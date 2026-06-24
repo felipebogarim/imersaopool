@@ -100,7 +100,7 @@ function RepsPage() {
                     <td className="px-4 py-3 text-muted-foreground">{r.telefone || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.regiao || "—"}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <EntityKebab type="representante" id={r.id} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />
                     </td>
                   </tr>
                 ))
