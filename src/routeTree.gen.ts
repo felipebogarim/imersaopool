@@ -23,6 +23,7 @@ import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authent
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -98,6 +99,12 @@ const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   path: '/clientes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedClientesIdEditarRoute =
+  AuthenticatedClientesIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => AuthenticatedClientesIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -107,12 +114,13 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
-  '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,12 +130,13 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
-  '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
+  '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -139,12 +148,13 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
-  '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/imersoes/nova'
     | '/clientes/'
     | '/imersoes/'
+    | '/clientes/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/imersoes/nova'
     | '/clientes'
     | '/imersoes'
+    | '/clientes/$id/editar'
   id:
     | '__root__'
     | '/'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/clientes/'
     | '/_authenticated/imersoes/'
+    | '/_authenticated/clientes/$id/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -302,15 +315,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/clientes/$id/editar': {
+      id: '/_authenticated/clientes/$id/editar'
+      path: '/editar'
+      fullPath: '/clientes/$id/editar'
+      preLoaderRoute: typeof AuthenticatedClientesIdEditarRouteImport
+      parentRoute: typeof AuthenticatedClientesIdRoute
+    }
   }
 }
+
+interface AuthenticatedClientesIdRouteChildren {
+  AuthenticatedClientesIdEditarRoute: typeof AuthenticatedClientesIdEditarRoute
+}
+
+const AuthenticatedClientesIdRouteChildren: AuthenticatedClientesIdRouteChildren =
+  {
+    AuthenticatedClientesIdEditarRoute: AuthenticatedClientesIdEditarRoute,
+  }
+
+const AuthenticatedClientesIdRouteWithChildren =
+  AuthenticatedClientesIdRoute._addFileChildren(
+    AuthenticatedClientesIdRouteChildren,
+  )
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
-  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
+  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
@@ -323,7 +357,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
-  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
+  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
