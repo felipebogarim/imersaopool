@@ -1,17 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EntityKebab } from "@/components/EntityKebab";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
   component: ClientsPage,
 });
+
 
 const STATUS_COLORS: Record<string, string> = {
   ativo: "bg-success/20 text-success border-success/30",
