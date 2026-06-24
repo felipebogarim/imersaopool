@@ -27,7 +27,12 @@ function ClientDetail() {
       <PageHeader
         title={client.nome_fantasia}
         subtitle={[client.grupo, client.categoria, [client.cidade, client.estado].filter(Boolean).join(", ")].filter(Boolean).join(" • ")}
-        actions={<Button variant="ghost" asChild><Link to="/clientes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button asChild><Link to="/clientes/$id/editar" params={{ id }}><Pencil className="h-4 w-4 mr-1" /> Editar</Link></Button>
+            <Button variant="ghost" asChild><Link to="/clientes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>
+          </div>
+        }
       />
       <div className="p-8 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
