@@ -23,6 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function ClientsPage() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -38,6 +39,14 @@ function ClientsPage() {
   const filtered = clients.filter((c: any) =>
     !q || c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) || c.cidade?.toLowerCase().includes(q.toLowerCase())
   );
+  async function remove(id: string, nome: string) {
+    if (!confirm(`Excluir cliente "${nome}"?`)) return;
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Cliente excluído");
+    qc.invalidateQueries({ queryKey: ["clients"] });
+  }
+
   return (
     <div>
       <PageHeader
