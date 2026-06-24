@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
+import { EntityKebab } from "@/components/EntityKebab";
 
 export const Route = createFileRoute("/_authenticated/agentes")({
   head: () => ({ meta: [{ title: "Agentes — PoolFlux" }] }),
