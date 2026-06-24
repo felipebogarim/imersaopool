@@ -2,10 +2,11 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { Mic, Square, Loader2, Image as ImageIcon, Video, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { transcribeAudio } from "@/lib/transcribe.functions";
+import { extractFromMedia } from "@/lib/extract-media.functions";
 
 type Common = {
   value: string;
@@ -81,22 +82,98 @@ function MicBtn({ state, start, stop }: { state: string; start: () => void; stop
   );
 }
 
+const MAX_BYTES = 20 * 1024 * 1024;
+
+function useMediaExtractor(onText: (t: string) => void) {
+  const extract = useServerFn(extractFromMedia);
+  const [loading, setLoading] = useState<null | "image" | "video" | "file">(null);
+
+  async function handle(file: File, kind: "image" | "video" | "file") {
+    if (file.size > MAX_BYTES) return toast.error("Arquivo maior que 20MB");
+    setLoading(kind);
+    try {
+      const base64 = await blobToBase64(file);
+      const { text } = await extract({ data: { base64, mime: file.type || "application/octet-stream", filename: file.name, kind } });
+      if (text.trim()) onText(text.trim());
+      else toast.error("Nada foi extraído");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao extrair");
+    } finally {
+      setLoading(null);
+    }
+  }
+  return { loading, handle };
+}
+
+function MediaBtn({
+  kind, accept, icon, title, loading, onPick,
+}: {
+  kind: "image" | "video" | "file";
+  accept: string;
+  icon: React.ReactNode;
+  title: string;
+  loading: null | "image" | "video" | "file";
+  onPick: (f: File, kind: "image" | "video" | "file") => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const isLoading = loading === kind;
+  return (
+    <>
+      <input
+        ref={ref}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onPick(f, kind); e.target.value = ""; }}
+      />
+      <Button
+        type="button"
+        size="icon"
+        variant="outline"
+        title={title}
+        disabled={!!loading}
+        onClick={() => ref.current?.click()}
+        className="shrink-0"
+      >
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      </Button>
+    </>
+  );
+}
+
+function MediaBtns({ onText }: { onText: (t: string) => void }) {
+  const { loading, handle } = useMediaExtractor(onText);
+  return (
+    <>
+      <MediaBtn kind="image" accept="image/*" icon={<ImageIcon className="h-4 w-4" />} title="Enviar foto" loading={loading} onPick={handle} />
+      <MediaBtn kind="video" accept="video/*" icon={<Video className="h-4 w-4" />} title="Enviar vídeo" loading={loading} onPick={handle} />
+      <MediaBtn kind="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" icon={<Paperclip className="h-4 w-4" />} title="Enviar arquivo" loading={loading} onPick={handle} />
+    </>
+  );
+}
+
 export function VoiceInput({ value, onChange, placeholder, className, type = "text", maxLength }: Common & { type?: string; maxLength?: number }) {
-  const { state, start, stop } = useRecorder(t => onChange(value ? `${value} ${t}` : t));
+  const append = (t: string) => onChange(value ? `${value} ${t}` : t);
+  const { state, start, stop } = useRecorder(append);
   return (
     <div className="flex gap-2">
       <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} maxLength={maxLength} />
       <MicBtn state={state} start={start} stop={stop} />
+      <MediaBtns onText={append} />
     </div>
   );
 }
 
 export function VoiceTextarea({ value, onChange, placeholder, className, rows }: Common & { rows?: number }) {
-  const { state, start, stop } = useRecorder(t => onChange(value ? `${value} ${t}` : t));
+  const append = (t: string) => onChange(value ? `${value} ${t}` : t);
+  const { state, start, stop } = useRecorder(append);
   return (
     <div className="flex gap-2 items-start">
       <Textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} rows={rows} />
-      <MicBtn state={state} start={start} stop={stop} />
+      <div className="flex flex-col gap-2">
+        <MicBtn state={state} start={start} stop={stop} />
+        <MediaBtns onText={append} />
+      </div>
     </div>
   );
 }
