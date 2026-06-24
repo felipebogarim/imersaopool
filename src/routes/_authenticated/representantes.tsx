@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { EntityKebab } from "@/components/EntityKebab";
 import { Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
