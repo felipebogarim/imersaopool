@@ -268,6 +268,36 @@ export type Database = {
           },
         ]
       }
+      entity_permissions: {
+        Row: {
+          allowed: boolean
+          area: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          area: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          area?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       field_visit_inputs: {
         Row: {
           created_at: string
