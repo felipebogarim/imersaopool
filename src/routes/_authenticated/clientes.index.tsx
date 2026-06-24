@@ -71,13 +71,14 @@ function ClientsPage() {
                 <th className="px-4 py-3 font-medium">Localização</th>
                 <th className="px-4 py-3 font-medium">Comprador</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 w-12"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
               ) : filtered.map((c: any) => (
                 <tr key={c.id} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-3">
@@ -89,6 +90,9 @@ function ClientsPage() {
                   <td className="px-4 py-3 text-muted-foreground">{c.nome_comprador || "—"}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <EntityKebab type="cliente" id={c.id} editTo="/clientes/$id/editar" onDelete={() => remove(c.id, c.nome_fantasia)} />
                   </td>
                 </tr>
               ))}
