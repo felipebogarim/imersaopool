@@ -57,9 +57,9 @@ function EditClient() {
       <div className="p-8 max-w-4xl">
         <div className="surface rounded-xl p-6 space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
-            <div><Label>Nome fantasia *</Label><Input value={form.nome_fantasia ?? ""} onChange={e => set("nome_fantasia", e.target.value)} /></div>
-            <div><Label>Razão social</Label><Input value={form.razao_social ?? ""} onChange={e => set("razao_social", e.target.value)} /></div>
-            <div><Label>CNPJ / CPF</Label><Input value={form.documento ?? ""} onChange={e => set("documento", e.target.value)} /></div>
+            <div><Label>Nome fantasia *</Label><VoiceInput value={form.nome_fantasia ?? ""} onChange={v => set("nome_fantasia", v)} /></div>
+            <div><Label>Razão social</Label><VoiceInput value={form.razao_social ?? ""} onChange={v => set("razao_social", v)} /></div>
+            <div><Label>CNPJ / CPF</Label><VoiceInput value={form.documento ?? ""} onChange={v => set("documento", v)} /></div>
             <div>
               <Label>Grupo</Label>
               <Select value={form.grupo ?? undefined} onValueChange={v => set("grupo", v)}>
