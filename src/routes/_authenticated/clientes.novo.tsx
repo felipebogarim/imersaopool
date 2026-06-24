@@ -73,14 +73,14 @@ function NewClient() {
                 <SelectContent>{["ativo","prospect","inativo"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Cidade</Label><Input value={form.cidade ?? ""} onChange={e => set("cidade", e.target.value)} /></div>
-            <div><Label>Estado</Label><Input value={form.estado ?? ""} onChange={e => set("estado", e.target.value)} maxLength={2} /></div>
-            <div><Label>Região</Label><Input value={form.regiao ?? ""} onChange={e => set("regiao", e.target.value)} /></div>
-            <div><Label>Endereço</Label><Input value={form.endereco ?? ""} onChange={e => set("endereco", e.target.value)} /></div>
-            <div><Label>Nome do comprador</Label><Input value={form.nome_comprador ?? ""} onChange={e => set("nome_comprador", e.target.value)} /></div>
-            <div><Label>Telefone</Label><Input value={form.telefone ?? ""} onChange={e => set("telefone", e.target.value)} /></div>
-            <div><Label>WhatsApp</Label><Input value={form.whatsapp ?? ""} onChange={e => set("whatsapp", e.target.value)} /></div>
-            <div><Label>E-mail</Label><Input type="email" value={form.email ?? ""} onChange={e => set("email", e.target.value)} /></div>
+            <div><Label>Cidade</Label><VoiceInput value={form.cidade ?? ""} onChange={v => set("cidade", v)} /></div>
+            <div><Label>Estado</Label><VoiceInput value={form.estado ?? ""} onChange={v => set("estado", v)} maxLength={2} /></div>
+            <div><Label>Região</Label><VoiceInput value={form.regiao ?? ""} onChange={v => set("regiao", v)} /></div>
+            <div><Label>Endereço</Label><VoiceInput value={form.endereco ?? ""} onChange={v => set("endereco", v)} /></div>
+            <div><Label>Nome do comprador</Label><VoiceInput value={form.nome_comprador ?? ""} onChange={v => set("nome_comprador", v)} /></div>
+            <div><Label>Telefone</Label><VoiceInput value={form.telefone ?? ""} onChange={v => set("telefone", v)} /></div>
+            <div><Label>WhatsApp</Label><VoiceInput value={form.whatsapp ?? ""} onChange={v => set("whatsapp", v)} /></div>
+            <div><Label>E-mail</Label><VoiceInput type="email" value={form.email ?? ""} onChange={v => set("email", v)} /></div>
             <div>
               <Label>Representante responsável</Label>
               <Select value={form.representative_id} onValueChange={v => set("representative_id", v)}>
@@ -89,7 +89,7 @@ function NewClient() {
               </Select>
             </div>
           </div>
-          <div><Label>Observações comerciais</Label><Textarea rows={3} value={form.observacoes ?? ""} onChange={e => set("observacoes", e.target.value)} /></div>
+          <div><Label>Observações comerciais</Label><VoiceTextarea rows={3} value={form.observacoes ?? ""} onChange={v => set("observacoes", v)} /></div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" asChild><Link to="/clientes">Cancelar</Link></Button>
             <Button onClick={save} disabled={saving}>{saving ? "Salvando..." : "Cadastrar cliente"}</Button>
