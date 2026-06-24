@@ -23,6 +23,7 @@ import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authent
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 
 const AuthRoute = AuthRouteImport.update({
@@ -99,6 +100,12 @@ const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   path: '/clientes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPermissoesTypeIdRoute =
+  AuthenticatedPermissoesTypeIdRouteImport.update({
+    id: '/permissoes/$type/$id',
+    path: '/permissoes/$type/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientesIdEditarRoute =
   AuthenticatedClientesIdEditarRouteImport.update({
     id: '/editar',
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/clientes/'
     | '/imersoes/'
     | '/clientes/$id/editar'
+    | '/permissoes/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/imersoes'
     | '/clientes/$id/editar'
+    | '/permissoes/$type/$id'
   id:
     | '__root__'
     | '/'
@@ -206,6 +218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/clientes/$id/editar'
+    | '/_authenticated/permissoes/$type/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -315,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/permissoes/$type/$id': {
+      id: '/_authenticated/permissoes/$type/$id'
+      path: '/permissoes/$type/$id'
+      fullPath: '/permissoes/$type/$id'
+      preLoaderRoute: typeof AuthenticatedPermissoesTypeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes/$id/editar': {
       id: '/_authenticated/clientes/$id/editar'
       path: '/editar'
@@ -350,6 +370,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
+  AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -363,6 +384,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
+  AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
