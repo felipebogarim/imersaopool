@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/imersoes")({
+export const Route = createFileRoute("/_authenticated/imersoes/")({
   head: () => ({ meta: [{ title: "Imersões — PoolFlux" }] }),
   component: ImmersionsIndex,
 });

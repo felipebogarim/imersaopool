@@ -28,7 +28,7 @@ function RepsPage() {
   async function save() {
     if (!form.nome) return toast.error("Nome obrigatório");
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("representatives").insert({ ...form, created_by: user?.id });
+    const { error } = await supabase.from("representatives").insert({ ...form, created_by: user?.id } as any);
     if (error) return toast.error(error.message);
     toast.success("Representante cadastrado");
     setForm({}); setOpen(false);

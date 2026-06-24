@@ -33,7 +33,7 @@ function NewClient() {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const payload = { ...form, created_by: user?.id, agente_id: user?.id };
-    const { data, error } = await supabase.from("clients").insert(payload).select("id").single();
+    const { data, error } = await supabase.from("clients").insert(payload as any).select("id").single();
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Cliente cadastrado");

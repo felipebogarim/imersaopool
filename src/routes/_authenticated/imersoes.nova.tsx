@@ -42,7 +42,7 @@ function NewImmersion() {
       ...form,
       created_by: user?.id,
       agente_id: user?.id,
-    }).select("id").single();
+    } as any).select("id").single();
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Imersão criada");

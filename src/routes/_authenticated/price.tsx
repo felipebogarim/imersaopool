@@ -53,7 +53,7 @@ function Competitors() {
   async function save() {
     if (!form.nome) return toast.error("Nome obrigatório");
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("price_competitors").insert({ ...form, created_by: user?.id });
+    const { error } = await supabase.from("price_competitors").insert({ ...form, created_by: user?.id } as any);
     if (error) return toast.error(error.message);
     toast.success("Competidor cadastrado");
     setForm({}); setOpen(false);
@@ -110,7 +110,7 @@ function OwnProducts() {
     const { error } = await supabase.from("own_products").insert({
       ...form,
       preco_base: form.preco_base ? Number(form.preco_base) : null,
-    });
+    } as any);
     if (error) return toast.error(error.message);
     toast.success("Produto cadastrado");
     setForm({}); setOpen(false);
