@@ -14,16 +14,704 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      action_plans: {
+        Row: {
+          acao: string
+          created_at: string
+          id: string
+          immersion_id: string
+          observacoes: string | null
+          prazo: string | null
+          prioridade: Database["public"]["Enums"]["action_priority"]
+          responsavel: string | null
+          status: Database["public"]["Enums"]["action_status"]
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          id?: string
+          immersion_id: string
+          observacoes?: string | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          responsavel?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          id?: string
+          immersion_id?: string
+          observacoes?: string | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["action_priority"]
+          responsavel?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_plans_immersion_id_fkey"
+            columns: ["immersion_id"]
+            isOneToOne: false
+            referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_compilations: {
+        Row: {
+          conteudo: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          immersion_id: string | null
+          modelo: string | null
+          tipo: Database["public"]["Enums"]["ai_compilation_type"]
+        }
+        Insert: {
+          conteudo: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immersion_id?: string | null
+          modelo?: string | null
+          tipo: Database["public"]["Enums"]["ai_compilation_type"]
+        }
+        Update: {
+          conteudo?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immersion_id?: string | null
+          modelo?: string | null
+          tipo?: Database["public"]["Enums"]["ai_compilation_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_compilations_immersion_id_fkey"
+            columns: ["immersion_id"]
+            isOneToOne: false
+            referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attachments: {
+        Row: {
+          created_at: string
+          description: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entity_id?: string
+          entity_type?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          agente_id: string | null
+          categoria: Database["public"]["Enums"]["client_category"] | null
+          cidade: string | null
+          created_at: string
+          created_by: string | null
+          documento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          grupo: Database["public"]["Enums"]["client_group"] | null
+          id: string
+          nome_comprador: string | null
+          nome_fantasia: string
+          observacoes: string | null
+          razao_social: string | null
+          regiao: string | null
+          representative_id: string | null
+          status: Database["public"]["Enums"]["client_status"]
+          telefone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          agente_id?: string | null
+          categoria?: Database["public"]["Enums"]["client_category"] | null
+          cidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          documento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          grupo?: Database["public"]["Enums"]["client_group"] | null
+          id?: string
+          nome_comprador?: string | null
+          nome_fantasia: string
+          observacoes?: string | null
+          razao_social?: string | null
+          regiao?: string | null
+          representative_id?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          agente_id?: string | null
+          categoria?: Database["public"]["Enums"]["client_category"] | null
+          cidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          documento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          grupo?: Database["public"]["Enums"]["client_group"] | null
+          id?: string
+          nome_comprador?: string | null
+          nome_fantasia?: string
+          observacoes?: string | null
+          razao_social?: string | null
+          regiao?: string | null
+          representative_id?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          telefone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_products: {
+        Row: {
+          arquivo_origem: string | null
+          categoria: string | null
+          codigo: string | null
+          competitor_id: string
+          created_at: string
+          data_tabela: string | null
+          familia: string | null
+          id: string
+          nome: string
+          preco_informado: number | null
+          updated_at: string
+        }
+        Insert: {
+          arquivo_origem?: string | null
+          categoria?: string | null
+          codigo?: string | null
+          competitor_id: string
+          created_at?: string
+          data_tabela?: string | null
+          familia?: string | null
+          id?: string
+          nome: string
+          preco_informado?: number | null
+          updated_at?: string
+        }
+        Update: {
+          arquivo_origem?: string | null
+          categoria?: string | null
+          codigo?: string | null
+          competitor_id?: string
+          created_at?: string
+          data_tabela?: string | null
+          familia?: string | null
+          id?: string
+          nome?: string
+          preco_informado?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_products_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "price_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_visit_inputs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          immersion_id: string
+          observacoes_comerciais: string | null
+          observacoes_concorrentes: string | null
+          observacoes_exposicao: string | null
+          observacoes_loja: string | null
+          oportunidades: string | null
+          texto: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immersion_id: string
+          observacoes_comerciais?: string | null
+          observacoes_concorrentes?: string | null
+          observacoes_exposicao?: string | null
+          observacoes_loja?: string | null
+          oportunidades?: string | null
+          texto?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          immersion_id?: string
+          observacoes_comerciais?: string | null
+          observacoes_concorrentes?: string | null
+          observacoes_exposicao?: string | null
+          observacoes_loja?: string | null
+          oportunidades?: string | null
+          texto?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_visit_inputs_immersion_id_fkey"
+            columns: ["immersion_id"]
+            isOneToOne: false
+            referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      immersions: {
+        Row: {
+          agente_id: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          data_visita: string | null
+          id: string
+          observacoes: string | null
+          representative_id: string | null
+          representative_token: string | null
+          representative_token_expires_at: string | null
+          status: Database["public"]["Enums"]["immersion_status"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          agente_id?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          data_visita?: string | null
+          id?: string
+          observacoes?: string | null
+          representative_id?: string | null
+          representative_token?: string | null
+          representative_token_expires_at?: string | null
+          status?: Database["public"]["Enums"]["immersion_status"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          agente_id?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_visita?: string | null
+          id?: string
+          observacoes?: string | null
+          representative_id?: string | null
+          representative_token?: string | null
+          representative_token_expires_at?: string | null
+          status?: Database["public"]["Enums"]["immersion_status"]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "immersions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immersions_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      own_products: {
+        Row: {
+          categoria: string | null
+          codigo_interno: string | null
+          created_at: string
+          familia: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          preco_base: number | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string | null
+          codigo_interno?: string | null
+          created_at?: string
+          familia?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          preco_base?: number | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string | null
+          codigo_interno?: string | null
+          created_at?: string
+          familia?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          preco_base?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      price_competitors: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          regiao: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          regiao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          regiao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_equivalences: {
+        Row: {
+          competitor_product_id: string
+          created_at: string
+          grau: Database["public"]["Enums"]["equivalence_grade"]
+          id: string
+          observacoes: string | null
+          own_product_id: string
+        }
+        Insert: {
+          competitor_product_id: string
+          created_at?: string
+          grau?: Database["public"]["Enums"]["equivalence_grade"]
+          id?: string
+          observacoes?: string | null
+          own_product_id: string
+        }
+        Update: {
+          competitor_product_id?: string
+          created_at?: string
+          grau?: Database["public"]["Enums"]["equivalence_grade"]
+          id?: string
+          observacoes?: string | null
+          own_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_equivalences_competitor_product_id_fkey"
+            columns: ["competitor_product_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_equivalences_own_product_id_fkey"
+            columns: ["own_product_id"]
+            isOneToOne: false
+            referencedRelation: "own_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          observacoes: string | null
+          phone: string | null
+          regiao: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          observacoes?: string | null
+          phone?: string | null
+          regiao?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          observacoes?: string | null
+          phone?: string | null
+          regiao?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      representative_inputs: {
+        Row: {
+          abordagem_diferente: string | null
+          acoes_faturamento: string | null
+          ameacas: string | null
+          created_at: string
+          cuidados: string | null
+          familias_mais_compradas: string | null
+          id: string
+          immersion_id: string
+          marcas_concorrentes: string | null
+          motivo_compra: string | null
+          negociacao: string | null
+          oportunidades: string | null
+          percepcao_marca: string | null
+          perfil_comprador: string | null
+          potencial_aumento: string | null
+          submitted_at: string | null
+          texto_livre: string | null
+          updated_at: string
+        }
+        Insert: {
+          abordagem_diferente?: string | null
+          acoes_faturamento?: string | null
+          ameacas?: string | null
+          created_at?: string
+          cuidados?: string | null
+          familias_mais_compradas?: string | null
+          id?: string
+          immersion_id: string
+          marcas_concorrentes?: string | null
+          motivo_compra?: string | null
+          negociacao?: string | null
+          oportunidades?: string | null
+          percepcao_marca?: string | null
+          perfil_comprador?: string | null
+          potencial_aumento?: string | null
+          submitted_at?: string | null
+          texto_livre?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abordagem_diferente?: string | null
+          acoes_faturamento?: string | null
+          ameacas?: string | null
+          created_at?: string
+          cuidados?: string | null
+          familias_mais_compradas?: string | null
+          id?: string
+          immersion_id?: string
+          marcas_concorrentes?: string | null
+          motivo_compra?: string | null
+          negociacao?: string | null
+          oportunidades?: string | null
+          percepcao_marca?: string | null
+          perfil_comprador?: string | null
+          potencial_aumento?: string | null
+          submitted_at?: string | null
+          texto_livre?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "representative_inputs_immersion_id_fkey"
+            columns: ["immersion_id"]
+            isOneToOne: false
+            referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      representatives: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          outras_marcas: string | null
+          regiao: string | null
+          telefone: string | null
+          tempo_relacionamento: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          outras_marcas?: string | null
+          regiao?: string | null
+          telefone?: string | null
+          tempo_relacionamento?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          outras_marcas?: string | null
+          regiao?: string | null
+          telefone?: string | null
+          tempo_relacionamento?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_immersion_by_token: {
+        Args: { _token: string }
+        Returns: {
+          already_submitted: boolean
+          client_name: string
+          expires_at: string
+          immersion_id: string
+          representative_name: string
+          titulo: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      submit_representative_input: {
+        Args: { _data: Json; _token: string }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      action_priority: "alta" | "media" | "baixa"
+      action_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
+      ai_compilation_type:
+        | "representante"
+        | "visita"
+        | "price"
+        | "diagnostico_final"
+      app_role: "admin" | "gestor" | "agente"
+      client_category: "Black" | "Gold" | "Silver"
+      client_group: "G1" | "G2" | "G2+" | "Corporativo"
+      client_status: "ativo" | "inativo" | "prospect"
+      equivalence_grade: "igual" | "similar" | "substituto"
+      immersion_status:
+        | "planejada"
+        | "antes_visita"
+        | "visita_campo"
+        | "em_diagnostico"
+        | "diagnostico_gerado"
+        | "plano_acao"
+        | "concluida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +838,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      action_priority: ["alta", "media", "baixa"],
+      action_status: ["pendente", "em_andamento", "concluida", "cancelada"],
+      ai_compilation_type: [
+        "representante",
+        "visita",
+        "price",
+        "diagnostico_final",
+      ],
+      app_role: ["admin", "gestor", "agente"],
+      client_category: ["Black", "Gold", "Silver"],
+      client_group: ["G1", "G2", "G2+", "Corporativo"],
+      client_status: ["ativo", "inativo", "prospect"],
+      equivalence_grade: ["igual", "similar", "substituto"],
+      immersion_status: [
+        "planejada",
+        "antes_visita",
+        "visita_campo",
+        "em_diagnostico",
+        "diagnostico_gerado",
+        "plano_acao",
+        "concluida",
+      ],
+    },
   },
 } as const
