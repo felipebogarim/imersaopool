@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Pencil } from "lucide-react";
 import { useState } from "react";
@@ -58,14 +58,14 @@ function RepsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Editar representante" : "Novo representante"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Nome *</Label><Input value={form.nome ?? ""} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></div>
+            <div><Label>Nome *</Label><VoiceInput value={form.nome ?? ""} onChange={v => setForm(f => ({ ...f, nome: v }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>E-mail</Label><Input type="email" value={form.email ?? ""} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div><Label>Telefone</Label><Input value={form.telefone ?? ""} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))} /></div>
+              <div><Label>E-mail</Label><VoiceInput type="email" value={form.email ?? ""} onChange={v => setForm(f => ({ ...f, email: v }))} /></div>
+              <div><Label>Telefone</Label><VoiceInput value={form.telefone ?? ""} onChange={v => setForm(f => ({ ...f, telefone: v }))} /></div>
             </div>
-            <div><Label>Região</Label><Input value={form.regiao ?? ""} onChange={e => setForm(f => ({ ...f, regiao: e.target.value }))} /></div>
-            <div><Label>Outras marcas que trabalha</Label><Textarea rows={2} value={form.outras_marcas ?? ""} onChange={e => setForm(f => ({ ...f, outras_marcas: e.target.value }))} /></div>
-            <div><Label>Observações</Label><Textarea rows={2} value={form.observacoes ?? ""} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} /></div>
+            <div><Label>Região</Label><VoiceInput value={form.regiao ?? ""} onChange={v => setForm(f => ({ ...f, regiao: v }))} /></div>
+            <div><Label>Outras marcas que trabalha</Label><VoiceTextarea rows={2} value={form.outras_marcas ?? ""} onChange={v => setForm(f => ({ ...f, outras_marcas: v }))} /></div>
+            <div><Label>Observações</Label><VoiceTextarea rows={2} value={form.observacoes ?? ""} onChange={v => setForm(f => ({ ...f, observacoes: v }))} /></div>
             <Button onClick={save} className="w-full">{editing ? "Salvar alterações" : "Cadastrar"}</Button>
           </div>
         </DialogContent>

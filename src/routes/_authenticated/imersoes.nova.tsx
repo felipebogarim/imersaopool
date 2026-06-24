@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { VoiceInput } from "@/components/VoiceInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -57,7 +58,7 @@ function NewImmersion() {
       />
       <div className="p-8 max-w-3xl">
         <div className="surface rounded-xl p-6 space-y-4">
-          <div><Label>Título da imersão *</Label><Input value={form.titulo ?? ""} onChange={e => setForm(f => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Imersão Cliente XYZ — Out/2025" /></div>
+          <div><Label>Título da imersão *</Label><VoiceInput value={form.titulo ?? ""} onChange={v => setForm(f => ({ ...f, titulo: v }))} placeholder="Ex: Imersão Cliente XYZ — Out/2025" /></div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label>Cliente *</Label>
