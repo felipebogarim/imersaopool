@@ -39,7 +39,7 @@ function EditClient() {
     if (!form.nome_fantasia) return toast.error("Informe o nome fantasia");
     setSaving(true);
     const { id: _id, created_at, updated_at, created_by, agente_id, ...payload } = form;
-    const { error } = await supabase.from("clients").update(payload).eq("id", id);
+    const { error } = await supabase.from("clients").update(payload as any).eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Cliente atualizado");
