@@ -49,6 +49,14 @@ function RepsPage() {
     setForm({}); setEditing(null); setOpen(false);
     qc.invalidateQueries({ queryKey: ["reps-list"] });
   }
+  async function remove(r: any) {
+    if (!confirm(`Excluir representante "${r.nome}"?`)) return;
+    const { error } = await supabase.from("representatives").delete().eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Representante excluído");
+    qc.invalidateQueries({ queryKey: ["reps-list"] });
+  }
+
 
   return (
     <div>
