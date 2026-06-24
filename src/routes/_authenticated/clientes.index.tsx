@@ -1,17 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EntityKebab } from "@/components/EntityKebab";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
   component: ClientsPage,
 });
+
 
 const STATUS_COLORS: Record<string, string> = {
   ativo: "bg-success/20 text-success border-success/30",
@@ -20,6 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function ClientsPage() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -35,6 +39,14 @@ function ClientsPage() {
   const filtered = clients.filter((c: any) =>
     !q || c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) || c.cidade?.toLowerCase().includes(q.toLowerCase())
   );
+  async function remove(id: string, nome: string) {
+    if (!confirm(`Excluir cliente "${nome}"?`)) return;
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Cliente excluído");
+    qc.invalidateQueries({ queryKey: ["clients"] });
+  }
+
   return (
     <div>
       <PageHeader
@@ -59,13 +71,14 @@ function ClientsPage() {
                 <th className="px-4 py-3 font-medium">Localização</th>
                 <th className="px-4 py-3 font-medium">Comprador</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 w-12"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
               ) : filtered.map((c: any) => (
                 <tr key={c.id} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-3">
@@ -77,6 +90,9 @@ function ClientsPage() {
                   <td className="px-4 py-3 text-muted-foreground">{c.nome_comprador || "—"}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <EntityKebab type="cliente" id={c.id} editTo="/clientes/$id/editar" onDelete={() => remove(c.id, c.nome_fantasia)} />
                   </td>
                 </tr>
               ))}

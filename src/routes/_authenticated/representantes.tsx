@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { EntityKebab } from "@/components/EntityKebab";
 import { Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -48,6 +49,14 @@ function RepsPage() {
     setForm({}); setEditing(null); setOpen(false);
     qc.invalidateQueries({ queryKey: ["reps-list"] });
   }
+  async function remove(r: any) {
+    if (!confirm(`Excluir representante "${r.nome}"?`)) return;
+    const { error } = await supabase.from("representatives").delete().eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.success("Representante excluído");
+    qc.invalidateQueries({ queryKey: ["reps-list"] });
+  }
+
 
   return (
     <div>
@@ -91,7 +100,7 @@ function RepsPage() {
                     <td className="px-4 py-3 text-muted-foreground">{r.telefone || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.regiao || "—"}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(r)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <EntityKebab type="representante" id={r.id} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />
                     </td>
                   </tr>
                 ))
