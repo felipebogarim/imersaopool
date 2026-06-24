@@ -9,38 +9,215 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as AuthenticatedRepresentantesRouteImport } from './routes/_authenticated/representantes'
+import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
+import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
+import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
+import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
+import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
+import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RTokenRoute = RTokenRouteImport.update({
+  id: '/r/$token',
+  path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRepresentantesRoute =
+  AuthenticatedRepresentantesRouteImport.update({
+    id: '/representantes',
+    path: '/representantes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPriceRoute = AuthenticatedPriceRouteImport.update({
+  id: '/price',
+  path: '/price',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
+  id: '/agentes',
+  path: '/agentes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedImersoesIndexRoute =
+  AuthenticatedImersoesIndexRouteImport.update({
+    id: '/imersoes/',
+    path: '/imersoes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClientesIndexRoute =
+  AuthenticatedClientesIndexRouteImport.update({
+    id: '/clientes/',
+    path: '/clientes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImersoesNovaRoute =
+  AuthenticatedImersoesNovaRouteImport.update({
+    id: '/imersoes/nova',
+    path: '/imersoes/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
+  id: '/imersoes/$id',
+  path: '/imersoes/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedClientesNovoRoute =
+  AuthenticatedClientesNovoRouteImport.update({
+    id: '/clientes/novo',
+    path: '/clientes/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
+  id: '/clientes/$id',
+  path: '/clientes/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/agentes': typeof AuthenticatedAgentesRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/price': typeof AuthenticatedPriceRoute
+  '/representantes': typeof AuthenticatedRepresentantesRoute
+  '/r/$token': typeof RTokenRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
+  '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/imersoes/': typeof AuthenticatedImersoesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/agentes': typeof AuthenticatedAgentesRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/price': typeof AuthenticatedPriceRoute
+  '/representantes': typeof AuthenticatedRepresentantesRoute
+  '/r/$token': typeof RTokenRoute
+  '/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
+  '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/clientes': typeof AuthenticatedClientesIndexRoute
+  '/imersoes': typeof AuthenticatedImersoesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/price': typeof AuthenticatedPriceRoute
+  '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
+  '/r/$token': typeof RTokenRoute
+  '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRoute
+  '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
+  '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/agentes'
+    | '/dashboard'
+    | '/price'
+    | '/representantes'
+    | '/r/$token'
+    | '/clientes/$id'
+    | '/clientes/novo'
+    | '/imersoes/$id'
+    | '/imersoes/nova'
+    | '/clientes/'
+    | '/imersoes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/agentes'
+    | '/dashboard'
+    | '/price'
+    | '/representantes'
+    | '/r/$token'
+    | '/clientes/$id'
+    | '/clientes/novo'
+    | '/imersoes/$id'
+    | '/imersoes/nova'
+    | '/clientes'
+    | '/imersoes'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/agentes'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/price'
+    | '/_authenticated/representantes'
+    | '/r/$token'
+    | '/_authenticated/clientes/$id'
+    | '/_authenticated/clientes/novo'
+    | '/_authenticated/imersoes/$id'
+    | '/_authenticated/imersoes/nova'
+    | '/_authenticated/clientes/'
+    | '/_authenticated/imersoes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  RTokenRoute: typeof RTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +225,121 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/r/$token': {
+      id: '/r/$token'
+      path: '/r/$token'
+      fullPath: '/r/$token'
+      preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/representantes': {
+      id: '/_authenticated/representantes'
+      path: '/representantes'
+      fullPath: '/representantes'
+      preLoaderRoute: typeof AuthenticatedRepresentantesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/price': {
+      id: '/_authenticated/price'
+      path: '/price'
+      fullPath: '/price'
+      preLoaderRoute: typeof AuthenticatedPriceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/agentes': {
+      id: '/_authenticated/agentes'
+      path: '/agentes'
+      fullPath: '/agentes'
+      preLoaderRoute: typeof AuthenticatedAgentesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/imersoes/': {
+      id: '/_authenticated/imersoes/'
+      path: '/imersoes'
+      fullPath: '/imersoes/'
+      preLoaderRoute: typeof AuthenticatedImersoesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/clientes/': {
+      id: '/_authenticated/clientes/'
+      path: '/clientes'
+      fullPath: '/clientes/'
+      preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/imersoes/nova': {
+      id: '/_authenticated/imersoes/nova'
+      path: '/imersoes/nova'
+      fullPath: '/imersoes/nova'
+      preLoaderRoute: typeof AuthenticatedImersoesNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/imersoes/$id': {
+      id: '/_authenticated/imersoes/$id'
+      path: '/imersoes/$id'
+      fullPath: '/imersoes/$id'
+      preLoaderRoute: typeof AuthenticatedImersoesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/clientes/novo': {
+      id: '/_authenticated/clientes/novo'
+      path: '/clientes/novo'
+      fullPath: '/clientes/novo'
+      preLoaderRoute: typeof AuthenticatedClientesNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/clientes/$id': {
+      id: '/_authenticated/clientes/$id'
+      path: '/clientes/$id'
+      fullPath: '/clientes/$id'
+      preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
+  AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
+  AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRoute
+  AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
+  AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
+  AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
+  AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+  AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPriceRoute: AuthenticatedPriceRoute,
+  AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
+  AuthenticatedClientesIdRoute: AuthenticatedClientesIdRoute,
+  AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
+  AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
+  AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
+  AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+  AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  RTokenRoute: RTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
