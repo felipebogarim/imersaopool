@@ -16,17 +16,11 @@ export const Route = createFileRoute("/r/$token")({
 
 const QUESTIONS = [
   { key: "percepcao_marca", q: "Como o cliente percebe a nossa marca hoje?" },
-  { key: "familias_mais_compradas", q: "Quais famílias de produtos o cliente mais compra?" },
-  { key: "motivo_compra", q: "Por que ele compra essas famílias?" },
-  { key: "potencial_aumento", q: "Quais famílias ele poderia comprar mais?" },
   { key: "marcas_concorrentes", q: "Quais outras marcas prevalecem na loja? Quais concorrentes têm maior presença?" },
   { key: "oportunidades", q: "Quais são nossas maiores oportunidades nesse cliente?" },
   { key: "ameacas", q: "Quais são nossas maiores ameaças nesse cliente?" },
   { key: "acoes_faturamento", q: "O que pode ser feito para ampliar o faturamento?" },
   { key: "cuidados", q: "O que precisamos tomar cuidado nessa conta?" },
-  { key: "abordagem_diferente", q: "O que podemos fazer diferente na abordagem comercial?" },
-  { key: "perfil_comprador", q: "Há alguma informação importante sobre o perfil do comprador?" },
-  { key: "negociacao", q: "Informações importantes sobre negociação, preço, prazo ou atendimento?" },
 ] as const;
 
 function PublicRepForm() {
