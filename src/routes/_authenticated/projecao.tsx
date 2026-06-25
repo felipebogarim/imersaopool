@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
 
 export const Route = createFileRoute("/_authenticated/projecao")({
-  head: () => ({ meta: [{ title: "Projeção de categoria — PoolFlux" }] }),
+  head: () => ({ meta: [{ title: "Projeção Categoria / Benefício — PoolFlux" }] }),
   component: ProjecaoPage,
 });
 
@@ -10,7 +10,7 @@ function ProjecaoPage() {
   return (
     <div>
       <PageHeader
-        title="Projeção de categoria / Benefícios"
+        title="Projeção Categoria / Benefício"
         subtitle="Em breve"
       />
       <div className="p-8">
