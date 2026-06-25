@@ -16,6 +16,7 @@ import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as AuthenticatedRepresentantesRouteImport } from './routes/_authenticated/representantes'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
+import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
@@ -60,6 +61,11 @@ const AuthenticatedProjecaoRoute = AuthenticatedProjecaoRouteImport.update({
 const AuthenticatedPriceRoute = AuthenticatedPriceRouteImport.update({
   id: '/price',
   path: '/price',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
+  id: '/novo-corp',
+  path: '/novo-corp',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/agentes': typeof AuthenticatedAgentesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/agentes': typeof AuthenticatedAgentesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/agentes'
     | '/dashboard'
+    | '/novo-corp'
     | '/price'
     | '/projecao'
     | '/representantes'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/agentes'
     | '/dashboard'
+    | '/novo-corp'
     | '/price'
     | '/projecao'
     | '/representantes'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/agentes'
     | '/_authenticated/dashboard'
+    | '/_authenticated/novo-corp'
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/representantes'
@@ -289,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/price'
       fullPath: '/price'
       preLoaderRoute: typeof AuthenticatedPriceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/novo-corp': {
+      id: '/_authenticated/novo-corp'
+      path: '/novo-corp'
+      fullPath: '/novo-corp'
+      preLoaderRoute: typeof AuthenticatedNovoCorpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -381,6 +400,7 @@ const AuthenticatedClientesIdRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
@@ -396,6 +416,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
