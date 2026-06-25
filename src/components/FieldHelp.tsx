@@ -11,7 +11,7 @@ const GENERIC_SUFFIX =
 
 const audioCache = new Map<string, string>(); // text -> objectURL
 
-export function FieldHelp({ text, voice, withMediaSuffix = false }: { text: string; voice?: string; withMediaSuffix?: boolean }) {
+export function FieldHelp({ text, voice, withMediaSuffix = false, audio = false }: { text: string; voice?: string; withMediaSuffix?: boolean; audio?: boolean }) {
   const fullText = text.trim() + (withMediaSuffix ? GENERIC_SUFFIX : "");
   const tts = useServerFn(synthesizeSpeech);
   const [state, setState] = useState<"idle" | "loading" | "playing">("idle");
@@ -55,23 +55,25 @@ export function FieldHelp({ text, voice, withMediaSuffix = false }: { text: stri
     <div className="mt-1 flex items-start gap-2 text-xs text-muted-foreground">
       <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-cyan" />
       <p className="flex-1 leading-relaxed">{text}</p>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="h-6 w-6 shrink-0"
-        title="Ouvir orientação"
-        onClick={toggle}
-        disabled={state === "loading"}
-      >
-        {state === "loading" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : state === "playing" ? (
-          <Pause className="h-3.5 w-3.5" />
-        ) : (
-          <Play className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      {audio && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6 shrink-0"
+          title="Ouvir orientação"
+          onClick={toggle}
+          disabled={state === "loading"}
+        >
+          {state === "loading" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : state === "playing" ? (
+            <Pause className="h-3.5 w-3.5" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      )}
     </div>
   );
 }
@@ -82,19 +84,21 @@ export function LabelHelp({
   htmlFor,
   required,
   withMediaSuffix,
+  audio,
 }: {
   label: string;
   help: string;
   htmlFor?: string;
   required?: boolean;
   withMediaSuffix?: boolean;
+  audio?: boolean;
 }) {
   return (
     <div className="mb-1.5">
       <Label htmlFor={htmlFor}>
         {label} {required && <span className="text-cyan">*</span>}
       </Label>
-      <FieldHelp text={help} withMediaSuffix={withMediaSuffix} />
+      <FieldHelp text={help} withMediaSuffix={withMediaSuffix} audio={audio} />
     </div>
   );
 }
