@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { VoiceInput } from "@/components/VoiceInput";
+import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
 
 const FIELDS: { key: string; label: string }[] = [
   { key: "texto", label: "Resumo / texto livre" },
@@ -72,25 +72,18 @@ export function AgentInputs({ immersionId }: { immersionId: string }) {
           {FIELDS.map((f) => (
             <div key={f.key} className="space-y-1">
               <label className="text-xs font-medium">{f.label}</label>
-              <div className="flex gap-2 items-start">
-                {f.key === "texto" ? (
-                  <Textarea
-                    value={form[f.key] ?? ""}
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                    rows={3}
-                  />
-                ) : (
-                  <Input
-                    value={form[f.key] ?? ""}
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                  />
-                )}
-                <VoiceInput
-                  onTranscript={(t) =>
-                    setForm((p) => ({ ...p, [f.key]: ((p[f.key] ?? "") + " " + t).trim() }))
-                  }
+              {f.key === "texto" ? (
+                <VoiceTextarea
+                  value={form[f.key] ?? ""}
+                  onChange={(v) => setForm({ ...form, [f.key]: v })}
+                  rows={3}
                 />
-              </div>
+              ) : (
+                <VoiceInput
+                  value={form[f.key] ?? ""}
+                  onChange={(v) => setForm({ ...form, [f.key]: v })}
+                />
+              )}
             </div>
           ))}
           <div className="flex gap-2 justify-end pt-2">
