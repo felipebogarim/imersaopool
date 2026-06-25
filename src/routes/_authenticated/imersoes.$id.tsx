@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Copy, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ImmersionAttachments } from "@/components/ImmersionAttachments";
+import { AgentInputs } from "@/components/AgentInputs";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -92,8 +93,8 @@ function ImmersionDetail() {
           </TabsContent>
 
           <TabsContent value="campo" className="mt-4 surface rounded-xl p-6">
-            <h3 className="font-semibold mb-2">Visita em campo</h3>
-            <p className="text-sm text-muted-foreground">Registros do agente em campo, fotos, áudios e observações. Em breve.</p>
+            <h3 className="font-semibold mb-3">Visita em campo</h3>
+            <AgentInputs immersionId={imm.id} />
           </TabsContent>
 
           <TabsContent value="price" className="mt-4 surface rounded-xl p-6">
