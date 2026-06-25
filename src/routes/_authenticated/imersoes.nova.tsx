@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceInput } from "@/components/VoiceInput";
+import { LabelHelp } from "@/components/FieldHelp";
+import { IMMERSION_HELP } from "@/lib/field-help-texts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -58,23 +60,23 @@ function NewImmersion() {
       />
       <div className="p-8 max-w-3xl">
         <div className="surface rounded-xl p-6 space-y-4">
-          <div><Label>Título da imersão *</Label><VoiceInput value={form.titulo ?? ""} onChange={v => setForm(f => ({ ...f, titulo: v }))} placeholder="Ex: Imersão Cliente XYZ — Out/2025" /></div>
+          <div><LabelHelp label="Título da imersão" required help={IMMERSION_HELP.titulo} /><VoiceInput value={form.titulo ?? ""} onChange={v => setForm(f => ({ ...f, titulo: v }))} placeholder="Ex: Imersão Cliente XYZ — Out/2025" /></div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label>Cliente *</Label>
+              <LabelHelp label="Cliente" required help={IMMERSION_HELP.cliente} withMediaSuffix={false} />
               <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
                 <SelectContent>{clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome_fantasia}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Representante</Label>
+              <LabelHelp label="Representante" help={IMMERSION_HELP.representante} withMediaSuffix={false} />
               <Select value={form.representative_id} onValueChange={v => setForm(f => ({ ...f, representative_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>{reps.map((r: any) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Data prevista da visita</Label><Input type="date" value={form.data_visita ?? ""} onChange={e => setForm(f => ({ ...f, data_visita: e.target.value }))} /></div>
+            <div><LabelHelp label="Data prevista da visita" help={IMMERSION_HELP.data_visita} withMediaSuffix={false} /><Input type="date" value={form.data_visita ?? ""} onChange={e => setForm(f => ({ ...f, data_visita: e.target.value }))} /></div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" asChild><Link to="/imersoes">Cancelar</Link></Button>
