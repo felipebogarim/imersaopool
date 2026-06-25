@@ -5,6 +5,8 @@ import { BrandLogo } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FieldHelp } from "@/components/FieldHelp";
+import { REP_PUBLIC_HELP } from "@/lib/field-help-texts";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
@@ -15,12 +17,12 @@ export const Route = createFileRoute("/r/$token")({
 });
 
 const QUESTIONS = [
-  { key: "percepcao_marca", q: "Como o cliente percebe a nossa marca hoje?" },
-  { key: "marcas_concorrentes", q: "Quais outras marcas prevalecem na loja? Quais concorrentes têm maior presença?" },
-  { key: "oportunidades", q: "Quais são nossas maiores oportunidades nesse cliente?" },
-  { key: "ameacas", q: "Quais são nossas maiores ameaças nesse cliente?" },
-  { key: "acoes_faturamento", q: "O que pode ser feito para ampliar o faturamento?" },
-  { key: "cuidados", q: "O que precisamos tomar cuidado nessa conta?" },
+  { key: "percepcao_marca", q: "Como o cliente percebe a nossa marca hoje?", help: REP_PUBLIC_HELP.marca },
+  { key: "marcas_concorrentes", q: "Quais outras marcas prevalecem na loja? Quais concorrentes têm maior presença?", help: REP_PUBLIC_HELP.concorrentes },
+  { key: "oportunidades", q: "Quais são nossas maiores oportunidades nesse cliente?", help: REP_PUBLIC_HELP.oportunidades },
+  { key: "ameacas", q: "Quais são nossas maiores ameaças nesse cliente?", help: REP_PUBLIC_HELP.ameacas },
+  { key: "acoes_faturamento", q: "O que pode ser feito para ampliar o faturamento?", help: REP_PUBLIC_HELP.faturamento },
+  { key: "cuidados", q: "O que precisamos tomar cuidado nessa conta?", help: REP_PUBLIC_HELP.cuidados },
 ] as const;
 
 function PublicRepForm() {
@@ -88,11 +90,13 @@ function PublicRepForm() {
           <div className="space-y-5">
             <div>
               <Label className="mb-1.5 block">Comentários gerais (opcional)</Label>
+              <FieldHelp text={REP_PUBLIC_HELP.texto_livre} withMediaSuffix={false} />
               <Textarea rows={3} value={form.texto_livre ?? ""} onChange={e => setForm(f => ({ ...f, texto_livre: e.target.value }))} />
             </div>
-            {QUESTIONS.map(({ key, q }) => (
+            {QUESTIONS.map(({ key, q, help }) => (
               <div key={key}>
                 <Label className="mb-1.5 block text-sm">{q}</Label>
+                <FieldHelp text={help} withMediaSuffix={false} />
                 <Textarea rows={3} value={form[key] ?? ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
               </div>
             ))}

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
+import { LabelHelp } from "@/components/FieldHelp";
+import { REP_HELP } from "@/lib/field-help-texts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EntityKebab } from "@/components/EntityKebab";
 import { Plus, Pencil } from "lucide-react";
@@ -67,14 +69,14 @@ function RepsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Editar representante" : "Novo representante"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Nome *</Label><VoiceInput value={form.nome ?? ""} onChange={v => setForm(f => ({ ...f, nome: v }))} /></div>
+            <div><LabelHelp label="Nome" required help={REP_HELP.nome} /><VoiceInput value={form.nome ?? ""} onChange={v => setForm(f => ({ ...f, nome: v }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>E-mail</Label><VoiceInput type="email" value={form.email ?? ""} onChange={v => setForm(f => ({ ...f, email: v }))} /></div>
-              <div><Label>Telefone</Label><VoiceInput value={form.telefone ?? ""} onChange={v => setForm(f => ({ ...f, telefone: v }))} /></div>
+              <div><LabelHelp label="E-mail" help={REP_HELP.email} /><VoiceInput type="email" value={form.email ?? ""} onChange={v => setForm(f => ({ ...f, email: v }))} /></div>
+              <div><LabelHelp label="Telefone" help={REP_HELP.telefone} /><VoiceInput value={form.telefone ?? ""} onChange={v => setForm(f => ({ ...f, telefone: v }))} /></div>
             </div>
-            <div><Label>Região</Label><VoiceInput value={form.regiao ?? ""} onChange={v => setForm(f => ({ ...f, regiao: v }))} /></div>
-            <div><Label>Outras marcas que trabalha</Label><VoiceTextarea rows={2} value={form.outras_marcas ?? ""} onChange={v => setForm(f => ({ ...f, outras_marcas: v }))} /></div>
-            <div><Label>Observações</Label><VoiceTextarea rows={2} value={form.observacoes ?? ""} onChange={v => setForm(f => ({ ...f, observacoes: v }))} /></div>
+            <div><LabelHelp label="Região" help={REP_HELP.regiao} /><VoiceInput value={form.regiao ?? ""} onChange={v => setForm(f => ({ ...f, regiao: v }))} /></div>
+            <div><LabelHelp label="Outras marcas que trabalha" help={REP_HELP.outras_marcas} /><VoiceTextarea rows={2} value={form.outras_marcas ?? ""} onChange={v => setForm(f => ({ ...f, outras_marcas: v }))} /></div>
+            <div><LabelHelp label="Observações" help={REP_HELP.observacoes} /><VoiceTextarea rows={2} value={form.observacoes ?? ""} onChange={v => setForm(f => ({ ...f, observacoes: v }))} /></div>
             <Button onClick={save} className="w-full">{editing ? "Salvar alterações" : "Cadastrar"}</Button>
           </div>
         </DialogContent>
