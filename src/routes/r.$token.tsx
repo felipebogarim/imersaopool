@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { VoiceTextarea } from "@/components/VoiceInput";
 import { FieldHelp } from "@/components/FieldHelp";
 import { REP_PUBLIC_HELP } from "@/lib/field-help-texts";
 import { toast } from "sonner";
