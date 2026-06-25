@@ -49,15 +49,17 @@ function ImmersionDetail() {
         </div>
 
         <Tabs defaultValue="visao">
-          <TabsList className="grid grid-cols-7 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-8 w-full max-w-4xl">
             <TabsTrigger value="visao">Visão geral</TabsTrigger>
             <TabsTrigger value="antes">Antes</TabsTrigger>
             <TabsTrigger value="rep">Representante</TabsTrigger>
             <TabsTrigger value="campo">Campo</TabsTrigger>
+            <TabsTrigger value="gerencia">Gerência</TabsTrigger>
             <TabsTrigger value="price">Price</TabsTrigger>
             <TabsTrigger value="diag">Diagnóstico</TabsTrigger>
             <TabsTrigger value="plano">Plano</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="visao" className="mt-4 surface rounded-xl p-6">
             <h3 className="font-semibold mb-3">Status da imersão</h3>
@@ -94,8 +96,14 @@ function ImmersionDetail() {
 
           <TabsContent value="campo" className="mt-4 surface rounded-xl p-6">
             <h3 className="font-semibold mb-3">Visita em campo</h3>
-            <AgentInputs immersionId={imm.id} />
+            <AgentInputs immersionId={imm.id} scope="campo" />
           </TabsContent>
+
+          <TabsContent value="gerencia" className="mt-4 surface rounded-xl p-6">
+            <h3 className="font-semibold mb-3">Gerência</h3>
+            <AgentInputs immersionId={imm.id} scope="gerencia" />
+          </TabsContent>
+
 
           <TabsContent value="price" className="mt-4 surface rounded-xl p-6">
             <h3 className="font-semibold mb-2">Comparativo Price</h3>

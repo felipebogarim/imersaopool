@@ -15,19 +15,20 @@ const FIELDS: { key: string; label: string }[] = [
   { key: "oportunidades", label: "Oportunidades" },
 ];
 
-export function AgentInputs({ immersionId }: { immersionId: string }) {
+export function AgentInputs({ immersionId, scope = "campo" }: { immersionId: string; scope?: string }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
   const { data: inputs = [] } = useQuery({
-    queryKey: ["field-inputs", immersionId],
+    queryKey: ["field-inputs", immersionId, scope],
     queryFn: async () => {
       const { data } = await supabase
         .from("field_visit_inputs")
         .select("*, profile:profiles!field_visit_inputs_created_by_fkey(full_name, email)")
         .eq("immersion_id", immersionId)
+        .eq("scope", scope)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -39,22 +40,24 @@ export function AgentInputs({ immersionId }: { immersionId: string }) {
     const { error } = await supabase.from("field_visit_inputs").insert({
       immersion_id: immersionId,
       created_by: u.user?.id,
+      scope,
       ...form,
-    });
+    } as any);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Input adicionado");
     setForm({});
     setOpen(false);
-    qc.invalidateQueries({ queryKey: ["field-inputs", immersionId] });
+    qc.invalidateQueries({ queryKey: ["field-inputs", immersionId, scope] });
   }
 
   async function remove(id: string) {
     if (!confirm("Excluir este input?")) return;
     const { error } = await supabase.from("field_visit_inputs").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["field-inputs", immersionId] });
+    qc.invalidateQueries({ queryKey: ["field-inputs", immersionId, scope] });
   }
+
 
   return (
     <div className="space-y-4">
