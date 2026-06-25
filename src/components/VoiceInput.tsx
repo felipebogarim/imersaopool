@@ -152,9 +152,12 @@ function MediaBtns({ onText }: { onText: (t: string) => void }) {
   );
 }
 
-export function VoiceInput({ value, onChange, placeholder, className, type = "text", maxLength }: Common & { type?: string; maxLength?: number }) {
+export function VoiceInput({ value, onChange, placeholder, className, type = "text", maxLength, assist = false }: Common & { type?: string; maxLength?: number; assist?: boolean }) {
   const append = (t: string) => onChange(value ? `${value} ${t}` : t);
   const { state, start, stop } = useRecorder(append);
+  if (!assist) {
+    return <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} maxLength={maxLength} />;
+  }
   return (
     <div className="flex gap-2">
       <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} maxLength={maxLength} />
@@ -164,9 +167,12 @@ export function VoiceInput({ value, onChange, placeholder, className, type = "te
   );
 }
 
-export function VoiceTextarea({ value, onChange, placeholder, className, rows }: Common & { rows?: number }) {
+export function VoiceTextarea({ value, onChange, placeholder, className, rows, assist = false }: Common & { rows?: number; assist?: boolean }) {
   const append = (t: string) => onChange(value ? `${value} ${t}` : t);
   const { state, start, stop } = useRecorder(append);
+  if (!assist) {
+    return <Textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} rows={rows} />;
+  }
   return (
     <div className="flex gap-2 items-start">
       <Textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={className} rows={rows} />
