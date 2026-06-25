@@ -11,7 +11,7 @@ const GENERIC_SUFFIX =
 
 const audioCache = new Map<string, string>(); // text -> objectURL
 
-export function FieldHelp({ text, voice, withMediaSuffix = true }: { text: string; voice?: string; withMediaSuffix?: boolean }) {
+export function FieldHelp({ text, voice, withMediaSuffix = false }: { text: string; voice?: string; withMediaSuffix?: boolean }) {
   const fullText = text.trim() + (withMediaSuffix ? GENERIC_SUFFIX : "");
   const tts = useServerFn(synthesizeSpeech);
   const [state, setState] = useState<"idle" | "loading" | "playing">("idle");
