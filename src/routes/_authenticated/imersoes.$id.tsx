@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Copy, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ImmersionAttachments } from "@/components/ImmersionAttachments";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -70,8 +71,9 @@ function ImmersionDetail() {
           </TabsContent>
 
           <TabsContent value="antes" className="mt-4 surface rounded-xl p-6">
-            <h3 className="font-semibold mb-2">Antes da visita</h3>
-            <p className="text-sm text-muted-foreground">Upload de histórico, planilhas e documentos prévios. Em breve.</p>
+            <h3 className="font-semibold mb-1">Antes da visita</h3>
+            <p className="text-sm text-muted-foreground mb-4">Envie histórico, planilhas, fotos, vídeos e documentos prévios.</p>
+            <ImmersionAttachments immersionId={imm.id} />
           </TabsContent>
 
           <TabsContent value="rep" className="mt-4 surface rounded-xl p-6 space-y-4">
