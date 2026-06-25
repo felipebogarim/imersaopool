@@ -90,13 +90,13 @@ function PublicRepForm() {
           <div className="space-y-5">
             <div>
               <Label className="mb-1.5 block">Comentários gerais (opcional)</Label>
-              <FieldHelp text={REP_PUBLIC_HELP.texto_livre} />
+              <FieldHelp text={REP_PUBLIC_HELP.texto_livre} withMediaSuffix />
               <VoiceTextarea assist rows={3} value={form.texto_livre ?? ""} onChange={v => setForm(f => ({ ...f, texto_livre: v }))} />
             </div>
             {QUESTIONS.map(({ key, q, help }) => (
               <div key={key}>
                 <Label className="mb-1.5 block text-sm">{q}</Label>
-                <FieldHelp text={help} />
+                <FieldHelp text={help} withMediaSuffix />
                 <VoiceTextarea assist rows={3} value={form[key] ?? ""} onChange={v => setForm(f => ({ ...f, [key]: v }))} />
               </div>
             ))}
