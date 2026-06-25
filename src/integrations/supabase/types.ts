@@ -309,6 +309,7 @@ export type Database = {
           observacoes_exposicao: string | null
           observacoes_loja: string | null
           oportunidades: string | null
+          scope: string
           texto: string | null
         }
         Insert: {
@@ -321,6 +322,7 @@ export type Database = {
           observacoes_exposicao?: string | null
           observacoes_loja?: string | null
           oportunidades?: string | null
+          scope?: string
           texto?: string | null
         }
         Update: {
@@ -333,6 +335,7 @@ export type Database = {
           observacoes_exposicao?: string | null
           observacoes_loja?: string | null
           oportunidades?: string | null
+          scope?: string
           texto?: string | null
         }
         Relationships: [

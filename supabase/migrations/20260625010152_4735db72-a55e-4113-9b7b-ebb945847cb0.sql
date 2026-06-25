@@ -1,0 +1,1 @@
+ALTER TABLE public.field_visit_inputs ADD COLUMN IF NOT EXISTS scope text NOT NULL DEFAULT 'campo';
