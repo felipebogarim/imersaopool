@@ -84,19 +84,21 @@ export function LabelHelp({
   htmlFor,
   required,
   withMediaSuffix,
+  audio,
 }: {
   label: string;
   help: string;
   htmlFor?: string;
   required?: boolean;
   withMediaSuffix?: boolean;
+  audio?: boolean;
 }) {
   return (
     <div className="mb-1.5">
       <Label htmlFor={htmlFor}>
         {label} {required && <span className="text-cyan">*</span>}
       </Label>
-      <FieldHelp text={help} withMediaSuffix={withMediaSuffix} />
+      <FieldHelp text={help} withMediaSuffix={withMediaSuffix} audio={audio} />
     </div>
   );
 }
