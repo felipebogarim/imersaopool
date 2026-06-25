@@ -75,12 +75,14 @@ export function AgentInputs({ immersionId, scope = "campo" }: { immersionId: str
               <label className="text-xs font-medium">{f.label}</label>
               {f.key === "texto" ? (
                 <VoiceTextarea
+                  assist
                   value={form[f.key] ?? ""}
                   onChange={(v) => setForm({ ...form, [f.key]: v })}
                   rows={3}
                 />
               ) : (
                 <VoiceInput
+                  assist
                   value={form[f.key] ?? ""}
                   onChange={(v) => setForm({ ...form, [f.key]: v })}
                 />
