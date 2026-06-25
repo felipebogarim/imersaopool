@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
