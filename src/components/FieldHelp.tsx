@@ -55,23 +55,25 @@ export function FieldHelp({ text, voice, withMediaSuffix = false, audio = false 
     <div className="mt-1 flex items-start gap-2 text-xs text-muted-foreground">
       <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-cyan" />
       <p className="flex-1 leading-relaxed">{text}</p>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="h-6 w-6 shrink-0"
-        title="Ouvir orientação"
-        onClick={toggle}
-        disabled={state === "loading"}
-      >
-        {state === "loading" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : state === "playing" ? (
-          <Pause className="h-3.5 w-3.5" />
-        ) : (
-          <Play className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      {audio && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6 shrink-0"
+          title="Ouvir orientação"
+          onClick={toggle}
+          disabled={state === "loading"}
+        >
+          {state === "loading" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : state === "playing" ? (
+            <Pause className="h-3.5 w-3.5" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      )}
     </div>
   );
 }
