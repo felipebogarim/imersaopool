@@ -11,8 +11,8 @@ const GENERIC_SUFFIX =
 
 const audioCache = new Map<string, string>(); // text -> objectURL
 
-export function FieldHelp({ text, voice }: { text: string; voice?: string }) {
-  const fullText = text.trim() + GENERIC_SUFFIX;
+export function FieldHelp({ text, voice, withMediaSuffix = true }: { text: string; voice?: string; withMediaSuffix?: boolean }) {
+  const fullText = text.trim() + (withMediaSuffix ? GENERIC_SUFFIX : "");
   const tts = useServerFn(synthesizeSpeech);
   const [state, setState] = useState<"idle" | "loading" | "playing">("idle");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -81,18 +81,20 @@ export function LabelHelp({
   help,
   htmlFor,
   required,
+  withMediaSuffix,
 }: {
   label: string;
   help: string;
   htmlFor?: string;
   required?: boolean;
+  withMediaSuffix?: boolean;
 }) {
   return (
     <div className="mb-1.5">
       <Label htmlFor={htmlFor}>
         {label} {required && <span className="text-cyan">*</span>}
       </Label>
-      <FieldHelp text={help} />
+      <FieldHelp text={help} withMediaSuffix={withMediaSuffix} />
     </div>
   );
 }
