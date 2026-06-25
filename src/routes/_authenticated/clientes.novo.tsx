@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VoiceInput, VoiceTextarea } from "@/components/VoiceInput";
+import { LabelHelp } from "@/components/FieldHelp";
+import { CLIENT_HELP } from "@/lib/field-help-texts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
