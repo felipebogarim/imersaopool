@@ -51,7 +51,6 @@ function NewClient() {
       <div className="p-8 max-w-4xl">
         <div className="surface rounded-xl p-6 space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
-            <div><Label>Nome fantasia *</Label><VoiceInput value={form.nome_fantasia ?? ""} onChange={v => set("nome_fantasia", v)} /></div>
             <div><LabelHelp label="Nome fantasia" required help={CLIENT_HELP.nome_fantasia} /><VoiceInput value={form.nome_fantasia ?? ""} onChange={v => set("nome_fantasia", v)} /></div>
             <div><LabelHelp label="Razão social" help={CLIENT_HELP.razao_social} /><VoiceInput value={form.razao_social ?? ""} onChange={v => set("razao_social", v)} /></div>
             <div><LabelHelp label="CNPJ / CPF" help={CLIENT_HELP.documento} /><VoiceInput value={form.documento ?? ""} onChange={v => set("documento", v)} /></div>
