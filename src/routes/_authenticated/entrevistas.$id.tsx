@@ -41,7 +41,7 @@ function EntrevistaDetail() {
   if (isLoading) return <div className="p-8 text-muted-foreground">Carregando...</div>;
   if (!data) return <div className="p-8">Não encontrada.</div>;
 
-  const respostas: Record<string, string> = data.respostas || {};
+  const respostas = (data.respostas ?? {}) as Record<string, string>;
 
   return (
     <div>

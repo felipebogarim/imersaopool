@@ -25,6 +25,7 @@ import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
+import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
@@ -115,6 +116,12 @@ const AuthenticatedEntrevistasNovaRoute =
     path: '/entrevistas/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEntrevistasIdRoute =
+  AuthenticatedEntrevistasIdRouteImport.update({
+    id: '/entrevistas/$id',
+    path: '/entrevistas/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientesNovoRoute =
   AuthenticatedClientesNovoRouteImport.update({
     id: '/clientes/novo',
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -172,6 +180,7 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -195,6 +204,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/clientes/$id'
     | '/clientes/novo'
+    | '/entrevistas/$id'
     | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/clientes/$id'
     | '/clientes/novo'
+    | '/entrevistas/$id'
     | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
@@ -261,6 +273,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/clientes/novo'
+    | '/_authenticated/entrevistas/$id'
     | '/_authenticated/entrevistas/nova'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEntrevistasNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/entrevistas/$id': {
+      id: '/_authenticated/entrevistas/$id'
+      path: '/entrevistas/$id'
+      fullPath: '/entrevistas/$id'
+      preLoaderRoute: typeof AuthenticatedEntrevistasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes/novo': {
       id: '/_authenticated/clientes/novo'
       path: '/clientes/novo'
@@ -446,6 +466,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
+  AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRoute
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
@@ -464,6 +485,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
+  AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRoute,
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
