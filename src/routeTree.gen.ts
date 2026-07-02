@@ -20,9 +20,12 @@ import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
+import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
+import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
+import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
@@ -84,6 +87,12 @@ const AuthenticatedImersoesIndexRoute =
     path: '/imersoes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEntrevistasIndexRoute =
+  AuthenticatedEntrevistasIndexRouteImport.update({
+    id: '/entrevistas/',
+    path: '/entrevistas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientesIndexRoute =
   AuthenticatedClientesIndexRouteImport.update({
     id: '/clientes/',
@@ -101,6 +110,18 @@ const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
   path: '/imersoes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEntrevistasNovaRoute =
+  AuthenticatedEntrevistasNovaRouteImport.update({
+    id: '/entrevistas/nova',
+    path: '/entrevistas/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEntrevistasIdRoute =
+  AuthenticatedEntrevistasIdRouteImport.update({
+    id: '/entrevistas/$id',
+    path: '/entrevistas/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientesNovoRoute =
   AuthenticatedClientesNovoRouteImport.update({
     id: '/clientes/novo',
@@ -137,9 +158,12 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -156,9 +180,12 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
+  '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -177,9 +204,12 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
+  '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
+  '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -198,9 +228,12 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/clientes/$id'
     | '/clientes/novo'
+    | '/entrevistas/$id'
+    | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/clientes/'
+    | '/entrevistas/'
     | '/imersoes/'
     | '/clientes/$id/editar'
     | '/permissoes/$type/$id'
@@ -217,9 +250,12 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/clientes/$id'
     | '/clientes/novo'
+    | '/entrevistas/$id'
+    | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/clientes'
+    | '/entrevistas'
     | '/imersoes'
     | '/clientes/$id/editar'
     | '/permissoes/$type/$id'
@@ -237,9 +273,12 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/clientes/novo'
+    | '/_authenticated/entrevistas/$id'
+    | '/_authenticated/entrevistas/nova'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/clientes/'
+    | '/_authenticated/entrevistas/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/permissoes/$type/$id'
@@ -331,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImersoesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/entrevistas/': {
+      id: '/_authenticated/entrevistas/'
+      path: '/entrevistas'
+      fullPath: '/entrevistas/'
+      preLoaderRoute: typeof AuthenticatedEntrevistasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes/': {
       id: '/_authenticated/clientes/'
       path: '/clientes'
@@ -350,6 +396,20 @@ declare module '@tanstack/react-router' {
       path: '/imersoes/$id'
       fullPath: '/imersoes/$id'
       preLoaderRoute: typeof AuthenticatedImersoesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/entrevistas/nova': {
+      id: '/_authenticated/entrevistas/nova'
+      path: '/entrevistas/nova'
+      fullPath: '/entrevistas/nova'
+      preLoaderRoute: typeof AuthenticatedEntrevistasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/entrevistas/$id': {
+      id: '/_authenticated/entrevistas/$id'
+      path: '/entrevistas/$id'
+      fullPath: '/entrevistas/$id'
+      preLoaderRoute: typeof AuthenticatedEntrevistasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clientes/novo': {
@@ -406,9 +466,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
+  AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRoute
+  AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
+  AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
 }
@@ -422,9 +485,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
+  AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRoute,
+  AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
+  AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
 }
@@ -441,13 +507,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

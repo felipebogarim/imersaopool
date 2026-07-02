@@ -411,6 +411,69 @@ export type Database = {
           },
         ]
       }
+      interviews: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          created_by: string | null
+          data_entrevista: string | null
+          empresa_nome: string | null
+          empresa_tipo: string | null
+          empresa_tipo_outro: string | null
+          entrevistado_classificacao: string
+          entrevistado_classificacao_outro: string | null
+          entrevistado_nome: string
+          entrevistador_cargo: string | null
+          entrevistador_email: string | null
+          entrevistador_nome: string
+          estado: string | null
+          id: string
+          observacoes: string | null
+          respostas: Json
+          updated_at: string
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_entrevista?: string | null
+          empresa_nome?: string | null
+          empresa_tipo?: string | null
+          empresa_tipo_outro?: string | null
+          entrevistado_classificacao: string
+          entrevistado_classificacao_outro?: string | null
+          entrevistado_nome: string
+          entrevistador_cargo?: string | null
+          entrevistador_email?: string | null
+          entrevistador_nome: string
+          estado?: string | null
+          id?: string
+          observacoes?: string | null
+          respostas?: Json
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_entrevista?: string | null
+          empresa_nome?: string | null
+          empresa_tipo?: string | null
+          empresa_tipo_outro?: string | null
+          entrevistado_classificacao?: string
+          entrevistado_classificacao_outro?: string | null
+          entrevistado_nome?: string
+          entrevistador_cargo?: string | null
+          entrevistador_email?: string | null
+          entrevistador_nome?: string
+          estado?: string | null
+          id?: string
+          observacoes?: string | null
+          respostas?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       own_products: {
         Row: {
           categoria: string | null

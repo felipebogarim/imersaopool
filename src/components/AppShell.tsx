@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2 } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
   { to: "/imersoes", label: "Imersões", icon: FileSearch },
+  { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
   { to: "/price", label: "Price", icon: Tag },
   { to: "/clientes", label: "Clientes", icon: Briefcase },
   { to: "/representantes", label: "Representantes", icon: Users },
