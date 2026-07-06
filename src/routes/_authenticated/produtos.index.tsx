@@ -23,6 +23,8 @@ function ProductsPage() {
   const [q, setQ] = useState("");
   const [marca, setMarca] = useState<string>("");
   const [familia, setFamilia] = useState<string>("");
+  const [categoria, setCategoria] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
 
   const { data: profile } = useQuery({
     queryKey: ["active-company"],
@@ -37,7 +39,7 @@ function ProductsPage() {
   const companyId = profile?.active_company_id;
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", companyId, q, marca, familia],
+    queryKey: ["products", companyId, q, marca, familia, categoria, status],
     enabled: !!companyId,
     queryFn: async () => {
       let query = supabase
@@ -49,6 +51,8 @@ function ProductsPage() {
       if (q) query = query.or(`nome.ilike.%${q}%,codigo_interno.ilike.%${q}%,codigo_barra.ilike.%${q}%`);
       if (marca) query = query.eq("marca", marca);
       if (familia) query = query.eq("familia", familia);
+      if (categoria) query = query.eq("categoria", categoria);
+      if (status) query = query.eq("status", status);
       const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
@@ -61,16 +65,19 @@ function ProductsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("own_products")
-        .select("marca, familia")
+        .select("marca, familia, categoria, status")
         .eq("company_id", companyId!)
         .limit(30000);
-      const marcas = Array.from(new Set((data ?? []).map((r: any) => r.marca).filter(Boolean))).sort();
-      const familias = Array.from(new Set((data ?? []).map((r: any) => r.familia).filter(Boolean))).sort();
-      return { marcas, familias };
+      const uniq = (k: string) =>
+        Array.from(new Set((data ?? []).map((r: any) => r[k]).filter(Boolean))).sort((a: any, b: any) =>
+          String(a).localeCompare(String(b), "pt-BR"),
+        ) as string[];
+      return { marcas: uniq("marca"), familias: uniq("familia"), categorias: uniq("categoria"), statuses: uniq("status") };
     },
   });
 
   const total = products.length;
+  const hasFilters = !!(q || marca || familia || categoria || status);
 
   return (
     <div>
@@ -89,10 +96,27 @@ function ProductsPage() {
             <option value="">Todas as famílias</option>
             {facets?.familias.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
+          <select value={categoria} onChange={e => setCategoria(e.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <option value="">Todas as categorias</option>
+            {facets?.categorias.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={status} onChange={e => setStatus(e.target.value)} className="h-10 rounded-md border border-border bg-background px-3 text-sm">
+            <option value="">Todos os status</option>
+            {facets?.statuses.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {hasFilters && (
+            <button
+              onClick={() => { setQ(""); setMarca(""); setFamilia(""); setCategoria(""); setStatus(""); }}
+              className="h-10 rounded-md border border-border bg-background px-3 text-sm hover:bg-muted"
+            >
+              Limpar
+            </button>
+          )}
           <div className="text-xs text-muted-foreground ml-auto">
             Exibindo {total} {total === 500 ? "(máx.)" : ""}
           </div>
         </div>
+
 
         <div className="surface rounded-xl overflow-hidden">
           <table className="w-full text-sm">
