@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { ClientGroupField } from "@/components/ClientGroupField";
 
 export const Route = createFileRoute("/_authenticated/clientes/$id/editar")({
   head: () => ({ meta: [{ title: "Editar cliente — PoolFlux" }] }),
@@ -97,6 +98,11 @@ function EditClient() {
               </Select>
             </div>
           </div>
+          <ClientGroupField
+            pertenceGrupo={!!form.pertence_grupo}
+            grupoNome={form.grupo_nome ?? ""}
+            onChange={(v) => setForm((f) => ({ ...f, ...v }))}
+          />
           <div><Label>Observações comerciais</Label><VoiceTextarea rows={3} value={form.observacoes ?? ""} onChange={v => set("observacoes", v)} /></div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" asChild><Link to="/clientes/$id" params={{ id }}>Cancelar</Link></Button>

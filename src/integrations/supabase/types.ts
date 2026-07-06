@@ -172,73 +172,217 @@ export type Database = {
       clients: {
         Row: {
           agente_id: string | null
+          assistente: string | null
+          bai_entrega: string | null
+          bairro: string | null
           categoria: Database["public"]["Enums"]["client_category"] | null
+          categoria_erp: string | null
+          cep: string | null
+          cep_entrega: string | null
           cidade: string | null
+          cnpj: string | null
+          cod_representante: string | null
+          cod_tabela_nl: string | null
+          cod_tabela_sd: string | null
+          cod_tabela_st: string | null
+          cod_transportadora: string | null
+          codigo_alternativo: string | null
+          codigo_erp: string | null
           company_id: string | null
+          complemento: string | null
+          cond_pagamento: string | null
+          conso_codigo: string | null
+          conso_nome: string | null
+          cpf: string | null
           created_at: string
           created_by: string | null
+          data_cadastro_erp: string | null
+          desc_tabela_nl: string | null
+          desc_tabela_sd: string | null
+          desc_tabela_st: string | null
+          desc_transportadora: string | null
           documento: string | null
           email: string | null
+          end_entrega: string | null
           endereco: string | null
           estado: string | null
+          fisica_juridica: string | null
           grupo: Database["public"]["Enums"]["client_group"] | null
+          grupo_erp: string | null
+          grupo_nome: string | null
           id: string
+          info_comerciais: string | null
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          mun_entrega: string | null
+          municipio: string | null
           nome_comprador: string | null
           nome_fantasia: string
+          nome_representante_erp: string | null
+          num_entrega: string | null
+          numero_endereco: string | null
+          obs_cliente: string | null
           observacoes: string | null
+          outro_email: string | null
+          pais: string | null
+          pertence_grupo: boolean
           razao_social: string | null
           regiao: string | null
           representative_id: string | null
+          rota: string | null
+          rua_entrega: string | null
+          sigla_endereco: string | null
           status: Database["public"]["Enums"]["client_status"]
+          status_erp: string | null
+          suframa: string | null
           telefone: string | null
+          tipo_end_entrega: string | null
+          tipo_frete: string | null
+          uf_entrega: string | null
           updated_at: string
           whatsapp: string | null
         }
         Insert: {
           agente_id?: string | null
+          assistente?: string | null
+          bai_entrega?: string | null
+          bairro?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
+          categoria_erp?: string | null
+          cep?: string | null
+          cep_entrega?: string | null
           cidade?: string | null
+          cnpj?: string | null
+          cod_representante?: string | null
+          cod_tabela_nl?: string | null
+          cod_tabela_sd?: string | null
+          cod_tabela_st?: string | null
+          cod_transportadora?: string | null
+          codigo_alternativo?: string | null
+          codigo_erp?: string | null
           company_id?: string | null
+          complemento?: string | null
+          cond_pagamento?: string | null
+          conso_codigo?: string | null
+          conso_nome?: string | null
+          cpf?: string | null
           created_at?: string
           created_by?: string | null
+          data_cadastro_erp?: string | null
+          desc_tabela_nl?: string | null
+          desc_tabela_sd?: string | null
+          desc_tabela_st?: string | null
+          desc_transportadora?: string | null
           documento?: string | null
           email?: string | null
+          end_entrega?: string | null
           endereco?: string | null
           estado?: string | null
+          fisica_juridica?: string | null
           grupo?: Database["public"]["Enums"]["client_group"] | null
+          grupo_erp?: string | null
+          grupo_nome?: string | null
           id?: string
+          info_comerciais?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          mun_entrega?: string | null
+          municipio?: string | null
           nome_comprador?: string | null
           nome_fantasia: string
+          nome_representante_erp?: string | null
+          num_entrega?: string | null
+          numero_endereco?: string | null
+          obs_cliente?: string | null
           observacoes?: string | null
+          outro_email?: string | null
+          pais?: string | null
+          pertence_grupo?: boolean
           razao_social?: string | null
           regiao?: string | null
           representative_id?: string | null
+          rota?: string | null
+          rua_entrega?: string | null
+          sigla_endereco?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          status_erp?: string | null
+          suframa?: string | null
           telefone?: string | null
+          tipo_end_entrega?: string | null
+          tipo_frete?: string | null
+          uf_entrega?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Update: {
           agente_id?: string | null
+          assistente?: string | null
+          bai_entrega?: string | null
+          bairro?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
+          categoria_erp?: string | null
+          cep?: string | null
+          cep_entrega?: string | null
           cidade?: string | null
+          cnpj?: string | null
+          cod_representante?: string | null
+          cod_tabela_nl?: string | null
+          cod_tabela_sd?: string | null
+          cod_tabela_st?: string | null
+          cod_transportadora?: string | null
+          codigo_alternativo?: string | null
+          codigo_erp?: string | null
           company_id?: string | null
+          complemento?: string | null
+          cond_pagamento?: string | null
+          conso_codigo?: string | null
+          conso_nome?: string | null
+          cpf?: string | null
           created_at?: string
           created_by?: string | null
+          data_cadastro_erp?: string | null
+          desc_tabela_nl?: string | null
+          desc_tabela_sd?: string | null
+          desc_tabela_st?: string | null
+          desc_transportadora?: string | null
           documento?: string | null
           email?: string | null
+          end_entrega?: string | null
           endereco?: string | null
           estado?: string | null
+          fisica_juridica?: string | null
           grupo?: Database["public"]["Enums"]["client_group"] | null
+          grupo_erp?: string | null
+          grupo_nome?: string | null
           id?: string
+          info_comerciais?: string | null
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          mun_entrega?: string | null
+          municipio?: string | null
           nome_comprador?: string | null
           nome_fantasia?: string
+          nome_representante_erp?: string | null
+          num_entrega?: string | null
+          numero_endereco?: string | null
+          obs_cliente?: string | null
           observacoes?: string | null
+          outro_email?: string | null
+          pais?: string | null
+          pertence_grupo?: boolean
           razao_social?: string | null
           regiao?: string | null
           representative_id?: string | null
+          rota?: string | null
+          rua_entrega?: string | null
+          sigla_endereco?: string | null
           status?: Database["public"]["Enums"]["client_status"]
+          status_erp?: string | null
+          suframa?: string | null
           telefone?: string | null
+          tipo_end_entrega?: string | null
+          tipo_frete?: string | null
+          uf_entrega?: string | null
           updated_at?: string
           whatsapp?: string | null
         }

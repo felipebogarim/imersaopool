@@ -21,6 +21,11 @@ function ClientDetail() {
     queryKey: ["client-immersions", id],
     queryFn: async () => (await supabase.from("immersions").select("id, titulo, status, data_visita, created_at").eq("client_id", id).order("created_at", { ascending: false })).data ?? [],
   });
+  const { data: groupPeers = [] } = useQuery({
+    queryKey: ["group-peers-detail", client?.grupo_nome, id],
+    enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
+    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome as string).neq("id", id)).data ?? [],
+  });
   if (!client) return <div className="p-8">Carregando...</div>;
   return (
     <div>
@@ -84,6 +89,29 @@ function ClientDetail() {
               </ul>
             )}
           </div>
+          {client.pertence_grupo && client.grupo_nome && (
+            <div className="surface rounded-xl p-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">Grupo econômico</h3>
+              <div className="text-base font-medium mb-3">{client.grupo_nome}</div>
+              {groupPeers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum outro cliente vinculado a este grupo.</p>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground mb-2">Dados exibidos são agregados dos {groupPeers.length + 1} clientes do grupo.</div>
+                  <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {groupPeers.map((p: any) => (
+                      <li key={p.id}>
+                        <Link to="/clientes/$id" params={{ id: p.id }} className="block text-sm rounded px-2 py-1 hover:bg-muted/30">
+                          <span className="font-medium">{p.nome_fantasia}</span>
+                          <span className="text-muted-foreground text-xs ml-2">{[p.cidade, p.estado].filter(Boolean).join(", ")}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
