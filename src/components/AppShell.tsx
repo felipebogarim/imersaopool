@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
-  { to: "/imersoes", label: "Imersões", icon: FileSearch },
+] as const;
+
+const INPUTS = [
+  { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
+] as const;
+
+const NAV_BOTTOM = [
   { to: "/price", label: "Price", icon: Tag },
   { to: "/representantes", label: "Representantes", icon: Users },
   { to: "/agentes", label: "Agentes", icon: UserCog },
@@ -30,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
   const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
+  const [inputsOpen, setInputsOpen] = useState(() => INPUTS.some(b => pathname.startsWith(b.to)));
 
 
   const { data: workspace } = useQuery({
@@ -85,6 +92,60 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setInputsOpen(o => !o)}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+            >
+              <Inbox className="h-4 w-4" />
+              <span className="flex-1 text-left">Inputs</span>
+              {inputsOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
+            {inputsOpen && (
+              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                {INPUTS.map(item => {
+                  const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {NAV_BOTTOM.map(item => {
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+
 
           <div className="pt-2">
             <button
