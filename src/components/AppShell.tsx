@@ -29,6 +29,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
+  const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
+
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -83,7 +85,43 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setBasesOpen(o => !o)}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+            >
+              <Database className="h-4 w-4" />
+              <span className="flex-1 text-left">Bases</span>
+              {basesOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
+            {basesOpen && (
+              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                {BASES.map(item => {
+                  const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {workspace?.isAdmin && (
+
             <div className="pt-4">
               <div className="px-3 pb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
                 <Shield className="h-3 w-3" /> Admin
