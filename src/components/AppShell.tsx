@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <BrandLogo />
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2">Imersões Comerciais</p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {NAV.map(item => {
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
@@ -78,6 +78,34 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {workspace?.isAdmin && (
+            <div className="pt-4">
+              <div className="px-3 pb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                <Shield className="h-3 w-3" /> Admin
+              </div>
+              {[
+                { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+                { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+              ].map(item => {
+                const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
         <div className="p-3 border-t border-sidebar-border space-y-2">
           <div className="px-2 py-1.5 rounded-md bg-sidebar-accent/30">
