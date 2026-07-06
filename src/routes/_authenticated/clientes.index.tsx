@@ -30,15 +30,21 @@ function ClientsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, nome_fantasia, grupo, categoria, cidade, estado, status, nome_comprador")
+        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
-  const filtered = clients.filter((c: any) =>
-    !q || c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) || c.cidade?.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = clients.filter((c: any) => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (
+      c.nome_fantasia?.toLowerCase().includes(s) ||
+      (c.municipio || c.cidade)?.toLowerCase().includes(s) ||
+      c.codigo_erp?.toLowerCase().includes(s)
+    );
+  });
   async function remove(id: string, nome: string) {
     if (!confirm(`Excluir cliente "${nome}"?`)) return;
     const { error } = await supabase.from("clients").delete().eq("id", id);
