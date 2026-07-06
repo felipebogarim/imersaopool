@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { ClientGroupField } from "@/components/ClientGroupField";
 
 export const Route = createFileRoute("/_authenticated/clientes/novo")({
   head: () => ({ meta: [{ title: "Novo cliente — PoolFlux" }] }),
