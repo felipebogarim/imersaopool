@@ -21,6 +21,11 @@ function ClientDetail() {
     queryKey: ["client-immersions", id],
     queryFn: async () => (await supabase.from("immersions").select("id, titulo, status, data_visita, created_at").eq("client_id", id).order("created_at", { ascending: false })).data ?? [],
   });
+  const { data: groupPeers = [] } = useQuery({
+    queryKey: ["group-peers-detail", client?.grupo_nome, id],
+    enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
+    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome).neq("id", id)).data ?? [],
+  });
   if (!client) return <div className="p-8">Carregando...</div>;
   return (
     <div>
