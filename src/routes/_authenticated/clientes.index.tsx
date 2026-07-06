@@ -40,6 +40,7 @@ function ClientsPage() {
   const [fCategoria, setFCategoria] = useState(ALL);
   const [fGrupo, setFGrupo] = useState(ALL);
   const [fStatus, setFStatus] = useState(ALL);
+  const [groupFor, setGroupFor] = useState<{ id: string; nome_fantasia: string; grupo_nome: string | null } | null>(null);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
