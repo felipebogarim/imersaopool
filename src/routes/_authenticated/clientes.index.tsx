@@ -170,8 +170,25 @@ function ClientsPage() {
                     <Badge variant="outline" className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <EntityKebab type="cliente" id={c.id} editTo="/clientes/$id/editar" onDelete={() => remove(c.id, c.nome_fantasia)} />
+                    <EntityKebab
+                      type="cliente"
+                      id={c.id}
+                      editTo="/clientes/$id/editar"
+                      onManageGroup={() => setGroupFor({ id: c.id, nome_fantasia: c.nome_fantasia, grupo_nome: c.grupo_nome })}
+                      onDelete={() => remove(c.id, c.nome_fantasia)}
+                    />
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <ClientGroupManagerDialog
+        open={!!groupFor}
+        onOpenChange={(v) => { if (!v) setGroupFor(null); }}
+        anchorClient={groupFor}
+      />
                 </tr>
               ))}
             </tbody>
