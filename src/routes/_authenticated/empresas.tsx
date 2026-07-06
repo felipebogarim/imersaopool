@@ -39,8 +39,11 @@ function EmpresasPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [nome, setNome] = useState("");
+  const [form, setForm] = useState<CompanyForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
+
+  const setField = (k: keyof CompanyForm) => (v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const { data: me } = useQuery({
     queryKey: ["me-role-company"],
@@ -74,14 +77,42 @@ function EmpresasPage() {
     navigate({ to: "/dashboard" });
   }
 
+  async function lookupCep() {
+    const raw = (form.cep ?? "").replace(/\D/g, "");
+    if (raw.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
+      const data = await res.json();
+      if (data.erro) { toast.error("CEP não encontrado"); return; }
+      setForm(f => ({
+        ...f,
+        logradouro: data.logradouro ?? f.logradouro,
+        bairro: data.bairro ?? f.bairro,
+        cidade: data.localidade ?? f.cidade,
+        estado: data.uf ?? f.estado,
+        pais: f.pais || "Brasil",
+      }));
+    } catch {
+      toast.error("Falha ao buscar CEP");
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
   async function createCompany() {
-    if (!nome.trim()) return toast.error("Informe o nome da empresa");
+    const parsed = companySchema.safeParse(form);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setSaving(true);
-    const { data, error } = await supabase.from("companies").insert({ nome: nome.trim(), created_by: me?.uid }).select("id").single();
+    const payload = Object.fromEntries(
+      Object.entries(parsed.data).map(([k, v]) => [k, v === "" ? null : v])
+    ) as any;
+    payload.created_by = me?.uid;
+    const { data, error } = await supabase.from("companies").insert(payload).select("id").single();
     setSaving(false);
     if (error) return toast.error(error.message);
     setOpen(false);
-    setNome("");
+    setForm(emptyForm);
     await qc.invalidateQueries({ queryKey: ["companies-list"] });
     toast.success("Empresa criada");
     if (data?.id) selectCompany(data.id);
@@ -100,17 +131,63 @@ function EmpresasPage() {
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" /> Nova empresa</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader><DialogTitle>Cadastrar nova empresa</DialogTitle></DialogHeader>
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2 max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="md:col-span-2">
+                    <Label>Nome fantasia *</Label>
+                    <Input value={form.nome} onChange={e => setField("nome")(e.target.value)} placeholder="Nome principal exibido no sistema" autoFocus />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Razão social</Label>
+                    <Input value={form.razao_social ?? ""} onChange={e => setField("razao_social")(e.target.value)} />
+                  </div>
                   <div>
-                    <Label>Nome da empresa</Label>
-                    <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex.: Pool Branding" autoFocus />
+                    <Label>CNPJ</Label>
+                    <Input value={form.cnpj ?? ""} onChange={e => setField("cnpj")(e.target.value)} placeholder="00.000.000/0000-00" />
+                  </div>
+                  <div>
+                    <Label>CEP</Label>
+                    <div className="relative">
+                      <Input
+                        value={form.cep ?? ""}
+                        onChange={e => setField("cep")(e.target.value)}
+                        onBlur={lookupCep}
+                        placeholder="00000-000"
+                      />
+                      {cepLoading && <Loader2 className="h-4 w-4 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />}
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Logradouro</Label>
+                    <Input value={form.logradouro ?? ""} onChange={e => setField("logradouro")(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Número</Label>
+                    <Input value={form.numero ?? ""} onChange={e => setField("numero")(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Bairro</Label>
+                    <Input value={form.bairro ?? ""} onChange={e => setField("bairro")(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Cidade</Label>
+                    <Input value={form.cidade ?? ""} onChange={e => setField("cidade")(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label>Estado</Label>
+                    <Input value={form.estado ?? ""} onChange={e => setField("estado")(e.target.value)} placeholder="UF" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>País</Label>
+                    <Input value={form.pais ?? ""} onChange={e => setField("pais")(e.target.value)} />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-                  <Button onClick={createCompany} disabled={saving}>Criar e entrar</Button>
+                  <Button onClick={createCompany} disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Criar e entrar
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
