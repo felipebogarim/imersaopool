@@ -30,15 +30,21 @@ function ClientsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, nome_fantasia, grupo, categoria, cidade, estado, status, nome_comprador")
+        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
-  const filtered = clients.filter((c: any) =>
-    !q || c.nome_fantasia?.toLowerCase().includes(q.toLowerCase()) || c.cidade?.toLowerCase().includes(q.toLowerCase())
-  );
+  const filtered = clients.filter((c: any) => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (
+      c.nome_fantasia?.toLowerCase().includes(s) ||
+      (c.municipio || c.cidade)?.toLowerCase().includes(s) ||
+      c.codigo_erp?.toLowerCase().includes(s)
+    );
+  });
   async function remove(id: string, nome: string) {
     if (!confirm(`Excluir cliente "${nome}"?`)) return;
     const { error } = await supabase.from("clients").delete().eq("id", id);
@@ -65,29 +71,33 @@ function ClientsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Cliente</th>
-                <th className="px-4 py-3 font-medium">Grupo</th>
+                <th className="px-4 py-3 font-medium">Código</th>
+                <th className="px-4 py-3 font-medium">Nome fantasia</th>
+                <th className="px-4 py-3 font-medium">Município</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium">Representante</th>
                 <th className="px-4 py-3 font-medium">Categoria</th>
-                <th className="px-4 py-3 font-medium">Localização</th>
-                <th className="px-4 py-3 font-medium">Comprador</th>
+                <th className="px-4 py-3 font-medium">Grupo</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 w-12"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente cadastrado ainda.</td></tr>
               ) : filtered.map((c: any) => (
                 <tr key={c.id} className="border-t border-border hover:bg-muted/20">
+                  <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{c.codigo_erp || "—"}</td>
                   <td className="px-4 py-3">
                     <Link to="/clientes/$id" params={{ id: c.id }} className="font-medium hover:text-cyan">{c.nome_fantasia}</Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.grupo || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.categoria || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{[c.cidade, c.estado].filter(Boolean).join(", ") || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.nome_comprador || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.municipio || c.cidade || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.estado || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.nome_representante_erp || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.categoria_erp || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.grupo_erp || "—"}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline" className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge>
                   </td>
