@@ -189,12 +189,7 @@ function ClientsPage() {
         onOpenChange={(v) => { if (!v) setGroupFor(null); }}
         anchorClient={groupFor}
       />
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
+
