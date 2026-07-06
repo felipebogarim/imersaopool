@@ -89,6 +89,29 @@ function ClientDetail() {
               </ul>
             )}
           </div>
+          {client.pertence_grupo && client.grupo_nome && (
+            <div className="surface rounded-xl p-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">Grupo econômico</h3>
+              <div className="text-base font-medium mb-3">{client.grupo_nome}</div>
+              {groupPeers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum outro cliente vinculado a este grupo.</p>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground mb-2">Dados exibidos são agregados dos {groupPeers.length + 1} clientes do grupo.</div>
+                  <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {groupPeers.map((p: any) => (
+                      <li key={p.id}>
+                        <Link to="/clientes/$id" params={{ id: p.id }} className="block text-sm rounded px-2 py-1 hover:bg-muted/30">
+                          <span className="font-medium">{p.nome_fantasia}</span>
+                          <span className="text-muted-foreground text-xs ml-2">{[p.cidade, p.estado].filter(Boolean).join(", ")}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
