@@ -261,26 +261,53 @@ export type Database = {
       }
       companies: {
         Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
           created_at: string
           created_by: string | null
+          estado: string | null
           id: string
+          logradouro: string | null
           nome: string
+          numero: string | null
+          pais: string | null
+          razao_social: string | null
           slug: string | null
           updated_at: string
         }
         Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
           created_by?: string | null
+          estado?: string | null
           id?: string
+          logradouro?: string | null
           nome: string
+          numero?: string | null
+          pais?: string | null
+          razao_social?: string | null
           slug?: string | null
           updated_at?: string
         }
         Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
           created_by?: string | null
+          estado?: string | null
           id?: string
+          logradouro?: string | null
           nome?: string
+          numero?: string | null
+          pais?: string | null
+          razao_social?: string | null
           slug?: string | null
           updated_at?: string
         }
