@@ -5,7 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportToCsv } from "@/lib/export-csv";
 
 export const Route = createFileRoute("/_authenticated/produtos/")({
   head: () => ({ meta: [{ title: "Produtos — PoolFlux" }] }),
@@ -81,7 +84,37 @@ function ProductsPage() {
 
   return (
     <div>
-      <PageHeader title="Produtos" subtitle="Base de produtos cadastrados" />
+      <PageHeader
+        title="Produtos"
+        subtitle="Base de produtos cadastrados"
+        actions={
+          <Button
+            variant="outline"
+            disabled={!companyId}
+            onClick={async () => {
+              if (!companyId) return;
+              const pageSize = 1000;
+              const all: any[] = [];
+              for (let from = 0; ; from += pageSize) {
+                const { data, error } = await supabase
+                  .from("own_products")
+                  .select("*")
+                  .eq("company_id", companyId)
+                  .order("nome")
+                  .range(from, from + pageSize - 1);
+                if (error) return toast.error(error.message);
+                if (!data || data.length === 0) break;
+                all.push(...data);
+                if (data.length < pageSize) break;
+              }
+              exportToCsv(`produtos-${new Date().toISOString().slice(0,10)}.csv`, all);
+              toast.success(`${all.length} produtos exportados`);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Exportar
+          </Button>
+        }
+      />
       <div className="p-8 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px] max-w-md">

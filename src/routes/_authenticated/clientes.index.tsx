@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EntityKebab } from "@/components/EntityKebab";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClientGroupManagerDialog } from "@/components/ClientGroupManagerDialog";
+import { exportToCsv } from "@/lib/export-csv";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
@@ -113,7 +114,15 @@ function ClientsPage() {
         title="Clientes"
         subtitle="Base completa de clientes e prospects"
         actions={
-          <Button asChild><Link to="/clientes/novo"><Plus className="h-4 w-4 mr-1" /> Novo cliente</Link></Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={async () => {
+              const { data, error } = await supabase.from("clients").select("*").order("nome_fantasia");
+              if (error) return toast.error(error.message);
+              exportToCsv(`clientes-${new Date().toISOString().slice(0,10)}.csv`, data ?? []);
+              toast.success(`${data?.length ?? 0} clientes exportados`);
+            }}><Download className="h-4 w-4 mr-1" /> Exportar</Button>
+            <Button asChild><Link to="/clientes/novo"><Plus className="h-4 w-4 mr-1" /> Novo cliente</Link></Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
