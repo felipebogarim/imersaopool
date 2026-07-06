@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { ClientGroupField } from "@/components/ClientGroupField";
 
 export const Route = createFileRoute("/_authenticated/clientes/$id/editar")({
   head: () => ({ meta: [{ title: "Editar cliente — PoolFlux" }] }),
