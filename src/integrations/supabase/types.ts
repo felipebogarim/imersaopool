@@ -768,38 +768,92 @@ export type Database = {
       own_products: {
         Row: {
           categoria: string | null
+          classe_rentabilidade: string | null
+          codigo_alternativo: string | null
+          codigo_barra: string | null
           codigo_interno: string | null
           company_id: string | null
           created_at: string
+          def_item: string | null
           familia: string | null
+          gru_in_codigo: number | null
+          gru_nome: string | null
           id: string
+          linha: string | null
+          linha_montagem: string | null
+          marca: string | null
+          narrativa: string | null
           nome: string
           observacoes: string | null
+          planta_fabril: string | null
+          portifolio: string | null
           preco_base: number | null
+          pro_in_codigo: number | null
+          pro_pad_in_codigo: number | null
+          status: string | null
+          sub_familia: string | null
+          sub_portifolio: string | null
+          tipo_produto: string | null
           updated_at: string
         }
         Insert: {
           categoria?: string | null
+          classe_rentabilidade?: string | null
+          codigo_alternativo?: string | null
+          codigo_barra?: string | null
           codigo_interno?: string | null
           company_id?: string | null
           created_at?: string
+          def_item?: string | null
           familia?: string | null
+          gru_in_codigo?: number | null
+          gru_nome?: string | null
           id?: string
+          linha?: string | null
+          linha_montagem?: string | null
+          marca?: string | null
+          narrativa?: string | null
           nome: string
           observacoes?: string | null
+          planta_fabril?: string | null
+          portifolio?: string | null
           preco_base?: number | null
+          pro_in_codigo?: number | null
+          pro_pad_in_codigo?: number | null
+          status?: string | null
+          sub_familia?: string | null
+          sub_portifolio?: string | null
+          tipo_produto?: string | null
           updated_at?: string
         }
         Update: {
           categoria?: string | null
+          classe_rentabilidade?: string | null
+          codigo_alternativo?: string | null
+          codigo_barra?: string | null
           codigo_interno?: string | null
           company_id?: string | null
           created_at?: string
+          def_item?: string | null
           familia?: string | null
+          gru_in_codigo?: number | null
+          gru_nome?: string | null
           id?: string
+          linha?: string | null
+          linha_montagem?: string | null
+          marca?: string | null
+          narrativa?: string | null
           nome?: string
           observacoes?: string | null
+          planta_fabril?: string | null
+          portifolio?: string | null
           preco_base?: number | null
+          pro_in_codigo?: number | null
+          pro_pad_in_codigo?: number | null
+          status?: string | null
+          sub_familia?: string | null
+          sub_portifolio?: string | null
+          tipo_produto?: string | null
           updated_at?: string
         }
         Relationships: [
