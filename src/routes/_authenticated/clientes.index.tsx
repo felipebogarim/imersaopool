@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ClientGroupManagerDialog } from "@/components/ClientGroupManagerDialog";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
@@ -39,13 +40,14 @@ function ClientsPage() {
   const [fCategoria, setFCategoria] = useState(ALL);
   const [fGrupo, setFGrupo] = useState(ALL);
   const [fStatus, setFStatus] = useState(ALL);
+  const [groupFor, setGroupFor] = useState<{ id: string; nome_fantasia: string; grupo_nome: string | null } | null>(null);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status")
+        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status, grupo_nome, pertence_grupo")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -168,7 +170,13 @@ function ClientsPage() {
                     <Badge variant="outline" className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <EntityKebab type="cliente" id={c.id} editTo="/clientes/$id/editar" onDelete={() => remove(c.id, c.nome_fantasia)} />
+                    <EntityKebab
+                      type="cliente"
+                      id={c.id}
+                      editTo="/clientes/$id/editar"
+                      onManageGroup={() => setGroupFor({ id: c.id, nome_fantasia: c.nome_fantasia, grupo_nome: c.grupo_nome })}
+                      onDelete={() => remove(c.id, c.nome_fantasia)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -176,6 +184,12 @@ function ClientsPage() {
           </table>
         </div>
       </div>
+      <ClientGroupManagerDialog
+        open={!!groupFor}
+        onOpenChange={(v) => { if (!v) setGroupFor(null); }}
+        anchorClient={groupFor}
+      />
     </div>
   );
 }
+
