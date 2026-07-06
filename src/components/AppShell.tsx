@@ -25,6 +25,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
 
+  const { data: workspace } = useQuery({
+    queryKey: ["workspace-header"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return null;
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("active_company_id").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+      const isAdmin = (roles ?? []).some(r => r.role === "admin");
+      let companyName: string | null = null;
+      if (profile?.active_company_id) {
+        const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
+        companyName = c?.nome ?? null;
+      }
+      return { isAdmin, companyName };
+    },
+  });
+
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
