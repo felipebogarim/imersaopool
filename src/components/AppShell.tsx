@@ -79,7 +79,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-2">
+          <div className="px-2 py-1.5 rounded-md bg-sidebar-accent/30">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
+            <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
+          </div>
+          {workspace?.isAdmin && (
+            <Button asChild variant="outline" size="sm" className="w-full justify-start">
+              <Link to="/empresas"><Repeat className="h-4 w-4 mr-2" /> Trocar empresa</Link>
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start text-muted-foreground">
             <LogOut className="h-4 w-4 mr-2" /> Sair
           </Button>
