@@ -17,7 +17,7 @@ export type Database = {
       action_plans: {
         Row: {
           acao: string
-          company_id: string
+          company_id: string | null
           created_at: string
           id: string
           immersion_id: string
@@ -30,7 +30,7 @@ export type Database = {
         }
         Insert: {
           acao: string
-          company_id: string
+          company_id?: string | null
           created_at?: string
           id?: string
           immersion_id: string
@@ -43,7 +43,7 @@ export type Database = {
         }
         Update: {
           acao?: string
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           immersion_id?: string
@@ -73,7 +73,7 @@ export type Database = {
       }
       ai_compilations: {
         Row: {
-          company_id: string
+          company_id: string | null
           conteudo: Json
           created_at: string
           created_by: string | null
@@ -83,7 +83,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           conteudo: Json
           created_at?: string
           created_by?: string | null
@@ -93,7 +93,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           conteudo?: Json
           created_at?: string
           created_by?: string | null
@@ -121,7 +121,7 @@ export type Database = {
       }
       attachments: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string
           description: string | null
           entity_id: string
@@ -134,7 +134,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           entity_id: string
@@ -147,7 +147,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           description?: string | null
           entity_id?: string
@@ -174,7 +174,7 @@ export type Database = {
           agente_id: string | null
           categoria: Database["public"]["Enums"]["client_category"] | null
           cidade: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           documento: string | null
@@ -198,7 +198,7 @@ export type Database = {
           agente_id?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
           cidade?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           documento?: string | null
@@ -222,7 +222,7 @@ export type Database = {
           agente_id?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
           cidade?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           documento?: string | null
@@ -291,7 +291,7 @@ export type Database = {
           arquivo_origem: string | null
           categoria: string | null
           codigo: string | null
-          company_id: string
+          company_id: string | null
           competitor_id: string
           created_at: string
           data_tabela: string | null
@@ -305,7 +305,7 @@ export type Database = {
           arquivo_origem?: string | null
           categoria?: string | null
           codigo?: string | null
-          company_id: string
+          company_id?: string | null
           competitor_id: string
           created_at?: string
           data_tabela?: string | null
@@ -319,7 +319,7 @@ export type Database = {
           arquivo_origem?: string | null
           categoria?: string | null
           codigo?: string | null
-          company_id?: string
+          company_id?: string | null
           competitor_id?: string
           created_at?: string
           data_tabela?: string | null
@@ -350,7 +350,7 @@ export type Database = {
         Row: {
           allowed: boolean
           area: string
-          company_id: string
+          company_id: string | null
           created_at: string
           entity_id: string
           entity_type: string
@@ -360,7 +360,7 @@ export type Database = {
         Insert: {
           allowed?: boolean
           area: string
-          company_id: string
+          company_id?: string | null
           created_at?: string
           entity_id: string
           entity_type: string
@@ -370,7 +370,7 @@ export type Database = {
         Update: {
           allowed?: boolean
           area?: string
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           entity_id?: string
           entity_type?: string
@@ -389,7 +389,7 @@ export type Database = {
       }
       field_visit_inputs: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -403,7 +403,7 @@ export type Database = {
           texto: string | null
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -417,7 +417,7 @@ export type Database = {
           texto?: string | null
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -451,7 +451,7 @@ export type Database = {
         Row: {
           agente_id: string | null
           client_id: string
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           data_visita: string | null
@@ -467,7 +467,7 @@ export type Database = {
         Insert: {
           agente_id?: string | null
           client_id: string
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
@@ -483,7 +483,7 @@ export type Database = {
         Update: {
           agente_id?: string | null
           client_id?: string
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
@@ -523,7 +523,7 @@ export type Database = {
       interviews: {
         Row: {
           cidade: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           data_entrevista: string | null
@@ -544,7 +544,7 @@ export type Database = {
         }
         Insert: {
           cidade?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_entrevista?: string | null
@@ -565,7 +565,7 @@ export type Database = {
         }
         Update: {
           cidade?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_entrevista?: string | null
@@ -598,7 +598,7 @@ export type Database = {
         Row: {
           categoria: string | null
           codigo_interno: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           familia: string | null
           id: string
@@ -610,7 +610,7 @@ export type Database = {
         Insert: {
           categoria?: string | null
           codigo_interno?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           familia?: string | null
           id?: string
@@ -622,7 +622,7 @@ export type Database = {
         Update: {
           categoria?: string | null
           codigo_interno?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           familia?: string | null
           id?: string
@@ -644,7 +644,7 @@ export type Database = {
       price_competitors: {
         Row: {
           categoria: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -655,7 +655,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -666,7 +666,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -687,7 +687,7 @@ export type Database = {
       }
       product_equivalences: {
         Row: {
-          company_id: string
+          company_id: string | null
           competitor_product_id: string
           created_at: string
           grau: Database["public"]["Enums"]["equivalence_grade"]
@@ -696,7 +696,7 @@ export type Database = {
           own_product_id: string
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           competitor_product_id: string
           created_at?: string
           grau?: Database["public"]["Enums"]["equivalence_grade"]
@@ -705,7 +705,7 @@ export type Database = {
           own_product_id: string
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           competitor_product_id?: string
           created_at?: string
           grau?: Database["public"]["Enums"]["equivalence_grade"]
@@ -802,7 +802,7 @@ export type Database = {
           abordagem_diferente: string | null
           acoes_faturamento: string | null
           ameacas: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           cuidados: string | null
           familias_mais_compradas: string | null
@@ -823,7 +823,7 @@ export type Database = {
           abordagem_diferente?: string | null
           acoes_faturamento?: string | null
           ameacas?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           cuidados?: string | null
           familias_mais_compradas?: string | null
@@ -844,7 +844,7 @@ export type Database = {
           abordagem_diferente?: string | null
           acoes_faturamento?: string | null
           ameacas?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           cuidados?: string | null
           familias_mais_compradas?: string | null
@@ -880,7 +880,7 @@ export type Database = {
       }
       representatives: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -894,7 +894,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -908,7 +908,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
