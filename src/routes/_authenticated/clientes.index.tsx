@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EntityKebab } from "@/components/EntityKebab";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, X, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClientGroupManagerDialog } from "@/components/ClientGroupManagerDialog";
+import { exportToCsv } from "@/lib/export-csv";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
