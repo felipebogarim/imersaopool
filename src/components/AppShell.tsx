@@ -1,8 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandLogo } from "@/components/Brand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,26 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
+
+  const { data: workspace } = useQuery({
+    queryKey: ["workspace-header"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return null;
+      const [{ data: profile }, { data: roles }] = await Promise.all([
+        supabase.from("profiles").select("active_company_id").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+      const isAdmin = (roles ?? []).some(r => r.role === "admin");
+      let companyName: string | null = null;
+      if (profile?.active_company_id) {
+        const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
+        companyName = c?.nome ?? null;
+      }
+      return { isAdmin, companyName };
+    },
+  });
 
   async function signOut() {
     await qc.cancelQueries();
@@ -59,7 +79,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-2">
+          <div className="px-2 py-1.5 rounded-md bg-sidebar-accent/30">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
+            <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
+          </div>
+          {workspace?.isAdmin && (
+            <Button asChild variant="outline" size="sm" className="w-full justify-start">
+              <Link to="/empresas"><Repeat className="h-4 w-4 mr-2" /> Trocar empresa</Link>
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start text-muted-foreground">
             <LogOut className="h-4 w-4 mr-2" /> Sair
           </Button>

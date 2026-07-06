@@ -17,6 +17,7 @@ export type Database = {
       action_plans: {
         Row: {
           acao: string
+          company_id: string | null
           created_at: string
           id: string
           immersion_id: string
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           acao: string
+          company_id?: string | null
           created_at?: string
           id?: string
           immersion_id: string
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           acao?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           immersion_id?: string
@@ -53,6 +56,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "action_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "action_plans_immersion_id_fkey"
             columns: ["immersion_id"]
             isOneToOne: false
@@ -63,6 +73,7 @@ export type Database = {
       }
       ai_compilations: {
         Row: {
+          company_id: string | null
           conteudo: Json
           created_at: string
           created_by: string | null
@@ -72,6 +83,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
         }
         Insert: {
+          company_id?: string | null
           conteudo: Json
           created_at?: string
           created_by?: string | null
@@ -81,6 +93,7 @@ export type Database = {
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
         }
         Update: {
+          company_id?: string | null
           conteudo?: Json
           created_at?: string
           created_by?: string | null
@@ -90,6 +103,13 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["ai_compilation_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_compilations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_compilations_immersion_id_fkey"
             columns: ["immersion_id"]
@@ -101,6 +121,7 @@ export type Database = {
       }
       attachments: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string | null
           entity_id: string
@@ -113,6 +134,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           entity_id: string
@@ -125,6 +147,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           entity_id?: string
@@ -136,13 +159,22 @@ export type Database = {
           storage_path?: string
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attachments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
           agente_id: string | null
           categoria: Database["public"]["Enums"]["client_category"] | null
           cidade: string | null
+          company_id: string | null
           created_at: string
           created_by: string | null
           documento: string | null
@@ -166,6 +198,7 @@ export type Database = {
           agente_id?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
           cidade?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           documento?: string | null
@@ -189,6 +222,7 @@ export type Database = {
           agente_id?: string | null
           categoria?: Database["public"]["Enums"]["client_category"] | null
           cidade?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           documento?: string | null
@@ -210,6 +244,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clients_representative_id_fkey"
             columns: ["representative_id"]
             isOneToOne: false
@@ -218,11 +259,39 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competitor_products: {
         Row: {
           arquivo_origem: string | null
           categoria: string | null
           codigo: string | null
+          company_id: string | null
           competitor_id: string
           created_at: string
           data_tabela: string | null
@@ -236,6 +305,7 @@ export type Database = {
           arquivo_origem?: string | null
           categoria?: string | null
           codigo?: string | null
+          company_id?: string | null
           competitor_id: string
           created_at?: string
           data_tabela?: string | null
@@ -249,6 +319,7 @@ export type Database = {
           arquivo_origem?: string | null
           categoria?: string | null
           codigo?: string | null
+          company_id?: string | null
           competitor_id?: string
           created_at?: string
           data_tabela?: string | null
@@ -259,6 +330,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "competitor_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "competitor_products_competitor_id_fkey"
             columns: ["competitor_id"]
@@ -272,6 +350,7 @@ export type Database = {
         Row: {
           allowed: boolean
           area: string
+          company_id: string | null
           created_at: string
           entity_id: string
           entity_type: string
@@ -281,6 +360,7 @@ export type Database = {
         Insert: {
           allowed?: boolean
           area: string
+          company_id?: string | null
           created_at?: string
           entity_id: string
           entity_type: string
@@ -290,16 +370,26 @@ export type Database = {
         Update: {
           allowed?: boolean
           area?: string
+          company_id?: string | null
           created_at?: string
           entity_id?: string
           entity_type?: string
           id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "entity_permissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       field_visit_inputs: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -313,6 +403,7 @@ export type Database = {
           texto: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -326,6 +417,7 @@ export type Database = {
           texto?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -340,6 +432,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "field_visit_inputs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "field_visit_inputs_immersion_id_fkey"
             columns: ["immersion_id"]
             isOneToOne: false
@@ -352,6 +451,7 @@ export type Database = {
         Row: {
           agente_id: string | null
           client_id: string
+          company_id: string | null
           created_at: string
           created_by: string | null
           data_visita: string | null
@@ -367,6 +467,7 @@ export type Database = {
         Insert: {
           agente_id?: string | null
           client_id: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
@@ -382,6 +483,7 @@ export type Database = {
         Update: {
           agente_id?: string | null
           client_id?: string
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
@@ -403,6 +505,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "immersions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "immersions_representative_id_fkey"
             columns: ["representative_id"]
             isOneToOne: false
@@ -414,6 +523,7 @@ export type Database = {
       interviews: {
         Row: {
           cidade: string | null
+          company_id: string | null
           created_at: string
           created_by: string | null
           data_entrevista: string | null
@@ -434,6 +544,7 @@ export type Database = {
         }
         Insert: {
           cidade?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_entrevista?: string | null
@@ -454,6 +565,7 @@ export type Database = {
         }
         Update: {
           cidade?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_entrevista?: string | null
@@ -472,12 +584,21 @@ export type Database = {
           respostas?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "interviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       own_products: {
         Row: {
           categoria: string | null
           codigo_interno: string | null
+          company_id: string | null
           created_at: string
           familia: string | null
           id: string
@@ -489,6 +610,7 @@ export type Database = {
         Insert: {
           categoria?: string | null
           codigo_interno?: string | null
+          company_id?: string | null
           created_at?: string
           familia?: string | null
           id?: string
@@ -500,6 +622,7 @@ export type Database = {
         Update: {
           categoria?: string | null
           codigo_interno?: string | null
+          company_id?: string | null
           created_at?: string
           familia?: string | null
           id?: string
@@ -508,11 +631,20 @@ export type Database = {
           preco_base?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "own_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_competitors: {
         Row: {
           categoria: string | null
+          company_id: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -523,6 +655,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -533,6 +666,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -541,10 +675,19 @@ export type Database = {
           regiao?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "price_competitors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_equivalences: {
         Row: {
+          company_id: string | null
           competitor_product_id: string
           created_at: string
           grau: Database["public"]["Enums"]["equivalence_grade"]
@@ -553,6 +696,7 @@ export type Database = {
           own_product_id: string
         }
         Insert: {
+          company_id?: string | null
           competitor_product_id: string
           created_at?: string
           grau?: Database["public"]["Enums"]["equivalence_grade"]
@@ -561,6 +705,7 @@ export type Database = {
           own_product_id: string
         }
         Update: {
+          company_id?: string | null
           competitor_product_id?: string
           created_at?: string
           grau?: Database["public"]["Enums"]["equivalence_grade"]
@@ -569,6 +714,13 @@ export type Database = {
           own_product_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_equivalences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_equivalences_competitor_product_id_fkey"
             columns: ["competitor_product_id"]
@@ -587,7 +739,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_company_id: string | null
           cargo: string | null
+          company_id: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -599,7 +753,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_company_id?: string | null
           cargo?: string | null
+          company_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -611,7 +767,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_company_id?: string | null
           cargo?: string | null
+          company_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -622,13 +780,29 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_company_id_fkey"
+            columns: ["active_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       representative_inputs: {
         Row: {
           abordagem_diferente: string | null
           acoes_faturamento: string | null
           ameacas: string | null
+          company_id: string | null
           created_at: string
           cuidados: string | null
           familias_mais_compradas: string | null
@@ -649,6 +823,7 @@ export type Database = {
           abordagem_diferente?: string | null
           acoes_faturamento?: string | null
           ameacas?: string | null
+          company_id?: string | null
           created_at?: string
           cuidados?: string | null
           familias_mais_compradas?: string | null
@@ -669,6 +844,7 @@ export type Database = {
           abordagem_diferente?: string | null
           acoes_faturamento?: string | null
           ameacas?: string | null
+          company_id?: string | null
           created_at?: string
           cuidados?: string | null
           familias_mais_compradas?: string | null
@@ -687,6 +863,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "representative_inputs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "representative_inputs_immersion_id_fkey"
             columns: ["immersion_id"]
             isOneToOne: false
@@ -697,6 +880,7 @@ export type Database = {
       }
       representatives: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -710,6 +894,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -723,6 +908,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -735,7 +921,15 @@ export type Database = {
           tempo_relacionamento?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "representatives_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -763,6 +957,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_company_id: { Args: never; Returns: string }
       get_immersion_by_token: {
         Args: { _token: string }
         Returns: {
