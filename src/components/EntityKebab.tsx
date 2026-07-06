@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Pencil, Trash2, Shield } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Shield, Users } from "lucide-react";
 
 type EntityType = "cliente" | "representante" | "agente";
 
@@ -11,13 +11,19 @@ export function EntityKebab({
   onEdit,
   onDelete,
   editTo,
+  onManageGroup,
+  showPermissions,
 }: {
   type: EntityType;
   id: string;
   onEdit?: () => void;
   onDelete?: () => void;
   editTo?: string;
+  onManageGroup?: () => void;
+  showPermissions?: boolean;
 }) {
+  // Default: hide permissions for cliente, show for others.
+  const showPerms = showPermissions ?? type !== "cliente";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -33,11 +39,18 @@ export function EntityKebab({
         ) : onEdit ? (
           <DropdownMenuItem onClick={onEdit}><Pencil className="h-4 w-4 mr-2" /> Editar</DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem asChild>
-          <Link to="/permissoes/$type/$id" params={{ type, id }}>
-            <Shield className="h-4 w-4 mr-2" /> Gerenciar permissões
-          </Link>
-        </DropdownMenuItem>
+        {onManageGroup && (
+          <DropdownMenuItem onClick={onManageGroup}>
+            <Users className="h-4 w-4 mr-2" /> Habilitar grupo de cliente
+          </DropdownMenuItem>
+        )}
+        {showPerms && (
+          <DropdownMenuItem asChild>
+            <Link to="/permissoes/$type/$id" params={{ type, id }}>
+              <Shield className="h-4 w-4 mr-2" /> Gerenciar permissões
+            </Link>
+          </DropdownMenuItem>
+        )}
         {onDelete && (
           <>
             <DropdownMenuSeparator />
@@ -50,3 +63,4 @@ export function EntityKebab({
     </DropdownMenu>
   );
 }
+
