@@ -24,7 +24,7 @@ function ClientDetail() {
   const { data: groupPeers = [] } = useQuery({
     queryKey: ["group-peers-detail", client?.grupo_nome, id],
     enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
-    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome).neq("id", id)).data ?? [],
+    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome as string).neq("id", id)).data ?? [],
   });
   if (!client) return <div className="p-8">Carregando...</div>;
   return (
