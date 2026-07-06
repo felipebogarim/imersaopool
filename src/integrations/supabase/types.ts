@@ -773,6 +773,8 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          nda_accepted_at: string | null
+          nda_version: string | null
           observacoes: string | null
           phone: string | null
           regiao: string | null
@@ -787,6 +789,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          nda_accepted_at?: string | null
+          nda_version?: string | null
           observacoes?: string | null
           phone?: string | null
           regiao?: string | null
@@ -801,6 +805,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          nda_accepted_at?: string | null
+          nda_version?: string | null
           observacoes?: string | null
           phone?: string | null
           regiao?: string | null
