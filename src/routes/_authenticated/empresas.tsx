@@ -7,13 +7,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Building2, Plus, ArrowRight, Check } from "lucide-react";
+import { Building2, Plus, ArrowRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/empresas")({
   head: () => ({ meta: [{ title: "Empresas — PoolFlux" }] }),
   component: EmpresasPage,
 });
+
+const companySchema = z.object({
+  nome: z.string().trim().min(2, "Nome fantasia obrigatório").max(120),
+  razao_social: z.string().trim().max(180).optional().or(z.literal("")),
+  cnpj: z.string().trim().max(20).optional().or(z.literal("")),
+  cep: z.string().trim().max(10).optional().or(z.literal("")),
+  logradouro: z.string().trim().max(180).optional().or(z.literal("")),
+  numero: z.string().trim().max(20).optional().or(z.literal("")),
+  bairro: z.string().trim().max(120).optional().or(z.literal("")),
+  cidade: z.string().trim().max(120).optional().or(z.literal("")),
+  estado: z.string().trim().max(60).optional().or(z.literal("")),
+  pais: z.string().trim().max(60).optional().or(z.literal("")),
+});
+type CompanyForm = z.infer<typeof companySchema>;
+
+const emptyForm: CompanyForm = {
+  nome: "", razao_social: "", cnpj: "", cep: "", logradouro: "",
+  numero: "", bairro: "", cidade: "", estado: "", pais: "Brasil",
+};
 
 function EmpresasPage() {
   const navigate = useNavigate();
