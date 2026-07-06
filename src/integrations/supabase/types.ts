@@ -694,6 +694,7 @@ export type Database = {
       interviews: {
         Row: {
           cidade: string | null
+          client_id: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
@@ -710,11 +711,17 @@ export type Database = {
           estado: string | null
           id: string
           observacoes: string | null
+          perfil: string | null
+          perfil_outro: string | null
           respostas: Json
+          tema: string | null
+          tema_outro: string | null
+          tipo: string | null
           updated_at: string
         }
         Insert: {
           cidade?: string | null
+          client_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -731,11 +738,17 @@ export type Database = {
           estado?: string | null
           id?: string
           observacoes?: string | null
+          perfil?: string | null
+          perfil_outro?: string | null
           respostas?: Json
+          tema?: string | null
+          tema_outro?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Update: {
           cidade?: string | null
+          client_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -752,10 +765,22 @@ export type Database = {
           estado?: string | null
           id?: string
           observacoes?: string | null
+          perfil?: string | null
+          perfil_outro?: string | null
           respostas?: Json
+          tema?: string | null
+          tema_outro?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "interviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "interviews_company_id_fkey"
             columns: ["company_id"]
