@@ -5,7 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportToCsv } from "@/lib/export-csv";
 
 export const Route = createFileRoute("/_authenticated/produtos/")({
   head: () => ({ meta: [{ title: "Produtos — PoolFlux" }] }),
