@@ -21,6 +21,7 @@ import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nd
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
@@ -30,6 +31,8 @@ import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_auth
 import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 
@@ -93,6 +96,11 @@ const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
   path: '/agentes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedImersoesIndexRoute =
   AuthenticatedImersoesIndexRouteImport.update({
     id: '/imersoes/',
@@ -145,6 +153,18 @@ const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   path: '/clientes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminUsuariosRoute =
+  AuthenticatedAdminUsuariosRouteImport.update({
+    id: '/usuarios',
+    path: '/usuarios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPermissoesRoute =
+  AuthenticatedAdminPermissoesRouteImport.update({
+    id: '/permissoes',
+    path: '/permissoes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
     id: '/permissoes/$type/$id',
@@ -161,6 +181,7 @@ const AuthenticatedClientesIdEditarRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
@@ -170,6 +191,8 @@ export interface FileRoutesByFullPath {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
+  '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
@@ -185,6 +208,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
@@ -194,6 +218,8 @@ export interface FileRoutesByTo {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
+  '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
@@ -211,6 +237,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
@@ -220,6 +247,8 @@ export interface FileRoutesById {
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
   '/r/$token': typeof RTokenRoute
+  '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
@@ -237,6 +266,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin'
     | '/agentes'
     | '/dashboard'
     | '/empresas'
@@ -246,6 +276,8 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/representantes'
     | '/r/$token'
+    | '/admin/permissoes'
+    | '/admin/usuarios'
     | '/clientes/$id'
     | '/clientes/novo'
     | '/entrevistas/$id'
@@ -261,6 +293,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/admin'
     | '/agentes'
     | '/dashboard'
     | '/empresas'
@@ -270,6 +303,8 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/representantes'
     | '/r/$token'
+    | '/admin/permissoes'
+    | '/admin/usuarios'
     | '/clientes/$id'
     | '/clientes/novo'
     | '/entrevistas/$id'
@@ -286,6 +321,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
@@ -295,6 +331,8 @@ export interface FileRouteTypes {
     | '/_authenticated/projecao'
     | '/_authenticated/representantes'
     | '/r/$token'
+    | '/_authenticated/admin/permissoes'
+    | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/clientes/novo'
     | '/_authenticated/entrevistas/$id'
@@ -401,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/imersoes/': {
       id: '/_authenticated/imersoes/'
       path: '/imersoes'
@@ -464,6 +509,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/usuarios': {
+      id: '/_authenticated/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/permissoes': {
+      id: '/_authenticated/admin/permissoes'
+      path: '/permissoes'
+      fullPath: '/admin/permissoes'
+      preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/permissoes/$type/$id': {
       id: '/_authenticated/permissoes/$type/$id'
       path: '/permissoes/$type/$id'
@@ -481,6 +540,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
+  AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
+  AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedClientesIdRouteChildren {
   AuthenticatedClientesIdEditarRoute: typeof AuthenticatedClientesIdEditarRoute
 }
@@ -496,6 +568,7 @@ const AuthenticatedClientesIdRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
@@ -517,6 +590,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
@@ -549,13 +623,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
