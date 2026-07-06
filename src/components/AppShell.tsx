@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck } from "lucide-react";
-import type { ReactNode } from "react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandLogo } from "@/components/Brand";
@@ -12,12 +12,17 @@ const NAV = [
   { to: "/imersoes", label: "Imersões", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/clientes", label: "Clientes", icon: Briefcase },
   { to: "/representantes", label: "Representantes", icon: Users },
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
 ] as const;
+
+const BASES = [
+  { to: "/clientes", label: "Clientes", icon: Briefcase },
+  { to: "/produtos", label: "Produtos", icon: Package },
+] as const;
+
 
 
 export function AppShell({ children }: { children: ReactNode }) {
