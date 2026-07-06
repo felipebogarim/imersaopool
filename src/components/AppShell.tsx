@@ -1,8 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat } from "lucide-react";
 import type { ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandLogo } from "@/components/Brand";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
