@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck } from "lucide-react";
-import type { ReactNode } from "react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandLogo } from "@/components/Brand";
@@ -12,18 +12,25 @@ const NAV = [
   { to: "/imersoes", label: "Imersões", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/clientes", label: "Clientes", icon: Briefcase },
   { to: "/representantes", label: "Representantes", icon: Users },
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
 ] as const;
 
+const BASES = [
+  { to: "/clientes", label: "Clientes", icon: Briefcase },
+  { to: "/produtos", label: "Produtos", icon: Package },
+] as const;
+
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
+  const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
+
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -78,7 +85,43 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setBasesOpen(o => !o)}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+            >
+              <Database className="h-4 w-4" />
+              <span className="flex-1 text-left">Bases</span>
+              {basesOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
+            {basesOpen && (
+              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                {BASES.map(item => {
+                  const active = pathname === item.to || pathname.startsWith(item.to + "/");
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {workspace?.isAdmin && (
+
             <div className="pt-4">
               <div className="px-3 pb-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
                 <Shield className="h-3 w-3" /> Admin
