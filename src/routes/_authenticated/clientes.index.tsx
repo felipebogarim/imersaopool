@@ -47,7 +47,7 @@ function ClientsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status")
+        .select("id, codigo_erp, nome_fantasia, municipio, cidade, estado, nome_representante_erp, categoria_erp, grupo_erp, status, grupo_nome, pertence_grupo")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
