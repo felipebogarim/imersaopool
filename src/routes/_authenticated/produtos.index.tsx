@@ -104,31 +104,64 @@ function ProductsPage() {
         title="Produtos"
         subtitle="Base de produtos cadastrados"
         actions={
-          <Button
-            variant="outline"
-            disabled={!companyId}
-            onClick={async () => {
-              if (!companyId) return;
-              const pageSize = 1000;
-              const all: any[] = [];
-              for (let from = 0; ; from += pageSize) {
-                const { data, error } = await supabase
-                  .from("own_products")
-                  .select("*")
-                  .eq("company_id", companyId)
-                  .order("nome")
-                  .range(from, from + pageSize - 1);
-                if (error) return toast.error(error.message);
-                if (!data || data.length === 0) break;
-                all.push(...data);
-                if (data.length < pageSize) break;
-              }
-              exportToCsv(`produtos-${new Date().toISOString().slice(0,10)}.csv`, all);
-              toast.success(`${all.length} produtos exportados`);
-            }}
-          >
-            <Download className="h-4 w-4 mr-1" /> Exportar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={!companyId}
+              onClick={async () => {
+                if (!companyId) return;
+                const pageSize = 1000;
+                const all: any[] = [];
+                for (let from = 0; ; from += pageSize) {
+                  const { data, error } = await supabase
+                    .from("own_products")
+                    .select("*")
+                    .eq("company_id", companyId)
+                    .order("nome")
+                    .range(from, from + pageSize - 1);
+                  if (error) return toast.error(error.message);
+                  if (!data || data.length === 0) break;
+                  all.push(...data);
+                  if (data.length < pageSize) break;
+                }
+                exportToCsv(`produtos-completo-${new Date().toISOString().slice(0,10)}.csv`, all);
+                toast.success(`${all.length} produtos exportados`);
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" /> Exportar completo
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!companyId}
+              onClick={async () => {
+                if (!companyId) return;
+                const pageSize = 1000;
+                const all: any[] = [];
+                for (let from = 0; ; from += pageSize) {
+                  let query = supabase
+                    .from("own_products")
+                    .select("*")
+                    .eq("company_id", companyId)
+                    .order("nome")
+                    .range(from, from + pageSize - 1);
+                  if (q) query = query.or(`nome.ilike.%${q}%,codigo_interno.ilike.%${q}%,codigo_barra.ilike.%${q}%`);
+                  if (marca) query = query.eq("marca", marca);
+                  if (familia) query = query.eq("familia", familia);
+                  if (categoria) query = query.eq("categoria", categoria);
+                  if (status) query = query.eq("status", status);
+                  const { data, error } = await query;
+                  if (error) return toast.error(error.message);
+                  if (!data || data.length === 0) break;
+                  all.push(...data);
+                  if (data.length < pageSize) break;
+                }
+                exportToCsv(`produtos-filtrado-${new Date().toISOString().slice(0,10)}.csv`, all);
+                toast.success(`${all.length} produtos exportados`);
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" /> Exportar filtrado
+            </Button>
+          </div>
         }
       />
       <div className="p-8 space-y-4">
