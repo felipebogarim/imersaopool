@@ -22,6 +22,21 @@ const STATUS_COLORS: Record<string, string> = {
   "FLI": "bg-warning/20 text-warning border-warning/30",
 };
 
+const PRODUCT_IMAGE_BUCKET = "product-images";
+
+function getProductImagePath(url?: string | null) {
+  if (!url) return null;
+  const marker = `/${PRODUCT_IMAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx >= 0) return decodeURIComponent(url.slice(idx + marker.length));
+  if (!url.startsWith("http") && !url.startsWith("data:")) return url.replace(/^\/+/, "");
+  return null;
+}
+
+function isDirectImageUrl(url?: string | null) {
+  return !!url && (url.startsWith("data:") || !url.includes(`/${PRODUCT_IMAGE_BUCKET}/`));
+}
+
 function ProductsPage() {
   const [q, setQ] = useState("");
   const [marca, setMarca] = useState<string>("");
@@ -66,6 +81,22 @@ function ProductsPage() {
         if (data.length < pageSize) break;
       }
       return all;
+    },
+  });
+
+  const imagePaths = useMemo(
+    () => Array.from(new Set(products.map((p: any) => getProductImagePath(p.imagem_url)).filter(Boolean))) as string[],
+    [products],
+  );
+
+  const { data: signedImageUrls = {} } = useQuery({
+    queryKey: ["product-image-signed-urls", imagePaths.join("|")],
+    enabled: imagePaths.length > 0,
+    staleTime: 45 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).createSignedUrls(imagePaths, 60 * 60);
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]));
     },
   });
 
@@ -219,38 +250,43 @@ function ProductsPage() {
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : products.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
-              ) : products.map((p: any) => (
-                <tr key={p.id} className="border-t border-border hover:bg-muted/20">
-                  <td className="px-4 py-2">
-                    <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
-                      <span>—</span>
-                      {p.imagem_url && (
-                        <img
-                          src={p.imagem_url}
-                          alt={p.nome || p.codigo_interno || "produto"}
-                          loading="lazy"
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                          className="absolute inset-0 h-full w-full object-contain bg-background"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
-                  <td className="px-4 py-2">
-                    <div className="font-medium">{p.nome}</div>
-                    {p.codigo_barra && <div className="text-[10px] text-muted-foreground">EAN {p.codigo_barra}</div>}
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.marca || "—"}</td>
-                  <td className="px-4 py-2">
-                    {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.portifolio || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.familia || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.categoria || "—"}</td>
-                </tr>
-              ))}
+              ) : products.map((p: any) => {
+                const imagePath = getProductImagePath(p.imagem_url);
+                const imageSrc = imagePath ? signedImageUrls[imagePath] : isDirectImageUrl(p.imagem_url) ? p.imagem_url : null;
+
+                return (
+                  <tr key={p.id} className="border-t border-border hover:bg-muted/20">
+                    <td className="px-4 py-2">
+                      <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
+                        <span>—</span>
+                        {imageSrc && (
+                          <img
+                            src={imageSrc}
+                            alt={p.nome || p.codigo_interno || "produto"}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            className="absolute inset-0 h-full w-full object-contain bg-background"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).remove(); }}
+                          />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
+                    <td className="px-4 py-2">
+                      <div className="font-medium">{p.nome}</div>
+                      {p.codigo_barra && <div className="text-[10px] text-muted-foreground">EAN {p.codigo_barra}</div>}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">{p.marca || "—"}</td>
+                    <td className="px-4 py-2">
+                      {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">{p.portifolio || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{p.familia || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{p.categoria || "—"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
