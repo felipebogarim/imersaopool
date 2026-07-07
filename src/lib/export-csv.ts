@@ -1,8 +1,13 @@
 // CSV export helper: converts array of objects to CSV and triggers download.
+// Uses semicolon separator + CRLF for pt-BR Excel compatibility.
+const SEP = ";";
+
 function escape(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  let s = typeof v === "object" ? JSON.stringify(v) : String(v);
+  // Normalize line breaks and strip control chars that break Excel cells
+  s = s.replace(/\r\n|\r|\n/g, " ").replace(/\t/g, " ");
+  if (/["";\n]/.test(s) || s.includes(SEP)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
 
@@ -14,9 +19,9 @@ export function exportToCsv(filename: string, rows: Record<string, any>[]) {
       return set;
     }, new Set()),
   );
-  const lines = [headers.join(",")];
-  for (const r of rows) lines.push(headers.map((h) => escape(r[h])).join(","));
-  const csv = "\uFEFF" + lines.join("\n"); // BOM for Excel UTF-8
+  const lines = [`sep=${SEP}`, headers.map(escape).join(SEP)];
+  for (const r of rows) lines.push(headers.map((h) => escape(r[h])).join(SEP));
+  const csv = "\uFEFF" + lines.join("\r\n"); // BOM + CRLF for Excel
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
