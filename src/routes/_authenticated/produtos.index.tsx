@@ -332,10 +332,20 @@ function ProductsPage() {
 
 
         <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col className="w-16" />
+              <col className="w-32" />
+              <col className="w-[32%]" />
+              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-32" />
+            </colgroup>
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3 font-medium w-16">Imagem</th>
+                <th className="px-4 py-3 font-medium">Imagem</th>
                 <th className="px-4 py-3 font-medium">Código</th>
                 <th className="px-4 py-3 font-medium">Descrição</th>
                 <th className="px-4 py-3 font-medium">Marca</th>
@@ -359,18 +369,19 @@ function ProductsPage() {
                     <td className="px-4 py-2">
                       <ProductThumbnail src={imageSrc} alt={p.nome || p.codigo_interno || "produto"} />
                     </td>
-                    <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
-                    <td className="px-4 py-2">
-                      <div className="font-medium">{p.nome}</div>
-                      {p.codigo_barra && <div className="text-[10px] text-muted-foreground">EAN {p.codigo_barra}</div>}
+                    <td className="px-4 py-2 font-mono text-xs truncate" title={p.codigo_interno || ""}>{p.codigo_interno || "—"}</td>
+                    <td className="px-4 py-2 min-w-0" title={`${p.nome || ""}${p.codigo_barra ? ` — EAN ${p.codigo_barra}` : ""}`}>
+                      <div className="font-medium truncate">{p.nome}</div>
+                      {p.codigo_barra && <div className="text-[10px] text-muted-foreground truncate">EAN {p.codigo_barra}</div>}
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">{p.marca || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground truncate" title={p.marca || ""}>{p.marca || "—"}</td>
                     <td className="px-4 py-2">
                       {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
                     </td>
-                    <td className="px-4 py-2 text-muted-foreground">{p.portifolio || "—"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{p.familia || "—"}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{p.categoria || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground truncate" title={p.portifolio || ""}>{p.portifolio || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground truncate" title={p.familia || ""}>{p.familia || "—"}</td>
+                    <td className="px-4 py-2 text-muted-foreground truncate" title={p.categoria || ""}>{p.categoria || "—"}</td>
+
                   </tr>
                 );
               })}
