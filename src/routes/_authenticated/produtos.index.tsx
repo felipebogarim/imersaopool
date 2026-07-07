@@ -205,18 +205,19 @@ function ProductsPage() {
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Código</th>
-                <th className="px-4 py-3 font-medium">Produto</th>
+                <th className="px-4 py-3 font-medium">Descrição</th>
                 <th className="px-4 py-3 font-medium">Marca</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Portifolio</th>
                 <th className="px-4 py-3 font-medium">Família</th>
                 <th className="px-4 py-3 font-medium">Categoria</th>
-                <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
               ) : products.map((p: any) => (
                 <tr key={p.id} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
@@ -225,11 +226,12 @@ function ProductsPage() {
                     {p.codigo_barra && <div className="text-[10px] text-muted-foreground">EAN {p.codigo_barra}</div>}
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">{p.marca || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.familia || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.categoria || "—"}</td>
                   <td className="px-4 py-2">
                     {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
                   </td>
+                  <td className="px-4 py-2 text-muted-foreground">{p.portifolio || "—"}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{p.familia || "—"}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{p.categoria || "—"}</td>
                 </tr>
               ))}
             </tbody>
