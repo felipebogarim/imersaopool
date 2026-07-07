@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Search, Download } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/export-csv";
+import JSZip from "jszip";
+
 
 export const Route = createFileRoute("/_authenticated/produtos/")({
   head: () => ({ meta: [{ title: "Produtos — PoolFlux" }] }),
