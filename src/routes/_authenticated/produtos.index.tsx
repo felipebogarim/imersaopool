@@ -204,6 +204,7 @@ function ProductsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 font-medium w-16">Imagem</th>
                 <th className="px-4 py-3 font-medium">Código</th>
                 <th className="px-4 py-3 font-medium">Descrição</th>
                 <th className="px-4 py-3 font-medium">Marca</th>
@@ -215,11 +216,23 @@ function ProductsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
               ) : products.map((p: any) => (
                 <tr key={p.id} className="border-t border-border hover:bg-muted/20">
+                  <td className="px-4 py-2">
+                    {p.imagem_url ? (
+                      <img
+                        src={p.imagem_url}
+                        alt={p.nome || p.codigo_interno || "produto"}
+                        loading="lazy"
+                        className="h-12 w-12 object-contain rounded bg-muted/30 border border-border"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">—</div>
+                    )}
+                  </td>
                   <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
                   <td className="px-4 py-2">
                     <div className="font-medium">{p.nome}</div>
