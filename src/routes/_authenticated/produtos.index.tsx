@@ -45,20 +45,27 @@ function ProductsPage() {
     queryKey: ["products", companyId, q, marca, familia, categoria, status],
     enabled: !!companyId,
     queryFn: async () => {
-      let query = supabase
-        .from("own_products")
-        .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra")
-        .eq("company_id", companyId!)
-        .order("nome")
-        .limit(500);
-      if (q) query = query.or(`nome.ilike.%${q}%,codigo_interno.ilike.%${q}%,codigo_barra.ilike.%${q}%`);
-      if (marca) query = query.eq("marca", marca);
-      if (familia) query = query.eq("familia", familia);
-      if (categoria) query = query.eq("categoria", categoria);
-      if (status) query = query.eq("status", status);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data ?? [];
+      const pageSize = 1000;
+      const all: any[] = [];
+      for (let from = 0; ; from += pageSize) {
+        let query = supabase
+          .from("own_products")
+          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra")
+          .eq("company_id", companyId!)
+          .order("nome")
+          .range(from, from + pageSize - 1);
+        if (q) query = query.or(`nome.ilike.%${q}%,codigo_interno.ilike.%${q}%,codigo_barra.ilike.%${q}%`);
+        if (marca) query = query.eq("marca", marca);
+        if (familia) query = query.eq("familia", familia);
+        if (categoria) query = query.eq("categoria", categoria);
+        if (status) query = query.eq("status", status);
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+      }
+      return all;
     },
   });
 
@@ -146,7 +153,7 @@ function ProductsPage() {
             </button>
           )}
           <div className="text-xs text-muted-foreground ml-auto">
-            Exibindo {total} {total === 500 ? "(máx.)" : ""}
+            {total.toLocaleString("pt-BR")} produtos
           </div>
         </div>
 
