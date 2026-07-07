@@ -94,9 +94,14 @@ function ProductsPage() {
     enabled: imagePaths.length > 0,
     staleTime: 45 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).createSignedUrls(imagePaths, 60 * 60);
-      if (error) throw error;
-      return Object.fromEntries((data ?? []).filter((item) => item.path && item.signedUrl).map((item) => [item.path, item.signedUrl]));
+      const entries: [string, string][] = [];
+      for (let i = 0; i < imagePaths.length; i += 100) {
+        const batch = imagePaths.slice(i, i + 100);
+        const { data, error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).createSignedUrls(batch, 60 * 60);
+        if (error) throw error;
+        entries.push(...(data ?? []).filter((item) => item.path && item.signedUrl).map((item) => [item.path, item.signedUrl] as [string, string]));
+      }
+      return Object.fromEntries(entries);
     },
   });
 
