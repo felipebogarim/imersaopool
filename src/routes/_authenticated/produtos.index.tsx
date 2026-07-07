@@ -73,18 +73,27 @@ function ProductsPage() {
     queryKey: ["product-facets", companyId],
     enabled: !!companyId,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("own_products")
-        .select("marca, familia, categoria, status")
-        .eq("company_id", companyId!)
-        .limit(30000);
+      const pageSize = 1000;
+      const rows: any[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("own_products")
+          .select("marca, familia, categoria, status")
+          .eq("company_id", companyId!)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < pageSize) break;
+      }
       const uniq = (k: string) =>
-        Array.from(new Set((data ?? []).map((r: any) => r[k]).filter(Boolean))).sort((a: any, b: any) =>
+        Array.from(new Set(rows.map((r: any) => r[k]).filter(Boolean))).sort((a: any, b: any) =>
           String(a).localeCompare(String(b), "pt-BR"),
         ) as string[];
       return { marcas: uniq("marca"), familias: uniq("familia"), categorias: uniq("categoria"), statuses: uniq("status") };
     },
   });
+
 
   const total = products.length;
   const hasFilters = !!(q || marca || familia || categoria || status);
