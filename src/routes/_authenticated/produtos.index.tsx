@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,34 @@ function getProductImagePath(url?: string | null) {
 
 function isDirectImageUrl(url?: string | null) {
   return !!url && (url.startsWith("data:") || !url.includes(`/${PRODUCT_IMAGE_BUCKET}/`));
+}
+
+function ProductThumbnail({ src, alt }: { src?: string | null; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [src]);
+
+  return (
+    <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
+      <span>—</span>
+      {src && !failed && (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className={`absolute inset-0 h-full w-full object-contain bg-background transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
 }
 
 function ProductsPage() {
@@ -262,20 +290,7 @@ function ProductsPage() {
                 return (
                   <tr key={p.id} className="border-t border-border hover:bg-muted/20">
                     <td className="px-4 py-2">
-                      <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
-                        <span>—</span>
-                        {imageSrc && (
-                          <img
-                            src={imageSrc}
-                            alt={p.nome || p.codigo_interno || "produto"}
-                            loading="lazy"
-                            decoding="async"
-                            referrerPolicy="no-referrer"
-                            className="absolute inset-0 h-full w-full object-contain bg-background"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).remove(); }}
-                          />
-                        )}
-                      </div>
+                      <ProductThumbnail src={imageSrc} alt={p.nome || p.codigo_interno || "produto"} />
                     </td>
                     <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
                     <td className="px-4 py-2">
