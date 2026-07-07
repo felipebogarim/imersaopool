@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Search, Download } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/export-csv";
+import JSZip from "jszip";
+
 
 export const Route = createFileRoute("/_authenticated/produtos/")({
   head: () => ({ meta: [{ title: "Produtos — PoolFlux" }] }),
@@ -243,6 +245,53 @@ function ProductsPage() {
             >
               <Download className="h-4 w-4 mr-1" /> Exportar filtrado
             </Button>
+            <Button
+              variant="outline"
+              disabled={!companyId || products.length === 0}
+              onClick={async () => {
+                const withImg = products.filter((p: any) => p.imagem_url);
+                if (withImg.length === 0) return toast.error("Nenhum produto com imagem");
+                const tid = toast.loading(`Preparando ${withImg.length} imagens...`);
+                try {
+                  const zip = new JSZip();
+                  const usedNames = new Map<string, number>();
+                  for (const p of withImg) {
+                    const path = getProductImagePath(p.imagem_url);
+                    let url: string | null = null;
+                    if (path) {
+                      const { data } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).createSignedUrl(path, 300);
+                      url = data?.signedUrl ?? null;
+                    } else if (isDirectImageUrl(p.imagem_url)) {
+                      url = p.imagem_url;
+                    }
+                    if (!url) continue;
+                    try {
+                      const res = await fetch(url);
+                      if (!res.ok) continue;
+                      const blob = await res.blob();
+                      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0].replace("jpeg", "jpg");
+                      const base = (p.codigo_interno || p.id).toString().replace(/[^\w\-]+/g, "_");
+                      const n = (usedNames.get(base) || 0) + 1;
+                      usedNames.set(base, n);
+                      const name = n === 1 ? `${base}.${ext}` : `${base}_${n}.${ext}`;
+                      zip.file(name, blob);
+                    } catch { /* skip */ }
+                  }
+                  const content = await zip.generateAsync({ type: "blob" });
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(content);
+                  a.download = `produtos-imagens-${new Date().toISOString().slice(0,10)}.zip`;
+                  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                  URL.revokeObjectURL(a.href);
+                  toast.success(`Imagens exportadas`, { id: tid });
+                } catch (e: any) {
+                  toast.error(e?.message || "Falha ao exportar imagens", { id: tid });
+                }
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" /> Exportar imagens
+            </Button>
+
           </div>
         }
       />
