@@ -222,16 +222,20 @@ function ProductsPage() {
               ) : products.map((p: any) => (
                 <tr key={p.id} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-2">
-                    {p.imagem_url ? (
-                      <img
-                        src={p.imagem_url}
-                        alt={p.nome || p.codigo_interno || "produto"}
-                        loading="lazy"
-                        className="h-12 w-12 object-contain rounded bg-muted/30 border border-border"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground">—</div>
-                    )}
+                    <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
+                      <span>—</span>
+                      {p.imagem_url && (
+                        <img
+                          src={p.imagem_url}
+                          alt={p.nome || p.codigo_interno || "produto"}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          className="absolute inset-0 h-full w-full object-contain bg-background"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-2 font-mono text-xs">{p.codigo_interno || "—"}</td>
                   <td className="px-4 py-2">
