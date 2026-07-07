@@ -40,28 +40,45 @@ function isDirectImageUrl(url?: string | null) {
 function ProductThumbnail({ src, alt }: { src?: string | null; alt: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     setLoaded(false);
     setFailed(false);
   }, [src]);
 
+  const canZoom = !!src && !failed;
+
   return (
-    <div className="h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative">
-      <span>—</span>
-      {src && !failed && (
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          className={`absolute inset-0 h-full w-full object-contain bg-background transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-        />
+    <>
+      <button
+        type="button"
+        onClick={() => canZoom && setOpen(true)}
+        disabled={!canZoom}
+        className={`h-12 w-12 rounded bg-muted/30 border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground overflow-hidden relative ${canZoom ? "cursor-zoom-in hover:border-primary" : "cursor-default"}`}
+      >
+        <span>—</span>
+        {src && !failed && (
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            className={`absolute inset-0 h-full w-full object-contain bg-background transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
+          />
+        )}
+      </button>
+      {canZoom && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-3xl p-2 bg-background">
+            <img src={src!} alt={alt} className="w-full h-auto max-h-[80vh] object-contain" referrerPolicy="no-referrer" />
+          </DialogContent>
+        </Dialog>
       )}
-    </div>
+    </>
   );
 }
 
