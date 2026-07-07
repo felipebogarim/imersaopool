@@ -804,6 +804,7 @@ export type Database = {
           gru_in_codigo: number | null
           gru_nome: string | null
           id: string
+          imagem_url: string | null
           linha: string | null
           linha_montagem: string | null
           marca: string | null
@@ -834,6 +835,7 @@ export type Database = {
           gru_in_codigo?: number | null
           gru_nome?: string | null
           id?: string
+          imagem_url?: string | null
           linha?: string | null
           linha_montagem?: string | null
           marca?: string | null
@@ -864,6 +866,7 @@ export type Database = {
           gru_in_codigo?: number | null
           gru_nome?: string | null
           id?: string
+          imagem_url?: string | null
           linha?: string | null
           linha_montagem?: string | null
           marca?: string | null
