@@ -153,7 +153,7 @@ function ProductsPage() {
             </button>
           )}
           <div className="text-xs text-muted-foreground ml-auto">
-            Exibindo {total} {total === 500 ? "(máx.)" : ""}
+            {total.toLocaleString("pt-BR")} produtos
           </div>
         </div>
 
