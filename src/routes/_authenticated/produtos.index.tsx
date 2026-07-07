@@ -89,14 +89,14 @@ function ProductsPage() {
     [products],
   );
 
-  const { data: signedImageUrls = {} } = useQuery({
+  const { data: signedImageUrls = {} } = useQuery<Record<string, string>>({
     queryKey: ["product-image-signed-urls", imagePaths.join("|")],
     enabled: imagePaths.length > 0,
     staleTime: 45 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.storage.from(PRODUCT_IMAGE_BUCKET).createSignedUrls(imagePaths, 60 * 60);
       if (error) throw error;
-      return Object.fromEntries((data ?? []).filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]));
+      return Object.fromEntries((data ?? []).filter((item) => item.path && item.signedUrl).map((item) => [item.path, item.signedUrl]));
     },
   });
 
