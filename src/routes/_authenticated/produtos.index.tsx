@@ -50,7 +50,7 @@ function ProductsPage() {
       for (let from = 0; ; from += pageSize) {
         let query = supabase
           .from("own_products")
-          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra")
+          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra, imagem_url")
           .eq("company_id", companyId!)
           .order("nome")
           .range(from, from + pageSize - 1);
