@@ -113,7 +113,7 @@ function ProductsPage() {
       for (let from = 0; ; from += pageSize) {
         let query = supabase
           .from("own_products")
-          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra, imagem_url")
+          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra, imagem_url, preco_base, ipi")
           .eq("company_id", companyId!)
           .order("nome")
           .range(from, from + pageSize - 1);
@@ -336,12 +336,14 @@ function ProductsPage() {
             <colgroup>
               <col className="w-16" />
               <col className="w-32" />
-              <col className="w-[32%]" />
-              <col className="w-32" />
+              <col className="w-[26%]" />
+              <col className="w-28" />
+              <col className="w-24" />
+              <col className="w-20" />
               <col className="w-28" />
               <col className="w-28" />
-              <col className="w-32" />
-              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-28" />
             </colgroup>
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -349,6 +351,8 @@ function ProductsPage() {
                 <th className="px-4 py-3 font-medium">Código</th>
                 <th className="px-4 py-3 font-medium">Descrição</th>
                 <th className="px-4 py-3 font-medium">Marca</th>
+                <th className="px-4 py-3 font-medium text-right">Preço</th>
+                <th className="px-4 py-3 font-medium text-right">IPI</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Portifolio</th>
                 <th className="px-4 py-3 font-medium">Família</th>
@@ -357,9 +361,9 @@ function ProductsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
               ) : products.map((p: any) => {
                 const imagePath = getProductImagePath(p.imagem_url);
                 const imageSrc = imagePath ? signedImageUrls[imagePath] : isDirectImageUrl(p.imagem_url) ? p.imagem_url : null;
@@ -375,6 +379,8 @@ function ProductsPage() {
                       {p.codigo_barra && <div className="text-[10px] text-muted-foreground truncate">EAN {p.codigo_barra}</div>}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground truncate" title={p.marca || ""}>{p.marca || "—"}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{p.preco_base != null ? Number(p.preco_base).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{p.ipi != null ? `${Number(p.ipi).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%` : "—"}</td>
                     <td className="px-4 py-2">
                       {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
                     </td>
