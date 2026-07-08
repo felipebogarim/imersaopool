@@ -52,12 +52,20 @@ function AuthPage() {
   async function signInGoogle() {
     try {
       const result: any = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-      if (result.error) {
+      if (result?.redirected) return;
+      // Some flows return an error shape even when session was set. Check session first.
+      const { data: sess } = await supabase.auth.getSession();
+      if (sess.session) {
+        navigate({ to: "/dashboard" });
+        return;
+      }
+      if (result?.error) {
         console.error("Google sign-in error:", result.error);
-        const msg = (result.error as any)?.message || (result.error as any)?.error_description || (typeof result.error === "string" ? result.error : JSON.stringify(result.error));
+        const err = result.error;
+        const msg = err?.message || err?.error_description || err?.error || (typeof err === "string" ? err : "Falha ao autenticar com Google");
         return toast.error(`Erro ao logar: ${msg}`);
       }
-      if (!result.redirected) navigate({ to: "/dashboard" });
+      toast.error("Erro ao logar: sessão não iniciada");
     } catch (e: any) {
       console.error("Google sign-in exception:", e);
       toast.error(`Erro ao logar: ${e?.message ?? String(e)}`);
