@@ -113,7 +113,7 @@ function ProductsPage() {
       for (let from = 0; ; from += pageSize) {
         let query = supabase
           .from("own_products")
-          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra, imagem_url")
+          .select("id, codigo_interno, nome, marca, familia, sub_familia, categoria, status, portifolio, codigo_barra, imagem_url, preco_base, ipi")
           .eq("company_id", companyId!)
           .order("nome")
           .range(from, from + pageSize - 1);
