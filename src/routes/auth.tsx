@@ -50,9 +50,18 @@ function AuthPage() {
   }
 
   async function signInGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
-    if (result.error) return toast.error(result.error.message);
-    if (!result.redirected) navigate({ to: "/dashboard" });
+    try {
+      const result: any = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+      if (result.error) {
+        console.error("Google sign-in error:", result.error);
+        const msg = (result.error as any)?.message || (result.error as any)?.error_description || (typeof result.error === "string" ? result.error : JSON.stringify(result.error));
+        return toast.error(`Erro ao logar: ${msg}`);
+      }
+      if (!result.redirected) navigate({ to: "/dashboard" });
+    } catch (e: any) {
+      console.error("Google sign-in exception:", e);
+      toast.error(`Erro ao logar: ${e?.message ?? String(e)}`);
+    }
   }
 
   return (
