@@ -1,1 +1,0 @@
-ALTER TABLE public.own_products ADD COLUMN IF NOT EXISTS ipi numeric;
