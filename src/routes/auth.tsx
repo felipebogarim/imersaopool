@@ -51,7 +51,7 @@ function AuthPage() {
 
   async function signInGoogle() {
     try {
-      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+      const result: any = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
       if (result.error) {
         console.error("Google sign-in error:", result.error);
         const msg = (result.error as any)?.message || (result.error as any)?.error_description || (typeof result.error === "string" ? result.error : JSON.stringify(result.error));
