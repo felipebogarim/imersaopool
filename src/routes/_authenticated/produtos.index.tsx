@@ -336,12 +336,14 @@ function ProductsPage() {
             <colgroup>
               <col className="w-16" />
               <col className="w-32" />
-              <col className="w-[32%]" />
-              <col className="w-32" />
+              <col className="w-[26%]" />
+              <col className="w-28" />
+              <col className="w-24" />
+              <col className="w-20" />
               <col className="w-28" />
               <col className="w-28" />
-              <col className="w-32" />
-              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-28" />
             </colgroup>
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
@@ -349,6 +351,8 @@ function ProductsPage() {
                 <th className="px-4 py-3 font-medium">Código</th>
                 <th className="px-4 py-3 font-medium">Descrição</th>
                 <th className="px-4 py-3 font-medium">Marca</th>
+                <th className="px-4 py-3 font-medium text-right">Preço</th>
+                <th className="px-4 py-3 font-medium text-right">IPI</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Portifolio</th>
                 <th className="px-4 py-3 font-medium">Família</th>
