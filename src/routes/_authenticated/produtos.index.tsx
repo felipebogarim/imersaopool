@@ -361,9 +361,9 @@ function ProductsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Nenhum produto encontrado.</td></tr>
               ) : products.map((p: any) => {
                 const imagePath = getProductImagePath(p.imagem_url);
                 const imageSrc = imagePath ? signedImageUrls[imagePath] : isDirectImageUrl(p.imagem_url) ? p.imagem_url : null;
@@ -379,6 +379,8 @@ function ProductsPage() {
                       {p.codigo_barra && <div className="text-[10px] text-muted-foreground truncate">EAN {p.codigo_barra}</div>}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground truncate" title={p.marca || ""}>{p.marca || "—"}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{p.preco_base != null ? Number(p.preco_base).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—"}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{p.ipi != null ? `${Number(p.ipi).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%` : "—"}</td>
                     <td className="px-4 py-2">
                       {p.status ? <Badge variant="outline" className={STATUS_COLORS[p.status] || ""}>{p.status}</Badge> : "—"}
                     </td>
