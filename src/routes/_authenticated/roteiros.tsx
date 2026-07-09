@@ -138,7 +138,7 @@ function RoteirosPage() {
       <RoteiroDialog
         open={creatingRoteiro || !!editingRoteiro}
         editing={editingRoteiro}
-        onOpenChange={(v) => { if (!v) { setCreatingRoteiro(false); setEditingRoteiro(null); } }}
+        onOpenChange={(v: boolean) => { if (!v) { setCreatingRoteiro(false); setEditingRoteiro(null); } }}
         onSaved={() => qc.invalidateQueries({ queryKey: ["roteiros-with-caps"] })}
       />
       <CapituloDialog
@@ -146,7 +146,7 @@ function RoteirosPage() {
         editing={editingCap}
         roteiroId={editingCap?.roteiro_id ?? creatingCapFor}
         nextOrdem={data.find((r: any) => r.id === (creatingCapFor ?? editingCap?.roteiro_id))?.capitulos?.length ?? 0}
-        onOpenChange={(v) => { if (!v) { setCreatingCapFor(null); setEditingCap(null); } }}
+        onOpenChange={(v: boolean) => { if (!v) { setCreatingCapFor(null); setEditingCap(null); } }}
         onSaved={() => qc.invalidateQueries({ queryKey: ["roteiros-with-caps"] })}
       />
     </div>
