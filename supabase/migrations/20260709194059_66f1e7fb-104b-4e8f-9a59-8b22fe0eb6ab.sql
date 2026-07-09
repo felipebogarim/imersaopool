@@ -1,0 +1,1 @@
+ALTER TABLE public.sessao_capitulos ADD COLUMN IF NOT EXISTS leitura_estrategica text;
