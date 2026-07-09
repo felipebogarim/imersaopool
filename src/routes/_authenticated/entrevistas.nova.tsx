@@ -212,23 +212,22 @@ function NovaEntrevista() {
               </Select>
             </div>
             <div className="md:col-span-2">
-              <Label>Roteiro (opcional)</Label>
+              <Label>Roteiro *</Label>
               <Select
-                value={form.roteiro_id || "none"}
-                onValueChange={(v) => setForm({ ...form, roteiro_id: v === "none" ? "" : v })}
+                value={form.roteiro_id}
+                onValueChange={(v) => { setRoteiroManual(true); setForm({ ...form, roteiro_id: v }); }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sem roteiro" />
+                  <SelectValue placeholder="Selecione um roteiro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sem roteiro</SelectItem>
                   {roteiros.map((r: any) => (
                     <SelectItem key={r.id} value={r.id}>{r.nome} (v{r.versao})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                Ative um roteiro para capturar a entrevista por capítulos estruturados.
+                O roteiro é pré-selecionado a partir do perfil, mas pode ser trocado.
               </p>
             </div>
           </div>
