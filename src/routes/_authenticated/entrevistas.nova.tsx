@@ -222,6 +222,68 @@ function NovaEntrevista() {
                 onChange={(e) => setForm({ ...form, data: e.target.value })}
               />
             </div>
+            <div className="md:col-span-2">
+              <Label>Nome do entrevistado *</Label>
+              {form.perfil === "representante" ? (
+                <Popover open={repOpen} onOpenChange={setRepOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {form.nome || "Selecione um representante"}
+                      <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar representante..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum representante encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {representantes.map((r: any) => (
+                            <CommandItem
+                              key={r.id}
+                              value={r.nome}
+                              onSelect={() => {
+                                setForm((f) => ({ ...f, nome: r.nome }));
+                                setRepOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", form.nome === r.nome ? "opacity-100" : "opacity-0")} />
+                              <div className="flex flex-col">
+                                <span>{r.nome}</span>
+                                {r.regiao && <span className="text-xs text-muted-foreground">{r.regiao}</span>}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                        <CommandGroup>
+                          <CommandItem
+                            onSelect={() => {
+                              setRepOpen(false);
+                              setRepDialogOpen(true);
+                            }}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Cadastrar novo representante
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Input
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  placeholder="Nome completo"
+                />
+              )}
+            </div>
+
             {form.perfil === "outro" && (
               <div className="md:col-span-2">
                 <Label>Especificar perfil *</Label>
