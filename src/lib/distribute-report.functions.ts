@@ -48,7 +48,11 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     } else if (isPlain) {
       sourceText = atob(data.base64);
     } else {
-      const dataUrl = `data:${mime || "application/pdf"};base64,${data.base64}`;
+      const isPdf = mime === "application/pdf" || /\.pdf$/i.test(data.filename);
+      if (!isPdf) {
+        throw new Error("Formato não suportado. Envie PDF, TXT/MD/CSV ou áudio. Para .doc/.docx, exporte como PDF antes.");
+      }
+      const dataUrl = `data:application/pdf;base64,${data.base64}`;
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
