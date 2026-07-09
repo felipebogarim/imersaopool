@@ -141,18 +141,12 @@ function CapituloBlock({
   return (
     <section className="surface rounded-xl p-5">
       <header className="flex items-start justify-between gap-4 mb-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">#{capitulo.ordem}</span>
             <h3 className="font-medium">{capitulo.titulo}</h3>
             <Badge variant="outline" className="text-[10px]">{capitulo.lente_default}</Badge>
           </div>
-          {capitulo.orientacao && (
-            <p className="text-sm text-muted-foreground mt-1">{capitulo.orientacao}</p>
-          )}
-          {capitulo.hipotese && (
-            <p className="text-xs italic text-muted-foreground mt-1">Hipótese: {capitulo.hipotese}</p>
-          )}
         </div>
         {existing && (
           <Badge variant="secondary" className="shrink-0">
@@ -160,6 +154,40 @@ function CapituloBlock({
           </Badge>
         )}
       </header>
+
+      {capitulo.pergunta_abertura && (
+        <blockquote className="border-l-4 border-primary/60 pl-4 py-2 mb-3">
+          <p className="text-base font-medium leading-relaxed">"{capitulo.pergunta_abertura}"</p>
+        </blockquote>
+      )}
+
+      {Array.isArray(capitulo.pontos_escuta) && capitulo.pontos_escuta.length > 0 && (
+        <div className="mb-3">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Fique atento a</p>
+          <ul className="list-disc pl-5 space-y-0.5 text-sm">
+            {capitulo.pontos_escuta.map((p: string, i: number) => (
+              <li key={i} className="text-muted-foreground">{p}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(capitulo.orientacao || capitulo.hipotese) && (
+        <details className="mb-3 text-sm">
+          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+            Objetivo de pesquisa e hipótese
+          </summary>
+          <div className="mt-2 space-y-1 pl-2 border-l border-border">
+            {capitulo.orientacao && (
+              <p className="text-sm text-muted-foreground">{capitulo.orientacao}</p>
+            )}
+            {capitulo.hipotese && (
+              <p className="text-xs italic text-muted-foreground">Hipótese: {capitulo.hipotese}</p>
+            )}
+          </div>
+        </details>
+      )}
+
       <Textarea
         rows={5}
         value={texto}
