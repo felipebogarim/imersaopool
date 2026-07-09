@@ -70,6 +70,7 @@ function RepsPage() {
           <DialogHeader><DialogTitle>{editing ? "Editar representante" : "Novo representante"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><LabelHelp label="Nome" required help={REP_HELP.nome} /><VoiceInput value={form.nome ?? ""} onChange={v => setForm(f => ({ ...f, nome: v }))} /></div>
+            <div><LabelHelp label="Representação" help="Razão social da representação (empresa)" /><VoiceInput value={form.representacao ?? ""} onChange={v => setForm(f => ({ ...f, representacao: v }))} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><LabelHelp label="E-mail" help={REP_HELP.email} /><VoiceInput type="email" value={form.email ?? ""} onChange={v => setForm(f => ({ ...f, email: v }))} /></div>
               <div><LabelHelp label="Telefone" help={REP_HELP.telefone} /><VoiceInput value={form.telefone ?? ""} onChange={v => setForm(f => ({ ...f, telefone: v }))} /></div>
