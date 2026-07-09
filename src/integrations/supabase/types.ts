@@ -36,7 +36,7 @@ export type Database = {
           created_at: string
           diagnostico_id: string | null
           id: string
-          immersion_id: string
+          immersion_id: string | null
           observacoes: string | null
           perspectiva_origem_id: string | null
           prazo: string | null
@@ -52,7 +52,7 @@ export type Database = {
           created_at?: string
           diagnostico_id?: string | null
           id?: string
-          immersion_id: string
+          immersion_id?: string | null
           observacoes?: string | null
           perspectiva_origem_id?: string | null
           prazo?: string | null
@@ -68,7 +68,7 @@ export type Database = {
           created_at?: string
           diagnostico_id?: string | null
           id?: string
-          immersion_id?: string
+          immersion_id?: string | null
           observacoes?: string | null
           perspectiva_origem_id?: string | null
           prazo?: string | null
