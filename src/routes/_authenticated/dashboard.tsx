@@ -133,6 +133,38 @@ function Dashboard() {
           <StatCard icon={Tag} label="Competidores" value={data?.totalCompetitors ?? 0} to="/price" />
         </div>
 
+        {(data?.vencidas?.length || data?.proximas?.length || data?.alertasAlta?.length) ? (
+          <div className="surface rounded-xl p-5 border-l-4 border-warning">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <h3 className="text-sm font-semibold">Alertas de plano de ação</h3>
+              </div>
+              <Link to="/planos" className="text-xs text-cyan hover:underline">Ver kanban</Link>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+              <AlertStat label="Vencidas" value={data?.vencidas?.length ?? 0} tone="destructive" />
+              <AlertStat label="Próximas (7 dias)" value={data?.proximas?.length ?? 0} tone="warning" />
+              <AlertStat label="Alta prioridade" value={data?.alertasAlta?.length ?? 0} tone="warning" />
+              <AlertStat label="Sem prazo" value={data?.semPrazo?.length ?? 0} tone="muted" />
+            </div>
+            {(data?.vencidas ?? []).length > 0 && (
+              <ul className="mt-4 space-y-1.5 text-sm">
+                {(data?.vencidas ?? []).slice(0, 5).map((a: any) => (
+                  <li key={a.id} className="flex items-center justify-between gap-2 border-t border-border pt-2">
+                    <span className="truncate">{a.acao}</span>
+                    <span className="text-xs text-destructive shrink-0">
+                      venceu em {new Date(a.prazo).toLocaleDateString("pt-BR")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
+
+
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="surface rounded-xl p-5">
