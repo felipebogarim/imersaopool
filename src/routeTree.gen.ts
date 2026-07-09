@@ -37,6 +37,7 @@ import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
+import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 
 const AuthRoute = AuthRouteImport.update({
@@ -191,6 +192,12 @@ const AuthenticatedPermissoesTypeIdRoute =
     path: '/permissoes/$type/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEntrevistasIdSessaoRoute =
+  AuthenticatedEntrevistasIdSessaoRouteImport.update({
+    id: '/sessao',
+    path: '/sessao',
+    getParentRoute: () => AuthenticatedEntrevistasIdRoute,
+  } as any)
 const AuthenticatedClientesIdEditarRoute =
   AuthenticatedClientesIdEditarRouteImport.update({
     id: '/editar',
@@ -217,7 +224,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
-  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRoutesByTo {
@@ -247,7 +255,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
-  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -256,6 +264,7 @@ export interface FileRoutesByTo {
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRoutesById {
@@ -279,7 +288,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
-  '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRoute
+  '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -288,6 +297,7 @@ export interface FileRoutesById {
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
+  '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
 }
 export interface FileRouteTypes {
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/imersoes/'
     | '/produtos/'
     | '/clientes/$id/editar'
+    | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/imersoes'
     | '/produtos'
     | '/clientes/$id/editar'
+    | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
   id:
     | '__root__'
@@ -381,6 +393,7 @@ export interface FileRouteTypes {
     | '/_authenticated/imersoes/'
     | '/_authenticated/produtos/'
     | '/_authenticated/clientes/$id/editar'
+    | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
   fileRoutesById: FileRoutesById
 }
@@ -589,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPermissoesTypeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/entrevistas/$id/sessao': {
+      id: '/_authenticated/entrevistas/$id/sessao'
+      path: '/sessao'
+      fullPath: '/entrevistas/$id/sessao'
+      preLoaderRoute: typeof AuthenticatedEntrevistasIdSessaoRouteImport
+      parentRoute: typeof AuthenticatedEntrevistasIdRoute
+    }
     '/_authenticated/clientes/$id/editar': {
       id: '/_authenticated/clientes/$id/editar'
       path: '/editar'
@@ -626,6 +646,21 @@ const AuthenticatedClientesIdRouteWithChildren =
     AuthenticatedClientesIdRouteChildren,
   )
 
+interface AuthenticatedEntrevistasIdRouteChildren {
+  AuthenticatedEntrevistasIdSessaoRoute: typeof AuthenticatedEntrevistasIdSessaoRoute
+}
+
+const AuthenticatedEntrevistasIdRouteChildren: AuthenticatedEntrevistasIdRouteChildren =
+  {
+    AuthenticatedEntrevistasIdSessaoRoute:
+      AuthenticatedEntrevistasIdSessaoRoute,
+  }
+
+const AuthenticatedEntrevistasIdRouteWithChildren =
+  AuthenticatedEntrevistasIdRoute._addFileChildren(
+    AuthenticatedEntrevistasIdRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
@@ -640,7 +675,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
-  AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRoute
+  AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRouteWithChildren
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
@@ -665,7 +700,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
-  AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRoute,
+  AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRouteWithChildren,
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
