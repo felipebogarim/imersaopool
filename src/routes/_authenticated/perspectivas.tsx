@@ -208,6 +208,11 @@ function PerspectivasPage() {
                                   </Link>
                                 </Button>
                               )}
+                              {tab === "aprovada" && (
+                                <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAcaoFor(p)}>
+                                  <ListPlus className="h-4 w-4 mr-1" /> Criar ação
+                                </Button>
+                              )}
                               {tab !== "aprovada" && tab !== "descartada" && (
                                 <div className="flex gap-2 ml-auto">
                                   <Button size="sm" variant="outline" onClick={() => updateStatus(p.id, "descartada")}>
@@ -221,6 +226,7 @@ function PerspectivasPage() {
                             </div>
                           </article>
                         ))}
+
                       </div>
                     </section>
                   ))}
