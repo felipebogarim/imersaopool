@@ -31,6 +31,7 @@ function ImmersionsIndex() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; titulo: string } | null>(null);
 
   const { data: imms = [], isLoading } = useQuery({
     queryKey: ["immersions"],
@@ -53,9 +54,9 @@ function ImmersionsIndex() {
     }
   }
 
-  async function remove(id: string, titulo: string) {
-    if (!confirm(`Excluir a imersão "${titulo}"?`)) return;
-    const { error } = await supabase.from("immersions").delete().eq("id", id);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { error } = await supabase.from("immersions").delete().eq("id", pendingDelete.id);
     if (error) return toast.error(error.message);
     toast.success("Imersão excluída");
     qc.invalidateQueries({ queryKey: ["immersions"] });
