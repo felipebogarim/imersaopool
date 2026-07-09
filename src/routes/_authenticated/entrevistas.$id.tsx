@@ -1,16 +1,13 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, ClipboardList } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  INTERVIEW_SECTIONS,
-  CLASSIFICACOES,
-  TIPOS_EMPRESA,
-} from "@/lib/interview-questions";
+import { ChapterCapture } from "@/components/ChapterCapture";
+import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
@@ -41,8 +38,6 @@ function EntrevistaDetail() {
   if (isLoading) return <div className="p-8 text-muted-foreground">Carregando...</div>;
   if (!data) return <div className="p-8">Não encontrada.</div>;
 
-  const respostas = (data.respostas ?? {}) as Record<string, string>;
-
   return (
     <div>
       <PageHeader
@@ -51,11 +46,6 @@ function EntrevistaDetail() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-            {data.roteiro_id && (
-              <Button variant="outline" asChild>
-                <Link to="/entrevistas/$id/sessao" params={{ id }}><ClipboardList className="h-4 w-4 mr-1" /> Capítulos</Link>
-              </Button>
-            )}
             <Button variant="destructive" onClick={remove}><Trash2 className="h-4 w-4 mr-1" /> Excluir</Button>
           </div>
         }
@@ -80,22 +70,13 @@ function EntrevistaDetail() {
           </div>
         </section>
 
-        {INTERVIEW_SECTIONS.map(sec => (
-          <section key={sec.id} className="surface rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold">{sec.titulo}</h2>
-            {sec.perguntas.map(q => (
-              <div key={q.id}>
-                <p className="text-sm font-medium mb-1">
-                  {q.pergunta}
-                  {q.hipotese !== "—" && <span className="text-[10px] text-muted-foreground ml-2">[{q.hipotese}]</span>}
-                </p>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {respostas[q.id]?.trim() || <span className="italic">Sem resposta</span>}
-                </p>
-              </div>
-            ))}
+        {data.roteiro_id ? (
+          <ChapterCapture sessaoId={data.id} roteiroId={data.roteiro_id} />
+        ) : (
+          <section className="surface rounded-xl p-6 text-sm text-muted-foreground">
+            Esta entrevista não tem roteiro vinculado — vincule um roteiro para capturar por capítulos.
           </section>
-        ))}
+        )}
 
         {data.observacoes && (
           <section className="surface rounded-xl p-6">
@@ -107,3 +88,4 @@ function EntrevistaDetail() {
     </div>
   );
 }
+
