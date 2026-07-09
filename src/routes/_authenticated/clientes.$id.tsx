@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Sparkles, ListChecks, Calendar } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/clientes/$id")({
   head: () => ({ meta: [{ title: "Cliente — PoolFlux" }] }),
