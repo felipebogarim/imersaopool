@@ -39,7 +39,7 @@ function RoteirosPage() {
       const ids = (rot ?? []).map((r: any) => r.id);
       if (!ids.length) return [];
       const { data: caps } = await supabase.from("capitulos")
-        .select("id, roteiro_id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz")
+        .select("id, roteiro_id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz, pergunta_abertura, pontos_escuta")
         .in("roteiro_id", ids).order("ordem");
       return (rot ?? []).map((r: any) => ({ ...r, capitulos: (caps ?? []).filter((c: any) => c.roteiro_id === r.id) }));
     },
@@ -118,14 +118,30 @@ function RoteirosPage() {
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => removeCap(c.id)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </div>
-                    {c.orientacao && <p className="text-sm text-muted-foreground mb-2">{c.orientacao}</p>}
+                    {c.pergunta_abertura && (
+                      <blockquote className="border-l-4 border-primary/60 pl-3 py-1 my-2">
+                        <p className="text-sm font-medium">"{c.pergunta_abertura}"</p>
+                      </blockquote>
+                    )}
+                    {Array.isArray(c.pontos_escuta) && c.pontos_escuta.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Fique atento a</p>
+                        <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
+                          {c.pontos_escuta.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {c.orientacao && <p className="text-xs text-muted-foreground mb-1"><span className="font-medium">Objetivo:</span> {c.orientacao}</p>}
                     {c.hipotese && <p className="text-xs italic text-muted-foreground mb-2">Hipótese: {c.hipotese}</p>}
                     {Array.isArray(c.campos_matriz) && c.campos_matriz.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {c.campos_matriz.map((f: string) => (
-                          <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
-                        ))}
-                      </div>
+                      <details className="mt-2">
+                        <summary className="text-[10px] uppercase tracking-wide text-muted-foreground cursor-pointer">Campos de fechamento</summary>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {c.campos_matriz.map((f: string) => (
+                            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
+                          ))}
+                        </div>
+                      </details>
                     )}
                   </li>
                 ))}
@@ -228,6 +244,8 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
   const [ordem, setOrdem] = useState(1);
   const [lente, setLente] = useState<Lente>("percepcao_marca");
   const [camposStr, setCamposStr] = useState("");
+  const [perguntaAbertura, setPerguntaAbertura] = useState("");
+  const [pontosEscutaStr, setPontosEscutaStr] = useState("");
   const [saving, setSaving] = useState(false);
 
   useMemo(() => {
@@ -237,9 +255,12 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
       setOrientacao(editing.orientacao ?? ""); setHipotese(editing.hipotese ?? "");
       setOrdem(editing.ordem); setLente(editing.lente_default ?? "percepcao_marca");
       setCamposStr((editing.campos_matriz ?? []).join(", "));
+      setPerguntaAbertura(editing.pergunta_abertura ?? "");
+      setPontosEscutaStr((editing.pontos_escuta ?? []).join("\n"));
     } else {
       setCodigo(""); setTitulo(""); setOrientacao(""); setHipotese("");
       setOrdem((nextOrdem ?? 0) + 1); setLente("percepcao_marca"); setCamposStr("");
+      setPerguntaAbertura(""); setPontosEscutaStr("");
     }
   }, [open, editing, nextOrdem]);
 
@@ -249,9 +270,12 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
     setSaving(true);
     try {
       const campos = camposStr.split(",").map(s => s.trim()).filter(Boolean);
+      const pontos = pontosEscutaStr.split("\n").map(s => s.trim()).filter(Boolean);
       const payload = {
         codigo, titulo, orientacao: orientacao || null, hipotese: hipotese || null,
         ordem, lente_default: lente, campos_matriz: campos as any,
+        pergunta_abertura: perguntaAbertura || null,
+        pontos_escuta: pontos.length ? pontos : null,
       };
       if (editing) {
         const { error } = await supabase.from("capitulos").update(payload).eq("id", editing.id);
@@ -278,7 +302,9 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
               <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} /></div>
           </div>
           <div><label className="text-xs text-muted-foreground">Título</label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
-          <div><label className="text-xs text-muted-foreground">Orientação</label><Textarea value={orientacao} onChange={(e) => setOrientacao(e.target.value)} /></div>
+          <div><label className="text-xs text-muted-foreground">Pergunta de abertura</label><Textarea rows={2} value={perguntaAbertura} onChange={(e) => setPerguntaAbertura(e.target.value)} placeholder="Frase que o entrevistador lê em voz alta para abrir o capítulo." /></div>
+          <div><label className="text-xs text-muted-foreground">Pontos de escuta (um por linha)</label><Textarea rows={3} value={pontosEscutaStr} onChange={(e) => setPontosEscutaStr(e.target.value)} placeholder="O que o entrevistador deve captar" /></div>
+          <div><label className="text-xs text-muted-foreground">Orientação (objetivo de pesquisa)</label><Textarea value={orientacao} onChange={(e) => setOrientacao(e.target.value)} /></div>
           <div><label className="text-xs text-muted-foreground">Hipótese</label><Textarea value={hipotese} onChange={(e) => setHipotese(e.target.value)} /></div>
           <div>
             <label className="text-xs text-muted-foreground">Lente default</label>
