@@ -28,8 +28,10 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/nova")({
   head: () => ({ meta: [{ title: "Nova entrevista — PoolFlux" }] }),
