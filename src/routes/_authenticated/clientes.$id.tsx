@@ -92,7 +92,9 @@ function ClientDetail() {
         <div className="space-y-6">
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Imersões</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                Imersões {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
+              </h3>
               <Button size="sm" asChild>
                 <Link to="/imersoes/nova" search={{ client: id }}><Plus className="h-3.5 w-3.5 mr-1" /> Nova</Link>
               </Button>
@@ -109,11 +111,15 @@ function ClientDetail() {
                         <span className="capitalize">{i.status.replace(/_/g, " ")}</span>
                         {i.data_visita && <span>{new Date(i.data_visita).toLocaleDateString("pt-BR")}</span>}
                       </div>
+                      {isGroup && i.client_id !== id && (
+                        <div className="text-[10px] text-muted-foreground mt-1">{i.client?.nome_fantasia}</div>
+                      )}
                     </Link>
                   </li>
                 ))}
               </ul>
             )}
+
           </div>
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
