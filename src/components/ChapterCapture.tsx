@@ -130,11 +130,16 @@ function CapituloBlock({
   capitulo: any; sessaoId: string; existing: any; onSaved: () => void;
 }) {
   const [texto, setTexto] = useState(existing?.resposta_texto ?? "");
+  const [sintese, setSintese] = useState<Record<string, string>>(existing?.sintese ?? {});
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { setTexto(existing?.resposta_texto ?? ""); }, [existing?.id, existing?.resposta_texto]);
+  useEffect(() => {
+    setTexto(existing?.resposta_texto ?? "");
+    setSintese(existing?.sintese ?? {});
+  }, [existing?.id, existing?.resposta_texto, existing?.sintese]);
 
   const isIaDraft = existing?.origem === "ia" && existing?.status_revisao === "pendente";
+  const campos: string[] = Array.isArray(capitulo.campos_matriz) ? capitulo.campos_matriz : [];
 
   async function save() {
     setSaving(true);
@@ -142,6 +147,7 @@ function CapituloBlock({
       sessao_id: sessaoId,
       capitulo_id: capitulo.id,
       resposta_texto: texto,
+      sintese,
       origem: isIaDraft ? "ia" : (existing?.origem ?? "humano"),
       status_revisao: "revisado",
     };
