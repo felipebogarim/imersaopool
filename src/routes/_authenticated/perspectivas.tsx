@@ -241,3 +241,84 @@ function PerspectivasPage() {
   );
 
 }
+
+function CriarAcaoDialog({ perspectiva, onClose }: { perspectiva: any | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [acao, setAcao] = useState("");
+  const [prioridade, setPrioridade] = useState<"alta" | "media" | "baixa">("media");
+  const [prazo, setPrazo] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const open = !!perspectiva;
+
+  useMemo(() => {
+    if (!perspectiva) return;
+    const first = Object.values(perspectiva.conteudo ?? {})[0];
+    setAcao(first ? String(first).slice(0, 200) : "");
+    setPrioridade(
+      perspectiva.lente === "ameaca" ? "alta" :
+      perspectiva.lente === "oportunidade" ? "media" : "baixa",
+    );
+    setPrazo("");
+    setObservacoes(`Origem: perspectiva (${perspectiva.lente} / ${perspectiva.escopo_tipo})`);
+  }, [perspectiva?.id]);
+
+  async function save() {
+    if (!perspectiva) return;
+    if (!acao.trim()) return toast.error("Descreva a ação");
+    setSaving(true);
+    const { error } = await supabase.from("action_plans").insert({
+      acao: acao.trim(),
+      prioridade,
+      status: "pendente",
+      prazo: prazo || null,
+      observacoes: observacoes.trim() || null,
+      perspectiva_origem_id: perspectiva.id,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Ação criada");
+    qc.invalidateQueries({ queryKey: ["action-plans"] });
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Criar ação a partir da perspectiva</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Ação</label>
+            <Input value={acao} onChange={(e) => setAcao(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Prioridade</label>
+              <Select value={prioridade} onValueChange={(v) => setPrioridade(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Média</SelectItem>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Prazo</label>
+              <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Observações</label>
+            <Textarea rows={3} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={save} disabled={saving}>{saving ? "Salvando..." : "Criar ação"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
