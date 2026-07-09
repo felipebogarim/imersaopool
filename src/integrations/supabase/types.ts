@@ -34,11 +34,14 @@ export type Database = {
           acao: string
           company_id: string | null
           created_at: string
+          diagnostico_id: string | null
           id: string
           immersion_id: string
           observacoes: string | null
+          perspectiva_origem_id: string | null
           prazo: string | null
           prioridade: Database["public"]["Enums"]["action_priority"]
+          resolvido_em: string | null
           responsavel: string | null
           status: Database["public"]["Enums"]["action_status"]
           updated_at: string
@@ -47,11 +50,14 @@ export type Database = {
           acao: string
           company_id?: string | null
           created_at?: string
+          diagnostico_id?: string | null
           id?: string
           immersion_id: string
           observacoes?: string | null
+          perspectiva_origem_id?: string | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["action_priority"]
+          resolvido_em?: string | null
           responsavel?: string | null
           status?: Database["public"]["Enums"]["action_status"]
           updated_at?: string
@@ -60,11 +66,14 @@ export type Database = {
           acao?: string
           company_id?: string | null
           created_at?: string
+          diagnostico_id?: string | null
           id?: string
           immersion_id?: string
           observacoes?: string | null
+          perspectiva_origem_id?: string | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["action_priority"]
+          resolvido_em?: string | null
           responsavel?: string | null
           status?: Database["public"]["Enums"]["action_status"]
           updated_at?: string
@@ -78,10 +87,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "action_plans_diagnostico_id_fkey"
+            columns: ["diagnostico_id"]
+            isOneToOne: false
+            referencedRelation: "ai_compilations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "action_plans_immersion_id_fkey"
             columns: ["immersion_id"]
             isOneToOne: false
             referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_plans_perspectiva_origem_id_fkey"
+            columns: ["perspectiva_origem_id"]
+            isOneToOne: false
+            referencedRelation: "perspectivas"
             referencedColumns: ["id"]
           },
         ]
@@ -92,30 +115,42 @@ export type Database = {
           conteudo: Json
           created_at: string
           created_by: string | null
+          escopo_ref_id: string | null
+          escopo_tipo: Database["public"]["Enums"]["perspectiva_escopo"]
           id: string
           immersion_id: string | null
           modelo: string | null
+          perspectivas_incluidas: string[]
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
+          versao: number | null
         }
         Insert: {
           company_id?: string | null
           conteudo: Json
           created_at?: string
           created_by?: string | null
+          escopo_ref_id?: string | null
+          escopo_tipo?: Database["public"]["Enums"]["perspectiva_escopo"]
           id?: string
           immersion_id?: string | null
           modelo?: string | null
+          perspectivas_incluidas?: string[]
           tipo: Database["public"]["Enums"]["ai_compilation_type"]
+          versao?: number | null
         }
         Update: {
           company_id?: string | null
           conteudo?: Json
           created_at?: string
           created_by?: string | null
+          escopo_ref_id?: string | null
+          escopo_tipo?: Database["public"]["Enums"]["perspectiva_escopo"]
           id?: string
           immersion_id?: string | null
           modelo?: string | null
+          perspectivas_incluidas?: string[]
           tipo?: Database["public"]["Enums"]["ai_compilation_type"]
+          versao?: number | null
         }
         Relationships: [
           {
@@ -180,6 +215,60 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capitulos: {
+        Row: {
+          campos_matriz: Json
+          codigo: string
+          created_at: string
+          hipotese: string | null
+          id: string
+          lente_default: Database["public"]["Enums"]["perspectiva_lente"] | null
+          ordem: number
+          orientacao: string | null
+          roteiro_id: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          campos_matriz?: Json
+          codigo: string
+          created_at?: string
+          hipotese?: string | null
+          id?: string
+          lente_default?:
+            | Database["public"]["Enums"]["perspectiva_lente"]
+            | null
+          ordem: number
+          orientacao?: string | null
+          roteiro_id: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          campos_matriz?: Json
+          codigo?: string
+          created_at?: string
+          hipotese?: string | null
+          id?: string
+          lente_default?:
+            | Database["public"]["Enums"]["perspectiva_lente"]
+            | null
+          ordem?: number
+          orientacao?: string | null
+          roteiro_id?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capitulos_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
             referencedColumns: ["id"]
           },
         ]
@@ -482,6 +571,7 @@ export type Database = {
           created_at: string
           data_tabela: string | null
           familia: string | null
+          familia_id: string | null
           id: string
           nome: string
           preco_informado: number | null
@@ -496,6 +586,7 @@ export type Database = {
           created_at?: string
           data_tabela?: string | null
           familia?: string | null
+          familia_id?: string | null
           id?: string
           nome: string
           preco_informado?: number | null
@@ -510,6 +601,7 @@ export type Database = {
           created_at?: string
           data_tabela?: string | null
           familia?: string | null
+          familia_id?: string | null
           id?: string
           nome?: string
           preco_informado?: number | null
@@ -528,6 +620,13 @@ export type Database = {
             columns: ["competitor_id"]
             isOneToOne: false
             referencedRelation: "price_competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_products_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias_produto"
             referencedColumns: ["id"]
           },
         ]
@@ -569,6 +668,57 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      familias_produto: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          id: string
+          nivel: Database["public"]["Enums"]["familia_nivel"]
+          nome: string
+          parent_id: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          nivel: Database["public"]["Enums"]["familia_nivel"]
+          nome: string
+          parent_id?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["familia_nivel"]
+          nome?: string
+          parent_id?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "familias_produto_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "familias_produto_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "familias_produto"
             referencedColumns: ["id"]
           },
         ]
@@ -725,13 +875,18 @@ export type Database = {
           entrevistador_nome: string
           estado: string | null
           id: string
+          immersion_id: string | null
+          modo_captura: string | null
           observacoes: string | null
           perfil: string | null
           perfil_outro: string | null
           respostas: Json
+          roteiro_id: string | null
+          status_revisao: Database["public"]["Enums"]["capitulo_status_revisao"]
           tema: string | null
           tema_outro: string | null
           tipo: string | null
+          transcricao_bruta: string | null
           updated_at: string
         }
         Insert: {
@@ -752,13 +907,18 @@ export type Database = {
           entrevistador_nome: string
           estado?: string | null
           id?: string
+          immersion_id?: string | null
+          modo_captura?: string | null
           observacoes?: string | null
           perfil?: string | null
           perfil_outro?: string | null
           respostas?: Json
+          roteiro_id?: string | null
+          status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
           tema?: string | null
           tema_outro?: string | null
           tipo?: string | null
+          transcricao_bruta?: string | null
           updated_at?: string
         }
         Update: {
@@ -779,13 +939,18 @@ export type Database = {
           entrevistador_nome?: string
           estado?: string | null
           id?: string
+          immersion_id?: string | null
+          modo_captura?: string | null
           observacoes?: string | null
           perfil?: string | null
           perfil_outro?: string | null
           respostas?: Json
+          roteiro_id?: string | null
+          status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
           tema?: string | null
           tema_outro?: string | null
           tipo?: string | null
+          transcricao_bruta?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -803,6 +968,20 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "interviews_immersion_id_fkey"
+            columns: ["immersion_id"]
+            isOneToOne: false
+            referencedRelation: "immersions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interviews_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
+            referencedColumns: ["id"]
+          },
         ]
       }
       own_products: {
@@ -816,6 +995,7 @@ export type Database = {
           created_at: string
           def_item: string | null
           familia: string | null
+          familia_id: string | null
           gru_in_codigo: number | null
           gru_nome: string | null
           id: string
@@ -848,6 +1028,7 @@ export type Database = {
           created_at?: string
           def_item?: string | null
           familia?: string | null
+          familia_id?: string | null
           gru_in_codigo?: number | null
           gru_nome?: string | null
           id?: string
@@ -880,6 +1061,7 @@ export type Database = {
           created_at?: string
           def_item?: string | null
           familia?: string | null
+          familia_id?: string | null
           gru_in_codigo?: number | null
           gru_nome?: string | null
           id?: string
@@ -908,6 +1090,102 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "own_products_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias_produto"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perspectivas: {
+        Row: {
+          aprovada_em: string | null
+          aprovada_por: string | null
+          capitulo_id: string | null
+          company_id: string
+          conteudo: Json
+          created_at: string
+          escopo_ref_id: string | null
+          escopo_tipo: Database["public"]["Enums"]["perspectiva_escopo"]
+          id: string
+          item_ref_id: string | null
+          item_ref_tipo: string | null
+          lente: Database["public"]["Enums"]["perspectiva_lente"]
+          origem: string
+          sessao_capitulo_id: string | null
+          sessao_id: string | null
+          status: Database["public"]["Enums"]["perspectiva_status"]
+          updated_at: string
+        }
+        Insert: {
+          aprovada_em?: string | null
+          aprovada_por?: string | null
+          capitulo_id?: string | null
+          company_id: string
+          conteudo?: Json
+          created_at?: string
+          escopo_ref_id?: string | null
+          escopo_tipo: Database["public"]["Enums"]["perspectiva_escopo"]
+          id?: string
+          item_ref_id?: string | null
+          item_ref_tipo?: string | null
+          lente: Database["public"]["Enums"]["perspectiva_lente"]
+          origem?: string
+          sessao_capitulo_id?: string | null
+          sessao_id?: string | null
+          status?: Database["public"]["Enums"]["perspectiva_status"]
+          updated_at?: string
+        }
+        Update: {
+          aprovada_em?: string | null
+          aprovada_por?: string | null
+          capitulo_id?: string | null
+          company_id?: string
+          conteudo?: Json
+          created_at?: string
+          escopo_ref_id?: string | null
+          escopo_tipo?: Database["public"]["Enums"]["perspectiva_escopo"]
+          id?: string
+          item_ref_id?: string | null
+          item_ref_tipo?: string | null
+          lente?: Database["public"]["Enums"]["perspectiva_lente"]
+          origem?: string
+          sessao_capitulo_id?: string | null
+          sessao_id?: string | null
+          status?: Database["public"]["Enums"]["perspectiva_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perspectivas_capitulo_id_fkey"
+            columns: ["capitulo_id"]
+            isOneToOne: false
+            referencedRelation: "capitulos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perspectivas_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perspectivas_sessao_capitulo_id_fkey"
+            columns: ["sessao_capitulo_id"]
+            isOneToOne: false
+            referencedRelation: "sessao_capitulos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perspectivas_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "interviews"
             referencedColumns: ["id"]
           },
         ]
@@ -1208,6 +1486,114 @@ export type Database = {
           },
         ]
       }
+      roteiros: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          perfil_alvo: string | null
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          ativo?: boolean
+          company_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          perfil_alvo?: string | null
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          perfil_alvo?: string | null
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roteiros_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessao_capitulos: {
+        Row: {
+          capitulo_id: string
+          company_id: string
+          created_at: string
+          id: string
+          origem: string
+          resposta_texto: string | null
+          revisado_em: string | null
+          revisado_por: string | null
+          sessao_id: string
+          status_revisao: Database["public"]["Enums"]["capitulo_status_revisao"]
+          updated_at: string
+        }
+        Insert: {
+          capitulo_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          origem?: string
+          resposta_texto?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          sessao_id: string
+          status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
+          updated_at?: string
+        }
+        Update: {
+          capitulo_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          origem?: string
+          resposta_texto?: string | null
+          revisado_em?: string | null
+          revisado_por?: string | null
+          sessao_id?: string
+          status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessao_capitulos_capitulo_id_fkey"
+            columns: ["capitulo_id"]
+            isOneToOne: false
+            referencedRelation: "capitulos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessao_capitulos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessao_capitulos_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "interviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1268,10 +1654,21 @@ export type Database = {
         | "price"
         | "diagnostico_final"
       app_role: "admin" | "gestor" | "agente"
+      capitulo_status_revisao:
+        | "pendente"
+        | "em_revisao"
+        | "revisado"
+        | "descartado"
       client_category: "Black" | "Gold" | "Silver"
       client_group: "G1" | "G2" | "G2+" | "Corporativo"
       client_status: "ativo" | "inativo" | "prospect"
       equivalence_grade: "igual" | "similar" | "substituto"
+      familia_nivel:
+        | "familia"
+        | "sub_familia"
+        | "linha"
+        | "portfolio"
+        | "sub_portfolio"
       immersion_status:
         | "planejada"
         | "antes_visita"
@@ -1280,6 +1677,23 @@ export type Database = {
         | "diagnostico_gerado"
         | "plano_acao"
         | "concluida"
+      perspectiva_escopo: "cliente" | "familia" | "competidor" | "empresa"
+      perspectiva_lente:
+        | "percepcao_marca"
+        | "mix"
+        | "concorrencia"
+        | "argumento"
+        | "decisao"
+        | "familias"
+        | "promo_comercial"
+        | "oportunidade"
+        | "ameaca"
+        | "cuidado"
+      perspectiva_status:
+        | "ia_sugerida"
+        | "em_revisao"
+        | "aprovada"
+        | "descartada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1416,10 +1830,23 @@ export const Constants = {
         "diagnostico_final",
       ],
       app_role: ["admin", "gestor", "agente"],
+      capitulo_status_revisao: [
+        "pendente",
+        "em_revisao",
+        "revisado",
+        "descartado",
+      ],
       client_category: ["Black", "Gold", "Silver"],
       client_group: ["G1", "G2", "G2+", "Corporativo"],
       client_status: ["ativo", "inativo", "prospect"],
       equivalence_grade: ["igual", "similar", "substituto"],
+      familia_nivel: [
+        "familia",
+        "sub_familia",
+        "linha",
+        "portfolio",
+        "sub_portfolio",
+      ],
       immersion_status: [
         "planejada",
         "antes_visita",
@@ -1428,6 +1855,25 @@ export const Constants = {
         "diagnostico_gerado",
         "plano_acao",
         "concluida",
+      ],
+      perspectiva_escopo: ["cliente", "familia", "competidor", "empresa"],
+      perspectiva_lente: [
+        "percepcao_marca",
+        "mix",
+        "concorrencia",
+        "argumento",
+        "decisao",
+        "familias",
+        "promo_comercial",
+        "oportunidade",
+        "ameaca",
+        "cuidado",
+      ],
+      perspectiva_status: [
+        "ia_sugerida",
+        "em_revisao",
+        "aprovada",
+        "descartada",
       ],
     },
   },
