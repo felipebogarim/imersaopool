@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, ExternalLink, Download, Lightbulb } from "lucide-react";
+import { Check, X, ExternalLink, Download, Lightbulb, ListPlus } from "lucide-react";
 import { EmptyState, LoadingRows } from "@/components/EmptyState";
 
 import { exportPerspectivasCsv } from "@/lib/export-compilation";
@@ -13,6 +13,10 @@ import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
 
 export const Route = createFileRoute("/_authenticated/perspectivas")({
   head: () => ({ meta: [{ title: "Perspectivas — PoolFlux" }] }),
