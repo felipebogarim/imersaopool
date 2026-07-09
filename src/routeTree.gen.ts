@@ -20,6 +20,7 @@ import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authenticated/perspectivas'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
+import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
@@ -95,6 +96,11 @@ const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
 const AuthenticatedNdaRoute = AuthenticatedNdaRouteImport.update({
   id: '/nda',
   path: '/nda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
+  id: '/familias',
+  path: '/familias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
+  '/familias': typeof AuthenticatedFamiliasRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -252,6 +259,7 @@ export interface FileRoutesByTo {
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
+  '/familias': typeof AuthenticatedFamiliasRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
+  '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
+    | '/familias'
     | '/nda'
     | '/novo-corp'
     | '/perspectivas'
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
+    | '/familias'
     | '/nda'
     | '/novo-corp'
     | '/perspectivas'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/_authenticated/compilacoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
+    | '/_authenticated/familias'
     | '/_authenticated/nda'
     | '/_authenticated/novo-corp'
     | '/_authenticated/perspectivas'
@@ -494,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/nda'
       fullPath: '/nda'
       preLoaderRoute: typeof AuthenticatedNdaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/familias': {
+      id: '/_authenticated/familias'
+      path: '/familias'
+      fullPath: '/familias'
+      preLoaderRoute: typeof AuthenticatedFamiliasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/empresas': {
@@ -687,6 +706,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
+  AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerspectivasRoute: typeof AuthenticatedPerspectivasRoute
@@ -713,6 +733,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
+  AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerspectivasRoute: AuthenticatedPerspectivasRoute,
@@ -745,13 +766,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

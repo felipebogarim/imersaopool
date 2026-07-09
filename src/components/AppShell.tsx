@@ -30,6 +30,7 @@ const NAV_BOTTOM = [
 const BASES = [
   { to: "/clientes", label: "Clientes", icon: Briefcase },
   { to: "/produtos", label: "Produtos", icon: Package },
+  { to: "/familias", label: "Famílias", icon: Package },
 ] as const;
 
 // Label span: hidden when sidebar is collapsed, shown on hover.

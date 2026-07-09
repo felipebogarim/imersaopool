@@ -1,18 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { useMemo, useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/perspectivas")({
   head: () => ({ meta: [{ title: "Perspectivas — PoolFlux" }] }),
@@ -26,22 +22,56 @@ const STATUS_TABS = [
   { value: "descartada", label: "Descartadas" },
 ] as const;
 
+const LENTES = [
+  "percepcao_marca","mix","concorrencia","argumento","decisao",
+  "familias","promo_comercial","oportunidade","ameaca","cuidado",
+] as const;
+
+type Escopo = "todos" | "cliente" | "familia" | "empresa" | "competidor";
+
 function PerspectivasPage() {
   const [tab, setTab] = useState<(typeof STATUS_TABS)[number]["value"]>("ia_sugerida");
+  const [escopoTipo, setEscopoTipo] = useState<Escopo>("todos");
+  const [escopoRefId, setEscopoRefId] = useState<string>("todos");
+  const [lente, setLente] = useState<string>("todas");
   const qc = useQueryClient();
 
-  const { data = [], isLoading } = useQuery({
-    queryKey: ["perspectivas", tab],
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients-min-persp"],
     queryFn: async () =>
-      (
-        await supabase
-          .from("perspectivas")
-          .select("id, lente, escopo_tipo, escopo_ref_id, conteudo, origem, status, created_at, sessao_id")
-          .eq("status", tab)
-          .order("created_at", { ascending: false })
-          .limit(200)
-      ).data ?? [],
+      (await supabase.from("clients").select("id, nome_fantasia").order("nome_fantasia").limit(1000)).data ?? [],
   });
+  const { data: familias = [] } = useQuery({
+    queryKey: ["familias-min-persp"],
+    queryFn: async () =>
+      (await supabase.from("familias_produto").select("id, nome, nivel").order("nome").limit(1000)).data ?? [],
+  });
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["perspectivas", tab, escopoTipo, escopoRefId, lente],
+    queryFn: async () => {
+      let q = supabase
+        .from("perspectivas")
+        .select("id, lente, escopo_tipo, escopo_ref_id, conteudo, origem, status, created_at, sessao_id, sessao_capitulo_id, capitulo_id")
+        .eq("status", tab)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (escopoTipo !== "todos") q = q.eq("escopo_tipo", escopoTipo as any);
+      if (escopoRefId !== "todos" && escopoTipo !== "empresa" && escopoTipo !== "todos") {
+        q = q.eq("escopo_ref_id", escopoRefId);
+      }
+      if (lente !== "todas") q = q.eq("lente", lente as any);
+      return (await q).data ?? [];
+    },
+  });
+
+  const grouped = useMemo(() => {
+    const g: Record<string, any[]> = {};
+    for (const p of data) {
+      (g[p.lente] ??= []).push(p);
+    }
+    return g;
+  }, [data]);
 
   async function updateStatus(id: string, status: "aprovada" | "descartada" | "em_revisao") {
     const { data: u } = await supabase.auth.getUser();
@@ -56,19 +86,58 @@ function PerspectivasPage() {
     qc.invalidateQueries({ queryKey: ["perspectivas"] });
   }
 
+  const showRefFilter = escopoTipo === "cliente" || escopoTipo === "familia";
+
   return (
     <div>
-      <PageHeader
-        title="Perspectivas"
-        subtitle="Revisão humana das leituras geradas a partir das sessões"
-      />
-      <div className="p-8">
+      <PageHeader title="Perspectivas" subtitle="Revisão humana das leituras geradas a partir das sessões" />
+      <div className="p-8 space-y-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="min-w-[160px]">
+            <label className="mb-1 block text-xs text-muted-foreground">Escopo</label>
+            <Select value={escopoTipo} onValueChange={(v) => { setEscopoTipo(v as Escopo); setEscopoRefId("todos"); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="cliente">Cliente</SelectItem>
+                <SelectItem value="familia">Família</SelectItem>
+                <SelectItem value="empresa">Empresa</SelectItem>
+                <SelectItem value="competidor">Competidor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {showRefFilter && (
+            <div className="min-w-[220px]">
+              <label className="mb-1 block text-xs text-muted-foreground">Referência</label>
+              <Select value={escopoRefId} onValueChange={setEscopoRefId}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {(escopoTipo === "cliente" ? clients : familias).map((r: any) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.nome_fantasia ?? r.nome}{r.nivel ? ` (${r.nivel})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="min-w-[180px]">
+            <label className="mb-1 block text-xs text-muted-foreground">Lente</label>
+            <Select value={lente} onValueChange={setLente}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                {LENTES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList>
             {STATUS_TABS.map((s) => (
-              <TabsTrigger key={s.value} value={s.value}>
-                {s.label}
-              </TabsTrigger>
+              <TabsTrigger key={s.value} value={s.value}>{s.label}</TabsTrigger>
             ))}
           </TabsList>
 
@@ -81,46 +150,54 @@ function PerspectivasPage() {
                   Nada aqui ainda.
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {data.map((p: any) => (
-                    <article key={p.id} className="surface rounded-xl p-5">
-                      <header className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge variant="outline">{p.lente}</Badge>
-                        <Badge variant="secondary">escopo: {p.escopo_tipo}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          origem: {p.origem ?? "—"}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {new Date(p.created_at).toLocaleString("pt-BR")}
-                        </span>
-                      </header>
-                      <div className="space-y-2">
-                        {Object.entries(p.conteudo ?? {}).map(([k, v]) => (
-                          <div key={k} className="text-sm">
-                            <span className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
-                              {k}
-                            </span>
-                            <p className="whitespace-pre-wrap">{String(v ?? "")}</p>
-                          </div>
+                <div className="space-y-6">
+                  {Object.entries(grouped).map(([lenteKey, items]) => (
+                    <section key={lenteKey}>
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <Badge variant="outline">{lenteKey}</Badge>
+                        <span className="text-muted-foreground text-xs">{items.length}</span>
+                      </h3>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {items.map((p: any) => (
+                          <article key={p.id} className="surface rounded-xl p-4">
+                            <header className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge variant="secondary">{p.escopo_tipo}</Badge>
+                              <span className="text-xs text-muted-foreground">{p.origem ?? "—"}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                {new Date(p.created_at).toLocaleDateString("pt-BR")}
+                              </span>
+                            </header>
+                            <div className="space-y-1.5">
+                              {Object.entries(p.conteudo ?? {}).map(([k, v]) => (
+                                <div key={k} className="text-sm">
+                                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">{k}</span>
+                                  <p className="whitespace-pre-wrap">{String(v ?? "")}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
+                              {p.sessao_id && (
+                                <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                                  <Link to="/entrevistas/$id/sessao" params={{ id: p.sessao_id }}>
+                                    <ExternalLink className="h-3 w-3 mr-1" /> Sessão
+                                  </Link>
+                                </Button>
+                              )}
+                              {tab !== "aprovada" && tab !== "descartada" && (
+                                <div className="flex gap-2 ml-auto">
+                                  <Button size="sm" variant="outline" onClick={() => updateStatus(p.id, "descartada")}>
+                                    <X className="h-4 w-4 mr-1" /> Descartar
+                                  </Button>
+                                  <Button size="sm" onClick={() => updateStatus(p.id, "aprovada")}>
+                                    <Check className="h-4 w-4 mr-1" /> Aprovar
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </article>
                         ))}
                       </div>
-                      {tab !== "aprovada" && tab !== "descartada" && (
-                        <div className="flex gap-2 justify-end mt-4 pt-3 border-t border-border">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateStatus(p.id, "descartada")}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Descartar
-                          </Button>
-                          <Button size="sm" onClick={() => updateStatus(p.id, "aprovada")}>
-                            <Check className="h-4 w-4 mr-1" />
-                            Aprovar
-                          </Button>
-                        </div>
-                      )}
-                    </article>
+                    </section>
                   ))}
                 </div>
               )}
