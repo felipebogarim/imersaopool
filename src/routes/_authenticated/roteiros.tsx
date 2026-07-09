@@ -118,14 +118,30 @@ function RoteirosPage() {
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={() => removeCap(c.id)}><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </div>
-                    {c.orientacao && <p className="text-sm text-muted-foreground mb-2">{c.orientacao}</p>}
+                    {c.pergunta_abertura && (
+                      <blockquote className="border-l-4 border-primary/60 pl-3 py-1 my-2">
+                        <p className="text-sm font-medium">"{c.pergunta_abertura}"</p>
+                      </blockquote>
+                    )}
+                    {Array.isArray(c.pontos_escuta) && c.pontos_escuta.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Fique atento a</p>
+                        <ul className="list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
+                          {c.pontos_escuta.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {c.orientacao && <p className="text-xs text-muted-foreground mb-1"><span className="font-medium">Objetivo:</span> {c.orientacao}</p>}
                     {c.hipotese && <p className="text-xs italic text-muted-foreground mb-2">Hipótese: {c.hipotese}</p>}
                     {Array.isArray(c.campos_matriz) && c.campos_matriz.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {c.campos_matriz.map((f: string) => (
-                          <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
-                        ))}
-                      </div>
+                      <details className="mt-2">
+                        <summary className="text-[10px] uppercase tracking-wide text-muted-foreground cursor-pointer">Campos de fechamento</summary>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {c.campos_matriz.map((f: string) => (
+                            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
+                          ))}
+                        </div>
+                      </details>
                     )}
                   </li>
                 ))}
