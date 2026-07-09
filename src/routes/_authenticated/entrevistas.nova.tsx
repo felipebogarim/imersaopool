@@ -54,14 +54,6 @@ const TIPOS = [
   { value: "online", label: "Online" },
 ];
 
-const TEMAS = [
-  { value: "visao_geral", label: "Visão geral" },
-  { value: "visao_produtos", label: "Visão produtos" },
-  { value: "visao_competidores", label: "Visão competidores" },
-  { value: "visao_comercial", label: "Visão comercial" },
-  { value: "visao_mercado", label: "Visão mercado" },
-  { value: "outro", label: "Outro" },
-];
 
 function NovaEntrevista() {
   const navigate = useNavigate();
@@ -72,8 +64,6 @@ function NovaEntrevista() {
     perfil_outro: "",
     data: new Date().toISOString().slice(0, 10),
     tipo: "",
-    tema: "",
-    tema_outro: "",
     roteiro_id: "" as string,
   });
   const [vinculado, setVinculado] = useState(false);
@@ -110,9 +100,8 @@ function NovaEntrevista() {
     if (form.perfil === "outro" && !form.perfil_outro.trim())
       return toast.error("Especifique o perfil");
     if (!form.tipo) return toast.error("Selecione o tipo");
-    if (!form.tema) return toast.error("Selecione o tema");
-    if (form.tema === "outro" && !form.tema_outro.trim())
-      return toast.error("Especifique o tema");
+    if (vinculado && !clientId)
+      return toast.error("Selecione o cliente vinculado");
     if (vinculado && !clientId)
       return toast.error("Selecione o cliente vinculado");
 
@@ -126,8 +115,6 @@ function NovaEntrevista() {
       perfil_outro: form.perfil === "outro" ? form.perfil_outro : null,
       data_entrevista: form.data || null,
       tipo: form.tipo,
-      tema: form.tema,
-      tema_outro: form.tema === "outro" ? form.tema_outro : null,
       client_id: vinculado ? clientId : null,
       roteiro_id: form.roteiro_id || null,
       entrevistador_nome: userData.user?.email ?? "—",
@@ -207,33 +194,6 @@ function NovaEntrevista() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Tema *</Label>
-              <Select
-                value={form.tema}
-                onValueChange={(v) => setForm({ ...form, tema: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TEMAS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {form.tema === "outro" && (
-              <div className="md:col-span-2">
-                <Label>Especificar tema *</Label>
-                <Input
-                  value={form.tema_outro}
-                  onChange={(e) => setForm({ ...form, tema_outro: e.target.value })}
-                />
-              </div>
-            )}
             <div className="md:col-span-2">
               <Label>Roteiro (opcional)</Label>
               <Select
