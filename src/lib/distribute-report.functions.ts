@@ -19,7 +19,7 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
 
     const { data: capitulos, error: cErr } = await supabase
       .from("capitulos")
-      .select("id, codigo, titulo, orientacao, pergunta_abertura")
+      .select("id, codigo, titulo, orientacao, pergunta_abertura, campos_matriz")
       .eq("roteiro_id", interview.roteiro_id)
       .order("ordem");
     if (cErr) throw new Error(cErr.message);
