@@ -272,9 +272,10 @@ function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Perspectivas na lente "ameaça"</p>
           </div>
         </div>
-
-        {isLoading && <p className="text-xs text-muted-foreground text-center">Carregando indicadores...</p>}
+        </>
+        )}
       </div>
+
     </div>
   );
 }
