@@ -46,6 +46,7 @@ function EntrevistaDetail() {
         subtitle={`${CLASSIF[data.entrevistado_classificacao] ?? data.entrevistado_classificacao}${data.empresa_nome ? " • " + data.empresa_nome : ""}`}
         actions={
           <div className="flex gap-2">
+            <SessionNotes entityType="interview" entityId={id} />
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
             <Button variant="destructive" onClick={remove}><Trash2 className="h-4 w-4 mr-1" /> Excluir</Button>
           </div>
