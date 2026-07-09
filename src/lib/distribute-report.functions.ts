@@ -25,13 +25,18 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!capitulos?.length) throw new Error("Roteiro sem capítulos");
 
-    // 1. Prepara a entrada (texto/áudio→transcrição / PDF direto para o LLM)
+    // 1. Prepara a entrada (texto/áudio→transcrição / PDF direto / DOCX extraído)
     const mime = data.mime || "";
     const isAudio = mime.startsWith("audio/") || /\.(mp3|wav|m4a|webm|ogg|aac|flac)$/i.test(data.filename);
     const isPlain = mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(data.filename);
     const isPdf = mime === "application/pdf" || /\.pdf$/i.test(data.filename);
-    if (!isAudio && !isPlain && !isPdf) {
-      throw new Error("Formato não suportado. Envie PDF, TXT/MD/CSV ou áudio.");
+    const isDocx = /\.docx$/i.test(data.filename) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const isDoc = !isDocx && (/\.doc$/i.test(data.filename) || mime === "application/msword");
+    if (isDoc) {
+      throw new Error("Formato .doc (Word 97-2003) não suportado. Salve como .docx ou PDF antes de enviar.");
+    }
+    if (!isAudio && !isPlain && !isPdf && !isDocx) {
+      throw new Error("Formato não suportado. Envie PDF, DOCX, TXT/MD/CSV ou áudio.");
     }
 
     let sourceText = "";
@@ -53,6 +58,28 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     } else if (isPlain) {
       sourceText = atob(data.base64).trim();
       if (!sourceText) throw new Error("Arquivo de texto vazio");
+    } else if (isDocx) {
+      const { unzipSync, strFromU8 } = await import("fflate");
+      const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
+      let files: Record<string, Uint8Array>;
+      try { files = unzipSync(bin, { filter: (f) => f.name === "word/document.xml" }); }
+      catch { throw new Error("DOCX inválido ou corrompido"); }
+      const xml = files["word/document.xml"] ? strFromU8(files["word/document.xml"]) : "";
+      if (!xml) throw new Error("Não foi possível ler o conteúdo do DOCX");
+      sourceText = xml
+        .replace(/<w:tab\/?>/g, "\t")
+        .replace(/<w:br\/?>/g, "\n")
+        .split(/<\/w:p>/)
+        .map((para) => {
+          const parts = [...para.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]);
+          return parts.join("")
+            .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+        })
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      if (!sourceText) throw new Error("DOCX sem texto extraível");
     }
 
     // 2. Distribui em capítulos via LLM (chamada única — PDF vai direto)

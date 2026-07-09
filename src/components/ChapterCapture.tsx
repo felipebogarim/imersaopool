@@ -89,7 +89,7 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.txt,.md,.csv,audio/*"
+              accept=".pdf,.docx,.txt,.md,.csv,audio/*"
               className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
             />
