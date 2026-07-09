@@ -1,10 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import {
   INTERVIEW_SECTIONS,
@@ -51,6 +51,11 @@ function EntrevistaDetail() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+            {data.roteiro_id && (
+              <Button variant="outline" asChild>
+                <Link to="/entrevistas/$id/sessao" params={{ id }}><ClipboardList className="h-4 w-4 mr-1" /> Capítulos</Link>
+              </Button>
+            )}
             <Button variant="destructive" onClick={remove}><Trash2 className="h-4 w-4 mr-1" /> Excluir</Button>
           </div>
         }

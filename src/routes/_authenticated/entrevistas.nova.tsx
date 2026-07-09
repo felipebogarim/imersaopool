@@ -74,10 +74,17 @@ function NovaEntrevista() {
     tipo: "",
     tema: "",
     tema_outro: "",
+    roteiro_id: "" as string,
   });
   const [vinculado, setVinculado] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
+
+  const { data: roteiros = [] } = useQuery({
+    queryKey: ["roteiros-ativos"],
+    queryFn: async () =>
+      (await supabase.from("roteiros").select("id, nome, versao").eq("ativo", true).order("nome")).data ?? [],
+  });
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select-all"],
@@ -122,6 +129,7 @@ function NovaEntrevista() {
       tema: form.tema,
       tema_outro: form.tema === "outro" ? form.tema_outro : null,
       client_id: vinculado ? clientId : null,
+      roteiro_id: form.roteiro_id || null,
       entrevistador_nome: userData.user?.email ?? "—",
       respostas: {},
     } as any);
@@ -226,7 +234,28 @@ function NovaEntrevista() {
                 />
               </div>
             )}
+            <div className="md:col-span-2">
+              <Label>Roteiro (opcional)</Label>
+              <Select
+                value={form.roteiro_id || "none"}
+                onValueChange={(v) => setForm({ ...form, roteiro_id: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem roteiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem roteiro</SelectItem>
+                  {roteiros.map((r: any) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome} (v{r.versao})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ative um roteiro para capturar a entrevista por capítulos estruturados.
+              </p>
+            </div>
           </div>
+
 
           <div className="pt-2 border-t border-border">
             <div className="flex items-center justify-between py-2">
