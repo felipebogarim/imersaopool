@@ -91,15 +91,25 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
       })
       .join("\n");
 
-    const promptHeader = `Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo (${isPdf ? "no PDF em anexo" : "no texto abaixo"}) e uma lista de CAPÍTULOS de um roteiro. Sua tarefa: distribuir o conteúdo entre os capítulos e, para cada capítulo com campos_sintese, preencher também uma síntese objetiva.
+    const promptHeader = `Você é um analista de estratégia comercial sênior, especialista no mercado de iluminação decorativa B2B. Sua tarefa NÃO é transcrever — é INTERPRETAR.
 
-Regras:
-- Retorne SOMENTE um objeto JSON no formato { "codigo_do_capitulo": { "texto": "...", "sintese": { "campo": "valor" } } }.
-- Use exatamente os códigos listados como chave.
-- Em "sintese", use apenas os campos listados em [campos_sintese] do capítulo, com respostas curtas e objetivas. Se não houver informação, use "".
-- Se um capítulo não tiver conteúdo, use { "texto": "", "sintese": {} }.
-- SEMPRE inclua o capítulo "informacoes_adicionais" e coloque nele TUDO que não se encaixou nos demais.
-- Português natural, sem markdown, sem inventar informação. Preserve nomes, números e detalhes no "texto".
+Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo (${isPdf ? "no PDF em anexo" : "no texto abaixo"}) e uma lista de CAPÍTULOS de um roteiro. Para cada capítulo, distribua o conteúdo pertinente e produza:
+
+1. "leitura_estrategica" — PROSA CORRIDA, 2 a 4 parágrafos curtos, como se estivesse resumindo para um gestor que não participou da conversa e precisa tomar decisão. A PRIMEIRA frase de cada capítulo deve funcionar como manchete: vai direto ao achado mais importante, sem preâmbulo. Traduza gírias, hesitações e frases truncadas para linguagem clara. Não copie fala literal como se fosse resposta — extraia o significado. Não repita aqui o que já está nos campos da síntese objetiva; a leitura é o raciocínio e o contexto por trás dos campos. Se não houver conteúdo substantivo alocado ao capítulo, use exatamente "Sem conteúdo relevante capturado nesta sessão".
+2. "sintese" — objeto com os campos listados em [campos_sintese] do capítulo, respostas curtas e objetivas. Campo sem informação = "".
+3. "evidencia" — UMA citação curta (até ~25 palavras) do próprio entrevistado que sustenta a leitura. Sem aspas extras, sem "né?"/"entendeu?". Vazio se não houver.
+
+IGNORE COMPLETAMENTE (nunca vira conteúdo):
+- Saudações, bate-papo pessoal, comentários sobre a dinâmica da entrevista ("isso vai ficar gravado?").
+- PERGUNTAS OU FALAS DO ENTREVISTADOR — elas só direcionam a conversa, nunca são conteúdo. Se a transcrição não diferencia interlocutores, use julgamento: perguntas abertas dirigidas ao respondente são do entrevistador.
+- Perguntas retóricas ou de confirmação do entrevistado ("né?", "entendeu?", recapitulações sem informação nova).
+- Ruído de transcrição automática que não muda o sentido.
+
+Formato de retorno — SOMENTE um objeto JSON:
+{ "codigo_do_capitulo": { "leitura_estrategica": "...", "sintese": { "campo": "valor" }, "evidencia": "..." } }
+
+- Use exatamente os códigos listados como chave. Português natural, sem markdown, sem inventar informação. Preserve nomes e números.
+- SEMPRE inclua "informacoes_adicionais" com o que não se encaixou nos demais (mesmas regras de interpretação).
 
 Capítulos disponíveis:
 ${capList}`;
