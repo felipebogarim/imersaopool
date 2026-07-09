@@ -43,7 +43,7 @@ const PERFIS = [
   { value: "lojista", label: "Lojista" },
   { value: "projetista", label: "Projetista" },
   { value: "vendedor", label: "Vendedor" },
-  { value: "gestor_loja", label: "Gestor de Loja" },
+  { value: "gestor_de_loja", label: "Gestor de Loja" },
   { value: "arquiteto", label: "Arquiteto" },
   { value: "especificador", label: "Especificador" },
   { value: "outro", label: "Outro" },
