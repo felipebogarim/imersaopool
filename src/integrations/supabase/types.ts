@@ -1628,6 +1628,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          leitura_estrategica: string | null
           origem: string
           resposta_texto: string | null
           revisado_em: string | null
@@ -1642,6 +1643,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
+          leitura_estrategica?: string | null
           origem?: string
           resposta_texto?: string | null
           revisado_em?: string | null
@@ -1656,6 +1658,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
+          leitura_estrategica?: string | null
           origem?: string
           resposta_texto?: string | null
           revisado_em?: string | null
