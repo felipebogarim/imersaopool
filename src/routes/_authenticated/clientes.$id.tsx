@@ -124,7 +124,7 @@ function ClientDetail() {
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5" /> Perspectivas aprovadas
+                <Sparkles className="h-3.5 w-3.5" /> Perspectivas aprovadas {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
               </h3>
               <Badge variant="outline">{perspectivas.length}</Badge>
             </div>
