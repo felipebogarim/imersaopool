@@ -255,9 +255,12 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
       setOrientacao(editing.orientacao ?? ""); setHipotese(editing.hipotese ?? "");
       setOrdem(editing.ordem); setLente(editing.lente_default ?? "percepcao_marca");
       setCamposStr((editing.campos_matriz ?? []).join(", "));
+      setPerguntaAbertura(editing.pergunta_abertura ?? "");
+      setPontosEscutaStr((editing.pontos_escuta ?? []).join("\n"));
     } else {
       setCodigo(""); setTitulo(""); setOrientacao(""); setHipotese("");
       setOrdem((nextOrdem ?? 0) + 1); setLente("percepcao_marca"); setCamposStr("");
+      setPerguntaAbertura(""); setPontosEscutaStr("");
     }
   }, [open, editing, nextOrdem]);
 
