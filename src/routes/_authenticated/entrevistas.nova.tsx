@@ -152,7 +152,7 @@ function NovaEntrevista() {
 
     setSaving(true);
     const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("interviews").insert({
+    const { data: inserted, error } = await supabase.from("interviews").insert({
       created_by: userData.user?.id,
       entrevistado_nome: form.nome,
       entrevistado_classificacao: form.perfil,
@@ -164,11 +164,12 @@ function NovaEntrevista() {
       roteiro_id: form.roteiro_id || null,
       entrevistador_nome: userData.user?.email ?? "—",
       respostas: {},
-    } as any);
+    } as any).select("id").single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["interviews"] });
     toast.success("Entrevista registrada");
-    navigate({ to: "/entrevistas" });
+    navigate({ to: "/entrevistas/$id", params: { id: inserted!.id } });
   }
 
   return (
