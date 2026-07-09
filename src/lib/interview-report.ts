@@ -23,7 +23,7 @@ export async function exportInterviewPdf(interviewId: string) {
       : Promise.resolve({ data: [] as any[] }),
     supabase
       .from("sessao_capitulos")
-      .select("capitulo_id, resposta_texto, sintese")
+      .select("capitulo_id, resposta_texto, leitura_estrategica, sintese")
       .eq("sessao_id", interviewId),
     supabase
       .from("session_notes")
