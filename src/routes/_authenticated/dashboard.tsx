@@ -55,6 +55,9 @@ function AlertStat({ label, value, tone }: { label: string; value: number; tone:
       <p className={`text-2xl font-bold ${toneClass}`}>{value}</p>
     </div>
   );
+}
+
+
 
 
 const IMM_STATUS_ORDER = ["planejada", "antes_visita", "em_visita", "pos_visita", "concluida"];
