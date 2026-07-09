@@ -44,7 +44,7 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
     queryFn: async () =>
     (await supabase
         .from("sessao_capitulos")
-        .select("id, capitulo_id, resposta_texto, origem, status_revisao, sintese")
+        .select("id, capitulo_id, resposta_texto, leitura_estrategica, origem, status_revisao, sintese")
         .eq("sessao_id", sessaoId)).data ?? [],
   });
 
