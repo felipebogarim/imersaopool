@@ -30,6 +30,7 @@ function RoteirosPage() {
   const [creatingRoteiro, setCreatingRoteiro] = useState(false);
   const [editingCap, setEditingCap] = useState<any | null>(null);
   const [creatingCapFor, setCreatingCapFor] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["roteiros-with-caps"],
