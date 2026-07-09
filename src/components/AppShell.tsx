@@ -191,12 +191,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <div className="border-b border-border px-8 py-6 flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+    <div className="border-b border-border px-4 sm:px-8 py-5 sm:py-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
+      <div className="min-w-0">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{title}</h1>
+        {subtitle && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{subtitle}</p>}
       </div>
-      {actions}
+      {actions && <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">{actions}</div>}
     </div>
   );
 }
+

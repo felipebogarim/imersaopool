@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, ExternalLink, Download } from "lucide-react";
+import { Check, X, ExternalLink, Download, Lightbulb } from "lucide-react";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
+
 import { exportPerspectivasCsv } from "@/lib/export-compilation";
 
 import { toast } from "sonner";
@@ -158,12 +160,15 @@ function PerspectivasPage() {
           {STATUS_TABS.map((s) => (
             <TabsContent key={s.value} value={s.value} className="mt-6">
               {isLoading ? (
-                <p className="text-muted-foreground">Carregando...</p>
+                <LoadingRows rows={4} />
               ) : data.length === 0 ? (
-                <div className="surface rounded-xl p-8 text-center text-sm text-muted-foreground">
-                  Nada aqui ainda.
-                </div>
+                <EmptyState
+                  icon={Lightbulb}
+                  title="Nada aqui ainda"
+                  description="Ajuste os filtros ou gere novas perspectivas a partir das sessões de entrevista."
+                />
               ) : (
+
                 <div className="space-y-6">
                   {Object.entries(grouped).map(([lenteKey, items]) => (
                     <section key={lenteKey}>
