@@ -64,8 +64,6 @@ function NovaEntrevista() {
     perfil_outro: "",
     data: new Date().toISOString().slice(0, 10),
     tipo: "",
-    tema: "",
-    tema_outro: "",
     roteiro_id: "" as string,
   });
   const [vinculado, setVinculado] = useState(false);
