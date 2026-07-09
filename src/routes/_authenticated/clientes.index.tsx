@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EntityKebab } from "@/components/EntityKebab";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, X, Download } from "lucide-react";
+import { Plus, Search, X, Download, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ClientGroupManagerDialog } from "@/components/ClientGroupManagerDialog";
 import { exportToCsv } from "@/lib/export-csv";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — PoolFlux" }] }),
@@ -161,9 +162,16 @@ function ClientsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-6"><LoadingRows rows={5} /></td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-6">
+                  <EmptyState
+                    icon={Users}
+                    title={clients.length === 0 ? "Nenhum cliente ainda" : "Nenhum cliente encontrado"}
+                    description={clients.length === 0 ? "Cadastre o primeiro cliente para começar." : "Ajuste os filtros ou a busca."}
+                    action={clients.length === 0 ? <Button asChild size="sm"><Link to="/clientes/novo"><Plus className="h-4 w-4 mr-1" /> Novo cliente</Link></Button> : hasFilters ? <Button size="sm" variant="ghost" onClick={clearFilters}><X className="h-4 w-4 mr-1" /> Limpar filtros</Button> : undefined}
+                  />
+                </td></tr>
               ) : filtered.map((c: any) => (
                 <tr key={c.id} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{c.codigo_erp || "—"}</td>

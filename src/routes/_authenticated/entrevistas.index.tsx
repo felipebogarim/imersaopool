@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, MessageSquare } from "lucide-react";
 import { CLASSIFICACOES } from "@/lib/interview-questions";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/")({
   head: () => ({ meta: [{ title: "Entrevistas — PoolFlux" }] }),
@@ -37,13 +38,14 @@ function EntrevistasIndex() {
       />
       <div className="p-8">
         {isLoading ? (
-          <p className="text-muted-foreground">Carregando...</p>
+          <LoadingRows rows={4} />
         ) : data.length === 0 ? (
-          <div className="surface rounded-xl p-12 text-center">
-            <h3 className="font-semibold mb-1">Nenhuma entrevista ainda</h3>
-            <p className="text-sm text-muted-foreground mb-4">Comece a estruturar as conversas de campo.</p>
-            <Button asChild><Link to="/entrevistas/nova"><Plus className="h-4 w-4 mr-1" /> Nova entrevista</Link></Button>
-          </div>
+          <EmptyState
+            icon={MessageSquare}
+            title="Nenhuma entrevista ainda"
+            description="Comece a estruturar as conversas de campo."
+            action={<Button asChild><Link to="/entrevistas/nova"><Plus className="h-4 w-4 mr-1" /> Nova entrevista</Link></Button>}
+          />
         ) : (
           <div className="grid gap-3">
             {data.map((e: any) => (
