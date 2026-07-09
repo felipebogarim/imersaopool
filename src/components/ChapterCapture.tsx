@@ -143,7 +143,7 @@ function CapituloBlock({
       capitulo_id: capitulo.id,
       resposta_texto: texto,
       origem: isIaDraft ? "ia" : (existing?.origem ?? "humano"),
-      status_revisao: "confirmado",
+      status_revisao: "revisado",
     };
     let error;
     if (existing?.id) {
@@ -168,7 +168,7 @@ function CapituloBlock({
             {isIaDraft && <Badge variant="secondary" className="text-[10px]"><Sparkles className="h-3 w-3 mr-1" /> sugestão IA</Badge>}
           </div>
         </div>
-        {existing && existing.status_revisao === "confirmado" && (
+        {existing && existing.status_revisao === "revisado" && (
           <Badge variant="secondary" className="shrink-0">
             <Check className="h-3 w-3 mr-1" /> confirmado
           </Badge>
