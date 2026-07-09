@@ -45,6 +45,18 @@ function Bar({ label, value, total }: { label: string; value: number; total: num
   );
 }
 
+function AlertStat({ label, value, tone }: { label: string; value: number; tone: "destructive" | "warning" | "muted" }) {
+  const toneClass =
+    tone === "destructive" ? "text-destructive" :
+    tone === "warning" ? "text-warning" : "text-muted-foreground";
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-bold ${toneClass}`}>{value}</p>
+    </div>
+  );
+
+
 const IMM_STATUS_ORDER = ["planejada", "antes_visita", "em_visita", "pos_visita", "concluida"];
 
 function Dashboard() {
