@@ -270,9 +270,12 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
     setSaving(true);
     try {
       const campos = camposStr.split(",").map(s => s.trim()).filter(Boolean);
+      const pontos = pontosEscutaStr.split("\n").map(s => s.trim()).filter(Boolean);
       const payload = {
         codigo, titulo, orientacao: orientacao || null, hipotese: hipotese || null,
         ordem, lente_default: lente, campos_matriz: campos as any,
+        pergunta_abertura: perguntaAbertura || null,
+        pontos_escuta: pontos.length ? pontos : null,
       };
       if (editing) {
         const { error } = await supabase.from("capitulos").update(payload).eq("id", editing.id);
