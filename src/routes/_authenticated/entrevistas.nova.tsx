@@ -59,6 +59,7 @@ const TIPOS = [
 
 function NovaEntrevista() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -71,8 +72,33 @@ function NovaEntrevista() {
   const [vinculado, setVinculado] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
+  const [repOpen, setRepOpen] = useState(false);
+  const [repDialogOpen, setRepDialogOpen] = useState(false);
+  const [newRep, setNewRep] = useState({ nome: "", email: "", telefone: "", regiao: "" });
+  const [savingRep, setSavingRep] = useState(false);
 
   const [roteiroManual, setRoteiroManual] = useState(false);
+
+  const { data: representantes = [] } = useQuery({
+    queryKey: ["reps-select"],
+    queryFn: async () =>
+      (await supabase.from("representatives").select("id, nome, email, telefone, regiao").order("nome")).data ?? [],
+    enabled: form.perfil === "representante",
+  });
+
+  async function saveNewRep() {
+    if (!newRep.nome.trim()) return toast.error("Informe o nome");
+    setSavingRep(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from("representatives").insert({ ...newRep, created_by: userData.user?.id } as any).select("id, nome").single();
+    setSavingRep(false);
+    if (error) return toast.error(error.message);
+    toast.success("Representante cadastrado");
+    setForm((f) => ({ ...f, nome: data!.nome }));
+    setNewRep({ nome: "", email: "", telefone: "", regiao: "" });
+    setRepDialogOpen(false);
+    qc.invalidateQueries({ queryKey: ["reps-select"] });
+  }
 
   const { data: roteiros = [] } = useQuery({
     queryKey: ["roteiros-ativos"],
