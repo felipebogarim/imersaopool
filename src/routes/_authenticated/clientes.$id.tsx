@@ -21,6 +21,29 @@ function ClientDetail() {
     queryKey: ["client-immersions", id],
     queryFn: async () => (await supabase.from("immersions").select("id, titulo, status, data_visita, created_at").eq("client_id", id).order("created_at", { ascending: false })).data ?? [],
   });
+  const immIds = imms.map((i: any) => i.id);
+  const { data: perspectivas = [] } = useQuery({
+    queryKey: ["client-perspectivas", id, immIds.join(",")],
+    enabled: immIds.length > 0,
+    queryFn: async () => (await supabase
+      .from("perspectivas")
+      .select("id, lente, conteudo, status, created_at, escopo_ref_id")
+      .eq("status", "aprovada")
+      .in("escopo_ref_id", immIds)
+      .order("created_at", { ascending: false })
+      .limit(20)).data ?? [],
+  });
+  const { data: acoes = [] } = useQuery({
+    queryKey: ["client-acoes", id, immIds.join(",")],
+    enabled: immIds.length > 0,
+    queryFn: async () => (await supabase
+      .from("action_plans")
+      .select("id, acao, prioridade, status, prazo, immersion_id")
+      .in("immersion_id", immIds)
+      .in("status", ["pendente", "em_andamento"])
+      .order("prazo", { ascending: true, nullsFirst: false })
+      .limit(20)).data ?? [],
+  });
   const { data: groupPeers = [] } = useQuery({
     queryKey: ["group-peers-detail", client?.grupo_nome, id],
     enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
