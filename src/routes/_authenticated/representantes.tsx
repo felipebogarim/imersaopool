@@ -88,6 +88,7 @@ function RepsPage() {
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3">Nome</th>
+                <th className="text-left px-4 py-3">Representação</th>
                 <th className="text-left px-4 py-3">E-mail</th>
                 <th className="text-left px-4 py-3">Telefone</th>
                 <th className="text-left px-4 py-3">Região</th>
@@ -95,10 +96,11 @@ function RepsPage() {
               </tr>
             </thead>
             <tbody>
-              {reps.length === 0 ? <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">Nenhum representante cadastrado.</td></tr> :
+              {reps.length === 0 ? <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum representante cadastrado.</td></tr> :
                 reps.map((r: any) => (
                   <tr key={r.id} className="border-t border-border">
                     <td className="px-4 py-3 font-medium">{r.nome}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{r.representacao || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.telefone || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.regiao || "—"}</td>
