@@ -115,8 +115,6 @@ function NovaEntrevista() {
       perfil_outro: form.perfil === "outro" ? form.perfil_outro : null,
       data_entrevista: form.data || null,
       tipo: form.tipo,
-      tema: form.tema,
-      tema_outro: form.tema === "outro" ? form.tema_outro : null,
       client_id: vinculado ? clientId : null,
       roteiro_id: form.roteiro_id || null,
       entrevistador_nome: userData.user?.email ?? "—",
