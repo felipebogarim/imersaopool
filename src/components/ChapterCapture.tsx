@@ -143,7 +143,7 @@ function CapituloBlock({
       capitulo_id: capitulo.id,
       resposta_texto: texto,
       origem: isIaDraft ? "ia" : (existing?.origem ?? "humano"),
-      status_revisao: "confirmado",
+      status_revisao: "revisado",
     };
     let error;
     if (existing?.id) {
