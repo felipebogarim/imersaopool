@@ -74,10 +74,17 @@ function NovaEntrevista() {
     tipo: "",
     tema: "",
     tema_outro: "",
+    roteiro_id: "" as string,
   });
   const [vinculado, setVinculado] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
+
+  const { data: roteiros = [] } = useQuery({
+    queryKey: ["roteiros-ativos"],
+    queryFn: async () =>
+      (await supabase.from("roteiros").select("id, nome, versao").eq("ativo", true).order("nome")).data ?? [],
+  });
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select-all"],
