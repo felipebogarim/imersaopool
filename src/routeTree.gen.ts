@@ -22,6 +22,7 @@ import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
@@ -106,6 +107,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCompilacoesRoute =
+  AuthenticatedCompilacoesRouteImport.update({
+    id: '/compilacoes',
+    path: '/compilacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
   id: '/agentes',
   path: '/agentes',
@@ -210,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
+  '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/nda': typeof AuthenticatedNdaRoute
@@ -241,6 +249,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
+  '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/nda': typeof AuthenticatedNdaRoute
@@ -274,6 +283,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
+  '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/agentes'
+    | '/compilacoes'
     | '/dashboard'
     | '/empresas'
     | '/nda'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/agentes'
+    | '/compilacoes'
     | '/dashboard'
     | '/empresas'
     | '/nda'
@@ -370,6 +382,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
+    | '/_authenticated/compilacoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
     | '/_authenticated/nda'
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/compilacoes': {
+      id: '/_authenticated/compilacoes'
+      path: '/compilacoes'
+      fullPath: '/compilacoes'
+      preLoaderRoute: typeof AuthenticatedCompilacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/agentes': {
@@ -664,6 +684,7 @@ const AuthenticatedEntrevistasIdRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
+  AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
@@ -689,6 +710,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
+  AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
@@ -723,13 +745,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

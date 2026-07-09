@@ -103,7 +103,7 @@ function CompilacoesPage() {
 
   return (
     <div>
-      <PageHeader title="Compilações IA" description="Sinteses executivas a partir das perspectivas aprovadas." />
+      <PageHeader title="Compilações IA" subtitle="Sinteses executivas a partir das perspectivas aprovadas." />
 
       <div className="grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
         <div>
