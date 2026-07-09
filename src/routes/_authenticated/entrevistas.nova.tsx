@@ -72,9 +72,29 @@ function NovaEntrevista() {
 
   const { data: roteiros = [] } = useQuery({
     queryKey: ["roteiros-ativos"],
+  const [roteiroManual, setRoteiroManual] = useState(false);
+
+  const { data: roteiros = [] } = useQuery({
+    queryKey: ["roteiros-ativos"],
     queryFn: async () =>
       (await supabase.from("roteiros").select("id, nome, versao").eq("ativo", true).order("nome")).data ?? [],
   });
+
+  const { data: roteiroPerfis = [] } = useQuery({
+    queryKey: ["roteiro-perfis"],
+    queryFn: async () =>
+      (await supabase.from("roteiro_perfis").select("roteiro_id, perfil")).data ?? [],
+  });
+
+  // Auto-seleciona roteiro ao escolher perfil (a menos que o usuário já tenha escolhido manualmente)
+  useEffect(() => {
+    if (!form.perfil || roteiroManual) return;
+    const match = roteiroPerfis.find((rp: any) => rp.perfil === form.perfil);
+    if (match && match.roteiro_id !== form.roteiro_id) {
+      setForm((f) => ({ ...f, roteiro_id: match.roteiro_id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.perfil, roteiroPerfis]);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select-all"],
