@@ -39,7 +39,7 @@ function RoteirosPage() {
       const ids = (rot ?? []).map((r: any) => r.id);
       if (!ids.length) return [];
       const { data: caps } = await supabase.from("capitulos")
-        .select("id, roteiro_id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz")
+        .select("id, roteiro_id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz, pergunta_abertura, pontos_escuta")
         .in("roteiro_id", ids).order("ordem");
       return (rot ?? []).map((r: any) => ({ ...r, capitulos: (caps ?? []).filter((c: any) => c.roteiro_id === r.id) }));
     },
