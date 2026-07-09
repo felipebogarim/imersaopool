@@ -109,8 +109,13 @@ export async function exportInterviewPdf(interviewId: string) {
     y += 14;
     write(`${cap.ordem}. ${cap.titulo}`, 14, "bold", [10, 20, 34]);
     const r: any = respByCap.get(cap.id);
-    if (r?.resposta_texto) {
-      write("Anotações", 10, "bold", [80, 80, 80]);
+    if (r?.leitura_estrategica?.trim()) {
+      write("Leitura estratégica", 10, "bold", [80, 80, 80]);
+      write(String(r.leitura_estrategica), 10);
+      y += 4;
+    }
+    if (r?.resposta_texto?.trim()) {
+      write("Evidência / anotações", 10, "bold", [80, 80, 80]);
       write(String(r.resposta_texto), 10);
       y += 4;
     }
