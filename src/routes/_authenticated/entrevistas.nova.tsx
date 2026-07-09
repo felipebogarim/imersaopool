@@ -178,12 +178,81 @@ function NovaEntrevista() {
         <div className="surface rounded-xl p-6 space-y-4">
           <div>
             <Label>Nome do entrevistado *</Label>
-            <Input
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-              placeholder="Nome completo"
-            />
+            {form.perfil === "representante" ? (
+              <Popover open={repOpen} onOpenChange={setRepOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    {form.nome || "Selecione um representante"}
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar representante..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum representante encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {representantes.map((r: any) => (
+                          <CommandItem
+                            key={r.id}
+                            value={r.nome}
+                            onSelect={() => {
+                              setForm((f) => ({ ...f, nome: r.nome }));
+                              setRepOpen(false);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", form.nome === r.nome ? "opacity-100" : "opacity-0")} />
+                            <div className="flex flex-col">
+                              <span>{r.nome}</span>
+                              {r.regiao && <span className="text-xs text-muted-foreground">{r.regiao}</span>}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => {
+                            setRepOpen(false);
+                            setRepDialogOpen(true);
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Cadastrar novo representante
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Input
+                value={form.nome}
+                onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                placeholder="Nome completo"
+              />
+            )}
           </div>
+
+          <Dialog open={repDialogOpen} onOpenChange={setRepDialogOpen}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Novo representante</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Nome *</Label><Input value={newRep.nome} onChange={(e) => setNewRep({ ...newRep, nome: e.target.value })} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>E-mail</Label><Input type="email" value={newRep.email} onChange={(e) => setNewRep({ ...newRep, email: e.target.value })} /></div>
+                  <div><Label>Telefone</Label><Input value={newRep.telefone} onChange={(e) => setNewRep({ ...newRep, telefone: e.target.value })} /></div>
+                </div>
+                <div><Label>Região</Label><Input value={newRep.regiao} onChange={(e) => setNewRep({ ...newRep, regiao: e.target.value })} /></div>
+                <Button onClick={saveNewRep} disabled={savingRep} className="w-full">{savingRep ? "Salvando..." : "Cadastrar"}</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
