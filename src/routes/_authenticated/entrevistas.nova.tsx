@@ -54,14 +54,6 @@ const TIPOS = [
   { value: "online", label: "Online" },
 ];
 
-const TEMAS = [
-  { value: "visao_geral", label: "Visão geral" },
-  { value: "visao_produtos", label: "Visão produtos" },
-  { value: "visao_competidores", label: "Visão competidores" },
-  { value: "visao_comercial", label: "Visão comercial" },
-  { value: "visao_mercado", label: "Visão mercado" },
-  { value: "outro", label: "Outro" },
-];
 
 function NovaEntrevista() {
   const navigate = useNavigate();
