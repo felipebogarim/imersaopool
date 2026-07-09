@@ -5,11 +5,12 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2, Compass } from "lucide-react";
+import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2, Compass, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { shareImmersionByEmail, shareImmersionByWhatsapp } from "@/lib/immersion-report";
 import { EmptyState, LoadingRows } from "@/components/EmptyState";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/imersoes/")({
   head: () => ({ meta: [{ title: "Imersões — PoolFlux" }] }),
