@@ -802,6 +802,7 @@ export type Database = {
           representative_id: string | null
           representative_token: string | null
           representative_token_expires_at: string | null
+          roteiro_id: string | null
           status: Database["public"]["Enums"]["immersion_status"]
           titulo: string
           updated_at: string
@@ -818,6 +819,7 @@ export type Database = {
           representative_id?: string | null
           representative_token?: string | null
           representative_token_expires_at?: string | null
+          roteiro_id?: string | null
           status?: Database["public"]["Enums"]["immersion_status"]
           titulo: string
           updated_at?: string
@@ -834,6 +836,7 @@ export type Database = {
           representative_id?: string | null
           representative_token?: string | null
           representative_token_expires_at?: string | null
+          roteiro_id?: string | null
           status?: Database["public"]["Enums"]["immersion_status"]
           titulo?: string
           updated_at?: string
@@ -858,6 +861,13 @@ export type Database = {
             columns: ["representative_id"]
             isOneToOne: false
             referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immersions_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
             referencedColumns: ["id"]
           },
         ]
