@@ -17,9 +17,16 @@ function ClientDetail() {
     queryKey: ["client", id],
     queryFn: async () => (await supabase.from("clients").select("*, representative:representatives(nome)").eq("id", id).single()).data,
   });
+  const { data: groupPeers = [] } = useQuery({
+    queryKey: ["group-peers-detail", client?.grupo_nome, id],
+    enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
+    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome as string).neq("id", id)).data ?? [],
+  });
+  const groupClientIds = [id, ...groupPeers.map((p: any) => p.id)];
+  const isGroup = groupClientIds.length > 1;
   const { data: imms = [] } = useQuery({
-    queryKey: ["client-immersions", id],
-    queryFn: async () => (await supabase.from("immersions").select("id, titulo, status, data_visita, created_at").eq("client_id", id).order("created_at", { ascending: false })).data ?? [],
+    queryKey: ["client-immersions", id, groupClientIds.join(",")],
+    queryFn: async () => (await supabase.from("immersions").select("id, titulo, status, data_visita, created_at, client_id, client:clients(nome_fantasia)").in("client_id", groupClientIds).order("created_at", { ascending: false })).data ?? [],
   });
   const immIds = imms.map((i: any) => i.id);
   const { data: perspectivas = [] } = useQuery({
@@ -44,11 +51,7 @@ function ClientDetail() {
       .order("prazo", { ascending: true, nullsFirst: false })
       .limit(20)).data ?? [],
   });
-  const { data: groupPeers = [] } = useQuery({
-    queryKey: ["group-peers-detail", client?.grupo_nome, id],
-    enabled: !!client?.pertence_grupo && !!client?.grupo_nome,
-    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia, cidade, estado, status").eq("grupo_nome", client!.grupo_nome as string).neq("id", id)).data ?? [],
-  });
+
   if (!client) return <div className="p-8">Carregando...</div>;
   return (
     <div>
@@ -89,7 +92,9 @@ function ClientDetail() {
         <div className="space-y-6">
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Imersões</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                Imersões {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
+              </h3>
               <Button size="sm" asChild>
                 <Link to="/imersoes/nova" search={{ client: id }}><Plus className="h-3.5 w-3.5 mr-1" /> Nova</Link>
               </Button>
@@ -106,16 +111,20 @@ function ClientDetail() {
                         <span className="capitalize">{i.status.replace(/_/g, " ")}</span>
                         {i.data_visita && <span>{new Date(i.data_visita).toLocaleDateString("pt-BR")}</span>}
                       </div>
+                      {isGroup && i.client_id !== id && (
+                        <div className="text-[10px] text-muted-foreground mt-1">{i.client?.nome_fantasia}</div>
+                      )}
                     </Link>
                   </li>
                 ))}
               </ul>
             )}
+
           </div>
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5" /> Perspectivas aprovadas
+                <Sparkles className="h-3.5 w-3.5" /> Perspectivas aprovadas {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
               </h3>
               <Badge variant="outline">{perspectivas.length}</Badge>
             </div>
@@ -141,7 +150,7 @@ function ClientDetail() {
           <div className="surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <ListChecks className="h-3.5 w-3.5" /> Ações em aberto
+                <ListChecks className="h-3.5 w-3.5" /> Ações em aberto {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
               </h3>
               <Button size="sm" variant="ghost" asChild><Link to="/planos">Ver kanban</Link></Button>
             </div>
