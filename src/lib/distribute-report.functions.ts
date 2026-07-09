@@ -77,7 +77,7 @@ Regras:
 - Retorne SOMENTE um objeto JSON no formato { "codigo_do_capitulo": "texto correspondente" }.
 - Use exatamente os códigos listados como chave.
 - Se um capítulo não tiver conteúdo relacionado, use string vazia "".
-- SEMPRE inclua o capítulo "demais_consideracoes" e coloque nele TUDO que não se encaixou nos demais.
+- SEMPRE inclua o capítulo "informacoes_adicionais" e coloque nele TUDO que não se encaixou nos demais.
 - Texto natural em português, sem markdown, sem inventar informação. Não resuma demais — preserve nomes, números e detalhes.
 
 Capítulos disponíveis:
