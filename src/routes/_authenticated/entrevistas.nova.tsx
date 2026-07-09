@@ -194,33 +194,6 @@ function NovaEntrevista() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Tema *</Label>
-              <Select
-                value={form.tema}
-                onValueChange={(v) => setForm({ ...form, tema: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TEMAS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {form.tema === "outro" && (
-              <div className="md:col-span-2">
-                <Label>Especificar tema *</Label>
-                <Input
-                  value={form.tema_outro}
-                  onChange={(e) => setForm({ ...form, tema_outro: e.target.value })}
-                />
-              </div>
-            )}
             <div className="md:col-span-2">
               <Label>Roteiro (opcional)</Label>
               <Select
