@@ -302,7 +302,9 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
               <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} /></div>
           </div>
           <div><label className="text-xs text-muted-foreground">Título</label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
-          <div><label className="text-xs text-muted-foreground">Orientação</label><Textarea value={orientacao} onChange={(e) => setOrientacao(e.target.value)} /></div>
+          <div><label className="text-xs text-muted-foreground">Pergunta de abertura</label><Textarea rows={2} value={perguntaAbertura} onChange={(e) => setPerguntaAbertura(e.target.value)} placeholder="Frase que o entrevistador lê em voz alta para abrir o capítulo." /></div>
+          <div><label className="text-xs text-muted-foreground">Pontos de escuta (um por linha)</label><Textarea rows={3} value={pontosEscutaStr} onChange={(e) => setPontosEscutaStr(e.target.value)} placeholder="O que o entrevistador deve captar" /></div>
+          <div><label className="text-xs text-muted-foreground">Orientação (objetivo de pesquisa)</label><Textarea value={orientacao} onChange={(e) => setOrientacao(e.target.value)} /></div>
           <div><label className="text-xs text-muted-foreground">Hipótese</label><Textarea value={hipotese} onChange={(e) => setHipotese(e.target.value)} /></div>
           <div>
             <label className="text-xs text-muted-foreground">Lente default</label>
