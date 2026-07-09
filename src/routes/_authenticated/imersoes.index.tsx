@@ -114,8 +114,11 @@ function ImmersionsIndex() {
                           <DropdownMenuItem onClick={() => runShare(i.id, "whats")}>
                             <MessageCircle className="h-4 w-4 mr-2" /> Compartilhar por WhatsApp
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate({ to: "/imersoes/$id", params: { id: i.id } })}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => remove(i.id, i.titulo)} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={() => setPendingDelete({ id: i.id, titulo: i.titulo })} className="text-destructive focus:text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" /> Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -128,6 +131,12 @@ function ImmersionsIndex() {
           )
         }
       </div>
+      <PasswordConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => { if (!v) setPendingDelete(null); }}
+        title={pendingDelete ? `Excluir "${pendingDelete.titulo}"` : "Excluir imersão"}
+        onConfirmed={confirmDelete}
+      />
     </div>
   );
 }
