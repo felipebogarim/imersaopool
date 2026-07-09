@@ -9,6 +9,7 @@ import { ArrowLeft, Copy, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ImmersionAttachments } from "@/components/ImmersionAttachments";
 import { AgentInputs } from "@/components/AgentInputs";
+import { ChapterCapture } from "@/components/ChapterCapture";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -24,6 +25,42 @@ function ImmersionDetail() {
       .select("*, client:clients(nome_fantasia, grupo, categoria), representative:representatives(nome)")
       .eq("id", id).single()).data,
   });
+
+  // Ensure an interview record exists for this immersion (session for chapter capture)
+  const roteiroId = (imm as any)?.roteiro_id as string | null | undefined;
+  const { data: sessao } = useQuery({
+    queryKey: ["immersion-sessao", id, roteiroId],
+    enabled: !!imm && !!roteiroId,
+    queryFn: async () => {
+      const { data: existing } = await supabase
+        .from("interviews")
+        .select("id, roteiro_id")
+        .eq("immersion_id", id)
+        .maybeSingle();
+      if (existing) {
+        if (existing.roteiro_id !== roteiroId && roteiroId) {
+          await supabase.from("interviews").update({ roteiro_id: roteiroId } as any).eq("id", existing.id);
+        }
+        return existing;
+      }
+      const { data: u } = await supabase.auth.getUser();
+      const { data: inserted, error } = await supabase.from("interviews").insert({
+        immersion_id: id,
+        roteiro_id: roteiroId,
+        client_id: (imm as any)?.client_id,
+        entrevistado_nome: (imm as any)?.titulo ?? "Imersão",
+        entrevistado_classificacao: "imersao",
+        perfil: "imersao",
+        tipo: "presencial",
+        entrevistador_nome: u.user?.email ?? "—",
+        created_by: u.user?.id,
+        respostas: {},
+      } as any).select("id").single();
+      if (error) throw new Error(error.message);
+      return inserted;
+    },
+  });
+
   if (!imm) return <div className="p-8">Carregando...</div>;
 
   const repUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${imm.representative_token}` : "";
@@ -48,9 +85,10 @@ function ImmersionDetail() {
           <Card label="Status" value={<Badge>{imm.status.replace(/_/g, " ")}</Badge>} />
         </div>
 
-        <Tabs defaultValue="visao">
-          <TabsList className="grid grid-cols-8 w-full max-w-4xl">
+        <Tabs defaultValue={roteiroId ? "roteiro" : "visao"}>
+          <TabsList className="grid grid-cols-9 w-full max-w-5xl">
             <TabsTrigger value="visao">Visão geral</TabsTrigger>
+            <TabsTrigger value="roteiro">Roteiro</TabsTrigger>
             <TabsTrigger value="antes">Antes</TabsTrigger>
             <TabsTrigger value="rep">Representante</TabsTrigger>
             <TabsTrigger value="campo">Campo</TabsTrigger>
@@ -59,7 +97,6 @@ function ImmersionDetail() {
             <TabsTrigger value="diag">Diagnóstico</TabsTrigger>
             <TabsTrigger value="plano">Plano</TabsTrigger>
           </TabsList>
-
 
           <TabsContent value="visao" className="mt-4 surface rounded-xl p-6">
             <h3 className="font-semibold mb-3">Status da imersão</h3>
@@ -71,6 +108,18 @@ function ImmersionDetail() {
                 </li>
               ))}
             </ol>
+          </TabsContent>
+
+          <TabsContent value="roteiro" className="mt-4">
+            {!roteiroId ? (
+              <div className="surface rounded-xl p-6 text-sm text-muted-foreground">
+                Esta imersão não tem roteiro vinculado. Edite a imersão e selecione um roteiro para começar a captura por capítulos.
+              </div>
+            ) : !sessao ? (
+              <div className="surface rounded-xl p-6 text-sm text-muted-foreground">Preparando sessão…</div>
+            ) : (
+              <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} />
+            )}
           </TabsContent>
 
           <TabsContent value="antes" className="mt-4 surface rounded-xl p-6">
@@ -103,7 +152,6 @@ function ImmersionDetail() {
             <h3 className="font-semibold mb-3">Gerência</h3>
             <AgentInputs immersionId={imm.id} scope="gerencia" />
           </TabsContent>
-
 
           <TabsContent value="price" className="mt-4 surface rounded-xl p-6">
             <h3 className="font-semibold mb-2">Comparativo Price</h3>
