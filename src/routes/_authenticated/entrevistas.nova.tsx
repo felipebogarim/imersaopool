@@ -100,9 +100,8 @@ function NovaEntrevista() {
     if (form.perfil === "outro" && !form.perfil_outro.trim())
       return toast.error("Especifique o perfil");
     if (!form.tipo) return toast.error("Selecione o tipo");
-    if (!form.tema) return toast.error("Selecione o tema");
-    if (form.tema === "outro" && !form.tema_outro.trim())
-      return toast.error("Especifique o tema");
+    if (vinculado && !clientId)
+      return toast.error("Selecione o cliente vinculado");
     if (vinculado && !clientId)
       return toast.error("Selecione o cliente vinculado");
 
