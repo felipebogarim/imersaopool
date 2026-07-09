@@ -112,6 +112,56 @@ function ClientDetail() {
               </ul>
             )}
           </div>
+          <div className="surface rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5" /> Perspectivas aprovadas
+              </h3>
+              <Badge variant="outline">{perspectivas.length}</Badge>
+            </div>
+            {perspectivas.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem perspectivas aprovadas para este cliente.</p>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {perspectivas.map((p: any) => {
+                  const first = Array.isArray(p.conteudo) ? p.conteudo[0] : (p.conteudo && typeof p.conteudo === "object" ? Object.values(p.conteudo)[0] : null);
+                  return (
+                    <li key={p.id} className="rounded-lg border border-border p-3 text-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="secondary" className="capitalize text-xs">{p.lente}</Badge>
+                        <span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</span>
+                      </div>
+                      {first && <p className="text-xs text-muted-foreground line-clamp-3">{String(first)}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="surface rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <ListChecks className="h-3.5 w-3.5" /> Ações em aberto
+              </h3>
+              <Button size="sm" variant="ghost" asChild><Link to="/planos">Ver kanban</Link></Button>
+            </div>
+            {acoes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma ação em aberto vinculada.</p>
+            ) : (
+              <ul className="space-y-2 max-h-72 overflow-y-auto">
+                {acoes.map((a: any) => (
+                  <li key={a.id} className="rounded-lg border border-border p-3 text-sm">
+                    <div className="font-medium leading-snug">{a.acao}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant={a.prioridade === "alta" ? "destructive" : a.prioridade === "media" ? "default" : "secondary"} className="text-xs">{a.prioridade}</Badge>
+                      <span className="capitalize">{a.status.replace(/_/g, " ")}</span>
+                      {a.prazo && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(a.prazo).toLocaleDateString("pt-BR")}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {client.pertence_grupo && client.grupo_nome && (
             <div className="surface rounded-xl p-6">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">Grupo econômico</h3>
