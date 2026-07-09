@@ -70,8 +70,6 @@ function NovaEntrevista() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
 
-  const { data: roteiros = [] } = useQuery({
-    queryKey: ["roteiros-ativos"],
   const [roteiroManual, setRoteiroManual] = useState(false);
 
   const { data: roteiros = [] } = useQuery({
