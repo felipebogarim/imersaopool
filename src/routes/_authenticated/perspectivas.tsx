@@ -10,7 +10,7 @@ import { EmptyState, LoadingRows } from "@/components/EmptyState";
 import { exportPerspectivasCsv } from "@/lib/export-compilation";
 
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -252,7 +252,7 @@ function CriarAcaoDialog({ perspectiva, onClose }: { perspectiva: any | null; on
 
   const open = !!perspectiva;
 
-  useMemo(() => {
+  useEffect(() => {
     if (!perspectiva) return;
     const first = Object.values(perspectiva.conteudo ?? {})[0];
     setAcao(first ? String(first).slice(0, 200) : "");
@@ -263,6 +263,7 @@ function CriarAcaoDialog({ perspectiva, onClose }: { perspectiva: any | null; on
     setPrazo("");
     setObservacoes(`Origem: perspectiva (${perspectiva.lente} / ${perspectiva.escopo_tipo})`);
   }, [perspectiva?.id]);
+
 
   async function save() {
     if (!perspectiva) return;
