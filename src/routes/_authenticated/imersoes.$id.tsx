@@ -76,7 +76,7 @@ function ImmersionDetail() {
       <PageHeader
         title={imm.titulo}
         subtitle={imm.client?.nome_fantasia}
-        actions={<Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
+        actions={<div className="flex gap-2"><SessionNotes entityType="immersion" entityId={id} /><Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button></div>}
       />
       <div className="p-8 space-y-6">
         <div className="grid md:grid-cols-4 gap-3">
