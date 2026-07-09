@@ -236,6 +236,8 @@ function PerspectivasPage() {
           ))}
         </Tabs>
       </div>
+      <CriarAcaoDialog perspectiva={acaoFor} onClose={() => setAcaoFor(null)} />
     </div>
   );
+
 }
