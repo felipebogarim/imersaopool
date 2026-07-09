@@ -6,8 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileText } from "lucide-react";
+import { Sparkles, FileText, Download, FileDown } from "lucide-react";
 import { toast } from "sonner";
+import { exportCompilationPdf, exportCompilationCsv } from "@/lib/export-compilation";
+
 import {
   Select,
   SelectContent,
@@ -233,7 +235,14 @@ function CompilationView({ detail }: { detail: any }) {
           {new Date(detail.created_at).toLocaleString("pt-BR")} ·{" "}
           {detail.perspectivas_incluidas?.length ?? 0} perspectivas
         </span>
+        <Button size="sm" variant="outline" className="gap-1" onClick={() => exportCompilationPdf(detail)}>
+          <FileDown className="h-3.5 w-3.5" /> PDF
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1" onClick={() => exportCompilationCsv(detail)}>
+          <Download className="h-3.5 w-3.5" /> CSV
+        </Button>
       </div>
+
 
       {c.resumo_executivo && (
         <Section title="Resumo executivo">

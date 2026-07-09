@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, ExternalLink } from "lucide-react";
+import { Check, X, ExternalLink, Download } from "lucide-react";
+import { exportPerspectivasCsv } from "@/lib/export-compilation";
+
 import { toast } from "sonner";
 import { useMemo, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -132,7 +134,19 @@ function PerspectivasPage() {
               </SelectContent>
             </Select>
           </div>
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              disabled={data.length === 0}
+              onClick={() => exportPerspectivasCsv(data, `perspectivas-${tab}`)}
+            >
+              <Download className="h-4 w-4" /> Exportar CSV
+            </Button>
+          </div>
         </div>
+
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList>
