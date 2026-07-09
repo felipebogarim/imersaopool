@@ -131,7 +131,7 @@ ${sourceText}
         const merged = text
           ? (hadContent ? `${existing.resposta_texto}\n\n[IA — relatório]\n${text}` : text)
           : existing.resposta_texto;
-        const mergedSintese = { ...(existing.sintese ?? {}), ...sintese };
+        const mergedSintese = { ...((existing.sintese as Record<string, unknown>) ?? {}), ...sintese };
         await supabase.from("sessao_capitulos").update({
           resposta_texto: merged,
           sintese: mergedSintese,
