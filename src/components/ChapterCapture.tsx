@@ -129,14 +129,16 @@ function CapituloBlock({
 }: {
   capitulo: any; sessaoId: string; existing: any; onSaved: () => void;
 }) {
+  const [leitura, setLeitura] = useState(existing?.leitura_estrategica ?? "");
   const [texto, setTexto] = useState(existing?.resposta_texto ?? "");
   const [sintese, setSintese] = useState<Record<string, string>>(existing?.sintese ?? {});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setLeitura(existing?.leitura_estrategica ?? "");
     setTexto(existing?.resposta_texto ?? "");
     setSintese(existing?.sintese ?? {});
-  }, [existing?.id, existing?.resposta_texto, existing?.sintese]);
+  }, [existing?.id, existing?.leitura_estrategica, existing?.resposta_texto, existing?.sintese]);
 
   const isIaDraft = existing?.origem === "ia" && existing?.status_revisao === "pendente";
   const campos: string[] = Array.isArray(capitulo.campos_matriz) ? capitulo.campos_matriz : [];
@@ -146,6 +148,7 @@ function CapituloBlock({
     const payload: any = {
       sessao_id: sessaoId,
       capitulo_id: capitulo.id,
+      leitura_estrategica: leitura,
       resposta_texto: texto,
       sintese,
       origem: isIaDraft ? "ia" : (existing?.origem ?? "humano"),
@@ -210,13 +213,32 @@ function CapituloBlock({
         </details>
       )}
 
-      <VoiceTextarea
-        rows={5}
-        value={texto}
-        onChange={setTexto}
-        placeholder="Registre a resposta livre. Você pode digitar, gravar áudio (a IA transcreve) ou anexar arquivo."
-        assist
-      />
+      <div className="mb-3">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leitura estratégica</p>
+        <VoiceTextarea
+          rows={6}
+          value={leitura}
+          onChange={setLeitura}
+          placeholder="Prosa interpretada (2 a 4 parágrafos). A IA preenche automaticamente ao enviar o relatório; você pode editar."
+          assist
+        />
+      </div>
+
+      <details className="mb-3">
+        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+          Anotações brutas / evidência
+        </summary>
+        <div className="mt-2">
+          <VoiceTextarea
+            rows={4}
+            value={texto}
+            onChange={setTexto}
+            placeholder="Trechos brutos ou citação curta que sustenta a leitura."
+            assist
+          />
+        </div>
+      </details>
+
 
       {campos.length > 0 && (
         <div className="mt-4">
