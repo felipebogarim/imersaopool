@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -43,7 +43,7 @@ const PERFIS = [
   { value: "lojista", label: "Lojista" },
   { value: "projetista", label: "Projetista" },
   { value: "vendedor", label: "Vendedor" },
-  { value: "gestor_loja", label: "Gestor de Loja" },
+  { value: "gestor_de_loja", label: "Gestor de Loja" },
   { value: "arquiteto", label: "Arquiteto" },
   { value: "especificador", label: "Especificador" },
   { value: "outro", label: "Outro" },
@@ -70,11 +70,29 @@ function NovaEntrevista() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
 
+  const [roteiroManual, setRoteiroManual] = useState(false);
+
   const { data: roteiros = [] } = useQuery({
     queryKey: ["roteiros-ativos"],
     queryFn: async () =>
       (await supabase.from("roteiros").select("id, nome, versao").eq("ativo", true).order("nome")).data ?? [],
   });
+
+  const { data: roteiroPerfis = [] } = useQuery({
+    queryKey: ["roteiro-perfis"],
+    queryFn: async () =>
+      (await supabase.from("roteiro_perfis").select("roteiro_id, perfil")).data ?? [],
+  });
+
+  // Auto-seleciona roteiro ao escolher perfil (a menos que o usuário já tenha escolhido manualmente)
+  useEffect(() => {
+    if (!form.perfil || roteiroManual) return;
+    const match = roteiroPerfis.find((rp: any) => rp.perfil === form.perfil);
+    if (match && match.roteiro_id !== form.roteiro_id) {
+      setForm((f) => ({ ...f, roteiro_id: match.roteiro_id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.perfil, roteiroPerfis]);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select-all"],
@@ -100,8 +118,7 @@ function NovaEntrevista() {
     if (form.perfil === "outro" && !form.perfil_outro.trim())
       return toast.error("Especifique o perfil");
     if (!form.tipo) return toast.error("Selecione o tipo");
-    if (vinculado && !clientId)
-      return toast.error("Selecione o cliente vinculado");
+    if (!form.roteiro_id) return toast.error("Selecione um roteiro");
     if (vinculado && !clientId)
       return toast.error("Selecione o cliente vinculado");
 
@@ -195,23 +212,22 @@ function NovaEntrevista() {
               </Select>
             </div>
             <div className="md:col-span-2">
-              <Label>Roteiro (opcional)</Label>
+              <Label>Roteiro *</Label>
               <Select
-                value={form.roteiro_id || "none"}
-                onValueChange={(v) => setForm({ ...form, roteiro_id: v === "none" ? "" : v })}
+                value={form.roteiro_id}
+                onValueChange={(v) => { setRoteiroManual(true); setForm({ ...form, roteiro_id: v }); }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sem roteiro" />
+                  <SelectValue placeholder="Selecione um roteiro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sem roteiro</SelectItem>
                   {roteiros.map((r: any) => (
                     <SelectItem key={r.id} value={r.id}>{r.nome} (v{r.versao})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
-                Ative um roteiro para capturar a entrevista por capítulos estruturados.
+                O roteiro é pré-selecionado a partir do perfil, mas pode ser trocado.
               </p>
             </div>
           </div>

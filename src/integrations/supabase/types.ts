@@ -889,8 +889,6 @@ export type Database = {
           respostas: Json
           roteiro_id: string | null
           status_revisao: Database["public"]["Enums"]["capitulo_status_revisao"]
-          tema: string | null
-          tema_outro: string | null
           tipo: string | null
           transcricao_bruta: string | null
           updated_at: string
@@ -921,8 +919,6 @@ export type Database = {
           respostas?: Json
           roteiro_id?: string | null
           status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
-          tema?: string | null
-          tema_outro?: string | null
           tipo?: string | null
           transcricao_bruta?: string | null
           updated_at?: string
@@ -953,8 +949,6 @@ export type Database = {
           respostas?: Json
           roteiro_id?: string | null
           status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
-          tema?: string | null
-          tema_outro?: string | null
           tipo?: string | null
           transcricao_bruta?: string | null
           updated_at?: string
@@ -1488,6 +1482,35 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roteiro_perfis: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          perfil: string
+          roteiro_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          perfil: string
+          roteiro_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          perfil?: string
+          roteiro_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roteiro_perfis_roteiro_id_fkey"
+            columns: ["roteiro_id"]
+            isOneToOne: false
+            referencedRelation: "roteiros"
             referencedColumns: ["id"]
           },
         ]

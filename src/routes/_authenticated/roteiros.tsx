@@ -161,15 +161,24 @@ function RoteirosPage() {
                         </ul>
                       </div>
                     )}
-                    {c.orientacao && <p className="text-xs text-muted-foreground mb-1"><span className="font-medium">Objetivo:</span> {c.orientacao}</p>}
-                    {c.hipotese && <p className="text-xs italic text-muted-foreground mb-2">Hipótese: {c.hipotese}</p>}
-                    {Array.isArray(c.campos_matriz) && c.campos_matriz.length > 0 && (
-                      <details className="mt-2">
-                        <summary className="text-[10px] uppercase tracking-wide text-muted-foreground cursor-pointer">Campos de fechamento</summary>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {c.campos_matriz.map((f: string) => (
-                            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
-                          ))}
+                    {(c.orientacao || c.hipotese || (Array.isArray(c.campos_matriz) && c.campos_matriz.length > 0)) && (
+                      <details className="mt-2 group">
+                        <summary className="text-[10px] uppercase tracking-wide text-muted-foreground cursor-pointer hover:text-foreground">
+                          Detalhes de pesquisa (orientação, hipótese, campos)
+                        </summary>
+                        <div className="mt-2 space-y-2 pl-2 border-l border-border/50">
+                          {c.orientacao && <p className="text-xs text-muted-foreground"><span className="font-medium">Objetivo:</span> {c.orientacao}</p>}
+                          {c.hipotese && <p className="text-xs italic text-muted-foreground">Hipótese: {c.hipotese}</p>}
+                          {Array.isArray(c.campos_matriz) && c.campos_matriz.length > 0 && (
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Campos de fechamento</p>
+                              <div className="flex flex-wrap gap-1">
+                                {c.campos_matriz.map((f: string) => (
+                                  <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">{f}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </details>
                     )}
