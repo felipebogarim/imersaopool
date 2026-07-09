@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id/sessao")({
   head: () => ({ meta: [{ title: "Sessão — PoolFlux" }] }),
