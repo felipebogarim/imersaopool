@@ -40,6 +40,9 @@ const PRIORIDADE_VARIANT: Record<Prioridade, "destructive" | "default" | "second
 function PlanosPage() {
   const qc = useQueryClient();
   const [filtro, setFiltro] = useState<"todas" | Prioridade>("todas");
+  const [busca, setBusca] = useState("");
+  const [responsavel, setResponsavel] = useState<string>("todos");
+  const [prazoFiltro, setPrazoFiltro] = useState<"todos" | "atrasadas" | "semana" | "sem_prazo">("todos");
   const [openNovo, setOpenNovo] = useState(false);
 
   const { data: acoes = [], isLoading } = useQuery({
@@ -54,10 +57,29 @@ function PlanosPage() {
     },
   });
 
-  const filtradas = useMemo(
-    () => acoes.filter((a) => filtro === "todas" || a.prioridade === filtro),
-    [acoes, filtro],
-  );
+  const responsaveis = useMemo(() => {
+    const set = new Set<string>();
+    acoes.forEach((a) => { if (a.responsavel) set.add(a.responsavel); });
+    return Array.from(set).sort();
+  }, [acoes]);
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    const now = new Date();
+    const weekEnd = new Date(); weekEnd.setDate(now.getDate() + 7);
+    return acoes.filter((a) => {
+      if (filtro !== "todas" && a.prioridade !== filtro) return false;
+      if (responsavel !== "todos" && (a.responsavel ?? "") !== responsavel) return false;
+      if (prazoFiltro === "sem_prazo" && a.prazo) return false;
+      if (prazoFiltro === "atrasadas" && (!a.prazo || new Date(a.prazo) >= now || a.status === "concluida")) return false;
+      if (prazoFiltro === "semana" && (!a.prazo || new Date(a.prazo) > weekEnd || new Date(a.prazo) < now)) return false;
+      if (q) {
+        const hay = `${a.acao ?? ""} ${a.observacoes ?? ""} ${a.responsavel ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [acoes, filtro, responsavel, prazoFiltro, busca]);
 
   async function moveStatus(id: string, status: Status) {
     const patch: any = { status };
@@ -76,31 +98,64 @@ function PlanosPage() {
     qc.invalidateQueries({ queryKey: ["action-plans"] });
   }
 
+  const filtrosAtivos = filtro !== "todas" || responsavel !== "todos" || prazoFiltro !== "todos" || busca.trim() !== "";
+
   return (
     <div>
       <PageHeader
         title="Planos de ação"
         subtitle="Kanban de ações derivadas das compilações e perspectivas."
         actions={
-          <div className="flex items-center gap-2">
-            <Select value={filtro} onValueChange={(v) => setFiltro(v as any)}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas prioridades</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="baixa">Baixa</SelectItem>
-              </SelectContent>
-            </Select>
-            <Dialog open={openNovo} onOpenChange={setOpenNovo}>
-              <DialogTrigger asChild>
-                <Button className="gap-2"><Plus className="h-4 w-4" /> Nova ação</Button>
-              </DialogTrigger>
-              <NovaAcaoDialog onDone={() => { setOpenNovo(false); qc.invalidateQueries({ queryKey: ["action-plans"] }); }} />
-            </Dialog>
-          </div>
+          <Dialog open={openNovo} onOpenChange={setOpenNovo}>
+            <DialogTrigger asChild>
+              <Button className="gap-2"><Plus className="h-4 w-4" /> Nova ação</Button>
+            </DialogTrigger>
+            <NovaAcaoDialog onDone={() => { setOpenNovo(false); qc.invalidateQueries({ queryKey: ["action-plans"] }); }} />
+          </Dialog>
         }
       />
+
+      <div className="mb-4 flex flex-wrap items-center gap-2 px-4 sm:px-8">
+        <Input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar por ação, observação ou responsável…"
+          className="h-9 w-full sm:w-72"
+        />
+        <Select value={filtro} onValueChange={(v) => setFiltro(v as any)}>
+          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas prioridades</SelectItem>
+            <SelectItem value="alta">Alta</SelectItem>
+            <SelectItem value="media">Média</SelectItem>
+            <SelectItem value="baixa">Baixa</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={responsavel} onValueChange={setResponsavel}>
+          <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos responsáveis</SelectItem>
+            {responsaveis.map((r) => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={prazoFiltro} onValueChange={(v) => setPrazoFiltro(v as any)}>
+          <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Qualquer prazo</SelectItem>
+            <SelectItem value="atrasadas">Atrasadas</SelectItem>
+            <SelectItem value="semana">Próx. 7 dias</SelectItem>
+            <SelectItem value="sem_prazo">Sem prazo</SelectItem>
+          </SelectContent>
+        </Select>
+        {filtrosAtivos && (
+          <Button variant="ghost" size="sm" onClick={() => { setFiltro("todas"); setResponsavel("todos"); setPrazoFiltro("todos"); setBusca(""); }}>
+            Limpar filtros
+          </Button>
+        )}
+      </div>
+
 
       {isLoading ? (
         <div className="p-4 sm:p-8"><LoadingRows rows={5} /></div>
