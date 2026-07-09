@@ -42,7 +42,9 @@ function PerspectivasPage() {
   const [escopoTipo, setEscopoTipo] = useState<Escopo>("todos");
   const [escopoRefId, setEscopoRefId] = useState<string>("todos");
   const [lente, setLente] = useState<string>("todas");
+  const [acaoFor, setAcaoFor] = useState<any | null>(null);
   const qc = useQueryClient();
+
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-min-persp"],
