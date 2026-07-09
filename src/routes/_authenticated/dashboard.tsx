@@ -1,17 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
-import { Briefcase, FileSearch, Tag, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import {
+  Briefcase, FileSearch, Tag, Users, TrendingUp, AlertTriangle,
+  Sparkles, MessageSquare, CheckCircle2, Clock, FileText,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "BI — PoolFlux" }] }),
   component: Dashboard,
 });
 
-function StatCard({ icon: Icon, label, value, hint }: { icon: any; label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="surface rounded-xl p-5">
+function StatCard({
+  icon: Icon, label, value, hint, to,
+}: { icon: any; label: string; value: string | number; hint?: string; to?: string }) {
+  const body = (
+    <div className="surface rounded-xl p-5 h-full transition hover:border-cyan/60">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
         <Icon className="h-4 w-4 text-cyan" />
@@ -20,52 +25,150 @@ function StatCard({ icon: Icon, label, value, hint }: { icon: any; label: string
       {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
     </div>
   );
+  return to ? <Link to={to as any} className="block">{body}</Link> : body;
 }
 
+function Bar({ label, value, total }: { label: string; value: number; total: number }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-muted-foreground capitalize">{label.replace(/_/g, " ")}</span>
+        <span className="font-mono">{value}</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="h-full bg-cyan rounded-full" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+const IMM_STATUS_ORDER = ["planejada", "antes_visita", "em_visita", "pos_visita", "concluida"];
+
 function Dashboard() {
-  const { data } = useQuery({
-    queryKey: ["dashboard-stats"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-exec"],
     queryFn: async () => {
-      const [clients, imm, reps, competitors] = await Promise.all([
+      const [clients, imm, reps, competitors, persp, comps, interviews] = await Promise.all([
         supabase.from("clients").select("id, grupo, categoria, status", { count: "exact" }),
-        supabase.from("immersions").select("id, status", { count: "exact" }),
+        supabase.from("immersions").select("id, titulo, status, data_visita", { count: "exact" }).order("data_visita", { ascending: false }),
         supabase.from("representatives").select("id", { count: "exact", head: true }),
         supabase.from("price_competitors").select("id", { count: "exact", head: true }),
+        supabase.from("perspectivas").select("id, lente, status, escopo_tipo", { count: "exact" }),
+        supabase.from("ai_compilations").select("id, tipo, escopo_tipo, versao, created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("interviews").select("id", { count: "exact", head: true }),
       ]);
+
       const byGroup: Record<string, number> = {};
       const byCategory: Record<string, number> = {};
       (clients.data ?? []).forEach((c: any) => {
         if (c.grupo) byGroup[c.grupo] = (byGroup[c.grupo] ?? 0) + 1;
         if (c.categoria) byCategory[c.categoria] = (byCategory[c.categoria] ?? 0) + 1;
       });
+
       const byStatus: Record<string, number> = {};
       (imm.data ?? []).forEach((i: any) => { byStatus[i.status] = (byStatus[i.status] ?? 0) + 1; });
+
+      const byLente: Record<string, number> = {};
+      const byPerspStatus: Record<string, number> = {};
+      const byEscopo: Record<string, number> = {};
+      (persp.data ?? []).forEach((p: any) => {
+        byLente[p.lente] = (byLente[p.lente] ?? 0) + 1;
+        byPerspStatus[p.status] = (byPerspStatus[p.status] ?? 0) + 1;
+        byEscopo[p.escopo_tipo] = (byEscopo[p.escopo_tipo] ?? 0) + 1;
+      });
+
+      const recentImm = (imm.data ?? []).slice(0, 5);
+
       return {
         totalClients: clients.count ?? 0,
         totalImm: imm.count ?? 0,
         totalReps: reps.count ?? 0,
         totalCompetitors: competitors.count ?? 0,
-        byGroup, byCategory, byStatus,
+        totalPersp: persp.count ?? 0,
+        totalInterviews: interviews.count ?? 0,
+        aprovadas: byPerspStatus["aprovada"] ?? 0,
+        pendentes: byPerspStatus["ia_sugerida"] ?? 0,
+        byGroup, byCategory, byStatus, byLente, byPerspStatus, byEscopo,
+        recentImm,
+        recentCompilations: comps.data ?? [],
       };
     },
   });
+
+  const totalPersp = data?.totalPersp ?? 0;
+  const totalImm = data?.totalImm ?? 0;
 
   return (
     <div>
       <PageHeader title="Painel BI" subtitle="Indicadores consolidados das imersões comerciais" />
       <div className="p-8 space-y-8">
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard icon={Briefcase} label="Clientes" value={data?.totalClients ?? 0} />
-          <StatCard icon={FileSearch} label="Imersões" value={data?.totalImm ?? 0} />
-          <StatCard icon={Users} label="Representantes" value={data?.totalReps ?? 0} />
-          <StatCard icon={Tag} label="Competidores" value={data?.totalCompetitors ?? 0} />
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          <StatCard icon={Briefcase} label="Clientes" value={data?.totalClients ?? 0} to="/clientes" />
+          <StatCard icon={FileSearch} label="Imersões" value={totalImm} to="/imersoes" />
+          <StatCard icon={MessageSquare} label="Entrevistas" value={data?.totalInterviews ?? 0} to="/entrevistas" />
+          <StatCard icon={Sparkles} label="Perspectivas" value={totalPersp} to="/perspectivas" />
+          <StatCard icon={Users} label="Representantes" value={data?.totalReps ?? 0} to="/representantes" />
+          <StatCard icon={Tag} label="Competidores" value={data?.totalCompetitors ?? 0} to="/price" />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="surface rounded-xl p-5">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">Clientes por grupo</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 className="h-4 w-4 text-cyan" />
+              <h3 className="text-sm font-semibold">Perspectivas aprovadas</h3>
+            </div>
+            <div className="text-3xl font-bold">{data?.aprovadas ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              de {totalPersp} total ({totalPersp > 0 ? Math.round(((data?.aprovadas ?? 0) / totalPersp) * 100) : 0}%)
+            </p>
+          </div>
+          <div className="surface rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="h-4 w-4 text-warning" />
+              <h3 className="text-sm font-semibold">Aguardando curadoria</h3>
+            </div>
+            <div className="text-3xl font-bold">{data?.pendentes ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Sugestões da IA pendentes</p>
+          </div>
+          <div className="surface rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4 text-cyan" />
+              <h3 className="text-sm font-semibold">Compilações IA</h3>
+            </div>
+            <div className="text-3xl font-bold">{data?.recentCompilations?.length ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Últimas geradas</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="surface rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-4">Funil de imersões</h3>
+            <div className="space-y-3">
+              {IMM_STATUS_ORDER.map(s => (
+                <Bar key={s} label={s} value={data?.byStatus?.[s] ?? 0} total={totalImm || 1} />
+              ))}
+              {totalImm === 0 && <p className="text-xs text-muted-foreground">Nenhuma imersão ainda</p>}
+            </div>
+          </div>
+          <div className="surface rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-4">Perspectivas por lente</h3>
             <div className="space-y-2">
-              {["G1","G2","G2+","Corporativo"].map(g => (
+              {Object.entries(data?.byLente ?? {})
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([l, n]) => (
+                  <Bar key={l} label={l} value={n as number} total={totalPersp || 1} />
+                ))}
+              {totalPersp === 0 && <p className="text-xs text-muted-foreground">Nenhuma perspectiva ainda</p>}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="surface rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-3">Clientes por grupo</h3>
+            <div className="space-y-2">
+              {["G1", "G2", "G2+", "Corporativo"].map(g => (
                 <div key={g} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{g}</span>
                   <span className="font-semibold">{data?.byGroup?.[g] ?? 0}</span>
@@ -76,7 +179,7 @@ function Dashboard() {
           <div className="surface rounded-xl p-5">
             <h3 className="text-sm font-semibold mb-3">Clientes por categoria</h3>
             <div className="space-y-2">
-              {["Black","Gold","Silver"].map(c => (
+              {["Black", "Gold", "Silver"].map(c => (
                 <div key={c} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{c}</span>
                   <span className="font-semibold">{data?.byCategory?.[c] ?? 0}</span>
@@ -85,16 +188,63 @@ function Dashboard() {
             </div>
           </div>
           <div className="surface rounded-xl p-5">
-            <h3 className="text-sm font-semibold mb-3">Imersões por status</h3>
+            <h3 className="text-sm font-semibold mb-3">Perspectivas por escopo</h3>
             <div className="space-y-2">
-              {Object.entries(data?.byStatus ?? {}).map(([s, n]) => (
-                <div key={s} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground capitalize">{s.replace(/_/g, " ")}</span>
-                  <span className="font-semibold">{n}</span>
+              {["cliente", "familia", "competidor", "empresa"].map(e => (
+                <div key={e} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground capitalize">{e}</span>
+                  <span className="font-semibold">{data?.byEscopo?.[e] ?? 0}</span>
                 </div>
               ))}
-              {Object.keys(data?.byStatus ?? {}).length === 0 && (
-                <p className="text-xs text-muted-foreground">Nenhuma imersão ainda</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="surface rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Últimas imersões</h3>
+              <Link to="/imersoes" className="text-xs text-cyan hover:underline">Ver todas</Link>
+            </div>
+            <div className="space-y-2">
+              {(data?.recentImm ?? []).map((i: any) => (
+                <Link
+                  key={i.id}
+                  to="/imersoes/$id"
+                  params={{ id: i.id }}
+                  className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50"
+                >
+                  <span className="truncate">{i.titulo}</span>
+                  <span className="text-xs text-muted-foreground capitalize ml-2">
+                    {i.status?.replace(/_/g, " ")}
+                  </span>
+                </Link>
+              ))}
+              {(data?.recentImm ?? []).length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhuma imersão registrada</p>
+              )}
+            </div>
+          </div>
+          <div className="surface rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Últimas compilações IA</h3>
+              <Link to="/compilacoes" className="text-xs text-cyan hover:underline">Ver todas</Link>
+            </div>
+            <div className="space-y-2">
+              {(data?.recentCompilations ?? []).map((c: any) => (
+                <div key={c.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-cyan" />
+                    <span className="capitalize">{c.tipo?.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-muted-foreground">v{c.versao ?? 1}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(c.created_at).toLocaleDateString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+              {(data?.recentCompilations ?? []).length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhuma compilação gerada</p>
               )}
             </div>
           </div>
@@ -102,14 +252,18 @@ function Dashboard() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="surface rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-2"><TrendingUp className="h-4 w-4 text-cyan" /><h3 className="text-sm font-semibold">Oportunidades IA</h3></div>
-            <p className="text-sm text-muted-foreground">Oportunidades identificadas pela IA aparecem aqui após gerar diagnósticos.</p>
+            <div className="flex items-center gap-2 mb-2"><TrendingUp className="h-4 w-4 text-cyan" /><h3 className="text-sm font-semibold">Oportunidades</h3></div>
+            <p className="text-3xl font-bold">{data?.byLente?.["oportunidade"] ?? 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">Perspectivas na lente "oportunidade"</p>
           </div>
           <div className="surface rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-4 w-4 text-warning" /><h3 className="text-sm font-semibold">Ameaças IA</h3></div>
-            <p className="text-sm text-muted-foreground">Ameaças identificadas pela IA aparecem aqui após gerar diagnósticos.</p>
+            <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-4 w-4 text-warning" /><h3 className="text-sm font-semibold">Ameaças</h3></div>
+            <p className="text-3xl font-bold">{data?.byLente?.["ameaca"] ?? 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">Perspectivas na lente "ameaça"</p>
           </div>
         </div>
+
+        {isLoading && <p className="text-xs text-muted-foreground text-center">Carregando indicadores...</p>}
       </div>
     </div>
   );
