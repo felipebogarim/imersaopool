@@ -32,7 +32,7 @@ function SessaoCapture() {
       (
         await supabase
           .from("capitulos")
-          .select("id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz")
+          .select("id, ordem, codigo, titulo, orientacao, hipotese, lente_default, campos_matriz, pergunta_abertura, pontos_escuta")
           .eq("roteiro_id", interview!.roteiro_id!)
           .order("ordem")
       ).data ?? [],
