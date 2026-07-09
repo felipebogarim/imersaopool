@@ -1444,6 +1444,7 @@ export type Database = {
           observacoes: string | null
           outras_marcas: string | null
           regiao: string | null
+          representacao: string | null
           telefone: string | null
           tempo_relacionamento: string | null
           updated_at: string
@@ -1458,6 +1459,7 @@ export type Database = {
           observacoes?: string | null
           outras_marcas?: string | null
           regiao?: string | null
+          representacao?: string | null
           telefone?: string | null
           tempo_relacionamento?: string | null
           updated_at?: string
@@ -1472,6 +1474,7 @@ export type Database = {
           observacoes?: string | null
           outras_marcas?: string | null
           regiao?: string | null
+          representacao?: string | null
           telefone?: string | null
           tempo_relacionamento?: string | null
           updated_at?: string
