@@ -103,8 +103,17 @@ function PlanosPage() {
       />
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
+        <div className="p-4 sm:p-8"><LoadingRows rows={5} /></div>
+      ) : acoes.length === 0 ? (
+        <div className="p-4 sm:p-8">
+          <EmptyState
+            icon={ListChecks}
+            title="Nenhuma ação criada"
+            description='Clique em "Nova ação" para começar seu kanban de execução.'
+          />
+        </div>
       ) : (
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {COLUNAS.map((col) => {
             const items = filtradas.filter((a) => a.status === col.key);
