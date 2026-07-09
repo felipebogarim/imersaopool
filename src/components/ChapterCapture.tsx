@@ -217,8 +217,37 @@ function CapituloBlock({
         placeholder="Registre a resposta livre. Você pode digitar, gravar áudio (a IA transcreve) ou anexar arquivo."
         assist
       />
-      <div className="flex justify-end mt-2">
-        <Button size="sm" onClick={save} disabled={saving || !texto.trim()}>
+
+      {campos.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Síntese objetiva do capítulo</p>
+          <div className="rounded-lg border overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody>
+                {campos.map((campo) => (
+                  <tr key={campo} className="border-b last:border-b-0">
+                    <td className="bg-muted/40 px-3 py-2 align-top font-medium w-1/3 capitalize">
+                      {campo.replace(/_/g, " ")}
+                    </td>
+                    <td className="p-0">
+                      <textarea
+                        rows={1}
+                        value={sintese[campo] ?? ""}
+                        onChange={(e) => setSintese((s) => ({ ...s, [campo]: e.target.value }))}
+                        className="w-full bg-transparent px-3 py-2 outline-none resize-y min-h-[36px]"
+                        placeholder="—"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end mt-3">
+        <Button size="sm" onClick={save} disabled={saving || (!texto.trim() && Object.values(sintese).every(v => !v?.trim()))}>
           {saving ? "Salvando..." : isIaDraft ? "Confirmar sugestão" : existing ? "Atualizar" : "Salvar capítulo"}
         </Button>
       </div>
