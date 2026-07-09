@@ -17,6 +17,7 @@ import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRepresentantesRouteImport } from './routes/_authenticated/representantes'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
+import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authenticated/perspectivas'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
@@ -78,6 +79,12 @@ const AuthenticatedPriceRoute = AuthenticatedPriceRouteImport.update({
   path: '/price',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPerspectivasRoute =
+  AuthenticatedPerspectivasRouteImport.update({
+    id: '/perspectivas',
+    path: '/perspectivas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
   id: '/novo-corp',
   path: '/novo-corp',
@@ -200,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
+  '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
@@ -229,6 +237,7 @@ export interface FileRoutesByTo {
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
+  '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
+  '/_authenticated/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/nda'
     | '/novo-corp'
+    | '/perspectivas'
     | '/price'
     | '/projecao'
     | '/representantes'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/nda'
     | '/novo-corp'
+    | '/perspectivas'
     | '/price'
     | '/projecao'
     | '/representantes'
@@ -350,6 +362,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresas'
     | '/_authenticated/nda'
     | '/_authenticated/novo-corp'
+    | '/_authenticated/perspectivas'
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/representantes'
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/price'
       fullPath: '/price'
       preLoaderRoute: typeof AuthenticatedPriceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perspectivas': {
+      id: '/_authenticated/perspectivas'
+      path: '/perspectivas'
+      fullPath: '/perspectivas'
+      preLoaderRoute: typeof AuthenticatedPerspectivasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/novo-corp': {
@@ -613,6 +633,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
+  AuthenticatedPerspectivasRoute: typeof AuthenticatedPerspectivasRoute
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
@@ -637,6 +658,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
+  AuthenticatedPerspectivasRoute: AuthenticatedPerspectivasRoute,
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
