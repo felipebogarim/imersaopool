@@ -51,7 +51,9 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-exec"],
     queryFn: async () => {
-      const [clients, imm, reps, competitors, persp, comps, interviews] = await Promise.all([
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      const [clients, imm, reps, competitors, persp, comps, interviews, actions] = await Promise.all([
         supabase.from("clients").select("id, grupo, categoria, status", { count: "exact" }),
         supabase.from("immersions").select("id, titulo, status, data_visita", { count: "exact" }).order("data_visita", { ascending: false }),
         supabase.from("representatives").select("id", { count: "exact", head: true }),
@@ -59,6 +61,7 @@ function Dashboard() {
         supabase.from("perspectivas").select("id, lente, status, escopo_tipo", { count: "exact" }),
         supabase.from("ai_compilations").select("id, tipo, escopo_tipo, versao, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("interviews").select("id", { count: "exact", head: true }),
+        supabase.from("action_plans").select("id, acao, prioridade, status, prazo").in("status", ["pendente", "em_andamento"]),
       ]);
 
       const byGroup: Record<string, number> = {};
@@ -80,6 +83,12 @@ function Dashboard() {
         byEscopo[p.escopo_tipo] = (byEscopo[p.escopo_tipo] ?? 0) + 1;
       });
 
+      const acoesAbertas = actions.data ?? [];
+      const vencidas = acoesAbertas.filter((a: any) => a.prazo && a.prazo < todayISO);
+      const proximas = acoesAbertas.filter((a: any) => a.prazo && a.prazo >= todayISO && a.prazo <= in7);
+      const semPrazo = acoesAbertas.filter((a: any) => !a.prazo);
+      const alertasAlta = acoesAbertas.filter((a: any) => a.prioridade === "alta");
+
       const recentImm = (imm.data ?? []).slice(0, 5);
 
       return {
@@ -94,9 +103,12 @@ function Dashboard() {
         byGroup, byCategory, byStatus, byLente, byPerspStatus, byEscopo,
         recentImm,
         recentCompilations: comps.data ?? [],
+        acoesAbertas: acoesAbertas.length,
+        vencidas, proximas, semPrazo, alertasAlta,
       };
     },
   });
+
 
   const totalPersp = data?.totalPersp ?? 0;
   const totalImm = data?.totalImm ?? 0;
