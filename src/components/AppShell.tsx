@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ const NAV = [
 const INPUTS = [
   { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
+  { to: "/roteiros", label: "Roteiros", icon: BookOpen },
+  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
 ] as const;
 
 const NAV_BOTTOM = [
