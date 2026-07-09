@@ -1,15 +1,15 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { VoiceInput } from "@/components/VoiceInput";
 import { LabelHelp } from "@/components/FieldHelp";
 import { IMMERSION_HELP } from "@/lib/field-help-texts";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -27,6 +27,7 @@ function NewImmersion() {
   const { client: preClient } = Route.useSearch();
   const [form, setForm] = useState<Record<string, any>>({ client_id: preClient });
   const [saving, setSaving] = useState(false);
+  const [roteiroManual, setRoteiroManual] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
@@ -36,9 +37,26 @@ function NewImmersion() {
     queryKey: ["reps-select"],
     queryFn: async () => (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
+  const { data: roteiros = [] } = useQuery({
+    queryKey: ["roteiros-ativos"],
+    queryFn: async () =>
+      (await supabase.from("roteiros").select("id, nome, versao").eq("ativo", true).order("nome")).data ?? [],
+  });
+  const { data: roteiroPerfis = [] } = useQuery({
+    queryKey: ["roteiro-perfis"],
+    queryFn: async () => (await supabase.from("roteiro_perfis").select("roteiro_id, perfil")).data ?? [],
+  });
+
+  // Auto-seleciona um roteiro do perfil "imersao"
+  useEffect(() => {
+    if (roteiroManual || form.roteiro_id) return;
+    const match = roteiroPerfis.find((rp: any) => rp.perfil === "imersao");
+    if (match) setForm(f => ({ ...f, roteiro_id: match.roteiro_id }));
+  }, [roteiroPerfis, roteiroManual, form.roteiro_id]);
 
   async function save() {
     if (!form.titulo || !form.client_id) return toast.error("Informe título e cliente");
+    if (!form.roteiro_id) return toast.error("Selecione um roteiro");
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase.from("immersions").insert({
@@ -77,6 +95,14 @@ function NewImmersion() {
               </Select>
             </div>
             <div><LabelHelp label="Data prevista da visita" help={IMMERSION_HELP.data_visita} withMediaSuffix={false} /><Input type="date" value={form.data_visita ?? ""} onChange={e => setForm(f => ({ ...f, data_visita: e.target.value }))} /></div>
+            <div className="md:col-span-2">
+              <Label>Roteiro *</Label>
+              <Select value={form.roteiro_id ?? ""} onValueChange={v => { setRoteiroManual(true); setForm(f => ({ ...f, roteiro_id: v })); }}>
+                <SelectTrigger><SelectValue placeholder="Selecione um roteiro" /></SelectTrigger>
+                <SelectContent>{roteiros.map((r: any) => <SelectItem key={r.id} value={r.id}>{r.nome} (v{r.versao})</SelectItem>)}</SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Pré-selecionamos um roteiro de imersão, mas você pode trocar.</p>
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" asChild><Link to="/imersoes">Cancelar</Link></Button>
