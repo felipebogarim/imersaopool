@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ImmersionAttachments } from "@/components/ImmersionAttachments";
 import { AgentInputs } from "@/components/AgentInputs";
 import { ChapterCapture } from "@/components/ChapterCapture";
+import { SessionNotes } from "@/components/SessionNotes";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
