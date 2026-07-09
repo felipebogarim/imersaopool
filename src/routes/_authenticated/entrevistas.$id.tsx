@@ -4,11 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
+import { exportInterviewPdf } from "@/lib/interview-report";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
@@ -47,6 +48,9 @@ function EntrevistaDetail() {
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="interview" entityId={id} />
+            <Button variant="outline" onClick={() => exportInterviewPdf(id).catch((e) => toast.error(e?.message ?? "Falha ao exportar"))}>
+              <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
+            </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
             <Button variant="destructive" onClick={remove}><Trash2 className="h-4 w-4 mr-1" /> Excluir</Button>
           </div>
