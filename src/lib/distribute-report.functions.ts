@@ -19,7 +19,7 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
 
     const { data: capitulos, error: cErr } = await supabase
       .from("capitulos")
-      .select("id, codigo, titulo, orientacao, pergunta_abertura")
+      .select("id, codigo, titulo, orientacao, pergunta_abertura, campos_matriz")
       .eq("roteiro_id", interview.roteiro_id)
       .order("ordem");
     if (cErr) throw new Error(cErr.message);
@@ -68,17 +68,22 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
 
     // 2. Distribui em capítulos via LLM
     const capList = capitulos
-      .map((c: any) => `- ${c.codigo}: "${c.titulo}"${c.orientacao ? ` — ${c.orientacao}` : ""}`)
+      .map((c: any) => {
+        const campos = Array.isArray(c.campos_matriz) && c.campos_matriz.length
+          ? ` [campos_sintese: ${c.campos_matriz.join(", ")}]` : "";
+        return `- ${c.codigo}: "${c.titulo}"${c.orientacao ? ` — ${c.orientacao}` : ""}${campos}`;
+      })
       .join("\n");
 
-    const prompt = `Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo e uma lista de CAPÍTULOS de um roteiro. Sua tarefa: distribuir o conteúdo do relatório entre os capítulos, colocando em cada um APENAS o que se refere ao tema daquele capítulo.
+    const prompt = `Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo e uma lista de CAPÍTULOS de um roteiro. Sua tarefa: distribuir o conteúdo do relatório entre os capítulos e, para cada capítulo com campos_sintese, preencher também uma síntese objetiva.
 
 Regras:
-- Retorne SOMENTE um objeto JSON no formato { "codigo_do_capitulo": "texto correspondente" }.
+- Retorne SOMENTE um objeto JSON no formato { "codigo_do_capitulo": { "texto": "...", "sintese": { "campo": "valor" } } }.
 - Use exatamente os códigos listados como chave.
-- Se um capítulo não tiver conteúdo relacionado, use string vazia "".
+- Em "sintese", use apenas os campos listados em [campos_sintese] do capítulo, com respostas curtas e objetivas (frases curtas ou listas separadas por vírgula). Se não houver informação, use "".
+- Se um capítulo não tiver conteúdo, use { "texto": "", "sintese": {} }.
 - SEMPRE inclua o capítulo "informacoes_adicionais" e coloque nele TUDO que não se encaixou nos demais.
-- Texto natural em português, sem markdown, sem inventar informação. Não resuma demais — preserve nomes, números e detalhes.
+- Português natural, sem markdown, sem inventar informação. Preserve nomes, números e detalhes no "texto".
 
 Capítulos disponíveis:
 ${capList}
@@ -103,27 +108,33 @@ ${sourceText}
     if (!distRes.ok) throw new Error(`Falha ao distribuir: ${distRes.status} ${await distRes.text().catch(() => "")}`);
     const distJson = await distRes.json();
     const raw = distJson?.choices?.[0]?.message?.content ?? "{}";
-    let mapping: Record<string, string> = {};
+    let mapping: Record<string, any> = {};
     try { mapping = JSON.parse(raw); } catch { throw new Error("IA retornou JSON inválido"); }
 
     // 3. Upsert em sessao_capitulos
     let filled = 0;
     for (const c of capitulos as any[]) {
-      const text = String(mapping[c.codigo] ?? "").trim();
-      if (!text) continue;
+      const entry = mapping[c.codigo];
+      const text = String((typeof entry === "string" ? entry : entry?.texto) ?? "").trim();
+      const sintese = (entry && typeof entry === "object" && entry.sintese && typeof entry.sintese === "object")
+        ? entry.sintese : {};
+      const hasSintese = Object.values(sintese).some((v: any) => String(v ?? "").trim());
+      if (!text && !hasSintese) continue;
       const { data: existing } = await supabase
         .from("sessao_capitulos")
-        .select("id, resposta_texto, origem")
+        .select("id, resposta_texto, origem, sintese")
         .eq("sessao_id", interview.id)
         .eq("capitulo_id", c.id)
         .maybeSingle();
       if (existing?.id) {
         const hadContent = !!existing.resposta_texto?.trim();
-        const merged = hadContent
-          ? `${existing.resposta_texto}\n\n[IA — relatório]\n${text}`
-          : text;
+        const merged = text
+          ? (hadContent ? `${existing.resposta_texto}\n\n[IA — relatório]\n${text}` : text)
+          : existing.resposta_texto;
+        const mergedSintese = { ...((existing.sintese as Record<string, unknown>) ?? {}), ...sintese };
         await supabase.from("sessao_capitulos").update({
           resposta_texto: merged,
+          sintese: mergedSintese,
           origem: hadContent ? existing.origem ?? "manual" : "ia",
           status_revisao: "pendente",
         } as any).eq("id", existing.id);
@@ -132,6 +143,7 @@ ${sourceText}
           sessao_id: interview.id,
           capitulo_id: c.id,
           resposta_texto: text,
+          sintese,
           origem: "ia",
           status_revisao: "pendente",
         } as any);
@@ -141,3 +153,4 @@ ${sourceText}
 
     return { filled, total: capitulos.length };
   });
+
