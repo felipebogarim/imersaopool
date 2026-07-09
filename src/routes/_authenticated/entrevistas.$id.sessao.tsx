@@ -58,9 +58,32 @@ function SessaoCapture() {
     );
   }
 
+  const generate = useServerFn(generatePerspectivasForSession);
+  const [generating, setGenerating] = useState(false);
+
+  async function runGenerate() {
+    setGenerating(true);
+    try {
+      const r = await generate({ data: { sessaoId: id } });
+      if (r.created > 0) toast.success(`${r.created} perspectiva(s) sugerida(s) pela IA`);
+      if (r.errors.length) toast.warning(`${r.errors.length} capítulo(s) com erro`, { description: r.errors[0] });
+      if (!r.created && !r.errors.length) toast.info("Nada para processar");
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao gerar perspectivas");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold text-lg">Captura por capítulos</h2>
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="font-semibold text-lg">Captura por capítulos</h2>
+        <Button size="sm" variant="outline" onClick={runGenerate} disabled={generating || respostas.length === 0}>
+          <Sparkles className="h-4 w-4 mr-1" />
+          {generating ? "Gerando..." : "Gerar perspectivas com IA"}
+        </Button>
+      </div>
       {capitulos.map((c: any) => {
         const existing = respostas.find((r: any) => r.capitulo_id === c.id);
         return (
