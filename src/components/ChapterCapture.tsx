@@ -42,9 +42,9 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   const { data: respostas = [] } = useQuery({
     queryKey: ["sessao-capitulos", sessaoId],
     queryFn: async () =>
-      (await supabase
+    (await supabase
         .from("sessao_capitulos")
-        .select("id, capitulo_id, resposta_texto, origem, status_revisao")
+        .select("id, capitulo_id, resposta_texto, origem, status_revisao, sintese")
         .eq("sessao_id", sessaoId)).data ?? [],
   });
 
