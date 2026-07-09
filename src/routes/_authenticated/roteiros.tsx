@@ -244,6 +244,8 @@ function CapituloDialog({ open, editing, roteiroId, nextOrdem, onOpenChange, onS
   const [ordem, setOrdem] = useState(1);
   const [lente, setLente] = useState<Lente>("percepcao_marca");
   const [camposStr, setCamposStr] = useState("");
+  const [perguntaAbertura, setPerguntaAbertura] = useState("");
+  const [pontosEscutaStr, setPontosEscutaStr] = useState("");
   const [saving, setSaving] = useState(false);
 
   useMemo(() => {
