@@ -13,8 +13,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Calendar, GripVertical } from "lucide-react";
+import { Plus, Trash2, Calendar, GripVertical, ListChecks } from "lucide-react";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/planos")({
   head: () => ({ meta: [{ title: "Planos de ação — PoolFlux" }] }),

@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, X, ExternalLink, Download } from "lucide-react";
+import { Check, X, ExternalLink, Download, Lightbulb } from "lucide-react";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
+
 import { exportPerspectivasCsv } from "@/lib/export-compilation";
 
 import { toast } from "sonner";
