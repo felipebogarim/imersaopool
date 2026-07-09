@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedRepresentantesRouteImport } from './routes/_authenticated/representantes'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
@@ -55,6 +56,11 @@ const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
+  id: '/roteiros',
+  path: '/roteiros',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRepresentantesRoute =
   AuthenticatedRepresentantesRouteImport.update({
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
+  '/roteiros': typeof AuthenticatedRoteirosRoute
   '/r/$token': typeof RTokenRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/representantes': typeof AuthenticatedRepresentantesRoute
+  '/roteiros': typeof AuthenticatedRoteirosRoute
   '/r/$token': typeof RTokenRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/representantes': typeof AuthenticatedRepresentantesRoute
+  '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/representantes'
+    | '/roteiros'
     | '/r/$token'
     | '/admin/permissoes'
     | '/admin/usuarios'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/representantes'
+    | '/roteiros'
     | '/r/$token'
     | '/admin/permissoes'
     | '/admin/usuarios'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/representantes'
+    | '/_authenticated/roteiros'
     | '/r/$token'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
@@ -395,6 +407,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/roteiros': {
+      id: '/_authenticated/roteiros'
+      path: '/roteiros'
+      fullPath: '/roteiros'
+      preLoaderRoute: typeof AuthenticatedRoteirosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/representantes': {
       id: '/_authenticated/representantes'
@@ -597,6 +616,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRepresentantesRoute: typeof AuthenticatedRepresentantesRoute
+  AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRoute
@@ -620,6 +640,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRepresentantesRoute: AuthenticatedRepresentantesRoute,
+  AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRoute,
@@ -645,13 +666,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
