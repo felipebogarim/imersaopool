@@ -229,6 +229,8 @@ export type Database = {
           lente_default: Database["public"]["Enums"]["perspectiva_lente"] | null
           ordem: number
           orientacao: string | null
+          pergunta_abertura: string | null
+          pontos_escuta: string[] | null
           roteiro_id: string
           titulo: string
           updated_at: string
@@ -244,6 +246,8 @@ export type Database = {
             | null
           ordem: number
           orientacao?: string | null
+          pergunta_abertura?: string | null
+          pontos_escuta?: string[] | null
           roteiro_id: string
           titulo: string
           updated_at?: string
@@ -259,6 +263,8 @@ export type Database = {
             | null
           ordem?: number
           orientacao?: string | null
+          pergunta_abertura?: string | null
+          pontos_escuta?: string[] | null
           roteiro_id?: string
           titulo?: string
           updated_at?: string
