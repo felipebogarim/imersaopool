@@ -146,25 +146,28 @@ ${capList}`;
     let filled = 0;
     for (const c of capitulos as any[]) {
       const entry = mapping[c.codigo];
-      const text = String((typeof entry === "string" ? entry : entry?.texto) ?? "").trim();
+      const leitura = String(
+        (typeof entry === "string" ? entry : entry?.leitura_estrategica ?? entry?.texto) ?? "",
+      ).trim();
+      const evidencia = String(entry?.evidencia ?? "").trim();
       const sintese = (entry && typeof entry === "object" && entry.sintese && typeof entry.sintese === "object")
         ? entry.sintese : {};
       const hasSintese = Object.values(sintese).some((v: any) => String(v ?? "").trim());
-      if (!text && !hasSintese) continue;
+      if (!leitura && !hasSintese && !evidencia) continue;
+      // Compat: guarda evidência como sufixo do texto (não há coluna dedicada)
+      const respostaTexto = evidencia ? `${leitura}\n\nEvidência: "${evidencia}"` : leitura;
       const { data: existing } = await supabase
         .from("sessao_capitulos")
-        .select("id, resposta_texto, origem, sintese")
+        .select("id, resposta_texto, origem, sintese, leitura_estrategica")
         .eq("sessao_id", interview.id)
         .eq("capitulo_id", c.id)
         .maybeSingle();
       if (existing?.id) {
-        const hadContent = !!existing.resposta_texto?.trim();
-        const merged = text
-          ? (hadContent ? `${existing.resposta_texto}\n\n[IA — relatório]\n${text}` : text)
-          : existing.resposta_texto;
+        const hadContent = !!(existing as any).leitura_estrategica?.trim() || !!existing.resposta_texto?.trim();
         const mergedSintese = { ...((existing.sintese as Record<string, unknown>) ?? {}), ...sintese };
         await supabase.from("sessao_capitulos").update({
-          resposta_texto: merged,
+          leitura_estrategica: leitura || (existing as any).leitura_estrategica,
+          resposta_texto: respostaTexto || existing.resposta_texto,
           sintese: mergedSintese,
           origem: hadContent ? existing.origem ?? "manual" : "ia",
           status_revisao: "pendente",
@@ -173,7 +176,8 @@ ${capList}`;
         await supabase.from("sessao_capitulos").insert({
           sessao_id: interview.id,
           capitulo_id: c.id,
-          resposta_texto: text,
+          leitura_estrategica: leitura,
+          resposta_texto: respostaTexto,
           sintese,
           origem: "ia",
           status_revisao: "pendente",
