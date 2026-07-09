@@ -30,6 +30,7 @@ function RoteirosPage() {
   const [creatingRoteiro, setCreatingRoteiro] = useState(false);
   const [editingCap, setEditingCap] = useState<any | null>(null);
   const [creatingCapFor, setCreatingCapFor] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["roteiros-with-caps"],
@@ -75,12 +76,41 @@ function RoteirosPage() {
         actions={<Button onClick={() => setCreatingRoteiro(true)}><Plus className="h-4 w-4 mr-1" /> Novo roteiro</Button>}
       />
       <div className="p-8 space-y-6">
+        {data.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground mr-1">Filtrar:</span>
+            <Button
+              size="sm"
+              variant={selectedIds.length === 0 ? "default" : "outline"}
+              onClick={() => setSelectedIds([])}
+            >
+              Todos
+            </Button>
+            {data.map((r: any) => {
+              const active = selectedIds.includes(r.id);
+              return (
+                <Button
+                  key={r.id}
+                  size="sm"
+                  variant={active ? "default" : "outline"}
+                  onClick={() =>
+                    setSelectedIds((prev) =>
+                      prev.includes(r.id) ? prev.filter((x) => x !== r.id) : [...prev, r.id]
+                    )
+                  }
+                >
+                  {r.nome}
+                </Button>
+              );
+            })}
+          </div>
+        )}
         {isLoading ? (
           <p className="text-muted-foreground">Carregando...</p>
         ) : data.length === 0 ? (
           <p className="text-muted-foreground">Nenhum roteiro cadastrado.</p>
         ) : (
-          data.map((r: any) => (
+          (selectedIds.length === 0 ? data : data.filter((r: any) => selectedIds.includes(r.id))).map((r: any) => (
             <section key={r.id} className="surface rounded-xl p-6">
               <header className="flex items-start justify-between gap-4 mb-4">
                 <div>
