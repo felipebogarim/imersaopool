@@ -104,8 +104,15 @@ function Dashboard() {
   return (
     <div>
       <PageHeader title="Painel BI" subtitle="Indicadores consolidados das imersões comerciais" />
-      <div className="p-8 space-y-8">
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="p-4 sm:p-8 space-y-8">
+        {isLoading ? (
+          <>
+            <LoadingCards count={6} />
+            <LoadingRows rows={4} />
+          </>
+        ) : (
+        <>
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <StatCard icon={Briefcase} label="Clientes" value={data?.totalClients ?? 0} to="/clientes" />
           <StatCard icon={FileSearch} label="Imersões" value={totalImm} to="/imersoes" />
           <StatCard icon={MessageSquare} label="Entrevistas" value={data?.totalInterviews ?? 0} to="/entrevistas" />
@@ -113,6 +120,7 @@ function Dashboard() {
           <StatCard icon={Users} label="Representantes" value={data?.totalReps ?? 0} to="/representantes" />
           <StatCard icon={Tag} label="Competidores" value={data?.totalCompetitors ?? 0} to="/price" />
         </div>
+
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="surface rounded-xl p-5">
