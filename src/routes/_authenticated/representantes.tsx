@@ -32,7 +32,7 @@ function RepsPage() {
   function openNew() { setEditing(null); setForm({}); setOpen(true); }
   function openEdit(r: any) {
     setEditing(r);
-    setForm({ nome: r.nome ?? "", email: r.email ?? "", telefone: r.telefone ?? "", regiao: r.regiao ?? "", outras_marcas: r.outras_marcas ?? "", observacoes: r.observacoes ?? "" });
+    setForm({ nome: r.nome ?? "", representacao: r.representacao ?? "", email: r.email ?? "", telefone: r.telefone ?? "", regiao: r.regiao ?? "", outras_marcas: r.outras_marcas ?? "", observacoes: r.observacoes ?? "" });
     setOpen(true);
   }
 
