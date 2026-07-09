@@ -5,10 +5,11 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2, Compass } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { shareImmersionByEmail, shareImmersionByWhatsapp } from "@/lib/immersion-report";
+import { EmptyState, LoadingRows } from "@/components/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/imersoes/")({
   head: () => ({ meta: [{ title: "Imersões — PoolFlux" }] }),
@@ -67,13 +68,14 @@ function ImmersionsIndex() {
         actions={<Button asChild><Link to="/imersoes/nova"><Plus className="h-4 w-4 mr-1" /> Nova imersão</Link></Button>}
       />
       <div className="p-8">
-        {isLoading ? <p className="text-muted-foreground">Carregando...</p> :
+        {isLoading ? <LoadingRows rows={4} /> :
           imms.length === 0 ? (
-            <div className="surface rounded-xl p-12 text-center">
-              <h3 className="font-semibold mb-1">Nenhuma imersão ainda</h3>
-              <p className="text-sm text-muted-foreground mb-4">Crie a primeira imersão para começar.</p>
-              <Button asChild><Link to="/imersoes/nova"><Plus className="h-4 w-4 mr-1" /> Nova imersão</Link></Button>
-            </div>
+            <EmptyState
+              icon={Compass}
+              title="Nenhuma imersão ainda"
+              description="Crie a primeira imersão para começar."
+              action={<Button asChild><Link to="/imersoes/nova"><Plus className="h-4 w-4 mr-1" /> Nova imersão</Link></Button>}
+            />
           ) : (
             <div className="grid gap-3">
               {imms.map((i: any) => (
