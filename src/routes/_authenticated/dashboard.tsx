@@ -45,13 +45,30 @@ function Bar({ label, value, total }: { label: string; value: number; total: num
   );
 }
 
+function AlertStat({ label, value, tone }: { label: string; value: number; tone: "destructive" | "warning" | "muted" }) {
+  const toneClass =
+    tone === "destructive" ? "text-destructive" :
+    tone === "warning" ? "text-warning" : "text-muted-foreground";
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-bold ${toneClass}`}>{value}</p>
+    </div>
+  );
+}
+
+
+
+
 const IMM_STATUS_ORDER = ["planejada", "antes_visita", "em_visita", "pos_visita", "concluida"];
 
 function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-exec"],
     queryFn: async () => {
-      const [clients, imm, reps, competitors, persp, comps, interviews] = await Promise.all([
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      const [clients, imm, reps, competitors, persp, comps, interviews, actions] = await Promise.all([
         supabase.from("clients").select("id, grupo, categoria, status", { count: "exact" }),
         supabase.from("immersions").select("id, titulo, status, data_visita", { count: "exact" }).order("data_visita", { ascending: false }),
         supabase.from("representatives").select("id", { count: "exact", head: true }),
@@ -59,6 +76,7 @@ function Dashboard() {
         supabase.from("perspectivas").select("id, lente, status, escopo_tipo", { count: "exact" }),
         supabase.from("ai_compilations").select("id, tipo, escopo_tipo, versao, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("interviews").select("id", { count: "exact", head: true }),
+        supabase.from("action_plans").select("id, acao, prioridade, status, prazo").in("status", ["pendente", "em_andamento"]),
       ]);
 
       const byGroup: Record<string, number> = {};
@@ -80,6 +98,12 @@ function Dashboard() {
         byEscopo[p.escopo_tipo] = (byEscopo[p.escopo_tipo] ?? 0) + 1;
       });
 
+      const acoesAbertas = actions.data ?? [];
+      const vencidas = acoesAbertas.filter((a: any) => a.prazo && a.prazo < todayISO);
+      const proximas = acoesAbertas.filter((a: any) => a.prazo && a.prazo >= todayISO && a.prazo <= in7);
+      const semPrazo = acoesAbertas.filter((a: any) => !a.prazo);
+      const alertasAlta = acoesAbertas.filter((a: any) => a.prioridade === "alta");
+
       const recentImm = (imm.data ?? []).slice(0, 5);
 
       return {
@@ -94,9 +118,12 @@ function Dashboard() {
         byGroup, byCategory, byStatus, byLente, byPerspStatus, byEscopo,
         recentImm,
         recentCompilations: comps.data ?? [],
+        acoesAbertas: acoesAbertas.length,
+        vencidas, proximas, semPrazo, alertasAlta,
       };
     },
   });
+
 
   const totalPersp = data?.totalPersp ?? 0;
   const totalImm = data?.totalImm ?? 0;
@@ -120,6 +147,38 @@ function Dashboard() {
           <StatCard icon={Users} label="Representantes" value={data?.totalReps ?? 0} to="/representantes" />
           <StatCard icon={Tag} label="Competidores" value={data?.totalCompetitors ?? 0} to="/price" />
         </div>
+
+        {(data?.vencidas?.length || data?.proximas?.length || data?.alertasAlta?.length) ? (
+          <div className="surface rounded-xl p-5 border-l-4 border-warning">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <h3 className="text-sm font-semibold">Alertas de plano de ação</h3>
+              </div>
+              <Link to="/planos" className="text-xs text-cyan hover:underline">Ver kanban</Link>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+              <AlertStat label="Vencidas" value={data?.vencidas?.length ?? 0} tone="destructive" />
+              <AlertStat label="Próximas (7 dias)" value={data?.proximas?.length ?? 0} tone="warning" />
+              <AlertStat label="Alta prioridade" value={data?.alertasAlta?.length ?? 0} tone="warning" />
+              <AlertStat label="Sem prazo" value={data?.semPrazo?.length ?? 0} tone="muted" />
+            </div>
+            {(data?.vencidas ?? []).length > 0 && (
+              <ul className="mt-4 space-y-1.5 text-sm">
+                {(data?.vencidas ?? []).slice(0, 5).map((a: any) => (
+                  <li key={a.id} className="flex items-center justify-between gap-2 border-t border-border pt-2">
+                    <span className="truncate">{a.acao}</span>
+                    <span className="text-xs text-destructive shrink-0">
+                      venceu em {new Date(a.prazo).toLocaleDateString("pt-BR")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
+
 
 
         <div className="grid gap-4 md:grid-cols-3">
