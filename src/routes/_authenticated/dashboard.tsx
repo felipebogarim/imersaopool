@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
+import { LoadingCards, LoadingRows } from "@/components/EmptyState";
 import {
   Briefcase, FileSearch, Tag, Users, TrendingUp, AlertTriangle,
   Sparkles, MessageSquare, CheckCircle2, Clock, FileText,
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "BI — PoolFlux" }] }),
   component: Dashboard,
 });
+
 
 function StatCard({
   icon: Icon, label, value, hint, to,
