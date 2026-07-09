@@ -1633,6 +1633,7 @@ export type Database = {
           revisado_em: string | null
           revisado_por: string | null
           sessao_id: string
+          sintese: Json
           status_revisao: Database["public"]["Enums"]["capitulo_status_revisao"]
           updated_at: string
         }
@@ -1646,6 +1647,7 @@ export type Database = {
           revisado_em?: string | null
           revisado_por?: string | null
           sessao_id: string
+          sintese?: Json
           status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
           updated_at?: string
         }
@@ -1659,6 +1661,7 @@ export type Database = {
           revisado_em?: string | null
           revisado_por?: string | null
           sessao_id?: string
+          sintese?: Json
           status_revisao?: Database["public"]["Enums"]["capitulo_status_revisao"]
           updated_at?: string
         }
