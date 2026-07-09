@@ -106,7 +106,7 @@ function RoteirosPage() {
               </header>
               <ol className="space-y-3">
                 {r.capitulos.map((c: any) => (
-                  <li key={c.id} className="border border-border rounded-lg p-4">
+                  <li key={c.id} className="surface-inset rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-muted-foreground">#{c.ordem}</span>
                       <h3 className="font-medium">{c.titulo}</h3>
