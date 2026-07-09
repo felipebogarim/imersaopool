@@ -25,12 +25,16 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!capitulos?.length) throw new Error("Roteiro sem capítulos");
 
-    // 1. Extrai texto do arquivo
-    let sourceText = "";
+    // 1. Prepara a entrada (texto/áudio→transcrição / PDF direto para o LLM)
     const mime = data.mime || "";
     const isAudio = mime.startsWith("audio/") || /\.(mp3|wav|m4a|webm|ogg|aac|flac)$/i.test(data.filename);
     const isPlain = mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(data.filename);
+    const isPdf = mime === "application/pdf" || /\.pdf$/i.test(data.filename);
+    if (!isAudio && !isPlain && !isPdf) {
+      throw new Error("Formato não suportado. Envie PDF, TXT/MD/CSV ou áudio.");
+    }
 
+    let sourceText = "";
     if (isAudio) {
       const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
       const blob = new Blob([bin], { type: mime || "audio/webm" });
@@ -45,32 +49,13 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
       if (!res.ok) throw new Error(`Falha ao transcrever: ${res.status} ${await res.text().catch(() => "")}`);
       const j = await res.json();
       sourceText = String(j.text ?? "").trim();
+      if (!sourceText) throw new Error("Não foi possível transcrever o áudio");
     } else if (isPlain) {
-      sourceText = atob(data.base64);
-    } else {
-      const isPdf = mime === "application/pdf" || /\.pdf$/i.test(data.filename);
-      if (!isPdf) {
-        throw new Error("Formato não suportado. Envie PDF, TXT/MD/CSV ou áudio. Para .doc/.docx, exporte como PDF antes.");
-      }
-      const dataUrl = `data:application/pdf;base64,${data.base64}`;
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: [
-            { type: "text", text: "Extraia TODO o conteúdo textual relevante deste documento em português, em texto corrido, preservando informações, nomes e dados citados. Não resuma." },
-            { type: "file", file: { filename: data.filename, file_data: dataUrl } },
-          ] }],
-        }),
-      });
-      if (!res.ok) throw new Error(`Falha ao extrair conteúdo: ${res.status} ${await res.text().catch(() => "")}`);
-      const j = await res.json();
-      sourceText = String(j?.choices?.[0]?.message?.content ?? "").trim();
+      sourceText = atob(data.base64).trim();
+      if (!sourceText) throw new Error("Arquivo de texto vazio");
     }
-    if (!sourceText) throw new Error("Não foi possível extrair conteúdo do arquivo");
 
-    // 2. Distribui em capítulos via LLM
+    // 2. Distribui em capítulos via LLM (chamada única — PDF vai direto)
     const capList = capitulos
       .map((c: any) => {
         const campos = Array.isArray(c.campos_matriz) && c.campos_matriz.length
@@ -79,23 +64,28 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
       })
       .join("\n");
 
-    const prompt = `Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo e uma lista de CAPÍTULOS de um roteiro. Sua tarefa: distribuir o conteúdo do relatório entre os capítulos e, para cada capítulo com campos_sintese, preencher também uma síntese objetiva.
+    const promptHeader = `Você recebe o RELATÓRIO BRUTO de uma entrevista/imersão de campo (${isPdf ? "no PDF em anexo" : "no texto abaixo"}) e uma lista de CAPÍTULOS de um roteiro. Sua tarefa: distribuir o conteúdo entre os capítulos e, para cada capítulo com campos_sintese, preencher também uma síntese objetiva.
 
 Regras:
 - Retorne SOMENTE um objeto JSON no formato { "codigo_do_capitulo": { "texto": "...", "sintese": { "campo": "valor" } } }.
 - Use exatamente os códigos listados como chave.
-- Em "sintese", use apenas os campos listados em [campos_sintese] do capítulo, com respostas curtas e objetivas (frases curtas ou listas separadas por vírgula). Se não houver informação, use "".
+- Em "sintese", use apenas os campos listados em [campos_sintese] do capítulo, com respostas curtas e objetivas. Se não houver informação, use "".
 - Se um capítulo não tiver conteúdo, use { "texto": "", "sintese": {} }.
 - SEMPRE inclua o capítulo "informacoes_adicionais" e coloque nele TUDO que não se encaixou nos demais.
 - Português natural, sem markdown, sem inventar informação. Preserve nomes, números e detalhes no "texto".
 
 Capítulos disponíveis:
-${capList}
+${capList}`;
 
-Relatório bruto:
-"""
-${sourceText}
-"""`;
+    const userContent: any[] = [{ type: "text", text: promptHeader }];
+    if (isPdf) {
+      userContent.push({
+        type: "file",
+        file: { filename: data.filename, file_data: `data:application/pdf;base64,${data.base64}` },
+      });
+    } else {
+      userContent.push({ type: "text", text: `Relatório bruto:\n"""\n${sourceText}\n"""` });
+    }
 
     const distRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -104,7 +94,7 @@ ${sourceText}
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "Você retorna somente JSON válido." },
-          { role: "user", content: prompt },
+          { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
       }),
