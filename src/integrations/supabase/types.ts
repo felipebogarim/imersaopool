@@ -1559,6 +1559,56 @@ export type Database = {
           },
         ]
       }
+      sessao_capitulo_itens: {
+        Row: {
+          campos: Json
+          company_id: string | null
+          confianca_ia: number | null
+          created_at: string
+          id: string
+          item_ref_id: string | null
+          item_tipo: string | null
+          origem: string
+          revisado_humano: boolean
+          sessao_capitulo_id: string
+          updated_at: string
+        }
+        Insert: {
+          campos?: Json
+          company_id?: string | null
+          confianca_ia?: number | null
+          created_at?: string
+          id?: string
+          item_ref_id?: string | null
+          item_tipo?: string | null
+          origem: string
+          revisado_humano?: boolean
+          sessao_capitulo_id: string
+          updated_at?: string
+        }
+        Update: {
+          campos?: Json
+          company_id?: string | null
+          confianca_ia?: number | null
+          created_at?: string
+          id?: string
+          item_ref_id?: string | null
+          item_tipo?: string | null
+          origem?: string
+          revisado_humano?: boolean
+          sessao_capitulo_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessao_capitulo_itens_sessao_capitulo_id_fkey"
+            columns: ["sessao_capitulo_id"]
+            isOneToOne: false
+            referencedRelation: "sessao_capitulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessao_capitulos: {
         Row: {
           capitulo_id: string
