@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ChapterCapture } from "@/components/ChapterCapture";
+import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
