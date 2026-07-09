@@ -57,7 +57,7 @@ function ImmersionsIndex() {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const { error } = await supabase.from("immersions").delete().eq("id", pendingDelete.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Imersão excluída");
     qc.invalidateQueries({ queryKey: ["immersions"] });
   }
