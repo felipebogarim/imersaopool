@@ -234,7 +234,28 @@ function NovaEntrevista() {
                 />
               </div>
             )}
+            <div className="md:col-span-2">
+              <Label>Roteiro (opcional)</Label>
+              <Select
+                value={form.roteiro_id || "none"}
+                onValueChange={(v) => setForm({ ...form, roteiro_id: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem roteiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem roteiro</SelectItem>
+                  {roteiros.map((r: any) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome} (v{r.versao})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ative um roteiro para capturar a entrevista por capítulos estruturados.
+              </p>
+            </div>
           </div>
+
 
           <div className="pt-2 border-t border-border">
             <div className="flex items-center justify-between py-2">
