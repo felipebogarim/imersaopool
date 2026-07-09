@@ -129,6 +129,7 @@ function NovaEntrevista() {
       tema: form.tema,
       tema_outro: form.tema === "outro" ? form.tema_outro : null,
       client_id: vinculado ? clientId : null,
+      roteiro_id: form.roteiro_id || null,
       entrevistador_nome: userData.user?.email ?? "—",
       respostas: {},
     } as any);
