@@ -5,11 +5,12 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2, Compass } from "lucide-react";
+import { Plus, MoreVertical, Mail, MessageCircle, Trash2, Loader2, Compass, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { shareImmersionByEmail, shareImmersionByWhatsapp } from "@/lib/immersion-report";
 import { EmptyState, LoadingRows } from "@/components/EmptyState";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/imersoes/")({
   head: () => ({ meta: [{ title: "Imersões — PoolFlux" }] }),
@@ -30,6 +31,7 @@ function ImmersionsIndex() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; titulo: string } | null>(null);
 
   const { data: imms = [], isLoading } = useQuery({
     queryKey: ["immersions"],
@@ -52,10 +54,10 @@ function ImmersionsIndex() {
     }
   }
 
-  async function remove(id: string, titulo: string) {
-    if (!confirm(`Excluir a imersão "${titulo}"?`)) return;
-    const { error } = await supabase.from("immersions").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { error } = await supabase.from("immersions").delete().eq("id", pendingDelete.id);
+    if (error) { toast.error(error.message); return; }
     toast.success("Imersão excluída");
     qc.invalidateQueries({ queryKey: ["immersions"] });
   }
@@ -112,8 +114,11 @@ function ImmersionsIndex() {
                           <DropdownMenuItem onClick={() => runShare(i.id, "whats")}>
                             <MessageCircle className="h-4 w-4 mr-2" /> Compartilhar por WhatsApp
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate({ to: "/imersoes/$id", params: { id: i.id } })}>
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => remove(i.id, i.titulo)} className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem onClick={() => setPendingDelete({ id: i.id, titulo: i.titulo })} className="text-destructive focus:text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" /> Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -126,6 +131,12 @@ function ImmersionsIndex() {
           )
         }
       </div>
+      <PasswordConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => { if (!v) setPendingDelete(null); }}
+        title={pendingDelete ? `Excluir "${pendingDelete.titulo}"` : "Excluir imersão"}
+        onConfirmed={confirmDelete}
+      />
     </div>
   );
 }
