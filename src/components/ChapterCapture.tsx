@@ -269,7 +269,7 @@ function CapituloBlock({
       )}
 
       <div className="flex justify-end mt-3">
-        <Button size="sm" onClick={save} disabled={saving || (!texto.trim() && Object.values(sintese).every(v => !v?.trim()))}>
+        <Button size="sm" onClick={save} disabled={saving || (!leitura.trim() && !texto.trim() && Object.values(sintese).every(v => !v?.trim()))}>
           {saving ? "Salvando..." : isIaDraft ? "Confirmar sugestão" : existing ? "Atualizar" : "Salvar capítulo"}
         </Button>
       </div>
