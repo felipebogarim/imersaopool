@@ -90,7 +90,8 @@ function parseFinalReport(md: string): ParsedChapter[] {
   type Section = "leitura" | "sintese" | "evidencia" | null;
   let section: Section = null;
 
-  const headerRe = /^\s*#{1,3}\s*(?:cap[ií]tulo\s*)?(\d+)?\s*[—\-–.:)]?\s*(.+?)\s*$/i;
+  // Linhas separadoras markdown (---, ***, ___). Nunca fazem parte de conteúdo.
+  const separatorRe = /^\s*(?:[-*_]\s*){3,}\s*$/;
 
   const flushLeituraBuffer = (buf: string[]) => {
     if (!cur) return;
@@ -106,10 +107,22 @@ function parseFinalReport(md: string): ParsedChapter[] {
     }
   };
 
+  // Texto fora de qualquer capítulo (antes do 1º ou após um heading não-capítulo)
+  // vira "observações gerais", separado dos capítulos.
+  const observacoesBuf: string[] = [];
+  let outsideMode = false;
+
   for (const raw of lines) {
     const line = raw.replace(/\s+$/, "");
+
+    // Separador markdown — encerra qualquer seção aberta e é ignorado.
+    if (separatorRe.test(line)) {
+      commitSectionSwitch();
+      section = null;
+      continue;
+    }
+
     // Só reconhece cabeçalho de capítulo se começar com "Capítulo N" ou "N." / "N —".
-    // Evita casar títulos que apenas contenham a palavra "capítulos".
     const chapterHeaderRe = /^\s*#{1,3}\s*(?:cap[ií]tulo\s+(\d+)|(\d+))\s*[—\-–.:)]?\s*(.+?)\s*$/i;
     const h = line.match(/^\s*#{1,3}\s+/);
     if (h) {
@@ -120,11 +133,30 @@ function parseFinalReport(md: string): ParsedChapter[] {
         const ordem = parseInt(m[1] ?? m[2], 10);
         cur = { ordem, titulo: m[3].trim(), leitura: "", sintese: {}, evidencia: "" };
         section = null;
+        outsideMode = false;
         continue;
       }
+      // Heading não-capítulo (ex: "## Nota final"): fecha o capítulo atual
+      // e o conteúdo seguinte é acumulado como observação geral do documento.
+      commitSectionSwitch();
+      if (cur) {
+        chapters.push(cur);
+        cur = null;
+      }
+      section = null;
+      outsideMode = true;
+      const label = line.replace(/^\s*#{1,3}\s*/, "").trim();
+      if (label) observacoesBuf.push(`**${label}**`);
+      continue;
     }
 
-    if (!cur) continue;
+    if (!cur) {
+      if (outsideMode) {
+        const t = line.trim();
+        if (t) observacoesBuf.push(line);
+      }
+      continue;
+    }
 
     // Marcadores de seção — linhas do tipo **Título** ou **Título:**
     const marker = line.match(/^\s*\*\*(.+?)\*\*\s*:?\s*(.*)$/);
