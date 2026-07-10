@@ -26,8 +26,11 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   const qc = useQueryClient();
   const generate = useServerFn(generatePerspectivasForSession);
   const distribute = useServerFn(distributeReportToChapters);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const ingestFinal = useServerFn(ingestFinalReport);
+  const brutoRef = useRef<HTMLInputElement>(null);
+  const finalRef = useRef<HTMLInputElement>(null);
+  const [uploadingBruto, setUploadingBruto] = useState(false);
+  const [uploadingFinal, setUploadingFinal] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const { data: capitulos = [] } = useQuery({
