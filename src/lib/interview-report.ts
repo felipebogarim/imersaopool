@@ -12,10 +12,10 @@ const CYAN: [number, number, number] = [56, 189, 220];
 const CYAN_DEEP: [number, number, number] = [14, 116, 144];
 const CORAL: [number, number, number] = [244, 114, 94];
 const INK: [number, number, number] = [20, 24, 36];
-const MUTED: [number, number, number] = [110, 120, 138];
+const MUTED: [number, number, number] = [86, 96, 116];
 const HAIRLINE: [number, number, number] = [220, 226, 236];
 const CREAM: [number, number, number] = [248, 246, 240];
-const HIGHLIGHT: [number, number, number] = [235, 248, 251];
+const HIGHLIGHT: [number, number, number] = [230, 246, 250];
 
 export async function exportInterviewPdf(interviewId: string) {
   const { data: interview } = await supabase
@@ -296,38 +296,45 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.text(`CAPÍTULO ${String(cap.ordem).padStart(2, "0")}`, margin, y, { charSpace: 2 });
     y += 14;
 
-    // Número em display
+    // Número em display (marca-d'água)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(96);
-    setText([236, 240, 246]);
-    doc.text(String(cap.ordem).padStart(2, "0"), margin, y + 70);
+    setText([232, 236, 244]);
+    doc.text(String(cap.ordem).padStart(2, "0"), margin, y + 78);
 
-    // Título ao lado do número
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(26);
-    setText(NAVY);
+    // Título ao lado do número — auto-shrink pra caber
     const titleX = margin + 130;
     const titleW = maxW - 130;
-    const tl = doc.splitTextToSize(cap.titulo, titleW);
+    let tSize = 26;
+    let tl = doc.splitTextToSize(cap.titulo, titleW);
+    while (tl.length > 3 && tSize > 16) {
+      tSize -= 2;
+      doc.setFontSize(tSize);
+      tl = doc.splitTextToSize(cap.titulo, titleW);
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(tSize);
+    setText(NAVY);
     let tly = y + 20;
     for (const l of tl.slice(0, 3)) {
       doc.text(l, titleX, tly);
-      tly += 30;
+      tly += tSize * 1.15;
     }
 
-    // Lente badge
+    // Lente badge — clampado dentro da largura útil
     if (cap.lente_default) {
       const badge = `LENTE · ${String(cap.lente_default).toUpperCase()}`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      const bw = doc.getTextWidth(badge) + 16;
+      const rawW = doc.getTextWidth(badge) + 16;
+      const bw = Math.min(rawW, maxW - 130);
       setFill(NAVY);
       doc.roundedRect(titleX, tly + 4, bw, 18, 9, 9, "F");
       setText([255, 255, 255]);
       doc.text(badge, titleX + 8, tly + 16, { charSpace: 1.2 });
     }
 
-    y = y + 100;
+    y = y + 110;
     setDraw(CORAL);
     doc.setLineWidth(2);
     doc.line(margin, y, margin + 48, y);
@@ -342,34 +349,49 @@ export async function exportInterviewPdf(interviewId: string) {
       y += 10;
     }
 
-    // Leitura estratégica — destaque em bloco cyan
+    // Leitura estratégica — pull-quote editorial (aspas gigantes + destaque)
     if (r?.leitura_estrategica?.trim()) {
-      const text = String(r.leitura_estrategica);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      const lines = doc.splitTextToSize(text, maxW - 32);
-      const blockH = 40 + lines.length * 16;
+      const text = String(r.leitura_estrategica).trim();
+      const innerW = maxW - 96;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      const lines = doc.splitTextToSize(text, innerW);
+      const blockH = 56 + lines.length * 20 + 20;
       ensure(blockH + 20);
-      setFill(HIGHLIGHT);
-      doc.roundedRect(margin, y, maxW, blockH, 6, 6, "F");
-      setFill(CYAN);
-      doc.rect(margin, y, 4, blockH, "F");
 
+      // fundo cream com borda cyan
+      setFill([255, 255, 255]);
+      doc.roundedRect(margin, y, maxW, blockH, 8, 8, "F");
+      setDraw(CYAN);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(margin, y, maxW, blockH, 8, 8, "S");
+      setFill(CYAN);
+      doc.rect(margin, y, 5, blockH, "F");
+
+      // aspas gigantes
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(72);
+      setText(CYAN);
+      doc.text("“", margin + 20, y + 62);
+
+      // label
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN_DEEP);
-      doc.text("LEITURA ESTRATÉGICA", margin + 20, y + 20, { charSpace: 1.5 });
+      doc.text("LEITURA ESTRATÉGICA", margin + 76, y + 24, { charSpace: 1.5 });
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      setText(INK);
-      let ly = y + 40;
+      // texto destaque
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      setText(NAVY);
+      let ly = y + 46;
       for (const l of lines) {
-        doc.text(l, margin + 20, ly);
-        ly += 16;
+        doc.text(l, margin + 76, ly);
+        ly += 20;
       }
       y += blockH + 18;
     }
+
 
     // Evidência / anotações
     if (r?.resposta_texto?.trim()) {
