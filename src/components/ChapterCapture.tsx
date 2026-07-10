@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
+import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
@@ -25,8 +26,11 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   const qc = useQueryClient();
   const generate = useServerFn(generatePerspectivasForSession);
   const distribute = useServerFn(distributeReportToChapters);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const ingestFinal = useServerFn(ingestFinalReport);
+  const brutoRef = useRef<HTMLInputElement>(null);
+  const finalRef = useRef<HTMLInputElement>(null);
+  const [uploadingBruto, setUploadingBruto] = useState(false);
+  const [uploadingFinal, setUploadingFinal] = useState(false);
   const [generating, setGenerating] = useState(false);
 
   const { data: capitulos = [] } = useQuery({
@@ -48,9 +52,9 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
         .eq("sessao_id", sessaoId)).data ?? [],
   });
 
-  async function handleUpload(file: File) {
+  async function handleBruto(file: File) {
     if (file.size > MAX_BYTES) return toast.error("Arquivo maior que 20MB");
-    setUploading(true);
+    setUploadingBruto(true);
     try {
       const base64 = await blobToBase64(file);
       const r = await distribute({ data: { sessaoId, base64, mime: file.type || "application/octet-stream", filename: file.name } });
@@ -59,7 +63,24 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao processar arquivo");
     } finally {
-      setUploading(false);
+      setUploadingBruto(false);
+    }
+  }
+
+  async function handleFinal(file: File) {
+    if (file.size > MAX_BYTES) return toast.error("Arquivo maior que 20MB");
+    setUploadingFinal(true);
+    try {
+      const base64 = await blobToBase64(file);
+      const r = await ingestFinal({ data: { sessaoId, base64, mime: file.type || "application/octet-stream", filename: file.name } });
+      toast.success(`Relatório final aplicado a ${r.filled} capítulo(s)`);
+      if (r.unmatched?.length)
+        toast.warning(`${r.unmatched.length} capítulo(s) não reconhecido(s)`, { description: r.unmatched.slice(0, 3).join(" · ") });
+      qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao processar arquivo");
+    } finally {
+      setUploadingFinal(false);
     }
   }
 
@@ -79,22 +100,34 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
 
   return (
     <div className="space-y-4">
-      <div className="surface rounded-xl p-5 border border-dashed">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <h3 className="font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Relatório completo</h3>
-            <p className="text-sm text-muted-foreground">Envie PDF, texto ou áudio da entrevista/imersão. A IA lê tudo e distribui pelos capítulos abaixo (como sugestão para você revisar).</p>
-          </div>
-          <div className="flex gap-2">
+      <div className="surface rounded-xl p-5 border border-dashed space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <h3 className="font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Relatório bruto</h3>
+            <p className="text-sm text-muted-foreground">Envie a transcrição/áudio original. A IA lê, interpreta e distribui pelos capítulos como sugestão para revisão.</p>
             <input
-              ref={fileRef}
+              ref={brutoRef}
               type="file"
               accept=".pdf,.docx,.txt,.md,.csv,audio/*"
               className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleBruto(f); e.target.value = ""; }}
             />
-            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Processando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar arquivo</>}
+            <Button variant="outline" onClick={() => brutoRef.current?.click()} disabled={uploadingBruto}>
+              {uploadingBruto ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Processando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar bruto</>}
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Relatório final</h3>
+            <p className="text-sm text-muted-foreground">Envie o documento já pronto (.md/.txt/.docx). O texto é copiado verbatim para os campos — a IA não reescreve nem interpreta.</p>
+            <input
+              ref={finalRef}
+              type="file"
+              accept=".md,.markdown,.txt,.docx"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFinal(f); e.target.value = ""; }}
+            />
+            <Button variant="outline" onClick={() => finalRef.current?.click()} disabled={uploadingFinal}>
+              {uploadingFinal ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Aplicando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar final</>}
             </Button>
           </div>
         </div>

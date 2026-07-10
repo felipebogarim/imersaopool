@@ -1,0 +1,261 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/**
+ * Ingesta de "Relatório final": documento já pronto e formatado.
+ * A IA NÃO analisa, resume ou reescreve — apenas parseia estrutura conhecida
+ * e copia trechos verbatim para os campos visuais (leitura_estrategica,
+ * sintese{campo}, evidência).
+ *
+ * Formato esperado (Markdown):
+ *   ## Capítulo N — Título              (ou "## N. Título", "## Capítulo N – Título")
+ *   **Percepção relatada** | **Leitura estratégica**
+ *   <parágrafos livres>
+ *   **Pontos levantados**
+ *   - chave: valor
+ *   - outra_chave: valor
+ *   **Evidência:** "trecho literal"
+ */
+
+function stripBase64ToText(base64: string, mime: string, filename: string): Promise<string> {
+  const isPlain =
+    (mime && (mime.startsWith("text/") || mime === "application/json")) ||
+    /\.(txt|md|markdown|csv)$/i.test(filename);
+  if (isPlain) {
+    try {
+      // decodifica utf-8
+      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      return Promise.resolve(new TextDecoder("utf-8").decode(bin));
+    } catch {
+      return Promise.resolve(atob(base64));
+    }
+  }
+  // DOCX
+  if (/\.docx$/i.test(filename) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return import("fflate").then(({ unzipSync, strFromU8 }) => {
+      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const files = unzipSync(bin, { filter: (f) => f.name === "word/document.xml" });
+      const xml = files["word/document.xml"] ? strFromU8(files["word/document.xml"]) : "";
+      if (!xml) throw new Error("Não foi possível ler o conteúdo do DOCX");
+      // Cada <w:p> vira um parágrafo. Detecta "bold" para marcar cabeçalhos como **texto**.
+      const paragraphs = xml.split(/<\/w:p>/).map((para) => {
+        const runs = [...para.matchAll(/<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g)].map((rm) => {
+          const runXml = rm[1];
+          const isBold = /<w:b\b(?:\s[^/>]*)?\/>|<w:b\s+w:val="(?:true|1)"\s*\/>/.test(runXml);
+          const text = [...runXml.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)]
+            .map((tm) => tm[1])
+            .join("")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'");
+          if (!text) return "";
+          return isBold ? `**${text}**` : text;
+        });
+        // Detecta se é item de lista
+        const isList = /<w:numPr\b/.test(para);
+        const line = runs.join("").trim();
+        if (!line) return "";
+        return isList ? `- ${line}` : line;
+      });
+      return paragraphs.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    });
+  }
+  throw new Error("Formato não suportado no modo Relatório final. Envie .md, .txt ou .docx.");
+}
+
+// Normaliza um cabeçalho de capítulo em código canônico ou label a comparar.
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+type ParsedChapter = {
+  ordem: number | null;
+  titulo: string;
+  leitura: string;
+  sintese: Record<string, string>;
+  evidencia: string;
+};
+
+function parseFinalReport(md: string): ParsedChapter[] {
+  const lines = md.split(/\r?\n/);
+  const chapters: ParsedChapter[] = [];
+  let cur: ParsedChapter | null = null;
+  type Section = "leitura" | "sintese" | "evidencia" | null;
+  let section: Section = null;
+
+  const headerRe = /^\s*#{1,3}\s*(?:cap[ií]tulo\s*)?(\d+)?\s*[—\-–.:)]?\s*(.+?)\s*$/i;
+
+  const flushLeituraBuffer = (buf: string[]) => {
+    if (!cur) return;
+    const txt = buf.join("\n").trim();
+    if (txt) cur.leitura = cur.leitura ? `${cur.leitura}\n\n${txt}` : txt;
+  };
+  let leituraBuf: string[] = [];
+
+  const commitSectionSwitch = () => {
+    if (section === "leitura") {
+      flushLeituraBuffer(leituraBuf);
+      leituraBuf = [];
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, "");
+    // Novo capítulo?
+    const h = line.match(/^\s*#{1,3}\s+/);
+    if (h) {
+      const m = line.match(headerRe);
+      if (m && /cap[ií]tulo|^\s*#{1,3}\s*\d/i.test(line)) {
+        commitSectionSwitch();
+        if (cur) chapters.push(cur);
+        const ordem = m[1] ? parseInt(m[1], 10) : null;
+        cur = { ordem, titulo: m[2].trim(), leitura: "", sintese: {}, evidencia: "" };
+        section = null;
+        continue;
+      }
+    }
+    if (!cur) continue;
+
+    // Marcadores de seção — linhas do tipo **Título** ou **Título:**
+    const marker = line.match(/^\s*\*\*(.+?)\*\*\s*:?\s*(.*)$/);
+    if (marker) {
+      const label = normalize(marker[1]);
+      const rest = marker[2].trim();
+
+      if (
+        label.startsWith("percepcao relatada") ||
+        label.startsWith("leitura estrategica") ||
+        label.startsWith("leitura")
+      ) {
+        commitSectionSwitch();
+        section = "leitura";
+        if (rest) leituraBuf.push(rest);
+        continue;
+      }
+      if (label.startsWith("pontos levantados") || label.startsWith("sintese")) {
+        commitSectionSwitch();
+        section = "sintese";
+        continue;
+      }
+      if (label.startsWith("evidencia")) {
+        commitSectionSwitch();
+        section = "evidencia";
+        if (rest) cur.evidencia = rest.replace(/^["“”']+|["“”']+$/g, "");
+        continue;
+      }
+    }
+
+    if (section === "leitura") {
+      leituraBuf.push(line);
+    } else if (section === "sintese") {
+      // linhas tipo "- chave: valor" ou "chave: valor"
+      const item = line.match(/^\s*[-*•]?\s*([A-Za-z0-9_ ][A-Za-z0-9_ \-]*?)\s*:\s*(.+)$/);
+      if (item) {
+        const key = item[1].trim().toLowerCase().replace(/\s+/g, "_");
+        cur.sintese[key] = item[2].trim();
+      }
+    } else if (section === "evidencia") {
+      const t = line.trim();
+      if (t) cur.evidencia = (cur.evidencia ? `${cur.evidencia} ${t}` : t).replace(/^["“”']+|["“”']+$/g, "");
+    }
+  }
+  commitSectionSwitch();
+  if (cur) chapters.push(cur);
+  return chapters;
+}
+
+export const ingestFinalReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { sessaoId: string; base64: string; mime: string; filename: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const text = await stripBase64ToText(data.base64, data.mime, data.filename);
+    if (!text.trim()) throw new Error("Documento vazio");
+
+    const parsed = parseFinalReport(text);
+    if (!parsed.length)
+      throw new Error(
+        'Nenhum capítulo reconhecido. Use cabeçalhos "## Capítulo N — Título" no documento.',
+      );
+
+    const { data: interview, error: iErr } = await supabase
+      .from("interviews")
+      .select("id, roteiro_id")
+      .eq("id", data.sessaoId)
+      .maybeSingle();
+    if (iErr) throw new Error(iErr.message);
+    if (!interview?.roteiro_id) throw new Error("Sessão sem roteiro vinculado");
+
+    const { data: capitulos, error: cErr } = await supabase
+      .from("capitulos")
+      .select("id, codigo, titulo, ordem, campos_matriz")
+      .eq("roteiro_id", interview.roteiro_id)
+      .order("ordem");
+    if (cErr) throw new Error(cErr.message);
+    if (!capitulos?.length) throw new Error("Roteiro sem capítulos");
+
+    // Casa parsed→capítulo por ordem, depois por título normalizado, depois por código.
+    const byOrdem = new Map<number, any>();
+    const byTitulo = new Map<string, any>();
+    const byCodigo = new Map<string, any>();
+    for (const c of capitulos as any[]) {
+      if (c.ordem != null) byOrdem.set(c.ordem, c);
+      byTitulo.set(normalize(c.titulo ?? ""), c);
+      byCodigo.set(normalize(c.codigo ?? ""), c);
+    }
+
+    let filled = 0;
+    const unmatched: string[] = [];
+    for (const p of parsed) {
+      let cap: any = null;
+      if (p.ordem != null) cap = byOrdem.get(p.ordem) ?? null;
+      if (!cap) {
+        const n = normalize(p.titulo);
+        cap = byTitulo.get(n) ?? byCodigo.get(n) ?? null;
+      }
+      if (!cap) {
+        unmatched.push(`${p.ordem ?? "?"} — ${p.titulo}`);
+        continue;
+      }
+
+      // Filtra síntese só para campos válidos do capítulo (não inventa nada).
+      const camposValidos: string[] = Array.isArray(cap.campos_matriz) ? cap.campos_matriz : [];
+      const sintese: Record<string, string> = {};
+      for (const k of camposValidos) if (p.sintese[k] != null) sintese[k] = p.sintese[k];
+
+      const respostaTexto = p.evidencia ? `Evidência: "${p.evidencia}"` : "";
+
+      const { data: existing } = await supabase
+        .from("sessao_capitulos")
+        .select("id")
+        .eq("sessao_id", interview.id)
+        .eq("capitulo_id", cap.id)
+        .maybeSingle();
+
+      const payload: any = {
+        sessao_id: interview.id,
+        capitulo_id: cap.id,
+        leitura_estrategica: p.leitura,
+        resposta_texto: respostaTexto,
+        sintese,
+        origem: "final",
+        status_revisao: "revisado",
+      };
+
+      if (existing?.id) {
+        await supabase.from("sessao_capitulos").update(payload).eq("id", existing.id);
+      } else {
+        await supabase.from("sessao_capitulos").insert(payload);
+      }
+      filled++;
+    }
+
+    return { filled, total: capitulos.length, unmatched };
+  });
