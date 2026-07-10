@@ -1820,6 +1820,7 @@ export type Database = {
         | "oportunidade"
         | "ameaca"
         | "cuidado"
+        | "governanca"
       perspectiva_status:
         | "ia_sugerida"
         | "em_revisao"
@@ -2000,6 +2001,7 @@ export const Constants = {
         "oportunidade",
         "ameaca",
         "cuidado",
+        "governanca",
       ],
       perspectiva_status: [
         "ia_sugerida",
