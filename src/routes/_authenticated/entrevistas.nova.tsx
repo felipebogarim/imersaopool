@@ -404,7 +404,7 @@ function NovaEntrevista() {
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Salvando..." : "Salvar entrevista"}
+              {saving ? "Salvando..." : "Avançar"}
             </Button>
           </div>
         </div>
