@@ -295,5 +295,20 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
       filled++;
     }
 
-    return { filled, total: capitulos.length, unmatched };
+    // Se houver texto fora de qualquer capítulo, anexa em interviews.observacoes.
+    if (observacoes) {
+      const { data: cur } = await supabase
+        .from("interviews")
+        .select("observacoes")
+        .eq("id", interview.id)
+        .maybeSingle();
+      const prev = (cur?.observacoes ?? "").trim();
+      const merged = prev
+        ? `${prev}\n\n---\n[Do relatório final] ${observacoes}`
+        : `[Do relatório final] ${observacoes}`;
+      await supabase.from("interviews").update({ observacoes: merged }).eq("id", interview.id);
+    }
+
+    return { filled, total: capitulos.length, unmatched, observacoes };
+
   });
