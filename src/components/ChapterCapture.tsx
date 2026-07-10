@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
+import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
