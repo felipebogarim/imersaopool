@@ -12,10 +12,10 @@ const CYAN: [number, number, number] = [56, 189, 220];
 const CYAN_DEEP: [number, number, number] = [14, 116, 144];
 const CORAL: [number, number, number] = [244, 114, 94];
 const INK: [number, number, number] = [20, 24, 36];
-const MUTED: [number, number, number] = [110, 120, 138];
+const MUTED: [number, number, number] = [86, 96, 116];
 const HAIRLINE: [number, number, number] = [220, 226, 236];
 const CREAM: [number, number, number] = [248, 246, 240];
-const HIGHLIGHT: [number, number, number] = [235, 248, 251];
+const HIGHLIGHT: [number, number, number] = [230, 246, 250];
 
 export async function exportInterviewPdf(interviewId: string) {
   const { data: interview } = await supabase
