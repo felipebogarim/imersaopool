@@ -147,7 +147,7 @@ function MediaBtns({ onText }: { onText: (t: string) => void }) {
     <>
       <MediaBtn kind="image" accept="image/*" icon={<ImageIcon className="h-4 w-4" />} title="Enviar foto" loading={loading} onPick={handle} />
       <MediaBtn kind="video" accept="video/*" icon={<Video className="h-4 w-4" />} title="Enviar vídeo" loading={loading} onPick={handle} />
-      <MediaBtn kind="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" icon={<Paperclip className="h-4 w-4" />} title="Enviar arquivo" loading={loading} onPick={handle} />
+      <MediaBtn kind="file" accept=".pdf,.doc,.docx,.txt,.md,.markdown,.csv,.xls,.xlsx" icon={<Paperclip className="h-4 w-4" />} title="Enviar arquivo" loading={loading} onPick={handle} />
     </>
   );
 }
