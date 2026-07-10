@@ -83,12 +83,13 @@ type ParsedChapter = {
   evidencia: string;
 };
 
-function parseFinalReport(md: string): ParsedChapter[] {
+function parseFinalReport(md: string): { chapters: ParsedChapter[]; observacoes: string } {
   const lines = md.split(/\r?\n/);
   const chapters: ParsedChapter[] = [];
   let cur: ParsedChapter | null = null;
   type Section = "leitura" | "sintese" | "evidencia" | null;
   let section: Section = null;
+
 
   // Linhas separadoras markdown (---, ***, ___). Nunca fazem parte de conteúdo.
   const separatorRe = /^\s*(?:[-*_]\s*){3,}\s*$/;
