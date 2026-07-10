@@ -204,8 +204,9 @@ function parseFinalReport(md: string): { chapters: ParsedChapter[]; observacoes:
   }
   commitSectionSwitch();
   if (cur) chapters.push(cur);
-  return chapters;
+  return { chapters, observacoes: observacoesBuf.join("\n").trim() };
 }
+
 
 export const ingestFinalReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
