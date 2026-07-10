@@ -108,19 +108,22 @@ function parseFinalReport(md: string): ParsedChapter[] {
 
   for (const raw of lines) {
     const line = raw.replace(/\s+$/, "");
-    // Novo capítulo?
+    // Só reconhece cabeçalho de capítulo se começar com "Capítulo N" ou "N." / "N —".
+    // Evita casar títulos que apenas contenham a palavra "capítulos".
+    const chapterHeaderRe = /^\s*#{1,3}\s*(?:cap[ií]tulo\s+(\d+)|(\d+))\s*[—\-–.:)]?\s*(.+?)\s*$/i;
     const h = line.match(/^\s*#{1,3}\s+/);
     if (h) {
-      const m = line.match(headerRe);
-      if (m && /cap[ií]tulo|^\s*#{1,3}\s*\d/i.test(line)) {
+      const m = line.match(chapterHeaderRe);
+      if (m) {
         commitSectionSwitch();
         if (cur) chapters.push(cur);
-        const ordem = m[1] ? parseInt(m[1], 10) : null;
-        cur = { ordem, titulo: m[2].trim(), leitura: "", sintese: {}, evidencia: "" };
+        const ordem = parseInt(m[1] ?? m[2], 10);
+        cur = { ordem, titulo: m[3].trim(), leitura: "", sintese: {}, evidencia: "" };
         section = null;
         continue;
       }
     }
+
     if (!cur) continue;
 
     // Marcadores de seção — linhas do tipo **Título** ou **Título:**
