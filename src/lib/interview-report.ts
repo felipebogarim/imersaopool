@@ -284,36 +284,176 @@ export async function exportInterviewPdf(interviewId: string) {
     });
   }
 
+  // ————————————————————————— PANORAMA (dashboard visual) —————————————————————————
+  const totalCaps = capitulos.length;
+  const capsRespondidos = capitulos.filter((c: any) => {
+    const r: any = respByCap.get(c.id);
+    return !!(r?.leitura_estrategica?.trim() || r?.resposta_texto?.trim() ||
+      (r?.sintese && Object.values(r.sintese as Record<string, string>).some(v => v?.trim())));
+  }).length;
+  const pctRespondidos = totalCaps ? Math.round((capsRespondidos / totalCaps) * 100) : 0;
+  let campoTotal = 0;
+  let campoFilled = 0;
+  for (const c of capitulos as any[]) {
+    const campos: string[] = Array.isArray(c.campos_matriz) ? c.campos_matriz : [];
+    const r: any = respByCap.get(c.id);
+    const s = (r?.sintese ?? {}) as Record<string, string>;
+    campoTotal += campos.length;
+    for (const k of campos) if (s[k]?.trim()) campoFilled++;
+  }
+
+  if (totalCaps) {
+    addContentPage();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(CYAN_DEEP);
+    doc.text("PANORAMA", margin, y, { charSpace: 2 });
+    y += 22;
+    write("Sinais em foco.", 28, "bold", NAVY);
+    y += 4;
+    setDraw(CORAL);
+    doc.setLineWidth(3);
+    doc.line(margin, y, margin + 48, y);
+    y += 28;
+
+    // Card 1 — Cobertura da entrevista (anel + % gigante)
+    const cardTop = y;
+    const cardH = 240;
+    setFill([255, 255, 255]);
+    doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "F");
+    setDraw(HAIRLINE);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "S");
+
+    // Anel de progresso (aprox por segmentos de linha)
+    const ringCx = margin + 130;
+    const ringCy = cardTop + cardH / 2;
+    const ringR = 78;
+    setDraw(HAIRLINE);
+    doc.setLineWidth(10);
+    doc.circle(ringCx, ringCy, ringR, "S");
+    setDraw(CYAN);
+    doc.setLineWidth(10);
+    const steps = 96;
+    const filledSteps = Math.round((pctRespondidos / 100) * steps);
+    for (let i = 0; i < filledSteps; i++) {
+      const a1 = -Math.PI / 2 + (i / steps) * Math.PI * 2;
+      const a2 = -Math.PI / 2 + ((i + 1) / steps) * Math.PI * 2;
+      doc.line(
+        ringCx + Math.cos(a1) * ringR,
+        ringCy + Math.sin(a1) * ringR,
+        ringCx + Math.cos(a2) * ringR,
+        ringCy + Math.sin(a2) * ringR,
+      );
+    }
+    // % no centro
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(36);
+    setText(NAVY);
+    const pctStr = `${pctRespondidos}%`;
+    const pctW = doc.getTextWidth(pctStr);
+    doc.text(pctStr, ringCx - pctW / 2, ringCy + 6);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    setText(MUTED);
+    const subStr = "COBERTURA";
+    const subW = doc.getTextWidth(subStr);
+    doc.text(subStr, ringCx - subW / 2, ringCy + 22, { charSpace: 1.2 });
+
+    // Texto à direita
+    const txtX = margin + 250;
+    const txtW = maxW - 270;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(CYAN_DEEP);
+    doc.text("DE COBERTURA DOS CAPÍTULOS", txtX, cardTop + 60, { charSpace: 1.5 });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    setText(INK);
+    const t1 = doc.splitTextToSize(
+      `${capsRespondidos} de ${totalCaps} capítulos com leitura estratégica registrada nesta sessão.`,
+      txtW,
+    );
+    let t1y = cardTop + 88;
+    for (const l of t1.slice(0, 4)) {
+      doc.text(l, txtX, t1y);
+      t1y += 26;
+    }
+    y = cardTop + cardH + 20;
+
+    // Card 2 — Insights capturados (número gigante à esquerda, texto à direita, à la Google)
+    if (campoTotal) {
+      const c2Top = y;
+      const c2H = 200;
+      ensure(c2H + 20);
+      setFill(NAVY);
+      doc.roundedRect(margin, c2Top, maxW, c2H, 10, 10, "F");
+      // faixa de destaque
+      setFill(CORAL);
+      doc.roundedRect(margin, c2Top, 8, c2H, 10, 10, "F");
+      doc.rect(margin + 4, c2Top, 4, c2H, "F");
+
+      const bigStr = `${campoFilled}`;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(120);
+      setText(CYAN);
+      doc.text(bigStr, margin + 40, c2Top + c2H / 2 + 40);
+      const bigW = doc.getTextWidth(bigStr);
+
+      const tx2 = margin + 40 + bigW + 30;
+      const tw2 = maxW - (tx2 - margin) - 20;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText([160, 205, 220]);
+      doc.text("DE UM TOTAL DE " + campoTotal, tx2, c2Top + 60, { charSpace: 1.5 });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      setText([255, 255, 255]);
+      const t2 = doc.splitTextToSize(
+        "campos de síntese objetiva capturados em campo — sinais concretos que sustentam a leitura.",
+        tw2,
+      );
+      let t2y = c2Top + 92;
+      for (const l of t2.slice(0, 4)) {
+        doc.text(l, tx2, t2y);
+        t2y += 26;
+      }
+      y = c2Top + c2H + 20;
+    }
+  }
+
   // ————————————————————————— CAPÍTULOS —————————————————————————
   for (const cap of capitulos) {
     addContentPage();
     const r: any = respByCap.get(cap.id);
 
-    // Cabeçalho capítulo — número gigante + título
+    // Cabeçalho capítulo — reformulado para evitar sobreposições
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     setText(CYAN_DEEP);
     doc.text(`CAPÍTULO ${String(cap.ordem).padStart(2, "0")}`, margin, y, { charSpace: 2 });
-    y += 14;
 
-    // Número em display
+    // Número gigante como watermark no canto direito
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(96);
-    setText([236, 240, 246]);
-    doc.text(String(cap.ordem).padStart(2, "0"), margin, y + 70);
+    doc.setFontSize(88);
+    setText([230, 236, 244]);
+    const numStr = String(cap.ordem).padStart(2, "0");
+    const numW = doc.getTextWidth(numStr);
+    doc.text(numStr, pageW - margin - numW, y + 54);
 
-    // Título ao lado do número
+    y += 24;
+
+    // Título em largura útil (deixando espaço para o watermark)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(26);
     setText(NAVY);
-    const titleX = margin + 130;
-    const titleW = maxW - 130;
+    const titleW = maxW - 120;
     const tl = doc.splitTextToSize(cap.titulo, titleW);
-    let tly = y + 20;
     for (const l of tl.slice(0, 3)) {
-      doc.text(l, titleX, tly);
-      tly += 30;
+      doc.text(l, margin, y + 20);
+      y += 30;
     }
+    y += 4;
 
     // Lente badge
     if (cap.lente_default) {
@@ -322,12 +462,12 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.setFontSize(8);
       const bw = doc.getTextWidth(badge) + 16;
       setFill(NAVY);
-      doc.roundedRect(titleX, tly + 4, bw, 18, 9, 9, "F");
+      doc.roundedRect(margin, y, bw, 18, 9, 9, "F");
       setText([255, 255, 255]);
-      doc.text(badge, titleX + 8, tly + 16, { charSpace: 1.2 });
+      doc.text(badge, margin + 8, y + 12, { charSpace: 1.2 });
+      y += 26;
     }
 
-    y = y + 100;
     setDraw(CORAL);
     doc.setLineWidth(2);
     doc.line(margin, y, margin + 48, y);
@@ -335,9 +475,6 @@ export async function exportInterviewPdf(interviewId: string) {
 
     // Pergunta de abertura
     if (cap.pergunta_abertura) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(13);
-      setText(NAVY_SOFT);
       write(`"${cap.pergunta_abertura}"`, 13, "italic", NAVY_SOFT);
       y += 10;
     }
@@ -347,8 +484,8 @@ export async function exportInterviewPdf(interviewId: string) {
       const text = String(r.leitura_estrategica);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
-      const lines = doc.splitTextToSize(text, maxW - 32);
-      const blockH = 40 + lines.length * 16;
+      const lines = doc.splitTextToSize(text, maxW - 40);
+      const blockH = 48 + lines.length * 16;
       ensure(blockH + 20);
       setFill(HIGHLIGHT);
       doc.roundedRect(margin, y, maxW, blockH, 6, 6, "F");
@@ -358,17 +495,17 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN_DEEP);
-      doc.text("LEITURA ESTRATÉGICA", margin + 20, y + 20, { charSpace: 1.5 });
+      doc.text("LEITURA ESTRATÉGICA", margin + 20, y + 22, { charSpace: 1.5 });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       setText(INK);
-      let ly = y + 40;
+      let ly = y + 44;
       for (const l of lines) {
         doc.text(l, margin + 20, ly);
         ly += 16;
       }
-      y += blockH + 18;
+      y += blockH + 20;
     }
 
     // Evidência / anotações
@@ -404,10 +541,10 @@ export async function exportInterviewPdf(interviewId: string) {
 
       for (const c of campos) {
         const val = sintese[c]?.trim() || "—";
-        doc.setFont("helvetica", "bold");
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         const lines = doc.splitTextToSize(val, maxW - 20);
-        const rowH = Math.max(28, 18 + lines.length * 13);
+        const rowH = Math.max(36, 22 + lines.length * 13);
         ensure(rowH + 4);
 
         // barra lateral coral
@@ -417,12 +554,12 @@ export async function exportInterviewPdf(interviewId: string) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         setText(NAVY);
-        doc.text(c.toUpperCase(), margin + 12, y + 14, { charSpace: 0.8 });
+        doc.text(c.toUpperCase().replace(/_/g, " "), margin + 12, y + 16, { charSpace: 0.8 });
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         setText(INK);
-        let ly = y + 28;
+        let ly = y + 32;
         for (const l of lines) {
           doc.text(l, margin + 12, ly);
           ly += 13;
@@ -436,6 +573,7 @@ export async function exportInterviewPdf(interviewId: string) {
       }
     }
   }
+
 
   // ————————————————————————— ANOTAÇÕES —————————————————————————
   if (notes.length) {
