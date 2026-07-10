@@ -83,7 +83,7 @@ export function ImmersionAttachments({ immersionId }: { immersionId: string }) {
         </Button>
         <PickerBtn accept="image/*" label="Foto" onPick={upload} disabled={uploading} />
         <PickerBtn accept="video/*" label="Vídeo" onPick={upload} disabled={uploading} />
-        <PickerBtn accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" label="Documento" onPick={upload} disabled={uploading} />
+        <PickerBtn accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.markdown" label="Documento" onPick={upload} disabled={uploading} />
       </div>
 
       {files.length === 0 ? (
