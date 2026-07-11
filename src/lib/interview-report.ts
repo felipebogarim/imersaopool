@@ -539,7 +539,7 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.setLineWidth(0.5);
       doc.line(margin, y, margin + 60, y);
       y += 12;
-      write(String(r.resposta_texto), 11, "normal", INK);
+      write(md(r.resposta_texto), 11, "normal", INK);
       y += 12;
     }
 
