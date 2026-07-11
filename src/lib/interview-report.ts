@@ -494,7 +494,7 @@ export async function exportInterviewPdf(interviewId: string) {
 
     // Pergunta de abertura
     if (cap.pergunta_abertura) {
-      write(`"${cap.pergunta_abertura}"`, 13, "italic", NAVY_SOFT);
+      write(`"${md(cap.pergunta_abertura)}"`, 13, "italic", NAVY_SOFT);
       y += 10;
     }
 
