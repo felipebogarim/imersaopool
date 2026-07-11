@@ -118,104 +118,163 @@ export async function exportInterviewPdf(interviewId: string) {
   setFill(NAVY);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  // Bloco cyan diagonal decorativo
-  setFill(CYAN_DEEP);
-  doc.rect(0, pageH - 260, pageW, 260, "F");
-  setFill(CYAN);
-  doc.rect(0, pageH - 260, pageW * 0.55, 6, "F");
+  // ————————————————————————— CAPA (modelo "Visão de Mercado") —————————————————————————
+  // Paleta específica da capa: teal profundo + destaque amarelo
+  const COVER_DARK: [number, number, number] = [15, 42, 52];
+  const COVER_TEAL: [number, number, number] = [40, 92, 105];
+  const COVER_TEAL_SOFT: [number, number, number] = [58, 118, 130];
+  const COVER_YELLOW: [number, number, number] = [255, 214, 92];
 
-  // Eyebrow
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  setText(CYAN);
-  doc.text("POOLFLUX  ·  INTELIGÊNCIA DE MERCADO", margin, 90, { charSpace: 2 });
+  // Faixa superior escura
+  const topBandH = 110;
+  setFill(COVER_DARK);
+  doc.rect(0, 0, pageW, topBandH, "F");
+  // Linha decorativa central fina
+  setDraw([255, 255, 255]);
+  doc.setLineWidth(1);
+  doc.line(pageW / 2 - 90, topBandH / 2, pageW / 2 + 90, topBandH / 2);
 
-  // Chip do tipo
-  const chipLabel = "RELATÓRIO DE ENTREVISTA";
-  doc.setFontSize(8);
-  const chipW = doc.getTextWidth(chipLabel) + 20;
+  // Área central — painel decorativo (substitui a foto do tablet)
+  const midTop = topBandH;
+  const midH = 360;
+  setFill([28, 34, 40]);
+  doc.rect(0, midTop, pageW, midH, "F");
+  // Grid sutil de pontos claros
+  doc.setGState(new (doc as any).GState({ opacity: 0.09 }));
   setFill([255, 255, 255]);
-  doc.setGState(new (doc as any).GState({ opacity: 0.12 }));
-  doc.roundedRect(margin, 108, chipW, 20, 10, 10, "F");
+  for (let gx = 30; gx < pageW; gx += 22) {
+    for (let gy = midTop + 30; gy < midTop + midH - 30; gy += 22) {
+      doc.circle(gx, gy, 0.9, "F");
+    }
+  }
   doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  setText([255, 255, 255]);
-  doc.text(chipLabel, margin + 10, 122, { charSpace: 1.5 });
-
-  // Título gigante
+  // "Mock" de dashboard flutuante — cartão claro central
+  const cardW = pageW * 0.7;
+  const cardH = 210;
+  const cardX = (pageW - cardW) / 2;
+  const cardY = midTop + (midH - cardH) / 2;
+  doc.setGState(new (doc as any).GState({ opacity: 0.97 }));
+  setFill([245, 243, 236]);
+  doc.roundedRect(cardX, cardY, cardW, cardH, 8, 8, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  // Header do card
+  setFill(COVER_YELLOW);
+  doc.rect(cardX + 20, cardY + 22, 18, 18, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(46);
-  setText([255, 255, 255]);
-  const titleLines = doc.splitTextToSize(interview.entrevistado_nome ?? "Entrevista", maxW);
-  let ty = 210;
-  for (const l of titleLines.slice(0, 3)) {
-    doc.text(l, margin, ty);
-    ty += 52;
-  }
-
-  // Subtítulo — empresa
-  if (interview.empresa_nome) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(18);
-    setText(CYAN);
-    doc.text(interview.empresa_nome, margin, ty + 6);
-  }
-
-  // Bloco inferior de metadados
-  const metaY = pageH - 220;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  setText([180, 220, 235]);
-  const metaCols = [
-    {
-      label: "CLASSIFICAÇÃO",
-      value:
-        CLASSIF[interview.entrevistado_classificacao] ??
-        interview.entrevistado_classificacao ??
-        "—",
-    },
-    {
-      label: "TIPO DE EMPRESA",
-      value: interview.empresa_tipo
-        ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo)
-        : "—",
-    },
-    {
-      label: "LOCAL",
-      value: [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—",
-    },
-    {
-      label: "DATA",
-      value: interview.data_entrevista
-        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
-        : "—",
-    },
-  ];
-  const colW = (pageW - margin * 2) / metaCols.length;
-  metaCols.forEach((m, i) => {
-    const cx = margin + colW * i;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    setText([160, 205, 220]);
-    doc.text(m.label, cx, metaY, { charSpace: 1.2 });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    setText([255, 255, 255]);
-    const v = doc.splitTextToSize(String(m.value), colW - 12);
-    doc.text(v[0] ?? "—", cx, metaY + 22);
-  });
-
-  // Rodapé da capa
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  setText([200, 220, 232]);
-  doc.text(
-    `Entrevistador: ${interview.entrevistador_nome ?? "—"}${interview.entrevistador_cargo ? " · " + interview.entrevistador_cargo : ""}`,
-    margin,
-    pageH - 60,
-  );
-  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, {
+  doc.setFontSize(7);
+  setText(COVER_DARK);
+  doc.text("AI-POWERED INTELLIGENCE FOR", cardX + 46, cardY + 30, { charSpace: 0.8 });
+  doc.text("POOL & OUTDOOR LIVING BRANDS", cardX + 46, cardY + 39, { charSpace: 0.8 });
+  doc.setFontSize(6);
+  setText([120, 120, 120]);
+  doc.text("STRATEGIC BOARD", cardX + cardW - 20, cardY + 30, {
     align: "right",
+    charSpace: 1,
   });
+  doc.text(
+    new Date()
+      .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+      .toUpperCase(),
+    cardX + cardW - 20,
+    cardY + 39,
+    { align: "right", charSpace: 1 },
+  );
+  // Linhas simulando conteúdo
+  setDraw([210, 205, 190]);
+  doc.setLineWidth(0.4);
+  doc.line(cardX + 20, cardY + 54, cardX + cardW - 20, cardY + 54);
+  // Colunas simuladas
+  const colBoxW = (cardW - 60) / 4;
+  for (let i = 0; i < 4; i++) {
+    const bx = cardX + 20 + i * (colBoxW + 8);
+    setFill([232, 228, 216]);
+    doc.roundedRect(bx, cardY + 68, colBoxW, 90, 4, 4, "F");
+    setFill(COVER_YELLOW);
+    doc.circle(bx + 10, cardY + 80, 3, "F");
+    setDraw([200, 195, 180]);
+    for (let ln = 0; ln < 4; ln++) {
+      doc.line(bx + 8, cardY + 100 + ln * 10, bx + colBoxW - 8, cardY + 100 + ln * 10);
+    }
+  }
+  // Barrinhas inferiores
+  for (let i = 0; i < 8; i++) {
+    const bh = 8 + ((i * 37) % 22);
+    setFill(i % 2 ? COVER_TEAL : COVER_YELLOW);
+    doc.rect(cardX + 24 + i * 16, cardY + cardH - 20 - bh, 10, bh, "F");
+  }
+
+  // Painel inferior teal com título e metadados
+  const botTop = midTop + midH;
+  const botH = pageH - botTop;
+  setFill(COVER_TEAL);
+  doc.rect(0, botTop, pageW, botH, "F");
+  // Gradiente aproximado (faixas verticais sutis)
+  doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+  setFill([255, 255, 255]);
+  doc.rect(pageW * 0.55, botTop, pageW * 0.45, botH, "F");
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+
+  // Data mês/ano
+  const nowLabel = new Date()
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+    .toUpperCase();
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  setText([255, 255, 255]);
+  doc.text(nowLabel, margin, botTop + 40, { charSpace: 1.5 });
+
+  // Título grande — usa nome do entrevistado
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(58);
+  setText([255, 255, 255]);
+  const coverTitle = interview.entrevistado_nome ?? "Entrevista";
+  const coverLines = doc.splitTextToSize(coverTitle, maxW);
+  let cty = botTop + 96;
+  for (const l of coverLines.slice(0, 2)) {
+    doc.text(l, margin, cty);
+    cty += 62;
+  }
+
+  // Label ENTREVISTADO(S) + badge amarelo com nome
+  const labelY = cty + 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  setText([255, 255, 255]);
+  doc.text("ENTREVISTADO", margin, labelY, { charSpace: 2 });
+
+  const badgeName = (interview.entrevistado_nome ?? "—").toUpperCase();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  const badgeTextW = doc.getTextWidth(badgeName);
+  setFill(COVER_YELLOW);
+  doc.rect(margin - 3, labelY + 8, badgeTextW + 16, 22, "F");
+  setText(COVER_DARK);
+  doc.text(badgeName, margin + 5, labelY + 23);
+
+  // Linha divisória e modelo do documento
+  const modelY = pageH - 60;
+  setDraw([255, 255, 255]);
+  doc.setGState(new (doc as any).GState({ opacity: 0.4 }));
+  doc.setLineWidth(0.5);
+  doc.line(margin, modelY - 22, pageW - margin, modelY - 22);
+  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  setText([220, 232, 235]);
+  doc.text("Modelo do documento:", margin, modelY);
+  doc.setFont("helvetica", "bold");
+  setText([255, 255, 255]);
+  doc.text(roteiroNome ?? "—", margin + doc.getTextWidth("Modelo do documento:  "), modelY);
+
+  // Rodapé direita — poolFlux
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  setText([255, 255, 255]);
+  doc.text("poolFlux", pageW - margin, labelY + 23, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  setText([200, 220, 225]);
+  doc.text("inteligência comercial", pageW - margin, labelY + 34, { align: "right" });
 
   // ————————————————————————— PÁGINA DE ABERTURA / SUMÁRIO —————————————————————————
   const addContentPage = () => {
@@ -229,6 +288,7 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.rect(0, 0, 6, 120, "F");
     y = margin + 10;
   };
+
 
   const writeCalloutBlock = (label: string, value?: string | null) => {
     const text = md(value);
