@@ -624,7 +624,7 @@ export async function exportInterviewPdf(interviewId: string) {
         { charSpace: 1 },
       );
       y += 14;
-      write(n.content ?? "", 11, "normal", INK);
+      write(md(n.content), 11, "normal", INK);
       y += 12;
       setDraw(HAIRLINE);
       doc.setLineWidth(0.3);
