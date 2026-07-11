@@ -649,7 +649,7 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.setLineWidth(3);
     doc.line(margin, y, margin + 48, y);
     y += 24;
-    write(interview.observacoes, 11, "normal", INK);
+    write(md(interview.observacoes), 11, "normal", INK);
   }
 
   // ————————————————————————— HEADER / FOOTER ——————————————————————
