@@ -30,70 +30,81 @@ export async function loadCoverImage(): Promise<string> {
 export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 56;
 
-  // Imagem de capa preenchendo a página inteira
+  // Imagem de capa (1349x1920) preenchendo a página inteira
   doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, pageH);
 
   const COVER_DARK: [number, number, number] = [18, 42, 52];
   const COVER_YELLOW: [number, number, number] = [244, 208, 96];
 
-  // 1) DATA — canto superior direito, dentro da faixa escura (~y=62)
+  // Âncoras medidas na imagem base (1349x1920) e convertidas para pt A4.
+  const SX = pageW / 1349;
+  const SY = pageH / 1920;
+  // Linha decorativa superior: y≈65, x de 438 a 912 (ends at ~x=402pt)
+  // Faixa escura termina em y≈130
+  // Painel teal começa em y≈1120
+  // Logos newline/poolFlux: y≈1625-1730, à direita
+  // Linha decorativa inferior: y≈1755, x de 135 a 1215
+
+  const leftX = 135 * SX; // alinhado ao início da linha inferior
+  const rightLineEndX = 912 * SX; // fim da linha superior
+
+  // 1) DATA — alinhada ao fim direito da linha superior, centrada verticalmente na faixa escura
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text((f.data || "").toUpperCase(), pageW - margin, 62, {
+  doc.text((f.data || "").toUpperCase(), rightLineEndX, 95 * SY, {
     align: "right",
     charSpace: 2.4,
   });
 
-  // 2) TÍTULO — grande, duas linhas, sobre o painel teal
+  // 2) TÍTULO — sobre o painel teal, duas linhas
   const title = (f.titulo || DEFAULT_TITULO).trim();
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(52);
+  doc.setFontSize(48);
   doc.setTextColor(255, 255, 255);
   const words = title.split(/\s+/);
-  let titleLines: string[];
-  if (words.length >= 2) {
-    const mid = Math.ceil(words.length / 2);
-    titleLines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
-  } else {
-    titleLines = [title];
-  }
-  let ty = 555;
+  const titleLines: string[] =
+    words.length >= 2
+      ? [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")]
+      : [title];
+  let ty = 1230 * SY;
   for (const line of titleLines) {
-    doc.text(line, margin, ty);
-    ty += 58;
+    doc.text(line, leftX, ty);
+    ty += 56;
   }
 
-  // 3) ENTREVISTADO — label + badge amarelo (posição fixa perto do rodapé)
-  const labelY = 705;
+  // 3) ENTREVISTADO — label + badge amarelo (acima da linha inferior, à esquerda dos logos)
+  const bottomLineY = 1755 * SY;
+  const modelY = bottomLineY - 12; // "Modelo do documento" logo acima da linha
+  const badgeH = 24;
+  const badgeGap = 14; // espaço entre badge e o texto Modelo
+  const badgeY = modelY - 14 - badgeH - badgeGap; // topo do badge
+  const labelY = badgeY - 6; // label ENTREVISTADO acima do badge
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", margin, labelY, { charSpace: 3 });
+  doc.text("ENTREVISTADO", leftX, labelY, { charSpace: 3 });
 
   const badgeName = (f.entrevistado || "—").toUpperCase();
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(12.5);
   const badgeTextW = doc.getTextWidth(badgeName);
-  const badgeH = 26;
-  const badgeY = labelY + 12;
   doc.setFillColor(COVER_YELLOW[0], COVER_YELLOW[1], COVER_YELLOW[2]);
-  doc.rect(margin - 4, badgeY, badgeTextW + 20, badgeH, "F");
+  doc.rect(leftX - 6, badgeY, badgeTextW + 20, badgeH, "F");
   doc.setTextColor(COVER_DARK[0], COVER_DARK[1], COVER_DARK[2]);
-  doc.text(badgeName, margin + 6, badgeY + 17);
+  doc.text(badgeName, leftX + 4, badgeY + 16);
 
-  // 4) MODELO DO DOCUMENTO — rodapé
-  const modelY = 788;
+  // 4) MODELO DO DOCUMENTO — logo acima da linha inferior
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(220, 232, 235);
   const modelLabel = "Modelo do documento:";
-  doc.text(modelLabel, margin, modelY);
+  doc.text(modelLabel, leftX, modelY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(f.modelo || "—", margin + doc.getTextWidth(modelLabel) + 14, modelY);
+  doc.text(f.modelo || "—", leftX + doc.getTextWidth(modelLabel) + 14, modelY);
 }
 
 export async function renderCoverPreviewBlobUrl(f: CoverFields): Promise<string> {
