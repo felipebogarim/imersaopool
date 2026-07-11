@@ -114,9 +114,8 @@ export async function exportInterviewPdf(interviewId: string) {
     }
   };
 
-  // ————————————————————————— CAPA —————————————————————————
-  setFill(NAVY);
-  doc.rect(0, 0, pageW, pageH, "F");
+
+
 
   // ————————————————————————— CAPA (modelo "Visão de Mercado") —————————————————————————
   // Paleta específica da capa: teal profundo + destaque amarelo
