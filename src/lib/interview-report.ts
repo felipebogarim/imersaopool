@@ -427,33 +427,33 @@ export async function exportInterviewPdf(interviewId: string) {
     addContentPage();
     const r: any = respByCap.get(cap.id);
 
-    // Cabeçalho capítulo — reformulado para evitar sobreposições
+    // Watermark do número — desenhado PRIMEIRO, como fundo, sem colidir com o header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(130);
+    setText([236, 240, 247]);
+    const wmStr = String(cap.ordem).padStart(2, "0");
+    const wmW = doc.getTextWidth(wmStr);
+    doc.text(wmStr, pageW - margin - wmW + 24, 178);
+
+    // Eyebrow
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     setText(CYAN_DEEP);
     doc.text(`CAPÍTULO ${String(cap.ordem).padStart(2, "0")}`, margin, y, { charSpace: 2 });
+    y += 34;
 
-    // Número gigante como watermark no canto direito
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(88);
-    setText([230, 236, 244]);
-    const numStr = String(cap.ordem).padStart(2, "0");
-    const numW = doc.getTextWidth(numStr);
-    doc.text(numStr, pageW - margin - numW, y + 54);
-
-    y += 24;
-
-    // Título em largura útil (deixando espaço para o watermark)
+    // Título — largura reduzida para não invadir o watermark à direita
     doc.setFont("helvetica", "bold");
     doc.setFontSize(26);
     setText(NAVY);
-    const titleW = maxW - 120;
+    const titleW = maxW - 140;
     const tl = doc.splitTextToSize(cap.titulo, titleW);
     for (const l of tl.slice(0, 3)) {
-      doc.text(l, margin, y + 20);
-      y += 30;
+      ensure(32);
+      doc.text(l, margin, y);
+      y += 32;
     }
-    y += 4;
+    y += 6;
 
     // Lente badge
     if (cap.lente_default) {
