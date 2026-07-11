@@ -109,12 +109,9 @@ export function exportCompilationPdf(detail: any) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN_DEEP);
-      doc.text(
-        `${title}${continued ? " · CONTINUAÇÃO" : ""}`.toUpperCase(),
-        margin + 18,
-        y + 21,
-        { charSpace: 1.1 },
-      );
+      doc.text(`${title}${continued ? " · CONTINUAÇÃO" : ""}`.toUpperCase(), margin + 18, y + 21, {
+        charSpace: 1.1,
+      });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);

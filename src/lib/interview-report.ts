@@ -161,10 +161,29 @@ export async function exportInterviewPdf(interviewId: string) {
   doc.setFontSize(9);
   setText([180, 220, 235]);
   const metaCols = [
-    { label: "CLASSIFICAÇÃO", value: CLASSIF[interview.entrevistado_classificacao] ?? interview.entrevistado_classificacao ?? "—" },
-    { label: "TIPO DE EMPRESA", value: interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—" },
-    { label: "LOCAL", value: [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—" },
-    { label: "DATA", value: interview.data_entrevista ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR") : "—" },
+    {
+      label: "CLASSIFICAÇÃO",
+      value:
+        CLASSIF[interview.entrevistado_classificacao] ??
+        interview.entrevistado_classificacao ??
+        "—",
+    },
+    {
+      label: "TIPO DE EMPRESA",
+      value: interview.empresa_tipo
+        ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo)
+        : "—",
+    },
+    {
+      label: "LOCAL",
+      value: [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—",
+    },
+    {
+      label: "DATA",
+      value: interview.data_entrevista
+        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
+        : "—",
+    },
   ];
   const colW = (pageW - margin * 2) / metaCols.length;
   metaCols.forEach((m, i) => {
@@ -189,7 +208,9 @@ export async function exportInterviewPdf(interviewId: string) {
     margin,
     pageH - 60,
   );
-  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, { align: "right" });
+  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, {
+    align: "right",
+  });
 
   // ————————————————————————— PÁGINA DE ABERTURA / SUMÁRIO —————————————————————————
   const addContentPage = () => {
@@ -235,7 +256,9 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN_DEEP);
-      doc.text(continued ? `${label} · CONTINUAÇÃO` : label, margin + 20, y + 22, { charSpace: 1.5 });
+      doc.text(continued ? `${label} · CONTINUAÇÃO` : label, margin + 20, y + 22, {
+        charSpace: 1.5,
+      });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
@@ -266,7 +289,9 @@ export async function exportInterviewPdf(interviewId: string) {
       ensure(52);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      const rawLabel = `${label}${continued ? " (continuação)" : ""}`.toUpperCase().replace(/_/g, " ");
+      const rawLabel = `${label}${continued ? " (continuação)" : ""}`
+        .toUpperCase()
+        .replace(/_/g, " ");
       const labelLines = doc.splitTextToSize(rawLabel, maxW - 24).slice(0, 2);
       const labelH = 18 + labelLines.length * 11;
       let availableLines = Math.floor((contentBottom() - y - labelH - 12) / lineH);
@@ -342,11 +367,22 @@ export async function exportInterviewPdf(interviewId: string) {
 
   const fichaItems: [string, string][] = [
     ["ENTREVISTADO", interview.entrevistado_nome ?? "—"],
-    ["CLASSIFICAÇÃO", `${CLASSIF[interview.entrevistado_classificacao] ?? "—"}${interview.entrevistado_classificacao_outro ? " · " + interview.entrevistado_classificacao_outro : ""}`],
+    [
+      "CLASSIFICAÇÃO",
+      `${CLASSIF[interview.entrevistado_classificacao] ?? "—"}${interview.entrevistado_classificacao_outro ? " · " + interview.entrevistado_classificacao_outro : ""}`,
+    ],
     ["EMPRESA", interview.empresa_nome ?? "—"],
-    ["TIPO", interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—"],
+    [
+      "TIPO",
+      interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—",
+    ],
     ["LOCAL", [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—"],
-    ["DATA", interview.data_entrevista ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR") : "—"],
+    [
+      "DATA",
+      interview.data_entrevista
+        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
+        : "—",
+    ],
   ];
   const gridCols = 3;
   const cellW = (maxW - 32) / gridCols;
@@ -415,8 +451,11 @@ export async function exportInterviewPdf(interviewId: string) {
   const totalCaps = capitulos.length;
   const capsRespondidos = capitulos.filter((c: any) => {
     const r: any = respByCap.get(c.id);
-    return !!(r?.leitura_estrategica?.trim() || r?.resposta_texto?.trim() ||
-      (r?.sintese && Object.values(r.sintese as Record<string, string>).some(v => v?.trim())));
+    return !!(
+      r?.leitura_estrategica?.trim() ||
+      r?.resposta_texto?.trim() ||
+      (r?.sintese && Object.values(r.sintese as Record<string, string>).some((v) => v?.trim()))
+    );
   }).length;
   const pctRespondidos = totalCaps ? Math.round((capsRespondidos / totalCaps) * 100) : 0;
   let campoTotal = 0;
@@ -612,7 +651,8 @@ export async function exportInterviewPdf(interviewId: string) {
     }
 
     // Leitura estratégica — destaque em bloco cyan
-    if (r?.leitura_estrategica?.trim()) writeCalloutBlock("LEITURA ESTRATÉGICA", r.leitura_estrategica);
+    if (r?.leitura_estrategica?.trim())
+      writeCalloutBlock("LEITURA ESTRATÉGICA", r.leitura_estrategica);
 
     // Evidência / anotações
     if (r?.resposta_texto?.trim()) {
@@ -648,7 +688,6 @@ export async function exportInterviewPdf(interviewId: string) {
       for (const c of campos) writeMatrixField(c, sintese[c]);
     }
   }
-
 
   // ————————————————————————— ANOTAÇÕES —————————————————————————
   if (notes.length) {
@@ -718,12 +757,10 @@ export async function exportInterviewPdf(interviewId: string) {
     setText(MUTED);
     doc.text("POOLFLUX  ·  RELATÓRIO DE ENTREVISTA", margin, 30, { charSpace: 1.5 });
     setText(NAVY);
-    doc.text(
-      (interview.entrevistado_nome ?? "").toUpperCase(),
-      pageW - margin,
-      30,
-      { align: "right", charSpace: 1.2 },
-    );
+    doc.text((interview.entrevistado_nome ?? "").toUpperCase(), pageW - margin, 30, {
+      align: "right",
+      charSpace: 1.2,
+    });
     setDraw(HAIRLINE);
     doc.setLineWidth(0.4);
     doc.line(margin, 38, pageW - margin, 38);
@@ -737,7 +774,12 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.text("Inteligência de mercado · confidencial", margin, pageH - 18);
     doc.setFont("helvetica", "bold");
     setText(NAVY);
-    doc.text(`${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`, pageW - margin, pageH - 18, { align: "right" });
+    doc.text(
+      `${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
+      pageW - margin,
+      pageH - 18,
+      { align: "right" },
+    );
   }
 
   const safe = (interview.entrevistado_nome || "entrevista")

@@ -33,10 +33,28 @@ function md(s?: string | null): string {
 
 async function fetchImmersionData(immersionId: string) {
   const [imm, repInputs, fieldInputs, ai, actions] = await Promise.all([
-    supabase.from("immersions").select("*, client:clients(nome_fantasia, grupo, categoria, cidade, estado, nome_comprador, telefone, email), representative:representatives(nome, email)").eq("id", immersionId).single(),
-    supabase.from("representative_inputs").select("*").eq("immersion_id", immersionId).order("created_at"),
-    supabase.from("field_visit_inputs").select("*").eq("immersion_id", immersionId).order("created_at"),
-    supabase.from("ai_compilations").select("*").eq("immersion_id", immersionId).order("created_at"),
+    supabase
+      .from("immersions")
+      .select(
+        "*, client:clients(nome_fantasia, grupo, categoria, cidade, estado, nome_comprador, telefone, email), representative:representatives(nome, email)",
+      )
+      .eq("id", immersionId)
+      .single(),
+    supabase
+      .from("representative_inputs")
+      .select("*")
+      .eq("immersion_id", immersionId)
+      .order("created_at"),
+    supabase
+      .from("field_visit_inputs")
+      .select("*")
+      .eq("immersion_id", immersionId)
+      .order("created_at"),
+    supabase
+      .from("ai_compilations")
+      .select("*")
+      .eq("immersion_id", immersionId)
+      .order("created_at"),
     supabase.from("action_plans").select("*").eq("immersion_id", immersionId).order("prioridade"),
   ]);
   return {
@@ -58,11 +76,20 @@ function buildChapters(d: Awaited<ReturnType<typeof fetchImmersionData>>): Chapt
     blocks: [
       { label: "Título", text: i.titulo },
       { label: "Cliente", text: i.client?.nome_fantasia ?? "—" },
-      { label: "Grupo / Categoria", text: [i.client?.grupo, i.client?.categoria].filter(Boolean).join(" / ") || "—" },
-      { label: "Localização", text: [i.client?.cidade, i.client?.estado].filter(Boolean).join(", ") || "—" },
+      {
+        label: "Grupo / Categoria",
+        text: [i.client?.grupo, i.client?.categoria].filter(Boolean).join(" / ") || "—",
+      },
+      {
+        label: "Localização",
+        text: [i.client?.cidade, i.client?.estado].filter(Boolean).join(", ") || "—",
+      },
       { label: "Comprador", text: i.client?.nome_comprador ?? "—" },
       { label: "Representante", text: i.representative?.nome ?? "—" },
-      { label: "Data da visita", text: i.data_visita ? new Date(i.data_visita).toLocaleDateString("pt-BR") : "—" },
+      {
+        label: "Data da visita",
+        text: i.data_visita ? new Date(i.data_visita).toLocaleDateString("pt-BR") : "—",
+      },
       { label: "Status", text: String(i.status) },
       { label: "Observações", text: i.observacoes || "—" },
     ],
@@ -97,8 +124,12 @@ function buildChapters(d: Awaited<ReturnType<typeof fetchImmersionData>>): Chapt
         { label: `Escopo: ${f.scope}`, text: f.texto || "—" },
         ...(f.observacoes_loja ? [{ label: "Observações da loja", text: f.observacoes_loja }] : []),
         ...(f.observacoes_exposicao ? [{ label: "Exposição", text: f.observacoes_exposicao }] : []),
-        ...(f.observacoes_concorrentes ? [{ label: "Concorrentes", text: f.observacoes_concorrentes }] : []),
-        ...(f.observacoes_comerciais ? [{ label: "Comercial", text: f.observacoes_comerciais }] : []),
+        ...(f.observacoes_concorrentes
+          ? [{ label: "Concorrentes", text: f.observacoes_concorrentes }]
+          : []),
+        ...(f.observacoes_comerciais
+          ? [{ label: "Comercial", text: f.observacoes_comerciais }]
+          : []),
         ...(f.oportunidades ? [{ label: "Oportunidades", text: f.oportunidades }] : []),
       ]),
     });
@@ -124,7 +155,9 @@ function buildChapters(d: Awaited<ReturnType<typeof fetchImmersionData>>): Chapt
           a.prazo ? `Prazo: ${new Date(a.prazo).toLocaleDateString("pt-BR")}` : null,
           `Status: ${a.status}`,
           a.observacoes ? `Obs.: ${a.observacoes}` : null,
-        ].filter(Boolean).join(" · "),
+        ]
+          .filter(Boolean)
+          .join(" · "),
       })),
     });
   }
@@ -132,7 +165,9 @@ function buildChapters(d: Awaited<ReturnType<typeof fetchImmersionData>>): Chapt
   return chapters;
 }
 
-export async function generateImmersionPdf(immersionId: string): Promise<{ blob: Blob; filename: string; title: string }> {
+export async function generateImmersionPdf(
+  immersionId: string,
+): Promise<{ blob: Blob; filename: string; title: string }> {
   const data = await fetchImmersionData(immersionId);
   if (!data.immersion) throw new Error("Imersão não encontrada");
   const chapters = buildChapters(data);
@@ -200,7 +235,11 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
 
     while (index < lines.length) {
       ensureSpace(58);
-      const labelText = label ? `${label}${continued ? " · continuação" : ""}` : continued ? "continuação" : "registro";
+      const labelText = label
+        ? `${label}${continued ? " · continuação" : ""}`
+        : continued
+          ? "continuação"
+          : "registro";
       const labelH = 28;
       let availableLines = Math.floor((contentBottom() - y - labelH - 14) / lineH);
       if (availableLines < 1) {
@@ -271,8 +310,17 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
   const metaCols = [
     ["STATUS", String(data.immersion.status ?? "—")],
     ["REPRESENTANTE", data.immersion.representative?.nome ?? "—"],
-    ["LOCAL", [data.immersion.client?.cidade, data.immersion.client?.estado].filter(Boolean).join(" / ") || "—"],
-    ["DATA", data.immersion.data_visita ? new Date(data.immersion.data_visita).toLocaleDateString("pt-BR") : "—"],
+    [
+      "LOCAL",
+      [data.immersion.client?.cidade, data.immersion.client?.estado].filter(Boolean).join(" / ") ||
+        "—",
+    ],
+    [
+      "DATA",
+      data.immersion.data_visita
+        ? new Date(data.immersion.data_visita).toLocaleDateString("pt-BR")
+        : "—",
+    ],
   ];
   const colW = maxW / metaCols.length;
   metaCols.forEach(([label, value], i) => {
@@ -289,11 +337,22 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText([200, 220, 232]);
-  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, { align: "right" });
+  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, {
+    align: "right",
+  });
 
-  const filledBlocks = chapters.reduce((acc, c) => acc + c.blocks.filter((b) => md(b.text) && md(b.text) !== "—").length, 0);
+  const filledBlocks = chapters.reduce(
+    (acc, c) => acc + c.blocks.filter((b) => md(b.text) && md(b.text) !== "—").length,
+    0,
+  );
   const totalBlocks = chapters.reduce((acc, c) => acc + c.blocks.length, 0);
-  const chapterCoverage = chapters.length ? Math.round((chapters.filter((c) => c.blocks.some((b) => md(b.text) && md(b.text) !== "—")).length / chapters.length) * 100) : 0;
+  const chapterCoverage = chapters.length
+    ? Math.round(
+        (chapters.filter((c) => c.blocks.some((b) => md(b.text) && md(b.text) !== "—")).length /
+          chapters.length) *
+          100,
+      )
+    : 0;
 
   // Panorama
   addContentPage();
@@ -330,7 +389,12 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
   for (let i = 0; i < filledSteps; i++) {
     const a1 = -Math.PI / 2 + (i / steps) * Math.PI * 2;
     const a2 = -Math.PI / 2 + ((i + 1) / steps) * Math.PI * 2;
-    doc.line(ringCx + Math.cos(a1) * ringR, ringCy + Math.sin(a1) * ringR, ringCx + Math.cos(a2) * ringR, ringCy + Math.sin(a2) * ringR);
+    doc.line(
+      ringCx + Math.cos(a1) * ringR,
+      ringCy + Math.sin(a1) * ringR,
+      ringCx + Math.cos(a2) * ringR,
+      ringCy + Math.sin(a2) * ringR,
+    );
   }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(34);
@@ -350,7 +414,10 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
   doc.text("CAPÍTULOS E SINAIS REGISTRADOS", tx, cardTop + 58, { charSpace: 1.4 });
   doc.setFontSize(20);
   setText(INK);
-  const msg = doc.splitTextToSize(`${chapters.length} capítulos organizados com ${filledBlocks} registros preenchidos de ${totalBlocks} campos disponíveis.`, tw);
+  const msg = doc.splitTextToSize(
+    `${chapters.length} capítulos organizados com ${filledBlocks} registros preenchidos de ${totalBlocks} campos disponíveis.`,
+    tw,
+  );
   let msgY = cardTop + 88;
   for (const line of msg.slice(0, 4)) {
     doc.text(line, tx, msgY);
@@ -382,7 +449,10 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
   doc.text("REGISTROS ÚTEIS", stx, statTop + 56, { charSpace: 1.5 });
   doc.setFontSize(20);
   setText([255, 255, 255]);
-  const statText = doc.splitTextToSize("pontos de evidência para orientar leitura comercial, oportunidades e plano de ação.", maxW - (stx - margin) - 24);
+  const statText = doc.splitTextToSize(
+    "pontos de evidência para orientar leitura comercial, oportunidades e plano de ação.",
+    maxW - (stx - margin) - 24,
+  );
   let sty = statTop + 86;
   for (const line of statText.slice(0, 3)) {
     doc.text(line, stx, sty);
@@ -428,7 +498,10 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
     setText(CYAN_DEEP);
     doc.text(`CAPÍTULO ${number}`, margin, y, { charSpace: 2 });
     y += 32;
-    writeText(c.title.replace(/^\d+\.\s*/, ""), 25, "bold", NAVY, { width: maxW - 140, lineHeight: 31 });
+    writeText(c.title.replace(/^\d+\.\s*/, ""), 25, "bold", NAVY, {
+      width: maxW - 140,
+      lineHeight: 31,
+    });
     y += 6;
     setDraw(CORAL);
     doc.setLineWidth(2);
@@ -461,11 +534,19 @@ export async function generateImmersionPdf(immersionId: string): Promise<{ blob:
     doc.text("Inteligência comercial · confidencial", margin, pageH - 18);
     doc.setFont("helvetica", "bold");
     setText(NAVY);
-    doc.text(`${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`, pageW - margin, pageH - 18, { align: "right" });
+    doc.text(
+      `${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
+      pageW - margin,
+      pageH - 18,
+      { align: "right" },
+    );
   }
 
   const blob = doc.output("blob");
-  const safe = (data.immersion.titulo || "imersao").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const safe = (data.immersion.titulo || "imersao")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
   return {
     blob,
     filename: `relatorio-${safe}.pdf`,
@@ -477,13 +558,21 @@ async function shareOrDownload(blob: Blob, filename: string, title: string, fall
   const file = new File([blob], filename, { type: "application/pdf" });
   const nav: any = navigator;
   if (nav.canShare && nav.canShare({ files: [file] })) {
-    try { await nav.share({ files: [file], title, text: title }); return; } catch { /* user cancelled */ }
+    try {
+      await nav.share({ files: [file], title, text: title });
+      return;
+    } catch {
+      /* user cancelled */
+    }
   }
   // Fallback: download + open link
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
   window.open(fallbackUrl, "_blank");
 }
@@ -491,7 +580,9 @@ async function shareOrDownload(blob: Blob, filename: string, title: string, fall
 export async function shareImmersionByEmail(immersionId: string) {
   const { blob, filename, title } = await generateImmersionPdf(immersionId);
   const subject = encodeURIComponent(title);
-  const body = encodeURIComponent(`Segue em anexo o relatório da imersão comercial.\n\n(${filename})`);
+  const body = encodeURIComponent(
+    `Segue em anexo o relatório da imersão comercial.\n\n(${filename})`,
+  );
   await shareOrDownload(blob, filename, title, `mailto:?subject=${subject}&body=${body}`);
 }
 
