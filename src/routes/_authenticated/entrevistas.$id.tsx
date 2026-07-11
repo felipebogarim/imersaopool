@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { toast } from "sonner";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
-import { exportInterviewPdf } from "@/lib/interview-report";
+import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
@@ -22,6 +23,7 @@ const CLASSIF = Object.fromEntries(CLASSIFICACOES.map(c => [c.value, c.label]));
 const TIPO = Object.fromEntries(TIPOS_EMPRESA.map(t => [t.value, t.label]));
 
 function EntrevistaDetail() {
+  const [exportOpen, setExportOpen] = useState(false);
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { data, isLoading } = useQuery({
@@ -42,13 +44,24 @@ function EntrevistaDetail() {
 
   return (
     <div>
+      <ExportInterviewPdfDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        interviewId={id}
+        defaults={{
+          entrevistado: data.entrevistado_nome ?? "",
+          data: data.data_entrevista
+            ? new Date(data.data_entrevista).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+            : new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+        }}
+      />
       <PageHeader
         title={data.entrevistado_nome}
         subtitle={`${CLASSIF[data.entrevistado_classificacao] ?? data.entrevistado_classificacao}${data.empresa_nome ? " • " + data.empresa_nome : ""}`}
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="interview" entityId={id} />
-            <Button variant="outline" onClick={() => exportInterviewPdf(id).catch((e) => toast.error(e?.message ?? "Falha ao exportar"))}>
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
               <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
