@@ -61,6 +61,25 @@ export async function exportInterviewPdf(interviewId: string) {
   const setText = (c: [number, number, number]) => doc.setTextColor(c[0], c[1], c[2]);
   const setDraw = (c: [number, number, number]) => doc.setDrawColor(c[0], c[1], c[2]);
 
+  // Sanitiza markdown vindo de relatórios (asteriscos, sublinhados, marcadores),
+  // evitando que "**bold**" apareça literalmente no PDF.
+  const md = (s?: string | null): string => {
+    if (!s) return "";
+    return String(s)
+      .replace(/\r\n?/g, "\n")
+      .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, "$1")
+      .replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, "$1")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s{0,3}[-*+]\s+/gm, "• ")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const ensure = (n: number) => {
     if (y + n > pageH - margin - 24) {
       addContentPage();
@@ -475,13 +494,13 @@ export async function exportInterviewPdf(interviewId: string) {
 
     // Pergunta de abertura
     if (cap.pergunta_abertura) {
-      write(`"${cap.pergunta_abertura}"`, 13, "italic", NAVY_SOFT);
+      write(`"${md(cap.pergunta_abertura)}"`, 13, "italic", NAVY_SOFT);
       y += 10;
     }
 
     // Leitura estratégica — destaque em bloco cyan
     if (r?.leitura_estrategica?.trim()) {
-      const text = String(r.leitura_estrategica);
+      const text = md(r.leitura_estrategica);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       const lines = doc.splitTextToSize(text, maxW - 40);
@@ -520,7 +539,7 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.setLineWidth(0.5);
       doc.line(margin, y, margin + 60, y);
       y += 12;
-      write(String(r.resposta_texto), 11, "normal", INK);
+      write(md(r.resposta_texto), 11, "normal", INK);
       y += 12;
     }
 
@@ -540,7 +559,7 @@ export async function exportInterviewPdf(interviewId: string) {
       y += 10;
 
       for (const c of campos) {
-        const val = sintese[c]?.trim() || "—";
+        const val = md(sintese[c]) || "—";
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         const lines = doc.splitTextToSize(val, maxW - 20);
@@ -605,7 +624,7 @@ export async function exportInterviewPdf(interviewId: string) {
         { charSpace: 1 },
       );
       y += 14;
-      write(n.content ?? "", 11, "normal", INK);
+      write(md(n.content), 11, "normal", INK);
       y += 12;
       setDraw(HAIRLINE);
       doc.setLineWidth(0.3);
@@ -630,7 +649,7 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.setLineWidth(3);
     doc.line(margin, y, margin + 48, y);
     y += 24;
-    write(interview.observacoes, 11, "normal", INK);
+    write(md(interview.observacoes), 11, "normal", INK);
   }
 
   // ————————————————————————— HEADER / FOOTER ——————————————————————
