@@ -5,17 +5,20 @@ import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
 const CLASSIF = Object.fromEntries(CLASSIFICACOES.map((c) => [c.value, c.label]));
 const TIPO = Object.fromEntries(TIPOS_EMPRESA.map((t) => [t.value, t.label]));
 
-// Paleta editorial — navy profundo + cyan elétrico + neutros quentes
+// Paleta editorial — alinhada à identidade poolFlux (dark navy + cyan elétrico)
+const BG: [number, number, number] = [6, 14, 26]; // background principal (near-black navy)
+const SURFACE: [number, number, number] = [14, 26, 44]; // cartões / superfícies elevadas
+const SURFACE_SOFT: [number, number, number] = [20, 36, 58];
 const NAVY: [number, number, number] = [10, 20, 44];
-const NAVY_SOFT: [number, number, number] = [30, 44, 78];
-const CYAN: [number, number, number] = [56, 189, 220];
-const CYAN_DEEP: [number, number, number] = [14, 116, 144];
-const CORAL: [number, number, number] = [244, 114, 94];
-const INK: [number, number, number] = [20, 24, 36];
-const MUTED: [number, number, number] = [110, 120, 138];
-const HAIRLINE: [number, number, number] = [220, 226, 236];
-const CREAM: [number, number, number] = [248, 246, 240];
-const HIGHLIGHT: [number, number, number] = [235, 248, 251];
+const NAVY_SOFT: [number, number, number] = [180, 210, 235];
+const CYAN: [number, number, number] = [0, 229, 255]; // primária
+const CYAN_DEEP: [number, number, number] = [90, 220, 240];
+const CORAL: [number, number, number] = [0, 229, 255]; // acentos remapeados para o cyan da marca
+const INK: [number, number, number] = [232, 240, 250]; // texto principal sobre dark
+const MUTED: [number, number, number] = [130, 150, 175];
+const HAIRLINE: [number, number, number] = [30, 50, 78];
+const CREAM: [number, number, number] = [6, 14, 26]; // background das páginas
+const HIGHLIGHT: [number, number, number] = [12, 40, 58]; // fundo de callouts
 
 import { drawCover, loadCoverImage, DEFAULT_TITULO, type CoverFields } from "./interview-cover";
 
