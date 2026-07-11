@@ -113,107 +113,39 @@ export async function exportInterviewPdf(interviewId: string) {
       y += lh;
     }
   };
-
-
-
-
   // ————————————————————————— CAPA (modelo "Visão de Mercado") —————————————————————————
-  // Paleta específica da capa: teal profundo + destaque amarelo
-  const COVER_DARK: [number, number, number] = [15, 42, 52];
+  // Paleta específica da capa — replica fiel da referência
+  const COVER_DARK: [number, number, number] = [18, 42, 52];
   const COVER_TEAL: [number, number, number] = [40, 92, 105];
-  const COVER_TEAL_SOFT: [number, number, number] = [58, 118, 130];
   const COVER_YELLOW: [number, number, number] = [255, 214, 92];
+  const COVER_PHOTO: [number, number, number] = [60, 60, 62];
 
-  // Faixa superior escura
-  const topBandH = 110;
+  // 1) Faixa superior escura com linha branca central
+  const topBandH = 100;
   setFill(COVER_DARK);
   doc.rect(0, 0, pageW, topBandH, "F");
-  // Linha decorativa central fina
   setDraw([255, 255, 255]);
   doc.setLineWidth(1);
   doc.line(pageW / 2 - 90, topBandH / 2, pageW / 2 + 90, topBandH / 2);
 
-  // Área central — painel decorativo (substitui a foto do tablet)
+  // 2) Área "foto" central — bloco cinza escuro sólido
   const midTop = topBandH;
-  const midH = 360;
-  setFill([28, 34, 40]);
+  const midH = 340;
+  setFill(COVER_PHOTO);
   doc.rect(0, midTop, pageW, midH, "F");
-  // Grid sutil de pontos claros
-  doc.setGState(new (doc as any).GState({ opacity: 0.09 }));
-  setFill([255, 255, 255]);
-  for (let gx = 30; gx < pageW; gx += 22) {
-    for (let gy = midTop + 30; gy < midTop + midH - 30; gy += 22) {
-      doc.circle(gx, gy, 0.9, "F");
-    }
-  }
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  // "Mock" de dashboard flutuante — cartão claro central
-  const cardW = pageW * 0.7;
-  const cardH = 210;
-  const cardX = (pageW - cardW) / 2;
-  const cardY = midTop + (midH - cardH) / 2;
-  doc.setGState(new (doc as any).GState({ opacity: 0.97 }));
-  setFill([245, 243, 236]);
-  doc.roundedRect(cardX, cardY, cardW, cardH, 8, 8, "F");
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  // Header do card
-  setFill(COVER_YELLOW);
-  doc.rect(cardX + 20, cardY + 22, 18, 18, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  setText(COVER_DARK);
-  doc.text("AI-POWERED INTELLIGENCE FOR", cardX + 46, cardY + 30, { charSpace: 0.8 });
-  doc.text("POOL & OUTDOOR LIVING BRANDS", cardX + 46, cardY + 39, { charSpace: 0.8 });
-  doc.setFontSize(6);
-  setText([120, 120, 120]);
-  doc.text("STRATEGIC BOARD", cardX + cardW - 20, cardY + 30, {
-    align: "right",
-    charSpace: 1,
-  });
-  doc.text(
-    new Date()
-      .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-      .toUpperCase(),
-    cardX + cardW - 20,
-    cardY + 39,
-    { align: "right", charSpace: 1 },
-  );
-  // Linhas simulando conteúdo
-  setDraw([210, 205, 190]);
-  doc.setLineWidth(0.4);
-  doc.line(cardX + 20, cardY + 54, cardX + cardW - 20, cardY + 54);
-  // Colunas simuladas
-  const colBoxW = (cardW - 60) / 4;
-  for (let i = 0; i < 4; i++) {
-    const bx = cardX + 20 + i * (colBoxW + 8);
-    setFill([232, 228, 216]);
-    doc.roundedRect(bx, cardY + 68, colBoxW, 90, 4, 4, "F");
-    setFill(COVER_YELLOW);
-    doc.circle(bx + 10, cardY + 80, 3, "F");
-    setDraw([200, 195, 180]);
-    for (let ln = 0; ln < 4; ln++) {
-      doc.line(bx + 8, cardY + 100 + ln * 10, bx + colBoxW - 8, cardY + 100 + ln * 10);
-    }
-  }
-  // Barrinhas inferiores
-  for (let i = 0; i < 8; i++) {
-    const bh = 8 + ((i * 37) % 22);
-    setFill(i % 2 ? COVER_TEAL : COVER_YELLOW);
-    doc.rect(cardX + 24 + i * 16, cardY + cardH - 20 - bh, 10, bh, "F");
-  }
 
-  // Painel inferior teal com título e metadados
+  // 3) Painel inferior teal
   const botTop = midTop + midH;
   const botH = pageH - botTop;
   setFill(COVER_TEAL);
   doc.rect(0, botTop, pageW, botH, "F");
-  // Gradiente aproximado (faixas verticais sutis)
-  doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
+  // sutil clareamento no lado direito (aproxima o gradiente da referência)
+  doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
   setFill([255, 255, 255]);
-  doc.rect(pageW * 0.55, botTop, pageW * 0.45, botH, "F");
+  doc.rect(pageW * 0.5, botTop, pageW * 0.5, botH, "F");
   doc.setGState(new (doc as any).GState({ opacity: 1 }));
 
-  // Data mês/ano
+  // 4) Mês/ano (topo do painel)
   const nowLabel = new Date()
     .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
     .toUpperCase();
@@ -222,20 +154,15 @@ export async function exportInterviewPdf(interviewId: string) {
   setText([255, 255, 255]);
   doc.text(nowLabel, margin, botTop + 40, { charSpace: 1.5 });
 
-  // Título grande — usa nome do entrevistado
+  // 5) Título FIXO "Visão de Mercado" — grande, duas linhas
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(58);
+  doc.setFontSize(62);
   setText([255, 255, 255]);
-  const coverTitle = interview.entrevistado_nome ?? "Entrevista";
-  const coverLines = doc.splitTextToSize(coverTitle, maxW);
-  let cty = botTop + 96;
-  for (const l of coverLines.slice(0, 2)) {
-    doc.text(l, margin, cty);
-    cty += 62;
-  }
+  doc.text("Visão de", margin, botTop + 108);
+  doc.text("Mercado", margin, botTop + 168);
 
-  // Label ENTREVISTADO(S) + badge amarelo com nome
-  const labelY = cty + 8;
+  // 6) Label ENTREVISTADO + badge amarelo com nome dinâmico
+  const labelY = botTop + 210;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   setText([255, 255, 255]);
@@ -245,35 +172,35 @@ export async function exportInterviewPdf(interviewId: string) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   const badgeTextW = doc.getTextWidth(badgeName);
+  const badgeY = labelY + 10;
   setFill(COVER_YELLOW);
-  doc.rect(margin - 3, labelY + 8, badgeTextW + 16, 22, "F");
+  doc.rect(margin - 3, badgeY, badgeTextW + 16, 22, "F");
   setText(COVER_DARK);
-  doc.text(badgeName, margin + 5, labelY + 23);
+  doc.text(badgeName, margin + 5, badgeY + 15);
 
-  // Linha divisória e modelo do documento
-  const modelY = pageH - 60;
+  // 7) Marca poolFlux (canto direito, alinhada ao badge)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  setText([255, 255, 255]);
+  doc.text("poolFlux", pageW - margin, badgeY + 16, { align: "right" });
+
+  // 8) Divisor + "Modelo do documento:" com nome do roteiro dinâmico
+  const modelY = pageH - 50;
   setDraw([255, 255, 255]);
-  doc.setGState(new (doc as any).GState({ opacity: 0.4 }));
+  doc.setGState(new (doc as any).GState({ opacity: 0.5 }));
   doc.setLineWidth(0.5);
-  doc.line(margin, modelY - 22, pageW - margin, modelY - 22);
+  doc.line(margin, modelY - 20, pageW - margin, modelY - 20);
   doc.setGState(new (doc as any).GState({ opacity: 1 }));
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  setText([220, 232, 235]);
-  doc.text("Modelo do documento:", margin, modelY);
+  setText([225, 235, 238]);
+  const modelLabel = "Modelo do documento:  ";
+  doc.text(modelLabel, margin, modelY);
   doc.setFont("helvetica", "bold");
   setText([255, 255, 255]);
-  doc.text(roteiroNome ?? "—", margin + doc.getTextWidth("Modelo do documento:  "), modelY);
+  doc.text(roteiroNome ?? "—", margin + doc.getTextWidth(modelLabel), modelY);
 
-  // Rodapé direita — poolFlux
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  setText([255, 255, 255]);
-  doc.text("poolFlux", pageW - margin, labelY + 23, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  setText([200, 220, 225]);
-  doc.text("inteligência comercial", pageW - margin, labelY + 34, { align: "right" });
+
 
   // ————————————————————————— PÁGINA DE ABERTURA / SUMÁRIO —————————————————————————
   const addContentPage = () => {
