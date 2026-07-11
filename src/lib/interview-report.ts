@@ -25,7 +25,7 @@ export async function exportInterviewPdf(interviewId: string) {
     .maybeSingle();
   if (!interview) throw new Error("Entrevista não encontrada");
 
-  const [capsRes, respRes, notesRes] = await Promise.all([
+  const [capsRes, respRes, notesRes, roteiroRes] = await Promise.all([
     interview.roteiro_id
       ? supabase
           .from("capitulos")
@@ -43,11 +43,16 @@ export async function exportInterviewPdf(interviewId: string) {
       .eq("entity_type", "interview")
       .eq("entity_id", interviewId)
       .order("created_at"),
+    interview.roteiro_id
+      ? supabase.from("roteiros").select("nome").eq("id", interview.roteiro_id).maybeSingle()
+      : Promise.resolve({ data: null as any }),
   ]);
 
   const capitulos = capsRes.data ?? [];
   const respostas = respRes.data ?? [];
   const notes = notesRes.data ?? [];
+  const roteiroNome = (roteiroRes as any)?.data?.nome ?? null;
+
   const respByCap = new Map(respostas.map((r: any) => [r.capitulo_id, r]));
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
