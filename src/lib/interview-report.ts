@@ -559,7 +559,7 @@ export async function exportInterviewPdf(interviewId: string) {
       y += 10;
 
       for (const c of campos) {
-        const val = sintese[c]?.trim() || "—";
+        const val = md(sintese[c]) || "—";
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         const lines = doc.splitTextToSize(val, maxW - 20);
