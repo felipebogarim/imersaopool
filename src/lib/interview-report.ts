@@ -17,7 +17,9 @@ const HAIRLINE: [number, number, number] = [220, 226, 236];
 const CREAM: [number, number, number] = [248, 246, 240];
 const HIGHLIGHT: [number, number, number] = [235, 248, 251];
 
-export async function exportInterviewPdf(interviewId: string) {
+import { drawCover, loadCoverImage, DEFAULT_TITULO, type CoverFields } from "./interview-cover";
+
+export async function exportInterviewPdf(interviewId: string, coverOverride?: Partial<CoverFields>) {
   const { data: interview } = await supabase
     .from("interviews")
     .select("*")
@@ -115,90 +117,22 @@ export async function exportInterviewPdf(interviewId: string) {
   };
   // ————————————————————————— CAPA (modelo "Visão de Mercado") —————————————————————————
   // Paleta específica da capa — replica fiel da referência
-  const COVER_DARK: [number, number, number] = [18, 42, 52];
-  const COVER_TEAL: [number, number, number] = [40, 92, 105];
-  const COVER_YELLOW: [number, number, number] = [255, 214, 92];
-  const COVER_PHOTO: [number, number, number] = [60, 60, 62];
+  const coverImg = await loadCoverImage();
+  const coverFields: CoverFields = {
+    data:
+      coverOverride?.data ??
+      (interview.data_entrevista
+        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR", {
+            month: "long",
+            year: "numeric",
+          })
+        : new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })),
+    titulo: coverOverride?.titulo ?? DEFAULT_TITULO,
+    entrevistado: coverOverride?.entrevistado ?? interview.entrevistado_nome ?? "—",
+    modelo: coverOverride?.modelo ?? roteiroNome ?? "—",
+  };
+  drawCover(doc, coverImg, coverFields);
 
-  // 1) Faixa superior escura com linha branca central
-  const topBandH = 100;
-  setFill(COVER_DARK);
-  doc.rect(0, 0, pageW, topBandH, "F");
-  setDraw([255, 255, 255]);
-  doc.setLineWidth(1);
-  doc.line(pageW / 2 - 90, topBandH / 2, pageW / 2 + 90, topBandH / 2);
-
-  // 2) Área "foto" central — bloco cinza escuro sólido
-  const midTop = topBandH;
-  const midH = 340;
-  setFill(COVER_PHOTO);
-  doc.rect(0, midTop, pageW, midH, "F");
-
-  // 3) Painel inferior teal
-  const botTop = midTop + midH;
-  const botH = pageH - botTop;
-  setFill(COVER_TEAL);
-  doc.rect(0, botTop, pageW, botH, "F");
-  // sutil clareamento no lado direito (aproxima o gradiente da referência)
-  doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
-  setFill([255, 255, 255]);
-  doc.rect(pageW * 0.5, botTop, pageW * 0.5, botH, "F");
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-
-  // 4) Mês/ano (topo do painel)
-  const nowLabel = new Date()
-    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-    .toUpperCase();
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-  setText([255, 255, 255]);
-  doc.text(nowLabel, margin, botTop + 40, { charSpace: 1.5 });
-
-  // 5) Título FIXO "Visão de Mercado" — grande, duas linhas
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(62);
-  setText([255, 255, 255]);
-  doc.text("Visão de", margin, botTop + 108);
-  doc.text("Mercado", margin, botTop + 168);
-
-  // 6) Label ENTREVISTADO + badge amarelo com nome dinâmico
-  const labelY = botTop + 210;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  setText([255, 255, 255]);
-  doc.text("ENTREVISTADO", margin, labelY, { charSpace: 2 });
-
-  const badgeName = (interview.entrevistado_nome ?? "—").toUpperCase();
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  const badgeTextW = doc.getTextWidth(badgeName);
-  const badgeY = labelY + 10;
-  setFill(COVER_YELLOW);
-  doc.rect(margin - 3, badgeY, badgeTextW + 16, 22, "F");
-  setText(COVER_DARK);
-  doc.text(badgeName, margin + 5, badgeY + 15);
-
-  // 7) Marca poolFlux (canto direito, alinhada ao badge)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  setText([255, 255, 255]);
-  doc.text("poolFlux", pageW - margin, badgeY + 16, { align: "right" });
-
-  // 8) Divisor + "Modelo do documento:" com nome do roteiro dinâmico
-  const modelY = pageH - 50;
-  setDraw([255, 255, 255]);
-  doc.setGState(new (doc as any).GState({ opacity: 0.5 }));
-  doc.setLineWidth(0.5);
-  doc.line(margin, modelY - 20, pageW - margin, modelY - 20);
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  setText([225, 235, 238]);
-  const modelLabel = "Modelo do documento:  ";
-  doc.text(modelLabel, margin, modelY);
-  doc.setFont("helvetica", "bold");
-  setText([255, 255, 255]);
-  doc.text(roteiroNome ?? "—", margin + doc.getTextWidth(modelLabel), modelY);
 
 
 
