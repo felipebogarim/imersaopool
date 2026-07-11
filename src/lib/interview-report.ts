@@ -500,7 +500,7 @@ export async function exportInterviewPdf(interviewId: string) {
 
     // Leitura estratégica — destaque em bloco cyan
     if (r?.leitura_estrategica?.trim()) {
-      const text = String(r.leitura_estrategica);
+      const text = md(r.leitura_estrategica);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       const lines = doc.splitTextToSize(text, maxW - 40);
