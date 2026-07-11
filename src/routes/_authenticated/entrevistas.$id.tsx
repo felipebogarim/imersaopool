@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { toast } from "sonner";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
-import { exportInterviewPdf } from "@/lib/interview-report";
+import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
