@@ -35,9 +35,12 @@ export function exportCompilationPdf(detail: any) {
   const maxW = pageW - margin * 2;
   let y = margin;
 
-  const setFill = (color: [number, number, number]) => doc.setFillColor(color[0], color[1], color[2]);
-  const setText = (color: [number, number, number]) => doc.setTextColor(color[0], color[1], color[2]);
-  const setDraw = (color: [number, number, number]) => doc.setDrawColor(color[0], color[1], color[2]);
+  const setFill = (color: [number, number, number]) =>
+    doc.setFillColor(color[0], color[1], color[2]);
+  const setText = (color: [number, number, number]) =>
+    doc.setTextColor(color[0], color[1], color[2]);
+  const setDraw = (color: [number, number, number]) =>
+    doc.setDrawColor(color[0], color[1], color[2]);
   const bottom = () => pageH - margin - 44;
 
   const addContentPage = () => {
@@ -51,9 +54,16 @@ export function exportCompilationPdf(detail: any) {
     y = margin + 10;
   };
 
-  const ensure = (n: number) => { if (y + n > bottom()) addContentPage(); };
+  const ensure = (n: number) => {
+    if (y + n > bottom()) addContentPage();
+  };
 
-  const write = (text: string, size = 10, style: "normal" | "bold" = "normal", color: [number, number, number] = INK) => {
+  const write = (
+    text: string,
+    size = 10,
+    style: "normal" | "bold" = "normal",
+    color: [number, number, number] = INK,
+  ) => {
     doc.setFont("helvetica", style);
     doc.setFontSize(size);
     setText(color);
@@ -99,7 +109,12 @@ export function exportCompilationPdf(detail: any) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN_DEEP);
-      doc.text(`${title}${continued ? " · CONTINUAÇÃO" : ""}`.toUpperCase(), margin + 18, y + 21, { charSpace: 1.1 });
+      doc.text(
+        `${title}${continued ? " · CONTINUAÇÃO" : ""}`.toUpperCase(),
+        margin + 18,
+        y + 21,
+        { charSpace: 1.1 },
+      );
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);
@@ -136,7 +151,12 @@ export function exportCompilationPdf(detail: any) {
   doc.text(`${detail.tipo} · v${detail.versao} · ${detail.escopo_tipo}`, margin, 242);
   doc.setFontSize(9);
   setText([200, 220, 232]);
-  doc.text(`Gerado em ${new Date(detail.created_at).toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, { align: "right" });
+  doc.text(
+    `Gerado em ${new Date(detail.created_at).toLocaleDateString("pt-BR")}`,
+    pageW - margin,
+    pageH - 60,
+    { align: "right" },
+  );
 
   addContentPage();
   doc.setFont("helvetica", "bold");
@@ -152,8 +172,10 @@ export function exportCompilationPdf(detail: any) {
   y += 28;
 
   const perspectives = detail.perspectivas_incluidas?.length ?? 0;
-  const counts = [c.insights_chave, c.oportunidades, c.ameacas, c.lacunas, c.recomendacoes]
-    .reduce((acc, items) => acc + (Array.isArray(items) ? items.length : 0), 0);
+  const counts = [c.insights_chave, c.oportunidades, c.ameacas, c.lacunas, c.recomendacoes].reduce(
+    (acc, items) => acc + (Array.isArray(items) ? items.length : 0),
+    0,
+  );
   const statTop = y;
   const statH = 190;
   setFill(NAVY);
@@ -178,7 +200,10 @@ export function exportCompilationPdf(detail: any) {
   doc.text("SINAIS CONSOLIDADOS", statX, statTop + 62, { charSpace: 1.5 });
   doc.setFontSize(21);
   setText([255, 255, 255]);
-  const statLines = doc.splitTextToSize(`${perspectives} perspectivas incluídas nesta leitura comparativa.`, maxW - (statX - margin) - 24);
+  const statLines = doc.splitTextToSize(
+    `${perspectives} perspectivas incluídas nesta leitura comparativa.`,
+    maxW - (statX - margin) - 24,
+  );
   let statY = statTop + 96;
   for (const line of statLines.slice(0, 3)) {
     doc.text(line, statX, statY);
@@ -205,7 +230,10 @@ export function exportCompilationPdf(detail: any) {
     for (const it of items) writePanel("item", it);
   };
 
-  if (c.resumo_executivo) { section("Resumo executivo"); writePanel("resumo", c.resumo_executivo); }
+  if (c.resumo_executivo) {
+    section("Resumo executivo");
+    writePanel("resumo", c.resumo_executivo);
+  }
   bullets("Insights-chave", c.insights_chave);
   bullets("Oportunidades", c.oportunidades);
   bullets("Ameaças", c.ameacas);
@@ -241,7 +269,12 @@ export function exportCompilationPdf(detail: any) {
     doc.text("Inteligência de mercado · confidencial", margin, pageH - 18);
     doc.setFont("helvetica", "bold");
     setText(NAVY);
-    doc.text(`${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`, pageW - margin, pageH - 18, { align: "right" });
+    doc.text(
+      `${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
+      pageW - margin,
+      pageH - 18,
+      { align: "right" },
+    );
   }
 
   const name = `compilacao-${detail.tipo}-v${detail.versao}.pdf`;
@@ -252,7 +285,11 @@ export function exportCompilationCsv(detail: any) {
   const c = (detail?.conteudo ?? {}) as any;
   const rows: Record<string, any>[] = [];
   const push = (secao: string, item: any, extra: Record<string, any> = {}) =>
-    rows.push({ secao, conteudo: typeof item === "string" ? item : JSON.stringify(item), ...extra });
+    rows.push({
+      secao,
+      conteudo: typeof item === "string" ? item : JSON.stringify(item),
+      ...extra,
+    });
 
   if (c.resumo_executivo) push("resumo_executivo", c.resumo_executivo);
   (c.insights_chave ?? []).forEach((i: any) => push("insight", i));
@@ -260,7 +297,10 @@ export function exportCompilationCsv(detail: any) {
   (c.ameacas ?? []).forEach((i: any) => push("ameaca", i));
   (c.lacunas ?? []).forEach((i: any) => push("lacuna", i));
   (c.recomendacoes ?? []).forEach((r: any) =>
-    push("recomendacao", r.acao ?? "", { prioridade: r.prioridade ?? "", justificativa: r.justificativa ?? "" }),
+    push("recomendacao", r.acao ?? "", {
+      prioridade: r.prioridade ?? "",
+      justificativa: r.justificativa ?? "",
+    }),
   );
 
   exportToCsv(`compilacao-${detail.tipo}-v${detail.versao}`, rows);
