@@ -32,76 +32,77 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 56;
 
-  // Imagem de capa preenchendo a página inteira (100% como foi enviada)
+  // Imagem de capa preenchendo a página inteira
   doc.addImage(imgDataUrl, "PNG", 0, 0, pageW, pageH);
 
   const COVER_DARK: [number, number, number] = [18, 42, 52];
-  const COVER_YELLOW: [number, number, number] = [255, 214, 92];
+  const COVER_YELLOW: [number, number, number] = [244, 208, 96];
 
-  // 1) DATA — canto superior direito na faixa escura
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text((f.data || "").toUpperCase(), pageW - margin, 55, {
-    align: "right",
-    charSpace: 2,
-  });
-
-  // 2) TÍTULO — grande sobre o painel teal inferior
-  const botTop = pageH * 0.6;
-  const title = (f.titulo || DEFAULT_TITULO).trim();
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(48);
-  doc.setTextColor(255, 255, 255);
-  const words = title.split(/\s+/);
-  const mid = Math.ceil(words.length / 2);
-  const titleLines =
-    words.length > 2
-      ? [words.slice(0, mid).join(" "), words.slice(mid).join(" ")]
-      : [title];
-  let ty = botTop + 60;
-  for (const line of titleLines) {
-    doc.text(line, margin, ty);
-    ty += 54;
-  }
-
-  // 3) ENTREVISTADO — label + badge amarelo
-  const labelY = ty + 26;
+  // 1) DATA — canto superior direito, dentro da faixa escura (~y=62)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", margin, labelY, { charSpace: 2 });
+  doc.text((f.data || "").toUpperCase(), pageW - margin, 62, {
+    align: "right",
+    charSpace: 2.4,
+  });
+
+  // 2) TÍTULO — grande, duas linhas, sobre o painel teal
+  const title = (f.titulo || DEFAULT_TITULO).trim();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(52);
+  doc.setTextColor(255, 255, 255);
+  const words = title.split(/\s+/);
+  let titleLines: string[];
+  if (words.length >= 2) {
+    const mid = Math.ceil(words.length / 2);
+    titleLines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+  } else {
+    titleLines = [title];
+  }
+  let ty = 555;
+  for (const line of titleLines) {
+    doc.text(line, margin, ty);
+    ty += 58;
+  }
+
+  // 3) ENTREVISTADO — label + badge amarelo (posição fixa perto do rodapé)
+  const labelY = 705;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text("ENTREVISTADO", margin, labelY, { charSpace: 3 });
 
   const badgeName = (f.entrevistado || "—").toUpperCase();
-  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
   const badgeTextW = doc.getTextWidth(badgeName);
-  const badgeY = labelY + 8;
+  const badgeH = 26;
+  const badgeY = labelY + 12;
   doc.setFillColor(COVER_YELLOW[0], COVER_YELLOW[1], COVER_YELLOW[2]);
-  doc.rect(margin - 3, badgeY, badgeTextW + 16, 22, "F");
+  doc.rect(margin - 4, badgeY, badgeTextW + 20, badgeH, "F");
   doc.setTextColor(COVER_DARK[0], COVER_DARK[1], COVER_DARK[2]);
-  doc.text(badgeName, margin + 5, badgeY + 15);
+  doc.text(badgeName, margin + 6, badgeY + 17);
 
-  // 4) MODELO DO DOCUMENTO — rodapé acima dos logos
-  const modelY = pageH - 90;
-  doc.setDrawColor(255, 255, 255);
-  (doc as any).setGState(new (doc as any).GState({ opacity: 0.4 }));
-  doc.setLineWidth(0.5);
-  doc.line(margin, modelY - 18, pageW - margin, modelY - 18);
-  (doc as any).setGState(new (doc as any).GState({ opacity: 1 }));
-
+  // 4) MODELO DO DOCUMENTO — rodapé
+  const modelY = 788;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(225, 235, 238);
-  const modelLabel = "Modelo do documento:  ";
+  doc.setFontSize(10.5);
+  doc.setTextColor(220, 232, 235);
+  const modelLabel = "Modelo do documento:";
   doc.text(modelLabel, margin, modelY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(f.modelo || "—", margin + doc.getTextWidth(modelLabel), modelY);
+  doc.text(f.modelo || "—", margin + doc.getTextWidth(modelLabel) + 14, modelY);
 }
 
-export async function renderCoverPreviewDataUrl(f: CoverFields): Promise<string> {
+export async function renderCoverPreviewBlobUrl(f: CoverFields): Promise<string> {
   const img = await loadCoverImage();
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   drawCover(doc, img, f);
-  return doc.output("datauristring");
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
 }
+
+// Backwards-compat alias
+export const renderCoverPreviewDataUrl = renderCoverPreviewBlobUrl;
