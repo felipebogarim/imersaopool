@@ -80,8 +80,10 @@ export async function exportInterviewPdf(interviewId: string) {
       .trim();
   };
 
+  const contentBottom = () => pageH - margin - 44;
+
   const ensure = (n: number) => {
-    if (y + n > pageH - margin - 24) {
+    if (y + n > contentBottom()) {
       addContentPage();
     }
   };
@@ -159,10 +161,29 @@ export async function exportInterviewPdf(interviewId: string) {
   doc.setFontSize(9);
   setText([180, 220, 235]);
   const metaCols = [
-    { label: "CLASSIFICAÇÃO", value: CLASSIF[interview.entrevistado_classificacao] ?? interview.entrevistado_classificacao ?? "—" },
-    { label: "TIPO DE EMPRESA", value: interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—" },
-    { label: "LOCAL", value: [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—" },
-    { label: "DATA", value: interview.data_entrevista ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR") : "—" },
+    {
+      label: "CLASSIFICAÇÃO",
+      value:
+        CLASSIF[interview.entrevistado_classificacao] ??
+        interview.entrevistado_classificacao ??
+        "—",
+    },
+    {
+      label: "TIPO DE EMPRESA",
+      value: interview.empresa_tipo
+        ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo)
+        : "—",
+    },
+    {
+      label: "LOCAL",
+      value: [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—",
+    },
+    {
+      label: "DATA",
+      value: interview.data_entrevista
+        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
+        : "—",
+    },
   ];
   const colW = (pageW - margin * 2) / metaCols.length;
   metaCols.forEach((m, i) => {
@@ -187,7 +208,9 @@ export async function exportInterviewPdf(interviewId: string) {
     margin,
     pageH - 60,
   );
-  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, { align: "right" });
+  doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, pageW - margin, pageH - 60, {
+    align: "right",
+  });
 
   // ————————————————————————— PÁGINA DE ABERTURA / SUMÁRIO —————————————————————————
   const addContentPage = () => {
@@ -200,6 +223,116 @@ export async function exportInterviewPdf(interviewId: string) {
     setFill(CYAN);
     doc.rect(0, 0, 6, 120, "F");
     y = margin + 10;
+  };
+
+  const writeCalloutBlock = (label: string, value?: string | null) => {
+    const text = md(value);
+    if (!text) return;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    const lineH = 16;
+    const lines = doc.splitTextToSize(text, maxW - 40);
+    let index = 0;
+    let continued = false;
+
+    while (index < lines.length) {
+      ensure(70);
+      const headerH = 44;
+      let availableLines = Math.floor((contentBottom() - y - headerH - 12) / lineH);
+      if (availableLines < 1) {
+        addContentPage();
+        availableLines = Math.floor((contentBottom() - y - headerH - 12) / lineH);
+      }
+
+      const chunk = lines.slice(index, index + Math.max(1, availableLines));
+      const blockH = headerH + chunk.length * lineH + 12;
+
+      setFill(HIGHLIGHT);
+      doc.roundedRect(margin, y, maxW, blockH, 6, 6, "F");
+      setFill(CYAN);
+      doc.rect(margin, y, 4, blockH, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      setText(CYAN_DEEP);
+      doc.text(continued ? `${label} · CONTINUAÇÃO` : label, margin + 20, y + 22, {
+        charSpace: 1.5,
+      });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      setText(INK);
+      let ly = y + 44;
+      for (const line of chunk) {
+        doc.text(line, margin + 20, ly);
+        ly += lineH;
+      }
+
+      index += chunk.length;
+      y += blockH + 20;
+      continued = true;
+      if (index < lines.length) addContentPage();
+    }
+  };
+
+  const writeMatrixField = (label: string, value?: string | null) => {
+    const text = md(value) || "—";
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const lineH = 13;
+    const lines = doc.splitTextToSize(text, maxW - 24);
+    let index = 0;
+    let continued = false;
+
+    while (index < lines.length) {
+      ensure(52);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      const rawLabel = `${label}${continued ? " (continuação)" : ""}`
+        .toUpperCase()
+        .replace(/_/g, " ");
+      const labelLines = doc.splitTextToSize(rawLabel, maxW - 24).slice(0, 2);
+      const labelH = 18 + labelLines.length * 11;
+      let availableLines = Math.floor((contentBottom() - y - labelH - 12) / lineH);
+      if (availableLines < 1) {
+        addContentPage();
+        availableLines = Math.floor((contentBottom() - y - labelH - 12) / lineH);
+      }
+
+      const chunk = lines.slice(index, index + Math.max(1, availableLines));
+      const rowH = Math.max(42, labelH + chunk.length * lineH + 12);
+
+      setFill(CORAL);
+      doc.rect(margin, y + 4, 3, rowH - 8, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      setText(NAVY);
+      let labelY = y + 16;
+      for (const line of labelLines) {
+        doc.text(line, margin + 12, labelY, { charSpace: 0.8 });
+        labelY += 11;
+      }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      setText(INK);
+      let ly = y + labelH;
+      for (const line of chunk) {
+        doc.text(line, margin + 12, ly);
+        ly += lineH;
+      }
+
+      y += rowH + 4;
+      setDraw(HAIRLINE);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, margin + maxW, y);
+      y += 4;
+      index += chunk.length;
+      continued = true;
+      if (index < lines.length) addContentPage();
+    }
   };
 
   addContentPage();
@@ -234,11 +367,22 @@ export async function exportInterviewPdf(interviewId: string) {
 
   const fichaItems: [string, string][] = [
     ["ENTREVISTADO", interview.entrevistado_nome ?? "—"],
-    ["CLASSIFICAÇÃO", `${CLASSIF[interview.entrevistado_classificacao] ?? "—"}${interview.entrevistado_classificacao_outro ? " · " + interview.entrevistado_classificacao_outro : ""}`],
+    [
+      "CLASSIFICAÇÃO",
+      `${CLASSIF[interview.entrevistado_classificacao] ?? "—"}${interview.entrevistado_classificacao_outro ? " · " + interview.entrevistado_classificacao_outro : ""}`,
+    ],
     ["EMPRESA", interview.empresa_nome ?? "—"],
-    ["TIPO", interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—"],
+    [
+      "TIPO",
+      interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—",
+    ],
     ["LOCAL", [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—"],
-    ["DATA", interview.data_entrevista ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR") : "—"],
+    [
+      "DATA",
+      interview.data_entrevista
+        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
+        : "—",
+    ],
   ];
   const gridCols = 3;
   const cellW = (maxW - 32) / gridCols;
@@ -307,8 +451,11 @@ export async function exportInterviewPdf(interviewId: string) {
   const totalCaps = capitulos.length;
   const capsRespondidos = capitulos.filter((c: any) => {
     const r: any = respByCap.get(c.id);
-    return !!(r?.leitura_estrategica?.trim() || r?.resposta_texto?.trim() ||
-      (r?.sintese && Object.values(r.sintese as Record<string, string>).some(v => v?.trim())));
+    return !!(
+      r?.leitura_estrategica?.trim() ||
+      r?.resposta_texto?.trim() ||
+      (r?.sintese && Object.values(r.sintese as Record<string, string>).some((v) => v?.trim()))
+    );
   }).length;
   const pctRespondidos = totalCaps ? Math.round((capsRespondidos / totalCaps) * 100) : 0;
   let campoTotal = 0;
@@ -414,7 +561,12 @@ export async function exportInterviewPdf(interviewId: string) {
 
       const bigStr = `${campoFilled}`;
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(120);
+      let bigSize = 120;
+      doc.setFontSize(bigSize);
+      while (doc.getTextWidth(bigStr) > 170 && bigSize > 56) {
+        bigSize -= 8;
+        doc.setFontSize(bigSize);
+      }
       setText(CYAN);
       doc.text(bigStr, margin + 40, c2Top + c2H / 2 + 40);
       const bigW = doc.getTextWidth(bigStr);
@@ -467,7 +619,7 @@ export async function exportInterviewPdf(interviewId: string) {
     setText(NAVY);
     const titleW = maxW - 140;
     const tl = doc.splitTextToSize(cap.titulo, titleW);
-    for (const l of tl.slice(0, 3)) {
+    for (const l of tl) {
       ensure(32);
       doc.text(l, margin, y);
       y += 32;
@@ -499,33 +651,8 @@ export async function exportInterviewPdf(interviewId: string) {
     }
 
     // Leitura estratégica — destaque em bloco cyan
-    if (r?.leitura_estrategica?.trim()) {
-      const text = md(r.leitura_estrategica);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      const lines = doc.splitTextToSize(text, maxW - 40);
-      const blockH = 48 + lines.length * 16;
-      ensure(blockH + 20);
-      setFill(HIGHLIGHT);
-      doc.roundedRect(margin, y, maxW, blockH, 6, 6, "F");
-      setFill(CYAN);
-      doc.rect(margin, y, 4, blockH, "F");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      setText(CYAN_DEEP);
-      doc.text("LEITURA ESTRATÉGICA", margin + 20, y + 22, { charSpace: 1.5 });
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      setText(INK);
-      let ly = y + 44;
-      for (const l of lines) {
-        doc.text(l, margin + 20, ly);
-        ly += 16;
-      }
-      y += blockH + 20;
-    }
+    if (r?.leitura_estrategica?.trim())
+      writeCalloutBlock("LEITURA ESTRATÉGICA", r.leitura_estrategica);
 
     // Evidência / anotações
     if (r?.resposta_texto?.trim()) {
@@ -558,41 +685,9 @@ export async function exportInterviewPdf(interviewId: string) {
       doc.line(margin, y, margin + 60, y);
       y += 10;
 
-      for (const c of campos) {
-        const val = md(sintese[c]) || "—";
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        const lines = doc.splitTextToSize(val, maxW - 20);
-        const rowH = Math.max(36, 22 + lines.length * 13);
-        ensure(rowH + 4);
-
-        // barra lateral coral
-        setFill(CORAL);
-        doc.rect(margin, y + 4, 3, rowH - 8, "F");
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        setText(NAVY);
-        doc.text(c.toUpperCase().replace(/_/g, " "), margin + 12, y + 16, { charSpace: 0.8 });
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        setText(INK);
-        let ly = y + 32;
-        for (const l of lines) {
-          doc.text(l, margin + 12, ly);
-          ly += 13;
-        }
-        y += rowH + 4;
-
-        setDraw(HAIRLINE);
-        doc.setLineWidth(0.3);
-        doc.line(margin, y, margin + maxW, y);
-        y += 4;
-      }
+      for (const c of campos) writeMatrixField(c, sintese[c]);
     }
   }
-
 
   // ————————————————————————— ANOTAÇÕES —————————————————————————
   if (notes.length) {
@@ -662,12 +757,10 @@ export async function exportInterviewPdf(interviewId: string) {
     setText(MUTED);
     doc.text("POOLFLUX  ·  RELATÓRIO DE ENTREVISTA", margin, 30, { charSpace: 1.5 });
     setText(NAVY);
-    doc.text(
-      (interview.entrevistado_nome ?? "").toUpperCase(),
-      pageW - margin,
-      30,
-      { align: "right", charSpace: 1.2 },
-    );
+    doc.text((interview.entrevistado_nome ?? "").toUpperCase(), pageW - margin, 30, {
+      align: "right",
+      charSpace: 1.2,
+    });
     setDraw(HAIRLINE);
     doc.setLineWidth(0.4);
     doc.line(margin, 38, pageW - margin, 38);
@@ -681,7 +774,12 @@ export async function exportInterviewPdf(interviewId: string) {
     doc.text("Inteligência de mercado · confidencial", margin, pageH - 18);
     doc.setFont("helvetica", "bold");
     setText(NAVY);
-    doc.text(`${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`, pageW - margin, pageH - 18, { align: "right" });
+    doc.text(
+      `${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
+      pageW - margin,
+      pageH - 18,
+      { align: "right" },
+    );
   }
 
   const safe = (interview.entrevistado_nome || "entrevista")
