@@ -236,7 +236,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      setText(NAVY);
+      setText(INK);
       let labelY = y + 16;
       for (const line of labelLines) {
         doc.text(line, margin + 12, labelY, { charSpace: 0.8 });
@@ -274,7 +274,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
-  setText(NAVY);
+  setText(INK);
   write("O que esta entrevista revela.", 28, "bold", NAVY);
   y += 6;
 
@@ -286,7 +286,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
 
   // Ficha em cartão
   const fichaTop = y;
-  setFill([255, 255, 255]);
+  setFill(SURFACE);
   const fichaH = 140;
   doc.roundedRect(margin, fichaTop, maxW, fichaH, 8, 8, "F");
   setDraw(HAIRLINE);
@@ -358,7 +358,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
-      setText(NAVY);
+      setText(INK);
       doc.text(cap.titulo, margin + 44, y);
 
       if (cap.lente_default) {
@@ -413,7 +413,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     // Card 1 — Cobertura da entrevista (anel + % gigante)
     const cardTop = y;
     const cardH = 240;
-    setFill([255, 255, 255]);
+    setFill(SURFACE);
     doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "F");
     setDraw(HAIRLINE);
     doc.setLineWidth(0.5);
@@ -443,7 +443,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     // % no centro
     doc.setFont("helvetica", "bold");
     doc.setFontSize(36);
-    setText(NAVY);
+    setText(INK);
     const pctStr = `${pctRespondidos}%`;
     const pctW = doc.getTextWidth(pctStr);
     doc.text(pctStr, ringCx - pctW / 2, ringCy + 6);
@@ -544,7 +544,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     // Título — largura reduzida para não invadir o watermark à direita
     doc.setFont("helvetica", "bold");
     doc.setFontSize(26);
-    setText(NAVY);
+    setText(INK);
     const titleW = maxW - 140;
     const tl = doc.splitTextToSize(cap.titulo, titleW);
     for (const l of tl) {
@@ -627,7 +627,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     y += 18;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(28);
-    setText(NAVY);
+    setText(INK);
     doc.text("Anotações da sessão", margin, y);
     y += 12;
     setDraw(CORAL);
@@ -665,7 +665,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     y += 18;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(24);
-    setText(NAVY);
+    setText(INK);
     doc.text("Notas do entrevistador", margin, y);
     y += 12;
     setDraw(CORAL);
@@ -684,7 +684,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     doc.setFontSize(7.5);
     setText(MUTED);
     doc.text("POOLFLUX  ·  RELATÓRIO DE ENTREVISTA", margin, 30, { charSpace: 1.5 });
-    setText(NAVY);
+    setText(INK);
     doc.text((interview.entrevistado_nome ?? "").toUpperCase(), pageW - margin, 30, {
       align: "right",
       charSpace: 1.2,
@@ -701,7 +701,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     setText(MUTED);
     doc.text("Inteligência de mercado · confidencial", margin, pageH - 18);
     doc.setFont("helvetica", "bold");
-    setText(NAVY);
+    setText(INK);
     doc.text(
       `${String(p).padStart(2, "0")} / ${String(total).padStart(2, "0")}`,
       pageW - margin,
