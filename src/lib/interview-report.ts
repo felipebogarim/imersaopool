@@ -61,6 +61,25 @@ export async function exportInterviewPdf(interviewId: string) {
   const setText = (c: [number, number, number]) => doc.setTextColor(c[0], c[1], c[2]);
   const setDraw = (c: [number, number, number]) => doc.setDrawColor(c[0], c[1], c[2]);
 
+  // Sanitiza markdown vindo de relatórios (asteriscos, sublinhados, marcadores),
+  // evitando que "**bold**" apareça literalmente no PDF.
+  const md = (s?: string | null): string => {
+    if (!s) return "";
+    return String(s)
+      .replace(/\r\n?/g, "\n")
+      .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/(?<!\w)_([^_\n]+)_(?!\w)/g, "$1")
+      .replace(/(?<!\w)\*([^*\n]+)\*(?!\w)/g, "$1")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/^\s{0,3}[-*+]\s+/gm, "• ")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   const ensure = (n: number) => {
     if (y + n > pageH - margin - 24) {
       addContentPage();
