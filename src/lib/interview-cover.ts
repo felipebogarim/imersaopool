@@ -148,50 +148,55 @@ function loadImageSize(dataUrl: string): Promise<{ w: number; h: number }> {
  */
 export async function drawIntervieweePage(
   doc: jsPDF,
-  coverImgDataUrl: string,
+  _coverImgDataUrl: string,
   f: IntervieweePageFields,
 ) {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-
-  // Fundo: reutiliza a arte da capa e mascara elementos indesejados.
-  doc.addImage(coverImgDataUrl, "PNG", 0, 0, pageW, pageH);
-
-  const SX = pageW / 1349;
-  const SY = pageH / 1920;
-  const DARK: [number, number, number] = [18, 42, 52];
-
-  // Máscara topo (faixa preta + linha + data)
-  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
-  doc.rect(0, 0, pageW, 135 * SY, "F");
-  // Máscara painel do título
-  doc.rect(0, 1120 * SY, pageW, (1600 - 1120) * SY, "F");
-  // Máscara abaixo da linha inferior ("modelo do documento")
-  doc.rect(0, (1755 + 4) * SY, pageW, pageH - (1755 + 4) * SY, "F");
-
-  // ————— Moldura da foto —————
-  const leftX = 150 * SX;
-  const frameX = leftX - 6;
-  const frameY = 150 * SY;
-  const frameW = pageW - frameX - 150 * SX;
-  const frameH = 1350 * SY - frameY; // até y≈1350, deixando faixa inferior livre
-  const radius = 28;
   const anyDoc = doc as any;
 
-  // Fundo do box (para letterbox invisível) + clip arredondado
+  // Paleta baseada na capa
+  const TOP: [number, number, number] = [11, 30, 42];     // azul escuro (topo-esquerda)
+  const BOTTOM: [number, number, number] = [30, 74, 82];  // teal (base-direita)
+
+  // Fundo com gradiente vertical simulado por faixas
+  const bands = 120;
+  for (let i = 0; i < bands; i++) {
+    const t = i / (bands - 1);
+    const r = Math.round(TOP[0] + (BOTTOM[0] - TOP[0]) * t);
+    const g = Math.round(TOP[1] + (BOTTOM[1] - TOP[1]) * t);
+    const b = Math.round(TOP[2] + (BOTTOM[2] - TOP[2]) * t);
+    doc.setFillColor(r, g, b);
+    doc.rect(0, (pageH * i) / bands, pageW, pageH / bands + 0.6, "F");
+  }
+
+  // ————— Layout —————
+  const leftX = 60;                  // margem esquerda
+  const bottomMargin = 80;           // margem inferior
+  const lineY = pageH - bottomMargin;
+
+  // Moldura da foto (retrato, canto esquerdo)
+  const frameW = 190;
+  const frameH = 240;
+  const frameX = leftX;
+  // posiciona a base da foto acima do bloco de texto
+  const textBlockH = 130;            // reservado para label + nome + linha
+  const frameY = lineY - textBlockH - frameH - 10;
+  const radius = 18;
+
+  // Clip arredondado e desenho da foto
   doc.saveGraphicsState?.();
   anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius);
   anyDoc.clip();
   anyDoc.discardPath?.();
 
-  // Preenche o box com dark antes da foto
-  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  // fundo do box
+  doc.setFillColor(BOTTOM[0], BOTTOM[1], BOTTOM[2]);
   doc.rect(frameX, frameY, frameW, frameH, "F");
 
   if (f.photoDataUrl) {
     try {
       const { w: iw, h: ih } = await loadImageSize(f.photoDataUrl);
-      // contain: cabe inteira dentro do box, sem cortar rostos
       const scale = Math.min(frameW / iw, frameH / ih);
       const drawW = iw * scale;
       const drawH = ih * scale;
@@ -200,25 +205,14 @@ export async function drawIntervieweePage(
       const fmt = f.photoDataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
       doc.addImage(f.photoDataUrl, fmt, dx, dy, drawW, drawH, undefined, "FAST");
     } catch {
-      // se falhar, mantém o fundo escuro
+      /* mantém fundo */
     }
   }
-
   doc.restoreGraphicsState?.();
 
-  // Borda sutil
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.6);
-  anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius, "S");
+  // ————— Label + nome —————
+  const nameMaxW = pageW - leftX - 60;
 
-  // ————— Bloco inferior: label + nome (à esquerda dos logos) —————
-  // Logos ocupam aprox x 800→1210 na referência. Reservamos até x=760*SX.
-  const nameMaxX = 760 * SX;
-  const nameMaxW = nameMaxX - leftX;
-  const bottomLineY = 1755 * SY;
-  const logosBaseY = 1730 * SY;
-
-  // Nome — quebra por palavra respeitando largura, auto-fit de fonte
   const name = (f.name || "—").toUpperCase();
   const words = name.split(/\s+/).filter(Boolean);
 
@@ -239,7 +233,7 @@ export async function drawIntervieweePage(
     return out;
   };
 
-  let fontSize = 46;
+  let fontSize = 44;
   let lines = wrapByWidth(fontSize);
   while (
     (lines.length > 2 || lines.some((l) => doc.getTextWidth(l) > nameMaxW)) &&
@@ -250,19 +244,19 @@ export async function drawIntervieweePage(
   }
   const lineH = fontSize * 1.08;
 
-  // Label "ENTREVISTADO" — posicionado ACIMA da primeira linha do nome,
-  // com folga garantida contra a base dos logos.
+  // linha decorativa inferior
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  doc.line(leftX, lineY, pageW - 60, lineY);
+
+  // nome: base logo acima da linha
+  const nameBaseY = lineY - 18;
+  const firstLineY = nameBaseY - (lines.length - 1) * lineH;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-
-  // Base do bloco de nome alinhada com base dos logos.
-  // Última linha desenha em y = nameBaseY; primeira em nameBaseY - (n-1)*lineH.
-  const nameBaseY = logosBaseY;
-  const firstLineY = nameBaseY - (lines.length - 1) * lineH;
-  const labelY = Math.max(bottomLineY + 8, firstLineY - lineH * 0.7);
-
-  doc.text("ENTREVISTADO", leftX, labelY, { charSpace: 3 });
+  doc.text("ENTREVISTADO", leftX, firstLineY - lineH * 0.75, { charSpace: 3 });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(fontSize);
@@ -273,6 +267,7 @@ export async function drawIntervieweePage(
     ny += lineH;
   }
 }
+
 
 export async function renderIntervieweePreviewBlobUrl(
   f: IntervieweePageFields,
