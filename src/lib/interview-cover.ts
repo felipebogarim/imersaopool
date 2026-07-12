@@ -294,7 +294,7 @@ export async function drawIntervieweePage(
 
 
 export async function renderIntervieweePreviewBlobUrl(
-  f: IntervieweePageFields,
+  f: IntervieweePageFields & { template?: CoverTemplate },
 ): Promise<string> {
   const img = await loadCoverImage();
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -302,5 +302,203 @@ export async function renderIntervieweePreviewBlobUrl(
   const blob = doc.output("blob");
   return URL.createObjectURL(blob);
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// TEMPLATE "DARK" — capa e página de apresentação em fundo preto minimalista
+// ═══════════════════════════════════════════════════════════════════════
+
+const DARK_BG: [number, number, number] = [17, 17, 19];
+
+async function drawLogoBottomRight(doc: jsPDF, pageW: number, y: number) {
+  try {
+    const logo = await loadPoolfluxLogo();
+    const { w: iw, h: ih } = await loadImageSize(logo);
+    const targetH = 34;
+    const scale = targetH / ih;
+    const drawW = iw * scale;
+    doc.addImage(logo, "PNG", pageW - 60 - drawW, y - targetH, drawW, targetH, undefined, "FAST");
+  } catch {
+    /* opcional */
+  }
+}
+
+export async function drawCoverDark(doc: jsPDF, f: CoverFields) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // Fundo preto
+  doc.setFillColor(DARK_BG[0], DARK_BG[1], DARK_BG[2]);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  const margin = 60;
+
+  // Linha decorativa superior (centro, curta)
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  const topLineW = 140;
+  doc.line((pageW - topLineW) / 2, 50, (pageW + topLineW) / 2, 50);
+
+  // Data — pequena, acima da linha
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(200, 200, 205);
+  doc.text((f.data || "").toUpperCase(), pageW / 2, 40, { align: "center", charSpace: 3 });
+
+  // Título principal — centralizado, upper-middle
+  const title = (f.titulo || DEFAULT_TITULO).trim();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(42);
+  doc.setTextColor(255, 255, 255);
+  const words = title.split(/\s+/);
+  const titleLines: string[] =
+    words.length >= 3
+      ? [
+          words.slice(0, Math.ceil(words.length / 2)).join(" "),
+          words.slice(Math.ceil(words.length / 2)).join(" "),
+        ]
+      : [title];
+  let ty = pageH * 0.42;
+  for (const line of titleLines) {
+    doc.text(line, pageW / 2, ty, { align: "center" });
+    ty += 50;
+  }
+
+  // Modelo do documento — subtítulo abaixo do título
+  if (f.modelo) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(170, 175, 185);
+    doc.text(f.modelo.toUpperCase(), pageW / 2, ty + 8, { align: "center", charSpace: 2 });
+  }
+
+  // Linha decorativa inferior
+  const bottomLineY = pageH - 80;
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  doc.line(margin, bottomLineY, pageW - margin, bottomLineY);
+
+  // Bloco inferior: ENTREVISTADO à esquerda, logo à direita
+  const blockBaseY = bottomLineY - 18;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(170, 175, 185);
+  doc.text("ENTREVISTADO", margin, blockBaseY - 16, { charSpace: 3 });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(255, 255, 255);
+  doc.text((f.entrevistado || "—").toUpperCase(), margin, blockBaseY);
+
+  await drawLogoBottomRight(doc, pageW, blockBaseY + 4);
+}
+
+export async function drawIntervieweePageDark(
+  doc: jsPDF,
+  f: IntervieweePageFields,
+) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const anyDoc = doc as any;
+
+  // Fundo preto
+  doc.setFillColor(DARK_BG[0], DARK_BG[1], DARK_BG[2]);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  const leftX = 60;
+  const bottomMargin = 80;
+  const lineY = pageH - bottomMargin;
+
+  // Moldura da foto
+  const frameW = 200;
+  const frameH = 250;
+  const frameX = leftX;
+  const textBlockH = 130;
+  const frameY = lineY - textBlockH - frameH - 10;
+  const radius = 18;
+
+  doc.saveGraphicsState?.();
+  anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius);
+  anyDoc.clip();
+  anyDoc.discardPath?.();
+
+  doc.setFillColor(35, 35, 38);
+  doc.rect(frameX, frameY, frameW, frameH, "F");
+
+  if (f.photoDataUrl) {
+    try {
+      const { w: iw, h: ih } = await loadImageSize(f.photoDataUrl);
+      const scale = Math.min(frameW / iw, frameH / ih);
+      const drawW = iw * scale;
+      const drawH = ih * scale;
+      const dx = frameX + (frameW - drawW) / 2;
+      const dy = frameY + (frameH - drawH) / 2;
+      const fmt = f.photoDataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(f.photoDataUrl, fmt, dx, dy, drawW, drawH, undefined, "FAST");
+    } catch {
+      /* mantém fundo */
+    }
+  }
+  doc.restoreGraphicsState?.();
+
+  // Nome com auto-fit
+  const nameMaxW = pageW - leftX - 60;
+  const name = (f.name || "—").toUpperCase();
+  const words = name.split(/\s+/).filter(Boolean);
+  const wrapByWidth = (fs: number): string[] => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(fs);
+    const out: string[] = [];
+    let cur = "";
+    for (const w of words) {
+      const tryLine = cur ? `${cur} ${w}` : w;
+      if (doc.getTextWidth(tryLine) <= nameMaxW) cur = tryLine;
+      else {
+        if (cur) out.push(cur);
+        cur = w;
+      }
+    }
+    if (cur) out.push(cur);
+    return out;
+  };
+  let fontSize = 44;
+  let lines = wrapByWidth(fontSize);
+  while (
+    (lines.length > 2 || lines.some((l) => doc.getTextWidth(l) > nameMaxW)) &&
+    fontSize > 22
+  ) {
+    fontSize -= 2;
+    lines = wrapByWidth(fontSize);
+  }
+  const lineH = fontSize * 1.08;
+
+  // linha decorativa inferior
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  doc.line(leftX, lineY, pageW - 60, lineY);
+
+  const nameBaseY = lineY - 18;
+  const firstLineY = nameBaseY - (lines.length - 1) * lineH;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(200, 200, 205);
+  doc.text("ENTREVISTADO", leftX, firstLineY - lineH * 0.75, { charSpace: 3 });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(fontSize);
+  doc.setTextColor(255, 255, 255);
+  let ny = firstLineY;
+  for (const l of lines) {
+    doc.text(l, leftX, ny);
+    ny += lineH;
+  }
+}
+
+export async function renderCoverDarkPreviewBlobUrl(f: CoverFields): Promise<string> {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  await drawCoverDark(doc, { ...f, template: "dark" });
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
+}
+
 
 
