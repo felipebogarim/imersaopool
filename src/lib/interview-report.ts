@@ -685,10 +685,21 @@ export async function exportInterviewPdf(
       for (const c of campos) writeMatrixField(c, sintese[c]);
     }
 
-    // ————— HIGHLIGHTS (frases-destaque por capítulo) — sempre inicia em nova página —————
+    // ————— HIGHLIGHTS (frases-destaque por capítulo) — fica na mesma página se couber —————
     const highlights = getHighlightsFor(interview.entrevistado_nome, cap.ordem);
     if (highlights.length) {
-      addContentPage();
+      // Estima altura necessária: painel + frases quebradas
+      const panelHEstimate = 110;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      let quotesH = 0;
+      for (const q of highlights) {
+        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const lines = doc.splitTextToSize(text, maxW);
+        quotesH += lines.length * 22 + 16;
+      }
+      const needed = panelHEstimate + 24 + quotesH;
+      ensure(needed);
 
       // Painel escuro com título grande
       const panelH = 110;
