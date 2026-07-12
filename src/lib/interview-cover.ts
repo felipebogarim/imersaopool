@@ -172,7 +172,7 @@ function loadImageSize(dataUrl: string): Promise<{ w: number; h: number }> {
  */
 export async function drawIntervieweePage(
   doc: jsPDF,
-  coverImgDataUrl: string,
+  _coverImgDataUrl: string,
   f: IntervieweePageFields & { template?: CoverTemplate },
 ) {
   if (f.template === "dark") return drawIntervieweePageDark(doc, f);
@@ -181,39 +181,27 @@ export async function drawIntervieweePage(
   const pageH = doc.internal.pageSize.getHeight();
   const anyDoc = doc as any;
 
-  // Reaproveita a arte da capa (mesma identidade: gradiente teal + logos + linhas)
-  doc.addImage(coverImgDataUrl, "PNG", 0, 0, pageW, pageH);
+  const DARK: [number, number, number] = [26, 53, 66];
+
+  // Fundo sólido navy/teal escuro
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(0, 0, pageW, pageH, "F");
 
   const SX = pageW / 1349;
   const SY = pageH / 1920;
-  const DARK: [number, number, number] = [18, 42, 52];
-  const TEAL: [number, number, number] = [30, 74, 82];
 
-  // Máscara: faixa superior (data) — cobre com preto
-  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
-  doc.rect(0, 0, pageW, 135 * SY, "F");
-
-  // Máscara: painel teal com o título "Visão de Mercado" — cobre com o mesmo teal
-  doc.setFillColor(TEAL[0], TEAL[1], TEAL[2]);
-  doc.rect(0, 1120 * SY, pageW, (1755 - 1120) * SY, "F");
-
-  // Máscara: rodapé abaixo da linha (Modelo do documento)
-  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
-  doc.rect(0, (1755 + 4) * SY, pageW, pageH - (1755 + 4) * SY, "F");
-
-  // ————— Moldura da foto (sobre a área do produto) —————
-  const leftX = 150 * SX;
-  const frameX = leftX - 6;
-  const frameY = 180 * SY;
-  const frameW = pageW - frameX - 150 * SX;
-  const frameH = 1080 * SY - frameY;
-  const radius = 28;
+  // ————— Moldura da foto (centro-esquerda, tamanho moderado) —————
+  const frameX = 155 * SX;
+  const frameY = 755 * SY;
+  const frameW = 480 * SX;
+  const frameH = 680 * SY;
+  const radius = 18;
 
   doc.saveGraphicsState?.();
   anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius);
   anyDoc.clip();
   anyDoc.discardPath?.();
-  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.setFillColor(35, 62, 75);
   doc.rect(frameX, frameY, frameW, frameH, "F");
 
   if (f.photoDataUrl) {
@@ -232,54 +220,40 @@ export async function drawIntervieweePage(
   }
   doc.restoreGraphicsState?.();
 
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.6);
-  anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius, "S");
-
-  // ————— Nome (sobre o painel teal, à esquerda dos logos) —————
-  const nameMaxX = 760 * SX;
-  const nameMaxW = nameMaxX - leftX;
-  const bottomLineY = 1755 * SY;
-  const logosBaseY = 1730 * SY;
+  // ————— Bloco inferior: ENTREVISTADO + Nome + linha —————
+  const leftX = 100 * SX;
+  const rightX = pageW - 100 * SX;
+  const bottomLineY = 1830 * SY;
 
   const name = (f.name || "—").toUpperCase();
-  const words = name.split(/\s+/).filter(Boolean);
-  const wrapByWidth = (fs: number): string[] => {
+  const nameMaxW = rightX - leftX;
+
+  // Auto-fit: tenta cabe em uma linha; se não, quebra em 2
+  const measure = (fs: number) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(fs);
-    const out: string[] = [];
-    let cur = "";
-    for (const w of words) {
-      const tryLine = cur ? `${cur} ${w}` : w;
-      if (doc.getTextWidth(tryLine) <= nameMaxW) cur = tryLine;
-      else {
-        if (cur) out.push(cur);
-        cur = w;
-      }
-    }
-    if (cur) out.push(cur);
-    return out;
+    return doc.getTextWidth(name);
   };
-  let fontSize = 44;
-  let lines = wrapByWidth(fontSize);
-  while (
-    (lines.length > 2 || lines.some((l) => doc.getTextWidth(l) > nameMaxW)) &&
-    fontSize > 22
-  ) {
-    fontSize -= 2;
-    lines = wrapByWidth(fontSize);
+  let fontSize = 72;
+  while (fontSize > 32 && measure(fontSize) > nameMaxW) fontSize -= 2;
+
+  let lines: string[] = [name];
+  if (measure(fontSize) > nameMaxW) {
+    const words = name.split(/\s+/).filter(Boolean);
+    const mid = Math.ceil(words.length / 2);
+    lines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
   }
-  const lineH = fontSize * 1.08;
-
-  const nameBaseY = logosBaseY;
+  const lineH = fontSize * 1.05;
+  const nameBaseY = bottomLineY - 22;
   const firstLineY = nameBaseY - (lines.length - 1) * lineH;
-  const labelY = Math.max(bottomLineY - (bottomLineY - firstLineY) - 30, firstLineY - lineH * 0.75);
 
+  // Label ENTREVISTADO
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", leftX, labelY, { charSpace: 3 });
+  doc.text("ENTREVISTADO", leftX, firstLineY - fontSize * 0.85, { charSpace: 4 });
 
+  // Nome
   doc.setFont("helvetica", "bold");
   doc.setFontSize(fontSize);
   doc.setTextColor(255, 255, 255);
@@ -288,6 +262,11 @@ export async function drawIntervieweePage(
     doc.text(l, leftX, ny);
     ny += lineH;
   }
+
+  // Linha inferior
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  doc.line(leftX, bottomLineY, rightX, bottomLineY);
 }
 
 
