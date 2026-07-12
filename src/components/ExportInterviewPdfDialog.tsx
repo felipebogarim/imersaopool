@@ -59,6 +59,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
   useEffect(() => {
     if (open) {
       setStep("cover");
+      setTemplate("visao");
       setFields({
         data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
         titulo: defaults?.titulo ?? DEFAULT_TITULO,
