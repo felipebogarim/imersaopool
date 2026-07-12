@@ -234,8 +234,8 @@ export async function drawIntervieweePage(
     doc.setFontSize(fs);
     return doc.getTextWidth(name);
   };
-  let fontSize = 72;
-  while (fontSize > 32 && measure(fontSize) > nameMaxW) fontSize -= 2;
+  let fontSize = 50; // reduzido ~30% (antes 72)
+  while (fontSize > 22 && measure(fontSize) > nameMaxW) fontSize -= 2;
 
   let lines: string[] = [name];
   if (measure(fontSize) > nameMaxW) {
