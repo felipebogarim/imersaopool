@@ -119,3 +119,114 @@ export async function renderCoverPreviewBlobUrl(f: CoverFields): Promise<string>
 
 // Backwards-compat alias
 export const renderCoverPreviewDataUrl = renderCoverPreviewBlobUrl;
+
+export type IntervieweePageFields = {
+  photoDataUrl?: string | null;
+  name: string;
+};
+
+/**
+ * Página de apresentação do entrevistado — mantém a identidade da capa
+ * (mesmo gradiente teal + logos + linha inferior) sem a faixa superior,
+ * data, título ou "modelo do documento". Traz uma moldura de foto no topo
+ * e o nome do entrevistado em destaque na base.
+ */
+export function drawIntervieweePage(
+  doc: jsPDF,
+  coverImgDataUrl: string,
+  f: IntervieweePageFields,
+) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // Fundo: reutiliza a arte da capa e sobrepõe blocos escuros para esconder
+  // faixa superior, data, título e "modelo do documento".
+  doc.addImage(coverImgDataUrl, "PNG", 0, 0, pageW, pageH);
+
+  const SX = pageW / 1349;
+  const SY = pageH / 1920;
+  const DARK: [number, number, number] = [18, 42, 52];
+
+  // Máscara: cobre topo inteiro (faixa preta + linha decorativa + data)
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(0, 0, pageW, 135 * SY, "F");
+  // Máscara: cobre painel do título (1120→1600 aprox), preservando badge/logos.
+  doc.rect(0, 1120 * SY, pageW, (1600 - 1120) * SY, "F");
+  // Máscara: cobre "modelo do documento" abaixo da linha inferior.
+  doc.rect(0, (1755 + 4) * SY, pageW, pageH - (1755 + 4) * SY, "F");
+
+  // Moldura da foto — grande cartão arredondado ocupando o topo/centro
+  const leftX = 150 * SX;
+  const frameX = leftX - 6;
+  const frameY = 90 * SY;
+  const frameW = pageW - frameX - 150 * SX;
+  const frameH = 1000 * SY;
+  const radius = 24;
+
+  if (f.photoDataUrl) {
+    // Foto com cantos arredondados via clip
+    const anyDoc = doc as any;
+    doc.saveGraphicsState?.();
+    try {
+      anyDoc.roundedRect(frameX, frameY, frameW, frameH, radius, radius);
+      anyDoc.clip();
+      anyDoc.discardPath?.();
+
+      // Cobrir o frame preservando proporção (cover)
+      // Sem saber a razão da imagem, deixamos jsPDF ajustar largura=frameW
+      // e centralizamos verticalmente (aproximação — jsPDF não faz cover nativo).
+      doc.addImage(f.photoDataUrl, "JPEG", frameX, frameY, frameW, frameH, undefined, "FAST");
+    } finally {
+      doc.restoreGraphicsState?.();
+    }
+  } else {
+    // Placeholder claro
+    doc.setFillColor(238, 240, 245);
+    (doc as any).roundedRect(frameX, frameY, frameW, frameH, radius, radius, "F");
+  }
+
+  // Borda sutil
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.6);
+  (doc as any).roundedRect(frameX, frameY, frameW, frameH, radius, radius, "S");
+
+  // Label "ENTREVISTADO"
+  const logosBaseY = 1730 * SY;
+  const labelY = 1640 * SY;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text("ENTREVISTADO", leftX, labelY, { charSpace: 3 });
+
+  // Nome grande — quebra em até 2 linhas
+  const name = (f.name || "—").toUpperCase();
+  const words = name.split(/\s+/);
+  let lines: string[];
+  if (words.length <= 1) lines = [name];
+  else {
+    // divide priorizando linhas equilibradas
+    const mid = Math.ceil(words.length / 2);
+    lines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(48);
+  doc.setTextColor(255, 255, 255);
+  // Ajusta base para alinhar com base dos logos
+  const lineH = 54;
+  let ny = logosBaseY - (lines.length - 1) * lineH;
+  for (const l of lines) {
+    doc.text(l, leftX, ny);
+    ny += lineH;
+  }
+}
+
+export async function renderIntervieweePreviewBlobUrl(
+  f: IntervieweePageFields,
+): Promise<string> {
+  const img = await loadCoverImage();
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  drawIntervieweePage(doc, img, f);
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
+}
+
