@@ -162,10 +162,11 @@ export async function exportInterviewPdf(
   const includeInterviewee = !!opts.intervieweePage?.include;
   if (includeInterviewee) {
     doc.addPage();
-    drawIntervieweePage(doc, coverImg, {
+    await drawIntervieweePage(doc, coverImg, {
       photoDataUrl: opts.intervieweePage?.photoDataUrl ?? null,
       name: opts.intervieweePage?.name || interview.entrevistado_nome || "—",
     });
+
   }
   const headerStartPage = includeInterviewee ? 3 : 2;
 
