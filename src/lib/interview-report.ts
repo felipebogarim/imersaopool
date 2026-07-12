@@ -529,7 +529,7 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
     // Watermark do número — desenhado PRIMEIRO, como fundo, sem colidir com o header
     doc.setFont("helvetica", "bold");
     doc.setFontSize(130);
-    setText([236, 240, 247]);
+    setText([20, 34, 54]);
     const wmStr = String(cap.ordem).padStart(2, "0");
     const wmW = doc.getTextWidth(wmStr);
     doc.text(wmStr, pageW - margin - wmW + 24, 178);
