@@ -7,13 +7,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Check, FileDown, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import coverAsset from "@/assets/cover-visao-mercado.png.asset.json";
+import coverDarkAsset from "@/assets/cover-dark-tablet.png.asset.json";
 import {
   DEFAULT_TITULO,
   renderCoverPreviewDataUrl,
   renderIntervieweePreviewBlobUrl,
   type CoverFields,
+  type CoverTemplate,
 } from "@/lib/interview-cover";
 import { exportInterviewPdf } from "@/lib/interview-report";
+
 
 type Props = {
   open: boolean;
@@ -35,7 +38,9 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defaults }: Props) {
   const [step, setStep] = useState<Step>("cover");
+  const [template, setTemplate] = useState<CoverTemplate>("visao");
   const [fields, setFields] = useState<CoverFields>({
+
     data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
     titulo: defaults?.titulo ?? DEFAULT_TITULO,
     entrevistado: defaults?.entrevistado ?? "",
@@ -54,6 +59,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
   useEffect(() => {
     if (open) {
       setStep("cover");
+      setTemplate("visao");
       setFields({
         data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
         titulo: defaults?.titulo ?? DEFAULT_TITULO,
@@ -85,13 +91,15 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
   async function goToPreview() {
     setLoading(true);
     try {
-      const cover = await renderCoverPreviewDataUrl(fields);
+      const cover = await renderCoverPreviewDataUrl({ ...fields, template });
       setCoverPreview(cover);
       if (includeInterviewee) {
         const p = await renderIntervieweePreviewBlobUrl({
           photoDataUrl: intervPhoto,
           name: intervName || fields.entrevistado,
+          template,
         });
+
         setIntervPreview(p);
       } else {
         setIntervPreview(null);
@@ -108,11 +116,12 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     setExporting(true);
     try {
       await exportInterviewPdf(interviewId, {
-        cover: fields,
+        cover: { ...fields, template },
         intervieweePage: includeInterviewee
-          ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado }
+          ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado, template }
           : null,
       });
+
       toast.success("PDF gerado");
       onOpenChange(false);
     } catch (e: any) {
@@ -136,22 +145,36 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
 
         {step === "cover" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setStep("form")}
-              className="group relative rounded-xl border-2 border-primary overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <img src={coverAsset.url} alt="Capa Visão de Mercado" className="w-full h-auto block" />
-              <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                <Check className="h-4 w-4" />
-              </div>
-              <div className="p-3 text-sm font-medium">Visão de Mercado</div>
-            </button>
-            <div className="rounded-xl border border-dashed border-muted-foreground/30 flex items-center justify-center p-8 text-sm text-muted-foreground text-center">
-              Mais modelos em breve
-            </div>
+            {[
+              { id: "visao" as const, label: "Visão de Mercado", url: coverAsset.url },
+              { id: "dark" as const, label: "Dark Editorial", url: coverDarkAsset.url },
+            ].map((t) => {
+              const selected = template === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setTemplate(t.id);
+                    setStep("form");
+                  }}
+                  className={`group relative rounded-xl border-2 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary ${
+                    selected ? "border-primary" : "border-transparent hover:border-muted-foreground/40"
+                  }`}
+                >
+                  <img src={t.url} alt={`Capa ${t.label}`} className="w-full h-auto block" />
+                  {selected && (
+                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                      <Check className="h-4 w-4" />
+                    </div>
+                  )}
+                  <div className="p-3 text-sm font-medium">{t.label}</div>
+                </button>
+              );
+            })}
           </div>
         )}
+
 
         {step === "form" && (
           <div className="grid gap-4">

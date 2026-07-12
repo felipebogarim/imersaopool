@@ -26,13 +26,15 @@ import {
   loadCoverImage,
   DEFAULT_TITULO,
   type CoverFields,
+  type CoverTemplate,
   type IntervieweePageFields,
 } from "./interview-cover";
 
 export type ExportInterviewOptions = {
   cover?: Partial<CoverFields>;
-  intervieweePage?: (IntervieweePageFields & { include: boolean }) | null;
+  intervieweePage?: (IntervieweePageFields & { include: boolean; template?: CoverTemplate }) | null;
 };
+
 
 export async function exportInterviewPdf(
   interviewId: string,
@@ -165,7 +167,9 @@ export async function exportInterviewPdf(
     await drawIntervieweePage(doc, coverImg, {
       photoDataUrl: opts.intervieweePage?.photoDataUrl ?? null,
       name: opts.intervieweePage?.name || interview.entrevistado_nome || "—",
+      template: opts.intervieweePage?.template ?? coverOverride?.template,
     });
+
 
   }
   const headerStartPage = includeInterviewee ? 3 : 2;
