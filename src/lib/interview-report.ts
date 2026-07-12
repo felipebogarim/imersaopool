@@ -26,13 +26,15 @@ import {
   loadCoverImage,
   DEFAULT_TITULO,
   type CoverFields,
+  type CoverTemplate,
   type IntervieweePageFields,
 } from "./interview-cover";
 
 export type ExportInterviewOptions = {
   cover?: Partial<CoverFields>;
-  intervieweePage?: (IntervieweePageFields & { include: boolean }) | null;
+  intervieweePage?: (IntervieweePageFields & { include: boolean; template?: CoverTemplate }) | null;
 };
+
 
 export async function exportInterviewPdf(
   interviewId: string,
