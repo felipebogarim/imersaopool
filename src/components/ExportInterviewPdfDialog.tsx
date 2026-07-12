@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, FileDown, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Check, FileDown, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import coverAsset from "@/assets/cover-visao-mercado.png.asset.json";
 import {
   DEFAULT_TITULO,
   renderCoverPreviewDataUrl,
+  renderIntervieweePreviewBlobUrl,
   type CoverFields,
 } from "@/lib/interview-cover";
 import { exportInterviewPdf } from "@/lib/interview-report";
@@ -22,6 +24,15 @@ type Props = {
 
 type Step = "cover" | "form" | "preview";
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
 export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defaults }: Props) {
   const [step, setStep] = useState<Step>("cover");
   const [fields, setFields] = useState<CoverFields>({
@@ -30,7 +41,13 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     entrevistado: defaults?.entrevistado ?? "",
     modelo: defaults?.modelo ?? "",
   });
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [includeInterviewee, setIncludeInterviewee] = useState(false);
+  const [intervName, setIntervName] = useState<string>("");
+  const [intervPhoto, setIntervPhoto] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [intervPreview, setIntervPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -43,15 +60,42 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         entrevistado: defaults?.entrevistado ?? "",
         modelo: defaults?.modelo ?? "",
       });
-      setPreviewUrl(null);
+      setIncludeInterviewee(false);
+      setIntervName(defaults?.entrevistado ?? "");
+      setIntervPhoto(null);
+      setCoverPreview(null);
+      setIntervPreview(null);
     }
   }, [open, defaults?.data, defaults?.titulo, defaults?.entrevistado, defaults?.modelo]);
+
+  async function onPickPhoto(f: File | null) {
+    if (!f) return;
+    if (f.size > 8 * 1024 * 1024) {
+      toast.error("Imagem muito grande (máx 8MB)");
+      return;
+    }
+    try {
+      const url = await fileToDataUrl(f);
+      setIntervPhoto(url);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao ler imagem");
+    }
+  }
 
   async function goToPreview() {
     setLoading(true);
     try {
-      const url = await renderCoverPreviewDataUrl(fields);
-      setPreviewUrl(url);
+      const cover = await renderCoverPreviewDataUrl(fields);
+      setCoverPreview(cover);
+      if (includeInterviewee) {
+        const p = await renderIntervieweePreviewBlobUrl({
+          photoDataUrl: intervPhoto,
+          name: intervName || fields.entrevistado,
+        });
+        setIntervPreview(p);
+      } else {
+        setIntervPreview(null);
+      }
       setStep("preview");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar preview");
@@ -63,7 +107,12 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
   async function confirmExport() {
     setExporting(true);
     try {
-      await exportInterviewPdf(interviewId, fields);
+      await exportInterviewPdf(interviewId, {
+        cover: fields,
+        intervieweePage: includeInterviewee
+          ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado }
+          : null,
+      });
       toast.success("PDF gerado");
       onOpenChange(false);
     } catch (e: any) {
@@ -75,13 +124,13 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Exportar PDF da entrevista</DialogTitle>
           <DialogDescription>
             {step === "cover" && "Escolha o modelo de capa."}
             {step === "form" && "Preencha os textos que aparecerão na capa."}
-            {step === "preview" && "Confira a capa antes de gerar o PDF."}
+            {step === "preview" && "Confira antes de gerar o PDF."}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,12 +188,88 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
                 onChange={(e) => setFields((f) => ({ ...f, modelo: e.target.value }))}
               />
             </div>
+
+            <div className="rounded-lg border p-4 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={includeInterviewee}
+                  onCheckedChange={(v) => {
+                    const on = v === true;
+                    setIncludeInterviewee(on);
+                    if (on && !intervName) setIntervName(fields.entrevistado);
+                  }}
+                />
+                <span className="text-sm font-medium">Incluir página de apresentação do entrevistado</span>
+              </label>
+
+              {includeInterviewee && (
+                <div className="grid gap-3 pl-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="interv-nome">Nome do entrevistado</Label>
+                    <Input
+                      id="interv-nome"
+                      value={intervName}
+                      onChange={(e) => setIntervName(e.target.value)}
+                      placeholder="Ex.: Salton e Fábio"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Foto</Label>
+                    <div className="flex items-center gap-3">
+                      {intervPhoto ? (
+                        <div className="relative">
+                          <img
+                            src={intervPhoto}
+                            alt="Prévia"
+                            className="h-24 w-24 object-cover rounded-md border"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setIntervPhoto(null)}
+                            className="absolute -top-2 -right-2 bg-background border rounded-full p-0.5"
+                            aria-label="Remover foto"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="h-24 w-24 rounded-md border border-dashed flex items-center justify-center text-muted-foreground">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                      )}
+                      <div>
+                        <input
+                          ref={fileRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => onPickPhoto(e.target.files?.[0] ?? null)}
+                        />
+                        <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>
+                          <Upload className="h-4 w-4 mr-1" />
+                          {intervPhoto ? "Trocar foto" : "Enviar foto"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {step === "preview" && previewUrl && (
-          <div className="border rounded-lg overflow-hidden bg-muted">
-            <iframe src={previewUrl} className="w-full h-[560px]" title="Preview da capa" />
+        {step === "preview" && (
+          <div className="space-y-3">
+            {coverPreview && (
+              <div className="border rounded-lg overflow-hidden bg-muted">
+                <iframe src={coverPreview} className="w-full h-[560px]" title="Preview da capa" />
+              </div>
+            )}
+            {intervPreview && (
+              <div className="border rounded-lg overflow-hidden bg-muted">
+                <iframe src={intervPreview} className="w-full h-[560px]" title="Preview do entrevistado" />
+              </div>
+            )}
           </div>
         )}
 
@@ -163,7 +288,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
           )}
           {step === "preview" && (
             <>
-              <Button variant="ghost" onClick={() => setStep("form")}>Editar textos</Button>
+              <Button variant="ghost" onClick={() => setStep("form")}>Editar</Button>
               <Button onClick={confirmExport} disabled={exporting}>
                 {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
                 Gerar PDF
