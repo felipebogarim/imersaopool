@@ -20,9 +20,31 @@ const HAIRLINE: [number, number, number] = [30, 50, 78];
 const CREAM: [number, number, number] = [6, 14, 26]; // background das páginas
 const HIGHLIGHT: [number, number, number] = [12, 40, 58]; // fundo de callouts
 
-import { drawCover, loadCoverImage, DEFAULT_TITULO, type CoverFields } from "./interview-cover";
+import {
+  drawCover,
+  drawIntervieweePage,
+  loadCoverImage,
+  DEFAULT_TITULO,
+  type CoverFields,
+  type IntervieweePageFields,
+} from "./interview-cover";
 
-export async function exportInterviewPdf(interviewId: string, coverOverride?: Partial<CoverFields>) {
+export type ExportInterviewOptions = {
+  cover?: Partial<CoverFields>;
+  intervieweePage?: (IntervieweePageFields & { include: boolean }) | null;
+};
+
+export async function exportInterviewPdf(
+  interviewId: string,
+  optsOrCover?: ExportInterviewOptions | Partial<CoverFields>,
+) {
+  // Backwards-compat: se receber apenas CoverFields, trata como { cover }
+  const opts: ExportInterviewOptions =
+    optsOrCover && ("cover" in optsOrCover || "intervieweePage" in optsOrCover)
+      ? (optsOrCover as ExportInterviewOptions)
+      : { cover: optsOrCover as Partial<CoverFields> | undefined };
+  const coverOverride = opts.cover;
+
   const { data: interview } = await supabase
     .from("interviews")
     .select("*")
