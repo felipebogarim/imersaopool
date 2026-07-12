@@ -158,6 +158,18 @@ export async function exportInterviewPdf(
   };
   drawCover(doc, coverImg, coverFields);
 
+  // ————————————————————————— PÁGINA DE APRESENTAÇÃO DO ENTREVISTADO —————————————————————————
+  const includeInterviewee = !!opts.intervieweePage?.include;
+  if (includeInterviewee) {
+    doc.addPage();
+    drawIntervieweePage(doc, coverImg, {
+      photoDataUrl: opts.intervieweePage?.photoDataUrl ?? null,
+      name: opts.intervieweePage?.name || interview.entrevistado_nome || "—",
+    });
+  }
+  const headerStartPage = includeInterviewee ? 3 : 2;
+
+
 
 
 
