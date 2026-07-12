@@ -32,7 +32,24 @@ export async function loadCoverImage(): Promise<string> {
   return dataUrl;
 }
 
+let cachedLogoDataUrl: string | null = null;
+export async function loadPoolfluxLogo(): Promise<string> {
+  if (cachedLogoDataUrl) return cachedLogoDataUrl;
+  const res = await fetch(poolfluxLogoAsset.url);
+  if (!res.ok) throw new Error("Falha ao carregar logo");
+  const blob = await res.blob();
+  cachedLogoDataUrl = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+  return cachedLogoDataUrl;
+}
+
 export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
+  if (f.template === "dark") return drawCoverDark(doc, f);
+
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
