@@ -667,11 +667,11 @@ export async function exportInterviewPdf(
       y += 12;
     }
 
-    // Síntese objetiva — grid de campos
+    // Síntese objetiva — grid de campos (sempre inicia em nova página)
     const campos: string[] = Array.isArray(cap.campos_matriz) ? cap.campos_matriz : [];
     const sintese = (r?.sintese ?? {}) as Record<string, string>;
     if (campos.length) {
-      ensure(30);
+      addContentPage();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(MUTED);
@@ -685,11 +685,10 @@ export async function exportInterviewPdf(
       for (const c of campos) writeMatrixField(c, sintese[c]);
     }
 
-    // ————— HIGHLIGHTS (frases-destaque por capítulo) —————
+    // ————— HIGHLIGHTS (frases-destaque por capítulo) — sempre inicia em nova página —————
     const highlights = getHighlightsFor(interview.entrevistado_nome, cap.ordem);
     if (highlights.length) {
-      y += 18;
-      ensure(180);
+      addContentPage();
 
       // Painel escuro com título grande
       const panelH = 110;
@@ -712,22 +711,23 @@ export async function exportInterviewPdf(
         y + 82,
       );
 
-      y += panelH + 22;
+      y += panelH + 24;
 
-      // Frases (aspas curvas), espaçadas
+      // Frases (aspas curvas), espaçadas — largura contida dentro das margens
+      const quoteW = maxW - 48;
       for (const q of highlights) {
         const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
-        const lineH = 20;
-        const lines = doc.splitTextToSize(text, maxW - 24);
-        ensure(lines.length * lineH + 16);
+        const lineH = 22;
+        const lines = doc.splitTextToSize(text, quoteW);
+        ensure(lines.length * lineH + 18);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(14);
         setText(INK);
         for (const l of lines) {
-          doc.text(l, margin + 12, y);
+          doc.text(l, margin + 24, y);
           y += lineH;
         }
-        y += 14;
+        y += 16;
       }
     }
   }
