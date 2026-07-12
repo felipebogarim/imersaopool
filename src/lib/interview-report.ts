@@ -181,6 +181,7 @@ export async function exportInterviewPdf(
     titulo: coverOverride?.titulo ?? DEFAULT_TITULO,
     entrevistado: coverOverride?.entrevistado ?? interview.entrevistado_nome ?? "—",
     modelo: coverOverride?.modelo ?? roteiroNome ?? "—",
+    template: coverOverride?.template,
   };
   drawCover(doc, coverImg, coverFields);
 
