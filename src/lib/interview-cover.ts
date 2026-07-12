@@ -74,12 +74,13 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
     ty += 56;
   }
 
-  // 3) ENTREVISTADO — label + badge amarelo (acima da linha inferior, à esquerda dos logos)
+  // 3) ENTREVISTADO — label + badge amarelo alinhado pela BASE com os logos à direita
   const bottomLineY = 1755 * SY;
-  const modelY = 1834 * SY; // "Modelo do documento" abaixo da linha, como na referência
+  const modelY = 1834 * SY; // "Modelo do documento" abaixo da linha
+  const logosBaseY = 1730 * SY; // base dos logos newline/poolFlux na referência
   const badgeH = 24;
-  const badgeY = bottomLineY - 74; // topo do badge, mantendo logos e badge acima da linha
-  const labelY = badgeY - 6; // label ENTREVISTADO acima do badge
+  const badgeY = logosBaseY - badgeH; // base do badge alinhada com base dos logos
+  const labelY = badgeY - 8; // label ENTREVISTADO acima do badge
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
@@ -93,7 +94,7 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   doc.setFillColor(COVER_YELLOW[0], COVER_YELLOW[1], COVER_YELLOW[2]);
   doc.rect(leftX - 6, badgeY, badgeTextW + 20, badgeH, "F");
   doc.setTextColor(COVER_DARK[0], COVER_DARK[1], COVER_DARK[2]);
-  doc.text(badgeName, leftX + 4, badgeY + 16);
+  doc.text(badgeName, leftX + 4, badgeY + badgeH - 8);
 
   // 4) MODELO DO DOCUMENTO — abaixo da linha inferior
   doc.setFont("helvetica", "normal");
