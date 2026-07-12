@@ -82,6 +82,30 @@ export async function exportInterviewPdf(
   const notes = notesRes.data ?? [];
   const roteiroNome = (roteiroRes as any)?.data?.nome ?? null;
 
+  // Empresa "logada" (aparece como marca no topo do sumário)
+  let activeCompanyName: string | null = null;
+  try {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u.user?.id;
+    if (uid) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("active_company_id")
+        .eq("id", uid)
+        .maybeSingle();
+      if (profile?.active_company_id) {
+        const { data: c } = await supabase
+          .from("companies")
+          .select("nome")
+          .eq("id", profile.active_company_id)
+          .maybeSingle();
+        activeCompanyName = c?.nome ?? null;
+      }
+    }
+  } catch {
+    /* opcional */
+  }
+
   const respByCap = new Map(respostas.map((r: any) => [r.capitulo_id, r]));
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
