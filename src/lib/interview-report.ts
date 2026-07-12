@@ -77,8 +77,9 @@ function getHighlightsFor(nome: string | null | undefined, ordem: number): strin
   return HIGHLIGHTS_BY_INTERVIEWEE[key]?.[ordem] ?? [];
 }
 
-
+export async function exportInterviewPdf(
   interviewId: string,
+
   optsOrCover?: ExportInterviewOptions | Partial<CoverFields>,
 ) {
   // Backwards-compat: se receber apenas CoverFields, trata como { cover }
