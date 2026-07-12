@@ -46,16 +46,16 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   // Logos newline/poolFlux: y≈1625-1730, à direita
   // Linha decorativa inferior: y≈1755, x de 135 a 1215
 
-  const leftX = 135 * SX; // alinhado ao início da linha inferior
-  const rightLineEndX = 912 * SX; // fim da linha superior
+  const leftX = 150 * SX; // alinhado à margem visual da referência
+  const dateCenterX = 674 * SX; // centro da linha decorativa superior
 
-  // 1) DATA — alinhada ao fim direito da linha superior, centrada verticalmente na faixa escura
+  // 1) DATA — centralizada sob a linha decorativa superior
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text((f.data || "").toUpperCase(), rightLineEndX, 95 * SY, {
-    align: "right",
-    charSpace: 2.4,
+  doc.text((f.data || "").toUpperCase(), dateCenterX, 120 * SY, {
+    align: "center",
+    charSpace: 3.2,
   });
 
   // 2) TÍTULO — sobre o painel teal, duas linhas
@@ -76,10 +76,9 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
 
   // 3) ENTREVISTADO — label + badge amarelo (acima da linha inferior, à esquerda dos logos)
   const bottomLineY = 1755 * SY;
-  const modelY = bottomLineY - 12; // "Modelo do documento" logo acima da linha
+  const modelY = 1834 * SY; // "Modelo do documento" abaixo da linha, como na referência
   const badgeH = 24;
-  const badgeGap = 14; // espaço entre badge e o texto Modelo
-  const badgeY = modelY - 14 - badgeH - badgeGap; // topo do badge
+  const badgeY = bottomLineY - 74; // topo do badge, mantendo logos e badge acima da linha
   const labelY = badgeY - 6; // label ENTREVISTADO acima do badge
 
   doc.setFont("helvetica", "bold");
@@ -96,15 +95,15 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   doc.setTextColor(COVER_DARK[0], COVER_DARK[1], COVER_DARK[2]);
   doc.text(badgeName, leftX + 4, badgeY + 16);
 
-  // 4) MODELO DO DOCUMENTO — logo acima da linha inferior
+  // 4) MODELO DO DOCUMENTO — abaixo da linha inferior
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
+  doc.setFontSize(7.5);
   doc.setTextColor(220, 232, 235);
   const modelLabel = "Modelo do documento:";
   doc.text(modelLabel, leftX, modelY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(f.modelo || "—", leftX + doc.getTextWidth(modelLabel) + 14, modelY);
+  doc.text(f.modelo || "—", 430 * SX, modelY);
 }
 
 export async function renderCoverPreviewBlobUrl(f: CoverFields): Promise<string> {
