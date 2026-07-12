@@ -1,14 +1,19 @@
 import jsPDF from "jspdf";
 import coverAsset from "@/assets/cover-visao-mercado.png.asset.json";
+import poolfluxLogoAsset from "@/assets/poolflux-logo.png.asset.json";
+
+export type CoverTemplate = "visao" | "dark";
 
 export type CoverFields = {
   data: string;
   titulo: string;
   entrevistado: string;
   modelo: string;
+  template?: CoverTemplate;
 };
 
 export const DEFAULT_TITULO = "Visão de Mercado";
+
 
 let cachedDataUrl: string | null = null;
 
