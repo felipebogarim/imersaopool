@@ -711,7 +711,7 @@ export async function exportInterviewPdf(
 
   // ————————————————————————— HEADER / FOOTER ——————————————————————
   const total = doc.getNumberOfPages();
-  for (let p = 2; p <= total; p++) {
+  for (let p = headerStartPage; p <= total; p++) {
     doc.setPage(p);
     // header sutil
     doc.setFont("helvetica", "bold");
