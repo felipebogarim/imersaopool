@@ -541,7 +541,7 @@ export async function exportInterviewPdf(
       doc.setFontSize(22);
       setText([255, 255, 255]);
       const t2 = doc.splitTextToSize(
-        "campos de síntese objetiva capturados em campo — sinais concretos que sustentam a leitura.",
+        "tabelas com sínteses das principais percepções",
         tw2,
       );
       let t2y = c2Top + 92;
