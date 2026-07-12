@@ -586,17 +586,14 @@ export async function exportInterviewPdf(
     }
     y += 6;
 
-    // Lente badge
+    // Lente — texto simples em cyan
     if (cap.lente_default) {
       const badge = `LENTE · ${String(cap.lente_default).toUpperCase()}`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      const bw = doc.getTextWidth(badge) + 16;
-      setFill(CYAN);
-      doc.roundedRect(margin, y, bw, 18, 9, 9, "F");
-      setText(NAVY);
-      doc.text(badge, margin + 8, y + 12, { charSpace: 1.2 });
-      y += 26;
+      setText(CYAN);
+      doc.text(badge, margin, y + 10, { charSpace: 1.2 });
+      y += 22;
     }
 
     setDraw(CORAL);
