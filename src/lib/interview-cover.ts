@@ -132,12 +132,14 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
 }
 
 export async function renderCoverPreviewBlobUrl(f: CoverFields): Promise<string> {
+  if (f.template === "dark") return renderCoverDarkPreviewBlobUrl(f);
   const img = await loadCoverImage();
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   drawCover(doc, img, f);
   const blob = doc.output("blob");
   return URL.createObjectURL(blob);
 }
+
 
 // Backwards-compat alias
 export const renderCoverPreviewDataUrl = renderCoverPreviewBlobUrl;
