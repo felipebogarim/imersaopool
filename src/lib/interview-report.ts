@@ -36,7 +36,48 @@ export type ExportInterviewOptions = {
 };
 
 
-export async function exportInterviewPdf(
+// Frases-destaque por entrevistado + ordem de capítulo.
+// Chave: primeiro nome (lowercase, sem acento) do entrevistado.
+const HIGHLIGHTS_BY_INTERVIEWEE: Record<string, Record<number, string[]>> = {
+  salton: {
+    1: [
+      "A Standard precisa de um portfólio maior. Aí ela vai performar.",
+      "Light designers, especificadores, projetos remunerados por RT e grandes contas de projeto: isso é um outro mercado, um baita mercado. É um volume que a gente não tem noção e que a gente não está surfando.",
+    ],
+    2: [
+      "Tudo o que veio para a FIT10 nos últimos tempos está tecnicamente muito bom, em fluxo e em tudo o que entrega.",
+    ],
+    3: [
+      "Não existia especificação de Usina. Hoje já chega projeto de arquiteto especificado com Usina.",
+      "No caso da Interlight, é preço combinado com entrega.",
+    ],
+    4: [
+      "A gente tem a Power Lume vendendo um perfil igual, super bom, por 20% mais barato.",
+    ],
+    5: [
+      "O arquiteto gosta de ficar sabendo dos lançamentos e especifica, mas quem manda é o vendedor da loja.",
+    ],
+    6: [
+      "Tem um cenário grande de marcenaria aqui no Rio Grande do Sul que a gente não está surfando. Se tiver uma fita para esses clientes, nesse tipo de negociação, aí funciona.",
+    ],
+    7: [
+      "O principal concorrente da Newline é a própria Newline. Temos tudo para ganhar o jogo.",
+    ],
+  },
+};
+
+function getHighlightsFor(nome: string | null | undefined, ordem: number): string[] {
+  if (!nome) return [];
+  const key = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)[0];
+  return HIGHLIGHTS_BY_INTERVIEWEE[key]?.[ordem] ?? [];
+}
+
+
   interviewId: string,
   optsOrCover?: ExportInterviewOptions | Partial<CoverFields>,
 ) {
