@@ -722,7 +722,7 @@ export async function exportInterviewPdf(
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(MUTED);
-    doc.text("POOLFLUX  ·  RELATÓRIO DE ENTREVISTA", margin, 30, { charSpace: 1.5 });
+    doc.text("RELATÓRIO - VISÃO DE MERCADO", margin, 30, { charSpace: 1.5 });
     setText(INK);
     doc.text((interview.entrevistado_nome ?? "").toUpperCase(), pageW - margin, 30, {
       align: "right",
