@@ -145,22 +145,36 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
 
         {step === "cover" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setStep("form")}
-              className="group relative rounded-xl border-2 border-primary overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <img src={coverAsset.url} alt="Capa Visão de Mercado" className="w-full h-auto block" />
-              <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-                <Check className="h-4 w-4" />
-              </div>
-              <div className="p-3 text-sm font-medium">Visão de Mercado</div>
-            </button>
-            <div className="rounded-xl border border-dashed border-muted-foreground/30 flex items-center justify-center p-8 text-sm text-muted-foreground text-center">
-              Mais modelos em breve
-            </div>
+            {[
+              { id: "visao" as const, label: "Visão de Mercado", url: coverAsset.url },
+              { id: "dark" as const, label: "Dark Editorial", url: coverDarkAsset.url },
+            ].map((t) => {
+              const selected = template === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setTemplate(t.id);
+                    setStep("form");
+                  }}
+                  className={`group relative rounded-xl border-2 overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-primary ${
+                    selected ? "border-primary" : "border-transparent hover:border-muted-foreground/40"
+                  }`}
+                >
+                  <img src={t.url} alt={`Capa ${t.label}`} className="w-full h-auto block" />
+                  {selected && (
+                    <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                      <Check className="h-4 w-4" />
+                    </div>
+                  )}
+                  <div className="p-3 text-sm font-medium">{t.label}</div>
+                </button>
+              );
+            })}
           </div>
         )}
+
 
         {step === "form" && (
           <div className="grid gap-4">
