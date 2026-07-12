@@ -40,20 +40,22 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   // Âncoras medidas na imagem base (1349x1920) e convertidas para pt A4.
   const SX = pageW / 1349;
   const SY = pageH / 1920;
-  // Linha decorativa superior: y≈65, x de 438 a 912 (ends at ~x=402pt)
+  // Linha decorativa superior: y≈69, x de 456 a 889
   // Faixa escura termina em y≈130
   // Painel teal começa em y≈1120
   // Logos newline/poolFlux: y≈1625-1730, à direita
   // Linha decorativa inferior: y≈1755, x de 135 a 1215
 
   const leftX = 150 * SX; // alinhado à margem visual da referência
-  const dateCenterX = 674 * SX; // centro da linha decorativa superior
+  const topLineLeftX = 456 * SX;
+  const topLineRightX = 889 * SX;
+  const topLineCenterX = (topLineLeftX + topLineRightX) / 2;
 
-  // 1) DATA — centralizada sob a linha decorativa superior
+  // 1) DATA — centralizada pelo eixo real da linha decorativa superior
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text((f.data || "").toUpperCase(), dateCenterX, 120 * SY, {
+  doc.text((f.data || "").toUpperCase(), topLineCenterX, 122 * SY, {
     align: "center",
     charSpace: 3.2,
   });
