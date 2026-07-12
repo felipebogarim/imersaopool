@@ -38,7 +38,9 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defaults }: Props) {
   const [step, setStep] = useState<Step>("cover");
+  const [template, setTemplate] = useState<CoverTemplate>("visao");
   const [fields, setFields] = useState<CoverFields>({
+
     data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
     titulo: defaults?.titulo ?? DEFAULT_TITULO,
     entrevistado: defaults?.entrevistado ?? "",
