@@ -560,9 +560,9 @@ export async function exportInterviewPdf(interviewId: string, coverOverride?: Pa
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       const bw = doc.getTextWidth(badge) + 16;
-      setFill(NAVY);
+      setFill(CYAN);
       doc.roundedRect(margin, y, bw, 18, 9, 9, "F");
-      setText([255, 255, 255]);
+      setText(NAVY);
       doc.text(badge, margin + 8, y + 12, { charSpace: 1.2 });
       y += 26;
     }
