@@ -116,11 +116,12 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     setExporting(true);
     try {
       await exportInterviewPdf(interviewId, {
-        cover: fields,
+        cover: { ...fields, template },
         intervieweePage: includeInterviewee
-          ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado }
+          ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado, template }
           : null,
       });
+
       toast.success("PDF gerado");
       onOpenChange(false);
     } catch (e: any) {
