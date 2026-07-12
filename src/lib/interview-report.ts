@@ -713,19 +713,21 @@ export async function exportInterviewPdf(
 
       y += panelH + 24;
 
-      // Frases (aspas curvas), espaçadas — largura contida dentro das margens
-      const quoteW = maxW - 48;
+      // Frases (aspas curvas), espaçadas — mesmas margens laterais da síntese objetiva.
+      const quoteX = margin;
+      const quoteW = maxW;
+      const quoteFontSize = 14;
+      const quoteLineH = 22;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(quoteFontSize);
+      setText(INK);
       for (const q of highlights) {
         const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
-        const lineH = 22;
         const lines = doc.splitTextToSize(text, quoteW);
-        ensure(lines.length * lineH + 18);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(14);
-        setText(INK);
+        ensure(lines.length * quoteLineH + 18);
         for (const l of lines) {
-          doc.text(l, margin + 24, y);
-          y += lineH;
+          doc.text(l, quoteX, y);
+          y += quoteLineH;
         }
         y += 16;
       }
