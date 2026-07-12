@@ -167,7 +167,9 @@ export async function exportInterviewPdf(
     await drawIntervieweePage(doc, coverImg, {
       photoDataUrl: opts.intervieweePage?.photoDataUrl ?? null,
       name: opts.intervieweePage?.name || interview.entrevistado_nome || "—",
+      template: opts.intervieweePage?.template ?? coverOverride?.template,
     });
+
 
   }
   const headerStartPage = includeInterviewee ? 3 : 2;
