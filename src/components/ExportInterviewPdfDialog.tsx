@@ -7,13 +7,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Check, FileDown, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import coverAsset from "@/assets/cover-visao-mercado.png.asset.json";
+import coverDarkAsset from "@/assets/cover-dark-tablet.png.asset.json";
 import {
   DEFAULT_TITULO,
   renderCoverPreviewDataUrl,
   renderIntervieweePreviewBlobUrl,
   type CoverFields,
+  type CoverTemplate,
 } from "@/lib/interview-cover";
 import { exportInterviewPdf } from "@/lib/interview-report";
+
 
 type Props = {
   open: boolean;
