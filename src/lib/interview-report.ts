@@ -82,6 +82,30 @@ export async function exportInterviewPdf(
   const notes = notesRes.data ?? [];
   const roteiroNome = (roteiroRes as any)?.data?.nome ?? null;
 
+  // Empresa "logada" (aparece como marca no topo do sumário)
+  let activeCompanyName: string | null = null;
+  try {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u.user?.id;
+    if (uid) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("active_company_id")
+        .eq("id", uid)
+        .maybeSingle();
+      if (profile?.active_company_id) {
+        const { data: c } = await supabase
+          .from("companies")
+          .select("nome")
+          .eq("id", profile.active_company_id)
+          .maybeSingle();
+        activeCompanyName = c?.nome ?? null;
+      }
+    }
+  } catch {
+    /* opcional */
+  }
+
   const respByCap = new Map(respostas.map((r: any) => [r.capitulo_id, r]));
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -304,94 +328,62 @@ export async function exportInterviewPdf(
 
   addContentPage();
 
-  // Eyebrow
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  setText(CYAN_DEEP);
-  doc.text("SUMÁRIO EXECUTIVO", margin, y, { charSpace: 2 });
-  y += 22;
+  // Marca da empresa "logada" (equivalente ao logo newline da referência)
+  const brandName = (activeCompanyName || "").trim();
+  if (brandName) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(34);
+    setText(INK);
+    doc.text(brandName, margin, y + 12);
+    y += 30;
+  } else {
+    y += 6;
+  }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  setText(INK);
-  write("O que esta entrevista revela.", 28, "bold", NAVY);
-  y += 6;
+  // Linha decorativa curta em cyan
+  setDraw(CYAN);
+  doc.setLineWidth(2.5);
+  doc.line(margin, y + 8, margin + 44, y + 8);
+  y += 28;
 
-  // Linha decorativa
-  setDraw(CORAL);
-  doc.setLineWidth(3);
-  doc.line(margin, y, margin + 48, y);
-  y += 20;
-
-  // Ficha em cartão
-  const fichaTop = y;
+  // Cartão elevado com título do sumário
+  const cardTop = y;
+  const cardH = 150;
   setFill(SURFACE);
-  const fichaH = 140;
-  doc.roundedRect(margin, fichaTop, maxW, fichaH, 8, 8, "F");
+  doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "F");
   setDraw(HAIRLINE);
   doc.setLineWidth(0.5);
-  doc.roundedRect(margin, fichaTop, maxW, fichaH, 8, 8, "S");
+  doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "S");
 
-  const fichaItems: [string, string][] = [
-    ["ENTREVISTADO", interview.entrevistado_nome ?? "—"],
-    [
-      "CLASSIFICAÇÃO",
-      `${CLASSIF[interview.entrevistado_classificacao] ?? "—"}${interview.entrevistado_classificacao_outro ? " · " + interview.entrevistado_classificacao_outro : ""}`,
-    ],
-    ["EMPRESA", interview.empresa_nome ?? "—"],
-    [
-      "TIPO",
-      interview.empresa_tipo ? (TIPO[interview.empresa_tipo] ?? interview.empresa_tipo) : "—",
-    ],
-    ["LOCAL", [interview.cidade, interview.estado].filter(Boolean).join(" / ") || "—"],
-    [
-      "DATA",
-      interview.data_entrevista
-        ? new Date(interview.data_entrevista).toLocaleDateString("pt-BR")
-        : "—",
-    ],
-  ];
-  const gridCols = 3;
-  const cellW = (maxW - 32) / gridCols;
-  fichaItems.forEach((it, idx) => {
-    const col = idx % gridCols;
-    const row = Math.floor(idx / gridCols);
-    const cx = margin + 16 + col * cellW;
-    const cy = fichaTop + 24 + row * 56;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    setText(MUTED);
-    doc.text(it[0], cx, cy, { charSpace: 1.2 });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    setText(INK);
-    const v = doc.splitTextToSize(it[1], cellW - 8);
-    doc.text(v[0] ?? "—", cx, cy + 18);
-    if (v[1]) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(v[1], cx, cy + 32);
-    }
-  });
-  y = fichaTop + fichaH + 28;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  setText(CYAN);
+  doc.text("SUMÁRIO EXECUTIVO", margin + 28, cardTop + 46, { charSpace: 2 });
 
-  // Sumário de capítulos
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(26);
+  setText(INK);
+  doc.text("O que esta entrevista apresenta", margin + 28, cardTop + 88);
+
+  y = cardTop + cardH + 32;
+
+  // Navegação
   if (capitulos.length) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    setText(CYAN_DEEP);
-    write("NAVEGAÇÃO", 9, "bold", CYAN_DEEP);
-    y += 4;
+    setText(CYAN);
+    doc.text("NAVEGAÇÃO", margin, y, { charSpace: 2 });
+    y += 8;
     setDraw(HAIRLINE);
     doc.setLineWidth(0.5);
     doc.line(margin, y, margin + maxW, y);
-    y += 12;
+    y += 16;
 
     capitulos.forEach((cap: any) => {
-      ensure(28);
+      ensure(34);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
-      setText(CORAL);
+      setText(CYAN);
       const numStr = String(cap.ordem).padStart(2, "0");
       doc.text(numStr, margin, y + 4);
 
@@ -413,6 +405,7 @@ export async function exportInterviewPdf(
       y += 30;
     });
   }
+
 
   // ————————————————————————— PANORAMA (dashboard visual) —————————————————————————
   const totalCaps = capitulos.length;
