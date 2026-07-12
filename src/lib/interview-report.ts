@@ -642,7 +642,54 @@ export async function exportInterviewPdf(
 
       for (const c of campos) writeMatrixField(c, sintese[c]);
     }
+
+    // ————— HIGHLIGHTS (frases-destaque por capítulo) —————
+    const highlights = getHighlightsFor(interview.entrevistado_nome, cap.ordem);
+    if (highlights.length) {
+      y += 18;
+      ensure(180);
+
+      // Painel escuro com título grande
+      const panelH = 110;
+      setFill(SURFACE);
+      doc.roundedRect(margin, y, maxW, panelH, 10, 10, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(38);
+      setText(CYAN);
+      doc.text("HIGHLIGHTS", margin + 24, y + 58);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      setText(INK);
+      doc.text(
+        highlights.length > 1
+          ? `Os ${highlights.length} principais destaques da percepção`
+          : "Principal destaque da percepção",
+        margin + 24,
+        y + 82,
+      );
+
+      y += panelH + 22;
+
+      // Frases (aspas curvas), espaçadas
+      for (const q of highlights) {
+        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const lineH = 20;
+        const lines = doc.splitTextToSize(text, maxW - 24);
+        ensure(lines.length * lineH + 16);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(14);
+        setText(INK);
+        for (const l of lines) {
+          doc.text(l, margin + 12, y);
+          y += lineH;
+        }
+        y += 14;
+      }
+    }
   }
+
 
   // ————————————————————————— ANOTAÇÕES —————————————————————————
   if (notes.length) {
