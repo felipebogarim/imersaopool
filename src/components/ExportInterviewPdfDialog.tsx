@@ -91,13 +91,15 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
   async function goToPreview() {
     setLoading(true);
     try {
-      const cover = await renderCoverPreviewDataUrl(fields);
+      const cover = await renderCoverPreviewDataUrl({ ...fields, template });
       setCoverPreview(cover);
       if (includeInterviewee) {
         const p = await renderIntervieweePreviewBlobUrl({
           photoDataUrl: intervPhoto,
           name: intervName || fields.entrevistado,
+          template,
         });
+
         setIntervPreview(p);
       } else {
         setIntervPreview(null);
