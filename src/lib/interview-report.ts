@@ -602,11 +602,8 @@ export async function exportInterviewPdf(
     doc.line(margin, y, margin + 48, y);
     y += 22;
 
-    // Pergunta de abertura
-    if (cap.pergunta_abertura) {
-      write(`"${md(cap.pergunta_abertura)}"`, 13, "italic", NAVY_SOFT);
-      y += 10;
-    }
+    // Pergunta de abertura omitida a pedido — o relatório vai direto para as percepções.
+
 
     // Leitura estratégica — destaque em bloco cyan
     if (r?.leitura_estrategica?.trim())
