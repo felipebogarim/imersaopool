@@ -171,8 +171,10 @@ function loadImageSize(dataUrl: string): Promise<{ w: number; h: number }> {
 export async function drawIntervieweePage(
   doc: jsPDF,
   _coverImgDataUrl: string,
-  f: IntervieweePageFields,
+  f: IntervieweePageFields & { template?: CoverTemplate },
 ) {
+  if (f.template === "dark") return drawIntervieweePageDark(doc, f);
+
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const anyDoc = doc as any;
