@@ -435,7 +435,7 @@ export async function exportInterviewPdf(
     setText(CYAN_DEEP);
     doc.text("PANORAMA", margin, y, { charSpace: 2 });
     y += 22;
-    write("Sinais em foco.", 28, "bold", NAVY);
+    write("Sinais em foco.", 28, "bold", INK);
     y += 4;
     setDraw(CORAL);
     doc.setLineWidth(3);
