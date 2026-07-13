@@ -265,8 +265,16 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
 
       // Filtra síntese só para campos válidos do capítulo (não inventa nada).
       const camposValidos: string[] = Array.isArray(cap.campos_matriz) ? cap.campos_matriz : [];
-      const sintese: Record<string, string> = {};
+      const sintese: Record<string, any> = {};
       for (const k of camposValidos) if (p.sintese[k] != null) sintese[k] = p.sintese[k];
+
+      // Highlights editoriais: lidos verbatim, apenas removendo aspas externas.
+      const stripQuotes = (s: string) =>
+        String(s).trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, "").trim();
+      const highlights: string[] = [];
+      if (p.sintese["highlight_1"]) highlights.push(stripQuotes(p.sintese["highlight_1"]));
+      if (p.sintese["highlight_2"]) highlights.push(stripQuotes(p.sintese["highlight_2"]));
+      if (highlights.length) sintese.highlights = highlights;
 
       const respostaTexto = p.evidencia ? `Evidência: "${p.evidencia}"` : "";
 
