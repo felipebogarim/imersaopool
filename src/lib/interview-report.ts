@@ -686,7 +686,12 @@ export async function exportInterviewPdf(
     }
 
     // ————— HIGHLIGHTS (frases-destaque por capítulo) — fica na mesma página se couber —————
-    const highlights = getHighlightsFor(interview.entrevistado_nome, cap.ordem);
+    const fromSintese = Array.isArray((sintese as any)?.highlights)
+      ? ((sintese as any).highlights as any[]).map((s) => String(s)).filter(Boolean)
+      : [];
+    const highlights = fromSintese.length
+      ? fromSintese
+      : getHighlightsFor(interview.entrevistado_nome, cap.ordem);
     if (highlights.length) {
       // Estima altura necessária: painel + frases quebradas
       const panelHEstimate = 110;
