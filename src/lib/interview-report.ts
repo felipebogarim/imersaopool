@@ -922,7 +922,8 @@ export async function exportInterviewPdf(
     // Síntese objetiva — grid de campos (sempre inicia em nova página)
     const campos: string[] = Array.isArray(cap.campos_matriz) ? cap.campos_matriz : [];
     const sintese = (r?.sintese ?? {}) as Record<string, string>;
-    if (campos.length) {
+    const hasSintese = campos.some((c) => (sintese[c] ?? "").toString().trim().length > 0);
+    if (campos.length && hasSintese) {
       addContentPage();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
@@ -934,7 +935,9 @@ export async function exportInterviewPdf(
       doc.line(margin, y, margin + 60, y);
       y += 10;
 
-      for (const c of campos) writeMatrixField(c, sintese[c]);
+      for (const c of campos) {
+        if ((sintese[c] ?? "").toString().trim().length > 0) writeMatrixField(c, sintese[c]);
+      }
     }
 
     // ————— HIGHLIGHTS (frases-destaque por capítulo) — fica na mesma página se couber —————
