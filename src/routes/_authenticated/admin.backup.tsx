@@ -326,12 +326,18 @@ function PoolBackupPage() {
     if (!job.storage_path) return;
     const toastId = toast.loading("Preparando download…");
     try {
-      const { data, error } = await supabase.storage.from("backups").download(job.storage_path);
-      if (error) throw error;
-      if (!data) throw new Error("Arquivo não encontrado");
-
+      const res = await fetch("/api/public/backup-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+        body: JSON.stringify({ job_id: job.id }),
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
       const ext = job.tipo === "codigo" ? "zip" : "json";
-      const url = URL.createObjectURL(data);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `backup-${job.tipo}-${job.id}.${ext}`;
