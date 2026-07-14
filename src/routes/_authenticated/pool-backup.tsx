@@ -324,18 +324,16 @@ function PoolBackupPage() {
 
   async function baixar(job: Job) {
     if (!job.storage_path) return;
-    let path = job.storage_path;
-    if (job.tipo === "completo" || job.tipo === "arquivos") {
-      // point to dump.json when available, else list first file
-      if (job.tipo === "completo") path = `${job.storage_path}/dump.json`;
-    }
-    const { data, error } = await supabase.storage.from("backups").createSignedUrl(path, 60);
+    const { data, error } = await supabase.storage
+      .from("backups")
+      .createSignedUrl(job.storage_path, 60);
     if (error) {
       toast.error(error.message);
       return;
     }
     window.open(data.signedUrl, "_blank");
   }
+
 
   async function excluir(job: Job) {
     if (!confirm("Excluir este backup?")) return;
