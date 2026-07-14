@@ -31,6 +31,7 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
@@ -159,6 +160,12 @@ const AuthenticatedClientesIndexRoute =
     path: '/clientes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRepresentantesPerformanceRoute =
+  AuthenticatedRepresentantesPerformanceRouteImport.update({
+    id: '/representantes/performance',
+    path: '/representantes/performance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedImersoesNovaRoute =
   AuthenticatedImersoesNovaRouteImport.update({
     id: '/imersoes/nova',
@@ -249,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -283,6 +291,7 @@ export interface FileRoutesByTo {
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
@@ -319,6 +328,7 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/representantes/performance'
     | '/clientes/'
     | '/entrevistas/'
     | '/imersoes/'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/entrevistas/nova'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/representantes/performance'
     | '/clientes'
     | '/entrevistas'
     | '/imersoes'
@@ -424,6 +436,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/nova'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
+    | '/_authenticated/representantes/performance'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
     | '/_authenticated/imersoes/'
@@ -597,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/representantes/performance': {
+      id: '/_authenticated/representantes/performance'
+      path: '/representantes/performance'
+      fullPath: '/representantes/performance'
+      preLoaderRoute: typeof AuthenticatedRepresentantesPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/imersoes/nova': {
       id: '/_authenticated/imersoes/nova'
       path: '/imersoes/nova'
@@ -739,6 +759,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
+  AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
@@ -767,6 +788,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
+  AuthenticatedRepresentantesPerformanceRoute:
+    AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
