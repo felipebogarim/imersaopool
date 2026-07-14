@@ -16,6 +16,7 @@ import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
+import { Route as AuthenticatedPoolBackupRouteImport } from './routes/_authenticated/pool-backup'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authenticated/perspectivas'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
@@ -76,6 +77,11 @@ const AuthenticatedProjecaoRoute = AuthenticatedProjecaoRouteImport.update({
 const AuthenticatedPriceRoute = AuthenticatedPriceRouteImport.update({
   id: '/price',
   path: '/price',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPoolBackupRoute = AuthenticatedPoolBackupRouteImport.update({
+  id: '/pool-backup',
+  path: '/pool-backup',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPlanosRoute = AuthenticatedPlanosRouteImport.update({
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/pool-backup': typeof AuthenticatedPoolBackupRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/pool-backup': typeof AuthenticatedPoolBackupRoute
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
+  '/_authenticated/pool-backup': typeof AuthenticatedPoolBackupRoute
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/novo-corp'
     | '/perspectivas'
     | '/planos'
+    | '/pool-backup'
     | '/price'
     | '/projecao'
     | '/roteiros'
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
     | '/novo-corp'
     | '/perspectivas'
     | '/planos'
+    | '/pool-backup'
     | '/price'
     | '/projecao'
     | '/roteiros'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/_authenticated/novo-corp'
     | '/_authenticated/perspectivas'
     | '/_authenticated/planos'
+    | '/_authenticated/pool-backup'
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
@@ -503,6 +515,13 @@ declare module '@tanstack/react-router' {
       path: '/price'
       fullPath: '/price'
       preLoaderRoute: typeof AuthenticatedPriceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pool-backup': {
+      id: '/_authenticated/pool-backup'
+      path: '/pool-backup'
+      fullPath: '/pool-backup'
+      preLoaderRoute: typeof AuthenticatedPoolBackupRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/planos': {
@@ -750,6 +769,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerspectivasRoute: typeof AuthenticatedPerspectivasRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
+  AuthenticatedPoolBackupRoute: typeof AuthenticatedPoolBackupRoute
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
@@ -779,6 +799,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerspectivasRoute: AuthenticatedPerspectivasRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
+  AuthenticatedPoolBackupRoute: AuthenticatedPoolBackupRoute,
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
@@ -810,13 +831,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
