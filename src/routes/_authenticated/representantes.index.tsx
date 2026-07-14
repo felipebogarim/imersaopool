@@ -14,7 +14,7 @@ import { Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/representantes")({
+export const Route = createFileRoute("/_authenticated/representantes/")({
   head: () => ({ meta: [{ title: "Representantes — PoolFlux" }] }),
   component: RepsPage,
 });

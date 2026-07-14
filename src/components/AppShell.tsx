@@ -21,10 +21,14 @@ const INPUTS = [
 
 const NAV_BOTTOM = [
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/representantes", label: "Representantes", icon: Users },
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
+] as const;
+
+const REPS = [
+  { to: "/representantes", label: "Atuais Reps", icon: Users },
+  { to: "/representantes/performance", label: "Performance", icon: TrendingUp },
 ] as const;
 
 const BASES = [
