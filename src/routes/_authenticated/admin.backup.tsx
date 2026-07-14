@@ -549,7 +549,7 @@ function PoolBackupPage() {
                 <p className="text-xs text-muted-foreground">{progressLabel}</p>
               </div>
             )}
-            <JobsTable jobs={jobsByType.completo} onDownload={baixar} onDelete={excluir} />
+            <JobsTable jobs={jobsByType.completo} onDownload={baixar} onDelete={excluir} onSendToDrive={enviarAoDrive} />
           </TabsContent>
 
           <TabsContent value="arquivos" className="mt-4 space-y-4">
