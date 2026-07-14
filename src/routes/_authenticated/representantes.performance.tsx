@@ -315,6 +315,47 @@ function PerformancePage() {
           </div>
         </div>
 
+        {/* Todas as planilhas carregadas */}
+        <div className="surface rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Planilhas carregadas</p>
+            <span className="text-xs text-muted-foreground">{allUploads.length} {allUploads.length === 1 ? "planilha" : "planilhas"}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">Representante</th>
+                  <th className="text-left px-3 py-2">Período</th>
+                  <th className="text-left px-3 py-2">Arquivo</th>
+                  <th className="text-left px-3 py-2">Carregado em</th>
+                  <th className="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {allUploads.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhuma planilha carregada ainda.</td></tr>
+                ) : allUploads.map((u: any) => {
+                  const isActive = u.id === effectiveUploadId;
+                  return (
+                    <tr key={u.id} className={cn("border-t border-border hover:bg-muted/30 cursor-pointer", isActive && "bg-muted/40")} onClick={() => { setRepId(u.representative_id); setUploadId(u.id); }}>
+                      <td className="px-3 py-2 font-medium">{u.representatives?.nome ?? "—"}</td>
+                      <td className="px-3 py-2">{u.periodo_label}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{u.filename ?? "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setRepId(u.representative_id); setUploadId(u.id); }}>
+                          Abrir
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Legenda (categorias + escala) */}
         {currentUpload && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
