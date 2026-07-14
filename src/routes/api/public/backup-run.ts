@@ -4,7 +4,7 @@ export const Route = createFileRoute("/api/public/backup-run")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { verifyApiKey, getAdmin, logHistorico, APP_TABLES, APP_BUCKETS, copyBucketToBackup } =
+        const { verifyApiKey, getAdmin, logHistorico, APP_TABLES, buildStorageManifest } =
           await import("@/lib/backup-shared.server");
         const unauth = verifyApiKey(request);
         if (unauth) return unauth;
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/api/public/backup-run")({
         try {
           let totalBytes = 0;
           let storagePath = "";
+          const payloadRoot: Record<string, unknown> = { generated_at: new Date().toISOString(), tipo };
 
           if (tipo === "json" || tipo === "completo") {
             const dump: Record<string, unknown[]> = {};
@@ -41,28 +42,30 @@ export const Route = createFileRoute("/api/public/backup-run")({
               const { data } = await admin.from(t).select("*");
               dump[t] = data ?? [];
             }
-            const payload = JSON.stringify({
-              generated_at: new Date().toISOString(),
-              tables: dump,
-            });
-            const bytes = new TextEncoder().encode(payload);
-            const path = tipo === "json" ? `json/${jobId}.json` : `completo/${jobId}/dump.json`;
-            const { error: upErr } = await admin.storage
-              .from("backups")
-              .upload(path, bytes, { contentType: "application/json", upsert: true });
-            if (upErr) throw new Error(`upload dump: ${upErr.message}`);
-            totalBytes += bytes.byteLength;
-            storagePath = tipo === "json" ? path : `completo/${jobId}`;
+            payloadRoot.tables = dump;
           }
 
           if (tipo === "completo" || tipo === "arquivos") {
-            const destPrefix = tipo === "completo" ? `completo/${jobId}` : `arquivos/${jobId}`;
-            for (const b of APP_BUCKETS) {
-              const { bytes } = await copyBucketToBackup(admin, b, destPrefix);
-              totalBytes += bytes;
-            }
-            if (tipo === "arquivos") storagePath = destPrefix;
+            const manifest = await buildStorageManifest(admin);
+            payloadRoot.storage_manifest = manifest;
+            // Referência informativa do tamanho lógico dos arquivos catalogados
+            totalBytes += manifest.totals.bytes;
           }
+
+          const payload = JSON.stringify(payloadRoot);
+          const bytes = new TextEncoder().encode(payload);
+          const path =
+            tipo === "json"
+              ? `json/${jobId}.json`
+              : tipo === "completo"
+                ? `completo/${jobId}/backup.json`
+                : `arquivos/${jobId}/manifest.json`;
+          const { error: upErr } = await admin.storage
+            .from("backups")
+            .upload(path, bytes, { contentType: "application/json", upsert: true });
+          if (upErr) throw new Error(`upload: ${upErr.message}`);
+          totalBytes += bytes.byteLength;
+          storagePath = path;
 
           await admin
             .from("backup_jobs")

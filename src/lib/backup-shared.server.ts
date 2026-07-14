@@ -69,41 +69,44 @@ export async function logHistorico(
   });
 }
 
-export async function copyBucketToBackup(
+/**
+ * Gera um manifesto (lista) de todos os arquivos dos buckets da aplicação.
+ * NÃO duplica os binários — apenas registra metadados suficientes para
+ * auditoria e restauração posterior. Isso é o que permite o backup rodar
+ * em segundos no worker Cloudflare, independente do volume total.
+ */
+export async function buildStorageManifest(
   admin: SupabaseClient,
-  sourceBucket: string,
-  destPrefix: string,
-): Promise<{ files: number; bytes: number }> {
-  let files = 0;
-  let bytes = 0;
-
-  async function walk(prefix: string) {
-    const { data, error } = await admin.storage.from(sourceBucket).list(prefix, {
-      limit: 1000,
-      sortBy: { column: "name", order: "asc" },
+): Promise<{
+  generated_at: string;
+  buckets: Record<string, { count: number; bytes: number; files: Array<{ path: string; size: number; mimetype: string; updated_at: string | null }> }>;
+  totals: { count: number; bytes: number };
+}> {
+  const { data, error } = await admin.rpc("list_storage_objects");
+  if (error) throw new Error(`list_storage_objects: ${error.message}`);
+  const rows = (data ?? []) as Array<{
+    bucket_id: string;
+    name: string;
+    size: number;
+    mimetype: string;
+    updated_at: string | null;
+  }>;
+  const buckets: Record<string, { count: number; bytes: number; files: Array<{ path: string; size: number; mimetype: string; updated_at: string | null }> }> = {};
+  let totalCount = 0;
+  let totalBytes = 0;
+  for (const b of APP_BUCKETS) buckets[b] = { count: 0, bytes: 0, files: [] };
+  for (const r of rows) {
+    if (!buckets[r.bucket_id]) buckets[r.bucket_id] = { count: 0, bytes: 0, files: [] };
+    buckets[r.bucket_id].files.push({
+      path: r.name,
+      size: Number(r.size) || 0,
+      mimetype: r.mimetype ?? "",
+      updated_at: r.updated_at,
     });
-    if (error) return;
-    for (const item of data ?? []) {
-      const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-      // folder: no id/metadata
-      const isFolder = !item.id && !item.metadata;
-      if (isFolder) {
-        await walk(fullPath);
-        continue;
-      }
-      const { data: file, error: dlErr } = await admin.storage.from(sourceBucket).download(fullPath);
-      if (dlErr || !file) continue;
-      const buf = new Uint8Array(await file.arrayBuffer());
-      const destPath = `${destPrefix}/${sourceBucket}/${fullPath}`;
-      const { error: upErr } = await admin.storage
-        .from("backups")
-        .upload(destPath, buf, { contentType: file.type || "application/octet-stream", upsert: true });
-      if (upErr) continue;
-      files += 1;
-      bytes += buf.byteLength;
-    }
+    buckets[r.bucket_id].count += 1;
+    buckets[r.bucket_id].bytes += Number(r.size) || 0;
+    totalCount += 1;
+    totalBytes += Number(r.size) || 0;
   }
-
-  await walk("");
-  return { files, bytes };
+  return { generated_at: new Date().toISOString(), buckets, totals: { count: totalCount, bytes: totalBytes } };
 }
