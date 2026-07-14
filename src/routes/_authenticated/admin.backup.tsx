@@ -324,14 +324,25 @@ function PoolBackupPage() {
 
   async function baixar(job: Job) {
     if (!job.storage_path) return;
-    const { data, error } = await supabase.storage
-      .from("backups")
-      .createSignedUrl(job.storage_path, 60);
-    if (error) {
-      toast.error(error.message);
-      return;
+    const toastId = toast.loading("Preparando download…");
+    try {
+      const { data, error } = await supabase.storage.from("backups").download(job.storage_path);
+      if (error) throw error;
+      if (!data) throw new Error("Arquivo não encontrado");
+
+      const ext = job.tipo === "codigo" ? "zip" : "json";
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `backup-${job.tipo}-${job.id}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Download iniciado", { id: toastId });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao baixar o backup", { id: toastId });
     }
-    window.open(data.signedUrl, "_blank");
   }
 
 
