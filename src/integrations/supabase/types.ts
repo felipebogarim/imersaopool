@@ -1362,6 +1362,106 @@ export type Database = {
           },
         ]
       }
+      rep_performance_rows: {
+        Row: {
+          categoria: string | null
+          company_id: string
+          created_at: string
+          id: string
+          metas: Json
+          ordem: number
+          razao_social: string
+          total_meta: number | null
+          upload_id: string
+        }
+        Insert: {
+          categoria?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          metas?: Json
+          ordem?: number
+          razao_social: string
+          total_meta?: number | null
+          upload_id: string
+        }
+        Update: {
+          categoria?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          metas?: Json
+          ordem?: number
+          razao_social?: string
+          total_meta?: number | null
+          upload_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rep_performance_rows_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "rep_performance_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rep_performance_uploads: {
+        Row: {
+          categoria_metas: Json
+          company_id: string
+          created_at: string
+          escala_percentual: Json
+          familias: string[]
+          filename: string | null
+          id: string
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          periodo_label: string
+          representative_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          categoria_metas?: Json
+          company_id: string
+          created_at?: string
+          escala_percentual?: Json
+          familias?: string[]
+          filename?: string | null
+          id?: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label: string
+          representative_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          categoria_metas?: Json
+          company_id?: string
+          created_at?: string
+          escala_percentual?: Json
+          familias?: string[]
+          filename?: string | null
+          id?: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label?: string
+          representative_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rep_performance_uploads_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       representative_inputs: {
         Row: {
           abordagem_diferente: string | null
