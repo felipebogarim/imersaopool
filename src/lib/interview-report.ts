@@ -310,6 +310,38 @@ export async function exportInterviewPdf(
     }
   };
 
+  const FIELD_LABELS: Record<string, string> = {
+    acao_sugerida: "Ação sugerida",
+    ameaca: "Ameaça",
+    argumento_usado: "Argumento usado",
+    categorias_onde_ganha: "Categorias onde ganha",
+    checou_tabela: "Checou tabela",
+    concorrente: "Concorrente",
+    criterio_declarado: "Critério declarado",
+    criterio_revelado: "Critério revelado",
+    cuidado: "Cuidado",
+    decisao_mencionada: "Decisão mencionada",
+    evidencia: "Evidência",
+    impacto_relatado: "Impacto relatado",
+    motivo: "Motivo",
+    o_que_funciona: "O que funciona",
+    o_que_nao_funciona: "O que não funciona",
+    objecao: "Objeção",
+    oportunidade: "Oportunidade",
+    percepcao_preco: "Percepção de preço",
+    produto: "Produto",
+    qualidade_argumento: "Qualidade do argumento",
+    sinal_autonomia: "Sinal de autonomia",
+    sinal_de_conflito: "Sinal de conflito",
+    skus_adormecidos: "SKUs adormecidos",
+    top_of_mind: "Top of mind",
+    valor_defensavel: "Valor defensável",
+    percepcao_marca: "Percepção de marca",
+    relato_livre: "Relato livre",
+  };
+  const prettyLabel = (key: string) =>
+    FIELD_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   const writeMatrixField = (label: string, value?: string | null) => {
     const text = md(value) || "—";
     doc.setFont("helvetica", "normal");
@@ -323,9 +355,9 @@ export async function exportInterviewPdf(
       ensure(52);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      const rawLabel = `${label}${continued ? " (continuação)" : ""}`
-        .toUpperCase()
-        .replace(/_/g, " ");
+      const rawLabel = `${prettyLabel(label)}${continued ? " (continuação)" : ""}`
+        .toUpperCase();
+
       const labelLines = doc.splitTextToSize(rawLabel, maxW - 24).slice(0, 2);
       const labelH = 18 + labelLines.length * 11;
       let availableLines = Math.floor((contentBottom() - y - labelH - 12) / lineH);
