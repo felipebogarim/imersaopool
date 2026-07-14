@@ -683,10 +683,12 @@ function JobsTable({
   jobs,
   onDownload,
   onDelete,
+  onSendToDrive,
 }: {
   jobs: Job[];
   onDownload: (j: Job) => void;
   onDelete: (j: Job) => void;
+  onSendToDrive?: (j: Job) => void;
 }) {
   return (
     <Card>
