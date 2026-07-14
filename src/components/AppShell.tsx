@@ -24,7 +24,6 @@ const NAV_BOTTOM = [
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
-  { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
 ] as const;
 
 const REPS = [
@@ -185,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {[
                 { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
                 { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
               ].map(item => (
                 <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
               ))}
