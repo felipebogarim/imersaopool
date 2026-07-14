@@ -21,10 +21,14 @@ const INPUTS = [
 
 const NAV_BOTTOM = [
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/representantes", label: "Representantes", icon: Users },
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
+] as const;
+
+const REPS = [
+  { to: "/representantes", label: "Atuais Reps", icon: Users },
+  { to: "/representantes/performance", label: "Performance", icon: TrendingUp },
 ] as const;
 
 const BASES = [
@@ -63,6 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
   const [inputsOpen, setInputsOpen] = useState(() => INPUTS.some(b => pathname.startsWith(b.to)));
+  const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -130,6 +135,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           {NAV_BOTTOM.map(item => (
             <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
           ))}
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setRepsOpen(o => !o)}
+              title="Representantes"
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+            >
+              <Users className="h-4 w-4 shrink-0" />
+              <span className={cn("flex-1 text-left", LBL)}>Representantes</span>
+              {repsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+            </button>
+            {repsOpen && (
+              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                {REPS.map(item => (
+                  <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || (item.to !== "/representantes" && pathname.startsWith(item.to + "/"))} />
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="pt-2">
             <button
