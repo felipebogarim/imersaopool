@@ -349,7 +349,10 @@ function PoolBackupPage() {
       toast.success("Download iniciado", { id: toastId });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao baixar o backup", { id: toastId });
+    }
   }
+
+
 
   async function enviarAoDrive(job: Job) {
     if (!job.storage_path) return;
