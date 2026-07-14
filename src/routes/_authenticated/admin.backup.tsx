@@ -727,6 +727,17 @@ function JobsTable({
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+                    {onSendToDrive && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Enviar ao Google Drive"
+                        onClick={() => onSendToDrive(j)}
+                        disabled={j.status !== "ok" || !j.storage_path}
+                      >
+                        <Cloud className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => onDelete(j)}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
