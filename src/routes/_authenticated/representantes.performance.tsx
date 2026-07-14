@@ -236,9 +236,9 @@ function PerformancePage() {
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
   }
 
-  const familias: string[] = currentUpload?.familias ?? [];
-  const categoriaMetas: Record<string, number> = currentUpload?.categoria_metas ?? {};
-  const escala: { label: string; min: number | null; max: number | null }[] = currentUpload?.escala_percentual ?? [];
+  const familias: string[] = (currentUpload?.familias as string[]) ?? [];
+  const categoriaMetas: Record<string, number> = (currentUpload?.categoria_metas as Record<string, number>) ?? {};
+  const escala: { label: string; min: number | null; max: number | null }[] = (currentUpload?.escala_percentual as any) ?? [];
 
   const totals = useMemo(() => {
     const t: Record<string, number> = {};
