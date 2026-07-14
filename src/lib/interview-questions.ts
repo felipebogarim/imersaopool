@@ -78,7 +78,7 @@ export const INTERVIEW_SECTIONS: InterviewSection[] = [
   },
   {
     id: "conflito_e_concorrencia",
-    titulo: "3. Concorrência e conflito de interesse",
+    titulo: "3. Competição de mercado",
     descricao:
       "Objetivo: mapear concorrentes fortes e detectar sinal de conflito estrutural (H3) em quem representa múltiplas marcas.",
     perguntas: [
