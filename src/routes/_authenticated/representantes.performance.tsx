@@ -226,6 +226,7 @@ function PerformancePage() {
       toast.success(`Planilha importada: ${parsed.rows.length} clientes.`);
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
       setUploadId(up.id);
     } catch (e: any) {
       console.error(e);
