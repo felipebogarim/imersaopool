@@ -123,6 +123,15 @@ function PerformancePage() {
   const [periodoFim, setPeriodoFim] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+  const { data: allUploads = [] } = useQuery({
+    queryKey: ["perf-all-uploads"],
+    queryFn: async () =>
+      (await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, filename, created_at, representatives(nome)")
+        .order("created_at", { ascending: false })).data ?? [],
+  });
+
   const { data: reps = [] } = useQuery({
     queryKey: ["perf-reps"],
     queryFn: async () => (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
@@ -217,6 +226,7 @@ function PerformancePage() {
       toast.success(`Planilha importada: ${parsed.rows.length} clientes.`);
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
       setUploadId(up.id);
     } catch (e: any) {
       console.error(e);
@@ -234,6 +244,7 @@ function PerformancePage() {
     toast.success("Versão excluída.");
     setUploadId("");
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+    qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
   }
 
   const familias: string[] = (currentUpload?.familias as string[]) ?? [];
@@ -301,6 +312,47 @@ function PerformancePage() {
                 <Trash2 className="h-4 w-4 mr-1" /> Excluir esta versão
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Todas as planilhas carregadas */}
+        <div className="surface rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Planilhas carregadas</p>
+            <span className="text-xs text-muted-foreground">{allUploads.length} {allUploads.length === 1 ? "planilha" : "planilhas"}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">Representante</th>
+                  <th className="text-left px-3 py-2">Período</th>
+                  <th className="text-left px-3 py-2">Arquivo</th>
+                  <th className="text-left px-3 py-2">Carregado em</th>
+                  <th className="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {allUploads.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhuma planilha carregada ainda.</td></tr>
+                ) : allUploads.map((u: any) => {
+                  const isActive = u.id === effectiveUploadId;
+                  return (
+                    <tr key={u.id} className={cn("border-t border-border hover:bg-muted/30 cursor-pointer", isActive && "bg-muted/40")} onClick={() => { setRepId(u.representative_id); setUploadId(u.id); }}>
+                      <td className="px-3 py-2 font-medium">{u.representatives?.nome ?? "—"}</td>
+                      <td className="px-3 py-2">{u.periodo_label}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{u.filename ?? "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</td>
+                      <td className="px-3 py-2 text-right">
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setRepId(u.representative_id); setUploadId(u.id); }}>
+                          Abrir
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
 
