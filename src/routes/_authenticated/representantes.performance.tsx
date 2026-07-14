@@ -74,7 +74,7 @@ function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
       const s = String(cell ?? "").trim();
       if (s && /=/.test(s) && /%/.test(s)) {
         const [labelRaw, ruleRaw] = s.split("=");
-        escala.push({ label: labelRaw.trim(), min: null, max: null, ...parseRule(ruleRaw) });
+        escala.push({ label: labelRaw.trim(), ...parseRule(ruleRaw) });
       }
     }
   }
