@@ -219,6 +219,152 @@ export type Database = {
           },
         ]
       }
+      backup_auditoria: {
+        Row: {
+          baixos: number
+          created_at: string
+          graves: number
+          id: string
+          medios: number
+          relatorio: Json
+          status: string
+        }
+        Insert: {
+          baixos?: number
+          created_at?: string
+          graves?: number
+          id?: string
+          medios?: number
+          relatorio?: Json
+          status: string
+        }
+        Update: {
+          baixos?: number
+          created_at?: string
+          graves?: number
+          id?: string
+          medios?: number
+          relatorio?: Json
+          status?: string
+        }
+        Relationships: []
+      }
+      backup_config: {
+        Row: {
+          auto_backup: boolean
+          created_at: string
+          frequencia: string
+          github_branch: string
+          github_repo: string | null
+          horario_execucao: string
+          id: string
+          limite_gb: number
+          retencao_dias: number
+          updated_at: string
+        }
+        Insert: {
+          auto_backup?: boolean
+          created_at?: string
+          frequencia?: string
+          github_branch?: string
+          github_repo?: string | null
+          horario_execucao?: string
+          id?: string
+          limite_gb?: number
+          retencao_dias?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_backup?: boolean
+          created_at?: string
+          frequencia?: string
+          github_branch?: string
+          github_repo?: string | null
+          horario_execucao?: string
+          id?: string
+          limite_gb?: number
+          retencao_dias?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backup_historico: {
+        Row: {
+          created_at: string
+          detalhe: string | null
+          id: string
+          job_id: string | null
+          operacao: string
+          resultado: string
+          usuario_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          job_id?: string | null
+          operacao: string
+          resultado?: string
+          usuario_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          detalhe?: string | null
+          id?: string
+          job_id?: string | null
+          operacao?: string
+          resultado?: string
+          usuario_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_historico_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "backup_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_jobs: {
+        Row: {
+          concluido_em: string | null
+          created_at: string
+          erro: string | null
+          id: string
+          iniciado_por: string | null
+          origem: string
+          status: string
+          storage_path: string | null
+          tamanho_bytes: number | null
+          tipo: string
+        }
+        Insert: {
+          concluido_em?: string | null
+          created_at?: string
+          erro?: string | null
+          id?: string
+          iniciado_por?: string | null
+          origem?: string
+          status?: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo: string
+        }
+        Update: {
+          concluido_em?: string | null
+          created_at?: string
+          erro?: string | null
+          id?: string
+          iniciado_por?: string | null
+          origem?: string
+          status?: string
+          storage_path?: string | null
+          tamanho_bytes?: number | null
+          tipo?: string
+        }
+        Relationships: []
+      }
       capitulos: {
         Row: {
           campos_matriz: Json
