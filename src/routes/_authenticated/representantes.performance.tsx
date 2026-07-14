@@ -123,6 +123,15 @@ function PerformancePage() {
   const [periodoFim, setPeriodoFim] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+  const { data: allUploads = [] } = useQuery({
+    queryKey: ["perf-all-uploads"],
+    queryFn: async () =>
+      (await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, filename, created_at, representatives(nome)")
+        .order("created_at", { ascending: false })).data ?? [],
+  });
+
   const { data: reps = [] } = useQuery({
     queryKey: ["perf-reps"],
     queryFn: async () => (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
