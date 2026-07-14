@@ -36,7 +36,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/pool-backup")({
+export const Route = createFileRoute("/_authenticated/admin/backup")({
   component: PoolBackupPage,
 });
 
@@ -375,7 +375,7 @@ function PoolBackupPage() {
   if (isAdmin === null) {
     return (
       <div>
-        <PageHeader title="Pool Backup" />
+        <PageHeader title="Backup" />
         <div className="p-8 text-sm text-muted-foreground">Carregando…</div>
       </div>
     );
@@ -383,7 +383,7 @@ function PoolBackupPage() {
   if (!isAdmin) {
     return (
       <div>
-        <PageHeader title="Pool Backup" />
+        <PageHeader title="Backup" />
         <div className="p-8">
           <Card>
             <CardContent className="pt-6 flex items-center gap-3">
@@ -404,7 +404,7 @@ function PoolBackupPage() {
   return (
     <div>
       <PageHeader
-        title="Pool Backup"
+        title="Backup"
         subtitle="Proteção de dados, arquivos e código-fonte"
         actions={
           <>
