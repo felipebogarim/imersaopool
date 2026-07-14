@@ -127,6 +127,9 @@ function RoteirosPage() {
                   <Button size="sm" variant="outline" onClick={() => setCreatingCapFor(r.id)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Capítulo
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => exportRoteiroPdf(r)}>
+                    <FileDown className="h-3.5 w-3.5 mr-1" /> PDF
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditingRoteiro(r)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
