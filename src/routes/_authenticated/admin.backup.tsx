@@ -34,6 +34,7 @@ import {
   HardDrive,
   Archive,
   ShieldAlert,
+  Cloud,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
