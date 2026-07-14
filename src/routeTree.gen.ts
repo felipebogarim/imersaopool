@@ -31,6 +31,7 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
 import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
@@ -165,6 +166,11 @@ const AuthenticatedClientesIndexRoute =
     path: '/clientes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicBackupToDriveRoute = ApiPublicBackupToDriveRouteImport.update({
+  id: '/api/public/backup-to-drive',
+  path: '/api/public/backup-to-drive',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicBackupRunRoute = ApiPublicBackupRunRouteImport.update({
   id: '/api/public/backup-run',
   path: '/api/public/backup-run',
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
+  '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByTo {
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
+  '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
+  '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
+    | '/api/public/backup-to-drive'
     | '/clientes/'
     | '/entrevistas/'
     | '/imersoes/'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
+    | '/api/public/backup-to-drive'
     | '/clientes'
     | '/entrevistas'
     | '/imersoes'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
+    | '/api/public/backup-to-drive'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
     | '/_authenticated/imersoes/'
@@ -517,6 +529,7 @@ export interface RootRouteChildren {
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
+  ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -674,6 +687,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/clientes/'
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/backup-to-drive': {
+      id: '/api/public/backup-to-drive'
+      path: '/api/public/backup-to-drive'
+      fullPath: '/api/public/backup-to-drive'
+      preLoaderRoute: typeof ApiPublicBackupToDriveRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/backup-run': {
       id: '/api/public/backup-run'
@@ -912,17 +932,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
+  ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

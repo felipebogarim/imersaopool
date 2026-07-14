@@ -34,6 +34,7 @@ import {
   HardDrive,
   Archive,
   ShieldAlert,
+  Cloud,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/backup")({
@@ -352,6 +353,35 @@ function PoolBackupPage() {
   }
 
 
+
+  async function enviarAoDrive(job: Job) {
+    if (!job.storage_path) return;
+    const toastId = toast.loading("Enviando ao Google Drive…");
+    try {
+      const res = await fetch("/api/public/backup-to-drive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+        body: JSON.stringify({ job_id: job.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      toast.success("Backup enviado ao Drive", {
+        id: toastId,
+        description: data?.web_view_link
+          ? "Clique para abrir no Drive"
+          : data?.name ?? undefined,
+        action: data?.web_view_link
+          ? { label: "Abrir", onClick: () => window.open(data.web_view_link, "_blank") }
+          : undefined,
+      });
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao Drive", { id: toastId });
+    }
+  }
+
+
+
   async function excluir(job: Job) {
     if (!confirm("Excluir este backup?")) return;
     if (job.storage_path) {
@@ -519,7 +549,7 @@ function PoolBackupPage() {
                 <p className="text-xs text-muted-foreground">{progressLabel}</p>
               </div>
             )}
-            <JobsTable jobs={jobsByType.completo} onDownload={baixar} onDelete={excluir} />
+            <JobsTable jobs={jobsByType.completo} onDownload={baixar} onDelete={excluir} onSendToDrive={enviarAoDrive} />
           </TabsContent>
 
           <TabsContent value="arquivos" className="mt-4 space-y-4">
@@ -653,10 +683,12 @@ function JobsTable({
   jobs,
   onDownload,
   onDelete,
+  onSendToDrive,
 }: {
   jobs: Job[];
   onDownload: (j: Job) => void;
   onDelete: (j: Job) => void;
+  onSendToDrive?: (j: Job) => void;
 }) {
   return (
     <Card>
@@ -695,6 +727,17 @@ function JobsTable({
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+                    {onSendToDrive && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Enviar ao Google Drive"
+                        onClick={() => onSendToDrive(j)}
+                        disabled={j.status !== "ok" || !j.storage_path}
+                      >
+                        <Cloud className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => onDelete(j)}>
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
