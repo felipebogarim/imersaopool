@@ -2017,6 +2017,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      list_storage_objects: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          mimetype: string
+          name: string
+          size: number
+          updated_at: string
+        }[]
+      }
       submit_representative_input: {
         Args: { _data: Json; _token: string }
         Returns: string
