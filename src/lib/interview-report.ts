@@ -163,9 +163,228 @@ export async function exportInterviewPdf(
 
   // Sanitiza markdown vindo de relatórios (asteriscos, sublinhados, marcadores),
   // evitando que "**bold**" apareça literalmente no PDF.
+  const ACCENT_CORRECTIONS: Record<string, string> = {
+    acao: "ação",
+    acoes: "ações",
+    adequacao: "adequação",
+    aderencia: "aderência",
+    analise: "análise",
+    anotacao: "anotação",
+    anotacoes: "anotações",
+    apendice: "apêndice",
+    aplicacao: "aplicação",
+    argumentacao: "argumentação",
+    atencao: "atenção",
+    ativacao: "ativação",
+    automacao: "automação",
+    avaliacao: "avaliação",
+    basica: "básica",
+    basicas: "básicas",
+    basico: "básico",
+    basicos: "básicos",
+    capitulo: "capítulo",
+    capitulos: "capítulos",
+    citacao: "citação",
+    citacoes: "citações",
+    classificacao: "classificação",
+    comunicacao: "comunicação",
+    conclusao: "conclusão",
+    consideracao: "consideração",
+    consideracoes: "considerações",
+    conteudo: "conteúdo",
+    conteudos: "conteúdos",
+    concorrencia: "concorrência",
+    concorrencias: "concorrências",
+    contribuicao: "contribuição",
+    cotacao: "cotação",
+    criterio: "critério",
+    criterios: "critérios",
+    critica: "crítica",
+    criticas: "críticas",
+    critico: "crítico",
+    criticos: "críticos",
+    decisao: "decisão",
+    decisoes: "decisões",
+    defensavel: "defensável",
+    descricao: "descrição",
+    diferenca: "diferença",
+    diferencas: "diferenças",
+    diferenciacao: "diferenciação",
+    dificil: "difícil",
+    dificeis: "difíceis",
+    diagnostico: "diagnóstico",
+    distribuicao: "distribuição",
+    dominio: "domínio",
+    economica: "econômica",
+    economicas: "econômicas",
+    economico: "econômico",
+    economicos: "econômicos",
+    eficiencia: "eficiência",
+    enfase: "ênfase",
+    especificacao: "especificação",
+    especificacoes: "especificações",
+    estrategia: "estratégia",
+    estrategias: "estratégias",
+    estrategica: "estratégica",
+    estrategicas: "estratégicas",
+    estrategico: "estratégico",
+    estrategicos: "estratégicos",
+    evidencia: "evidência",
+    evidencias: "evidências",
+    execucao: "execução",
+    experiencia: "experiência",
+    experiencias: "experiências",
+    exposicao: "exposição",
+    facil: "fácil",
+    faceis: "fáceis",
+    familia: "família",
+    familias: "famílias",
+    frequencia: "frequência",
+    gestao: "gestão",
+    historico: "histórico",
+    hipotese: "hipótese",
+    hipoteses: "hipóteses",
+    informacao: "informação",
+    informacoes: "informações",
+    instalacao: "instalação",
+    integracao: "integração",
+    inteligencia: "inteligência",
+    intencao: "intenção",
+    lideranca: "liderança",
+    logica: "lógica",
+    manutencao: "manutenção",
+    media: "média",
+    metodo: "método",
+    metrica: "métrica",
+    metricas: "métricas",
+    necessario: "necessário",
+    necessaria: "necessária",
+    necessarios: "necessários",
+    necessarias: "necessárias",
+    negociacao: "negociação",
+    negociacoes: "negociações",
+    nivel: "nível",
+    niveis: "níveis",
+    numero: "número",
+    numeros: "números",
+    objecao: "objeção",
+    objecoes: "objeções",
+    observacao: "observação",
+    observacoes: "observações",
+    ocorrencia: "ocorrência",
+    ocorrencias: "ocorrências",
+    operacao: "operação",
+    operacoes: "operações",
+    opiniao: "opinião",
+    opinioes: "opiniões",
+    pagina: "página",
+    paginas: "páginas",
+    padrao: "padrão",
+    padroes: "padrões",
+    percepcao: "percepção",
+    percepcoes: "percepções",
+    periodo: "período",
+    periodos: "períodos",
+    politica: "política",
+    politicas: "políticas",
+    possivel: "possível",
+    possiveis: "possíveis",
+    potencia: "potência",
+    pratica: "prática",
+    praticas: "práticas",
+    pratico: "prático",
+    praticos: "práticos",
+    preco: "preço",
+    precos: "preços",
+    precificacao: "precificação",
+    presenca: "presença",
+    primario: "primário",
+    prioritaria: "prioritária",
+    prioritarias: "prioritárias",
+    prioritario: "prioritário",
+    prioritarios: "prioritários",
+    priorizacao: "priorização",
+    producao: "produção",
+    proximo: "próximo",
+    proximos: "próximos",
+    proxima: "próxima",
+    proximas: "próximas",
+    publico: "público",
+    publicos: "públicos",
+    publica: "pública",
+    publicas: "públicas",
+    rapida: "rápida",
+    rapidas: "rápidas",
+    rapido: "rápido",
+    rapidos: "rápidos",
+    reativacao: "reativação",
+    recomendacao: "recomendação",
+    recomendacoes: "recomendações",
+    referencia: "referência",
+    referencias: "referências",
+    relacao: "relação",
+    relacoes: "relações",
+    relatorio: "relatório",
+    relatorios: "relatórios",
+    restricao: "restrição",
+    revisao: "revisão",
+    saudacoes: "saudações",
+    secundaria: "secundária",
+    secundarias: "secundárias",
+    secundario: "secundário",
+    secundarios: "secundários",
+    secao: "seção",
+    secoes: "seções",
+    sequencia: "sequência",
+    servico: "serviço",
+    servicos: "serviços",
+    sessao: "sessão",
+    sessoes: "sessões",
+    sintese: "síntese",
+    sinteses: "sínteses",
+    situacao: "situação",
+    situacoes: "situações",
+    solucao: "solução",
+    solucoes: "soluções",
+    sugestao: "sugestão",
+    sugestoes: "sugestões",
+    tecnica: "técnica",
+    tecnicas: "técnicas",
+    tecnico: "técnico",
+    tecnicos: "técnicos",
+    tendencia: "tendência",
+    tendencias: "tendências",
+    unico: "único",
+    unica: "única",
+    usuario: "usuário",
+    usuarios: "usuários",
+    validacao: "validação",
+    versao: "versão",
+    visao: "visão",
+    nao: "não",
+  };
+
+  const applyCase = (source: string, replacement: string) => {
+    if (source === source.toUpperCase()) return replacement.toUpperCase();
+    if (source[0] === source[0].toUpperCase()) {
+      return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+    }
+    return replacement;
+  };
+
+  const applyPortugueseAccents = (text: string): string => {
+    const letter = "A-Za-zÀ-ÖØ-öø-ÿ";
+    return Object.entries(ACCENT_CORRECTIONS)
+      .sort(([a], [b]) => b.length - a.length)
+      .reduce((out, [source, replacement]) => {
+        const re = new RegExp(`(^|[^${letter}])(${source})(?=$|[^${letter}])`, "gi");
+        return out.replace(re, (_full, prefix: string, word: string) => `${prefix}${applyCase(word, replacement)}`);
+      }, text);
+  };
+
   const md = (s?: string | null): string => {
     if (!s) return "";
-    return String(s)
+    return applyPortugueseAccents(String(s)
       .replace(/\r\n?/g, "\n")
       .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")
       .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
@@ -177,7 +396,7 @@ export async function exportInterviewPdf(
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
       .replace(/[ \t]+\n/g, "\n")
       .replace(/\n{3,}/g, "\n\n")
-      .trim();
+      .trim());
   };
 
   const contentBottom = () => pageH - margin - 44;
@@ -201,7 +420,7 @@ export async function exportInterviewPdf(
     const w = opts.width ?? maxW;
     const x = opts.x ?? margin;
     const lh = opts.lineHeight ?? size * 1.35;
-    const lines = doc.splitTextToSize(text || "—", w);
+    const lines = doc.splitTextToSize(applyPortugueseAccents(text || "—"), w);
     for (const l of lines) {
       ensure(lh);
       doc.text(l, x, y);
@@ -338,9 +557,10 @@ export async function exportInterviewPdf(
     valor_defensavel: "Valor defensável",
     percepcao_marca: "Percepção de marca",
     relato_livre: "Relato livre",
+    evidencias: "Evidências",
   };
   const prettyLabel = (key: string) =>
-    FIELD_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    FIELD_LABELS[key] ?? applyPortugueseAccents(key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
 
   const writeMatrixField = (label: string, value?: string | null) => {
     const text = md(value) || "—";
@@ -465,13 +685,13 @@ export async function exportInterviewPdf(
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       setText(INK);
-      doc.text(cap.titulo, margin + 44, y);
+      doc.text(applyPortugueseAccents(cap.titulo), margin + 44, y);
 
       if (cap.lente_default) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         setText(MUTED);
-        doc.text(`lente · ${cap.lente_default}`, margin + 44, y + 12, { charSpace: 0.5 });
+        doc.text(`lente · ${prettyLabel(String(cap.lente_default)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
       }
 
       setDraw(HAIRLINE);
@@ -653,7 +873,7 @@ export async function exportInterviewPdf(
     doc.setFontSize(26);
     setText(INK);
     const titleW = maxW - 140;
-    const tl = doc.splitTextToSize(cap.titulo, titleW);
+      const tl = doc.splitTextToSize(applyPortugueseAccents(cap.titulo), titleW);
     for (const l of tl) {
       ensure(32);
       doc.text(l, margin, y);
@@ -663,7 +883,7 @@ export async function exportInterviewPdf(
 
     // Lente — texto simples em cyan
     if (cap.lente_default) {
-      const badge = `LENTE · ${String(cap.lente_default).toUpperCase()}`;
+      const badge = `LENTE · ${prettyLabel(String(cap.lente_default)).toUpperCase()}`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN);
@@ -731,7 +951,7 @@ export async function exportInterviewPdf(
       doc.setFontSize(14);
       let quotesH = 0;
       for (const q of highlights) {
-        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const text = applyPortugueseAccents(`“${q.replace(/^["“”]|["“”]$/g, "")}”`);
         const lines = doc.splitTextToSize(text, maxW);
         quotesH += lines.length * 22 + 16;
       }
@@ -770,7 +990,7 @@ export async function exportInterviewPdf(
       doc.setFontSize(quoteFontSize);
       setText(INK);
       for (const q of highlights) {
-        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const text = applyPortugueseAccents(`“${q.replace(/^["“”]|["“”]$/g, "")}”`);
         const lines = doc.splitTextToSize(text, quoteW);
         ensure(lines.length * quoteLineH + 18);
         for (const l of lines) {
