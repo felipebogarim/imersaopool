@@ -244,6 +244,7 @@ function PerformancePage() {
     toast.success("Versão excluída.");
     setUploadId("");
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+    qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
   }
 
   const familias: string[] = (currentUpload?.familias as string[]) ?? [];
