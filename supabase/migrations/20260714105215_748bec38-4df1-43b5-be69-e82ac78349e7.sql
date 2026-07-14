@@ -1,0 +1,1 @@
+UPDATE capitulos SET titulo='Competição de mercado' WHERE ordem=3 AND titulo='Concorrência e conflito de interesse';
