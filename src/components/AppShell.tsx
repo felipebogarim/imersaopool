@@ -24,7 +24,6 @@ const NAV_BOTTOM = [
   { to: "/agentes", label: "Agentes", icon: UserCog },
   { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
   { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
-  { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
 ] as const;
 
 const REPS = [
