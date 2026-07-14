@@ -229,6 +229,8 @@ export async function exportInterviewPdf(
     estrategicas: "estratégicas",
     estrategico: "estratégico",
     estrategicos: "estratégicos",
+    evidencia: "evidência",
+    evidencias: "evidências",
     execucao: "execução",
     experiencia: "experiência",
     experiencias: "experiências",
@@ -555,9 +557,10 @@ export async function exportInterviewPdf(
     valor_defensavel: "Valor defensável",
     percepcao_marca: "Percepção de marca",
     relato_livre: "Relato livre",
+    evidencias: "Evidências",
   };
   const prettyLabel = (key: string) =>
-    FIELD_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    FIELD_LABELS[key] ?? applyPortugueseAccents(key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
 
   const writeMatrixField = (label: string, value?: string | null) => {
     const text = md(value) || "—";
@@ -682,13 +685,13 @@ export async function exportInterviewPdf(
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       setText(INK);
-      doc.text(cap.titulo, margin + 44, y);
+      doc.text(applyPortugueseAccents(cap.titulo), margin + 44, y);
 
       if (cap.lente_default) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         setText(MUTED);
-        doc.text(`lente · ${cap.lente_default}`, margin + 44, y + 12, { charSpace: 0.5 });
+        doc.text(`lente · ${prettyLabel(String(cap.lente_default)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
       }
 
       setDraw(HAIRLINE);
@@ -870,7 +873,7 @@ export async function exportInterviewPdf(
     doc.setFontSize(26);
     setText(INK);
     const titleW = maxW - 140;
-    const tl = doc.splitTextToSize(cap.titulo, titleW);
+      const tl = doc.splitTextToSize(applyPortugueseAccents(cap.titulo), titleW);
     for (const l of tl) {
       ensure(32);
       doc.text(l, margin, y);
@@ -880,7 +883,7 @@ export async function exportInterviewPdf(
 
     // Lente — texto simples em cyan
     if (cap.lente_default) {
-      const badge = `LENTE · ${String(cap.lente_default).toUpperCase()}`;
+      const badge = `LENTE · ${prettyLabel(String(cap.lente_default)).toUpperCase()}`;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       setText(CYAN);
@@ -948,7 +951,7 @@ export async function exportInterviewPdf(
       doc.setFontSize(14);
       let quotesH = 0;
       for (const q of highlights) {
-        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const text = applyPortugueseAccents(`“${q.replace(/^["“”]|["“”]$/g, "")}”`);
         const lines = doc.splitTextToSize(text, maxW);
         quotesH += lines.length * 22 + 16;
       }
@@ -987,7 +990,7 @@ export async function exportInterviewPdf(
       doc.setFontSize(quoteFontSize);
       setText(INK);
       for (const q of highlights) {
-        const text = `“${q.replace(/^["“”]|["“”]$/g, "")}”`;
+        const text = applyPortugueseAccents(`“${q.replace(/^["“”]|["“”]$/g, "")}”`);
         const lines = doc.splitTextToSize(text, quoteW);
         ensure(lines.length * quoteLineH + 18);
         for (const l of lines) {
