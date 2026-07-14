@@ -338,22 +338,7 @@ function PoolBackupPage() {
   async function excluir(job: Job) {
     if (!confirm("Excluir este backup?")) return;
     if (job.storage_path) {
-      if (job.tipo === "json" || job.tipo === "codigo") {
-        await supabase.storage.from("backups").remove([job.storage_path]);
-      } else {
-        // list & delete recursively (best effort)
-        async function purge(prefix: string) {
-          const { data } = await supabase.storage.from("backups").list(prefix, { limit: 1000 });
-          const files: string[] = [];
-          for (const it of data ?? []) {
-            const full = `${prefix}/${it.name}`;
-            if (!it.id && !it.metadata) await purge(full);
-            else files.push(full);
-          }
-          if (files.length) await supabase.storage.from("backups").remove(files);
-        }
-        await purge(job.storage_path);
-      }
+      await supabase.storage.from("backups").remove([job.storage_path]);
     }
     await supabase.from("backup_jobs").delete().eq("id", job.id);
     await supabase.from("backup_historico").insert({
@@ -361,6 +346,7 @@ function PoolBackupPage() {
       resultado: "ok",
       detalhe: fmtDate(job.created_at),
     });
+
     toast.success("Backup excluído");
     await load();
   }
