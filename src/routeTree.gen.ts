@@ -32,6 +32,9 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
+import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
+import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
@@ -166,6 +169,21 @@ const AuthenticatedClientesIndexRoute =
     path: '/clientes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicBackupRunRoute = ApiPublicBackupRunRouteImport.update({
+  id: '/api/public/backup-run',
+  path: '/api/public/backup-run',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicBackupCodigoRoute = ApiPublicBackupCodigoRouteImport.update({
+  id: '/api/public/backup-codigo',
+  path: '/api/public/backup-codigo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
+  id: '/api/public/backup-audit',
+  path: '/api/public/backup-audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRepresentantesPerformanceRoute =
   AuthenticatedRepresentantesPerformanceRouteImport.update({
     id: '/representantes/performance',
@@ -264,6 +282,9 @@ export interface FileRoutesByFullPath {
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
+  '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
+  '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -300,6 +321,9 @@ export interface FileRoutesByTo {
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
+  '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
+  '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
@@ -338,6 +362,9 @@ export interface FileRoutesById {
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
+  '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
+  '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
@@ -376,6 +403,9 @@ export interface FileRouteTypes {
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/representantes/performance'
+    | '/api/public/backup-audit'
+    | '/api/public/backup-codigo'
+    | '/api/public/backup-run'
     | '/clientes/'
     | '/entrevistas/'
     | '/imersoes/'
@@ -412,6 +442,9 @@ export interface FileRouteTypes {
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/representantes/performance'
+    | '/api/public/backup-audit'
+    | '/api/public/backup-codigo'
+    | '/api/public/backup-run'
     | '/clientes'
     | '/entrevistas'
     | '/imersoes'
@@ -449,6 +482,9 @@ export interface FileRouteTypes {
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/representantes/performance'
+    | '/api/public/backup-audit'
+    | '/api/public/backup-codigo'
+    | '/api/public/backup-run'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
     | '/_authenticated/imersoes/'
@@ -464,6 +500,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   RTokenRoute: typeof RTokenRoute
+  ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
+  ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
+  ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -628,6 +667,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/clientes/'
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/backup-run': {
+      id: '/api/public/backup-run'
+      path: '/api/public/backup-run'
+      fullPath: '/api/public/backup-run'
+      preLoaderRoute: typeof ApiPublicBackupRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/backup-codigo': {
+      id: '/api/public/backup-codigo'
+      path: '/api/public/backup-codigo'
+      fullPath: '/api/public/backup-codigo'
+      preLoaderRoute: typeof ApiPublicBackupCodigoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/backup-audit': {
+      id: '/api/public/backup-audit'
+      path: '/api/public/backup-audit'
+      fullPath: '/api/public/backup-audit'
+      preLoaderRoute: typeof ApiPublicBackupAuditRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/representantes/performance': {
       id: '/_authenticated/representantes/performance'
@@ -827,6 +887,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   RTokenRoute: RTokenRoute,
+  ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
+  ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
+  ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
