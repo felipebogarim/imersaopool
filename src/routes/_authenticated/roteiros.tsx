@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, FileDown } from "lucide-react";
+import { exportRoteiroPdf } from "@/lib/roteiro-pdf";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -125,6 +126,9 @@ function RoteirosPage() {
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => setCreatingCapFor(r.id)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Capítulo
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => exportRoteiroPdf(r)}>
+                    <FileDown className="h-3.5 w-3.5 mr-1" /> PDF
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditingRoteiro(r)}>
                     <Pencil className="h-3.5 w-3.5" />
