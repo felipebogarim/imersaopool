@@ -349,8 +349,34 @@ function PoolBackupPage() {
       toast.success("Download iniciado", { id: toastId });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao baixar o backup", { id: toastId });
+  }
+
+  async function enviarAoDrive(job: Job) {
+    if (!job.storage_path) return;
+    const toastId = toast.loading("Enviando ao Google Drive…");
+    try {
+      const res = await fetch("/api/public/backup-to-drive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+        body: JSON.stringify({ job_id: job.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      toast.success("Backup enviado ao Drive", {
+        id: toastId,
+        description: data?.web_view_link
+          ? "Clique para abrir no Drive"
+          : data?.name ?? undefined,
+        action: data?.web_view_link
+          ? { label: "Abrir", onClick: () => window.open(data.web_view_link, "_blank") }
+          : undefined,
+      });
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao enviar ao Drive", { id: toastId });
     }
   }
+
 
 
   async function excluir(job: Job) {
