@@ -344,6 +344,7 @@ function PerformancePage() {
         metas_status: r.metas_status,
         metas_cores: r.metas_cores,
         total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
       }));
       for (let i = 0; i < payload.length; i += 200) {
         const chunk = payload.slice(i, i + 200);
