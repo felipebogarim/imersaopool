@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   FAROL_CELL_CLASS,
   FAROL_LABEL,
@@ -61,6 +63,8 @@ function PerformancePage() {
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "meta";
     return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
@@ -77,6 +81,23 @@ function PerformancePage() {
     queryKey: ["perf-reps"],
     queryFn: async () =>
       (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
+  });
+
+  // Lista da landing: uma linha por representante com sua última versão ativa
+  const { data: repList = [], isLoading: loadingList } = useQuery({
+    queryKey: ["perf-rep-list"],
+    queryFn: async () => {
+      const { data: ups } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false });
+      const byRep = new Map<string, any>();
+      for (const u of ups ?? []) {
+        if (!byRep.has(u.representative_id)) byRep.set(u.representative_id, u);
+      }
+      return Array.from(byRep.entries()).map(([rid, u]) => ({ rep_id: rid, upload: u }));
+    },
   });
 
   const { data: uploads = [] } = useQuery({
@@ -469,71 +490,239 @@ function PerformancePage() {
     });
   }
 
+  // Exporta a partir da lista (sem abrir o representante)
+  async function exportFromList(rid: string, upload: any) {
+    const rep = reps.find((r: any) => r.id === rid)?.nome ?? "";
+    const { data: rws } = await supabase
+      .from("rep_performance_rows")
+      .select("*")
+      .eq("upload_id", upload.id)
+      .order("ordem");
+    const fams: string[] = (upload.familias as string[]) ?? [];
+    const rowsE = (rws ?? []).map((r: any) => ({
+      razao_social: r.razao_social,
+      categoria: r.categoria,
+      metas: r.metas ?? {},
+      metas_status: r.metas_status ?? {},
+      metas_cores: r.metas_cores ?? {},
+      total_meta: r.total_meta,
+    }));
+    const perFamilia: Record<string, number> = {};
+    let grand = 0;
+    for (const r of rowsE) {
+      for (const f of fams) perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+      grand += fams.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0) || Number(r.total_meta) || 0;
+    }
+    exportPerformanceXlsx({
+      filename: `performance-${rep || "rep"}-${upload.periodo_label}`,
+      representante: rep,
+      periodo: upload.periodo_label,
+      familias: fams,
+      rows: rowsE,
+      totals: { perFamilia, grand },
+    });
+  }
+
+  // Abre editar (substituir versão) a partir da lista
+  function editFromList(rid: string) {
+    setRepId(rid);
+    setUploadId("");
+    setTimeout(() => openUpload("replace"), 0);
+  }
+
+  // Exclui todas as versões (com senha do gestor master) de um representante
+  async function deleteRepConfirmed() {
+    const rid = pwdTargetRep;
+    if (!rid) return;
+    const { data: ups } = await supabase
+      .from("rep_performance_uploads")
+      .select("id")
+      .eq("representative_id", rid);
+    const ids = (ups ?? []).map((u: any) => u.id);
+    if (ids.length) {
+      await supabase.from("rep_performance_rows").delete().in("upload_id", ids);
+      const { error } = await supabase.from("rep_performance_uploads").delete().in("id", ids);
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Performance do representante excluída.");
+    setPwdTargetRep("");
+    qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+    if (repId === rid) {
+      setRepId("");
+      setUploadId("");
+    }
+  }
+
   return (
     <div>
       <PageHeader
         title="Performance"
         subtitle="Metas e desempenho por família de produto"
         actions={
-          <>
-            {!editing ? (
-              <>
-                <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
-                  <Pencil className="h-4 w-4 mr-1" /> Editar metas
-                </Button>
-                <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
-                  <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
-                </Button>
-                <Button variant="outline" onClick={() => openUpload("replace")} disabled={!currentUpload}>
-                  <RefreshCw className="h-4 w-4 mr-1" /> Substituir versão
-                </Button>
-                <Button onClick={() => openUpload("new")}>
-                  <Upload className="h-4 w-4 mr-1" /> Nova planilha
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={cancelEdit}>
-                  <XCircle className="h-4 w-4 mr-1" /> Cancelar
-                </Button>
-                <Button onClick={saveEdit} disabled={busy}>
-                  <Save className="h-4 w-4 mr-1" /> Salvar como nova versão
-                </Button>
-              </>
-            )}
-          </>
+          !repId ? null : !editing ? (
+            <>
+              <Button variant="ghost" onClick={() => { setRepId(""); setUploadId(""); }}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+              </Button>
+              <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
+                <Pencil className="h-4 w-4 mr-1" /> Editar metas
+              </Button>
+              <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
+                <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
+              </Button>
+              <Button variant="outline" onClick={() => openUpload("replace")} disabled={!currentUpload}>
+                <RefreshCw className="h-4 w-4 mr-1" /> Substituir versão
+              </Button>
+              <Button onClick={() => openUpload("new")}>
+                <Upload className="h-4 w-4 mr-1" /> Nova planilha
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={cancelEdit}>
+                <XCircle className="h-4 w-4 mr-1" /> Cancelar
+              </Button>
+              <Button onClick={saveEdit} disabled={busy}>
+                <Save className="h-4 w-4 mr-1" /> Salvar como nova versão
+              </Button>
+            </>
+          )
         }
       />
 
+      {!repId ? (
+        <div className="p-4 sm:p-8">
+          <div className="surface rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Representantes com performance</p>
+                <p className="text-xs text-muted-foreground">
+                  Uma linha por representante. Abra para ver o detalhamento por período.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {repList.length} representante{repList.length === 1 ? "" : "s"}
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      <Upload className="h-4 w-4 mr-1" /> Nova planilha
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                    {reps.length === 0 ? (
+                      <DropdownMenuItem disabled>Nenhum representante</DropdownMenuItem>
+                    ) : (
+                      reps.map((r: any) => (
+                        <DropdownMenuItem
+                          key={r.id}
+                          onClick={() => {
+                            setRepId(r.id);
+                            setUploadId("");
+                            setTimeout(() => openUpload("new"), 0);
+                          }}
+                        >
+                          {r.nome}
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2">Representante</th>
+                    <th className="text-left px-4 py-2">Último período</th>
+                    <th className="text-left px-4 py-2">Atualizada em</th>
+                    <th className="text-left px-4 py-2">Arquivo</th>
+                    <th className="px-2 py-2 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingList ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td>
+                    </tr>
+                  ) : repList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                        Nenhuma planilha de performance carregada ainda.
+                      </td>
+                    </tr>
+                  ) : (
+                    repList.map((item: any) => {
+                      const rep = reps.find((r: any) => r.id === item.rep_id);
+                      const u = item.upload;
+                      return (
+                        <tr
+                          key={item.rep_id}
+                          className="border-t border-border hover:bg-muted/30 cursor-pointer"
+                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}
+                        >
+                          <td className="px-4 py-3 font-medium">{rep?.nome ?? "—"}</td>
+                          <td className="px-4 py-3">{u.periodo_label}</td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground truncate max-w-[280px]">
+                            {u.filename ?? "—"}
+                          </td>
+                          <td className="px-2 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}>
+                                  <ChevronRight className="h-4 w-4 mr-2" /> Abrir
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => exportFromList(item.rep_id, u)}>
+                                  <FileDown className="h-4 w-4 mr-2" /> Exportar planilha
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => editFromList(item.rep_id)}>
+                                  <Pencil className="h-4 w-4 mr-2" /> Editar (nova planilha)
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => { setPwdTargetRep(item.rep_id); setPwdOpen(true); }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+
       <div className="p-4 sm:p-8 space-y-6">
         {/* Seletores */}
-        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Representante</Label>
-            <Select
-              value={repId}
-              onValueChange={(v) => {
-                setRepId(v);
-                setUploadId("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um representante" />
-              </SelectTrigger>
-              <SelectContent>
-                {reps.map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="h-10 flex items-center px-3 rounded-md border border-border bg-muted/30 font-medium truncate">
+              {reps.find((r: any) => r.id === repId)?.nome ?? "—"}
+            </div>
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Versão ativa</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Período (versão)</Label>
             <Select value={effectiveUploadId} onValueChange={setUploadId} disabled={!uploads.length}>
               <SelectTrigger>
-                <SelectValue placeholder={uploads.length ? "Selecione uma versão" : "Nenhuma versão ativa"} />
+                <SelectValue placeholder={uploads.length ? "Selecione um período" : "Nenhuma versão ativa"} />
               </SelectTrigger>
               <SelectContent>
                 {uploads.map((u: any) => (
@@ -558,14 +747,8 @@ function PerformancePage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end">
-            {currentUpload && !editing && (
-              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
-                <Trash2 className="h-4 w-4 mr-1" /> Excluir esta versão
-              </Button>
-            )}
-          </div>
         </div>
+
 
         {/* Resumo executivo */}
         {currentUpload && (
@@ -807,6 +990,9 @@ function PerformancePage() {
           </div>
         )}
       </div>
+      )}
+
+
 
       <Dialog open={dlgOpen} onOpenChange={setDlgOpen}>
         <DialogContent>
@@ -858,6 +1044,14 @@ function PerformancePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PasswordConfirmDialog
+        open={pwdOpen}
+        onOpenChange={(v) => { setPwdOpen(v); if (!v) setPwdTargetRep(""); }}
+        title="Excluir performance do representante"
+        description="Todas as versões e dados de performance deste representante serão removidos. Digite a senha do gestor master para confirmar."
+        onConfirmed={async () => { await deleteRepConfirmed(); }}
+      />
     </div>
   );
 }
