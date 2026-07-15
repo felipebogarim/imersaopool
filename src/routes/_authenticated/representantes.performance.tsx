@@ -437,7 +437,8 @@ function PerformancePage() {
           metas_status: r.metas_status,
           metas_cores: r.metas_cores,
           realizado: r.realizado,
-          total_meta: total || null,
+          total_meta: total || r.total_meta,
+          total_pct_status: r.total_pct_status,
         };
       });
       for (let i = 0; i < payload.length; i += 200) {
