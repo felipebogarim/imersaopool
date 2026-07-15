@@ -50,6 +50,7 @@ type Row = {
   metas_cores: Record<string, string>;
   realizado: Record<string, number>;
   total_meta: number | null;
+  total_pct_status: FarolStatus | null;
 };
 
 function PerformancePage() {
