@@ -880,6 +880,76 @@ function PerformancePage() {
 
         {/* Matriz */}
         <div className="surface rounded-xl overflow-hidden">
+          {currentUpload && (
+            <div className="px-3 py-3 border-b border-border flex flex-wrap items-center gap-2" ref={filtersRef}>
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Buscar razão social…"
+                  value={filterQ}
+                  onChange={(e) => { setFilterQ(e.target.value); setFilterOpen(true); }}
+                  onFocus={() => setFilterOpen(true)}
+                  className="pl-9 pr-8 h-9"
+                />
+                {filterQ && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterQ("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                {filterOpen && razaoSociaisAll.length > 0 && (
+                  <div className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md border border-border bg-popover shadow-md">
+                    {razaoSociaisAll
+                      .filter((n) => n.toLowerCase().includes(filterQ.trim().toLowerCase()))
+                      .map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => { setFilterQ(n); setFilterOpen(false); }}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                          {n}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {CATEGORIA_OPTIONS.map((c) => {
+                  const active = filterCats.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() =>
+                        setFilterCats((prev) => (active ? prev.filter((x) => x !== c) : [...prev, c]))
+                      }
+                      className={cn(
+                        "inline-flex px-2.5 py-1 rounded-full text-xs border transition",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-transparent text-muted-foreground border-border hover:bg-muted",
+                      )}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); }}>
+                  <X className="h-4 w-4 mr-1" /> Limpar
+                </Button>
+              )}
+              <span className="ml-auto text-xs text-muted-foreground">
+                {filteredView.length} de {view.length} clientes
+              </span>
+            </div>
+          )}
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-sm border-collapse">
               <thead className="bg-muted/60 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
@@ -913,9 +983,16 @@ function PerformancePage() {
                       Carregando…
                     </td>
                   </tr>
+                ) : filteredView.length === 0 ? (
+                  <tr>
+                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                      Nenhum cliente encontrado com os filtros atuais.
+                    </td>
+                  </tr>
                 ) : (
                   <>
-                    {view.map((r, rowIdx) => {
+                    {filteredView.map((r) => {
+                      const rowIdx = view.indexOf(r);
                       const totalRow = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
                       return (
                         <tr key={r.id ?? rowIdx} className="border-t border-border">
@@ -956,16 +1033,16 @@ function PerformancePage() {
                       <td className="px-3 py-3 sticky left-[240px] bg-muted/70 z-10"></td>
                       {familias.map((f) => (
                         <td key={f} className="px-3 py-3 text-right tabular-nums">
-                          {fmtBRL(totals.perFamilia[f])}
-                          {resumo.hasRealizado && totals.perFamiliaReal[f] > 0 && (
+                          {fmtBRL(filteredTotals.perFamilia[f])}
+                          {resumo.hasRealizado && filteredTotals.perFamiliaReal[f] > 0 && (
                             <div className="text-[10px] font-normal text-muted-foreground">
-                              real: {fmtBRL(totals.perFamiliaReal[f])} (
-                              {((totals.perFamiliaReal[f] / (totals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
+                              real: {fmtBRL(filteredTotals.perFamiliaReal[f])} (
+                              {((filteredTotals.perFamiliaReal[f] / (filteredTotals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
                             </div>
                           )}
                         </td>
                       ))}
-                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(totals.grand)}</td>
+                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(filteredTotals.grand)}</td>
                     </tr>
                   </>
                 )}
@@ -973,6 +1050,7 @@ function PerformancePage() {
             </table>
           </div>
         </div>
+
 
         {/* Histórico de versões do representante */}
         {repId && (
