@@ -251,7 +251,7 @@ export async function drawIntervieweePage(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", leftX, firstLineY - fontSize * 0.85, { charSpace: 4 });
+  doc.text("ENTREVISTADO", leftX, firstLineY - fontSize * 1.35, { charSpace: 4 });
 
   // Nome
   doc.setFont("helvetica", "bold");
