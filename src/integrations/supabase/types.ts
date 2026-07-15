@@ -1622,6 +1622,7 @@ export type Database = {
           razao_social: string
           realizado: Json
           total_meta: number | null
+          total_pct_status: string | null
           upload_id: string
         }
         Insert: {
@@ -1638,6 +1639,7 @@ export type Database = {
           razao_social: string
           realizado?: Json
           total_meta?: number | null
+          total_pct_status?: string | null
           upload_id: string
         }
         Update: {
@@ -1654,6 +1656,7 @@ export type Database = {
           razao_social?: string
           realizado?: Json
           total_meta?: number | null
+          total_pct_status?: string | null
           upload_id?: string
         }
         Relationships: [
