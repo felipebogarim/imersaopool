@@ -866,6 +866,63 @@ export type Database = {
         }
         Relationships: []
       }
+      event_orders_test: {
+        Row: {
+          confirmation_email_sent_at: string | null
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          pacote: string
+          pacote_titulo: string
+          paid_at: string | null
+          participante_email: string
+          participante_nome: string
+          participante_telefone: string | null
+          payment_method: string | null
+          raw: Json | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          pacote: string
+          pacote_titulo: string
+          paid_at?: string | null
+          participante_email: string
+          participante_nome: string
+          participante_telefone?: string | null
+          payment_method?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          confirmation_email_sent_at?: string | null
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          pacote?: string
+          pacote_titulo?: string
+          paid_at?: string | null
+          participante_email?: string
+          participante_nome?: string
+          participante_telefone?: string | null
+          payment_method?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       familias_produto: {
         Row: {
           ativo: boolean
