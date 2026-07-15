@@ -1243,6 +1243,9 @@ function MatrixCell({
   const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : row.metas_status?.[familia] ?? null;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
+  // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
+  const isFaixaMode = !!row.metas_status?.[familia] && meta === 0 && real === 0;
+
   if (editing) {
     return (
       <td className={cn("px-1.5 py-1 text-right", cls)}>
@@ -1256,12 +1259,19 @@ function MatrixCell({
     );
   }
 
+  if (isFaixaMode && status) {
+    return (
+      <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>
+        {FAROL_FAIXA_TEXT[status]}
+      </td>
+    );
+  }
+
   const display = (() => {
     if (viewMode === "meta") return meta > 0 ? fmtBRL(meta) : "";
     if (viewMode === "realizado") return real > 0 ? fmtBRL(real) : "";
     if (viewMode === "percentual") return pct != null ? `${pct.toFixed(1)}%` : "";
-    // completo
-    if (real > 0 && meta > 0) return null; // multi-linha abaixo
+    if (real > 0 && meta > 0) return null;
     return meta > 0 ? fmtBRL(meta) : "";
   })();
 
