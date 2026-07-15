@@ -768,13 +768,16 @@ export async function exportInterviewPdf(
 
     if (hasSumario) {
       // Modelo novo — três cards: Sumário Executivo · Capítulos · Tabelas
+      // Layout: coluna esquerda com número grande + eyebrow empilhados;
+      // coluna direita com a headline centralizada verticalmente.
       const drawStatCard = (
         big: string,
         eyebrow: string,
         headline: string,
         variant: "surface" | "navy",
+        eyebrowPos: "above" | "below",
       ) => {
-        const cardH = 150;
+        const cardH = 160;
         ensure(cardH + 16);
         const top = y;
         if (variant === "surface") {
@@ -791,53 +794,80 @@ export async function exportInterviewPdf(
           doc.rect(margin + 4, top, 4, cardH, "F");
         }
 
+        // Coluna esquerda: número grande + eyebrow empilhados
+        const leftPad = 32;
+        const colLeftX = margin + leftPad;
+        const colLeftW = 200;
+
+        // Auto-fit do número grande
         doc.setFont("helvetica", "bold");
-        let bigSize = 78;
+        let bigSize = 64;
         doc.setFontSize(bigSize);
-        while (doc.getTextWidth(big) > 170 && bigSize > 40) {
-          bigSize -= 6;
+        while (doc.getTextWidth(big) > colLeftW - 8 && bigSize > 32) {
+          bigSize -= 4;
           doc.setFontSize(bigSize);
         }
-        setText(CYAN);
-        doc.text(big, margin + 32, top + cardH / 2 + bigSize / 3);
-        const bigW = doc.getTextWidth(big);
 
-        const tx = margin + 32 + bigW + 28;
-        const tw = maxW - (tx - margin) - 20;
+        const eyebrowSize = 8;
+        const eyebrowGap = 10;
+        const stackH = bigSize + eyebrowGap + eyebrowSize;
+        const stackTop = top + (cardH - stackH) / 2;
+
+        const eyebrowColor = variant === "navy" ? [160, 205, 220] as [number, number, number] : CYAN_DEEP;
+
+        if (eyebrowPos === "above") {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(eyebrowSize);
+          setText(eyebrowColor);
+          doc.text(eyebrow.toUpperCase(), colLeftX, stackTop + eyebrowSize, { charSpace: 2 });
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(bigSize);
+          setText(CYAN);
+          doc.text(big, colLeftX, stackTop + eyebrowSize + eyebrowGap + bigSize * 0.85);
+        } else {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(bigSize);
+          setText(CYAN);
+          doc.text(big, colLeftX, stackTop + bigSize * 0.85);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(eyebrowSize);
+          setText(eyebrowColor);
+          doc.text(eyebrow.toUpperCase(), colLeftX, stackTop + bigSize + eyebrowGap + eyebrowSize, { charSpace: 2 });
+        }
+
+        // Coluna direita: headline
+        const tx = margin + leftPad + colLeftW + 24;
+        const tw = maxW - (tx - margin) - 24;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        setText(variant === "navy" ? [160, 205, 220] : CYAN_DEEP);
-        doc.text(eyebrow.toUpperCase(), tx, top + 50, { charSpace: 1.5 });
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
+        doc.setFontSize(15);
         setText(variant === "navy" ? [255, 255, 255] : INK);
         const lines = doc.splitTextToSize(headline, tw);
-        let ly = top + 76;
+        const lineH = 20;
+        const blockH = Math.min(lines.length, 3) * lineH;
+        let ly = top + (cardH - blockH) / 2 + 14;
         for (const line of lines.slice(0, 3)) {
           doc.text(line, tx, ly);
-          ly += 22;
+          ly += lineH;
         }
         y = top + cardH + 16;
       };
 
-      drawStatCard(
-        "1",
-        "Sumário executivo",
-        "Tudo resumido em uma página.",
-        "surface",
-      );
+      drawStatCard("1", "Sumário executivo", "Tudo resumido em uma página.", "surface", "below");
       drawStatCard(
         `${totalCaps} de ${totalCaps}`,
         "Capítulos",
         "Permitem acesso a uma visão mais detalhada e organizada por assuntos.",
         "navy",
+        "above",
       );
       drawStatCard(
         `${campoFilled}`,
         "Tabelas",
         "Sintetizam as principais ideias de cada capítulo.",
         "surface",
+        "below",
       );
+
     } else {
       // Modelo antigo (compatibilidade retroativa) — cobertura + tabelas
       const cardTop = y;
