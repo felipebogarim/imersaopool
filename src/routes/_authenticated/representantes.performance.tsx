@@ -17,6 +17,7 @@ import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   FAROL_CELL_CLASS,
+  FAROL_FAIXA_TEXT,
   FAROL_LABEL,
   FAROL_ORDER,
   catBadge,
