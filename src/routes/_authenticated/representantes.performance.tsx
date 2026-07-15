@@ -684,33 +684,18 @@ function PerformancePage() {
 
       <div className="p-4 sm:p-8 space-y-6">
         {/* Seletores */}
-        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Representante</Label>
-            <Select
-              value={repId}
-              onValueChange={(v) => {
-                setRepId(v);
-                setUploadId("");
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um representante" />
-              </SelectTrigger>
-              <SelectContent>
-                {reps.map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="h-10 flex items-center px-3 rounded-md border border-border bg-muted/30 font-medium truncate">
+              {reps.find((r: any) => r.id === repId)?.nome ?? "—"}
+            </div>
           </div>
           <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Versão ativa</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Período (versão)</Label>
             <Select value={effectiveUploadId} onValueChange={setUploadId} disabled={!uploads.length}>
               <SelectTrigger>
-                <SelectValue placeholder={uploads.length ? "Selecione uma versão" : "Nenhuma versão ativa"} />
+                <SelectValue placeholder={uploads.length ? "Selecione um período" : "Nenhuma versão ativa"} />
               </SelectTrigger>
               <SelectContent>
                 {uploads.map((u: any) => (
@@ -735,14 +720,8 @@ function PerformancePage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end">
-            {currentUpload && !editing && (
-              <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
-                <Trash2 className="h-4 w-4 mr-1" /> Excluir esta versão
-              </Button>
-            )}
-          </div>
         </div>
+
 
         {/* Resumo executivo */}
         {currentUpload && (
