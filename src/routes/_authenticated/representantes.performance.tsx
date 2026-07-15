@@ -966,12 +966,13 @@ function PerformancePage() {
                   <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted/80 z-30 min-w-[110px]">
                     Categoria
                   </th>
+                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted/80">Total meta</th>
+                  <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted/80">Total %</th>
                   {familias.map((f) => (
-                    <th key={f} className="text-right px-3 py-3 whitespace-nowrap min-w-[140px]">
+                    <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px]">
                       {f}
                     </th>
                   ))}
-                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[140px] bg-muted/80">Meta total</th>
                 </tr>
               </thead>
               <tbody>
