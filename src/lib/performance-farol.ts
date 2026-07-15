@@ -59,6 +59,36 @@ export const FAROL_HEX: Record<FarolStatus, string> = {
 };
 
 /** Deriva status a partir de um percentual (0–∞) */
+// Texto curto exibido dentro da célula colorida (novo formato da planilha).
+export const FAROL_FAIXA_TEXT: Record<FarolStatus, string> = {
+  sem_compra: "0%",
+  abaixo_meta: "<50",
+  pode_melhorar: "50-69",
+  proximo: "70-89",
+  otimo: "90-100",
+  excelente: ">100",
+};
+
+/** Converte a string de faixa da planilha (ex.: "0%", "<50", "50-69", ">100") em FarolStatus. */
+export function statusFromFaixa(text: string | null | undefined): FarolStatus | null {
+  if (text == null) return null;
+  const s = String(text).trim().toLowerCase().replace(/\s+/g, "");
+  if (!s) return null;
+  if (s === "0%" || s === "0" || s === "sem" || s === "semcompra") return "sem_compra";
+  if (s.startsWith("<50") || s === "<50%") return "abaixo_meta";
+  if (s.startsWith(">100") || s === ">100%" || s === "acima100") return "excelente";
+  // ranges "50-69", "70-89", "90-100" (aceita en-dash "–" e "a")
+  const m = s.match(/^(\d+)\s*[-–a]\s*(\d+)/);
+  if (m) {
+    const lo = parseInt(m[1], 10);
+    if (lo >= 90) return "otimo";
+    if (lo >= 70) return "proximo";
+    if (lo >= 50) return "pode_melhorar";
+    if (lo >= 0) return "abaixo_meta";
+  }
+  return null;
+}
+
 export function statusFromPercent(p: number | null | undefined): FarolStatus | null {
   if (p == null || Number.isNaN(p)) return null;
   if (p <= 0) return "sem_compra";
