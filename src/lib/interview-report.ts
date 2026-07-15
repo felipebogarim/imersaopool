@@ -662,6 +662,25 @@ export async function exportInterviewPdf(
 
   y = cardTop + cardH + 32;
 
+  // Sumário Executivo (opcional) — vem do ingest do "Relatório final"
+  const sumario = ((interview.respostas as any)?.__sumario_executivo__ ?? null) as
+    | {
+        sintese_geral?: string;
+        sinais_prioritarios?: Array<{ key: string; value: string }>;
+        risco_estrategico?: string;
+        agenda_prioritaria?: Array<{ key: string; value: string }>;
+        sintese_final?: string;
+      }
+    | null;
+  const hasSumario = !!(
+    sumario &&
+    (sumario.sintese_geral ||
+      sumario.risco_estrategico ||
+      sumario.sintese_final ||
+      sumario.sinais_prioritarios?.length ||
+      sumario.agenda_prioritaria?.length)
+  );
+
   // Navegação
   if (capitulos.length) {
     doc.setFont("helvetica", "bold");
@@ -674,24 +693,33 @@ export async function exportInterviewPdf(
     doc.line(margin, y, margin + maxW, y);
     y += 16;
 
-    capitulos.forEach((cap: any) => {
+    const navItems: Array<{ ordem: string; titulo: string; lente?: string | null }> = [];
+    if (hasSumario) navItems.push({ ordem: "00", titulo: "Sumário executivo" });
+    for (const cap of capitulos as any[]) {
+      navItems.push({
+        ordem: String(cap.ordem).padStart(2, "0"),
+        titulo: cap.titulo,
+        lente: cap.lente_default,
+      });
+    }
+
+    navItems.forEach((item) => {
       ensure(34);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
       setText(CYAN);
-      const numStr = String(cap.ordem).padStart(2, "0");
-      doc.text(numStr, margin, y + 4);
+      doc.text(item.ordem, margin, y + 4);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       setText(INK);
-      doc.text(applyPortugueseAccents(cap.titulo), margin + 44, y);
+      doc.text(applyPortugueseAccents(item.titulo), margin + 44, y);
 
-      if (cap.lente_default) {
+      if (item.lente) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         setText(MUTED);
-        doc.text(`lente · ${prettyLabel(String(cap.lente_default)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
+        doc.text(`lente · ${prettyLabel(String(item.lente)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
       }
 
       setDraw(HAIRLINE);
@@ -700,6 +728,7 @@ export async function exportInterviewPdf(
       y += 30;
     });
   }
+
 
 
   // ————————————————————————— PANORAMA (dashboard visual) —————————————————————————
