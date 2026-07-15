@@ -419,6 +419,18 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
       await supabase.from("interviews").update({ observacoes: merged }).eq("id", interview.id);
     }
 
-    return { filled, total: capitulos.length, unmatched, observacoes };
+    // Persiste Sumário Executivo em interviews.respostas.__sumario_executivo__
+    if (sumario) {
+      const { data: curInt } = await supabase
+        .from("interviews")
+        .select("respostas")
+        .eq("id", interview.id)
+        .maybeSingle();
+      const prev = (curInt?.respostas ?? {}) as Record<string, any>;
+      const nextRespostas = { ...prev, __sumario_executivo__: sumario };
+      await supabase.from("interviews").update({ respostas: nextRespostas }).eq("id", interview.id);
+    }
 
+    return { filled, total: capitulos.length, unmatched, observacoes, sumario };
   });
+
