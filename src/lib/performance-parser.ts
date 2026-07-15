@@ -1,9 +1,11 @@
 // Parser da planilha Excel de metas/desempenho por representante.
-// Usa xlsx-js-style para conseguir ler a cor de fundo de cada célula
-// (a lib "xlsx" pura não expõe estilos).
+// Suporta o formato AJUSTADO (novo): cabeçalho na linha 1 com
+// [RAZÃO SOCIAL, CATEGORIA, TOTAL META, TOTAL %, <famílias...>] e valores
+// de família como faixa em texto ("0%", "<50", "50-69", "70-89", "90-100", ">100").
+// Também mantém compatibilidade retroativa com o formato antigo (numérico + cor).
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromHex, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromHex, type FarolStatus } from "./performance-farol";
 
 export type ParsedRow = {
   ordem: number;
@@ -13,6 +15,7 @@ export type ParsedRow = {
   metas_status: Record<string, FarolStatus>;
   metas_cores: Record<string, string>; // hex sem "#"
   total_meta: number | null;
+  total_pct_status: FarolStatus | null;
 };
 
 export type ParsedSheet = {
@@ -22,22 +25,30 @@ export type ParsedSheet = {
   rows: ParsedRow[];
 };
 
-function parseRule(s: string): { min: number | null; max: number | null } {
-  const nums = Array.from(s.matchAll(/(\d+[.,]?\d*)/g)).map((m) =>
-    parseFloat(m[1].replace(",", ".")),
-  );
-  const lower = s.toLowerCase();
-  if (lower.includes("acima")) return { min: nums[0] ?? null, max: null };
-  if (lower.includes("abaixo")) return { min: null, max: nums[0] ?? null };
-  if (nums.length >= 2) return { min: nums[0], max: nums[1] };
-  if (nums.length === 1) return { min: nums[0], max: nums[0] };
-  return { min: null, max: null };
-}
-
 function cellHex(cell: any): string | null {
   const fg = cell?.s?.fill?.fgColor?.rgb ?? cell?.s?.fill?.bgColor?.rgb ?? null;
   if (!fg) return null;
-  return String(fg).replace(/^#/, "").toUpperCase();
+  const s = String(fg).replace(/^#/, "").toUpperCase();
+  // 00000000 = "sem preenchimento" em muitos exports
+  if (/^0{6,8}$/.test(s)) return null;
+  return s;
+}
+
+function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "antigo" } | null {
+  for (let r = 0; r < Math.min(grid.length, 25); r++) {
+    const row = grid[r] ?? [];
+    const a = String(row[0]?.v ?? "").trim().toUpperCase();
+    const b = String(row[1]?.v ?? "").trim().toUpperCase();
+    const c = String(row[2]?.v ?? "").trim().toUpperCase();
+    const d = String(row[3]?.v ?? "").trim().toUpperCase();
+    if ((a === "RAZÃO SOCIAL" || a === "RAZAO SOCIAL" || a === "GRUPO") && b === "CATEGORIA") {
+      if (c.startsWith("TOTAL META") && d.startsWith("TOTAL")) {
+        return { row: r, layout: "novo" };
+      }
+      return { row: r, layout: "antigo" };
+    }
+  }
+  return null;
 }
 
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
@@ -46,7 +57,6 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   if (!ws) throw new Error("Planilha vazia.");
   const range = XLSXStyle.utils.decode_range(ws["!ref"] || "A1");
 
-  // Grade [row][col] com a célula "crua" (para ler cor) e valor.
   const grid: { v: any; c: string | null }[][] = [];
   for (let r = range.s.r; r <= range.e.r; r++) {
     const row: { v: any; c: string | null }[] = [];
@@ -58,20 +68,80 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
     grid.push(row);
   }
 
-  // Localizar linha de cabeçalho: col 0 = GRUPO/RAZÃO SOCIAL, col 1 = CATEGORIA
-  let headerRow = -1;
-  for (let r = 0; r < Math.min(grid.length, 25); r++) {
-    const a = String(grid[r]?.[0]?.v ?? "").trim().toUpperCase();
-    const b = String(grid[r]?.[1]?.v ?? "").trim().toUpperCase();
-    if ((a === "GRUPO" || a.startsWith("RAZAO") || a.startsWith("RAZÃO")) && b === "CATEGORIA") {
-      headerRow = r;
-      break;
+  const head = findHeaderRow(grid);
+  if (!head) throw new Error("Cabeçalho não encontrado (linha com RAZÃO SOCIAL + CATEGORIA).");
+
+  if (head.layout === "novo") {
+    return parseNovo(grid, head.row);
+  }
+  return parseAntigo(grid, head.row);
+}
+
+// ---------- Novo formato (planilha ajustada) ----------
+function parseNovo(
+  grid: { v: any; c: string | null }[][],
+  headerRow: number,
+): ParsedSheet {
+  const hdr = grid[headerRow] ?? [];
+  // colunas: 0 Razão, 1 Categoria, 2 Total Meta, 3 Total %, 4.. famílias
+  const familias: string[] = [];
+  const famCols: number[] = [];
+  for (let c = 4; c < hdr.length; c++) {
+    const v = hdr[c]?.v;
+    if (v && String(v).trim()) {
+      familias.push(String(v).trim());
+      famCols.push(c);
     }
   }
-  if (headerRow < 0)
-    throw new Error("Cabeçalho não encontrado (linha com GRUPO/RAZÃO SOCIAL + CATEGORIA).");
 
-  // Famílias na linha acima do cabeçalho
+  const rows: ParsedRow[] = [];
+  let ordem = 0;
+  for (let r = headerRow + 1; r < grid.length; r++) {
+    const row = grid[r] ?? [];
+    const razao = String(row[0]?.v ?? "").trim();
+    if (!razao) continue;
+    const razaoU = razao.toUpperCase();
+    if (razaoU.startsWith("TOTAL")) continue; // linha "TOTAL GERAL DA META"
+    const categoria = String(row[1]?.v ?? "").trim();
+    // pode acontecer linha "FAIXA %" abaixo do cabeçalho — pular
+    if (!categoria && !famCols.some((c) => typeof row[c]?.v === "string" && /^\d/.test(String(row[c]?.v).trim()) === false)) {
+      // heurística fraca; segue por segurança
+    }
+    if (razaoU === "FAIXA %" || razaoU === "FAIXA%") continue;
+
+    const total_meta = typeof row[2]?.v === "number" ? (row[2].v as number) : null;
+    const total_pct_status = statusFromFaixa(row[3]?.v);
+
+    const metas: Record<string, number> = {};
+    const metas_status: Record<string, FarolStatus> = {};
+    const metas_cores: Record<string, string> = {};
+    familias.forEach((f, i) => {
+      const cell = row[famCols[i]];
+      const st = statusFromFaixa(cell?.v);
+      if (st) metas_status[f] = st;
+      if (cell?.c) metas_cores[f] = cell.c;
+    });
+
+    rows.push({
+      ordem: ordem++,
+      razao_social: razao,
+      categoria: categoria || null,
+      metas,
+      metas_status,
+      metas_cores,
+      total_meta,
+      total_pct_status,
+    });
+  }
+
+  return { familias, categoriaMetas: {}, escala: [], rows };
+}
+
+// ---------- Formato antigo (mantido para compatibilidade) ----------
+function parseAntigo(
+  grid: { v: any; c: string | null }[][],
+  headerRow: number,
+): ParsedSheet {
   const famRow = grid[headerRow - 1] ?? [];
   const familias: string[] = [];
   const famCols: number[] = [];
@@ -84,7 +154,6 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   }
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
 
-  // Metas por categoria e escala (linhas acima do cabeçalho)
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
   const CATS = ["BLACK", "GOLD", "SILVER", "BRONZE", "DIAMOND", "PLATINUM"];
@@ -99,13 +168,6 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
         categoriaMetas[kU.charAt(0) + kU.slice(1).toLowerCase()] = val;
       }
     }
-    for (const cell of row) {
-      const s = String(cell?.v ?? "").trim();
-      if (s && /=/.test(s) && /%/.test(s)) {
-        const [labelRaw, ruleRaw] = s.split("=");
-        escala.push({ label: labelRaw.trim(), ...parseRule(ruleRaw) });
-      }
-    }
   }
 
   const rows: ParsedRow[] = [];
@@ -115,7 +177,6 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
     const razao = String(row[0]?.v ?? "").trim();
     const categoria = String(row[1]?.v ?? "").trim();
     if (!razao) continue;
-    // pula linha de totais (sem categoria + número na col 2)
     if (!categoria && typeof row[2]?.v === "number") continue;
 
     const metas: Record<string, number> = {};
@@ -139,6 +200,7 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
       metas_status,
       metas_cores,
       total_meta: total,
+      total_pct_status: null,
     });
   }
 
