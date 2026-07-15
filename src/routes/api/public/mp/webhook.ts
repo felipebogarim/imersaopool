@@ -124,15 +124,13 @@ export const Route = createFileRoute("/api/public/mp/webhook")({
         const newStatus = mapStatus(payment.status);
         const isApproval = newStatus === "approved";
 
-        const updates: Record<string, unknown> = {
+        const updates = {
           status: newStatus,
           mp_payment_id: String(payment.id),
           payment_method: payment.payment_method_id ?? payment.payment_type_id ?? null,
           raw: payment as unknown as Record<string, unknown>,
+          ...(isApproval ? { paid_at: payment.date_approved ?? new Date().toISOString() } : {}),
         };
-        if (isApproval) {
-          updates.paid_at = payment.date_approved ?? new Date().toISOString();
-        }
 
         const { error: updErr } = await supabaseAdmin
           .from("event_orders")
