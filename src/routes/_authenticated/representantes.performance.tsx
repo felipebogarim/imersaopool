@@ -978,7 +978,7 @@ function PerformancePage() {
               <tbody>
                 {!currentUpload ? (
                   <tr>
-                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
                       {repId
                         ? 'Nenhuma planilha importada para este representante. Clique em "Nova planilha".'
                         : "Selecione um representante."}
@@ -986,13 +986,13 @@ function PerformancePage() {
                   </tr>
                 ) : view.length === 0 ? (
                   <tr>
-                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
                       Carregando…
                     </td>
                   </tr>
                 ) : filteredView.length === 0 ? (
                   <tr>
-                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
                       Nenhum cliente encontrado com os filtros atuais.
                     </td>
                   </tr>
@@ -1001,6 +1001,7 @@ function PerformancePage() {
                     {filteredView.map((r) => {
                       const rowIdx = view.indexOf(r);
                       const totalRow = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+                      const totalPctCls = r.total_pct_status ? FAROL_CELL_CLASS[r.total_pct_status] : "";
                       return (
                         <tr key={r.id ?? rowIdx} className="border-t border-border">
                           <td
@@ -1019,6 +1020,18 @@ function PerformancePage() {
                               {r.categoria ?? "—"}
                             </span>
                           </td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/20">
+                            {fmtBRL(r.total_meta ?? totalRow)}
+                          </td>
+                          <td className={cn("px-2 py-1 text-center", totalPctCls)}>
+                            {r.total_pct_status ? (
+                              <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
+                                {FAROL_FAIXA_TEXT[r.total_pct_status]}
+                              </span>
+                            ) : (
+                              ""
+                            )}
+                          </td>
                           {familias.map((f) => (
                             <MatrixCell
                               key={f}
@@ -1029,27 +1042,29 @@ function PerformancePage() {
                               onChange={(v) => updateCell(rowIdx, f, v)}
                             />
                           ))}
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/30">
-                            {fmtBRL(totalRow || r.total_meta)}
-                          </td>
                         </tr>
                       );
                     })}
                     <tr className="border-t-2 border-border bg-muted/40 font-semibold sticky bottom-0">
                       <td className="px-3 py-3 sticky left-0 bg-muted/70 z-10">TOTAL</td>
                       <td className="px-3 py-3 sticky left-[240px] bg-muted/70 z-10"></td>
+                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">
+                        {fmtBRL(filteredTotals.grand)}
+                      </td>
+                      <td className="px-3 py-3 bg-muted/70"></td>
                       {familias.map((f) => (
-                        <td key={f} className="px-3 py-3 text-right tabular-nums">
-                          {fmtBRL(filteredTotals.perFamilia[f])}
-                          {resumo.hasRealizado && filteredTotals.perFamiliaReal[f] > 0 && (
-                            <div className="text-[10px] font-normal text-muted-foreground">
-                              real: {fmtBRL(filteredTotals.perFamiliaReal[f])} (
-                              {((filteredTotals.perFamiliaReal[f] / (filteredTotals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
-                            </div>
-                          )}
+                        <td key={f} className="px-3 py-3 text-center tabular-nums text-xs text-muted-foreground">
+                          {(() => {
+                            const counts: Record<string, number> = {};
+                            for (const row of filteredView) {
+                              const s = row.metas_status?.[f];
+                              if (s) counts[s] = (counts[s] ?? 0) + 1;
+                            }
+                            const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                            return top ? `${top[1]}× ${FAROL_FAIXA_TEXT[top[0] as FarolStatus]}` : "—";
+                          })()}
                         </td>
                       ))}
-                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(filteredTotals.grand)}</td>
                     </tr>
                   </>
                 )}
