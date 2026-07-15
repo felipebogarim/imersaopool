@@ -55,6 +55,7 @@ import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/pu
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
+import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
 import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
 
 const AuthRoute = AuthRouteImport.update({
@@ -305,6 +306,11 @@ const AuthenticatedClientesIdEditarRoute =
     path: '/editar',
     getParentRoute: () => AuthenticatedClientesIdRoute,
   } as any)
+const ApiPublicMpTestWebhookRoute = ApiPublicMpTestWebhookRouteImport.update({
+  id: '/api/public/mp/test/webhook',
+  path: '/api/public/mp/test/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMpTestCreatePreferenceRoute =
   ApiPublicMpTestCreatePreferenceRouteImport.update({
     id: '/api/public/mp/test/create-preference',
@@ -359,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -407,6 +414,7 @@ export interface FileRoutesByTo {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -457,6 +465,7 @@ export interface FileRoutesById {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   id:
     | '__root__'
     | '/'
@@ -604,6 +615,7 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -623,6 +635,7 @@ export interface RootRouteChildren {
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicMpTestCreatePreferenceRoute: typeof ApiPublicMpTestCreatePreferenceRoute
+  ApiPublicMpTestWebhookRoute: typeof ApiPublicMpTestWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -949,6 +962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdEditarRouteImport
       parentRoute: typeof AuthenticatedClientesIdRoute
     }
+    '/api/public/mp/test/webhook': {
+      id: '/api/public/mp/test/webhook'
+      path: '/api/public/mp/test/webhook'
+      fullPath: '/api/public/mp/test/webhook'
+      preLoaderRoute: typeof ApiPublicMpTestWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp/test/create-preference': {
       id: '/api/public/mp/test/create-preference'
       path: '/api/public/mp/test/create-preference'
@@ -1082,6 +1102,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicMpTestCreatePreferenceRoute: ApiPublicMpTestCreatePreferenceRoute,
+  ApiPublicMpTestWebhookRoute: ApiPublicMpTestWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
