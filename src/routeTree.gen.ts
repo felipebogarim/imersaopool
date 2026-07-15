@@ -13,6 +13,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
+import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
+import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
+import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
@@ -46,6 +50,8 @@ import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
+import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
+import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
@@ -67,6 +73,26 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoSucessoRoute = EventoSucessoRouteImport.update({
+  id: '/evento/sucesso',
+  path: '/evento/sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoPendenteRoute = EventoPendenteRouteImport.update({
+  id: '/evento/pendente',
+  path: '/evento/pendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoFalhaRoute = EventoFalhaRouteImport.update({
+  id: '/evento/falha',
+  path: '/evento/falha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
+  id: '/evento/checkout',
+  path: '/evento/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
@@ -249,6 +275,17 @@ const AuthenticatedAdminBackupRoute =
     path: '/backup',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
+  id: '/api/public/mp/webhook',
+  path: '/api/public/mp/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicMpCreatePreferenceRoute =
+  ApiPublicMpCreatePreferenceRouteImport.update({
+    id: '/api/public/mp/create-preference',
+    path: '/api/public/mp/create-preference',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
     id: '/permissoes/$type/$id',
@@ -284,6 +321,10 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -308,6 +349,8 @@ export interface FileRoutesByFullPath {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -325,6 +368,10 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -349,6 +396,8 @@ export interface FileRoutesByTo {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -368,6 +417,10 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
+  '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -392,6 +445,8 @@ export interface FileRoutesById {
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
+  '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -411,6 +466,10 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/permissoes'
@@ -435,6 +494,8 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
+    | '/api/public/mp/create-preference'
+    | '/api/public/mp/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -452,6 +513,10 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/permissoes'
@@ -476,6 +541,8 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
+    | '/api/public/mp/create-preference'
+    | '/api/public/mp/webhook'
   id:
     | '__root__'
     | '/'
@@ -494,6 +561,10 @@ export interface FileRouteTypes {
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
+    | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/permissoes'
@@ -518,18 +589,26 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
+    | '/api/public/mp/create-preference'
+    | '/api/public/mp/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  EventoCheckoutRoute: typeof EventoCheckoutRoute
+  EventoFalhaRoute: typeof EventoFalhaRoute
+  EventoPendenteRoute: typeof EventoPendenteRoute
+  EventoSucessoRoute: typeof EventoSucessoRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
+  ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
+  ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -560,6 +639,34 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/sucesso': {
+      id: '/evento/sucesso'
+      path: '/evento/sucesso'
+      fullPath: '/evento/sucesso'
+      preLoaderRoute: typeof EventoSucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/pendente': {
+      id: '/evento/pendente'
+      path: '/evento/pendente'
+      fullPath: '/evento/pendente'
+      preLoaderRoute: typeof EventoPendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/falha': {
+      id: '/evento/falha'
+      path: '/evento/falha'
+      fullPath: '/evento/falha'
+      preLoaderRoute: typeof EventoFalhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/checkout': {
+      id: '/evento/checkout'
+      path: '/evento/checkout'
+      fullPath: '/evento/checkout'
+      preLoaderRoute: typeof EventoCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/roteiros': {
@@ -793,6 +900,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBackupRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/mp/webhook': {
+      id: '/api/public/mp/webhook'
+      path: '/api/public/mp/webhook'
+      fullPath: '/api/public/mp/webhook'
+      preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/mp/create-preference': {
+      id: '/api/public/mp/create-preference'
+      path: '/api/public/mp/create-preference'
+      fullPath: '/api/public/mp/create-preference'
+      preLoaderRoute: typeof ApiPublicMpCreatePreferenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/permissoes/$type/$id': {
       id: '/_authenticated/permissoes/$type/$id'
       path: '/permissoes/$type/$id'
@@ -927,23 +1048,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  EventoCheckoutRoute: EventoCheckoutRoute,
+  EventoFalhaRoute: EventoFalhaRoute,
+  EventoPendenteRoute: EventoPendenteRoute,
+  EventoSucessoRoute: EventoSucessoRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
+  ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
+  ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
