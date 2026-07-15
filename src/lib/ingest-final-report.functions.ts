@@ -83,8 +83,109 @@ type ParsedChapter = {
   evidencia: string;
 };
 
-function parseFinalReport(md: string): { chapters: ParsedChapter[]; observacoes: string } {
-  const lines = md.split(/\r?\n/);
+export type SumarioExecutivo = {
+  sintese_geral?: string;
+  sinais_prioritarios?: Array<{ key: string; value: string }>;
+  risco_estrategico?: string;
+  agenda_prioritaria?: Array<{ key: string; value: string }>;
+  sintese_final?: string;
+};
+
+function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
+  // Locate "## Sumário executivo" block; ends at next "## " heading.
+  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
+  const m = md.match(re);
+  if (!m) return null;
+  const start = m.index! + m[0].length;
+  const rest = md.slice(start);
+  const nextH = rest.search(/^\s*##\s+/m);
+  const block = nextH === -1 ? rest : rest.slice(0, nextH);
+
+  const lines = block.split(/\r?\n/);
+  const sum: SumarioExecutivo = {};
+  type Sec = "sintese_geral" | "sinais" | "risco" | "agenda" | "final" | null;
+  let sec: Sec = null;
+  const textBuf: Record<string, string[]> = {
+    sintese_geral: [],
+    risco: [],
+    final: [],
+  };
+  const sinais: Array<{ key: string; value: string }> = [];
+  const agenda: Array<{ key: string; value: string }> = [];
+
+  const matchLabel = (raw: string): Sec | undefined => {
+    const t = raw.replace(/^\s*\*+\s*|\s*\*+\s*:?\s*$/g, "").trim();
+    const n = normalize(t);
+    if (!n) return undefined;
+    if (n.startsWith("sintese geral")) return "sintese_geral";
+    if (n.startsWith("sinais prioritarios") || n.startsWith("sinais")) return "sinais";
+    if (n.startsWith("risco estrategico") || n.startsWith("risco")) return "risco";
+    if (n.startsWith("agenda prioritaria") || n.startsWith("agenda")) return "agenda";
+    if (n.startsWith("sintese final")) return "final";
+    return undefined;
+  };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, "");
+    if (!line.trim()) continue;
+    // Label lines: **Something** or **Something:** possibly on own line
+    const lbl = line.match(/^\s*\*\*(.+?)\*\*\s*:?\s*$/);
+    if (lbl) {
+      const s = matchLabel(lbl[1]);
+      if (s !== undefined) {
+        sec = s;
+        continue;
+      }
+    }
+    if (sec === "sinais" || sec === "agenda") {
+      const item = line.match(/^\s*[-*•]\s*([^:]+?)\s*:\s*(.+)$/);
+      if (item) {
+        const key = item[1].trim().toLowerCase().replace(/\s+/g, "_");
+        const value = item[2].trim();
+        (sec === "sinais" ? sinais : agenda).push({ key, value });
+      }
+    } else if (sec === "sintese_geral" || sec === "risco" || sec === "final") {
+      textBuf[sec === "sintese_geral" ? "sintese_geral" : sec === "risco" ? "risco" : "final"].push(line);
+    }
+  }
+
+  if (textBuf.sintese_geral.length) sum.sintese_geral = textBuf.sintese_geral.join("\n").trim();
+  if (textBuf.risco.length) sum.risco_estrategico = textBuf.risco.join("\n").trim();
+  if (textBuf.final.length) sum.sintese_final = textBuf.final.join("\n").trim();
+  if (sinais.length) sum.sinais_prioritarios = sinais;
+  if (agenda.length) sum.agenda_prioritaria = agenda;
+
+  const hasAny =
+    sum.sintese_geral ||
+    sum.risco_estrategico ||
+    sum.sintese_final ||
+    (sum.sinais_prioritarios && sum.sinais_prioritarios.length) ||
+    (sum.agenda_prioritaria && sum.agenda_prioritaria.length);
+  return hasAny ? sum : null;
+}
+
+
+
+function stripSumarioBlock(md: string): string {
+  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
+  const m = md.match(re);
+  if (!m) return md;
+  const start = m.index!;
+  const rest = md.slice(start + m[0].length);
+  const nextH = rest.search(/^\s*##\s+/m);
+  if (nextH === -1) return md.slice(0, start).trimEnd();
+  return md.slice(0, start) + rest.slice(nextH);
+}
+
+function parseFinalReport(md: string): {
+  chapters: ParsedChapter[];
+  observacoes: string;
+  sumario: SumarioExecutivo | null;
+} {
+  const sumario = parseSumarioExecutivo(md);
+  const cleaned = stripSumarioBlock(md);
+  const lines = cleaned.split(/\r?\n/);
+
   const chapters: ParsedChapter[] = [];
   let cur: ParsedChapter | null = null;
   type Section = "leitura" | "sintese" | "evidencia" | null;
@@ -204,8 +305,9 @@ function parseFinalReport(md: string): { chapters: ParsedChapter[]; observacoes:
   }
   commitSectionSwitch();
   if (cur) chapters.push(cur);
-  return { chapters, observacoes: observacoesBuf.join("\n").trim() };
+  return { chapters, observacoes: observacoesBuf.join("\n").trim(), sumario };
 }
+
 
 
 export const ingestFinalReport = createServerFn({ method: "POST" })
@@ -216,7 +318,7 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
     const text = await stripBase64ToText(data.base64, data.mime, data.filename);
     if (!text.trim()) throw new Error("Documento vazio");
 
-    const { chapters: parsed, observacoes } = parseFinalReport(text);
+    const { chapters: parsed, observacoes, sumario } = parseFinalReport(text);
     if (!parsed.length)
       throw new Error(
         'Nenhum capítulo reconhecido. Use cabeçalhos "## Capítulo N — Título" no documento.',
@@ -317,6 +419,18 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
       await supabase.from("interviews").update({ observacoes: merged }).eq("id", interview.id);
     }
 
-    return { filled, total: capitulos.length, unmatched, observacoes };
+    // Persiste Sumário Executivo em interviews.respostas.__sumario_executivo__
+    if (sumario) {
+      const { data: curInt } = await supabase
+        .from("interviews")
+        .select("respostas")
+        .eq("id", interview.id)
+        .maybeSingle();
+      const prev = (curInt?.respostas ?? {}) as Record<string, any>;
+      const nextRespostas = { ...prev, __sumario_executivo__: sumario };
+      await supabase.from("interviews").update({ respostas: nextRespostas }).eq("id", interview.id);
+    }
 
+    return { filled, total: capitulos.length, unmatched, observacoes, sumario };
   });
+

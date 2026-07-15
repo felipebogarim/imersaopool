@@ -662,6 +662,25 @@ export async function exportInterviewPdf(
 
   y = cardTop + cardH + 32;
 
+  // Sumário Executivo (opcional) — vem do ingest do "Relatório final"
+  const sumario = ((interview.respostas as any)?.__sumario_executivo__ ?? null) as
+    | {
+        sintese_geral?: string;
+        sinais_prioritarios?: Array<{ key: string; value: string }>;
+        risco_estrategico?: string;
+        agenda_prioritaria?: Array<{ key: string; value: string }>;
+        sintese_final?: string;
+      }
+    | null;
+  const hasSumario = !!(
+    sumario &&
+    (sumario.sintese_geral ||
+      sumario.risco_estrategico ||
+      sumario.sintese_final ||
+      sumario.sinais_prioritarios?.length ||
+      sumario.agenda_prioritaria?.length)
+  );
+
   // Navegação
   if (capitulos.length) {
     doc.setFont("helvetica", "bold");
@@ -674,24 +693,33 @@ export async function exportInterviewPdf(
     doc.line(margin, y, margin + maxW, y);
     y += 16;
 
-    capitulos.forEach((cap: any) => {
+    const navItems: Array<{ ordem: string; titulo: string; lente?: string | null }> = [];
+    if (hasSumario) navItems.push({ ordem: "00", titulo: "Sumário executivo" });
+    for (const cap of capitulos as any[]) {
+      navItems.push({
+        ordem: String(cap.ordem).padStart(2, "0"),
+        titulo: cap.titulo,
+        lente: cap.lente_default,
+      });
+    }
+
+    navItems.forEach((item) => {
       ensure(34);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
       setText(CYAN);
-      const numStr = String(cap.ordem).padStart(2, "0");
-      doc.text(numStr, margin, y + 4);
+      doc.text(item.ordem, margin, y + 4);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       setText(INK);
-      doc.text(applyPortugueseAccents(cap.titulo), margin + 44, y);
+      doc.text(applyPortugueseAccents(item.titulo), margin + 44, y);
 
-      if (cap.lente_default) {
+      if (item.lente) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         setText(MUTED);
-        doc.text(`lente · ${prettyLabel(String(cap.lente_default)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
+        doc.text(`lente · ${prettyLabel(String(item.lente)).toLowerCase()}`, margin + 44, y + 12, { charSpace: 0.5 });
       }
 
       setDraw(HAIRLINE);
@@ -700,6 +728,7 @@ export async function exportInterviewPdf(
       y += 30;
     });
   }
+
 
 
   // ————————————————————————— PANORAMA (dashboard visual) —————————————————————————
@@ -737,116 +766,372 @@ export async function exportInterviewPdf(
     doc.line(margin, y, margin + 48, y);
     y += 28;
 
-    // Card 1 — Cobertura da entrevista (anel + % gigante)
-    const cardTop = y;
-    const cardH = 240;
-    setFill(SURFACE);
-    doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "F");
-    setDraw(HAIRLINE);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "S");
+    if (hasSumario) {
+      // Modelo novo — três cards: Sumário Executivo · Capítulos · Tabelas
+      const drawStatCard = (
+        big: string,
+        eyebrow: string,
+        headline: string,
+        variant: "surface" | "navy",
+      ) => {
+        const cardH = 150;
+        ensure(cardH + 16);
+        const top = y;
+        if (variant === "surface") {
+          setFill(SURFACE);
+          doc.roundedRect(margin, top, maxW, cardH, 10, 10, "F");
+          setDraw(HAIRLINE);
+          doc.setLineWidth(0.5);
+          doc.roundedRect(margin, top, maxW, cardH, 10, 10, "S");
+        } else {
+          setFill(NAVY);
+          doc.roundedRect(margin, top, maxW, cardH, 10, 10, "F");
+          setFill(CORAL);
+          doc.roundedRect(margin, top, 8, cardH, 10, 10, "F");
+          doc.rect(margin + 4, top, 4, cardH, "F");
+        }
 
-    // Anel de progresso (aprox por segmentos de linha)
-    const ringCx = margin + 130;
-    const ringCy = cardTop + cardH / 2;
-    const ringR = 78;
-    setDraw(HAIRLINE);
-    doc.setLineWidth(10);
-    doc.circle(ringCx, ringCy, ringR, "S");
-    setDraw(CYAN);
-    doc.setLineWidth(10);
-    const steps = 96;
-    const filledSteps = Math.round((pctRespondidos / 100) * steps);
-    for (let i = 0; i < filledSteps; i++) {
-      const a1 = -Math.PI / 2 + (i / steps) * Math.PI * 2;
-      const a2 = -Math.PI / 2 + ((i + 1) / steps) * Math.PI * 2;
-      doc.line(
-        ringCx + Math.cos(a1) * ringR,
-        ringCy + Math.sin(a1) * ringR,
-        ringCx + Math.cos(a2) * ringR,
-        ringCy + Math.sin(a2) * ringR,
-      );
-    }
-    // % no centro
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(36);
-    setText(INK);
-    const pctStr = `${pctRespondidos}%`;
-    const pctW = doc.getTextWidth(pctStr);
-    doc.text(pctStr, ringCx - pctW / 2, ringCy + 6);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    setText(MUTED);
-    const subStr = "COBERTURA";
-    const subW = doc.getTextWidth(subStr);
-    doc.text(subStr, ringCx - subW / 2, ringCy + 22, { charSpace: 1.2 });
-
-    // Texto à direita
-    const txtX = margin + 250;
-    const txtW = maxW - 270;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    setText(CYAN_DEEP);
-    doc.text("DE COBERTURA DOS CAPÍTULOS", txtX, cardTop + 60, { charSpace: 1.5 });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    setText(INK);
-    const t1 = doc.splitTextToSize(
-      `${capsRespondidos} de ${totalCaps} capítulos com leitura estratégica registrada nesta sessão.`,
-      txtW,
-    );
-    let t1y = cardTop + 88;
-    for (const l of t1.slice(0, 4)) {
-      doc.text(l, txtX, t1y);
-      t1y += 26;
-    }
-    y = cardTop + cardH + 20;
-
-    // Card 2 — Insights capturados (número gigante à esquerda, texto à direita, à la Google)
-    if (campoTotal) {
-      const c2Top = y;
-      const c2H = 200;
-      ensure(c2H + 20);
-      setFill(NAVY);
-      doc.roundedRect(margin, c2Top, maxW, c2H, 10, 10, "F");
-      // faixa de destaque
-      setFill(CORAL);
-      doc.roundedRect(margin, c2Top, 8, c2H, 10, 10, "F");
-      doc.rect(margin + 4, c2Top, 4, c2H, "F");
-
-      const bigStr = `${campoFilled}`;
-      doc.setFont("helvetica", "bold");
-      let bigSize = 120;
-      doc.setFontSize(bigSize);
-      while (doc.getTextWidth(bigStr) > 170 && bigSize > 56) {
-        bigSize -= 8;
+        doc.setFont("helvetica", "bold");
+        let bigSize = 78;
         doc.setFontSize(bigSize);
-      }
-      setText(CYAN);
-      doc.text(bigStr, margin + 40, c2Top + c2H / 2 + 40);
-      const bigW = doc.getTextWidth(bigStr);
+        while (doc.getTextWidth(big) > 170 && bigSize > 40) {
+          bigSize -= 6;
+          doc.setFontSize(bigSize);
+        }
+        setText(CYAN);
+        doc.text(big, margin + 32, top + cardH / 2 + bigSize / 3);
+        const bigW = doc.getTextWidth(big);
 
-      const tx2 = margin + 40 + bigW + 30;
-      const tw2 = maxW - (tx2 - margin) - 20;
+        const tx = margin + 32 + bigW + 28;
+        const tw = maxW - (tx - margin) - 20;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        setText(variant === "navy" ? [160, 205, 220] : CYAN_DEEP);
+        doc.text(eyebrow.toUpperCase(), tx, top + 50, { charSpace: 1.5 });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        setText(variant === "navy" ? [255, 255, 255] : INK);
+        const lines = doc.splitTextToSize(headline, tw);
+        let ly = top + 76;
+        for (const line of lines.slice(0, 3)) {
+          doc.text(line, tx, ly);
+          ly += 22;
+        }
+        y = top + cardH + 16;
+      };
+
+      drawStatCard(
+        "1",
+        "Sumário executivo",
+        "Tudo resumido em uma página.",
+        "surface",
+      );
+      drawStatCard(
+        `${totalCaps} de ${totalCaps}`,
+        "Capítulos",
+        "Permitem acesso a uma visão mais detalhada e organizada por assuntos.",
+        "navy",
+      );
+      drawStatCard(
+        `${campoFilled}`,
+        "Tabelas",
+        "Sintetizam as principais ideias de cada capítulo.",
+        "surface",
+      );
+    } else {
+      // Modelo antigo (compatibilidade retroativa) — cobertura + tabelas
+      const cardTop = y;
+      const cardH = 240;
+      setFill(SURFACE);
+      doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "F");
+      setDraw(HAIRLINE);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cardTop, maxW, cardH, 10, 10, "S");
+
+      const ringCx = margin + 130;
+      const ringCy = cardTop + cardH / 2;
+      const ringR = 78;
+      setDraw(HAIRLINE);
+      doc.setLineWidth(10);
+      doc.circle(ringCx, ringCy, ringR, "S");
+      setDraw(CYAN);
+      doc.setLineWidth(10);
+      const steps = 96;
+      const filledSteps = Math.round((pctRespondidos / 100) * steps);
+      for (let i = 0; i < filledSteps; i++) {
+        const a1 = -Math.PI / 2 + (i / steps) * Math.PI * 2;
+        const a2 = -Math.PI / 2 + ((i + 1) / steps) * Math.PI * 2;
+        doc.line(
+          ringCx + Math.cos(a1) * ringR,
+          ringCy + Math.sin(a1) * ringR,
+          ringCx + Math.cos(a2) * ringR,
+          ringCy + Math.sin(a2) * ringR,
+        );
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(36);
+      setText(INK);
+      const pctStr = `${pctRespondidos}%`;
+      const pctW = doc.getTextWidth(pctStr);
+      doc.text(pctStr, ringCx - pctW / 2, ringCy + 6);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      setText(MUTED);
+      const subStr = "COBERTURA";
+      const subW = doc.getTextWidth(subStr);
+      doc.text(subStr, ringCx - subW / 2, ringCy + 22, { charSpace: 1.2 });
+
+      const txtX = margin + 250;
+      const txtW = maxW - 270;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      setText([160, 205, 220]);
-      doc.text("DE UM TOTAL DE " + campoTotal, tx2, c2Top + 60, { charSpace: 1.5 });
+      setText(CYAN_DEEP);
+      doc.text("DE COBERTURA DOS CAPÍTULOS", txtX, cardTop + 60, { charSpace: 1.5 });
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      setText([255, 255, 255]);
-      const t2 = doc.splitTextToSize(
-        "tabelas com sínteses das principais percepções",
-        tw2,
+      doc.setFontSize(20);
+      setText(INK);
+      const t1 = doc.splitTextToSize(
+        `${capsRespondidos} de ${totalCaps} capítulos com leitura estratégica registrada nesta sessão.`,
+        txtW,
       );
-      let t2y = c2Top + 92;
-      for (const l of t2.slice(0, 4)) {
-        doc.text(l, tx2, t2y);
-        t2y += 26;
+      let t1y = cardTop + 88;
+      for (const l of t1.slice(0, 4)) {
+        doc.text(l, txtX, t1y);
+        t1y += 26;
       }
-      y = c2Top + c2H + 20;
+      y = cardTop + cardH + 20;
+
+      if (campoFilled) {
+        const c2Top = y;
+        const c2H = 200;
+        ensure(c2H + 20);
+        setFill(NAVY);
+        doc.roundedRect(margin, c2Top, maxW, c2H, 10, 10, "F");
+        setFill(CORAL);
+        doc.roundedRect(margin, c2Top, 8, c2H, 10, 10, "F");
+        doc.rect(margin + 4, c2Top, 4, c2H, "F");
+
+        const bigStr = `${campoFilled}`;
+        doc.setFont("helvetica", "bold");
+        let bigSize = 120;
+        doc.setFontSize(bigSize);
+        while (doc.getTextWidth(bigStr) > 170 && bigSize > 56) {
+          bigSize -= 8;
+          doc.setFontSize(bigSize);
+        }
+        setText(CYAN);
+        doc.text(bigStr, margin + 40, c2Top + c2H / 2 + 40);
+        const bigW = doc.getTextWidth(bigStr);
+
+        const tx2 = margin + 40 + bigW + 30;
+        const tw2 = maxW - (tx2 - margin) - 20;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        setText([160, 205, 220]);
+        doc.text("TABELAS PREENCHIDAS", tx2, c2Top + 60, { charSpace: 1.5 });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        setText([255, 255, 255]);
+        const t2 = doc.splitTextToSize(
+          "tabelas com sínteses das principais percepções",
+          tw2,
+        );
+        let t2y = c2Top + 92;
+        for (const l of t2.slice(0, 4)) {
+          doc.text(l, tx2, t2y);
+          t2y += 26;
+        }
+        y = c2Top + c2H + 20;
+      }
     }
   }
+
+  // ————————————————————————— SUMÁRIO EXECUTIVO (página única) —————————————————————————
+  if (hasSumario && sumario) {
+    addContentPage();
+
+    // Watermark "00" à direita
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(130);
+    setText([20, 34, 54]);
+    const wm = "00";
+    const wmW = doc.getTextWidth(wm);
+    doc.text(wm, pageW - margin - wmW + 24, 178);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setText(CYAN_DEEP);
+    doc.text("00", margin, y, { charSpace: 2 });
+    y += 22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(26);
+    setText(INK);
+    doc.text("Sumário executivo", margin, y);
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    setText(MUTED);
+    doc.text("Síntese geral", margin, y + 10, { charSpace: 1.2 });
+    y += 18;
+    setDraw(CORAL);
+    doc.setLineWidth(2);
+    doc.line(margin, y, margin + 48, y);
+    y += 18;
+
+    // Budget de altura para caber em uma página
+    const bottomLimit = pageH - margin - 44;
+    const available = bottomLimit - y;
+
+    type Block =
+      | { kind: "text"; label: string; text: string }
+      | { kind: "chips"; label: string; items: Array<{ key: string; value: string }> };
+    const blocks: Block[] = [];
+    if (sumario.sintese_geral)
+      blocks.push({ kind: "text", label: "Síntese geral", text: sumario.sintese_geral });
+    if (sumario.sinais_prioritarios?.length)
+      blocks.push({ kind: "chips", label: "Sinais prioritários", items: sumario.sinais_prioritarios });
+    if (sumario.risco_estrategico)
+      blocks.push({ kind: "text", label: "Risco estratégico", text: sumario.risco_estrategico });
+    if (sumario.agenda_prioritaria?.length)
+      blocks.push({ kind: "chips", label: "Agenda prioritária", items: sumario.agenda_prioritaria });
+    if (sumario.sintese_final)
+      blocks.push({ kind: "text", label: "Síntese final", text: sumario.sintese_final });
+
+    // Escolhe escala tipográfica (tenta grande, reduz se não couber)
+    const humanize = (k: string) =>
+      k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const scales = [
+      { body: 10.5, chipVal: 9.5, label: 8, gap: 12, blockPad: 12, lineH: 13.5, chipLineH: 12 },
+      { body: 9.5, chipVal: 8.5, label: 7.5, gap: 8, blockPad: 10, lineH: 12, chipLineH: 11 },
+      { body: 8.5, chipVal: 7.5, label: 7, gap: 6, blockPad: 8, lineH: 11, chipLineH: 10 },
+      { body: 7.5, chipVal: 7, label: 6.5, gap: 4, blockPad: 6, lineH: 10, chipLineH: 9.5 },
+    ];
+
+    const innerW = maxW - 24;
+    const measure = (s: typeof scales[number]) => {
+      let total = 0;
+      for (const b of blocks) {
+        const labelH = s.label + 8;
+        if (b.kind === "text") {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(s.body);
+          const lines = doc.splitTextToSize(md(b.text), innerW);
+          total += labelH + lines.length * s.lineH + s.blockPad * 2 + s.gap;
+        } else {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(s.chipVal);
+          let h = labelH + 4;
+          for (const it of b.items) {
+            const vl = doc.splitTextToSize(md(it.value), innerW);
+            h += s.label + 4 + vl.length * s.chipLineH + 6;
+          }
+          total += h + s.blockPad * 2 + s.gap;
+        }
+      }
+      return total;
+    };
+
+    let chosen = scales[0];
+    for (const s of scales) {
+      if (measure(s) <= available) {
+        chosen = s;
+        break;
+      }
+      chosen = s;
+    }
+
+    for (const b of blocks) {
+      const startY = y;
+      // header do bloco
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(chosen.label);
+      setText(CYAN);
+      doc.text(b.label.toUpperCase(), margin + 12, startY + chosen.label + 2, { charSpace: 1.3 });
+      const contentTop = startY + chosen.label + 10;
+
+      let blockH = 0;
+      if (b.kind === "text") {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(chosen.body);
+        setText(INK);
+        const lines = doc.splitTextToSize(md(b.text), innerW);
+        let ly = contentTop + chosen.lineH;
+        for (const line of lines) {
+          doc.text(line, margin + 12, ly);
+          ly += chosen.lineH;
+        }
+        blockH = ly - startY + 4;
+      } else {
+        let ly = contentTop;
+        for (const it of b.items) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(chosen.label);
+          setText(CYAN_DEEP);
+          doc.text(humanize(it.key).toUpperCase(), margin + 12, ly + chosen.label, {
+            charSpace: 1.1,
+          });
+          ly += chosen.label + 4;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(chosen.chipVal);
+          setText(INK);
+          const vl = doc.splitTextToSize(md(it.value), innerW);
+          for (const line of vl) {
+            doc.text(line, margin + 12, ly + chosen.chipLineH);
+            ly += chosen.chipLineH;
+          }
+          ly += 6;
+        }
+        blockH = ly - startY + 4;
+      }
+
+      // fundo sutil
+      setFill(SURFACE);
+      doc.roundedRect(margin, startY, maxW, blockH, 6, 6, "F");
+      setFill(CORAL);
+      doc.rect(margin, startY + 4, 3, blockH - 8, "F");
+      // redesenha o conteúdo por cima do fundo
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(chosen.label);
+      setText(CYAN);
+      doc.text(b.label.toUpperCase(), margin + 12, startY + chosen.label + 2, { charSpace: 1.3 });
+      let ly = contentTop;
+      if (b.kind === "text") {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(chosen.body);
+        setText(INK);
+        const lines = doc.splitTextToSize(md(b.text), innerW);
+        ly = contentTop + chosen.lineH;
+        for (const line of lines) {
+          doc.text(line, margin + 12, ly);
+          ly += chosen.lineH;
+        }
+      } else {
+        for (const it of b.items) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(chosen.label);
+          setText(CYAN_DEEP);
+          doc.text(humanize(it.key).toUpperCase(), margin + 12, ly + chosen.label, {
+            charSpace: 1.1,
+          });
+          ly += chosen.label + 4;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(chosen.chipVal);
+          setText(INK);
+          const vl = doc.splitTextToSize(md(it.value), innerW);
+          for (const line of vl) {
+            doc.text(line, margin + 12, ly + chosen.chipLineH);
+            ly += chosen.chipLineH;
+          }
+          ly += 6;
+        }
+      }
+
+      y = startY + blockH + chosen.gap;
+    }
+  }
+
+
 
   // ————————————————————————— CAPÍTULOS —————————————————————————
   for (const cap of capitulos) {
