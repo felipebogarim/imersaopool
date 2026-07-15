@@ -49,6 +49,7 @@ import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
@@ -271,6 +272,12 @@ const AuthenticatedAdminPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminEventoCheckoutTesteRoute =
+  AuthenticatedAdminEventoCheckoutTesteRouteImport.update({
+    id: '/evento-checkout-teste',
+    path: '/evento-checkout-teste',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/backup',
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -440,6 +449,7 @@ export interface FileRoutesById {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -491,6 +501,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
+    | '/admin/evento-checkout-teste'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -540,6 +551,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
+    | '/admin/evento-checkout-teste'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -590,6 +602,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes/$id'
@@ -920,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/evento-checkout-teste': {
+      id: '/_authenticated/admin/evento-checkout-teste'
+      path: '/evento-checkout-teste'
+      fullPath: '/admin/evento-checkout-teste'
+      preLoaderRoute: typeof AuthenticatedAdminEventoCheckoutTesteRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/backup'
@@ -981,12 +1001,15 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminEventoCheckoutTesteRoute:
+    AuthenticatedAdminEventoCheckoutTesteRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
