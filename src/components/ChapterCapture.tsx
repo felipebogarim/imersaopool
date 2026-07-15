@@ -77,6 +77,8 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
       if (r.unmatched?.length)
         toast.warning(`${r.unmatched.length} capítulo(s) não reconhecido(s)`, { description: r.unmatched.slice(0, 3).join(" · ") });
       qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
+      qc.invalidateQueries({ queryKey: ["interview-sumario", sessaoId] });
+      qc.invalidateQueries({ queryKey: ["interview", sessaoId] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao processar arquivo");
     } finally {
