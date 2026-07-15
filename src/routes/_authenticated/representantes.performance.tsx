@@ -1,114 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Upload, RefreshCw, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { parseWorkbook } from "@/lib/performance-parser";
+import { exportPerformanceXlsx } from "@/lib/performance-export";
+import {
+  FAROL_CELL_CLASS,
+  FAROL_LABEL,
+  FAROL_ORDER,
+  catBadge,
+  statusFromPercent,
+  type FarolStatus,
+} from "@/lib/performance-farol";
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
   head: () => ({ meta: [{ title: "Performance — Representantes" }] }),
   component: PerformancePage,
 });
 
-type ParsedSheet = {
-  familias: string[];
-  categoriaMetas: Record<string, number>;
-  escala: { label: string; min: number | null; max: number | null }[];
-  rows: { razao_social: string; categoria: string | null; metas: Record<string, number>; total_meta: number | null; ordem: number }[];
+type ViewMode = "meta" | "realizado" | "percentual" | "completo";
+
+const VIEW_KEY = "perf-view-mode";
+const fmtBRL = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n)
+    ? "—"
+    : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const fmtNum = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n) ? "" : n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+
+type Row = {
+  id: string;
+  ordem: number;
+  razao_social: string;
+  categoria: string | null;
+  metas: Record<string, number>;
+  metas_status: Record<string, FarolStatus>;
+  metas_cores: Record<string, string>;
+  realizado: Record<string, number>;
+  total_meta: number | null;
 };
-
-/** Parse an "DESEMPENHO ... SEMESTRE" workbook. */
-function parseWorkbook(wb: XLSX.WorkBook): ParsedSheet {
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  const grid: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-
-  // Locate header row: contains "GRUPO" or "RAZAO SOCIAL" in col 0 and "CATEGORIA" in col 1
-  let headerRow = -1;
-  for (let r = 0; r < Math.min(grid.length, 20); r++) {
-    const a = String(grid[r]?.[0] ?? "").trim().toUpperCase();
-    const b = String(grid[r]?.[1] ?? "").trim().toUpperCase();
-    if ((a === "GRUPO" || a.startsWith("RAZAO") || a.startsWith("RAZÃO")) && b === "CATEGORIA") {
-      headerRow = r;
-      break;
-    }
-  }
-  if (headerRow < 0) throw new Error("Cabeçalho não encontrado (linha com GRUPO/RAZÃO SOCIAL + CATEGORIA).");
-
-  // Family names live in the row above the header row, starting at col 2
-  const famRow = grid[headerRow - 1] ?? [];
-  const familias: string[] = [];
-  const famCols: number[] = [];
-  for (let c = 2; c < famRow.length; c++) {
-    const v = famRow[c];
-    if (v && String(v).trim()) {
-      familias.push(String(v).trim());
-      famCols.push(c);
-    }
-  }
-  const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
-
-  // Categoria metas + escala live in cols 8/9 and 11 typically. Scan first ~10 rows for pairs.
-  const categoriaMetas: Record<string, number> = {};
-  const escala: { label: string; min: number | null; max: number | null }[] = [];
-  for (let r = 0; r < headerRow; r++) {
-    const row = grid[r] ?? [];
-    for (let c = 0; c < row.length - 1; c++) {
-      const key = String(row[c] ?? "").trim();
-      const val = row[c + 1];
-      if (!key) continue;
-      const kU = key.toUpperCase();
-      if (["BLACK", "GOLD", "SILVER", "BRONZE", "DIAMOND", "PLATINUM"].includes(kU) && typeof val === "number") {
-        categoriaMetas[kU.charAt(0) + kU.slice(1).toLowerCase()] = val;
-      }
-    }
-    // escala free text on any column containing "=" or "%"
-    for (const cell of row) {
-      const s = String(cell ?? "").trim();
-      if (s && /=/.test(s) && /%/.test(s)) {
-        const [labelRaw, ruleRaw] = s.split("=");
-        escala.push({ label: labelRaw.trim(), ...parseRule(ruleRaw) });
-      }
-    }
-  }
-
-  const rows: ParsedSheet["rows"] = [];
-  let ordem = 0;
-  for (let r = headerRow + 1; r < grid.length; r++) {
-    const row = grid[r] ?? [];
-    const razao = String(row[0] ?? "").trim();
-    const categoria = String(row[1] ?? "").trim();
-    if (!razao) continue;
-    // skip totals row (no categoria + numeric on col 2)
-    if (!categoria && typeof row[2] === "number") continue;
-    const metas: Record<string, number> = {};
-    familias.forEach((f, i) => {
-      const v = row[famCols[i]];
-      if (typeof v === "number") metas[f] = v;
-    });
-    const total = typeof row[totalCol] === "number" ? row[totalCol] : null;
-    rows.push({ razao_social: razao, categoria: categoria || null, metas, total_meta: total, ordem: ordem++ });
-  }
-
-  return { familias, categoriaMetas, escala, rows };
-}
-
-function parseRule(s: string): { min: number | null; max: number | null } {
-  const nums = Array.from(s.matchAll(/(\d+[.,]?\d*)/g)).map((m) => parseFloat(m[1].replace(",", ".")));
-  const lower = s.toLowerCase();
-  if (lower.includes("acima")) return { min: nums[0] ?? null, max: null };
-  if (lower.includes("abaixo")) return { min: null, max: nums[0] ?? null };
-  if (nums.length >= 2) return { min: nums[0], max: nums[1] };
-  if (nums.length === 1) return { min: nums[0], max: nums[0] };
-  return { min: null, max: null };
-}
 
 function PerformancePage() {
   const qc = useQueryClient();
@@ -122,19 +61,22 @@ function PerformancePage() {
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-
-  const { data: allUploads = [] } = useQuery({
-    queryKey: ["perf-all-uploads"],
-    queryFn: async () =>
-      (await supabase
-        .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, filename, created_at, representatives(nome)")
-        .order("created_at", { ascending: false })).data ?? [],
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "meta";
+    return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
   });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem(VIEW_KEY, viewMode);
+  }, [viewMode]);
+
+  // Edição
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Row[] | null>(null);
 
   const { data: reps = [] } = useQuery({
     queryKey: ["perf-reps"],
-    queryFn: async () => (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
 
   const { data: uploads = [] } = useQuery({
@@ -145,14 +87,28 @@ function PerformancePage() {
         .from("rep_performance_uploads")
         .select("*")
         .eq("representative_id", repId)
+        .is("substituida_em", null)
         .order("created_at", { ascending: false })).data ?? [],
   });
 
-  // Auto-select first upload when rep changes
-  const currentUpload = useMemo(() => uploads.find((u: any) => u.id === uploadId) ?? uploads[0] ?? null, [uploads, uploadId]);
+  const { data: allVersions = [] } = useQuery({
+    queryKey: ["perf-all-versions", repId],
+    enabled: !!repId,
+    queryFn: async () =>
+      (await supabase
+        .from("rep_performance_uploads")
+        .select("*")
+        .eq("representative_id", repId)
+        .order("created_at", { ascending: false })).data ?? [],
+  });
+
+  const currentUpload = useMemo(
+    () => uploads.find((u: any) => u.id === uploadId) ?? uploads[0] ?? null,
+    [uploads, uploadId],
+  );
   const effectiveUploadId = currentUpload?.id ?? "";
 
-  const { data: rows = [] } = useQuery({
+  const { data: dbRows = [] } = useQuery({
     queryKey: ["perf-rows", effectiveUploadId],
     enabled: !!effectiveUploadId,
     queryFn: async () =>
@@ -163,8 +119,80 @@ function PerformancePage() {
         .order("ordem")).data ?? [],
   });
 
+  const rows: Row[] = useMemo(
+    () =>
+      (dbRows as any[]).map((r) => ({
+        id: r.id,
+        ordem: r.ordem,
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas ?? {},
+        metas_status: r.metas_status ?? {},
+        metas_cores: r.metas_cores ?? {},
+        realizado: r.realizado ?? {},
+        total_meta: r.total_meta,
+      })),
+    [dbRows],
+  );
+
+  // Reset draft quando muda de upload
+  useEffect(() => {
+    setEditing(false);
+    setDraft(null);
+  }, [effectiveUploadId]);
+
+  const familias: string[] = (currentUpload?.familias as string[]) ?? [];
+  const categoriaMetas: Record<string, number> = (currentUpload?.categoria_metas as Record<string, number>) ?? {};
+
+  // Fonte de verdade para render/totais: draft se editando, senão rows
+  const view: Row[] = editing && draft ? draft : rows;
+
+  const totals = useMemo(() => {
+    const perFamilia: Record<string, number> = {};
+    const perFamiliaReal: Record<string, number> = {};
+    let grand = 0;
+    let grandReal = 0;
+    for (const r of view) {
+      for (const f of familias) {
+        perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+        perFamiliaReal[f] = (perFamiliaReal[f] ?? 0) + (Number(r.realizado?.[f]) || 0);
+      }
+      const t = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+      grand += t || Number(r.total_meta) || 0;
+      grandReal += familias.reduce((s, f) => s + (Number(r.realizado?.[f]) || 0), 0);
+    }
+    return { perFamilia, perFamiliaReal, grand, grandReal };
+  }, [view, familias]);
+
+  // Resumo executivo — contagens por status
+  const resumo = useMemo(() => {
+    const perCat: Record<string, { count: number; meta: number; real: number }> = {};
+    let semCompra = 0;
+    let naMeta = 0;
+    let abaixo = 0;
+    let hasRealizado = false;
+    for (const r of view) {
+      const cat = r.categoria ?? "—";
+      perCat[cat] ??= { count: 0, meta: 0, real: 0 };
+      perCat[cat].count += 1;
+      const rowMeta = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+      const rowReal = familias.reduce((s, f) => s + (Number(r.realizado?.[f]) || 0), 0);
+      perCat[cat].meta += rowMeta;
+      perCat[cat].real += rowReal;
+      if (rowReal > 0) hasRealizado = true;
+      const anyStatus = Object.values(r.metas_status);
+      if (rowReal === 0 && anyStatus.every((s) => s === "sem_compra")) semCompra += 1;
+      else if (rowReal >= rowMeta && rowMeta > 0) naMeta += 1;
+      else if (rowMeta > 0 && rowReal < rowMeta) abaixo += 1;
+    }
+    return { perCat, semCompra, naMeta, abaixo, hasRealizado };
+  }, [view, familias]);
+
   function openUpload(mode: "new" | "replace") {
-    if (!repId) { toast.error("Selecione um representante primeiro."); return; }
+    if (!repId) {
+      toast.error("Selecione um representante primeiro.");
+      return;
+    }
     setDlgMode(mode);
     setPeriodoLabel(mode === "replace" && currentUpload ? currentUpload.periodo_label : "1º Semestre 2026");
     setPeriodoInicio(mode === "replace" && currentUpload?.periodo_inicio ? currentUpload.periodo_inicio : "2026-01-01");
@@ -174,21 +202,29 @@ function PerformancePage() {
   }
 
   async function handleUpload() {
-    if (!pendingFile) { toast.error("Selecione um arquivo .xlsx"); return; }
-    if (!periodoLabel.trim()) { toast.error("Informe o período."); return; }
+    if (!pendingFile) {
+      toast.error("Selecione um arquivo .xlsx");
+      return;
+    }
+    if (!periodoLabel.trim()) {
+      toast.error("Informe o período.");
+      return;
+    }
     setBusy(true);
     try {
       const buf = await pendingFile.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const parsed = parseWorkbook(wb);
+      const parsed = await parseWorkbook(buf);
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada na planilha.");
 
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
 
-      // Replace mode: delete existing upload (cascade removes rows) with the same period label
+      // Modo substituir: marca a versão atual como substituída (não apaga)
       if (dlgMode === "replace" && currentUpload) {
-        await supabase.from("rep_performance_uploads").delete().eq("id", currentUpload.id);
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString() } as any)
+          .eq("id", currentUpload.id);
       }
 
       const { data: up, error: upErr } = await supabase
@@ -203,22 +239,31 @@ function PerformancePage() {
           escala_percentual: parsed.escala,
           filename: pendingFile.name,
           uploaded_by: uid,
+          origem: "import",
         } as any)
         .select("id")
         .single();
       if (upErr || !up) throw upErr ?? new Error("Falha ao criar upload");
 
-      const rowsPayload = parsed.rows.map((r) => ({
+      if (dlgMode === "replace" && currentUpload) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_por: up.id } as any)
+          .eq("id", currentUpload.id);
+      }
+
+      const payload = parsed.rows.map((r) => ({
         upload_id: up.id,
         ordem: r.ordem,
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas: r.metas,
+        metas_status: r.metas_status,
+        metas_cores: r.metas_cores,
         total_meta: r.total_meta,
       }));
-      // insert in chunks of 200
-      for (let i = 0; i < rowsPayload.length; i += 200) {
-        const chunk = rowsPayload.slice(i, i + 200);
+      for (let i = 0; i < payload.length; i += 200) {
+        const chunk = payload.slice(i, i + 200);
         const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
         if (error) throw error;
       }
@@ -226,7 +271,7 @@ function PerformancePage() {
       toast.success(`Planilha importada: ${parsed.rows.length} clientes.`);
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
-      qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
+      qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
       setUploadId(up.id);
     } catch (e: any) {
       console.error(e);
@@ -244,25 +289,185 @@ function PerformancePage() {
     toast.success("Versão excluída.");
     setUploadId("");
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
-    qc.invalidateQueries({ queryKey: ["perf-all-uploads"] });
+    qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
   }
 
-  const familias: string[] = (currentUpload?.familias as string[]) ?? [];
-  const categoriaMetas: Record<string, number> = (currentUpload?.categoria_metas as Record<string, number>) ?? {};
-  const escala: { label: string; min: number | null; max: number | null }[] = (currentUpload?.escala_percentual as any) ?? [];
-
-  const totals = useMemo(() => {
-    const t: Record<string, number> = {};
-    let grand = 0;
-    for (const r of rows as any[]) {
-      for (const f of familias) t[f] = (t[f] ?? 0) + (Number(r.metas?.[f]) || 0);
-      grand += Number(r.total_meta) || 0;
+  function startEdit() {
+    setDraft(JSON.parse(JSON.stringify(rows)));
+    setEditing(true);
+  }
+  function cancelEdit() {
+    if (draft && JSON.stringify(draft) !== JSON.stringify(rows)) {
+      if (!confirm("Descartar alterações não salvas?")) return;
     }
-    return { perFamilia: t, grand };
-  }, [rows, familias]);
+    setDraft(null);
+    setEditing(false);
+  }
 
-  const fmt = (n: number | null | undefined) =>
-    n == null || Number.isNaN(n) ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  async function saveEdit() {
+    if (!draft || !currentUpload) return;
+    setBusy(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+
+      // Cria nova versão (não sobrescreve)
+      await supabase
+        .from("rep_performance_uploads")
+        .update({ substituida_em: new Date().toISOString() } as any)
+        .eq("id", currentUpload.id);
+
+      const { data: up, error: upErr } = await supabase
+        .from("rep_performance_uploads")
+        .insert({
+          representative_id: repId,
+          periodo_label: currentUpload.periodo_label,
+          periodo_inicio: currentUpload.periodo_inicio,
+          periodo_fim: currentUpload.periodo_fim,
+          familias: currentUpload.familias,
+          categoria_metas: currentUpload.categoria_metas,
+          escala_percentual: currentUpload.escala_percentual,
+          filename: currentUpload.filename,
+          observacao: `Edição manual em ${new Date().toLocaleString("pt-BR")}`,
+          uploaded_by: uid,
+          updated_by: uid,
+          origem: "manual_edit",
+        } as any)
+        .select("id")
+        .single();
+      if (upErr || !up) throw upErr;
+
+      await supabase
+        .from("rep_performance_uploads")
+        .update({ substituida_por: up.id } as any)
+        .eq("id", currentUpload.id);
+
+      const payload = draft.map((r) => {
+        const total = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+        return {
+          upload_id: up.id,
+          ordem: r.ordem,
+          razao_social: r.razao_social,
+          categoria: r.categoria,
+          metas: r.metas,
+          metas_status: r.metas_status,
+          metas_cores: r.metas_cores,
+          realizado: r.realizado,
+          total_meta: total || null,
+        };
+      });
+      for (let i = 0; i < payload.length; i += 200) {
+        const chunk = payload.slice(i, i + 200);
+        const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
+        if (error) throw error;
+      }
+
+      toast.success("Nova versão criada com as alterações.");
+      setEditing(false);
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+      setUploadId(up.id);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao salvar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function updateCell(rowIdx: number, familia: string, value: number) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = prev.slice();
+      const r = { ...next[rowIdx], metas: { ...next[rowIdx].metas } };
+      if (Number.isNaN(value) || value === 0) delete r.metas[familia];
+      else r.metas[familia] = value;
+      // Se está editando manualmente e não há realizado, deriva status por presença de valor
+      // (não altera se existir realizado — % será calculado)
+      next[rowIdx] = r;
+      return next;
+    });
+  }
+
+  async function restoreVersion(v: any) {
+    if (!confirm(`Restaurar a versão de ${new Date(v.created_at).toLocaleString("pt-BR")} como versão ativa?`)) return;
+    setBusy(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+
+      // Marca a atual como substituída
+      if (currentUpload) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString() } as any)
+          .eq("id", currentUpload.id);
+      }
+
+      // Duplica a antiga como nova ativa
+      const { data: up } = await supabase
+        .from("rep_performance_uploads")
+        .insert({
+          representative_id: repId,
+          periodo_label: v.periodo_label,
+          periodo_inicio: v.periodo_inicio,
+          periodo_fim: v.periodo_fim,
+          familias: v.familias,
+          categoria_metas: v.categoria_metas,
+          escala_percentual: v.escala_percentual,
+          filename: v.filename,
+          observacao: `Restauração da versão ${new Date(v.created_at).toLocaleString("pt-BR")}`,
+          uploaded_by: uid,
+          updated_by: uid,
+          origem: "restore",
+        } as any)
+        .select("id")
+        .single();
+      if (!up) throw new Error("Falha ao restaurar");
+
+      const { data: srcRows } = await supabase
+        .from("rep_performance_rows")
+        .select("*")
+        .eq("upload_id", v.id);
+      const payload = (srcRows ?? []).map((r: any) => ({
+        upload_id: up.id,
+        ordem: r.ordem,
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        metas_cores: r.metas_cores,
+        realizado: r.realizado,
+        total_meta: r.total_meta,
+      }));
+      for (let i = 0; i < payload.length; i += 200) {
+        const chunk = payload.slice(i, i + 200);
+        await supabase.from("rep_performance_rows").insert(chunk as any);
+      }
+      toast.success("Versão restaurada.");
+      qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+      setUploadId(up.id);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao restaurar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function doExport() {
+    if (!currentUpload) return;
+    const rep = reps.find((r: any) => r.id === repId)?.nome ?? "";
+    exportPerformanceXlsx({
+      filename: `performance-${rep || "rep"}-${currentUpload.periodo_label}`,
+      representante: rep,
+      periodo: currentUpload.periodo_label,
+      familias,
+      rows: view,
+      totals,
+    });
+  }
 
   return (
     <div>
@@ -271,43 +476,90 @@ function PerformancePage() {
         subtitle="Metas e desempenho por família de produto"
         actions={
           <>
-            <Button variant="outline" onClick={() => openUpload("replace")} disabled={!currentUpload}>
-              <RefreshCw className="h-4 w-4 mr-1" /> Substituir versão
-            </Button>
-            <Button onClick={() => openUpload("new")}>
-              <Upload className="h-4 w-4 mr-1" /> Nova planilha
-            </Button>
+            {!editing ? (
+              <>
+                <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
+                  <Pencil className="h-4 w-4 mr-1" /> Editar metas
+                </Button>
+                <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
+                  <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
+                </Button>
+                <Button variant="outline" onClick={() => openUpload("replace")} disabled={!currentUpload}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> Substituir versão
+                </Button>
+                <Button onClick={() => openUpload("new")}>
+                  <Upload className="h-4 w-4 mr-1" /> Nova planilha
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={cancelEdit}>
+                  <XCircle className="h-4 w-4 mr-1" /> Cancelar
+                </Button>
+                <Button onClick={saveEdit} disabled={busy}>
+                  <Save className="h-4 w-4 mr-1" /> Salvar como nova versão
+                </Button>
+              </>
+            )}
           </>
         }
       />
 
       <div className="p-4 sm:p-8 space-y-6">
-        {/* Filters */}
-        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Seletores */}
+        <div className="surface rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Representante</Label>
-            <Select value={repId} onValueChange={(v) => { setRepId(v); setUploadId(""); }}>
-              <SelectTrigger><SelectValue placeholder="Selecione um representante" /></SelectTrigger>
+            <Select
+              value={repId}
+              onValueChange={(v) => {
+                setRepId(v);
+                setUploadId("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um representante" />
+              </SelectTrigger>
               <SelectContent>
-                {reps.map((r: any) => <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Período</Label>
-            <Select value={effectiveUploadId} onValueChange={setUploadId} disabled={!uploads.length}>
-              <SelectTrigger><SelectValue placeholder={uploads.length ? "Selecione um período" : "Nenhuma planilha importada"} /></SelectTrigger>
-              <SelectContent>
-                {uploads.map((u: any) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.periodo_label} {u.filename ? `— ${u.filename}` : ""}
+                {reps.map((r: any) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Versão ativa</Label>
+            <Select value={effectiveUploadId} onValueChange={setUploadId} disabled={!uploads.length}>
+              <SelectTrigger>
+                <SelectValue placeholder={uploads.length ? "Selecione uma versão" : "Nenhuma versão ativa"} />
+              </SelectTrigger>
+              <SelectContent>
+                {uploads.map((u: any) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.periodo_label} — {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Visualização</Label>
+            <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="meta">Meta</SelectItem>
+                <SelectItem value="realizado">Realizado</SelectItem>
+                <SelectItem value="percentual">Percentual</SelectItem>
+                <SelectItem value="completo">Completo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-end">
-            {currentUpload && (
+            {currentUpload && !editing && (
               <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
                 <Trash2 className="h-4 w-4 mr-1" /> Excluir esta versão
               </Button>
@@ -315,108 +567,163 @@ function PerformancePage() {
           </div>
         </div>
 
-        {/* Todas as planilhas carregadas */}
-        <div className="surface rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Planilhas carregadas</p>
-            <span className="text-xs text-muted-foreground">{allUploads.length} {allUploads.length === 1 ? "planilha" : "planilhas"}</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left px-3 py-2">Representante</th>
-                  <th className="text-left px-3 py-2">Período</th>
-                  <th className="text-left px-3 py-2">Arquivo</th>
-                  <th className="text-left px-3 py-2">Carregado em</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {allUploads.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhuma planilha carregada ainda.</td></tr>
-                ) : allUploads.map((u: any) => {
-                  const isActive = u.id === effectiveUploadId;
-                  return (
-                    <tr key={u.id} className={cn("border-t border-border hover:bg-muted/30 cursor-pointer", isActive && "bg-muted/40")} onClick={() => { setRepId(u.representative_id); setUploadId(u.id); }}>
-                      <td className="px-3 py-2 font-medium">{u.representatives?.nome ?? "—"}</td>
-                      <td className="px-3 py-2">{u.periodo_label}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{u.filename ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}</td>
-                      <td className="px-3 py-2 text-right">
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setRepId(u.representative_id); setUploadId(u.id); }}>
-                          Abrir
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Legenda (categorias + escala) */}
+        {/* Resumo executivo */}
         {currentUpload && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="surface rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Categoria × Meta</p>
-              <div className="grid grid-cols-3 gap-2 text-sm">
-                {Object.entries(categoriaMetas).map(([k, v]) => (
-                  <div key={k} className="flex flex-col rounded border border-border p-2">
-                    <span className="font-medium">{k}</span>
-                    <span className="text-muted-foreground">{fmt(v)}</span>
-                  </div>
-                ))}
-                {!Object.keys(categoriaMetas).length && <span className="text-muted-foreground text-sm">—</span>}
-              </div>
-            </div>
-            <div className="surface rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Escala de desempenho</p>
-              <ul className="text-sm space-y-1">
-                {escala.map((e, i) => (<li key={i} className="text-muted-foreground"><span className="font-medium text-foreground">{e.label}</span> — {formatEscala(e)}</li>))}
-                {!escala.length && <li className="text-muted-foreground">—</li>}
-              </ul>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
+            {resumo.hasRealizado && (
+              <>
+                <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
+                <KpiCard
+                  label="Atingimento"
+                  value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
+                />
+              </>
+            )}
+            <KpiCard label="Na meta" value={String(resumo.naMeta)} />
+            <KpiCard label="Abaixo da meta" value={String(resumo.abaixo)} />
+            <KpiCard label="Sem compra" value={String(resumo.semCompra)} />
           </div>
         )}
 
-        {/* Table */}
+        {/* Cards por categoria */}
+        {currentUpload && Object.keys(resumo.perCat).length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {Object.entries(resumo.perCat).map(([cat, v]) => (
+              <div key={cat} className="surface rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                    {cat}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{v.count} clientes</span>
+                </div>
+                <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtBRL(v.meta)}</div>
+                <div className="text-xs text-muted-foreground">
+                  Meta da categoria {categoriaMetas[cat] ? `— referência ${fmtBRL(categoriaMetas[cat])}` : ""}
+                </div>
+                {resumo.hasRealizado && (
+                  <div className="mt-2 text-sm">
+                    Realizado: <span className="tabular-nums">{fmtBRL(v.real)}</span>{" "}
+                    {v.meta > 0 && (
+                      <span className="text-muted-foreground">({((v.real / v.meta) * 100).toFixed(1)}%)</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Legenda do farol */}
+        {currentUpload && (
+          <div className="flex flex-wrap gap-2 items-center text-xs">
+            <span className="text-muted-foreground uppercase tracking-wider">Farol:</span>
+            {FAROL_ORDER.map((s) => (
+              <span
+                key={s}
+                className={cn("inline-flex px-2 py-1 rounded border border-border font-medium", FAROL_CELL_CLASS[s])}
+              >
+                {FAROL_LABEL[s]}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {editing && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100 px-4 py-2 text-sm flex items-center gap-2">
+            <Undo2 className="h-4 w-4" />
+            Você está editando. As alterações só serão gravadas ao clicar em <strong>Salvar como nova versão</strong>.
+          </div>
+        )}
+
+        {/* Matriz */}
         <div className="surface rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+          <div className="overflow-auto max-h-[70vh]">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-muted/60 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
                 <tr>
-                  <th className="text-left px-3 py-3 sticky left-0 bg-muted/40">Razão Social</th>
-                  <th className="text-left px-3 py-3">Categoria</th>
-                  {familias.map((f) => <th key={f} className="text-right px-3 py-3 whitespace-nowrap">{f}</th>)}
-                  <th className="text-right px-3 py-3">Total Meta</th>
+                  <th className="text-left px-3 py-3 sticky left-0 top-0 bg-muted/80 z-30 min-w-[240px]">
+                    Razão social
+                  </th>
+                  <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted/80 z-30 min-w-[110px]">
+                    Categoria
+                  </th>
+                  {familias.map((f) => (
+                    <th key={f} className="text-right px-3 py-3 whitespace-nowrap min-w-[140px]">
+                      {f}
+                    </th>
+                  ))}
+                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[140px] bg-muted/80">Meta total</th>
                 </tr>
               </thead>
               <tbody>
                 {!currentUpload ? (
-                  <tr><td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
-                    {repId ? "Nenhuma planilha importada para este representante. Clique em \"Nova planilha\"." : "Selecione um representante."}
-                  </td></tr>
-                ) : rows.length === 0 ? (
-                  <tr><td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">Carregando…</td></tr>
+                  <tr>
+                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                      {repId
+                        ? 'Nenhuma planilha importada para este representante. Clique em "Nova planilha".'
+                        : "Selecione um representante."}
+                    </td>
+                  </tr>
+                ) : view.length === 0 ? (
+                  <tr>
+                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                      Carregando…
+                    </td>
+                  </tr>
                 ) : (
                   <>
-                    {rows.map((r: any) => (
-                      <tr key={r.id} className="border-t border-border">
-                        <td className="px-3 py-2 font-medium sticky left-0 bg-background">{r.razao_social}</td>
-                        <td className="px-3 py-2">
-                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(r.categoria))}>{r.categoria ?? "—"}</span>
+                    {view.map((r, rowIdx) => {
+                      const totalRow = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+                      return (
+                        <tr key={r.id ?? rowIdx} className="border-t border-border">
+                          <td
+                            title={r.razao_social}
+                            className="px-3 py-2 font-medium sticky left-0 bg-background z-10 max-w-[280px] truncate"
+                          >
+                            {r.razao_social}
+                          </td>
+                          <td className="px-3 py-2 sticky left-[240px] bg-background z-10">
+                            <span
+                              className={cn(
+                                "inline-flex px-2 py-0.5 rounded-full text-xs border",
+                                catBadge(r.categoria),
+                              )}
+                            >
+                              {r.categoria ?? "—"}
+                            </span>
+                          </td>
+                          {familias.map((f) => (
+                            <MatrixCell
+                              key={f}
+                              row={r}
+                              familia={f}
+                              editing={editing}
+                              viewMode={viewMode}
+                              onChange={(v) => updateCell(rowIdx, f, v)}
+                            />
+                          ))}
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/30">
+                            {fmtBRL(totalRow || r.total_meta)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t-2 border-border bg-muted/40 font-semibold sticky bottom-0">
+                      <td className="px-3 py-3 sticky left-0 bg-muted/70 z-10">TOTAL</td>
+                      <td className="px-3 py-3 sticky left-[240px] bg-muted/70 z-10"></td>
+                      {familias.map((f) => (
+                        <td key={f} className="px-3 py-3 text-right tabular-nums">
+                          {fmtBRL(totals.perFamilia[f])}
+                          {resumo.hasRealizado && totals.perFamiliaReal[f] > 0 && (
+                            <div className="text-[10px] font-normal text-muted-foreground">
+                              real: {fmtBRL(totals.perFamiliaReal[f])} (
+                              {((totals.perFamiliaReal[f] / (totals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
+                            </div>
+                          )}
                         </td>
-                        {familias.map((f) => (<td key={f} className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmt(Number(r.metas?.[f]))}</td>))}
-                        <td className="px-3 py-2 text-right tabular-nums font-semibold">{fmt(Number(r.total_meta))}</td>
-                      </tr>
-                    ))}
-                    <tr className="border-t-2 border-border bg-muted/30 font-semibold">
-                      <td className="px-3 py-3 sticky left-0 bg-muted/30">TOTAL</td>
-                      <td className="px-3 py-3"></td>
-                      {familias.map((f) => (<td key={f} className="px-3 py-3 text-right tabular-nums">{fmt(totals.perFamilia[f])}</td>))}
-                      <td className="px-3 py-3 text-right tabular-nums">{fmt(totals.grand)}</td>
+                      ))}
+                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(totals.grand)}</td>
                     </tr>
                   </>
                 )}
@@ -424,12 +731,89 @@ function PerformancePage() {
             </table>
           </div>
         </div>
+
+        {/* Histórico de versões do representante */}
+        {repId && (
+          <div className="surface rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Histórico de versões deste representante
+              </p>
+              <span className="text-xs text-muted-foreground">{allVersions.length} versões</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2">Período</th>
+                    <th className="text-left px-3 py-2">Origem</th>
+                    <th className="text-left px-3 py-2">Arquivo / observação</th>
+                    <th className="text-left px-3 py-2">Criada em</th>
+                    <th className="text-left px-3 py-2">Status</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allVersions.map((v: any) => {
+                    const isActive = v.id === effectiveUploadId;
+                    const isReplaced = !!v.substituida_em;
+                    return (
+                      <tr key={v.id} className={cn("border-t border-border", isActive && "bg-muted/40")}>
+                        <td className="px-3 py-2 font-medium">{v.periodo_label}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {v.origem === "manual_edit"
+                            ? "Edição manual"
+                            : v.origem === "restore"
+                            ? "Restauração"
+                            : "Importação"}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{v.observacao ?? v.filename ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {new Date(v.created_at).toLocaleString("pt-BR")}
+                        </td>
+                        <td className="px-3 py-2">
+                          {isActive ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              Ativa
+                            </span>
+                          ) : isReplaced ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                              Substituída
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {!isActive && (
+                            <Button variant="ghost" size="sm" onClick={() => restoreVersion(v)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restaurar
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {allVersions.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                        Nenhuma versão ainda.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={dlgOpen} onOpenChange={setDlgOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{dlgMode === "replace" ? "Substituir versão atual" : "Nova planilha de performance"}</DialogTitle>
+            <DialogTitle>
+              {dlgMode === "replace" ? "Substituir versão atual" : "Nova planilha de performance"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -437,38 +821,108 @@ function PerformancePage() {
               <Input value={periodoLabel} onChange={(e) => setPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Início</Label><Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} /></div>
-              <div><Label>Fim</Label><Input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} /></div>
+              <div>
+                <Label>Início</Label>
+                <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
+              </div>
+              <div>
+                <Label>Fim</Label>
+                <Input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} />
+              </div>
             </div>
             <div>
               <Label>Planilha (.xlsx)</Label>
-              <Input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)} />
+              <Input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
+              />
               <p className="text-xs text-muted-foreground mt-1">
-                Estrutura esperada: cabeçalho com "GRUPO/RAZÃO SOCIAL", "CATEGORIA", famílias nas colunas seguintes e coluna final "Total R$ META".
+                A cor de fundo de cada célula é lida e mapeada para o farol. Valores, ordem e categorias são preservados exatamente como no arquivo.
               </p>
             </div>
-            <Button className="w-full" onClick={handleUpload} disabled={busy}>
+            {dlgMode === "replace" && (
+              <p className="text-xs text-muted-foreground">
+                A versão atual será arquivada (não excluída) e permanecerá no histórico.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDlgOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpload} disabled={busy}>
               {busy ? "Importando…" : dlgMode === "replace" ? "Substituir versão" : "Importar"}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function formatEscala(e: { min: number | null; max: number | null }): string {
-  if (e.min == null && e.max != null) return `abaixo de ${e.max}%`;
-  if (e.min != null && e.max == null) return `acima de ${e.min}%`;
-  if (e.min != null && e.max != null && e.min === e.max) return `${e.min}%`;
-  if (e.min != null && e.max != null) return `${e.min}% a ${e.max}%`;
-  return "—";
+function KpiCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="surface rounded-xl p-4">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-2xl font-semibold tabular-nums mt-1">{value}</div>
+    </div>
+  );
 }
 
-function catBadge(c: string | null): string {
-  const k = (c ?? "").toLowerCase();
-  if (k === "black") return "bg-foreground/10 text-foreground border-foreground/30";
-  if (k === "gold") return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30";
-  if (k === "silver") return "bg-muted text-muted-foreground border-border";
-  return "bg-muted text-muted-foreground border-border";
+function MatrixCell({
+  row,
+  familia,
+  editing,
+  viewMode,
+  onChange,
+}: {
+  row: Row;
+  familia: string;
+  editing: boolean;
+  viewMode: ViewMode;
+  onChange: (v: number) => void;
+}) {
+  const meta = Number(row.metas?.[familia]) || 0;
+  const real = Number(row.realizado?.[familia]) || 0;
+  const pct = meta > 0 && real > 0 ? (real / meta) * 100 : null;
+  const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : row.metas_status?.[familia] ?? null;
+  const cls = status ? FAROL_CELL_CLASS[status] : "";
+
+  if (editing) {
+    return (
+      <td className={cn("px-1.5 py-1 text-right", cls)}>
+        <input
+          type="number"
+          className="w-full bg-transparent border border-border/40 rounded px-1.5 py-1 text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+          value={meta || ""}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        />
+      </td>
+    );
+  }
+
+  const display = (() => {
+    if (viewMode === "meta") return meta > 0 ? fmtBRL(meta) : "";
+    if (viewMode === "realizado") return real > 0 ? fmtBRL(real) : "";
+    if (viewMode === "percentual") return pct != null ? `${pct.toFixed(1)}%` : "";
+    // completo
+    if (real > 0 && meta > 0) return null; // multi-linha abaixo
+    return meta > 0 ? fmtBRL(meta) : "";
+  })();
+
+  return (
+    <td className={cn("px-3 py-2 text-right tabular-nums", cls)}>
+      {viewMode === "completo" && real > 0 && meta > 0 ? (
+        <div className="leading-tight">
+          <div className="text-[10px] opacity-70">Meta: {fmtNum(meta)}</div>
+          <div className="text-[10px] opacity-70">Real: {fmtNum(real)}</div>
+          <div className="font-semibold">{pct != null ? `${pct.toFixed(1)}%` : ""}</div>
+        </div>
+      ) : (
+        display
+      )}
+    </td>
+  );
 }

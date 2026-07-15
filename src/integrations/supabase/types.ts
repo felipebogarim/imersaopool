@@ -1495,35 +1495,50 @@ export type Database = {
       }
       rep_performance_rows: {
         Row: {
+          acompanhar: boolean
           categoria: string | null
           company_id: string
           created_at: string
           id: string
           metas: Json
+          metas_cores: Json
+          metas_status: Json
+          observacao: string | null
           ordem: number
           razao_social: string
+          realizado: Json
           total_meta: number | null
           upload_id: string
         }
         Insert: {
+          acompanhar?: boolean
           categoria?: string | null
           company_id: string
           created_at?: string
           id?: string
           metas?: Json
+          metas_cores?: Json
+          metas_status?: Json
+          observacao?: string | null
           ordem?: number
           razao_social: string
+          realizado?: Json
           total_meta?: number | null
           upload_id: string
         }
         Update: {
+          acompanhar?: boolean
           categoria?: string | null
           company_id?: string
           created_at?: string
           id?: string
           metas?: Json
+          metas_cores?: Json
+          metas_status?: Json
+          observacao?: string | null
           ordem?: number
           razao_social?: string
+          realizado?: Json
           total_meta?: number | null
           upload_id?: string
         }
@@ -1546,11 +1561,16 @@ export type Database = {
           familias: string[]
           filename: string | null
           id: string
+          observacao: string | null
+          origem: string
           periodo_fim: string | null
           periodo_inicio: string | null
           periodo_label: string
           representative_id: string
+          substituida_em: string | null
+          substituida_por: string | null
           updated_at: string
+          updated_by: string | null
           uploaded_by: string | null
         }
         Insert: {
@@ -1561,11 +1581,16 @@ export type Database = {
           familias?: string[]
           filename?: string | null
           id?: string
+          observacao?: string | null
+          origem?: string
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label: string
           representative_id: string
+          substituida_em?: string | null
+          substituida_por?: string | null
           updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
         }
         Update: {
@@ -1576,11 +1601,16 @@ export type Database = {
           familias?: string[]
           filename?: string | null
           id?: string
+          observacao?: string | null
+          origem?: string
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label?: string
           representative_id?: string
+          substituida_em?: string | null
+          substituida_por?: string | null
           updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
@@ -1589,6 +1619,13 @@ export type Database = {
             columns: ["representative_id"]
             isOneToOne: false
             referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rep_performance_uploads_substituida_por_fkey"
+            columns: ["substituida_por"]
+            isOneToOne: false
+            referencedRelation: "rep_performance_uploads"
             referencedColumns: ["id"]
           },
         ]
