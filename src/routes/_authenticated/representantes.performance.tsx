@@ -490,6 +490,69 @@ function PerformancePage() {
     });
   }
 
+  // Exporta a partir da lista (sem abrir o representante)
+  async function exportFromList(rid: string, upload: any) {
+    const rep = reps.find((r: any) => r.id === rid)?.nome ?? "";
+    const { data: rws } = await supabase
+      .from("rep_performance_rows")
+      .select("*")
+      .eq("upload_id", upload.id)
+      .order("ordem");
+    const fams: string[] = (upload.familias as string[]) ?? [];
+    const rowsE = (rws ?? []).map((r: any) => ({
+      razao_social: r.razao_social,
+      categoria: r.categoria,
+      metas: r.metas ?? {},
+      metas_status: r.metas_status ?? {},
+      metas_cores: r.metas_cores ?? {},
+      total_meta: r.total_meta,
+    }));
+    const perFamilia: Record<string, number> = {};
+    let grand = 0;
+    for (const r of rowsE) {
+      for (const f of fams) perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+      grand += fams.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0) || Number(r.total_meta) || 0;
+    }
+    exportPerformanceXlsx({
+      filename: `performance-${rep || "rep"}-${upload.periodo_label}`,
+      representante: rep,
+      periodo: upload.periodo_label,
+      familias: fams,
+      rows: rowsE,
+      totals: { perFamilia, grand },
+    });
+  }
+
+  // Abre editar (substituir versão) a partir da lista
+  function editFromList(rid: string) {
+    setRepId(rid);
+    setUploadId("");
+    setTimeout(() => openUpload("replace"), 0);
+  }
+
+  // Exclui todas as versões (com senha do gestor master) de um representante
+  async function deleteRepConfirmed() {
+    const rid = pwdTargetRep;
+    if (!rid) return;
+    const { data: ups } = await supabase
+      .from("rep_performance_uploads")
+      .select("id")
+      .eq("representative_id", rid);
+    const ids = (ups ?? []).map((u: any) => u.id);
+    if (ids.length) {
+      await supabase.from("rep_performance_rows").delete().in("upload_id", ids);
+      const { error } = await supabase.from("rep_performance_uploads").delete().in("id", ids);
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Performance do representante excluída.");
+    setPwdTargetRep("");
+    qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+    if (repId === rid) {
+      setRepId("");
+      setUploadId("");
+    }
+  }
+
   return (
     <div>
       <PageHeader
