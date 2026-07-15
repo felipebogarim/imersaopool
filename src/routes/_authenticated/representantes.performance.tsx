@@ -168,6 +168,7 @@ function PerformancePage() {
         metas_cores: r.metas_cores ?? {},
         realizado: r.realizado ?? {},
         total_meta: r.total_meta,
+        total_pct_status: (r.total_pct_status ?? null) as FarolStatus | null,
       })),
     [dbRows],
   );
