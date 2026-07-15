@@ -963,6 +963,9 @@ function PerformancePage() {
           </div>
         )}
       </div>
+      )}
+
+
 
       <Dialog open={dlgOpen} onOpenChange={setDlgOpen}>
         <DialogContent>
