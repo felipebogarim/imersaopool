@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
@@ -76,6 +76,20 @@ function PerformancePage() {
   // Edição
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Row[] | null>(null);
+
+  // Filtros da matriz
+  const CATEGORIA_OPTIONS = [
+    "DECOR NEW",
+    "DECOR STUDIO",
+    "SISTEMAS E MODULOS",
+    "PRO LED",
+    "PRO LAMP",
+    "PERFIL",
+    "FITAS E FONTES",
+  ];
+  const [filterQ, setFilterQ] = useState("");
+  const [filterCats, setFilterCats] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: reps = [] } = useQuery({
     queryKey: ["perf-reps"],
@@ -184,6 +198,51 @@ function PerformancePage() {
     }
     return { perFamilia, perFamiliaReal, grand, grandReal };
   }, [view, familias]);
+
+  // Filtros aplicados apenas na matriz
+  const filteredView = useMemo(() => {
+    const q = filterQ.trim().toLowerCase();
+    return view.filter((r) => {
+      if (q && !(r.razao_social ?? "").toLowerCase().includes(q)) return false;
+      if (filterCats.length > 0) {
+        const cat = (r.categoria ?? "").toUpperCase().trim();
+        if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
+      }
+      return true;
+    });
+  }, [view, filterQ, filterCats]);
+
+  const filteredTotals = useMemo(() => {
+    const perFamilia: Record<string, number> = {};
+    const perFamiliaReal: Record<string, number> = {};
+    let grand = 0;
+    let grandReal = 0;
+    for (const r of filteredView) {
+      for (const f of familias) {
+        perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+        perFamiliaReal[f] = (perFamiliaReal[f] ?? 0) + (Number(r.realizado?.[f]) || 0);
+      }
+      const t = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+      grand += t || Number(r.total_meta) || 0;
+      grandReal += familias.reduce((s, f) => s + (Number(r.realizado?.[f]) || 0), 0);
+    }
+    return { perFamilia, perFamiliaReal, grand, grandReal };
+  }, [filteredView, familias]);
+
+  const razaoSociaisAll = useMemo(
+    () => Array.from(new Set(view.map((r) => r.razao_social).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [view],
+  );
+  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0;
+  const filtersRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!filterOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [filterOpen]);
 
   // Resumo executivo — contagens por status
   const resumo = useMemo(() => {
@@ -821,6 +880,76 @@ function PerformancePage() {
 
         {/* Matriz */}
         <div className="surface rounded-xl overflow-hidden">
+          {currentUpload && (
+            <div className="px-3 py-3 border-b border-border flex flex-wrap items-center gap-2" ref={filtersRef}>
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Buscar razão social…"
+                  value={filterQ}
+                  onChange={(e) => { setFilterQ(e.target.value); setFilterOpen(true); }}
+                  onFocus={() => setFilterOpen(true)}
+                  className="pl-9 pr-8 h-9"
+                />
+                {filterQ && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterQ("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Limpar busca"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                {filterOpen && razaoSociaisAll.length > 0 && (
+                  <div className="absolute z-30 mt-1 w-full max-h-64 overflow-auto rounded-md border border-border bg-popover shadow-md">
+                    {razaoSociaisAll
+                      .filter((n) => n.toLowerCase().includes(filterQ.trim().toLowerCase()))
+                      .map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => { setFilterQ(n); setFilterOpen(false); }}
+                          className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                          {n}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {CATEGORIA_OPTIONS.map((c) => {
+                  const active = filterCats.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() =>
+                        setFilterCats((prev) => (active ? prev.filter((x) => x !== c) : [...prev, c]))
+                      }
+                      className={cn(
+                        "inline-flex px-2.5 py-1 rounded-full text-xs border transition",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-transparent text-muted-foreground border-border hover:bg-muted",
+                      )}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); }}>
+                  <X className="h-4 w-4 mr-1" /> Limpar
+                </Button>
+              )}
+              <span className="ml-auto text-xs text-muted-foreground">
+                {filteredView.length} de {view.length} clientes
+              </span>
+            </div>
+          )}
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-sm border-collapse">
               <thead className="bg-muted/60 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
@@ -854,9 +983,16 @@ function PerformancePage() {
                       Carregando…
                     </td>
                   </tr>
+                ) : filteredView.length === 0 ? (
+                  <tr>
+                    <td colSpan={3 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                      Nenhum cliente encontrado com os filtros atuais.
+                    </td>
+                  </tr>
                 ) : (
                   <>
-                    {view.map((r, rowIdx) => {
+                    {filteredView.map((r) => {
+                      const rowIdx = view.indexOf(r);
                       const totalRow = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
                       return (
                         <tr key={r.id ?? rowIdx} className="border-t border-border">
@@ -897,16 +1033,16 @@ function PerformancePage() {
                       <td className="px-3 py-3 sticky left-[240px] bg-muted/70 z-10"></td>
                       {familias.map((f) => (
                         <td key={f} className="px-3 py-3 text-right tabular-nums">
-                          {fmtBRL(totals.perFamilia[f])}
-                          {resumo.hasRealizado && totals.perFamiliaReal[f] > 0 && (
+                          {fmtBRL(filteredTotals.perFamilia[f])}
+                          {resumo.hasRealizado && filteredTotals.perFamiliaReal[f] > 0 && (
                             <div className="text-[10px] font-normal text-muted-foreground">
-                              real: {fmtBRL(totals.perFamiliaReal[f])} (
-                              {((totals.perFamiliaReal[f] / (totals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
+                              real: {fmtBRL(filteredTotals.perFamiliaReal[f])} (
+                              {((filteredTotals.perFamiliaReal[f] / (filteredTotals.perFamilia[f] || 1)) * 100).toFixed(0)}%)
                             </div>
                           )}
                         </td>
                       ))}
-                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(totals.grand)}</td>
+                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">{fmtBRL(filteredTotals.grand)}</td>
                     </tr>
                   </>
                 )}
@@ -914,6 +1050,7 @@ function PerformancePage() {
             </table>
           </div>
         </div>
+
 
         {/* Histórico de versões do representante */}
         {repId && (
