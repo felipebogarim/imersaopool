@@ -166,8 +166,26 @@ function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
 
 
 
-function parseFinalReport(md: string): { chapters: ParsedChapter[]; observacoes: string } {
-  const lines = md.split(/\r?\n/);
+function stripSumarioBlock(md: string): string {
+  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
+  const m = md.match(re);
+  if (!m) return md;
+  const start = m.index!;
+  const rest = md.slice(start + m[0].length);
+  const nextH = rest.search(/^\s*##\s+/m);
+  if (nextH === -1) return md.slice(0, start).trimEnd();
+  return md.slice(0, start) + rest.slice(nextH);
+}
+
+function parseFinalReport(md: string): {
+  chapters: ParsedChapter[];
+  observacoes: string;
+  sumario: SumarioExecutivo | null;
+} {
+  const sumario = parseSumarioExecutivo(md);
+  const cleaned = stripSumarioBlock(md);
+  const lines = cleaned.split(/\r?\n/);
+
   const chapters: ParsedChapter[] = [];
   let cur: ParsedChapter | null = null;
   type Section = "leitura" | "sintese" | "evidencia" | null;
