@@ -91,10 +91,12 @@ export type SumarioExecutivo = {
   sintese_final?: string;
 };
 
+const SUMARIO_HEADER_RE =
+  /^\s*#{1,3}\s*(?:cap[ií]tulo\s+0+\s*[—\-–.:)]?\s*)?sum[aá]rio\s+executivo\s*$/im;
+
 function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
-  // Locate "## Sumário executivo" block; ends at next "## " heading.
-  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
-  const m = md.match(re);
+  // Locate sumário executivo heading; ends at next "## " heading.
+  const m = md.match(SUMARIO_HEADER_RE);
   if (!m) return null;
   const start = m.index! + m[0].length;
   const rest = md.slice(start);
