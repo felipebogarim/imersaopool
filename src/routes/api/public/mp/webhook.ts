@@ -128,7 +128,7 @@ export const Route = createFileRoute("/api/public/mp/webhook")({
           status: newStatus,
           mp_payment_id: String(payment.id),
           payment_method: payment.payment_method_id ?? payment.payment_type_id ?? null,
-          raw: payment as unknown as Record<string, unknown>,
+          raw: payment as any,
           ...(isApproval ? { paid_at: payment.date_approved ?? new Date().toISOString() } : {}),
         };
 
