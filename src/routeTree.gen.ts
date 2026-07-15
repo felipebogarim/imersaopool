@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
@@ -70,6 +71,11 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoSucessoRoute = EventoSucessoRouteImport.update({
+  id: '/evento/sucesso',
+  path: '/evento/sucesso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -348,6 +355,7 @@ export interface FileRoutesByTo {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -394,6 +402,7 @@ export interface FileRoutesById {
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -440,6 +449,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/evento/checkout'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/permissoes'
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/evento/checkout'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/permissoes'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
     | '/evento/checkout'
+    | '/evento/sucesso'
     | '/r/$token'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/permissoes'
@@ -562,6 +574,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
+  EventoSucessoRoute: typeof EventoSucessoRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -600,6 +613,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/sucesso': {
+      id: '/evento/sucesso'
+      path: '/evento/sucesso'
+      fullPath: '/evento/sucesso'
+      preLoaderRoute: typeof EventoSucessoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evento/checkout': {
@@ -989,6 +1009,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
+  EventoSucessoRoute: EventoSucessoRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
