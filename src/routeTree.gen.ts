@@ -49,12 +49,15 @@ import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
+import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
+import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -269,6 +272,12 @@ const AuthenticatedAdminPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminEventoCheckoutTesteRoute =
+  AuthenticatedAdminEventoCheckoutTesteRouteImport.update({
+    id: '/evento-checkout-teste',
+    path: '/evento-checkout-teste',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/backup',
@@ -304,6 +313,17 @@ const AuthenticatedClientesIdEditarRoute =
     path: '/editar',
     getParentRoute: () => AuthenticatedClientesIdRoute,
   } as any)
+const ApiPublicMpTestWebhookRoute = ApiPublicMpTestWebhookRouteImport.update({
+  id: '/api/public/mp/test/webhook',
+  path: '/api/public/mp/test/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicMpTestCreatePreferenceRoute =
+  ApiPublicMpTestCreatePreferenceRouteImport.update({
+    id: '/api/public/mp/test/create-preference',
+    path: '/api/public/mp/test/create-preference',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -327,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -351,6 +372,8 @@ export interface FileRoutesByFullPath {
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -374,6 +397,7 @@ export interface FileRoutesByTo {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -398,6 +422,8 @@ export interface FileRoutesByTo {
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -423,6 +449,7 @@ export interface FileRoutesById {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -447,6 +474,8 @@ export interface FileRoutesById {
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
+  '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -472,6 +501,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
+    | '/admin/evento-checkout-teste'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -496,6 +526,8 @@ export interface FileRouteTypes {
     | '/permissoes/$type/$id'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -519,6 +551,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
+    | '/admin/evento-checkout-teste'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -543,6 +576,8 @@ export interface FileRouteTypes {
     | '/permissoes/$type/$id'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   id:
     | '__root__'
     | '/'
@@ -567,6 +602,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/r/$token'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes/$id'
@@ -591,6 +627,8 @@ export interface FileRouteTypes {
     | '/_authenticated/permissoes/$type/$id'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/api/public/mp/test/create-preference'
+    | '/api/public/mp/test/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -609,6 +647,8 @@ export interface RootRouteChildren {
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiPublicMpTestCreatePreferenceRoute: typeof ApiPublicMpTestCreatePreferenceRoute
+  ApiPublicMpTestWebhookRoute: typeof ApiPublicMpTestWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -893,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/evento-checkout-teste': {
+      id: '/_authenticated/admin/evento-checkout-teste'
+      path: '/evento-checkout-teste'
+      fullPath: '/admin/evento-checkout-teste'
+      preLoaderRoute: typeof AuthenticatedAdminEventoCheckoutTesteRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/backup'
@@ -935,17 +982,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdEditarRouteImport
       parentRoute: typeof AuthenticatedClientesIdRoute
     }
+    '/api/public/mp/test/webhook': {
+      id: '/api/public/mp/test/webhook'
+      path: '/api/public/mp/test/webhook'
+      fullPath: '/api/public/mp/test/webhook'
+      preLoaderRoute: typeof ApiPublicMpTestWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/mp/test/create-preference': {
+      id: '/api/public/mp/test/create-preference'
+      path: '/api/public/mp/test/create-preference'
+      fullPath: '/api/public/mp/test/create-preference'
+      preLoaderRoute: typeof ApiPublicMpTestCreatePreferenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminEventoCheckoutTesteRoute:
+    AuthenticatedAdminEventoCheckoutTesteRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
@@ -1060,6 +1124,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiPublicMpTestCreatePreferenceRoute: ApiPublicMpTestCreatePreferenceRoute,
+  ApiPublicMpTestWebhookRoute: ApiPublicMpTestWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
