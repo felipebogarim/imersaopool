@@ -105,9 +105,9 @@ export const Route = createFileRoute("/api/public/mp/test/create-preference")({
             external_reference: order.id,
             statement_descriptor: "POOL TESTE",
             back_urls: {
-              success: `${origin}/evento/checkout-teste?resultado=sucesso&order=${order.id}`,
-              pending: `${origin}/evento/checkout-teste?resultado=pendente&order=${order.id}`,
-              failure: `${origin}/evento/checkout-teste?resultado=falha&order=${order.id}`,
+              success: `${origin}/admin/evento-checkout-teste?resultado=sucesso&order=${order.id}`,
+              pending: `${origin}/admin/evento-checkout-teste?resultado=pendente&order=${order.id}`,
+              failure: `${origin}/admin/evento-checkout-teste?resultado=falha&order=${order.id}`,
             },
             auto_return: "approved",
             notification_url: `${origin}/api/public/mp/test/webhook`,
