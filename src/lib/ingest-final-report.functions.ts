@@ -305,8 +305,9 @@ function parseFinalReport(md: string): {
   }
   commitSectionSwitch();
   if (cur) chapters.push(cur);
-  return { chapters, observacoes: observacoesBuf.join("\n").trim() };
+  return { chapters, observacoes: observacoesBuf.join("\n").trim(), sumario };
 }
+
 
 
 export const ingestFinalReport = createServerFn({ method: "POST" })
