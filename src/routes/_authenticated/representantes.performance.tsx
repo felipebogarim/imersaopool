@@ -81,6 +81,23 @@ function PerformancePage() {
       (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
 
+  // Lista da landing: uma linha por representante com sua última versão ativa
+  const { data: repList = [], isLoading: loadingList } = useQuery({
+    queryKey: ["perf-rep-list"],
+    queryFn: async () => {
+      const { data: ups } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false });
+      const byRep = new Map<string, any>();
+      for (const u of ups ?? []) {
+        if (!byRep.has(u.representative_id)) byRep.set(u.representative_id, u);
+      }
+      return Array.from(byRep.entries()).map(([rid, u]) => ({ rep_id: rid, upload: u }));
+    },
+  });
+
   const { data: uploads = [] } = useQuery({
     queryKey: ["perf-uploads", repId],
     enabled: !!repId,
