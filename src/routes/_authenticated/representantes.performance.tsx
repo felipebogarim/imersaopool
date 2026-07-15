@@ -1023,7 +1023,7 @@ function PerformancePage() {
         onOpenChange={(v) => { setPwdOpen(v); if (!v) setPwdTargetRep(""); }}
         title="Excluir performance do representante"
         description="Todas as versões e dados de performance deste representante serão removidos. Digite a senha do gestor master para confirmar."
-        onConfirmed={deleteRepConfirmed}
+        onConfirmed={async () => { await deleteRepConfirmed(); }}
       />
     </div>
   );
