@@ -169,8 +169,7 @@ function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
 
 
 function stripSumarioBlock(md: string): string {
-  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
-  const m = md.match(re);
+  const m = md.match(SUMARIO_HEADER_RE);
   if (!m) return md;
   const start = m.index!;
   const rest = md.slice(start + m[0].length);
