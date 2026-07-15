@@ -318,7 +318,7 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
     const text = await stripBase64ToText(data.base64, data.mime, data.filename);
     if (!text.trim()) throw new Error("Documento vazio");
 
-    const { chapters: parsed, observacoes } = parseFinalReport(text);
+    const { chapters: parsed, observacoes, sumario } = parseFinalReport(text);
     if (!parsed.length)
       throw new Error(
         'Nenhum capítulo reconhecido. Use cabeçalhos "## Capítulo N — Título" no documento.',
