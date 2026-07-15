@@ -231,9 +231,20 @@ function parseFinalReport(md: string): {
     if (h) {
       const m = line.match(chapterHeaderRe);
       if (m) {
+        const ordem = parseInt(m[1] ?? m[2], 10);
+        // Capítulo 0/00 é reservado ao Sumário executivo (já tratado à parte).
+        if (ordem === 0) {
+          commitSectionSwitch();
+          if (cur) {
+            chapters.push(cur);
+            cur = null;
+          }
+          section = null;
+          outsideMode = false;
+          continue;
+        }
         commitSectionSwitch();
         if (cur) chapters.push(cur);
-        const ordem = parseInt(m[1] ?? m[2], 10);
         cur = { ordem, titulo: m[3].trim(), leitura: "", sintese: {}, evidencia: "" };
         section = null;
         outsideMode = false;
