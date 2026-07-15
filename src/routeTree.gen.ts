@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
+import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
+import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
@@ -76,6 +78,16 @@ const RTokenRoute = RTokenRouteImport.update({
 const EventoSucessoRoute = EventoSucessoRouteImport.update({
   id: '/evento/sucesso',
   path: '/evento/sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoPendenteRoute = EventoPendenteRouteImport.update({
+  id: '/evento/pendente',
+  path: '/evento/pendente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventoFalhaRoute = EventoFalhaRouteImport.update({
+  id: '/evento/falha',
+  path: '/evento/falha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
@@ -310,6 +322,8 @@ export interface FileRoutesByFullPath {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -355,6 +369,8 @@ export interface FileRoutesByTo {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -402,6 +418,8 @@ export interface FileRoutesById {
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/evento/checkout': typeof EventoCheckoutRoute
+  '/evento/falha': typeof EventoFalhaRoute
+  '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -449,6 +467,8 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
@@ -494,6 +514,8 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
     | '/evento/sucesso'
     | '/r/$token'
     | '/admin/backup'
@@ -540,6 +562,8 @@ export interface FileRouteTypes {
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
     | '/evento/checkout'
+    | '/evento/falha'
+    | '/evento/pendente'
     | '/evento/sucesso'
     | '/r/$token'
     | '/_authenticated/admin/backup'
@@ -574,6 +598,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
+  EventoFalhaRoute: typeof EventoFalhaRoute
+  EventoPendenteRoute: typeof EventoPendenteRoute
   EventoSucessoRoute: typeof EventoSucessoRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
@@ -620,6 +646,20 @@ declare module '@tanstack/react-router' {
       path: '/evento/sucesso'
       fullPath: '/evento/sucesso'
       preLoaderRoute: typeof EventoSucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/pendente': {
+      id: '/evento/pendente'
+      path: '/evento/pendente'
+      fullPath: '/evento/pendente'
+      preLoaderRoute: typeof EventoPendenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evento/falha': {
+      id: '/evento/falha'
+      path: '/evento/falha'
+      fullPath: '/evento/falha'
+      preLoaderRoute: typeof EventoFalhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evento/checkout': {
@@ -1009,6 +1049,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
+  EventoFalhaRoute: EventoFalhaRoute,
+  EventoPendenteRoute: EventoPendenteRoute,
   EventoSucessoRoute: EventoSucessoRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
