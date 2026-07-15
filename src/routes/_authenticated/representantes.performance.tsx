@@ -600,9 +600,36 @@ function PerformancePage() {
                   Uma linha por representante. Abra para ver o detalhamento por período.
                 </p>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {repList.length} representante{repList.length === 1 ? "" : "s"}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {repList.length} representante{repList.length === 1 ? "" : "s"}
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      <Upload className="h-4 w-4 mr-1" /> Nova planilha
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                    {reps.length === 0 ? (
+                      <DropdownMenuItem disabled>Nenhum representante</DropdownMenuItem>
+                    ) : (
+                      reps.map((r: any) => (
+                        <DropdownMenuItem
+                          key={r.id}
+                          onClick={() => {
+                            setRepId(r.id);
+                            setUploadId("");
+                            setTimeout(() => openUpload("new"), 0);
+                          }}
+                        >
+                          {r.nome}
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
