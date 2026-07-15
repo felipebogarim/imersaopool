@@ -199,6 +199,51 @@ function PerformancePage() {
     return { perFamilia, perFamiliaReal, grand, grandReal };
   }, [view, familias]);
 
+  // Filtros aplicados apenas na matriz
+  const filteredView = useMemo(() => {
+    const q = filterQ.trim().toLowerCase();
+    return view.filter((r) => {
+      if (q && !(r.razao_social ?? "").toLowerCase().includes(q)) return false;
+      if (filterCats.length > 0) {
+        const cat = (r.categoria ?? "").toUpperCase().trim();
+        if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
+      }
+      return true;
+    });
+  }, [view, filterQ, filterCats]);
+
+  const filteredTotals = useMemo(() => {
+    const perFamilia: Record<string, number> = {};
+    const perFamiliaReal: Record<string, number> = {};
+    let grand = 0;
+    let grandReal = 0;
+    for (const r of filteredView) {
+      for (const f of familias) {
+        perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+        perFamiliaReal[f] = (perFamiliaReal[f] ?? 0) + (Number(r.realizado?.[f]) || 0);
+      }
+      const t = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+      grand += t || Number(r.total_meta) || 0;
+      grandReal += familias.reduce((s, f) => s + (Number(r.realizado?.[f]) || 0), 0);
+    }
+    return { perFamilia, perFamiliaReal, grand, grandReal };
+  }, [filteredView, familias]);
+
+  const razaoSociaisAll = useMemo(
+    () => Array.from(new Set(view.map((r) => r.razao_social).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [view],
+  );
+  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0;
+  const filtersRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!filterOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [filterOpen]);
+
   // Resumo executivo — contagens por status
   const resumo = useMemo(() => {
     const perCat: Record<string, { count: number; meta: number; real: number }> = {};
