@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _image_url_staging2: {
-        Row: {
-          product_id: string
-          url: string
-        }
-        Insert: {
-          product_id: string
-          url: string
-        }
-        Update: {
-          product_id?: string
-          url?: string
-        }
-        Relationships: []
-      }
       action_plans: {
         Row: {
           acao: string
