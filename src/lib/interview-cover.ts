@@ -459,7 +459,7 @@ export async function drawIntervieweePageDark(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(200, 200, 205);
-  doc.text("ENTREVISTADO", leftX, firstLineY - lineH * 0.55 - 10, { charSpace: 3 });
+  doc.text("ENTREVISTADO", leftX, firstLineY - lineH * 1.25, { charSpace: 3 });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(fontSize);
