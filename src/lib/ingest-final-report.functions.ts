@@ -91,10 +91,12 @@ export type SumarioExecutivo = {
   sintese_final?: string;
 };
 
+const SUMARIO_HEADER_RE =
+  /^\s*#{1,3}\s*(?:cap[ií]tulo\s+0+\s*[—\-–.:)]?\s*)?sum[aá]rio\s+executivo\s*$/im;
+
 function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
-  // Locate "## Sumário executivo" block; ends at next "## " heading.
-  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
-  const m = md.match(re);
+  // Locate sumário executivo heading; ends at next "## " heading.
+  const m = md.match(SUMARIO_HEADER_RE);
   if (!m) return null;
   const start = m.index! + m[0].length;
   const rest = md.slice(start);
@@ -167,8 +169,7 @@ function parseSumarioExecutivo(md: string): SumarioExecutivo | null {
 
 
 function stripSumarioBlock(md: string): string {
-  const re = /^\s*##\s+sum[aá]rio\s+executivo\s*$/im;
-  const m = md.match(re);
+  const m = md.match(SUMARIO_HEADER_RE);
   if (!m) return md;
   const start = m.index!;
   const rest = md.slice(start + m[0].length);
@@ -230,9 +231,20 @@ function parseFinalReport(md: string): {
     if (h) {
       const m = line.match(chapterHeaderRe);
       if (m) {
+        const ordem = parseInt(m[1] ?? m[2], 10);
+        // Capítulo 0/00 é reservado ao Sumário executivo (já tratado à parte).
+        if (ordem === 0) {
+          commitSectionSwitch();
+          if (cur) {
+            chapters.push(cur);
+            cur = null;
+          }
+          section = null;
+          outsideMode = false;
+          continue;
+        }
         commitSectionSwitch();
         if (cur) chapters.push(cur);
-        const ordem = parseInt(m[1] ?? m[2], 10);
         cur = { ordem, titulo: m[3].trim(), leitura: "", sintese: {}, evidencia: "" };
         section = null;
         outsideMode = false;
