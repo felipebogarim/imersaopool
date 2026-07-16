@@ -304,7 +304,6 @@ function GeradorPerformancePage() {
         familias: result.familias as any,
         rows: result.rows as any,
         participacao: derived.participacao as any,
-        atingimento: derived.atingimento as any,
         observacoes: result.observacoes ?? null,
       } as any);
       if (error) throw error;
