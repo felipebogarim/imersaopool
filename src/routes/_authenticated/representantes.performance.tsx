@@ -238,13 +238,8 @@ function PerformancePage() {
         if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
       }
       if (filterZero) {
-        const hasZero = famsToCheck.some((f) => {
-          const status = r.metas_status?.[f];
-          if (status === "sem_compra") return true;
-          const meta = Number(r.metas?.[f]) || 0;
-          const real = Number(r.realizado?.[f]) || 0;
-          return meta > 0 && real === 0;
-        });
+        // Considera 0% apenas nas colunas de famílias (ignora coluna Total %).
+        const hasZero = famsToCheck.some((f) => r.metas_status?.[f] === "sem_compra");
         if (!hasZero) return false;
       }
       return true;
