@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
@@ -33,6 +34,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
+import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
@@ -43,6 +45,7 @@ import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/ba
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
+import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
 import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
 import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
@@ -79,6 +82,11 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventoSucessoRoute = EventoSucessoRouteImport.update({
@@ -186,6 +194,11 @@ const AuthenticatedImersoesIndexRoute =
     path: '/imersoes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFormsIndexRoute = AuthenticatedFormsIndexRouteImport.update({
+  id: '/forms/',
+  path: '/forms/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEntrevistasIndexRoute =
   AuthenticatedEntrevistasIndexRouteImport.update({
     id: '/entrevistas/',
@@ -238,6 +251,11 @@ const AuthenticatedImersoesNovaRoute =
 const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
   id: '/imersoes/$id',
   path: '/imersoes/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFormsIdRoute = AuthenticatedFormsIdRouteImport.update({
+  id: '/forms/$id',
+  path: '/forms/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEntrevistasNovaRoute =
@@ -366,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
+  '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -377,6 +396,7 @@ export interface FileRoutesByFullPath {
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -387,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -419,6 +440,7 @@ export interface FileRoutesByTo {
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
+  '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -430,6 +452,7 @@ export interface FileRoutesByTo {
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -440,6 +463,7 @@ export interface FileRoutesByTo {
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
+  '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
@@ -474,6 +498,7 @@ export interface FileRoutesById {
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
+  '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -485,6 +510,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -495,6 +521,7 @@ export interface FileRoutesById {
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -529,6 +556,7 @@ export interface FileRouteTypes {
     | '/evento/falha'
     | '/evento/pendente'
     | '/evento/sucesso'
+    | '/f/$slug'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
@@ -540,6 +568,7 @@ export interface FileRouteTypes {
     | '/clientes/novo'
     | '/entrevistas/$id'
     | '/entrevistas/nova'
+    | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/representantes/performance'
@@ -550,6 +579,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-to-drive'
     | '/clientes/'
     | '/entrevistas/'
+    | '/forms/'
     | '/imersoes/'
     | '/produtos/'
     | '/representantes/'
@@ -582,6 +612,7 @@ export interface FileRouteTypes {
     | '/evento/falha'
     | '/evento/pendente'
     | '/evento/sucesso'
+    | '/f/$slug'
     | '/r/$token'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
@@ -593,6 +624,7 @@ export interface FileRouteTypes {
     | '/clientes/novo'
     | '/entrevistas/$id'
     | '/entrevistas/nova'
+    | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/representantes/performance'
@@ -603,6 +635,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-to-drive'
     | '/clientes'
     | '/entrevistas'
+    | '/forms'
     | '/imersoes'
     | '/produtos'
     | '/representantes'
@@ -636,6 +669,7 @@ export interface FileRouteTypes {
     | '/evento/falha'
     | '/evento/pendente'
     | '/evento/sucesso'
+    | '/f/$slug'
     | '/r/$token'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/evento-checkout-teste'
@@ -647,6 +681,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/novo'
     | '/_authenticated/entrevistas/$id'
     | '/_authenticated/entrevistas/nova'
+    | '/_authenticated/forms/$id'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/representantes/performance'
@@ -657,6 +692,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-to-drive'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
+    | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
@@ -678,6 +714,7 @@ export interface RootRouteChildren {
   EventoFalhaRoute: typeof EventoFalhaRoute
   EventoPendenteRoute: typeof EventoPendenteRoute
   EventoSucessoRoute: typeof EventoSucessoRoute
+  FSlugRoute: typeof FSlugRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -718,6 +755,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evento/sucesso': {
@@ -860,6 +904,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImersoesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/forms/': {
+      id: '/_authenticated/forms/'
+      path: '/forms'
+      fullPath: '/forms/'
+      preLoaderRoute: typeof AuthenticatedFormsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/entrevistas/': {
       id: '/_authenticated/entrevistas/'
       path: '/entrevistas'
@@ -928,6 +979,13 @@ declare module '@tanstack/react-router' {
       path: '/imersoes/$id'
       fullPath: '/imersoes/$id'
       preLoaderRoute: typeof AuthenticatedImersoesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/forms/$id': {
+      id: '/_authenticated/forms/$id'
+      path: '/forms/$id'
+      fullPath: '/forms/$id'
+      preLoaderRoute: typeof AuthenticatedFormsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/entrevistas/nova': {
@@ -1128,11 +1186,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRouteWithChildren
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
+  AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
+  AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
@@ -1160,12 +1220,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRouteWithChildren,
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
+  AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
+  AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
@@ -1185,6 +1247,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventoFalhaRoute: EventoFalhaRoute,
   EventoPendenteRoute: EventoPendenteRoute,
   EventoSucessoRoute: EventoSucessoRoute,
+  FSlugRoute: FSlugRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
