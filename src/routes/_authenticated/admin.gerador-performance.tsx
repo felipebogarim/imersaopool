@@ -808,12 +808,12 @@ function GeradorPerformancePage() {
                           </td>
                           <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
                           <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
-                            —
+                          <td className="px-3 py-2.5 text-center tabular-nums">
+                            {fmtPct(derived.atingimento.__total__)}
                           </td>
                           {result.familias.map((f) => (
-                            <td key={f} className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
-                              —
+                            <td key={f} className="px-3 py-2.5 text-center tabular-nums">
+                              {fmtPct(derived.atingimento[f])}
                             </td>
                           ))}
                         </tr>
