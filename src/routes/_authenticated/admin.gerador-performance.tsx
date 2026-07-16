@@ -141,6 +141,114 @@ function GeradorPerformancePage() {
     });
   }
 
+  function openSend() {
+    if (!result) return;
+    const found = reps.find((r: any) => r.nome?.toLowerCase() === representante.trim().toLowerCase());
+    setSendRepId(found?.id ?? "");
+    setSendPeriodoLabel(periodo || "1º Semestre 2026");
+    setSendPeriodoInicio("");
+    setSendPeriodoFim("");
+    setSendOpen(true);
+  }
+
+  async function sendToPanel() {
+    if (!result) return;
+    if (!sendRepId) return toast.error("Selecione um representante.");
+    if (!sendPeriodoLabel.trim()) return toast.error("Informe o período.");
+    setSending(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+
+      const { data: existing } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, periodo_label, periodo_inicio, periodo_fim")
+        .eq("representative_id", sendRepId)
+        .is("substituida_em", null);
+
+      const norm = (s: string) => (s ?? "").trim().toLowerCase();
+      const sameLabel = (a: string, b: string) => norm(a) === norm(b);
+      const sameDates = (a: any) =>
+        (sendPeriodoInicio || null) === (a.periodo_inicio || null) &&
+        (sendPeriodoFim || null) === (a.periodo_fim || null);
+      const match = (existing ?? []).find(
+        (u: any) => sameLabel(u.periodo_label, sendPeriodoLabel) || sameDates(u),
+      );
+
+      if (match) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString() } as any)
+          .eq("id", match.id);
+      }
+
+      const familias = result.familias;
+      const categoria_metas: Record<string, number> = {};
+      for (const r of result.rows) {
+        const c = (r.categoria ?? "").trim();
+        if (!c) continue;
+        const t = Number(r.total_meta) || familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+        categoria_metas[c] = (categoria_metas[c] ?? 0) + t;
+      }
+
+      const { data: up, error: upErr } = await supabase
+        .from("rep_performance_uploads")
+        .insert({
+          representative_id: sendRepId,
+          periodo_label: sendPeriodoLabel.trim(),
+          periodo_inicio: sendPeriodoInicio || null,
+          periodo_fim: sendPeriodoFim || null,
+          familias,
+          categoria_metas,
+          escala_percentual: {},
+          participacao: {},
+          atingimento: {},
+          filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
+          uploaded_by: uid,
+          origem: match ? "ia-atualizada" : "ia",
+        } as any)
+        .select("id")
+        .single();
+      if (upErr || !up) throw upErr ?? new Error("Falha ao criar upload");
+
+      if (match) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_por: up.id } as any)
+          .eq("id", match.id);
+      }
+
+      const payload = result.rows.map((r, i) => ({
+        upload_id: up.id,
+        ordem: i + 1,
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        metas_cores: {},
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      }));
+      for (let i = 0; i < payload.length; i += 200) {
+        const chunk = payload.slice(i, i + 200);
+        const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
+        if (error) throw error;
+      }
+
+      toast.success(
+        match
+          ? "Enviado como atualização da performance existente."
+          : "Enviado como nova performance no painel.",
+      );
+      setSendOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Erro ao enviar para o painel.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   const totalCells = useMemo(() => files.reduce((s, f) => s + f.sheets.reduce((a, sh) => a + sh.aoa.length, 0), 0), [files]);
 
   return (
