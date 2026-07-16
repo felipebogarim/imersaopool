@@ -80,15 +80,6 @@ function PerformancePage() {
   const [draft, setDraft] = useState<Row[] | null>(null);
 
   // Filtros da matriz
-  const CATEGORIA_OPTIONS = [
-    "DECOR NEW",
-    "DECOR STUDIO",
-    "SISTEMAS E MODULOS",
-    "PRO LED",
-    "PRO LAMP",
-    "PERFIL",
-    "FITAS E FONTES",
-  ];
   const [filterQ, setFilterQ] = useState("");
   const [filterCats, setFilterCats] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -234,6 +225,17 @@ function PerformancePage() {
 
   const razaoSociaisAll = useMemo(
     () => Array.from(new Set(view.map((r) => r.razao_social).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [view],
+  );
+  const CATEGORIA_OPTIONS = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          view
+            .map((r) => (r.categoria ?? "").trim())
+            .filter((c) => c.length > 0),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [view],
   );
   const hasFilters = filterQ.trim() !== "" || filterCats.length > 0;
