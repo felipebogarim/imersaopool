@@ -79,15 +79,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         supabase.from("profiles").select("active_company_id").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
-      const isAdmin = (roles ?? []).some(r => r.role === "admin");
+      const roleList = (roles ?? []).map((r: any) => r.role);
+      const isAdmin = roleList.includes("admin");
+      const isComercialOnly = roleList.length > 0 && roleList.every((r: string) => r === "comercial");
       let companyName: string | null = null;
       if (profile?.active_company_id) {
         const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
         companyName = c?.nome ?? null;
       }
-      return { isAdmin, companyName };
+      return { isAdmin, isComercialOnly, companyName };
     },
   });
+
 
   async function signOut() {
     await qc.cancelQueries();
