@@ -107,7 +107,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const pathname = useRouterState({ select: s => s.location.pathname });
-  const isDark = pathname === "/";
+  const isDark = pathname === "/" || pathname.startsWith("/auth");
   useEffect(() => {
     const root = document.documentElement;
     if (isDark) root.classList.add("dark");
