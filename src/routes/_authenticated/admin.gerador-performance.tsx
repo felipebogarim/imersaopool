@@ -22,11 +22,21 @@ import {
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
-  FAROL_LABEL,
   catBadge,
   type FarolStatus,
 } from "@/lib/performance-farol";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+
+const fmtBRL = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n)
+    ? "—"
+    : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const fmtPct = (n: number | null | undefined) => {
+  if (n == null || Number.isNaN(n)) return "—";
+  const v = Math.abs(n) <= 1.5 ? n * 100 : n;
+  return `${v.toFixed(1).replace(".", ",")}%`;
+};
 
 export const Route = createFileRoute("/_authenticated/admin/gerador-performance")({
   head: () => ({ meta: [{ title: "Gerador de Performance — Admin" }] }),
@@ -125,14 +135,28 @@ function GeradorPerformancePage() {
     }
   }
 
-  function download() {
-    if (!result) return;
-    const totals = {
-      perFamilia: Object.fromEntries(
-        result.familias.map((f) => [f, result.rows.reduce((s, r) => s + (Number(r.metas[f]) || 0), 0)]),
-      ),
-      grand: result.rows.reduce((s, r) => s + (Number(r.total_meta) || 0), 0),
+  const derived = useMemo(() => {
+    if (!result) return null;
+    const perFamilia = Object.fromEntries(
+      result.familias.map((f) => [f, result.rows.reduce((s, r) => s + (Number(r.metas[f]) || 0), 0)]),
+    ) as Record<string, number>;
+    const grand = result.rows.reduce((s, r) => {
+      const t =
+        Number(r.total_meta) ||
+        result.familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      return s + t;
+    }, 0);
+    const participacao: { __total__: number | null } & Record<string, number | null> = {
+      __total__: grand > 0 ? 100 : null,
     };
+    for (const f of result.familias) {
+      participacao[f] = grand > 0 ? (perFamilia[f] / grand) * 100 : null;
+    }
+    return { perFamilia, grand, participacao };
+  }, [result]);
+
+  function download() {
+    if (!result || !derived) return;
     exportPerformanceXlsx({
       filename: `Performance-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
       representante: representante || "—",
@@ -144,10 +168,13 @@ function GeradorPerformancePage() {
         metas: r.metas,
         metas_status: r.metas_status,
         total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
       })),
-      totals,
+      totals: { perFamilia: derived.perFamilia, grand: derived.grand },
+      participacao: derived.participacao,
     });
   }
+
 
   function openSend() {
     if (!result) return;
@@ -207,7 +234,7 @@ function GeradorPerformancePage() {
           familias,
           categoria_metas,
           escala_percentual: {},
-          participacao: {},
+          participacao: derived?.participacao ?? {},
           atingimento: {},
           filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
           uploaded_by: uid,
@@ -382,49 +409,140 @@ function GeradorPerformancePage() {
               </div>
             )}
 
-            <div className="overflow-auto rounded-lg border border-border">
-              <table className="min-w-full text-xs">
-                <thead className="bg-muted/40 text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-2 sticky left-0 bg-muted/40">Razão social</th>
-                    <th className="text-left px-3 py-2">Categoria</th>
-                    {result.familias.map((f) => (
-                      <th key={f} className="text-center px-3 py-2 whitespace-nowrap">{f}</th>
-                    ))}
-                    <th className="text-right px-3 py-2">Total meta</th>
-                    <th className="text-center px-3 py-2">Total %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.rows.map((r, i) => (
-                    <tr key={i} className="border-t border-border">
-                      <td className="px-3 py-2 sticky left-0 bg-background font-medium">{r.razao_social}</td>
-                      <td className="px-3 py-2">
-                        {r.categoria && (
-                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border", catBadge(r.categoria))}>
-                            {r.categoria}
-                          </span>
-                        )}
-                      </td>
-                      {result.familias.map((f) => {
-                        const st = r.metas_status?.[f] as FarolStatus | undefined;
-                        return (
-                          <td key={f} className={cn("px-2 py-1 text-center tabular-nums", st && FAROL_CELL_CLASS[st])}>
-                            {st ? FAROL_FAIXA_TEXT[st] : ""}
-                          </td>
-                        );
-                      })}
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {r.total_meta != null ? r.total_meta.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }) : "—"}
-                      </td>
-                      <td className={cn("px-2 py-1 text-center", r.total_pct_status && FAROL_CELL_CLASS[r.total_pct_status])}>
-                        {r.total_pct_status ? FAROL_LABEL[r.total_pct_status] : "—"}
-                      </td>
+            <div className="surface rounded-xl overflow-hidden">
+              <div className="overflow-auto max-h-[70vh]">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
+                    <tr>
+                      <th className="text-left px-3 py-3 sticky left-0 top-0 bg-muted z-30 min-w-[240px]">
+                        Razão social
+                      </th>
+                      <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
+                        Categoria
+                      </th>
+                      <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted">
+                        Total meta
+                      </th>
+                      <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">
+                        Total %
+                      </th>
+                      {result.familias.map((f) => (
+                        <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
+                          {f}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {result.rows.map((r, i) => {
+                      const totalRow =
+                        r.total_meta ??
+                        result.familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+                      const totalPctCls = r.total_pct_status ? FAROL_CELL_CLASS[r.total_pct_status] : "";
+                      return (
+                        <tr key={i} className="border-t border-border">
+                          <td
+                            title={r.razao_social}
+                            className="px-3 py-2 font-medium sticky left-0 bg-background z-10 max-w-[280px] truncate"
+                          >
+                            {r.razao_social}
+                          </td>
+                          <td className="px-3 py-2 sticky left-[240px] bg-background z-10">
+                            <span
+                              className={cn(
+                                "inline-flex px-2 py-0.5 rounded-full text-xs border",
+                                catBadge(r.categoria),
+                              )}
+                            >
+                              {r.categoria ?? "—"}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/20">
+                            {fmtBRL(totalRow)}
+                          </td>
+                          <td className={cn("px-2 py-1 text-center", totalPctCls)}>
+                            {r.total_pct_status ? (
+                              <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
+                                {FAROL_FAIXA_TEXT[r.total_pct_status]}
+                              </span>
+                            ) : (
+                              ""
+                            )}
+                          </td>
+                          {result.familias.map((f) => {
+                            const st = r.metas_status?.[f] as FarolStatus | undefined;
+                            return (
+                              <td
+                                key={f}
+                                className={cn(
+                                  "px-2 py-1 text-center font-semibold text-xs tabular-nums",
+                                  st && FAROL_CELL_CLASS[st],
+                                )}
+                              >
+                                {st ? FAROL_FAIXA_TEXT[st] : ""}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                    {derived && (
+                      <>
+                        {/* TOTAL GERAL DA META */}
+                        <tr className="border-t-2 border-border bg-muted/60 font-semibold">
+                          <td className="px-3 py-3 sticky left-0 bg-muted/80 z-10 uppercase text-xs tracking-wider">
+                            Total geral da meta
+                          </td>
+                          <td className="px-3 py-3 sticky left-[240px] bg-muted/80 z-10"></td>
+                          <td className="px-3 py-3 text-right tabular-nums">
+                            {fmtBRL(derived.grand)}
+                          </td>
+                          <td className="px-3 py-3"></td>
+                          {result.familias.map((f) => (
+                            <td key={f} className="px-3 py-3 text-right tabular-nums">
+                              {fmtBRL(derived.perFamilia[f] || 0)}
+                            </td>
+                          ))}
+                        </tr>
+                        {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
+                        <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
+                          <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
+                            Participação estimada na venda
+                          </td>
+                          <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
+                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5 text-center tabular-nums">
+                            {fmtPct(derived.participacao.__total__)}
+                          </td>
+                          {result.familias.map((f) => (
+                            <td key={f} className="px-3 py-2.5 text-center tabular-nums">
+                              {fmtPct(derived.participacao[f])}
+                            </td>
+                          ))}
+                        </tr>
+                        {/* ATINGIMENTO ESTIMADO DA META */}
+                        <tr className="border-t border-border bg-amber-50 dark:bg-amber-950/30 font-medium">
+                          <td className="px-3 py-2.5 sticky left-0 bg-amber-100/90 dark:bg-amber-950/60 z-10 text-xs uppercase tracking-wider">
+                            Atingimento estimado da meta
+                          </td>
+                          <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
+                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                            —
+                          </td>
+                          {result.familias.map((f) => (
+                            <td key={f} className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
+                              —
+                            </td>
+                          ))}
+                        </tr>
+                      </>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
           </div>
         )}
       </div>
