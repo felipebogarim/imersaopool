@@ -465,5 +465,3 @@ function GeradorPerformancePage() {
     </div>
   );
 }
-  );
-}
