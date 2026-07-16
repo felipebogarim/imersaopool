@@ -1,291 +1,294 @@
 import * as XLSX from "xlsx";
+import { statusFromPercent, FAROL_LABEL, type FarolStatus } from "./performance-farol";
 
-// BI do cliente: mesma estrutura do BI do representante, porém a seção
-// "PARTICIPAÇÃO DAS CATEGORIAS" é substituída por "PARTICIPAÇÃO DAS FAMÍLIAS"
-// (o cliente pertence a apenas uma categoria).
+// ============= Types =============
+
+export type FamiliaResultado = {
+  familia: string;
+  atingimento: number | null; // fração 0..>1
+  farol: string | null; // "Ótimo" | "Sem compra" | ...
+};
+
 export type ClientBIData = {
   geral: number | null;
   categoria: string | null;
-  maior_familia: { label: string | null; participacao: number | null };
-  maior_grupo_farol: { label: string | null; participacao: number | null };
-  familias: Array<{ familia: string; participacao: number | null; atingimento: number | null }>;
-  farol: Array<{ grupo: string; participacao: number | null }>;
-  piores_familias: Array<{
-    posicao: number | null;
-    familia_pior_atingimento: string | null;
-    atingimento_pior: number | null;
-    familia_maior_participacao: string | null;
-    participacao_maior: number | null;
-    atingimento_maior: number | null;
-  }>;
+  familias: FamiliaResultado[];
+  // derivados
+  melhor_familia: { label: string | null; atingimento: number | null };
+  pior_familia: { label: string | null; atingimento: number | null };
+  distribuicao_farol: Array<{ grupo: string; quantidade: number }>;
 };
+
+export type ClientFamiliasData = {
+  itens: FamiliaResultado[];
+};
+
+// ============= Helpers =============
 
 const num = (v: any): number | null => {
   if (v == null || v === "") return null;
-  if (typeof v === "number") return v;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
   const s = String(v).replace("%", "").replace(",", ".").trim();
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 };
-const str = (v: any): string | null => (v == null || v === "" ? null : String(v).trim());
-
-export function parseClientBIWorkbook(buf: ArrayBuffer): ClientBIData {
-  const wb = XLSX.read(buf, { type: "array" });
-  const sheetName = wb.SheetNames.find((n) => n.toUpperCase().includes("BI")) ?? wb.SheetNames[0];
-  return parseClientBISheet(wb.Sheets[sheetName]);
-}
-
-function parseClientBISheet(ws: any): ClientBIData {
-  if (!ws) throw new Error("Planilha BI não encontrada.");
-  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
-
-  const findRow = (needle: string) =>
-    rows.findIndex((r) => (r ?? []).some((c) => typeof c === "string" && c.toUpperCase().includes(needle)));
-
-  const iGeral = findRow("ATINGIMENTO PONDERADO GERAL");
-  const iFams = findRow("PARTICIPAÇÃO DAS FAMÍLIAS");
-  const iFarol = findRow("DISTRIBUIÇÃO DOS GRUPOS DO FAROL");
-  const iPiores = findRow("TRÊS PIORES FAMÍLIAS");
-
-  const data: ClientBIData = {
-    geral: null,
-    categoria: null,
-    maior_familia: { label: null, participacao: null },
-    maior_grupo_farol: { label: null, participacao: null },
-    familias: [],
-    farol: [],
-    piores_familias: [],
-  };
-
-  if (iGeral >= 0 && rows[iGeral + 1]) {
-    const r = rows[iGeral + 1];
-    data.geral = num(r[0]);
-    // categoria única do cliente pode estar em coluna próxima ao "maior participação"
-    data.categoria = str(r[2]) ?? str(r[3]);
-    data.maior_familia = { label: str(r[4]), participacao: num(r[7]) };
-    data.maior_grupo_farol = { label: str(r[9]), participacao: num(r[12]) };
-  }
-
-  if (iFams >= 0) {
-    for (let i = iFams + 2; i < rows.length; i++) {
-      const r = rows[i] ?? [];
-      const fam = str(r[0]);
-      if (!fam || fam.toUpperCase().includes("DISTRIBUIÇÃO") || fam.toUpperCase().includes("TRÊS")) break;
-      data.familias.push({ familia: fam, participacao: num(r[1]), atingimento: num(r[2]) });
-    }
-  }
-
-  if (iFarol >= 0) {
-    for (let i = iFarol + 2; i < rows.length; i++) {
-      const r = rows[i] ?? [];
-      const g = str(r[0]);
-      if (!g || g.toUpperCase().includes("TRÊS") || g.toUpperCase().includes("PIORES")) break;
-      data.farol.push({ grupo: g, participacao: num(r[1]) });
-    }
-  }
-
-  if (iPiores >= 0) {
-    for (let i = iPiores + 2; i < rows.length; i++) {
-      const r = rows[i] ?? [];
-      const pos = num(r[0]);
-      const fam = str(r[1]);
-      if (pos == null && !fam) break;
-      data.piores_familias.push({
-        posicao: pos ?? i - iPiores - 1,
-        familia_pior_atingimento: fam,
-        atingimento_pior: num(r[2]),
-        familia_maior_participacao: str(r[4]),
-        participacao_maior: num(r[5]),
-        atingimento_maior: num(r[6]),
-      });
-    }
-  }
-
-  return data;
-}
-
-// Segunda planilha: resultado por família (base do gráfico de barras).
-export type ClientFamiliasData = {
-  itens: Array<{
-    familia: string;
-    meta: number | null;
-    realizado: number | null;
-    atingimento: number | null; // 0..>1 (fração) ou 0..>100 (%)
-  }>;
+const str = (v: any): string | null => {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
 };
 
-export function parseClientFamiliasWorkbook(buf: ArrayBuffer): ClientFamiliasData {
-  const wb = XLSX.read(buf, { type: "array" });
-  const sheetName = wb.SheetNames[0];
-  const ws = wb.Sheets[sheetName];
-  if (!ws) throw new Error("Planilha de famílias não encontrada.");
-  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
+const normalize = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .trim();
 
-  // Descobre a linha de cabeçalho procurando colunas conhecidas.
-  let headerIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 12); i++) {
-    const cells = (rows[i] ?? []).map((c) => String(c ?? "").toUpperCase());
-    if (cells.some((c) => c.includes("FAMÍLIA") || c.includes("FAMILIA"))) {
-      headerIdx = i;
+function farolFromAtingimento(a: number | null): string | null {
+  if (a == null) return null;
+  const pct = Math.abs(a) <= 1.5 ? a * 100 : a;
+  const st = statusFromPercent(pct);
+  return st ? FAROL_LABEL[st as FarolStatus] : null;
+}
+
+function buildBIData(
+  categoria: string | null,
+  geral: number | null,
+  familias: FamiliaResultado[],
+): ClientBIData {
+  const withF = familias.map((f) => ({ ...f, farol: f.farol ?? farolFromAtingimento(f.atingimento) }));
+  const sorted = withF.slice().sort((a, b) => (a.atingimento ?? -1) - (b.atingimento ?? -1));
+  const melhor = sorted[sorted.length - 1];
+  const pior = sorted[0];
+  const counts = new Map<string, number>();
+  for (const f of withF) if (f.farol) counts.set(f.farol, (counts.get(f.farol) ?? 0) + 1);
+  const distribuicao_farol = Array.from(counts.entries()).map(([grupo, quantidade]) => ({
+    grupo,
+    quantidade,
+  }));
+  return {
+    geral,
+    categoria,
+    familias: withF,
+    melhor_familia: melhor
+      ? { label: melhor.familia, atingimento: melhor.atingimento }
+      : { label: null, atingimento: null },
+    pior_familia: pior
+      ? { label: pior.familia, atingimento: pior.atingimento }
+      : { label: null, atingimento: null },
+    distribuicao_farol,
+  };
+}
+
+// ============= Long-format sheet (Dados para gráfico) =============
+// Header: ID CLIENTE | CLIENTE | CATEGORIA | ORDEM | TIPO | INDICADOR | RESULTADO | GRUPO DO FAROL
+
+type LongIdx = {
+  cli: number;
+  cat: number;
+  tipo: number;
+  ind: number;
+  res: number;
+  farol: number;
+};
+
+function findLongHeader(rows: any[][]): { headerIdx: number; idx: LongIdx } | null {
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const cells = (rows[i] ?? []).map((c) => (c == null ? "" : normalize(String(c))));
+    const cli = cells.findIndex((c) => c === "CLIENTE" || c === "RAZAO SOCIAL");
+    const tipo = cells.findIndex((c) => c === "TIPO");
+    const ind = cells.findIndex((c) => c.includes("INDICADOR") || c.includes("FAMILIA"));
+    const res = cells.findIndex((c) => c.includes("RESULTADO") || c.includes("ATING"));
+    if (cli >= 0 && tipo >= 0 && ind >= 0 && res >= 0) {
+      return {
+        headerIdx: i,
+        idx: {
+          cli,
+          cat: cells.findIndex((c) => c === "CATEGORIA"),
+          tipo,
+          ind,
+          res,
+          farol: cells.findIndex((c) => c.includes("FAROL")),
+        },
+      };
+    }
+  }
+  return null;
+}
+
+type LongGrouped = Map<string, { categoria: string | null; geral: number | null; familias: FamiliaResultado[] }>;
+
+function readLongRows(rows: any[][], header: { headerIdx: number; idx: LongIdx }): LongGrouped {
+  const { headerIdx, idx } = header;
+  const groups: LongGrouped = new Map();
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] ?? [];
+    const cli = str(r[idx.cli]);
+    if (!cli) continue;
+    let g = groups.get(cli);
+    if (!g) {
+      g = { categoria: null, geral: null, familias: [] };
+      groups.set(cli, g);
+    }
+    if (idx.cat >= 0 && !g.categoria) g.categoria = str(r[idx.cat]);
+    const tipo = normalize(String(r[idx.tipo] ?? ""));
+    const indicador = str(r[idx.ind]);
+    const resultado = num(r[idx.res]);
+    const farol = idx.farol >= 0 ? str(r[idx.farol]) : null;
+    if (tipo.startsWith("GERAL") || (indicador && normalize(indicador).includes("RESULTADO GERAL"))) {
+      g.geral = resultado ?? g.geral;
+      continue;
+    }
+    if (!indicador) continue;
+    g.familias.push({ familia: indicador, atingimento: resultado, farol });
+  }
+  return groups;
+}
+
+// ============= Per-sheet parser (Graficos_Barras layout) =============
+// Cada aba tem:
+//   linha 1: "RESULTADO GERAL E POR FAMÍLIA — <CLIENTE>"
+//   linha 2: "Período: ... · Categoria: <cat>"
+//   linha 4 (approx): ORDEM | TIPO | INDICADOR | RESULTADO | GRUPO DO FAROL
+
+function parsePerClientSheet(ws: any, fallbackName: string): {
+  razao_social: string;
+  data: ClientBIData;
+} | null {
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
+  if (!rows.length) return null;
+
+  // Título
+  let cliente: string | null = null;
+  for (let i = 0; i < Math.min(rows.length, 4); i++) {
+    const t = str(rows[i]?.[0]);
+    if (!t) continue;
+    // ex: "RESULTADO GERAL E POR FAMÍLIA — LUMEN PRIME ILUMINAÇÃO LTDA"
+    const m = t.match(/[—–-]\s*(.+)$/);
+    if (m && (t.toUpperCase().includes("RESULTADO") || t.toUpperCase().includes("FAMÍLIA"))) {
+      cliente = m[1].trim();
       break;
     }
   }
-  if (headerIdx < 0) headerIdx = 0;
+  // Categoria
+  let categoria: string | null = null;
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const t = str(rows[i]?.[0]);
+    if (t && /Categoria\s*:/i.test(t)) {
+      const m = t.match(/Categoria\s*:\s*([^·|]+)/i);
+      if (m) categoria = m[1].trim();
+    }
+  }
 
-  const header = (rows[headerIdx] ?? []).map((c) => String(c ?? "").toUpperCase().trim());
-  const idxFam = header.findIndex((h) => h.includes("FAMÍLIA") || h.includes("FAMILIA"));
-  const idxMeta = header.findIndex((h) => h.includes("META"));
-  const idxReal = header.findIndex((h) => h.includes("REAL") || h.includes("FATUR"));
-  const idxAtg = header.findIndex((h) => h.includes("ATING") || h === "%");
+  // Header ORDEM | TIPO | INDICADOR | RESULTADO | GRUPO DO FAROL
+  let headerIdx = -1;
+  let iTipo = -1;
+  let iInd = -1;
+  let iRes = -1;
+  let iFarol = -1;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const cells = (rows[i] ?? []).map((c) => (c == null ? "" : normalize(String(c))));
+    const t = cells.indexOf("TIPO");
+    const ind = cells.findIndex((c) => c.includes("INDICADOR") || c.includes("FAMILIA"));
+    const res = cells.findIndex((c) => c.includes("RESULTADO") || c.includes("ATING"));
+    if (t >= 0 && ind >= 0 && res >= 0) {
+      headerIdx = i;
+      iTipo = t;
+      iInd = ind;
+      iRes = res;
+      iFarol = cells.findIndex((c) => c.includes("FAROL"));
+      break;
+    }
+  }
+  if (headerIdx < 0) return null;
 
-  const itens: ClientFamiliasData["itens"] = [];
+  let geral: number | null = null;
+  const familias: FamiliaResultado[] = [];
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i] ?? [];
-    const fam = str(r[idxFam >= 0 ? idxFam : 0]);
-    if (!fam) continue;
-    const up = fam.toUpperCase();
-    if (up.startsWith("TOTAL") || up.startsWith("SOMA")) continue;
-    itens.push({
-      familia: fam,
-      meta: idxMeta >= 0 ? num(r[idxMeta]) : null,
-      realizado: idxReal >= 0 ? num(r[idxReal]) : null,
-      atingimento: idxAtg >= 0 ? num(r[idxAtg]) : null,
-    });
+    const tipo = normalize(String(r[iTipo] ?? ""));
+    const indicador = str(r[iInd]);
+    const resultado = num(r[iRes]);
+    const farol = iFarol >= 0 ? str(r[iFarol]) : null;
+    if (!indicador && resultado == null) continue;
+    if (tipo.startsWith("GERAL") || (indicador && normalize(indicador).includes("RESULTADO GERAL"))) {
+      geral = resultado ?? geral;
+      continue;
+    }
+    if (!indicador) continue;
+    if (normalize(indicador).startsWith("LEITURA")) break;
+    familias.push({ familia: indicador, atingimento: resultado, farol });
   }
-  return { itens };
+  if (!familias.length && geral == null) return null;
+  return {
+    razao_social: (cliente ?? fallbackName).trim(),
+    data: buildBIData(categoria, geral, familias),
+  };
 }
 
-// ============= Batch: uma planilha com dados de todos os clientes =============
+// ============= Public API — single-file parsers =============
 
-const HAS_BI_MARKERS = (ws: any): boolean => {
-  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
-  return rows.some((r) =>
-    (r ?? []).some(
-      (c) =>
-        typeof c === "string" &&
-        (c.toUpperCase().includes("ATINGIMENTO PONDERADO GERAL") ||
-          c.toUpperCase().includes("PARTICIPAÇÃO DAS FAMÍLIAS")),
-    ),
-  );
-};
+export function parseClientBIWorkbook(buf: ArrayBuffer): ClientBIData {
+  const items = parseClientBIWorkbookBatch(buf);
+  if (!items.length) throw new Error("Nenhum cliente encontrado na planilha.");
+  return items[0].data;
+}
 
-/**
- * Planilha BI multi-cliente: cada aba do workbook representa UM cliente.
- * O nome da aba é usado como razão social (limitada a 31 chars pelo Excel;
- * o parser também procura por um rótulo "CLIENTE:" / "RAZÃO SOCIAL:" dentro
- * da aba e, se encontrar, prioriza esse valor).
- */
-export function parseClientBIWorkbookBatch(
-  buf: ArrayBuffer,
-): Array<{ razao_social: string; data: ClientBIData }> {
+export function parseClientFamiliasWorkbook(buf: ArrayBuffer): ClientFamiliasData {
+  const items = parseClientFamiliasWorkbookBatch(buf);
+  if (!items.length) throw new Error("Nenhum cliente encontrado na planilha.");
+  return items[0].data;
+}
+
+// ============= Batch parsers =============
+
+function tryLongWorkbook(buf: ArrayBuffer): LongGrouped | null {
   const wb = XLSX.read(buf, { type: "array" });
-  const out: Array<{ razao_social: string; data: ClientBIData }> = [];
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
     if (!ws) continue;
-    if (!HAS_BI_MARKERS(ws)) continue; // ignora abas de índice/instruções
     const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
-    let razao: string | null = null;
-    for (const r of rows.slice(0, 12)) {
-      for (let i = 0; i < (r?.length ?? 0); i++) {
-        const c = r[i];
-        if (typeof c !== "string") continue;
-        const up = c.toUpperCase();
-        if (up.includes("RAZÃO SOCIAL") || up.includes("CLIENTE:") || up === "CLIENTE") {
-          const v = r[i + 1];
-          if (typeof v === "string" && v.trim()) {
-            razao = v.trim();
-            break;
-          }
-        }
-      }
-      if (razao) break;
+    const header = findLongHeader(rows);
+    if (header) {
+      const g = readLongRows(rows, header);
+      if (g.size > 0) return g;
     }
-    const data = parseClientBISheet(ws);
-    out.push({ razao_social: (razao ?? name).trim(), data });
   }
-  if (!out.length) throw new Error("Nenhuma aba de BI reconhecida no arquivo.");
+  return null;
+}
+
+export function parseClientBIWorkbookBatch(
+  buf: ArrayBuffer,
+): Array<{ razao_social: string; data: ClientBIData }> {
+  // 1) Formato "Dados para gráfico" (long)
+  const long = tryLongWorkbook(buf);
+  if (long) {
+    return Array.from(long.entries()).map(([cli, g]) => ({
+      razao_social: cli,
+      data: buildBIData(g.categoria, g.geral, g.familias),
+    }));
+  }
+
+  // 2) Formato "Graficos_Barras" — uma aba por cliente
+  const wb = XLSX.read(buf, { type: "array" });
+  const out: Array<{ razao_social: string; data: ClientBIData }> = [];
+  for (const name of wb.SheetNames) {
+    if (normalize(name).startsWith("INDICE") || normalize(name) === "ÍNDICE") continue;
+    const parsed = parsePerClientSheet(wb.Sheets[name], name);
+    if (parsed) out.push(parsed);
+  }
+  if (!out.length) throw new Error("Formato de planilha não reconhecido.");
   return out;
 }
 
-/**
- * Planilha de resultado por família multi-cliente:
- * Estratégia 1: workbook com várias abas — cada aba é um cliente.
- * Estratégia 2: uma única aba com coluna CLIENTE/RAZÃO SOCIAL — agrupa por cliente.
- */
 export function parseClientFamiliasWorkbookBatch(
   buf: ArrayBuffer,
 ): Array<{ razao_social: string; data: ClientFamiliasData }> {
-  const wb = XLSX.read(buf, { type: "array" });
-
-  // Estratégia 1: múltiplas abas com dados por cliente
-  if (wb.SheetNames.length > 1) {
-    const out: Array<{ razao_social: string; data: ClientFamiliasData }> = [];
-    for (const name of wb.SheetNames) {
-      const ws = wb.Sheets[name];
-      if (!ws) continue;
-      try {
-        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
-        const hasFam = rows.some((r) =>
-          (r ?? []).some(
-            (c) =>
-              typeof c === "string" && (c.toUpperCase().includes("FAMÍLIA") || c.toUpperCase().includes("FAMILIA")),
-          ),
-        );
-        if (!hasFam) continue;
-        // reaproveita o parser single-sheet re-serializando
-        const single = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(single, ws, "S");
-        const bufSingle = XLSX.write(single, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
-        const data = parseClientFamiliasWorkbook(bufSingle);
-        if (data.itens.length) out.push({ razao_social: name.trim(), data });
-      } catch {
-        /* aba sem formato válido é ignorada */
-      }
-    }
-    if (out.length) return out;
-  }
-
-  // Estratégia 2: uma única aba com coluna cliente
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  if (!ws) throw new Error("Planilha vazia.");
-  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
-
-  let headerIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 12); i++) {
-    const cells = (rows[i] ?? []).map((c) => String(c ?? "").toUpperCase());
-    if (
-      cells.some((c) => c.includes("FAMÍLIA") || c.includes("FAMILIA")) &&
-      cells.some((c) => c.includes("CLIENTE") || c.includes("RAZÃO"))
-    ) {
-      headerIdx = i;
-      break;
-    }
-  }
-  if (headerIdx < 0) throw new Error("Cabeçalho com colunas CLIENTE e FAMÍLIA não encontrado.");
-
-  const header = (rows[headerIdx] ?? []).map((c) => String(c ?? "").toUpperCase().trim());
-  const idxCli = header.findIndex((h) => h.includes("CLIENTE") || h.includes("RAZÃO"));
-  const idxFam = header.findIndex((h) => h.includes("FAMÍLIA") || h.includes("FAMILIA"));
-  const idxMeta = header.findIndex((h) => h.includes("META"));
-  const idxReal = header.findIndex((h) => h.includes("REAL") || h.includes("FATUR"));
-  const idxAtg = header.findIndex((h) => h.includes("ATING") || h === "%");
-
-  const map = new Map<string, ClientFamiliasData>();
-  for (let i = headerIdx + 1; i < rows.length; i++) {
-    const r = rows[i] ?? [];
-    const cli = str(r[idxCli]);
-    const fam = str(r[idxFam]);
-    if (!cli || !fam) continue;
-    const up = fam.toUpperCase();
-    if (up.startsWith("TOTAL") || up.startsWith("SOMA")) continue;
-    if (!map.has(cli)) map.set(cli, { itens: [] });
-    map.get(cli)!.itens.push({
-      familia: fam,
-      meta: idxMeta >= 0 ? num(r[idxMeta]) : null,
-      realizado: idxReal >= 0 ? num(r[idxReal]) : null,
-      atingimento: idxAtg >= 0 ? num(r[idxAtg]) : null,
-    });
-  }
-  return Array.from(map.entries()).map(([razao_social, data]) => ({ razao_social, data }));
+  // Reusa o parser de BI e projeta apenas as famílias (o gráfico usa os mesmos dados)
+  const items = parseClientBIWorkbookBatch(buf);
+  return items.map(({ razao_social, data }) => ({
+    razao_social,
+    data: { itens: data.familias },
+  }));
 }
