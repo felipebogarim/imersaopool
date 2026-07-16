@@ -1,11 +1,9 @@
-import { useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Upload, BarChart3 } from "lucide-react";
-import { toast } from "sonner";
+import { BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseClientBIWorkbook, type ClientBIData } from "@/lib/client-bi-parser";
+import type { ClientBIData } from "@/lib/client-bi-parser";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 
 const fmtPct = (n: number | null | undefined) => {
@@ -14,25 +12,21 @@ const fmtPct = (n: number | null | undefined) => {
   return `${v.toFixed(1).replace(".", ",")}%`;
 };
 
-const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
+const farolKey = (grupo: string | null | undefined): FarolStatus | null => {
+  if (!grupo) return null;
   const g = grupo.toLowerCase();
   const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
-  return (found as any) ?? null;
+  return (found as FarolStatus) ?? null;
 };
 
 export function ClientBISection({
   repId,
   razaoSocial,
-  companyId,
 }: {
   repId: string;
   razaoSocial: string;
   companyId: string | null;
 }) {
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const { data: bi = null, isLoading } = useQuery({
     queryKey: ["client-bi", repId, razaoSocial],
     enabled: !!repId && !!razaoSocial,
@@ -51,81 +45,36 @@ export function ClientBISection({
     },
   });
 
-  const upload = useMutation({
-    mutationFn: async (file: File) => {
-      if (!companyId) throw new Error("Cliente sem empresa associada.");
-      const buf = await file.arrayBuffer();
-      const parsed: ClientBIData = parseClientBIWorkbook(buf);
-      const { data: userRes } = await supabase.auth.getUser();
-      if (bi?.id) {
-        await (supabase as any)
-          .from("client_bi_uploads")
-          .update({ substituida_em: new Date().toISOString() })
-          .eq("id", bi.id);
-      }
-      const { error } = await (supabase as any).from("client_bi_uploads").insert({
-        representative_id: repId,
-        razao_social: razaoSocial,
-        company_id: companyId,
-        kind: "bi",
-        filename: file.name,
-        data: parsed,
-        uploaded_by: userRes.user?.id ?? null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("BI do cliente importado.");
-      qc.invalidateQueries({ queryKey: ["client-bi", repId, razaoSocial] });
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Erro ao importar BI."),
-    onSettled: () => setBusy(false),
-  });
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    setBusy(true);
-    upload.mutate(f);
-  }
-
   const d: ClientBIData | null = (bi?.data as ClientBIData) ?? null;
+
   const famsSorted = useMemo(
-    () => (d?.familias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
+    () => (d?.familias ?? []).slice().sort((a, b) => (b.atingimento ?? -1) - (a.atingimento ?? -1)),
     [d],
   );
   const farolSorted = useMemo(
-    () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
+    () =>
+      (d?.distribuicao_farol ?? [])
+        .slice()
+        .sort(
+          (a, b) =>
+            (FAROL_ORDER.indexOf(farolKey(a.grupo) as FarolStatus) + 999) -
+            (FAROL_ORDER.indexOf(farolKey(b.grupo) as FarolStatus) + 999),
+        ),
     [d],
   );
 
   return (
     <div className="surface rounded-xl overflow-hidden">
-      <div className="w-full px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-            BI do cliente
-          </p>
-          {d?.geral != null && (
-            <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Atingimento ponderado geral: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {bi?.filename && (
-            <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[240px]">
-              {bi.filename}
-            </span>
-          )}
-          <input ref={fileRef} type="file" accept=".xlsx" className="hidden" onChange={onFile} />
-          <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
-            <Upload className="h-3.5 w-3.5 mr-1" />
-            {bi ? "Atualizar BI" : "Carregar planilha BI"}
-          </Button>
-        </div>
+      <div className="w-full px-4 py-3 border-b border-border flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+        <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+          BI do cliente
+        </p>
+        {d?.geral != null && (
+          <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+            Atingimento geral: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
+          </span>
+        )}
       </div>
 
       <div className="p-4 space-y-6">
@@ -133,15 +82,16 @@ export function ClientBISection({
           <div className="text-sm text-muted-foreground">Carregando…</div>
         ) : !d ? (
           <div className="text-sm text-muted-foreground">
-            Nenhuma planilha de BI carregada para este cliente. Use <strong>Carregar planilha BI</strong>.
+            Nenhuma planilha de BI carregada para este cliente. Carregue as planilhas no botão{" "}
+            <strong>BI dos clientes</strong> na página de Performance.
           </div>
         ) : (
           <>
             {/* Destaques */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="rounded-xl border border-border p-4 bg-primary/5">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Atingimento ponderado geral
+                  Atingimento geral
                 </div>
                 <div className="mt-1 text-3xl font-semibold tabular-nums">{fmtPct(d.geral)}</div>
               </div>
@@ -149,94 +99,96 @@ export function ClientBISection({
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Categoria do cliente
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(d.categoria ?? ""))}>
+                <div className="mt-2">
+                  <span
+                    className={cn(
+                      "inline-flex px-2 py-0.5 rounded-full text-xs border",
+                      catBadge(d.categoria ?? ""),
+                    )}
+                  >
                     {d.categoria ?? "—"}
                   </span>
                 </div>
               </div>
               <div className="rounded-xl border border-border p-4">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Maior participação por grupo do farol
+                  Melhor família
                 </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  {(() => {
-                    const k = farolKey(d.maior_grupo_farol.label ?? "");
-                    return (
-                      <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as FarolStatus])}>
-                        {d.maior_grupo_farol.label ?? "—"}
-                      </span>
-                    );
-                  })()}
-                  <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_grupo_farol.participacao)}</span>
+                <div className="mt-1 text-sm truncate">{d.melhor_familia.label ?? "—"}</div>
+                <div className="text-lg font-semibold tabular-nums">
+                  {fmtPct(d.melhor_familia.atingimento)}
+                </div>
+              </div>
+              <div className="rounded-xl border border-border p-4">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Pior família
+                </div>
+                <div className="mt-1 text-sm truncate">{d.pior_familia.label ?? "—"}</div>
+                <div className="text-lg font-semibold tabular-nums">
+                  {fmtPct(d.pior_familia.atingimento)}
                 </div>
               </div>
             </div>
 
-            {/* Participação das famílias (substitui categorias) */}
+            {/* Participação das famílias no resultado (atingimento por família) */}
             <div>
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
                 Participação das famílias no resultado do cliente
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {famsSorted.map((f) => (
-                  <div key={f.familia} className="rounded-xl border border-border p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs border bg-muted text-muted-foreground border-border">
-                        {f.familia}
-                      </span>
-                      <span className="text-xs text-muted-foreground">participação</span>
-                    </div>
-                    <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtPct(f.participacao)}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      Atingimento ponderado:{" "}
-                      <span className="tabular-nums text-foreground">{fmtPct(f.atingimento)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Distribuição do farol */}
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                Distribuição dos grupos do farol
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {farolSorted.map((f) => {
-                  const k = farolKey(f.grupo);
+                {famsSorted.map((f) => {
+                  const k = farolKey(f.farol);
                   return (
-                    <div
-                      key={f.grupo}
-                      className={cn(
-                        "rounded-xl p-3 border border-border/60 flex flex-col gap-1",
-                        k && FAROL_CELL_CLASS[k as FarolStatus],
-                      )}
-                    >
-                      <div className="text-[11px] uppercase tracking-wider opacity-80">{f.grupo}</div>
-                      <div className="text-xl font-semibold tabular-nums">{fmtPct(f.participacao)}</div>
+                    <div key={f.familia} className="rounded-xl border border-border p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-xs border bg-muted text-muted-foreground border-border truncate">
+                          {f.familia}
+                        </span>
+                        {k && (
+                          <span
+                            className={cn(
+                              "inline-flex px-2 py-0.5 rounded text-[10px] border",
+                              FAROL_CELL_CLASS[k],
+                            )}
+                          >
+                            {FAROL_LABEL[k]}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 text-2xl font-semibold tabular-nums">
+                        {fmtPct(f.atingimento)}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">Atingimento</div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Três piores famílias */}
-            {d.piores_familias.length > 0 && (
+            {/* Distribuição do farol */}
+            {farolSorted.length > 0 && (
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Três piores famílias
+                  Distribuição dos grupos do farol
                 </div>
-                <div className="rounded-xl border border-border p-4">
-                  <ol className="space-y-1.5 text-sm">
-                    {d.piores_familias.map((p, i) => (
-                      <li key={i} className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground w-4">{p.posicao ?? i + 1}.</span>
-                        <span className="flex-1 truncate">{p.familia_pior_atingimento ?? "—"}</span>
-                        <span className="tabular-nums font-medium">{fmtPct(p.atingimento_pior)}</span>
-                      </li>
-                    ))}
-                  </ol>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {farolSorted.map((f) => {
+                    const k = farolKey(f.grupo);
+                    return (
+                      <div
+                        key={f.grupo}
+                        className={cn(
+                          "rounded-xl p-3 border border-border/60 flex flex-col gap-1",
+                          k && FAROL_CELL_CLASS[k],
+                        )}
+                      >
+                        <div className="text-[11px] uppercase tracking-wider opacity-80">
+                          {f.grupo}
+                        </div>
+                        <div className="text-xl font-semibold tabular-nums">{f.quantidade}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
