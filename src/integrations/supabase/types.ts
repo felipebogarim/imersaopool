@@ -2232,7 +2232,7 @@ export type Database = {
         | "visita"
         | "price"
         | "diagnostico_final"
-      app_role: "admin" | "gestor" | "agente"
+      app_role: "admin" | "gestor" | "agente" | "comercial"
       capitulo_status_revisao:
         | "pendente"
         | "em_revisao"
@@ -2410,7 +2410,7 @@ export const Constants = {
         "price",
         "diagnostico_final",
       ],
-      app_role: ["admin", "gestor", "agente"],
+      app_role: ["admin", "gestor", "agente", "comercial"],
       capitulo_status_revisao: [
         "pendente",
         "em_revisao",
