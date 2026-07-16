@@ -959,7 +959,7 @@ function PerformancePage() {
               </div>
               {familias.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 items-center border-l border-border pl-2 ml-1">
-                  {visibleFams.map((f) => {
+                  {familias.map((f) => {
                     const active = filterFams.includes(f);
                     return (
                       <button
