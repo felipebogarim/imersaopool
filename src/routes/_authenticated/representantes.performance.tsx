@@ -906,14 +906,9 @@ function PerformancePage() {
 
         {/* BI — indicadores de performance (recolhido por padrão) */}
         {repId && (
-          <>
-            <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
-            <ClientBIBatchUpload
-              repId={repId}
-              companyId={(reps.find((r: any) => r.id === repId) as any)?.company_id ?? null}
-            />
-          </>
+          <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
         )}
+
 
 
         {editing && (
