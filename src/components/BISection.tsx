@@ -1,0 +1,270 @@
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Upload, BarChart3 } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge } from "@/lib/performance-farol";
+
+const fmtPct = (n: number | null | undefined) => {
+  if (n == null || Number.isNaN(n)) return "—";
+  const v = Math.abs(n) <= 1.5 ? n * 100 : n;
+  return `${v.toFixed(1).replace(".", ",")}%`;
+};
+
+const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
+  const g = grupo.toLowerCase();
+  const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
+  return (found as any) ?? null;
+};
+
+export function BISection({ repId, repName }: { repId: string; repName: string }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data: bi = null, isLoading } = useQuery({
+    queryKey: ["rep-bi", repId],
+    enabled: !!repId,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("rep_bi_uploads")
+        .select("*")
+        .eq("representative_id", repId)
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const buf = await file.arrayBuffer();
+      const parsed: BIData = parseBIWorkbook(buf);
+      const { data: userRes } = await supabase.auth.getUser();
+      const { data: rep } = await supabase
+        .from("representatives")
+        .select("company_id")
+        .eq("id", repId)
+        .single();
+      if (!rep?.company_id) throw new Error("Representante sem empresa associada.");
+      if (bi?.id) {
+        await (supabase as any)
+          .from("rep_bi_uploads")
+          .update({ substituida_em: new Date().toISOString() })
+          .eq("id", bi.id);
+      }
+      const { error } = await (supabase as any).from("rep_bi_uploads").insert({
+        representative_id: repId,
+        company_id: rep.company_id,
+        periodo_label: "1º Semestre 2026",
+        filename: file.name,
+        data: parsed,
+        uploaded_by: userRes.user?.id ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Planilha de BI importada.");
+      qc.invalidateQueries({ queryKey: ["rep-bi", repId] });
+      setOpen(true);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Erro ao importar BI."),
+    onSettled: () => setBusy(false),
+  });
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setBusy(true);
+    upload.mutate(f);
+  }
+
+  const d: BIData | null = (bi?.data as BIData) ?? null;
+  const catsSorted = useMemo(
+    () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
+    [d],
+  );
+  const farolSorted = useMemo(
+    () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
+    [d],
+  );
+  const piorePorCat = useMemo(() => {
+    const m: Record<string, BIData["piores_familias"]> = {};
+    for (const p of d?.piores_familias ?? []) (m[p.categoria] ??= []).push(p);
+    return m;
+  }, [d]);
+
+  return (
+    <div className="surface rounded-xl overflow-hidden">
+      <div className="w-full px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 flex-1 text-left hover:opacity-80 transition"
+          aria-expanded={open}
+        >
+          <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-90")} />
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            BI — indicadores de performance {repName ? `· ${repName}` : ""}
+          </p>
+          {d?.geral != null && (
+            <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              Atingimento ponderado geral: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
+            </span>
+          )}
+        </button>
+        <div className="flex items-center gap-2">
+          {bi?.filename && (
+            <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[240px]">
+              {bi.filename}
+            </span>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={onFile}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
+          >
+            <Upload className="h-3.5 w-3.5 mr-1" />
+            {bi ? "Atualizar BI" : "Carregar planilha BI"}
+          </Button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="p-4 space-y-6">
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Carregando…</div>
+          ) : !d ? (
+            <div className="text-sm text-muted-foreground">
+              Nenhuma planilha de BI carregada. Use o botão <strong>Carregar planilha BI</strong> acima.
+            </div>
+          ) : (
+            <>
+              {/* Destaques */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border p-4 bg-primary/5">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Atingimento ponderado geral</div>
+                  <div className="mt-1 text-3xl font-semibold tabular-nums">{fmtPct(d.geral)}</div>
+                </div>
+                <div className="rounded-xl border border-border p-4">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por categoria</div>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(d.maior_categoria.label ?? ""))}>
+                      {d.maior_categoria.label ?? "—"}
+                    </span>
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_categoria.participacao)}</span>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border p-4">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por grupo do farol</div>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    {(() => {
+                      const k = farolKey(d.maior_grupo_farol.label ?? "");
+                      return (
+                        <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as any])}>
+                          {d.maior_grupo_farol.label ?? "—"}
+                        </span>
+                      );
+                    })()}
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_grupo_farol.participacao)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Participação das categorias */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Participação das categorias no total
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {catsSorted.map((c) => (
+                    <div key={c.categoria} className="rounded-xl border border-border p-4">
+                      <div className="flex items-center justify-between">
+                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(c.categoria))}>
+                          {c.categoria}
+                        </span>
+                        <span className="text-xs text-muted-foreground">participação</span>
+                      </div>
+                      <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtPct(c.participacao)}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Atingimento ponderado: <span className="tabular-nums text-foreground">{fmtPct(c.atingimento)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Distribuição do farol */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Distribuição dos grupos do farol
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {farolSorted.map((f) => {
+                    const k = farolKey(f.grupo);
+                    return (
+                      <div
+                        key={f.grupo}
+                        className={cn(
+                          "rounded-xl p-3 border border-border/60 flex flex-col gap-1",
+                          k && FAROL_CELL_CLASS[k as any],
+                        )}
+                      >
+                        <div className="text-[11px] uppercase tracking-wider opacity-80">{f.grupo}</div>
+                        <div className="text-xl font-semibold tabular-nums">{fmtPct(f.participacao)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Três piores famílias por categoria */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Três piores famílias por categoria
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {Object.entries(piorePorCat).map(([cat, list]) => (
+                    <div key={cat} className="rounded-xl border border-border p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                          {cat}
+                        </span>
+                        <span className="text-xs text-muted-foreground">piores 3</span>
+                      </div>
+                      <ol className="space-y-1.5 text-sm">
+                        {list.map((p, i) => (
+                          <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground w-4">{p.posicao ?? i + 1}.</span>
+                            <span className="flex-1 truncate">{p.familia_pior_atingimento ?? "—"}</span>
+                            <span className="tabular-nums font-medium">{fmtPct(p.atingimento_pior)}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
