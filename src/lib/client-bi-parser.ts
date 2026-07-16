@@ -36,9 +36,6 @@ export function parseClientBIWorkbook(buf: ArrayBuffer): ClientBIData {
 }
 
 function parseClientBISheet(ws: any): ClientBIData {
-  const wb = XLSX.read(buf, { type: "array" });
-  const sheetName = wb.SheetNames.find((n) => n.toUpperCase().includes("BI")) ?? wb.SheetNames[0];
-  const ws = wb.Sheets[sheetName];
   if (!ws) throw new Error("Planilha BI não encontrada.");
   const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
 
