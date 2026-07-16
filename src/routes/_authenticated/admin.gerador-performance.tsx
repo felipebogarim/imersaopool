@@ -73,8 +73,8 @@ function GeradorPerformancePage() {
     queryFn: async () =>
       (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
-  const fileRef = useRef<HTMLInputElement>(null);
-  const runFn = useServerFn(generatePerformanceFromRaw);
+
+
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const list = Array.from(e.target.files ?? []);
