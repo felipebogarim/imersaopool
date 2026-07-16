@@ -434,6 +434,8 @@ function PerformancePage() {
           familias: currentUpload.familias,
           categoria_metas: currentUpload.categoria_metas,
           escala_percentual: currentUpload.escala_percentual,
+          participacao: currentUpload.participacao,
+          atingimento: currentUpload.atingimento,
           filename: currentUpload.filename,
           observacao: `Edição manual em ${new Date().toLocaleString("pt-BR")}`,
           uploaded_by: uid,
