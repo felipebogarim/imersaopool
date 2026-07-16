@@ -235,15 +235,15 @@ function PerformancePage() {
         const cat = (r.categoria ?? "").toUpperCase().trim();
         if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
       }
-      if (filterFams.length > 0) {
-        const hasAny = filterFams.some(
-          (f) => (Number(r.metas?.[f]) || 0) > 0 || (Number(r.realizado?.[f]) || 0) > 0,
-        );
-        if (!hasAny) return false;
-      }
       return true;
     });
-  }, [view, filterQ, filterCats, filterFams]);
+  }, [view, filterQ, filterCats]);
+
+  const visibleFams = useMemo(
+    () => (filterFams.length > 0 ? familias.filter((f) => filterFams.includes(f)) : familias),
+    [familias, filterFams],
+  );
+
 
 
   const filteredTotals = useMemo(() => {
