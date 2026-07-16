@@ -159,6 +159,11 @@ function BatchPage() {
         }
       />
       <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+        <Button variant="ghost" size="sm" asChild className="-ml-2">
+          <Link to="/representantes/performance">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+          </Link>
+        </Button>
         <div className="surface rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
