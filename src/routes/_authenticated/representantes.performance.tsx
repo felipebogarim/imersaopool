@@ -227,6 +227,17 @@ function PerformancePage() {
     () => Array.from(new Set(view.map((r) => r.razao_social).filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [view],
   );
+  const CATEGORIA_OPTIONS = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          view
+            .map((r) => (r.categoria ?? "").trim())
+            .filter((c) => c.length > 0),
+        ),
+      ).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [view],
+  );
   const hasFilters = filterQ.trim() !== "" || filterCats.length > 0;
   const filtersRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
