@@ -104,40 +104,38 @@ export function exportPerformancePdf(opts: {
 
   // Rodapé
   const totalRowCells: CellDef[] = [
-    { content: "TOTAL GERAL DA META", styles: { halign: "left" } },
-    { content: "" },
-    { content: fmtBRL(totals.grand), styles: { halign: "right" } },
-    { content: "" },
+    { content: "TOTAL GERAL DA META", styles: { halign: "left", fontStyle: "bold", fillColor: HEX.totalBg } },
+    { content: "", styles: { fillColor: HEX.totalBg } },
+    { content: fmtBRL(totals.grand), styles: { halign: "right", fontStyle: "bold", fillColor: HEX.totalBg } },
+    { content: "", styles: { fillColor: HEX.totalBg } },
     ...familias.map<CellDef>((f) => ({
       content: fmtBRL(totals.perFamilia[f] || 0),
-      styles: { halign: "right" },
+      styles: { halign: "right", fontStyle: "bold", fillColor: HEX.totalBg },
     })),
-  ].map((c) => ({
-    ...c,
-    styles: { ...(c.styles ?? {}), fontStyle: "bold", fillColor: HEX.totalBg },
-  }));
+  ];
 
   const participacaoCells: CellDef[] = [
-    { content: "PARTICIPAÇÃO ESTIMADA NA VENDA", styles: { halign: "left", fontStyle: "bold" } },
-    { content: "" },
-    { content: "" },
-    { content: fmtPct(opts.participacao?.__total__ ?? null), styles: { halign: "center" } },
+    { content: "PARTICIPAÇÃO ESTIMADA NA VENDA", styles: { halign: "left", fontStyle: "bold", fillColor: HEX.participacaoBg } },
+    { content: "", styles: { fillColor: HEX.participacaoBg } },
+    { content: "", styles: { fillColor: HEX.participacaoBg } },
+    { content: fmtPct(opts.participacao?.__total__ ?? null), styles: { halign: "center", fillColor: HEX.participacaoBg } },
     ...familias.map<CellDef>((f) => ({
       content: fmtPct((opts.participacao?.[f] as number | null | undefined) ?? null),
-      styles: { halign: "center" },
+      styles: { halign: "center", fillColor: HEX.participacaoBg },
     })),
-  ].map((c) => ({ ...c, styles: { ...(c.styles ?? {}), fillColor: HEX.participacaoBg } }));
+  ];
 
   const atingimentoCells: CellDef[] = [
-    { content: "ATINGIMENTO ESTIMADO DA META", styles: { halign: "left", fontStyle: "bold" } },
-    { content: "" },
-    { content: "" },
-    { content: fmtPct(opts.atingimento?.__total__ ?? null), styles: { halign: "center" } },
+    { content: "ATINGIMENTO ESTIMADO DA META", styles: { halign: "left", fontStyle: "bold", fillColor: HEX.atingimentoBg } },
+    { content: "", styles: { fillColor: HEX.atingimentoBg } },
+    { content: "", styles: { fillColor: HEX.atingimentoBg } },
+    { content: fmtPct(opts.atingimento?.__total__ ?? null), styles: { halign: "center", fillColor: HEX.atingimentoBg } },
     ...familias.map<CellDef>((f) => ({
       content: fmtPct((opts.atingimento?.[f] as number | null | undefined) ?? null),
-      styles: { halign: "center" },
+      styles: { halign: "center", fillColor: HEX.atingimentoBg },
     })),
-  ].map((c) => ({ ...c, styles: { ...(c.styles ?? {}), fillColor: HEX.atingimentoBg } }));
+  ];
+
 
   body.push(totalRowCells, participacaoCells, atingimentoCells);
 
