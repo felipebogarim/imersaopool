@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
 import { BrandLogo } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { VoiceTextarea } from "@/components/VoiceInput";
 import { FieldHelp } from "@/components/FieldHelp";
 import { REP_PUBLIC_HELP } from "@/lib/field-help-texts";
+import {
+  getImmersionByToken,
+  submitRepresentativeInput,
+  type RepresentativeTokenInfo,
+} from "@/lib/representative-token.functions";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
@@ -27,29 +32,41 @@ const QUESTIONS = [
 
 function PublicRepForm() {
   const { token } = Route.useParams();
-  const [info, setInfo] = useState<any>(null);
+  const [info, setInfo] = useState<RepresentativeTokenInfo | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
+  const loadFn = useServerFn(getImmersionByToken);
+  const submitFn = useServerFn(submitRepresentativeInput);
+
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("get_immersion_by_token", { _token: token });
-      setLoading(false);
-      if (error || !data || data.length === 0) return;
-      setInfo(data[0]);
-      if (data[0].already_submitted) setDone(true);
+      try {
+        const data = await loadFn({ data: { token } });
+        setInfo(data);
+        if (data?.already_submitted) setDone(true);
+      } catch {
+        setInfo(null);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [token]);
+  }, [token, loadFn]);
 
   async function submit() {
     setSubmitting(true);
-    const { error } = await supabase.rpc("submit_representative_input", { _token: token, _data: form });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    setDone(true);
+    try {
+      await submitFn({ data: { token, data: form } });
+      setDone(true);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao enviar respostas");
+    } finally {
+      setSubmitting(false);
+    }
   }
+
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-cyan" /></div>;
