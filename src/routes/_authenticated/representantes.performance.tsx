@@ -64,9 +64,10 @@ function PerformancePage() {
   const [dlgMode, setDlgMode] = useState<"new" | "replace">("new");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [periodoLabel, setPeriodoLabel] = useState("");
-  const [periodoInicio, setPeriodoInicio] = useState("");
-  const [periodoFim, setPeriodoFim] = useState("");
+  const [periodoObj, setPeriodoObj] = useState<PeriodoValue>({ label: `1º Semestre ${new Date().getFullYear()}`, inicio: `${new Date().getFullYear()}-01-01`, fim: `${new Date().getFullYear()}-06-30` });
+  const periodoLabel = periodoObj.label;
+  const periodoInicio = periodoObj.inicio;
+  const periodoFim = periodoObj.fim;
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
