@@ -335,11 +335,9 @@ function GeradorPerformancePage() {
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="periodo">Período</Label>
-              <Input id="periodo" value={periodo} onChange={(e) => setPeriodo(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
-            </div>
+            <PeriodoPicker value={periodoObj} onChange={setPeriodoObj} />
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="hint">Instruções adicionais para a IA</Label>
             <Textarea
