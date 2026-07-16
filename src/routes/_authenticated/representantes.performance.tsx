@@ -252,9 +252,14 @@ function PerformancePage() {
   // Resumo executivo — contagens por status
   const resumo = useMemo(() => {
     const perCat: Record<string, { count: number; meta: number; real: number }> = {};
-    let semCompra = 0;
-    let naMeta = 0;
-    let abaixo = 0;
+    const perStatus: Record<FarolStatus, number> = {
+      sem_compra: 0,
+      abaixo_meta: 0,
+      pode_melhorar: 0,
+      proximo: 0,
+      otimo: 0,
+      excelente: 0,
+    };
     let hasRealizado = false;
     for (const r of view) {
       const cat = r.categoria ?? "—";
@@ -265,12 +270,26 @@ function PerformancePage() {
       perCat[cat].meta += rowMeta;
       perCat[cat].real += rowReal;
       if (rowReal > 0) hasRealizado = true;
-      const anyStatus = Object.values(r.metas_status);
-      if (rowReal === 0 && anyStatus.every((s) => s === "sem_compra")) semCompra += 1;
-      else if (rowReal >= rowMeta && rowMeta > 0) naMeta += 1;
-      else if (rowMeta > 0 && rowReal < rowMeta) abaixo += 1;
+      // Status da linha: prioriza total_pct_status; senão calcula por realizado/meta;
+      // senão infere de metas_status (predominante ou sem_compra).
+      let status: FarolStatus | null = r.total_pct_status ?? null;
+      if (!status && rowMeta > 0 && rowReal > 0) {
+        status = statusFromPercent((rowReal / rowMeta) * 100);
+      }
+      if (!status) {
+        const values = Object.values(r.metas_status ?? {});
+        if (values.length > 0) {
+          if (values.every((s) => s === "sem_compra")) status = "sem_compra";
+          else {
+            const counts: Record<string, number> = {};
+            for (const v of values) counts[v] = (counts[v] ?? 0) + 1;
+            status = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FarolStatus) ?? null;
+          }
+        }
+      }
+      if (status) perStatus[status] += 1;
     }
-    return { perCat, semCompra, naMeta, abaixo, hasRealizado };
+    return { perCat, perStatus, hasRealizado };
   }, [view, familias]);
 
   function openUpload(mode: "new" | "replace") {
@@ -819,20 +838,40 @@ function PerformancePage() {
 
         {/* Resumo executivo */}
         {currentUpload && (
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
-            {resumo.hasRealizado && (
-              <>
-                <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
-                <KpiCard
-                  label="Atingimento"
-                  value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
-                />
-              </>
-            )}
-            <KpiCard label="Na meta" value={String(resumo.naMeta)} />
-            <KpiCard label="Abaixo da meta" value={String(resumo.abaixo)} />
-            <KpiCard label="Sem compra" value={String(resumo.semCompra)} />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
+              {resumo.hasRealizado && (
+                <>
+                  <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
+                  <KpiCard
+                    label="Atingimento"
+                    value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
+                  />
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {FAROL_ORDER.map((s) => (
+                <div
+                  key={s}
+                  className={cn(
+                    "rounded-xl p-4 border border-border/60 flex flex-col gap-1",
+                    FAROL_CELL_CLASS[s],
+                  )}
+                >
+                  <div className="text-[11px] uppercase tracking-wider opacity-80">
+                    {FAROL_LABEL[s]}
+                  </div>
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {resumo.perStatus[s]}
+                  </div>
+                  <div className="text-[11px] opacity-70">
+                    {resumo.perStatus[s] === 1 ? "cliente" : "clientes"} · {FAROL_FAIXA_TEXT[s]}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
