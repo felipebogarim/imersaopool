@@ -16,6 +16,7 @@ import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
