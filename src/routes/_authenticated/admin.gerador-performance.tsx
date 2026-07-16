@@ -416,6 +416,54 @@ function GeradorPerformancePage() {
           </div>
         )}
       </div>
+
+      <Dialog open={sendOpen} onOpenChange={setSendOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar para o painel de Performance</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Se já houver uma performance ativa do representante com o mesmo período, ela será
+              substituída por esta como atualização. Caso contrário, esta entra como uma nova versão.
+            </p>
+            <div className="space-y-1.5">
+              <Label>Representante</Label>
+              <Select value={sendRepId} onValueChange={setSendRepId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o representante" /></SelectTrigger>
+                <SelectContent>
+                  {reps.map((r: any) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Período (rótulo)</Label>
+              <Input value={sendPeriodoLabel} onChange={(e) => setSendPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Início</Label>
+                <Input type="date" value={sendPeriodoInicio} onChange={(e) => setSendPeriodoInicio(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Fim</Label>
+                <Input type="date" value={sendPeriodoFim} onChange={(e) => setSendPeriodoFim(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendOpen(false)} disabled={sending}>Cancelar</Button>
+            <Button onClick={sendToPanel} disabled={sending}>
+              {sending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+              Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
   );
 }
