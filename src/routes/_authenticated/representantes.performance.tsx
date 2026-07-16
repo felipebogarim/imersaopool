@@ -1012,18 +1012,18 @@ function PerformancePage() {
           )}
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-sm border-collapse">
-              <thead className="bg-muted/60 text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
+              <thead className="bg-muted text-xs uppercase tracking-wider text-muted-foreground sticky top-0 z-20">
                 <tr>
-                  <th className="text-left px-3 py-3 sticky left-0 top-0 bg-muted/80 z-30 min-w-[240px]">
+                  <th className="text-left px-3 py-3 sticky left-0 top-0 bg-muted z-30 min-w-[240px]">
                     Razão social
                   </th>
-                  <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted/80 z-30 min-w-[110px]">
+                  <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
                     Categoria
                   </th>
-                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted/80">Total meta</th>
-                  <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted/80">Total %</th>
+                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted">Total meta</th>
+                  <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Total %</th>
                   {familias.map((f) => (
-                    <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px]">
+                    <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
                       {f}
                     </th>
                   ))}
