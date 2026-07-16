@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx-js-style";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Sparkles, FileDown, ShieldCheck, X, FileSpreadsheet, Loader2, Send } from "lucide-react";
+import {
+  Upload,
+  Sparkles,
+  FileDown,
+  ShieldCheck,
+  X,
+  FileSpreadsheet,
+  Loader2,
+  Send,
+  Save,
+  MoreVertical,
+  FolderOpen,
+  Trash2,
+  FileText,
+} from "lucide-react";
 import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,6 +47,8 @@ import {
   type FarolStatus,
 } from "@/lib/performance-farol";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+import { exportPerformancePdf } from "@/lib/performance-pdf";
+
 
 const fmtBRL = (n: number | null | undefined) =>
   n == null || Number.isNaN(n)
