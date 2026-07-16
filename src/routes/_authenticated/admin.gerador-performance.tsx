@@ -371,7 +371,7 @@ function GeradorPerformancePage() {
     qc.invalidateQueries({ queryKey: ["gerador-perf-salvos"] });
   }
 
-
+  function openSend() {
     if (!result) return;
     const found = reps.find((r: any) => r.nome?.toLowerCase() === representante.trim().toLowerCase());
     setSendRepId(found?.id ?? "");
