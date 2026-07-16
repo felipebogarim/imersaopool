@@ -177,7 +177,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                     {(() => {
                       const k = farolKey(d.maior_grupo_farol.label ?? "");
                       return (
-                        <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as any])}>
+                        <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as FarolStatus])}>
                           {d.maior_grupo_farol.label ?? "—"}
                         </span>
                       );
@@ -223,7 +223,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                         key={f.grupo}
                         className={cn(
                           "rounded-xl p-3 border border-border/60 flex flex-col gap-1",
-                          k && FAROL_CELL_CLASS[k as any],
+                          k && FAROL_CELL_CLASS[k as FarolStatus],
                         )}
                       >
                         <div className="text-[11px] uppercase tracking-wider opacity-80">{f.grupo}</div>
