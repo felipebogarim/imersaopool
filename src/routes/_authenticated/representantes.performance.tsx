@@ -83,6 +83,7 @@ function PerformancePage() {
   // Filtros da matriz
   const [filterQ, setFilterQ] = useState("");
   const [filterCats, setFilterCats] = useState<string[]>([]);
+  const [filterFams, setFilterFams] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: reps = [] } = useQuery({
@@ -210,9 +211,16 @@ function PerformancePage() {
         const cat = (r.categoria ?? "").toUpperCase().trim();
         if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
       }
+      if (filterFams.length > 0) {
+        const hasAny = filterFams.some(
+          (f) => (Number(r.metas?.[f]) || 0) > 0 || (Number(r.realizado?.[f]) || 0) > 0,
+        );
+        if (!hasAny) return false;
+      }
       return true;
     });
-  }, [view, filterQ, filterCats]);
+  }, [view, filterQ, filterCats, filterFams]);
+
 
   const filteredTotals = useMemo(() => {
     const perFamilia: Record<string, number> = {};
@@ -246,7 +254,7 @@ function PerformancePage() {
       ).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [view],
   );
-  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0;
+  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0 || filterFams.length > 0;
   const filtersRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!filterOpen) return;
@@ -1001,8 +1009,32 @@ function PerformancePage() {
                   );
                 })}
               </div>
+              {familias.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 items-center border-l border-border pl-2 ml-1">
+                  {familias.map((f) => {
+                    const active = filterFams.includes(f);
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() =>
+                          setFilterFams((prev) => (active ? prev.filter((x) => x !== f) : [...prev, f]))
+                        }
+                        className={cn(
+                          "inline-flex px-2.5 py-1 rounded-full text-xs border transition",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-transparent text-muted-foreground border-border hover:bg-muted",
+                        )}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); }}>
+                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); setFilterFams([]); }}>
                   <X className="h-4 w-4 mr-1" /> Limpar
                 </Button>
               )}
