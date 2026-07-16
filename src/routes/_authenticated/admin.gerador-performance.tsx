@@ -153,9 +153,7 @@ function GeradorPerformancePage() {
     if (!result) return;
     const found = reps.find((r: any) => r.nome?.toLowerCase() === representante.trim().toLowerCase());
     setSendRepId(found?.id ?? "");
-    setSendPeriodoLabel(periodo || "1º Semestre 2026");
-    setSendPeriodoInicio("");
-    setSendPeriodoFim("");
+    setSendPeriodoObj(periodoObj);
     setSendOpen(true);
   }
 
