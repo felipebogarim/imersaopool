@@ -111,90 +111,102 @@ export function AppShell({ children }: { children: ReactNode }) {
           <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>Imersões Comerciais</p>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
-          {NAV.map(item => (
-            <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-          ))}
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setInputsOpen(o => !o)}
-              title="Inputs"
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-            >
-              <Inbox className="h-4 w-4 shrink-0" />
-              <span className={cn("flex-1 text-left", LBL)}>Inputs</span>
-              {inputsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-            </button>
-            {inputsOpen && (
-              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                {INPUTS.map(item => (
-                  <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {NAV_BOTTOM.map(item => (
-            <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-          ))}
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setRepsOpen(o => !o)}
-              title="Representantes"
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-            >
-              <Users className="h-4 w-4 shrink-0" />
-              <span className={cn("flex-1 text-left", LBL)}>Representantes</span>
-              {repsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-            </button>
-            {repsOpen && (
-              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                {REPS.map(item => (
-                  <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || (item.to !== "/representantes" && pathname.startsWith(item.to + "/"))} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setBasesOpen(o => !o)}
-              title="Bases"
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-            >
-              <Database className="h-4 w-4 shrink-0" />
-              <span className={cn("flex-1 text-left", LBL)}>Bases</span>
-              {basesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-            </button>
-            {basesOpen && (
-              <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                {BASES.map(item => (
-                  <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {workspace?.isAdmin && (
-            <div className="pt-4">
-              <div className={cn("px-3 pb-2 items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground", ONLY_EXPANDED)}>
-                <Shield className="h-3 w-3" /> Admin
-              </div>
-              {[
-                { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
-                { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
-                { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
-                { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
-              ].map(item => (
+          {workspace?.isComercialOnly ? (
+            <NavItem
+              to="/admin/gerador-performance"
+              label="Gerador de Performance"
+              Icon={Sparkles}
+              active={pathname === "/admin/gerador-performance"}
+            />
+          ) : (
+            <>
+              {NAV.map(item => (
                 <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
               ))}
-            </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setInputsOpen(o => !o)}
+                  title="Inputs"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Inbox className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Inputs</span>
+                  {inputsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {inputsOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {INPUTS.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {NAV_BOTTOM.map(item => (
+                <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+              ))}
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRepsOpen(o => !o)}
+                  title="Representantes"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Users className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Representantes</span>
+                  {repsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {repsOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {REPS.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || (item.to !== "/representantes" && pathname.startsWith(item.to + "/"))} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBasesOpen(o => !o)}
+                  title="Bases"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Database className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Bases</span>
+                  {basesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {basesOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {BASES.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {workspace?.isAdmin && (
+                <div className="pt-4">
+                  <div className={cn("px-3 pb-2 items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground", ONLY_EXPANDED)}>
+                    <Shield className="h-3 w-3" /> Admin
+                  </div>
+                  {[
+                    { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+                    { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                    { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
+                    { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
+                  ].map(item => (
+                    <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </nav>
+
         <div className="p-3 border-t border-sidebar-border space-y-2">
           <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block")}>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
