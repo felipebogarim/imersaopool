@@ -793,7 +793,7 @@ function PerformancePage() {
                         <tr
                           key={item.rep_id}
                           className="border-t border-border hover:bg-muted/30 cursor-pointer"
-                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}
+                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}
                         >
                           <td className="px-4 py-3 font-medium">{rep?.nome ?? "—"}</td>
                           <td className="px-4 py-3">{u.periodo_label}</td>
@@ -811,7 +811,7 @@ function PerformancePage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}>
+                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}>
                                   <ChevronRight className="h-4 w-4 mr-2" /> Abrir
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => exportFromList(item.rep_id, u)}>
