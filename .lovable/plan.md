@@ -1,94 +1,89 @@
-## Escopo
+## Objetivo
 
-A entrega é grande e o próprio pedido diz **"Não avançar para a Etapa 2 antes de validar que a Etapa 1 reproduz fielmente a planilha original."** Vou seguir isso: implementar agora a **Etapa 1 completa**, deixar Etapa 2 e 3 esboçadas mas não construídas, e voltar após sua validação visual.
+Criar uma área **Forms** no menu Inputs, com gerador de formulários por IA, publicação em URL pública própria por formulário, edição e repositório de respostas dentro da mesma página.
 
-## Etapa 1 — Réplica fiel e editável (esta entrega)
+## Estrutura da funcionalidade
 
-### Banco (migração)
+### 1. Menu
+- Adicionar item **Forms** dentro do grupo *Inputs* na sidebar (`src/components/AppShell.tsx`), com rota `/forms`.
 
-Ajustes nas tabelas existentes `rep_performance_uploads` e `rep_performance_rows`:
+### 2. Página principal `/forms` (autenticada, dentro de `_authenticated`)
+Três blocos empilhados na mesma página:
 
-- `rep_performance_rows.metas_status` (jsonb) — status do farol por família importado da cor da célula, quando a planilha não trouxer % (ex.: `{ "Pro LED": "sem_compra", "Perfil": "otimo" }`).
-- `rep_performance_rows.metas_cores` (jsonb) — cor original hex por família, para exportação fiel.
-- `rep_performance_rows.realizado` (jsonb) — valores realizados por família (nulo por enquanto; usado na Etapa 3).
-- `rep_performance_rows.observacao` (text) e `acompanhar` (bool) — placeholders p/ Etapa 2, criados agora para evitar segunda migração.
-- `rep_performance_uploads.observacao` (text), `updated_at` (timestamptz), `updated_by` (uuid) — metadados de versão.
-- Manter GRANTs e políticas atuais (a tabela já tem RLS por company/representante).
+1. **Gerador**
+   - Campo *Título* (obrigatório) → gera o slug do form.
+   - Campo *Prompt* (textarea) descrevendo o formulário desejado.
+   - Botão **Gerar com IA** → chama server function que usa Lovable AI (Gemini) e retorna um schema JSON de campos (tipo, label, placeholder, opções, obrigatório).
+   - Preview inline do form gerado + botão **Salvar** (persiste em `forms`).
 
-Nenhuma coluna existente é removida — planilhas antigas continuam funcionando.
+2. **Forms criados** (lista/repositório)
+   - Colunas: título, slug, criado em, nº de respostas, status (ativo/pausado).
+   - Kebab com: **Abrir link público** (copia URL), **Editar** (abre editor de schema), **Ver respostas**, **Pausar/ativar**, **Excluir**.
 
-### Parser (`parseWorkbook`)
+3. **Respostas** (drawer/dialog acionado pelo kebab **Ver respostas**)
+   - Tabela com colunas dinâmicas a partir do schema + data de envio.
+   - Botão **Exportar CSV**.
 
-Reescrever usando o XLSX com `cellStyles: true` para ler cor de fundo de cada célula da matriz e mapear para o farol:
+### 3. URL pública do formulário
+- Rota pública `src/routes/f.$slug.tsx` (fora de `_authenticated`), sem shell, sem menu, sem links para outras áreas do sistema.
+- Formato final: `https://.../f/[titulo-em-slug]` (usamos o prefixo `/f/` para evitar colisão com rotas do app como `/dashboard`, `/auth`, `/imersoes` etc. — usar `/[titulo]` sem prefixo bloquearia qualquer rota nova com esse nome).
+- Renderiza os campos do schema, valida e envia via server route pública em `src/routes/api/public/forms/submit.ts` (grava em `form_responses` com Supabase admin server-side).
+- Após envio, mostra tela de "Resposta enviada" — sem link para login nem para app.
 
-```text
-verde escuro       → excelente   (>100%)
-verde              → otimo       (90–100%)
-amarelo / lima     → proximo     (70–89,99%)
-laranja            → pode_melhorar (50–69,99%)
-vermelho           → abaixo_meta (<50%)
-cinza / branco+0   → sem_compra  (0%)
-```
+### 4. Banco de dados
+Migration com:
 
-O mapa cor→status vive em `src/lib/performance-faroI.ts` com fallback tolerante (distância RGB ao centro de cada faixa). Regras de fidelidade do item 15 respeitadas: nada é reordenado, renomeado, arredondado ou combinado; célula vazia fica **vazia** (não vira zero e não vira "abaixo da meta").
+- `public.forms`: `id`, `company_id`, `slug` (único global), `title`, `prompt`, `schema jsonb`, `is_active bool default true`, `created_by`, `created_at`, `updated_at`.
+- `public.form_responses`: `id`, `form_id (fk)`, `answers jsonb`, `submitted_at`, `ip`, `user_agent`.
+- Índices em `slug` e `form_id`.
+- Trigger `set_company_id_default` (padrão do projeto).
+- Trigger `updated_at`.
 
-### UI — `src/routes/_authenticated/representantes.performance.tsx`
+### RLS
+- `forms`: autenticados leem/escrevem os da própria empresa (`company_id = current_company_id()`); `anon` recebe **SELECT restrito** apenas por `slug` de forms ativos, retornando só colunas necessárias (schema, title). Como PostgREST não filtra colunas por policy, o SELECT anônimo será feito via **RPC security definer** `public.get_active_form_by_slug(_slug text)` retornando `id, title, schema` — evita expor `prompt`, `company_id`, `created_by`.
+- `form_responses`: `anon` só pode **INSERT** (com `form_id` de form ativo, validado em trigger `BEFORE INSERT`); autenticados leem os do próprio `company_id` (join via `forms`).
+- Server route pública usa `supabaseAdmin` para gravar após validar slug/ativo.
 
-Reestruturar a página em componentes menores dentro de `src/components/performance/`:
+### 5. Geração por IA
+- Server function `generateFormSchema` (`src/lib/generate-form.functions.ts`) com `requireSupabaseAuth`.
+- Modelo: `google/gemini-2.5-flash` via `https://ai.gateway.lovable.dev/v1/chat/completions` com `response_format: json_object` (mesmo padrão de `generate-perspectivas.functions.ts`).
+- Prompt de sistema instrui a devolver:
+  ```
+  { "fields": [ { "id", "label", "type" ("text"|"textarea"|"email"|"number"|"select"|"radio"|"checkbox"|"date"), "required", "placeholder"?, "options"?: [{"value","label"}] } ] }
+  ```
+- Cliente valida com Zod antes de salvar.
 
-- `PerformanceToolbar` — seletor rep / período / versão + ações (Editar, Salvar, Cancelar, Substituir, Nova, Exportar).
-- `PerformanceResumo` — cards de Meta total, clientes na meta, abaixo, sem compra + cards por categoria (Black/Gold/Silver).
-- `PerformanceLegenda` — chips coloridos do farol, sempre visíveis.
-- `PerformanceMatriz` — tabela com:
-  - colunas `Razão social` e `Categoria` congeladas (`sticky left-0` com z-index correto);
-  - `thead` sticky;
-  - rodapé com totais por família + total geral;
-  - célula colorida pelo farol; tooltip com nome completo do cliente;
-  - seletor de visualização (Meta / Realizado / Percentual / Completo) persistido em `localStorage`;
-  - modo edição: célula vira `<input>` numérico, recálculo de totais em tempo real, aviso de "alterações não salvas", desfazer local antes de salvar.
-- `PerformanceVersionamento` — lista de versões da planilha do rep atual, com badge da ativa e ações Restaurar / Comparar (comparar fica desabilitado nesta etapa e vai para Etapa 3).
+### 6. Editor de forms já criados
+- Rota `/_authenticated/forms.$id.tsx`: edita título, prompt (opcional), schema (formulário visual: adicionar/remover/reordenar campos, tipo, opções), toggle ativo/pausado.
+- Botão **Regenerar com IA** re-executa a geração usando o prompt atual.
 
-### Versionamento
+## Detalhes técnicos
 
-- `Substituir versão` passa a **arquivar** (nova linha em `rep_performance_uploads` com o mesmo período, marcando a anterior como `substituida_em`), em vez de deletar. Restauração = duplicar a versão antiga como nova ativa.
-- Salvar edições em modo "editar metas" cria uma nova versão automaticamente (não sobrescreve silenciosamente), preservando arquivo original.
+- **Slug**: gerado com `slugify` (lower, remove acentos, `-`); checa unicidade e sugere sufixo numérico se colidir.
+- **Reservados**: bloquear slugs iguais a rotas do sistema (`dashboard`, `auth`, `imersoes`, `entrevistas`, `admin`, `f`, `api`, `r`, `evento`, `clientes`, `produtos`, `familias`, `roteiros`, `agentes`, `price`, `projecao`, `perspectivas`, `compilacoes`, `planos`, `representantes`, `empresas`, `novo-corp`, `permissoes`, `forms`, `nda`).
+- **Público seguro**: rota pública nunca importa `AppShell`; sem `<Link>` para rotas internas; header simples com brand.
+- **Submissão**: server route em `src/routes/api/public/forms/submit.ts` valida o schema no servidor (mesmo Zod usado no client) e insere via `supabaseAdmin`.
+- **Erros de gateway**: tratamento explícito para `429` (rate limit) e `402` (créditos) com toast.
 
-### Exportação
+## Arquivos
 
-Botão `Exportar Excel` gera .xlsx com `xlsx-js-style` reaproveitando cores originais + valores atuais, com totais e cabeçalho de rep/período/versão.
+Criados:
+- `supabase/migrations/<ts>_forms.sql`
+- `src/lib/form-schema.ts` (tipos + Zod compartilhados)
+- `src/lib/generate-form.functions.ts`
+- `src/routes/_authenticated/forms.index.tsx`
+- `src/routes/_authenticated/forms.$id.tsx`
+- `src/routes/f.$slug.tsx` (público)
+- `src/routes/api/public/forms/submit.ts`
+- `src/components/FormRenderer.tsx` (renderiza schema como formulário)
+- `src/components/FormBuilder.tsx` (editor visual de schema)
 
-## Etapa 2 — Gestão operacional (próxima entrega, após sua validação)
+Editados:
+- `src/components/AppShell.tsx` (novo item no INPUTS)
+- `src/integrations/supabase/types.ts` (gerado após migration)
 
-Filtros avançados, painel lateral por célula, observações, marcar para acompanhamento, edição em massa. Colunas `observacao` / `acompanhar` já criadas nesta migração.
-
-## Etapa 3 — Integração analítica
-
-Realizado vindo de vendas, % automático, histórico mensal, comparação entre versões, KPIs executivos com dados reais.
-
-## Arquivos afetados nesta entrega
-
-```text
-supabase/migrations/<novo>.sql                             (nova migração)
-src/lib/performance-farol.ts                               (novo)
-src/lib/performance-parser.ts                              (novo — extraído da route)
-src/lib/performance-export.ts                              (novo)
-src/components/performance/PerformanceToolbar.tsx          (novo)
-src/components/performance/PerformanceResumo.tsx           (novo)
-src/components/performance/PerformanceLegenda.tsx          (novo)
-src/components/performance/PerformanceMatriz.tsx           (novo)
-src/components/performance/PerformanceVersionamento.tsx    (novo)
-src/routes/_authenticated/representantes.performance.tsx   (reescrita usando os componentes acima)
-package.json                                               (+ xlsx-js-style)
-```
-
-## Fora de escopo desta entrega
-
-- Painel lateral por célula, filtros avançados, edição em massa, observações e acompanhamento (Etapa 2).
-- Cálculo automático de realizado/percentual a partir de vendas (Etapa 3).
-- Comparação entre versões (Etapa 3).
-
-## Perguntas antes de executar
-
-1. **Você tem a planilha real de exemplo** para eu calibrar o mapa cor→status? Sem ela posso implementar o mapa padrão descrito acima, mas cores fora do padrão podem cair na faixa errada até você me mandar 1 arquivo pra ajustar.
-2. **"Substituir versão" deve arquivar (preservar a anterior) ou continuar apagando?** No plano acima passei a arquivar — confirma?
-3. Confirma que posso seguir só com a **Etapa 1** agora e voltar para Etapa 2/3 depois da sua validação visual?
+## Fora do escopo (desta rodada)
+- Uploads de arquivo dentro do form (posso adicionar depois).
+- Lógica condicional (mostrar campo B se A = X).
+- Notificações por e-mail ao receber resposta.
+- Multi-página / branching.

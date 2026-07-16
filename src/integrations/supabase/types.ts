@@ -1087,6 +1087,83 @@ export type Database = {
           },
         ]
       }
+      form_responses: {
+        Row: {
+          answers: Json
+          company_id: string
+          form_id: string
+          id: string
+          ip: string | null
+          submitted_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          answers?: Json
+          company_id: string
+          form_id: string
+          id?: string
+          ip?: string | null
+          submitted_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          answers?: Json
+          company_id?: string
+          form_id?: string
+          id?: string
+          ip?: string | null
+          submitted_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forms: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          prompt: string | null
+          schema: Json
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          prompt?: string | null
+          schema?: Json
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          prompt?: string | null
+          schema?: Json
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gerador_performance_salvos: {
         Row: {
           created_at: string
@@ -2291,6 +2368,14 @@ export type Database = {
     }
     Functions: {
       current_company_id: { Args: never; Returns: string }
+      get_active_form_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          id: string
+          schema: Json
+          title: string
+        }[]
+      }
       get_immersion_by_token: {
         Args: { _token: string }
         Returns: {
@@ -2319,6 +2404,10 @@ export type Database = {
           size: number
           updated_at: string
         }[]
+      }
+      submit_form_response: {
+        Args: { _answers: Json; _slug: string; _user_agent?: string }
+        Returns: string
       }
       submit_representative_input: {
         Args: { _data: Json; _token: string }
