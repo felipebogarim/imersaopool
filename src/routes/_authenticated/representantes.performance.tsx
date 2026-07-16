@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,12 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3 } from "lucide-react";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
-import { ClientBIBatchUpload } from "@/components/ClientBIBatchUpload";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
@@ -717,6 +716,11 @@ function PerformancePage() {
               <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
                 <Pencil className="h-4 w-4 mr-1" /> Editar metas
               </Button>
+              <Button variant="outline" asChild>
+                <Link to="/clientes-bi-batch/$repId" params={{ repId }}>
+                  <Users className="h-4 w-4 mr-1" /> BI dos clientes
+                </Link>
+              </Button>
               <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
                 <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
               </Button>
@@ -902,14 +906,9 @@ function PerformancePage() {
 
         {/* BI — indicadores de performance (recolhido por padrão) */}
         {repId && (
-          <>
-            <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
-            <ClientBIBatchUpload
-              repId={repId}
-              companyId={(reps.find((r: any) => r.id === repId) as any)?.company_id ?? null}
-            />
-          </>
+          <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
         )}
+
 
 
         {editing && (
