@@ -147,20 +147,27 @@ function PerformancePage() {
         .order("ordem")).data ?? [],
   });
 
+  // Filtra defensivamente linhas de resumo (dados antigos importados antes do parser corrigido)
+  const SUMMARY_PREFIXES = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
   const rows: Row[] = useMemo(
     () =>
-      (dbRows as any[]).map((r) => ({
-        id: r.id,
-        ordem: r.ordem,
-        razao_social: r.razao_social,
-        categoria: r.categoria,
-        metas: r.metas ?? {},
-        metas_status: r.metas_status ?? {},
-        metas_cores: r.metas_cores ?? {},
-        realizado: r.realizado ?? {},
-        total_meta: r.total_meta,
-        total_pct_status: (r.total_pct_status ?? null) as FarolStatus | null,
-      })),
+      (dbRows as any[])
+        .filter((r) => {
+          const u = String(r.razao_social ?? "").trim().toUpperCase();
+          return !SUMMARY_PREFIXES.some((p) => u.startsWith(p));
+        })
+        .map((r) => ({
+          id: r.id,
+          ordem: r.ordem,
+          razao_social: r.razao_social,
+          categoria: r.categoria,
+          metas: r.metas ?? {},
+          metas_status: r.metas_status ?? {},
+          metas_cores: r.metas_cores ?? {},
+          realizado: r.realizado ?? {},
+          total_meta: r.total_meta,
+          total_pct_status: (r.total_pct_status ?? null) as FarolStatus | null,
+        })),
     [dbRows],
   );
 
