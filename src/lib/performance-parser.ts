@@ -18,11 +18,15 @@ export type ParsedRow = {
   total_pct_status: FarolStatus | null;
 };
 
+export type ResumoPct = { __total__: number | null } & Record<string, number>;
+
 export type ParsedSheet = {
   familias: string[];
   categoriaMetas: Record<string, number>;
   escala: { label: string; min: number | null; max: number | null }[];
   rows: ParsedRow[];
+  participacao: ResumoPct | null;
+  atingimento: ResumoPct | null;
 };
 
 function cellHex(cell: any): string | null {
