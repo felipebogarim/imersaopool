@@ -58,6 +58,7 @@ function PerformancePage() {
   const [repId, setRepId] = useState<string>("");
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
   const [dlgMode, setDlgMode] = useState<"new" | "replace">("new");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1175,12 +1176,23 @@ function PerformancePage() {
         {/* Histórico de versões do representante */}
         {repId && (
           <div className="surface rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Histórico de versões deste representante
-              </p>
+            <button
+              type="button"
+              onClick={() => setVersionsOpen((v) => !v)}
+              className="w-full px-4 py-3 border-b border-border flex items-center justify-between hover:bg-muted/40 transition-colors"
+              aria-expanded={versionsOpen}
+            >
+              <div className="flex items-center gap-2">
+                <ChevronRight
+                  className={cn("h-4 w-4 text-muted-foreground transition-transform", versionsOpen && "rotate-90")}
+                />
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Histórico de versões deste representante
+                </p>
+              </div>
               <span className="text-xs text-muted-foreground">{allVersions.length} versões</span>
-            </div>
+            </button>
+            {versionsOpen && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
@@ -1244,6 +1256,7 @@ function PerformancePage() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
       </div>
