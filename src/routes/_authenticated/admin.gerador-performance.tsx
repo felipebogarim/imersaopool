@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Sparkles, FileDown, ShieldCheck, X, FileSpreadsheet, Loader2, Send } from "lucide-react";
+import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
