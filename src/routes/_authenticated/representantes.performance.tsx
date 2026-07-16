@@ -1103,6 +1103,10 @@ function PerformancePage() {
                               familia={f}
                               editing={editing}
                               viewMode={viewMode}
+                              iaMode={
+                                currentUpload?.origem === "ia" ||
+                                currentUpload?.origem === "ia-atualizada"
+                              }
                               onChange={(v) => updateCell(rowIdx, f, v)}
                             />
                           ))}
