@@ -580,23 +580,30 @@ function GeradorPerformancePage() {
 
         {/* Resultado */}
         {result && (
-          <div className="surface rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3">
+          <div id="resultado-gerador" className="surface rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <div className="text-sm font-medium">3. Resultado</div>
                 <p className="text-xs text-muted-foreground">
                   {result.rows.length} clientes · {result.familias.length} famílias
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button variant="outline" onClick={download}>
-                  <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
+                  <FileDown className="h-4 w-4 mr-1" /> Excel
+                </Button>
+                <Button variant="outline" onClick={downloadPdf}>
+                  <FileText className="h-4 w-4 mr-1" /> PDF
+                </Button>
+                <Button variant="outline" onClick={openSaveDialog}>
+                  <Save className="h-4 w-4 mr-1" /> Salvar
                 </Button>
                 <Button onClick={openSend}>
                   <Send className="h-4 w-4 mr-1" /> Enviar para painel
                 </Button>
               </div>
             </div>
+
 
             {result.observacoes && (
               <div className="text-xs text-muted-foreground rounded-lg border border-border p-3 bg-muted/30">
