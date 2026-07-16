@@ -358,7 +358,42 @@ function GeradorPerformancePage() {
               familias.map((f) => [f, grand > 0 ? (perFamilia[f] / grand) * 100 : null]),
             ),
           }) as { __total__: number | null } & Record<string, number | null>;
-    return { familias, rows, perFamilia, grand, participacao };
+    // Atingimento estimado a partir dos midpoints do farol.
+    const savedAtg = (row.atingimento && Object.keys(row.atingimento).length ? row.atingimento : null) as
+      | ({ __total__: number | null } & Record<string, number | null>)
+      | null;
+    let atingimento: { __total__: number | null } & Record<string, number | null>;
+    if (savedAtg) {
+      atingimento = savedAtg;
+    } else {
+      atingimento = { __total__: null };
+      for (const f of familias) {
+        let num = 0, den = 0, ss = 0, sn = 0;
+        for (const r of rows) {
+          const st = r.metas_status?.[f] as FarolStatus | undefined;
+          if (!st) continue;
+          const w = Number(r.metas?.[f]) || 0;
+          num += FAROL_MIDPOINT[st] * w;
+          den += w;
+          ss += FAROL_MIDPOINT[st];
+          sn += 1;
+        }
+        atingimento[f] = den > 0 ? num / den : sn > 0 ? ss / sn : null;
+      }
+      let tn = 0, td = 0, ts = 0, tc = 0;
+      for (const r of rows) {
+        const st = r.total_pct_status as FarolStatus | undefined;
+        if (!st) continue;
+        const w =
+          Number(r.total_meta) || familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+        tn += FAROL_MIDPOINT[st] * w;
+        td += w;
+        ts += FAROL_MIDPOINT[st];
+        tc += 1;
+      }
+      atingimento.__total__ = td > 0 ? tn / td : tc > 0 ? ts / tc : null;
+    }
+    return { familias, rows, perFamilia, grand, participacao, atingimento };
   }
 
   function exportSavedXlsx(row: any) {
