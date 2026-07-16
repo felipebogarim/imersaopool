@@ -43,6 +43,7 @@ import {
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
+  FAROL_MIDPOINT,
   catBadge,
   type FarolStatus,
 } from "@/lib/performance-farol";
