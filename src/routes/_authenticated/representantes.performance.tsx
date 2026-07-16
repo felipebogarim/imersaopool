@@ -1099,27 +1099,6 @@ function PerformancePage() {
                         </tr>
                       );
                     })}
-                    <tr className="border-t-2 border-border bg-muted/40 font-semibold sticky bottom-[calc(2*2.75rem)]">
-                      <td className="px-3 py-3 sticky left-0 bg-muted/70 z-10">TOTAL</td>
-                      <td className="px-3 py-3 sticky left-[240px] bg-muted/70 z-10"></td>
-                      <td className="px-3 py-3 text-right tabular-nums bg-muted/70">
-                        {fmtBRL(filteredTotals.grand)}
-                      </td>
-                      <td className="px-3 py-3 bg-muted/70"></td>
-                      {familias.map((f) => (
-                        <td key={f} className="px-3 py-3 text-center tabular-nums text-xs text-muted-foreground">
-                          {(() => {
-                            const counts: Record<string, number> = {};
-                            for (const row of filteredView) {
-                              const s = row.metas_status?.[f];
-                              if (s) counts[s] = (counts[s] ?? 0) + 1;
-                            }
-                            const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-                            return top ? `${top[1]}× ${FAROL_FAIXA_TEXT[top[0] as FarolStatus]}` : "—";
-                          })()}
-                        </td>
-                      ))}
-                    </tr>
                     {(() => {
                       const participacao = (currentUpload as any)?.participacao as
                         | { __total__: number | null; [k: string]: number | null }
@@ -1127,40 +1106,61 @@ function PerformancePage() {
                       const atingimento = (currentUpload as any)?.atingimento as
                         | { __total__: number | null; [k: string]: number | null }
                         | null;
-                      const fmtPct = (n: number | null | undefined) =>
-                        n == null || Number.isNaN(n) ? "—" : `${n.toFixed(1).replace(".", ",")}%`;
+                      const fmtPct = (n: number | null | undefined) => {
+                        if (n == null || Number.isNaN(n)) return "—";
+                        const v = Math.abs(n) <= 1.5 ? n * 100 : n;
+                        return `${v.toFixed(1).replace(".", ",")}%`;
+                      };
                       return (
                         <>
-                          {participacao && (
-                            <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium sticky bottom-[2.75rem]">
-                              <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
-                                Participação estimada na venda
+                          {/* TOTAL GERAL DA META */}
+                          <tr className="border-t-2 border-border bg-muted/60 font-semibold sticky bottom-[calc(2*2.75rem)]">
+                            <td className="px-3 py-3 sticky left-0 bg-muted/80 z-10 uppercase text-xs tracking-wider">
+                              Total geral da meta
+                            </td>
+                            <td className="px-3 py-3 sticky left-[240px] bg-muted/80 z-10"></td>
+                            <td className="px-3 py-3 text-right tabular-nums bg-muted/70">
+                              {fmtBRL(filteredTotals.grand)}
+                            </td>
+                            <td className="px-3 py-3 bg-muted/70"></td>
+                            {familias.map((f) => (
+                              <td key={f} className="px-3 py-3 text-right tabular-nums bg-muted/70">
+                                {fmtBRL(filteredTotals.perFamilia[f] || 0)}
                               </td>
-                              <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
-                              <td className="px-3 py-2.5"></td>
-                              <td className="px-3 py-2.5 text-center tabular-nums">{fmtPct(participacao.__total__)}</td>
-                              {familias.map((f) => (
-                                <td key={f} className="px-3 py-2.5 text-center tabular-nums">
-                                  {fmtPct(participacao[f])}
-                                </td>
-                              ))}
-                            </tr>
-                          )}
-                          {atingimento && (
-                            <tr className="border-t border-border bg-amber-50 dark:bg-amber-950/30 font-medium sticky bottom-0">
-                              <td className="px-3 py-2.5 sticky left-0 bg-amber-100/90 dark:bg-amber-950/60 z-10 text-xs uppercase tracking-wider">
-                                Atingimento estimado da meta
+                            ))}
+                          </tr>
+                          {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
+                          <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium sticky bottom-[2.75rem]">
+                            <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
+                              Participação estimada na venda
+                            </td>
+                            <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
+                            <td className="px-3 py-2.5"></td>
+                            <td className="px-3 py-2.5 text-center tabular-nums">
+                              {fmtPct(participacao?.__total__ ?? null)}
+                            </td>
+                            {familias.map((f) => (
+                              <td key={f} className="px-3 py-2.5 text-center tabular-nums">
+                                {fmtPct(participacao?.[f] ?? null)}
                               </td>
-                              <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
-                              <td className="px-3 py-2.5"></td>
-                              <td className="px-3 py-2.5 text-center tabular-nums">{fmtPct(atingimento.__total__)}</td>
-                              {familias.map((f) => (
-                                <td key={f} className="px-3 py-2.5 text-center tabular-nums">
-                                  {fmtPct(atingimento[f])}
-                                </td>
-                              ))}
-                            </tr>
-                          )}
+                            ))}
+                          </tr>
+                          {/* ATINGIMENTO ESTIMADO DA META */}
+                          <tr className="border-t border-border bg-amber-50 dark:bg-amber-950/30 font-medium sticky bottom-0">
+                            <td className="px-3 py-2.5 sticky left-0 bg-amber-100/90 dark:bg-amber-950/60 z-10 text-xs uppercase tracking-wider">
+                              Atingimento estimado da meta
+                            </td>
+                            <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
+                            <td className="px-3 py-2.5"></td>
+                            <td className="px-3 py-2.5 text-center tabular-nums">
+                              {fmtPct(atingimento?.__total__ ?? null)}
+                            </td>
+                            {familias.map((f) => (
+                              <td key={f} className="px-3 py-2.5 text-center tabular-nums">
+                                {fmtPct(atingimento?.[f] ?? null)}
+                              </td>
+                            ))}
+                          </tr>
                         </>
                       );
                     })()}
