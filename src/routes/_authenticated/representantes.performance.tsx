@@ -252,9 +252,14 @@ function PerformancePage() {
   // Resumo executivo — contagens por status
   const resumo = useMemo(() => {
     const perCat: Record<string, { count: number; meta: number; real: number }> = {};
-    let semCompra = 0;
-    let naMeta = 0;
-    let abaixo = 0;
+    const perStatus: Record<FarolStatus, number> = {
+      sem_compra: 0,
+      abaixo_meta: 0,
+      pode_melhorar: 0,
+      proximo: 0,
+      otimo: 0,
+      excelente: 0,
+    };
     let hasRealizado = false;
     for (const r of view) {
       const cat = r.categoria ?? "—";
@@ -265,12 +270,26 @@ function PerformancePage() {
       perCat[cat].meta += rowMeta;
       perCat[cat].real += rowReal;
       if (rowReal > 0) hasRealizado = true;
-      const anyStatus = Object.values(r.metas_status);
-      if (rowReal === 0 && anyStatus.every((s) => s === "sem_compra")) semCompra += 1;
-      else if (rowReal >= rowMeta && rowMeta > 0) naMeta += 1;
-      else if (rowMeta > 0 && rowReal < rowMeta) abaixo += 1;
+      // Status da linha: prioriza total_pct_status; senão calcula por realizado/meta;
+      // senão infere de metas_status (predominante ou sem_compra).
+      let status: FarolStatus | null = r.total_pct_status ?? null;
+      if (!status && rowMeta > 0 && rowReal > 0) {
+        status = statusFromPercent((rowReal / rowMeta) * 100);
+      }
+      if (!status) {
+        const values = Object.values(r.metas_status ?? {});
+        if (values.length > 0) {
+          if (values.every((s) => s === "sem_compra")) status = "sem_compra";
+          else {
+            const counts: Record<string, number> = {};
+            for (const v of values) counts[v] = (counts[v] ?? 0) + 1;
+            status = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FarolStatus) ?? null;
+          }
+        }
+      }
+      if (status) perStatus[status] += 1;
     }
-    return { perCat, semCompra, naMeta, abaixo, hasRealizado };
+    return { perCat, perStatus, hasRealizado };
   }, [view, familias]);
 
   function openUpload(mode: "new" | "replace") {
