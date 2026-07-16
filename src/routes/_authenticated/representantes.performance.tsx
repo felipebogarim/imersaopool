@@ -959,7 +959,7 @@ function PerformancePage() {
               </div>
               {familias.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 items-center border-l border-border pl-2 ml-1">
-                  {familias.map((f) => {
+                  {visibleFams.map((f) => {
                     const active = filterFams.includes(f);
                     return (
                       <button
@@ -1003,7 +1003,7 @@ function PerformancePage() {
                   </th>
                   <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted">Total meta</th>
                   <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Total %</th>
-                  {familias.map((f) => (
+                  {visibleFams.map((f) => (
                     <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
                       {f}
                     </th>
@@ -1013,7 +1013,7 @@ function PerformancePage() {
               <tbody>
                 {!currentUpload ? (
                   <tr>
-                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       {repId
                         ? 'Nenhuma planilha importada para este representante. Clique em "Nova planilha".'
                         : "Selecione um representante."}
@@ -1021,13 +1021,13 @@ function PerformancePage() {
                   </tr>
                 ) : view.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Carregando…
                     </td>
                   </tr>
                 ) : filteredView.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + familias.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Nenhum cliente encontrado com os filtros atuais.
                     </td>
                   </tr>
@@ -1067,7 +1067,7 @@ function PerformancePage() {
                               ""
                             )}
                           </td>
-                          {familias.map((f) => (
+                          {visibleFams.map((f) => (
                             <MatrixCell
                               key={f}
                               row={r}
@@ -1104,7 +1104,7 @@ function PerformancePage() {
                               {fmtBRL(filteredTotals.grand)}
                             </td>
                             <td className="px-3 py-3"></td>
-                            {familias.map((f) => (
+                            {visibleFams.map((f) => (
                               <td key={f} className="px-3 py-3 text-right tabular-nums">
                                 {fmtBRL(filteredTotals.perFamilia[f] || 0)}
                               </td>
@@ -1120,7 +1120,7 @@ function PerformancePage() {
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(participacao?.__total__ ?? null)}
                             </td>
-                            {familias.map((f) => (
+                            {visibleFams.map((f) => (
                               <td key={f} className="px-3 py-2.5 text-center tabular-nums">
                                 {fmtPct(participacao?.[f] ?? null)}
                               </td>
@@ -1136,7 +1136,7 @@ function PerformancePage() {
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(atingimento?.__total__ ?? null)}
                             </td>
-                            {familias.map((f) => (
+                            {visibleFams.map((f) => (
                               <td key={f} className="px-3 py-2.5 text-center tabular-nums">
                                 {fmtPct(atingimento?.[f] ?? null)}
                               </td>
