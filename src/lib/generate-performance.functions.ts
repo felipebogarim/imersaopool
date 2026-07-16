@@ -1,0 +1,134 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+type SheetPayload = {
+  filename: string;
+  sheetName: string;
+  // Matriz de linhas x colunas já em formato "planilha" (strings/numbers).
+  // O cliente extrai a partir do .xlsx e envia. Nenhum arquivo bruto é armazenado.
+  aoa: (string | number | null)[][];
+};
+
+type FarolStatus =
+  | "sem_compra"
+  | "abaixo_meta"
+  | "pode_melhorar"
+  | "proximo"
+  | "otimo"
+  | "excelente";
+
+export type GeneratedRow = {
+  razao_social: string;
+  categoria: string | null;
+  total_meta: number | null;
+  total_pct_status: FarolStatus | null;
+  metas: Record<string, number>;
+  metas_status: Record<string, FarolStatus>;
+};
+
+export type GeneratedPerformance = {
+  familias: string[];
+  rows: GeneratedRow[];
+  observacoes?: string;
+};
+
+export const generatePerformanceFromRaw = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: {
+      sheets: SheetPayload[];
+      periodoLabel?: string | null;
+      hint?: string | null;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+    if (!data.sheets?.length) throw new Error("Nenhuma planilha enviada.");
+
+    // Compacta cada planilha limitando linhas para caber no contexto.
+    const MAX_ROWS = 400;
+    const MAX_COLS = 40;
+    const compact = data.sheets.map((s) => ({
+      arquivo: s.filename,
+      aba: s.sheetName,
+      linhas: (s.aoa || []).slice(0, MAX_ROWS).map((row) =>
+        (row || []).slice(0, MAX_COLS).map((v) => (v == null ? "" : String(v).slice(0, 120))),
+      ),
+    }));
+
+    const schema = `{
+  "familias": string[],
+  "rows": [
+    {
+      "razao_social": string,
+      "categoria": "Black"|"Gold"|"Silver"|"Bronze"|"Diamond"|"Platinum"|null,
+      "total_meta": number|null,
+      "total_pct_status": "sem_compra"|"abaixo_meta"|"pode_melhorar"|"proximo"|"otimo"|"excelente"|null,
+      "metas": { [familia: string]: number },
+      "metas_status": { [familia: string]: "sem_compra"|"abaixo_meta"|"pode_melhorar"|"proximo"|"otimo"|"excelente" }
+    }
+  ],
+  "observacoes": string
+}`;
+
+    const prompt = `Você recebe UMA OU MAIS planilhas brutas (contendo dados de metas e realizações por cliente e por família de produto de representantes comerciais). Sua tarefa é EXTRAIR e CONSOLIDAR os dados no formato canônico da planilha "Performance", mesmo que os dados estejam espalhados em várias abas/arquivos.
+
+Regras:
+- Descubra a lista de FAMÍLIAS DE PRODUTO (colunas).
+- Para cada CLIENTE (razão social), extraia:
+  - "categoria" (Black/Gold/Silver/Bronze/Diamond/Platinum), se existir; senão null.
+  - "total_meta": meta total do cliente no período (número). Se não existir, null.
+  - Por família: "metas[fam]" = valor de META (numérico, absoluto em R$). Se não existir a meta, use 0.
+  - Por família: "metas_status[fam]" = FAROL calculado a partir do percentual de atingimento (realizado/meta):
+     * exatamente 0% => "sem_compra"
+     * <50% => "abaixo_meta"
+     * 50-69% => "pode_melhorar"
+     * 70-89% => "proximo"
+     * 90-100% => "otimo"
+     * >100% => "excelente"
+    Se a planilha já traz faixa textual ("<50", "50-69", ">100", "0%") ou cor semântica, use-a diretamente.
+  - "total_pct_status": mesmo cálculo para o total do cliente.
+- IMPORTANTE: NUNCA retorne valores realizados/faturados nem valores brutos além da META. Só META em R$ e status de farol.
+- Se a mesma "razão social" aparecer em várias abas, consolide em UMA linha.
+- Se a planilha for ambígua, use o campo "observacoes" para explicar suposições.
+- Retorne APENAS JSON válido no schema abaixo. Sem markdown, sem comentários.
+
+Schema esperado:
+${schema}
+
+${data.periodoLabel ? `Período informado pelo usuário: ${data.periodoLabel}\n` : ""}${data.hint ? `Contexto adicional do usuário: ${data.hint}\n` : ""}
+Dados brutos (JSON, uma entrada por aba de planilha):
+${JSON.stringify(compact).slice(0, 180000)}`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: "Você retorna somente JSON válido, sem markdown." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      if (res.status === 429) throw new Error("Limite de uso IA atingido. Tente novamente em instantes.");
+      if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos na workspace.");
+      throw new Error(`Falha IA: ${res.status} ${t.slice(0, 200)}`);
+    }
+    const json = await res.json();
+    const raw = json.choices?.[0]?.message?.content ?? "{}";
+    let parsed: GeneratedPerformance;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error("IA retornou JSON inválido");
+    }
+    // Sanitiza mínimo
+    parsed.familias = Array.isArray(parsed.familias) ? parsed.familias.map(String) : [];
+    parsed.rows = Array.isArray(parsed.rows) ? parsed.rows : [];
+    return parsed;
+  });

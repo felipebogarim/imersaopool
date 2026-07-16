@@ -184,6 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {[
                 { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
                 { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
                 { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
               ].map(item => (
                 <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />

@@ -49,6 +49,7 @@ import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
@@ -272,6 +273,12 @@ const AuthenticatedAdminPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminGeradorPerformanceRoute =
+  AuthenticatedAdminGeradorPerformanceRouteImport.update({
+    id: '/gerador-performance',
+    path: '/gerador-performance',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminEventoCheckoutTesteRoute =
   AuthenticatedAdminEventoCheckoutTesteRouteImport.update({
     id: '/evento-checkout-teste',
@@ -348,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
+  '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -398,6 +406,7 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
+  '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -450,6 +459,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
+  '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -502,6 +512,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
+    | '/admin/gerador-performance'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -552,6 +563,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
+    | '/admin/gerador-performance'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes/$id'
@@ -603,6 +615,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/evento-checkout-teste'
+    | '/_authenticated/admin/gerador-performance'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes/$id'
@@ -933,6 +946,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/gerador-performance': {
+      id: '/_authenticated/admin/gerador-performance'
+      path: '/gerador-performance'
+      fullPath: '/admin/gerador-performance'
+      preLoaderRoute: typeof AuthenticatedAdminGeradorPerformanceRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/evento-checkout-teste': {
       id: '/_authenticated/admin/evento-checkout-teste'
       path: '/evento-checkout-teste'
@@ -1002,6 +1022,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
+  AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
@@ -1010,6 +1031,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminEventoCheckoutTesteRoute:
     AuthenticatedAdminEventoCheckoutTesteRoute,
+  AuthenticatedAdminGeradorPerformanceRoute:
+    AuthenticatedAdminGeradorPerformanceRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
