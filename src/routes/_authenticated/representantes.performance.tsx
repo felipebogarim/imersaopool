@@ -13,6 +13,7 @@ import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
+import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
@@ -93,21 +94,44 @@ function PerformancePage() {
   });
 
   // Lista da landing: uma linha por representante com sua última versão ativa
+  // (inclui reps com apenas BI, sem planilha de performance)
   const { data: repList = [], isLoading: loadingList } = useQuery({
     queryKey: ["perf-rep-list"],
     queryFn: async () => {
-      const { data: ups } = await supabase
-        .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false });
+      const [{ data: ups }, { data: bis }] = await Promise.all([
+        supabase
+          .from("rep_performance_uploads")
+          .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+          .is("substituida_em", null)
+          .order("created_at", { ascending: false }),
+        (supabase as any)
+          .from("rep_bi_uploads")
+          .select("id, representative_id, periodo_label, created_at, filename")
+          .is("substituida_em", null)
+          .order("created_at", { ascending: false }),
+      ]);
       const byRep = new Map<string, any>();
       for (const u of ups ?? []) {
         if (!byRep.has(u.representative_id)) byRep.set(u.representative_id, u);
       }
+      for (const b of (bis as any[]) ?? []) {
+        if (!byRep.has(b.representative_id)) {
+          byRep.set(b.representative_id, {
+            id: null,
+            representative_id: b.representative_id,
+            periodo_label: b.periodo_label,
+            periodo_inicio: null,
+            periodo_fim: null,
+            created_at: b.created_at,
+            filename: b.filename,
+            bi_only: true,
+          });
+        }
+      }
       return Array.from(byRep.entries()).map(([rid, u]) => ({ rep_id: rid, upload: u }));
     },
   });
+
 
   const { data: uploads = [] } = useQuery({
     queryKey: ["perf-uploads", repId],
@@ -769,7 +793,7 @@ function PerformancePage() {
                         <tr
                           key={item.rep_id}
                           className="border-t border-border hover:bg-muted/30 cursor-pointer"
-                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}
+                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}
                         >
                           <td className="px-4 py-3 font-medium">{rep?.nome ?? "—"}</td>
                           <td className="px-4 py-3">{u.periodo_label}</td>
@@ -787,7 +811,7 @@ function PerformancePage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id); }}>
+                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}>
                                   <ChevronRight className="h-4 w-4 mr-2" /> Abrir
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => exportFromList(item.rep_id, u)}>
@@ -858,87 +882,11 @@ function PerformancePage() {
         </div>
 
 
-        {/* Resumo executivo */}
-        {currentUpload && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
-              {resumo.hasRealizado && (
-                <>
-                  <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
-                  <KpiCard
-                    label="Atingimento"
-                    value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
-                  />
-                </>
-              )}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-              {FAROL_ORDER.map((s) => (
-                <div
-                  key={s}
-                  className={cn(
-                    "rounded-xl p-4 border border-border/60 flex flex-col gap-1",
-                    FAROL_CELL_CLASS[s],
-                  )}
-                >
-                  <div className="text-[11px] uppercase tracking-wider opacity-80">
-                    {FAROL_LABEL[s]}
-                  </div>
-                  <div className="text-2xl font-semibold tabular-nums">
-                    {resumo.perStatus[s]}
-                  </div>
-                  <div className="text-[11px] opacity-70">
-                    {resumo.perStatus[s] === 1 ? "cliente" : "clientes"} · {FAROL_FAIXA_TEXT[s]}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* BI — indicadores de performance (recolhido por padrão) */}
+        {repId && (
+          <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
         )}
 
-        {/* Cards por categoria */}
-        {currentUpload && Object.keys(resumo.perCat).length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {Object.entries(resumo.perCat).map(([cat, v]) => (
-              <div key={cat} className="surface rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
-                    {cat}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{v.count} clientes</span>
-                </div>
-                <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtBRL(v.meta)}</div>
-                <div className="text-xs text-muted-foreground">
-                  Meta da categoria {categoriaMetas[cat] ? `— referência ${fmtBRL(categoriaMetas[cat])}` : ""}
-                </div>
-                {resumo.hasRealizado && (
-                  <div className="mt-2 text-sm">
-                    Realizado: <span className="tabular-nums">{fmtBRL(v.real)}</span>{" "}
-                    {v.meta > 0 && (
-                      <span className="text-muted-foreground">({((v.real / v.meta) * 100).toFixed(1)}%)</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Legenda do farol */}
-        {currentUpload && (
-          <div className="flex flex-wrap gap-2 items-center text-xs">
-            <span className="text-muted-foreground uppercase tracking-wider">Farol:</span>
-            {FAROL_ORDER.map((s) => (
-              <span
-                key={s}
-                className={cn("inline-flex px-2 py-1 rounded border border-border font-medium", FAROL_CELL_CLASS[s])}
-              >
-                {FAROL_LABEL[s]}
-              </span>
-            ))}
-          </div>
-        )}
 
         {editing && (
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100 px-4 py-2 text-sm flex items-center gap-2">
