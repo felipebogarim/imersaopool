@@ -1340,12 +1340,14 @@ function MatrixCell({
   familia,
   editing,
   viewMode,
+  iaMode = false,
   onChange,
 }: {
   row: Row;
   familia: string;
   editing: boolean;
   viewMode: ViewMode;
+  iaMode?: boolean;
   onChange: (v: number) => void;
 }) {
   const meta = Number(row.metas?.[familia]) || 0;
@@ -1355,7 +1357,10 @@ function MatrixCell({
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
   // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
-  const isFaixaMode = !!row.metas_status?.[familia] && meta === 0 && real === 0;
+  // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
+  // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
+  const isFaixaMode =
+    !!row.metas_status?.[familia] && real === 0 && (iaMode || meta === 0);
 
   if (editing) {
     return (
