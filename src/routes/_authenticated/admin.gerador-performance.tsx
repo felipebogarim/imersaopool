@@ -22,11 +22,21 @@ import {
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
-  FAROL_LABEL,
   catBadge,
   type FarolStatus,
 } from "@/lib/performance-farol";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+
+const fmtBRL = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n)
+    ? "—"
+    : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+const fmtPct = (n: number | null | undefined) => {
+  if (n == null || Number.isNaN(n)) return "—";
+  const v = Math.abs(n) <= 1.5 ? n * 100 : n;
+  return `${v.toFixed(1).replace(".", ",")}%`;
+};
 
 export const Route = createFileRoute("/_authenticated/admin/gerador-performance")({
   head: () => ({ meta: [{ title: "Gerador de Performance — Admin" }] }),
