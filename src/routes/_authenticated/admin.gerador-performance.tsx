@@ -135,14 +135,28 @@ function GeradorPerformancePage() {
     }
   }
 
-  function download() {
-    if (!result) return;
-    const totals = {
-      perFamilia: Object.fromEntries(
-        result.familias.map((f) => [f, result.rows.reduce((s, r) => s + (Number(r.metas[f]) || 0), 0)]),
-      ),
-      grand: result.rows.reduce((s, r) => s + (Number(r.total_meta) || 0), 0),
+  const derived = useMemo(() => {
+    if (!result) return null;
+    const perFamilia = Object.fromEntries(
+      result.familias.map((f) => [f, result.rows.reduce((s, r) => s + (Number(r.metas[f]) || 0), 0)]),
+    ) as Record<string, number>;
+    const grand = result.rows.reduce((s, r) => {
+      const t =
+        Number(r.total_meta) ||
+        result.familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      return s + t;
+    }, 0);
+    const participacao: { __total__: number | null } & Record<string, number | null> = {
+      __total__: grand > 0 ? 100 : null,
     };
+    for (const f of result.familias) {
+      participacao[f] = grand > 0 ? (perFamilia[f] / grand) * 100 : null;
+    }
+    return { perFamilia, grand, participacao };
+  }, [result]);
+
+  function download() {
+    if (!result || !derived) return;
     exportPerformanceXlsx({
       filename: `Performance-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
       representante: representante || "—",
@@ -154,10 +168,13 @@ function GeradorPerformancePage() {
         metas: r.metas,
         metas_status: r.metas_status,
         total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
       })),
-      totals,
+      totals: { perFamilia: derived.perFamilia, grand: derived.grand },
+      participacao: derived.participacao,
     });
   }
+
 
   function openSend() {
     if (!result) return;
