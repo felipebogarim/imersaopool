@@ -526,6 +526,8 @@ function PerformancePage() {
           familias: v.familias,
           categoria_metas: v.categoria_metas,
           escala_percentual: v.escala_percentual,
+          participacao: v.participacao,
+          atingimento: v.atingimento,
           filename: v.filename,
           observacao: `Restauração da versão ${new Date(v.created_at).toLocaleString("pt-BR")}`,
           uploaded_by: uid,
