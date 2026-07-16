@@ -104,7 +104,7 @@
 }
 
 .dark {
-  /* Dark is the default theme for PoolFlux */
+  /* Dark theme override (currently unused — app runs in light mode) */
   --background: oklch(0.16 0.025 245);
   --foreground: oklch(0.98 0.005 240);
 }
@@ -117,28 +117,29 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     background-image:
-      radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.28 0.08 220 / 0.35), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 100% 50%, oklch(0.25 0.06 200 / 0.18), transparent 70%);
+      radial-gradient(ellipse 80% 60% at 50% -10%, oklch(0.88 0.05 215 / 0.35), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 100% 50%, oklch(0.92 0.04 200 / 0.25), transparent 70%);
     background-attachment: fixed;
   }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
 }
 
 @utility surface {
-  background: linear-gradient(180deg, oklch(0.26 0.032 245 / 0.92), oklch(0.20 0.028 245 / 0.85));
-  border: 1px solid oklch(0.55 0.05 245 / 0.85);
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.95), oklch(0.98 0.005 240 / 0.85));
+  border: 1px solid oklch(0.88 0.012 240 / 0.9);
   backdrop-filter: blur(12px);
   box-shadow:
-    var(--shadow-card),
-    inset 0 1px 0 0 oklch(1 0 0 / 0.08);
+    0 12px 32px -12px oklch(0.30 0.05 245 / 0.15),
+    0 2px 6px -2px oklch(0.30 0.05 245 / 0.08),
+    inset 0 1px 0 0 oklch(1 0 0 / 0.6);
 }
 
 @utility surface-inset {
-  background: linear-gradient(180deg, oklch(0.11 0.02 245 / 0.85), oklch(0.09 0.018 245 / 0.75));
-  border: 1px solid oklch(0.48 0.045 245 / 0.75);
+  background: linear-gradient(180deg, oklch(0.96 0.008 240 / 0.9), oklch(0.94 0.01 240 / 0.85));
+  border: 1px solid oklch(0.88 0.012 240 / 0.9);
   box-shadow:
-    inset 0 2px 8px -2px oklch(0 0 0 / 0.7),
-    0 1px 0 0 oklch(1 0 0 / 0.04);
+    inset 0 2px 4px -2px oklch(0.30 0.05 245 / 0.12),
+    0 1px 0 0 oklch(1 0 0 / 0.4);
 }
 
 
