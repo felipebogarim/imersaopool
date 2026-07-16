@@ -13,6 +13,7 @@ import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, 
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
+import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
