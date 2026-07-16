@@ -747,7 +747,118 @@ function GeradorPerformancePage() {
 
           </div>
         )}
+
+        {/* Repositório de planilhas salvas */}
+        <div className="surface rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium">Repositório de planilhas geradas</div>
+              <p className="text-xs text-muted-foreground">
+                Suas planilhas salvas ficam disponíveis aqui para reabrir, exportar ou excluir.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{salvos.length} planilha{salvos.length === 1 ? "" : "s"}</span>
+          </div>
+          {loadingSalvos ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Carregando…
+            </div>
+          ) : salvos.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-lg">
+              Nenhuma planilha salva ainda. Gere uma acima e clique em <strong>Salvar</strong>.
+            </div>
+          ) : (
+            <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+              {salvos.map((s: any) => (
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors">
+                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate">{s.nome}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {[s.representante, s.periodo_label].filter(Boolean).join(" · ") || "—"}
+                      {" · "}
+                      {new Date(s.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Ações</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openSaved(s)}>
+                        <FolderOpen className="h-4 w-4 mr-2" /> Abrir
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportSavedXlsx(s)}>
+                        <FileDown className="h-4 w-4 mr-2" /> Exportar Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportSavedPdf(s)}>
+                        <FileText className="h-4 w-4 mr-2" /> Exportar PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setDeleteId(s.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Dialog Salvar */}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Salvar planilha no repositório</DialogTitle>
+            <DialogDescription>
+              Dê um nome para encontrá-la depois.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="save-nome">Nome</Label>
+            <Input
+              id="save-nome"
+              value={saveNome}
+              onChange={(e) => setSaveNome(e.target.value)}
+              placeholder="Ex.: Salton — 1º Semestre 2026"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={saveGenerated} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Excluir */}
+      <Dialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir planilha</DialogTitle>
+            <DialogDescription>
+              Esta ação não pode ser desfeita. A planilha será removida do repositório.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={sendOpen} onOpenChange={setSendOpen}>
         <DialogContent>
