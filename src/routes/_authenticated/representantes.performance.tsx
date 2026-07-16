@@ -58,6 +58,7 @@ function PerformancePage() {
   const [repId, setRepId] = useState<string>("");
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
+  const [versionsOpen, setVersionsOpen] = useState(false);
   const [dlgMode, setDlgMode] = useState<"new" | "replace">("new");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
