@@ -89,10 +89,15 @@ function GeradorPerformancePage() {
   }
 
   async function generate() {
+    if (!representante) {
+      toast.error("Selecione o representante.");
+      return;
+    }
     if (!files.length) {
       toast.error("Adicione ao menos uma planilha.");
       return;
     }
+
     setBusy(true);
     setResult(null);
     try {
