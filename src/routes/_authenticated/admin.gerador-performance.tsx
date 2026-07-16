@@ -354,9 +354,14 @@ function GeradorPerformancePage() {
                   {result.rows.length} clientes · {result.familias.length} famílias
                 </p>
               </div>
-              <Button variant="outline" onClick={download}>
-                <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={download}>
+                  <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
+                </Button>
+                <Button onClick={openSend}>
+                  <Send className="h-4 w-4 mr-1" /> Enviar para painel
+                </Button>
+              </div>
             </div>
 
             {result.observacoes && (
