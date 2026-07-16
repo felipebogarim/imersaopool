@@ -1009,8 +1009,32 @@ function PerformancePage() {
                   );
                 })}
               </div>
+              {familias.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 items-center border-l border-border pl-2 ml-1">
+                  {familias.map((f) => {
+                    const active = filterFams.includes(f);
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() =>
+                          setFilterFams((prev) => (active ? prev.filter((x) => x !== f) : [...prev, f]))
+                        }
+                        className={cn(
+                          "inline-flex px-2.5 py-1 rounded-full text-xs border transition",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-transparent text-muted-foreground border-border hover:bg-muted",
+                        )}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); }}>
+                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); setFilterFams([]); }}>
                   <X className="h-4 w-4 mr-1" /> Limpar
                 </Button>
               )}
