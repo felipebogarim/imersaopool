@@ -288,7 +288,7 @@ function PerformancePage() {
       ).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [view],
   );
-  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0 || filterFams.length > 0;
+  const hasFilters = filterQ.trim() !== "" || filterCats.length > 0 || filterFams.length > 0 || filterZero;
   const filtersRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!filterOpen) return;
