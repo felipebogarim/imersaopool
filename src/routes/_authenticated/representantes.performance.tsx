@@ -991,8 +991,21 @@ function PerformancePage() {
                   })}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => setFilterZero((v) => !v)}
+                className={cn(
+                  "inline-flex px-2.5 py-1 rounded-full text-xs border transition ml-1",
+                  filterZero
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:bg-muted",
+                )}
+                title="Mostrar apenas clientes com pelo menos uma família em 0% (meta > 0 e realizado = 0)"
+              >
+                0%
+              </button>
               {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); setFilterFams([]); }}>
+                <Button variant="ghost" size="sm" onClick={() => { setFilterQ(""); setFilterCats([]); setFilterFams([]); setFilterZero(false); }}>
                   <X className="h-4 w-4 mr-1" /> Limpar
                 </Button>
               )}
