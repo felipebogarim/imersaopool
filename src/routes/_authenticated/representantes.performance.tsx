@@ -1281,20 +1281,7 @@ function PerformancePage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Rótulo do período</Label>
-              <Input value={periodoLabel} onChange={(e) => setPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Início</Label>
-                <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
-              </div>
-              <div>
-                <Label>Fim</Label>
-                <Input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} />
-              </div>
-            </div>
+            <PeriodoPicker value={periodoObj} onChange={setPeriodoObj} required />
             <div>
               <Label>Planilha (.xlsx)</Label>
               <Input
