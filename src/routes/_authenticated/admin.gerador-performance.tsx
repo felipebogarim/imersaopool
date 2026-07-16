@@ -195,7 +195,45 @@ function GeradorPerformancePage() {
     for (const f of result.familias) {
       participacao[f] = grand > 0 ? (perFamilia[f] / grand) * 100 : null;
     }
-    return { perFamilia, grand, participacao };
+    // Atingimento estimado (%) — média dos midpoints da faixa ponderada pela meta.
+    // Se a meta por família for 0 (comum quando a IA só extrai farol), usa média simples.
+    const atingimento: { __total__: number | null } & Record<string, number | null> = {
+      __total__: null,
+    };
+    for (const f of result.familias) {
+      let num = 0;
+      let den = 0;
+      let simpleSum = 0;
+      let simpleN = 0;
+      for (const r of result.rows) {
+        const st = r.metas_status?.[f];
+        if (!st) continue;
+        const w = Number(r.metas?.[f]) || 0;
+        num += FAROL_MIDPOINT[st] * w;
+        den += w;
+        simpleSum += FAROL_MIDPOINT[st];
+        simpleN += 1;
+      }
+      atingimento[f] = den > 0 ? num / den : simpleN > 0 ? simpleSum / simpleN : null;
+    }
+    // Total: pondera pelo total_meta de cada cliente e status total_pct_status.
+    let tnum = 0;
+    let tden = 0;
+    let tSum = 0;
+    let tN = 0;
+    for (const r of result.rows) {
+      const st = r.total_pct_status;
+      if (!st) continue;
+      const w =
+        Number(r.total_meta) ||
+        result.familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      tnum += FAROL_MIDPOINT[st] * w;
+      tden += w;
+      tSum += FAROL_MIDPOINT[st];
+      tN += 1;
+    }
+    atingimento.__total__ = tden > 0 ? tnum / tden : tN > 0 ? tSum / tN : null;
+    return { perFamilia, grand, participacao, atingimento };
   }, [result]);
 
   function download() {
