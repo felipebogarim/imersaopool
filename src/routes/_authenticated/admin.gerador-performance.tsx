@@ -103,12 +103,31 @@ function GeradorPerformancePage() {
   const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const runFn = useServerFn(generatePerformanceFromRaw);
+  const qc = useQueryClient();
+
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveNome, setSaveNome] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: reps = [] } = useQuery({
     queryKey: ["gerador-perf-reps"],
     queryFn: async () =>
       (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
+
+  const { data: salvos = [], isLoading: loadingSalvos } = useQuery({
+    queryKey: ["gerador-perf-salvos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("gerador_performance_salvos")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
 
 
