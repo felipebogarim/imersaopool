@@ -838,20 +838,40 @@ function PerformancePage() {
 
         {/* Resumo executivo */}
         {currentUpload && (
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
-            {resumo.hasRealizado && (
-              <>
-                <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
-                <KpiCard
-                  label="Atingimento"
-                  value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
-                />
-              </>
-            )}
-            <KpiCard label="Na meta" value={String(resumo.naMeta)} />
-            <KpiCard label="Abaixo da meta" value={String(resumo.abaixo)} />
-            <KpiCard label="Sem compra" value={String(resumo.semCompra)} />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <KpiCard label="Meta total" value={fmtBRL(totals.grand)} />
+              {resumo.hasRealizado && (
+                <>
+                  <KpiCard label="Realizado" value={fmtBRL(totals.grandReal)} />
+                  <KpiCard
+                    label="Atingimento"
+                    value={totals.grand > 0 ? `${((totals.grandReal / totals.grand) * 100).toFixed(1)}%` : "—"}
+                  />
+                </>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {FAROL_ORDER.map((s) => (
+                <div
+                  key={s}
+                  className={cn(
+                    "rounded-xl p-4 border border-border/60 flex flex-col gap-1",
+                    FAROL_CELL_CLASS[s],
+                  )}
+                >
+                  <div className="text-[11px] uppercase tracking-wider opacity-80">
+                    {FAROL_LABEL[s]}
+                  </div>
+                  <div className="text-2xl font-semibold tabular-nums">
+                    {resumo.perStatus[s]}
+                  </div>
+                  <div className="text-[11px] opacity-70">
+                    {resumo.perStatus[s] === 1 ? "cliente" : "clientes"} · {FAROL_FAIXA_TEXT[s]}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
