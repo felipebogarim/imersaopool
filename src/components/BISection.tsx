@@ -6,7 +6,7 @@ import { ChevronRight, Upload, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
-import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 
 const fmtPct = (n: number | null | undefined) => {
   if (n == null || Number.isNaN(n)) return "—";
