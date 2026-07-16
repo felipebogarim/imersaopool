@@ -47,6 +47,7 @@ import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_auth
 import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
+import { Route as AuthenticatedClientesBiBatchRepIdRouteImport } from './routes/_authenticated/clientes-bi-batch.$repId'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
@@ -262,6 +263,12 @@ const AuthenticatedClientesIdRoute = AuthenticatedClientesIdRouteImport.update({
   path: '/clientes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedClientesBiBatchRepIdRoute =
+  AuthenticatedClientesBiBatchRepIdRouteImport.update({
+    id: '/clientes-bi-batch/$repId',
+    path: '/clientes-bi-batch/$repId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/usuarios',
@@ -365,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
@@ -417,6 +425,7 @@ export interface FileRoutesByTo {
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
@@ -471,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
@@ -525,6 +535,7 @@ export interface FileRouteTypes {
     | '/admin/gerador-performance'
     | '/admin/permissoes'
     | '/admin/usuarios'
+    | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
     | '/clientes/novo'
     | '/entrevistas/$id'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/admin/gerador-performance'
     | '/admin/permissoes'
     | '/admin/usuarios'
+    | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
     | '/clientes/novo'
     | '/entrevistas/$id'
@@ -630,6 +642,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/gerador-performance'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
+    | '/_authenticated/clientes-bi-batch/$repId'
     | '/_authenticated/clientes/$id'
     | '/_authenticated/clientes/novo'
     | '/_authenticated/entrevistas/$id'
@@ -945,6 +958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/clientes-bi-batch/$repId': {
+      id: '/_authenticated/clientes-bi-batch/$repId'
+      path: '/clientes-bi-batch/$repId'
+      fullPath: '/clientes-bi-batch/$repId'
+      preLoaderRoute: typeof AuthenticatedClientesBiBatchRepIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/usuarios': {
       id: '/_authenticated/admin/usuarios'
       path: '/usuarios'
@@ -1103,6 +1123,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
+  AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRouteWithChildren
@@ -1133,6 +1154,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
+  AuthenticatedClientesBiBatchRepIdRoute:
+    AuthenticatedClientesBiBatchRepIdRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRouteWithChildren,

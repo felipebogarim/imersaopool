@@ -717,6 +717,11 @@ function PerformancePage() {
               <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
                 <Pencil className="h-4 w-4 mr-1" /> Editar metas
               </Button>
+              <Button variant="outline" asChild>
+                <Link to="/clientes-bi-batch/$repId" params={{ repId }}>
+                  <Users className="h-4 w-4 mr-1" /> BI dos clientes
+                </Link>
+              </Button>
               <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
                 <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
               </Button>
