@@ -237,5 +237,5 @@ function parseAntigo(
     });
   }
 
-  return { familias, categoriaMetas, escala, rows };
+  return { familias, categoriaMetas, escala, rows, participacao: null, atingimento: null };
 }
