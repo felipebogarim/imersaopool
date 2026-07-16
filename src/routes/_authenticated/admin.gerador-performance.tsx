@@ -43,6 +43,7 @@ import {
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
+  FAROL_MIDPOINT,
   catBadge,
   type FarolStatus,
 } from "@/lib/performance-farol";
@@ -194,7 +195,45 @@ function GeradorPerformancePage() {
     for (const f of result.familias) {
       participacao[f] = grand > 0 ? (perFamilia[f] / grand) * 100 : null;
     }
-    return { perFamilia, grand, participacao };
+    // Atingimento estimado (%) — média dos midpoints da faixa ponderada pela meta.
+    // Se a meta por família for 0 (comum quando a IA só extrai farol), usa média simples.
+    const atingimento: { __total__: number | null } & Record<string, number | null> = {
+      __total__: null,
+    };
+    for (const f of result.familias) {
+      let num = 0;
+      let den = 0;
+      let simpleSum = 0;
+      let simpleN = 0;
+      for (const r of result.rows) {
+        const st = r.metas_status?.[f];
+        if (!st) continue;
+        const w = Number(r.metas?.[f]) || 0;
+        num += FAROL_MIDPOINT[st] * w;
+        den += w;
+        simpleSum += FAROL_MIDPOINT[st];
+        simpleN += 1;
+      }
+      atingimento[f] = den > 0 ? num / den : simpleN > 0 ? simpleSum / simpleN : null;
+    }
+    // Total: pondera pelo total_meta de cada cliente e status total_pct_status.
+    let tnum = 0;
+    let tden = 0;
+    let tSum = 0;
+    let tN = 0;
+    for (const r of result.rows) {
+      const st = r.total_pct_status;
+      if (!st) continue;
+      const w =
+        Number(r.total_meta) ||
+        result.familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      tnum += FAROL_MIDPOINT[st] * w;
+      tden += w;
+      tSum += FAROL_MIDPOINT[st];
+      tN += 1;
+    }
+    atingimento.__total__ = tden > 0 ? tnum / tden : tN > 0 ? tSum / tN : null;
+    return { perFamilia, grand, participacao, atingimento };
   }, [result]);
 
   function download() {
@@ -214,6 +253,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: derived.perFamilia, grand: derived.grand },
       participacao: derived.participacao,
+      atingimento: derived.atingimento,
     });
   }
 
@@ -234,6 +274,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: derived.perFamilia, grand: derived.grand },
       participacao: derived.participacao,
+      atingimento: derived.atingimento,
     });
   }
 
@@ -316,7 +357,42 @@ function GeradorPerformancePage() {
               familias.map((f) => [f, grand > 0 ? (perFamilia[f] / grand) * 100 : null]),
             ),
           }) as { __total__: number | null } & Record<string, number | null>;
-    return { familias, rows, perFamilia, grand, participacao };
+    // Atingimento estimado a partir dos midpoints do farol.
+    const savedAtg = (row.atingimento && Object.keys(row.atingimento).length ? row.atingimento : null) as
+      | ({ __total__: number | null } & Record<string, number | null>)
+      | null;
+    let atingimento: { __total__: number | null } & Record<string, number | null>;
+    if (savedAtg) {
+      atingimento = savedAtg;
+    } else {
+      atingimento = { __total__: null };
+      for (const f of familias) {
+        let num = 0, den = 0, ss = 0, sn = 0;
+        for (const r of rows) {
+          const st = r.metas_status?.[f] as FarolStatus | undefined;
+          if (!st) continue;
+          const w = Number(r.metas?.[f]) || 0;
+          num += FAROL_MIDPOINT[st] * w;
+          den += w;
+          ss += FAROL_MIDPOINT[st];
+          sn += 1;
+        }
+        atingimento[f] = den > 0 ? num / den : sn > 0 ? ss / sn : null;
+      }
+      let tn = 0, td = 0, ts = 0, tc = 0;
+      for (const r of rows) {
+        const st = r.total_pct_status as FarolStatus | undefined;
+        if (!st) continue;
+        const w =
+          Number(r.total_meta) || familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+        tn += FAROL_MIDPOINT[st] * w;
+        td += w;
+        ts += FAROL_MIDPOINT[st];
+        tc += 1;
+      }
+      atingimento.__total__ = td > 0 ? tn / td : tc > 0 ? ts / tc : null;
+    }
+    return { familias, rows, perFamilia, grand, participacao, atingimento };
   }
 
   function exportSavedXlsx(row: any) {
@@ -336,6 +412,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: d.perFamilia, grand: d.grand },
       participacao: d.participacao,
+      atingimento: d.atingimento,
     });
   }
 
@@ -356,6 +433,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: d.perFamilia, grand: d.grand },
       participacao: d.participacao,
+      atingimento: d.atingimento,
     });
   }
 
@@ -430,7 +508,7 @@ function GeradorPerformancePage() {
           categoria_metas,
           escala_percentual: {},
           participacao: derived?.participacao ?? {},
-          atingimento: {},
+          atingimento: derived?.atingimento ?? {},
           filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
           uploaded_by: uid,
           origem: match ? "ia-atualizada" : "ia",
@@ -729,12 +807,12 @@ function GeradorPerformancePage() {
                           </td>
                           <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
                           <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
-                            —
+                          <td className="px-3 py-2.5 text-center tabular-nums">
+                            {fmtPct(derived.atingimento.__total__)}
                           </td>
                           {result.familias.map((f) => (
-                            <td key={f} className="px-3 py-2.5 text-center tabular-nums text-muted-foreground">
-                              —
+                            <td key={f} className="px-3 py-2.5 text-center tabular-nums">
+                              {fmtPct(derived.atingimento[f])}
                             </td>
                           ))}
                         </tr>
