@@ -410,6 +410,59 @@ export type Database = {
           },
         ]
       }
+      client_bi_uploads: {
+        Row: {
+          company_id: string
+          created_at: string
+          data: Json
+          filename: string | null
+          id: string
+          kind: string
+          periodo_label: string | null
+          razao_social: string
+          representative_id: string
+          substituida_em: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          data: Json
+          filename?: string | null
+          id?: string
+          kind: string
+          periodo_label?: string | null
+          razao_social: string
+          representative_id: string
+          substituida_em?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          data?: Json
+          filename?: string | null
+          id?: string
+          kind?: string
+          periodo_label?: string | null
+          razao_social?: string
+          representative_id?: string
+          substituida_em?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_bi_uploads_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           agente_id: string | null

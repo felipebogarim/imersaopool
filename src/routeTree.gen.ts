@@ -57,6 +57,7 @@ import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/pu
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
+import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.$repId.$razao'
 import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
 import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
 
@@ -320,6 +321,12 @@ const AuthenticatedClientesIdEditarRoute =
     path: '/editar',
     getParentRoute: () => AuthenticatedClientesIdRoute,
   } as any)
+const AuthenticatedClientesBiRepIdRazaoRoute =
+  AuthenticatedClientesBiRepIdRazaoRouteImport.update({
+    id: '/clientes-bi/$repId/$razao',
+    path: '/clientes-bi/$repId/$razao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicMpTestWebhookRoute = ApiPublicMpTestWebhookRouteImport.update({
   id: '/api/public/mp/test/webhook',
   path: '/api/public/mp/test/webhook',
@@ -375,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -426,6 +434,7 @@ export interface FileRoutesByTo {
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
+  '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -479,6 +488,7 @@ export interface FileRoutesById {
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/_authenticated/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
@@ -532,6 +542,7 @@ export interface FileRouteTypes {
     | '/imersoes/'
     | '/produtos/'
     | '/representantes/'
+    | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
@@ -583,6 +594,7 @@ export interface FileRouteTypes {
     | '/imersoes'
     | '/produtos'
     | '/representantes'
+    | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
@@ -635,6 +647,7 @@ export interface FileRouteTypes {
     | '/_authenticated/imersoes/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
+    | '/_authenticated/clientes-bi/$repId/$razao'
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
@@ -1002,6 +1015,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIdEditarRouteImport
       parentRoute: typeof AuthenticatedClientesIdRoute
     }
+    '/_authenticated/clientes-bi/$repId/$razao': {
+      id: '/_authenticated/clientes-bi/$repId/$razao'
+      path: '/clientes-bi/$repId/$razao'
+      fullPath: '/clientes-bi/$repId/$razao'
+      preLoaderRoute: typeof AuthenticatedClientesBiRepIdRazaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/mp/test/webhook': {
       id: '/api/public/mp/test/webhook'
       path: '/api/public/mp/test/webhook'
@@ -1095,6 +1115,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
+  AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
 }
 
@@ -1125,6 +1146,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
+  AuthenticatedClientesBiRepIdRazaoRoute:
+    AuthenticatedClientesBiRepIdRazaoRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
 }
 

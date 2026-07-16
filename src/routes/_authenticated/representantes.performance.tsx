@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
@@ -57,6 +57,7 @@ type Row = {
 
 function PerformancePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [repId, setRepId] = useState<string>("");
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
@@ -1070,9 +1071,33 @@ function PerformancePage() {
                         <tr key={r.id ?? rowIdx} className="border-t border-border">
                           <td
                             title={r.razao_social}
-                            className="px-3 py-2 font-medium sticky left-0 bg-background z-10 max-w-[280px] truncate"
+                            className="px-3 py-2 font-medium sticky left-0 bg-background z-10 max-w-[280px]"
                           >
-                            {r.razao_social}
+                            <div className="flex items-center gap-1">
+                              <span className="truncate flex-1">{r.razao_social}</span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      navigate({
+                                        to: "/clientes-bi/$repId/$razao",
+                                        params: {
+                                          repId,
+                                          razao: encodeURIComponent(r.razao_social),
+                                        },
+                                      })
+                                    }
+                                  >
+                                    <BarChart3 className="h-4 w-4 mr-2" /> BI do cliente
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </td>
                           <td className="px-3 py-2 sticky left-[240px] bg-background z-10">
                             <span
