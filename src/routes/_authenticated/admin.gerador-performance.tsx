@@ -253,6 +253,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: derived.perFamilia, grand: derived.grand },
       participacao: derived.participacao,
+      atingimento: derived.atingimento,
     });
   }
 
