@@ -1607,6 +1607,53 @@ export type Database = {
           },
         ]
       }
+      rep_bi_uploads: {
+        Row: {
+          company_id: string
+          created_at: string
+          data: Json
+          filename: string | null
+          id: string
+          periodo_label: string
+          representative_id: string
+          substituida_em: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          data: Json
+          filename?: string | null
+          id?: string
+          periodo_label: string
+          representative_id: string
+          substituida_em?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          data?: Json
+          filename?: string | null
+          id?: string
+          periodo_label?: string
+          representative_id?: string
+          substituida_em?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rep_bi_uploads_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rep_performance_rows: {
         Row: {
           acompanhar: boolean
