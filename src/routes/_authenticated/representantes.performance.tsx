@@ -341,6 +341,8 @@ function PerformancePage() {
           familias: parsed.familias,
           categoria_metas: parsed.categoriaMetas,
           escala_percentual: parsed.escala,
+          participacao: parsed.participacao,
+          atingimento: parsed.atingimento,
           filename: pendingFile.name,
           uploaded_by: uid,
           origem: "import",
