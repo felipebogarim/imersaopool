@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import * as XLSX from "xlsx-js-style";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Sparkles, FileDown, ShieldCheck, X, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Upload, Sparkles, FileDown, ShieldCheck, X, FileSpreadsheet, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -55,8 +59,22 @@ function GeradorPerformancePage() {
   const [representante, setRepresentante] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GeneratedPerformance | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendRepId, setSendRepId] = useState("");
+  const [sendPeriodoLabel, setSendPeriodoLabel] = useState("");
+  const [sendPeriodoInicio, setSendPeriodoInicio] = useState("");
+  const [sendPeriodoFim, setSendPeriodoFim] = useState("");
+  const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const runFn = useServerFn(generatePerformanceFromRaw);
+
+  const { data: reps = [] } = useQuery({
+    queryKey: ["gerador-perf-reps"],
+    queryFn: async () =>
+      (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
+  });
+
+
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const list = Array.from(e.target.files ?? []);
@@ -121,6 +139,114 @@ function GeradorPerformancePage() {
       })),
       totals,
     });
+  }
+
+  function openSend() {
+    if (!result) return;
+    const found = reps.find((r: any) => r.nome?.toLowerCase() === representante.trim().toLowerCase());
+    setSendRepId(found?.id ?? "");
+    setSendPeriodoLabel(periodo || "1º Semestre 2026");
+    setSendPeriodoInicio("");
+    setSendPeriodoFim("");
+    setSendOpen(true);
+  }
+
+  async function sendToPanel() {
+    if (!result) return;
+    if (!sendRepId) return toast.error("Selecione um representante.");
+    if (!sendPeriodoLabel.trim()) return toast.error("Informe o período.");
+    setSending(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+
+      const { data: existing } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, periodo_label, periodo_inicio, periodo_fim")
+        .eq("representative_id", sendRepId)
+        .is("substituida_em", null);
+
+      const norm = (s: string) => (s ?? "").trim().toLowerCase();
+      const sameLabel = (a: string, b: string) => norm(a) === norm(b);
+      const sameDates = (a: any) =>
+        (sendPeriodoInicio || null) === (a.periodo_inicio || null) &&
+        (sendPeriodoFim || null) === (a.periodo_fim || null);
+      const match = (existing ?? []).find(
+        (u: any) => sameLabel(u.periodo_label, sendPeriodoLabel) || sameDates(u),
+      );
+
+      if (match) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString() } as any)
+          .eq("id", match.id);
+      }
+
+      const familias = result.familias;
+      const categoria_metas: Record<string, number> = {};
+      for (const r of result.rows) {
+        const c = (r.categoria ?? "").trim();
+        if (!c) continue;
+        const t = Number(r.total_meta) || familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+        categoria_metas[c] = (categoria_metas[c] ?? 0) + t;
+      }
+
+      const { data: up, error: upErr } = await supabase
+        .from("rep_performance_uploads")
+        .insert({
+          representative_id: sendRepId,
+          periodo_label: sendPeriodoLabel.trim(),
+          periodo_inicio: sendPeriodoInicio || null,
+          periodo_fim: sendPeriodoFim || null,
+          familias,
+          categoria_metas,
+          escala_percentual: {},
+          participacao: {},
+          atingimento: {},
+          filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
+          uploaded_by: uid,
+          origem: match ? "ia-atualizada" : "ia",
+        } as any)
+        .select("id")
+        .single();
+      if (upErr || !up) throw upErr ?? new Error("Falha ao criar upload");
+
+      if (match) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_por: up.id } as any)
+          .eq("id", match.id);
+      }
+
+      const payload = result.rows.map((r, i) => ({
+        upload_id: up.id,
+        ordem: i + 1,
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        metas_cores: {},
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      }));
+      for (let i = 0; i < payload.length; i += 200) {
+        const chunk = payload.slice(i, i + 200);
+        const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
+        if (error) throw error;
+      }
+
+      toast.success(
+        match
+          ? "Enviado como atualização da performance existente."
+          : "Enviado como nova performance no painel.",
+      );
+      setSendOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Erro ao enviar para o painel.");
+    } finally {
+      setSending(false);
+    }
   }
 
   const totalCells = useMemo(() => files.reduce((s, f) => s + f.sheets.reduce((a, sh) => a + sh.aoa.length, 0), 0), [files]);
@@ -228,9 +354,14 @@ function GeradorPerformancePage() {
                   {result.rows.length} clientes · {result.familias.length} famílias
                 </p>
               </div>
-              <Button variant="outline" onClick={download}>
-                <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={download}>
+                  <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
+                </Button>
+                <Button onClick={openSend}>
+                  <Send className="h-4 w-4 mr-1" /> Enviar para painel
+                </Button>
+              </div>
             </div>
 
             {result.observacoes && (
@@ -285,6 +416,52 @@ function GeradorPerformancePage() {
           </div>
         )}
       </div>
+
+      <Dialog open={sendOpen} onOpenChange={setSendOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar para o painel de Performance</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Se já houver uma performance ativa do representante com o mesmo período, ela será
+              substituída por esta como atualização. Caso contrário, esta entra como uma nova versão.
+            </p>
+            <div className="space-y-1.5">
+              <Label>Representante</Label>
+              <Select value={sendRepId} onValueChange={setSendRepId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o representante" /></SelectTrigger>
+                <SelectContent>
+                  {reps.map((r: any) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Período (rótulo)</Label>
+              <Input value={sendPeriodoLabel} onChange={(e) => setSendPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Início</Label>
+                <Input type="date" value={sendPeriodoInicio} onChange={(e) => setSendPeriodoInicio(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Fim</Label>
+                <Input type="date" value={sendPeriodoFim} onChange={(e) => setSendPeriodoFim(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendOpen(false)} disabled={sending}>Cancelar</Button>
+            <Button onClick={sendToPanel} disabled={sending}>
+              {sending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+              Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
