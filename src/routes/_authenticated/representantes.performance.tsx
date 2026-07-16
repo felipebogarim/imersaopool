@@ -94,21 +94,44 @@ function PerformancePage() {
   });
 
   // Lista da landing: uma linha por representante com sua última versão ativa
+  // (inclui reps com apenas BI, sem planilha de performance)
   const { data: repList = [], isLoading: loadingList } = useQuery({
     queryKey: ["perf-rep-list"],
     queryFn: async () => {
-      const { data: ups } = await supabase
-        .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false });
+      const [{ data: ups }, { data: bis }] = await Promise.all([
+        supabase
+          .from("rep_performance_uploads")
+          .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+          .is("substituida_em", null)
+          .order("created_at", { ascending: false }),
+        (supabase as any)
+          .from("rep_bi_uploads")
+          .select("id, representative_id, periodo_label, created_at, filename")
+          .is("substituida_em", null)
+          .order("created_at", { ascending: false }),
+      ]);
       const byRep = new Map<string, any>();
       for (const u of ups ?? []) {
         if (!byRep.has(u.representative_id)) byRep.set(u.representative_id, u);
       }
+      for (const b of (bis as any[]) ?? []) {
+        if (!byRep.has(b.representative_id)) {
+          byRep.set(b.representative_id, {
+            id: null,
+            representative_id: b.representative_id,
+            periodo_label: b.periodo_label,
+            periodo_inicio: null,
+            periodo_fim: null,
+            created_at: b.created_at,
+            filename: b.filename,
+            bi_only: true,
+          });
+        }
+      }
       return Array.from(byRep.entries()).map(([rid, u]) => ({ rep_id: rid, upload: u }));
     },
   });
+
 
   const { data: uploads = [] } = useQuery({
     queryKey: ["perf-uploads", repId],
