@@ -85,6 +85,7 @@ function PerformancePage() {
   const [filterQ, setFilterQ] = useState("");
   const [filterCats, setFilterCats] = useState<string[]>([]);
   const [filterFams, setFilterFams] = useState<string[]>([]);
+  const [filterZero, setFilterZero] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: reps = [] } = useQuery({
