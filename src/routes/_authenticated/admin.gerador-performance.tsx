@@ -493,7 +493,7 @@ function GeradorPerformancePage() {
             <div className="font-medium text-foreground">Seus dados brutos não são publicados nem compartilhados.</div>
             <p className="text-muted-foreground mt-1">
               As planilhas enviadas são usadas <strong>somente</strong> para que a IA extraia metas, percentuais e
-              faróis. Nenhum valor de faturamento/realização é armazenado nem exposto — o resultado final contém
+              faróis. <strong className="font-bold text-red-600 dark:text-red-500">Nenhum valor de faturamento/realização é armazenado nem exposto</strong> — o resultado final contém
               apenas <strong>metas em R$</strong> e <strong>faixas de farol</strong>, exatamente como na área de
               Performance.
             </p>
