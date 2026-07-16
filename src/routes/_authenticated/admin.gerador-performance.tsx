@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx-js-style";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Sparkles, FileDown, ShieldCheck, X, FileSpreadsheet, Loader2, Send } from "lucide-react";
+import {
+  Upload,
+  Sparkles,
+  FileDown,
+  ShieldCheck,
+  X,
+  FileSpreadsheet,
+  Loader2,
+  Send,
+  Save,
+  MoreVertical,
+  FolderOpen,
+  Trash2,
+  FileText,
+} from "lucide-react";
 import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,6 +47,8 @@ import {
   type FarolStatus,
 } from "@/lib/performance-farol";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+import { exportPerformancePdf } from "@/lib/performance-pdf";
+
 
 const fmtBRL = (n: number | null | undefined) =>
   n == null || Number.isNaN(n)
@@ -80,12 +103,31 @@ function GeradorPerformancePage() {
   const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const runFn = useServerFn(generatePerformanceFromRaw);
+  const qc = useQueryClient();
+
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveNome, setSaveNome] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: reps = [] } = useQuery({
     queryKey: ["gerador-perf-reps"],
     queryFn: async () =>
       (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
   });
+
+  const { data: salvos = [], isLoading: loadingSalvos } = useQuery({
+    queryKey: ["gerador-perf-salvos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("gerador_performance_salvos")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
 
 
@@ -175,6 +217,159 @@ function GeradorPerformancePage() {
     });
   }
 
+  function downloadPdf() {
+    if (!result || !derived) return;
+    exportPerformancePdf({
+      filename: `Performance-${(representante || "gerada").replace(/\s+/g, "_")}.pdf`,
+      representante: representante || "—",
+      periodo: periodo || "—",
+      familias: result.familias,
+      rows: result.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: derived.perFamilia, grand: derived.grand },
+      participacao: derived.participacao,
+    });
+  }
+
+  function openSaveDialog() {
+    if (!result) return;
+    setSaveNome(
+      `${representante || "Planilha"} — ${periodo || new Date().toLocaleDateString("pt-BR")}`,
+    );
+    setSaveOpen(true);
+  }
+
+  async function saveGenerated() {
+    if (!result || !derived) return;
+    if (!saveNome.trim()) return toast.error("Dê um nome à planilha.");
+    setSaving(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Sessão expirada. Entre novamente.");
+      const { error } = await supabase.from("gerador_performance_salvos").insert({
+        uploaded_by: uid,
+        nome: saveNome.trim(),
+        representante: representante || null,
+        periodo_label: periodoObj.label || null,
+        periodo_inicio: periodoObj.inicio || null,
+        periodo_fim: periodoObj.fim || null,
+        familias: result.familias as any,
+        rows: result.rows as any,
+        participacao: derived.participacao as any,
+        observacoes: result.observacoes ?? null,
+      } as any);
+      if (error) throw error;
+      toast.success("Planilha salva no repositório.");
+      setSaveOpen(false);
+      qc.invalidateQueries({ queryKey: ["gerador-perf-salvos"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openSaved(row: any) {
+    setResult({
+      familias: (row.familias ?? []) as string[],
+      rows: (row.rows ?? []) as any,
+      observacoes: row.observacoes ?? undefined,
+    });
+    if (row.representante) setRepresentante(row.representante);
+    if (row.periodo_label) {
+      setPeriodoObj({
+        label: row.periodo_label,
+        inicio: row.periodo_inicio ?? "",
+        fim: row.periodo_fim ?? "",
+      });
+    }
+    toast.success(`"${row.nome}" carregado.`);
+    setTimeout(() => {
+      document.getElementById("resultado-gerador")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  function derivedFromSaved(row: any) {
+    const familias = (row.familias ?? []) as string[];
+    const rows = (row.rows ?? []) as any[];
+    const perFamilia = Object.fromEntries(
+      familias.map((f) => [f, rows.reduce((s, r) => s + (Number(r.metas?.[f]) || 0), 0)]),
+    ) as Record<string, number>;
+    const grand = rows.reduce((s, r) => {
+      const t =
+        Number(r.total_meta) || familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      return s + t;
+    }, 0);
+    const participacao =
+      (row.participacao && Object.keys(row.participacao).length
+        ? row.participacao
+        : {
+            __total__: grand > 0 ? 100 : null,
+            ...Object.fromEntries(
+              familias.map((f) => [f, grand > 0 ? (perFamilia[f] / grand) * 100 : null]),
+            ),
+          }) as { __total__: number | null } & Record<string, number | null>;
+    return { familias, rows, perFamilia, grand, participacao };
+  }
+
+  function exportSavedXlsx(row: any) {
+    const d = derivedFromSaved(row);
+    exportPerformanceXlsx({
+      filename: `${row.nome}.xlsx`,
+      representante: row.representante ?? "—",
+      periodo: row.periodo_label ?? "—",
+      familias: d.familias,
+      rows: d.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: d.perFamilia, grand: d.grand },
+      participacao: d.participacao,
+    });
+  }
+
+  function exportSavedPdf(row: any) {
+    const d = derivedFromSaved(row);
+    exportPerformancePdf({
+      filename: `${row.nome}.pdf`,
+      representante: row.representante ?? "—",
+      periodo: row.periodo_label ?? "—",
+      familias: d.familias,
+      rows: d.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: d.perFamilia, grand: d.grand },
+      participacao: d.participacao,
+    });
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    const { error } = await supabase
+      .from("gerador_performance_salvos")
+      .delete()
+      .eq("id", deleteId);
+    if (error) return toast.error(error.message);
+    toast.success("Planilha excluída.");
+    setDeleteId(null);
+    qc.invalidateQueries({ queryKey: ["gerador-perf-salvos"] });
+  }
 
   function openSend() {
     if (!result) return;
@@ -385,23 +580,30 @@ function GeradorPerformancePage() {
 
         {/* Resultado */}
         {result && (
-          <div className="surface rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3">
+          <div id="resultado-gerador" className="surface rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <div className="text-sm font-medium">3. Resultado</div>
                 <p className="text-xs text-muted-foreground">
                   {result.rows.length} clientes · {result.familias.length} famílias
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button variant="outline" onClick={download}>
-                  <FileDown className="h-4 w-4 mr-1" /> Baixar .xlsx
+                  <FileDown className="h-4 w-4 mr-1" /> Excel
+                </Button>
+                <Button variant="outline" onClick={downloadPdf}>
+                  <FileText className="h-4 w-4 mr-1" /> PDF
+                </Button>
+                <Button variant="outline" onClick={openSaveDialog}>
+                  <Save className="h-4 w-4 mr-1" /> Salvar
                 </Button>
                 <Button onClick={openSend}>
                   <Send className="h-4 w-4 mr-1" /> Enviar para painel
                 </Button>
               </div>
             </div>
+
 
             {result.observacoes && (
               <div className="text-xs text-muted-foreground rounded-lg border border-border p-3 bg-muted/30">
@@ -545,7 +747,118 @@ function GeradorPerformancePage() {
 
           </div>
         )}
+
+        {/* Repositório de planilhas salvas */}
+        <div className="surface rounded-xl p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium">Repositório de planilhas geradas</div>
+              <p className="text-xs text-muted-foreground">
+                Suas planilhas salvas ficam disponíveis aqui para reabrir, exportar ou excluir.
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground">{salvos.length} planilha{salvos.length === 1 ? "" : "s"}</span>
+          </div>
+          {loadingSalvos ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Carregando…
+            </div>
+          ) : salvos.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-lg">
+              Nenhuma planilha salva ainda. Gere uma acima e clique em <strong>Salvar</strong>.
+            </div>
+          ) : (
+            <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+              {salvos.map((s: any) => (
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors">
+                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate">{s.nome}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {[s.representante, s.periodo_label].filter(Boolean).join(" · ") || "—"}
+                      {" · "}
+                      {new Date(s.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Ações</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openSaved(s)}>
+                        <FolderOpen className="h-4 w-4 mr-2" /> Abrir
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportSavedXlsx(s)}>
+                        <FileDown className="h-4 w-4 mr-2" /> Exportar Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportSavedPdf(s)}>
+                        <FileText className="h-4 w-4 mr-2" /> Exportar PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setDeleteId(s.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Dialog Salvar */}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Salvar planilha no repositório</DialogTitle>
+            <DialogDescription>
+              Dê um nome para encontrá-la depois.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="save-nome">Nome</Label>
+            <Input
+              id="save-nome"
+              value={saveNome}
+              onChange={(e) => setSaveNome(e.target.value)}
+              placeholder="Ex.: Salton — 1º Semestre 2026"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={saveGenerated} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Excluir */}
+      <Dialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir planilha</DialogTitle>
+            <DialogDescription>
+              Esta ação não pode ser desfeita. A planilha será removida do repositório.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={sendOpen} onOpenChange={setSendOpen}>
         <DialogContent>

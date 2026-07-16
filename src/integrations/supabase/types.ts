@@ -1034,6 +1034,54 @@ export type Database = {
           },
         ]
       }
+      gerador_performance_salvos: {
+        Row: {
+          created_at: string
+          familias: Json
+          id: string
+          nome: string
+          observacoes: string | null
+          participacao: Json
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          periodo_label: string | null
+          representante: string | null
+          rows: Json
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          familias?: Json
+          id?: string
+          nome: string
+          observacoes?: string | null
+          participacao?: Json
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label?: string | null
+          representante?: string | null
+          rows?: Json
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          familias?: Json
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          participacao?: Json
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label?: string | null
+          representante?: string | null
+          rows?: Json
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       immersions: {
         Row: {
           agente_id: string | null
