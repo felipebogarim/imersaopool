@@ -17,6 +17,7 @@ const INPUTS = [
   { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
   { to: "/planos", label: "Planos de ação", icon: ListChecks },
+  { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
 
 const NAV_BOTTOM = [
