@@ -55,16 +55,18 @@ async function readWorkbook(file: File): Promise<LocalFile> {
 
 function GeradorPerformancePage() {
   const [files, setFiles] = useState<LocalFile[]>([]);
-  const [periodo, setPeriodo] = useState("");
+  const [periodoObj, setPeriodoObj] = useState<PeriodoValue>({ label: `1º Semestre ${new Date().getFullYear()}`, inicio: `${new Date().getFullYear()}-01-01`, fim: `${new Date().getFullYear()}-06-30` });
+  const periodo = periodoObj.label;
   const [hint, setHint] = useState("");
   const [representante, setRepresentante] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GeneratedPerformance | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
   const [sendRepId, setSendRepId] = useState("");
-  const [sendPeriodoLabel, setSendPeriodoLabel] = useState("");
-  const [sendPeriodoInicio, setSendPeriodoInicio] = useState("");
-  const [sendPeriodoFim, setSendPeriodoFim] = useState("");
+  const [sendPeriodoObj, setSendPeriodoObj] = useState<PeriodoValue>({ label: `1º Semestre ${new Date().getFullYear()}`, inicio: `${new Date().getFullYear()}-01-01`, fim: `${new Date().getFullYear()}-06-30` });
+  const sendPeriodoLabel = sendPeriodoObj.label;
+  const sendPeriodoInicio = sendPeriodoObj.inicio;
+  const sendPeriodoFim = sendPeriodoObj.fim;
   const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const runFn = useServerFn(generatePerformanceFromRaw);
