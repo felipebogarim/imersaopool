@@ -347,9 +347,16 @@ function PerformancePage() {
       return;
     }
     setDlgMode(mode);
-    setPeriodoLabel(mode === "replace" && currentUpload ? currentUpload.periodo_label : "1º Semestre 2026");
-    setPeriodoInicio(mode === "replace" && currentUpload?.periodo_inicio ? currentUpload.periodo_inicio : "2026-01-01");
-    setPeriodoFim(mode === "replace" && currentUpload?.periodo_fim ? currentUpload.periodo_fim : "2026-06-30");
+    if (mode === "replace" && currentUpload) {
+      setPeriodoObj({
+        label: currentUpload.periodo_label || `1º Semestre ${new Date().getFullYear()}`,
+        inicio: currentUpload.periodo_inicio || `${new Date().getFullYear()}-01-01`,
+        fim: currentUpload.periodo_fim || `${new Date().getFullYear()}-06-30`,
+      });
+    } else {
+      const y = new Date().getFullYear();
+      setPeriodoObj({ label: `1º Semestre ${y}`, inicio: `${y}-01-01`, fim: `${y}-06-30` });
+    }
     setPendingFile(null);
     setDlgOpen(true);
   }
