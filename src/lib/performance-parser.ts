@@ -18,11 +18,15 @@ export type ParsedRow = {
   total_pct_status: FarolStatus | null;
 };
 
+export type ResumoPct = { __total__: number | null; [familia: string]: number | null };
+
 export type ParsedSheet = {
   familias: string[];
   categoriaMetas: Record<string, number>;
   escala: { label: string; min: number | null; max: number | null }[];
   rows: ParsedRow[];
+  participacao: ResumoPct | null;
+  atingimento: ResumoPct | null;
 };
 
 function cellHex(cell: any): string | null {
@@ -78,6 +82,17 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
 }
 
 // ---------- Novo formato (planilha ajustada) ----------
+function toPct(v: any): number | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return null;
+    return Math.abs(v) <= 1.5 ? v * 100 : v;
+  }
+  const s = String(v).trim().replace("%", "").replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 function parseNovo(
   grid: { v: any; c: string | null }[][],
   headerRow: number,
@@ -95,20 +110,38 @@ function parseNovo(
   }
 
   const rows: ParsedRow[] = [];
+  let participacao: ResumoPct | null = null;
+  let atingimento: ResumoPct | null = null;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
     const row = grid[r] ?? [];
     const razao = String(row[0]?.v ?? "").trim();
     if (!razao) continue;
     const razaoU = razao.toUpperCase();
-    if (razaoU.startsWith("TOTAL")) continue; // linha "TOTAL GERAL DA META"
-    const categoria = String(row[1]?.v ?? "").trim();
-    // pode acontecer linha "FAIXA %" abaixo do cabeçalho — pular
-    if (!categoria && !famCols.some((c) => typeof row[c]?.v === "string" && /^\d/.test(String(row[c]?.v).trim()) === false)) {
-      // heurística fraca; segue por segurança
+
+    if (razaoU.startsWith("PARTICIPA")) {
+      const out: ResumoPct = { __total__: toPct(row[3]?.v) };
+      familias.forEach((f, i) => {
+        const p = toPct(row[famCols[i]]?.v);
+        if (p != null) out[f] = p;
+      });
+      participacao = out;
+      continue;
     }
+    if (razaoU.startsWith("ATINGIMENTO")) {
+      const out: ResumoPct = { __total__: toPct(row[3]?.v) };
+      familias.forEach((f, i) => {
+        const p = toPct(row[famCols[i]]?.v);
+        if (p != null) out[f] = p;
+      });
+      atingimento = out;
+      continue;
+    }
+    if (razaoU.startsWith("TOTAL")) continue; // linha "TOTAL GERAL DA META"
+    if (razaoU.startsWith("ESTIMATIVA")) continue; // rodapé explicativo
     if (razaoU === "FAIXA %" || razaoU === "FAIXA%") continue;
 
+    const categoria = String(row[1]?.v ?? "").trim();
     const total_meta = typeof row[2]?.v === "number" ? (row[2].v as number) : null;
     const total_pct_status = statusFromFaixa(row[3]?.v);
 
@@ -134,7 +167,7 @@ function parseNovo(
     });
   }
 
-  return { familias, categoriaMetas: {}, escala: [], rows };
+  return { familias, categoriaMetas: {}, escala: [], rows, participacao, atingimento };
 }
 
 // ---------- Formato antigo (mantido para compatibilidade) ----------
@@ -204,5 +237,5 @@ function parseAntigo(
     });
   }
 
-  return { familias, categoriaMetas, escala, rows };
+  return { familias, categoriaMetas, escala, rows, participacao: null, atingimento: null };
 }

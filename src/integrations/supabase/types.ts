@@ -1671,6 +1671,7 @@ export type Database = {
       }
       rep_performance_uploads: {
         Row: {
+          atingimento: Json | null
           categoria_metas: Json
           company_id: string
           created_at: string
@@ -1680,6 +1681,7 @@ export type Database = {
           id: string
           observacao: string | null
           origem: string
+          participacao: Json | null
           periodo_fim: string | null
           periodo_inicio: string | null
           periodo_label: string
@@ -1691,6 +1693,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          atingimento?: Json | null
           categoria_metas?: Json
           company_id: string
           created_at?: string
@@ -1700,6 +1703,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          participacao?: Json | null
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label: string
@@ -1711,6 +1715,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          atingimento?: Json | null
           categoria_metas?: Json
           company_id?: string
           created_at?: string
@@ -1720,6 +1725,7 @@ export type Database = {
           id?: string
           observacao?: string | null
           origem?: string
+          participacao?: Json | null
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label?: string
