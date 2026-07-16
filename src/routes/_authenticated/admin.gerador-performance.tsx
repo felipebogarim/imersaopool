@@ -274,6 +274,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: derived.perFamilia, grand: derived.grand },
       participacao: derived.participacao,
+      atingimento: derived.atingimento,
     });
   }
 
@@ -303,6 +304,7 @@ function GeradorPerformancePage() {
         familias: result.familias as any,
         rows: result.rows as any,
         participacao: derived.participacao as any,
+        atingimento: derived.atingimento as any,
         observacoes: result.observacoes ?? null,
       } as any);
       if (error) throw error;
@@ -376,6 +378,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: d.perFamilia, grand: d.grand },
       participacao: d.participacao,
+      atingimento: d.atingimento,
     });
   }
 
@@ -396,6 +399,7 @@ function GeradorPerformancePage() {
       })),
       totals: { perFamilia: d.perFamilia, grand: d.grand },
       participacao: d.participacao,
+      atingimento: d.atingimento,
     });
   }
 
@@ -470,7 +474,7 @@ function GeradorPerformancePage() {
           categoria_metas,
           escala_percentual: {},
           participacao: derived?.participacao ?? {},
-          atingimento: {},
+          atingimento: derived?.atingimento ?? {},
           filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
           uploaded_by: uid,
           origem: match ? "ia-atualizada" : "ia",
