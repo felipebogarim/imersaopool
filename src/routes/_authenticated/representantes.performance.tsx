@@ -230,15 +230,24 @@ function PerformancePage() {
   // Filtros aplicados apenas na matriz
   const filteredView = useMemo(() => {
     const q = filterQ.trim().toLowerCase();
+    const famsToCheck = filterFams.length > 0 ? filterFams : familias;
     return view.filter((r) => {
       if (q && !(r.razao_social ?? "").toLowerCase().includes(q)) return false;
       if (filterCats.length > 0) {
         const cat = (r.categoria ?? "").toUpperCase().trim();
         if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
       }
+      if (filterZero) {
+        const hasZero = famsToCheck.some((f) => {
+          const meta = Number(r.metas?.[f]) || 0;
+          const real = Number(r.realizado?.[f]) || 0;
+          return meta > 0 && real === 0;
+        });
+        if (!hasZero) return false;
+      }
       return true;
     });
-  }, [view, filterQ, filterCats]);
+  }, [view, filterQ, filterCats, filterZero, filterFams, familias]);
 
   const visibleFams = useMemo(
     () => (filterFams.length > 0 ? familias.filter((f) => filterFams.includes(f)) : familias),
