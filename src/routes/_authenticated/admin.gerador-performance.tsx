@@ -89,10 +89,15 @@ function GeradorPerformancePage() {
   }
 
   async function generate() {
+    if (!representante) {
+      toast.error("Selecione o representante.");
+      return;
+    }
     if (!files.length) {
       toast.error("Adicione ao menos uma planilha.");
       return;
     }
+
     setBusy(true);
     setResult(null);
     try {
@@ -318,9 +323,17 @@ function GeradorPerformancePage() {
           <div className="text-sm font-medium">2. Contexto (opcional)</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="rep">Representante</Label>
-              <Input id="rep" value={representante} onChange={(e) => setRepresentante(e.target.value)} placeholder="Ex.: Salton" />
+              <Label htmlFor="rep">Representante <span className="text-destructive">*</span></Label>
+              <Select value={representante} onValueChange={setRepresentante}>
+                <SelectTrigger id="rep"><SelectValue placeholder="Selecione o representante" /></SelectTrigger>
+                <SelectContent>
+                  {reps.map((r: any) => (
+                    <SelectItem key={r.id} value={r.nome}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="periodo">Período</Label>
               <Input id="periodo" value={periodo} onChange={(e) => setPeriodo(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
@@ -337,7 +350,7 @@ function GeradorPerformancePage() {
             />
           </div>
           <div>
-            <Button onClick={generate} disabled={busy || !files.length}>
+            <Button onClick={generate} disabled={busy || !files.length || !representante}>
               {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
               {busy ? "Analisando com IA…" : "Gerar planilha de performance"}
             </Button>
