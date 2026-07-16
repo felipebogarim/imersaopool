@@ -234,7 +234,7 @@ function GeradorPerformancePage() {
           familias,
           categoria_metas,
           escala_percentual: {},
-          participacao: {},
+          participacao: derived?.participacao ?? {},
           atingimento: {},
           filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
           uploaded_by: uid,
