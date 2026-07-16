@@ -83,6 +83,7 @@ function PerformancePage() {
   // Filtros da matriz
   const [filterQ, setFilterQ] = useState("");
   const [filterCats, setFilterCats] = useState<string[]>([]);
+  const [filterFams, setFilterFams] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: reps = [] } = useQuery({
