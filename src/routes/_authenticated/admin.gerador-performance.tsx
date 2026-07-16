@@ -450,20 +450,7 @@ function GeradorPerformancePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Período (rótulo)</Label>
-              <Input value={sendPeriodoLabel} onChange={(e) => setSendPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Início</Label>
-                <Input type="date" value={sendPeriodoInicio} onChange={(e) => setSendPeriodoInicio(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Fim</Label>
-                <Input type="date" value={sendPeriodoFim} onChange={(e) => setSendPeriodoFim(e.target.value)} />
-              </div>
-            </div>
+            <PeriodoPicker value={sendPeriodoObj} onChange={setSendPeriodoObj} label="Período" required />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSendOpen(false)} disabled={sending}>Cancelar</Button>
