@@ -18,7 +18,7 @@ export type ParsedRow = {
   total_pct_status: FarolStatus | null;
 };
 
-export type ResumoPct = { __total__: number | null } & Record<string, number>;
+export type ResumoPct = { __total__: number | null; [familia: string]: number | null };
 
 export type ParsedSheet = {
   familias: string[];
