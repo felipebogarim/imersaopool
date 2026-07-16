@@ -16,6 +16,7 @@ import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
@@ -63,9 +64,10 @@ function PerformancePage() {
   const [dlgMode, setDlgMode] = useState<"new" | "replace">("new");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [periodoLabel, setPeriodoLabel] = useState("");
-  const [periodoInicio, setPeriodoInicio] = useState("");
-  const [periodoFim, setPeriodoFim] = useState("");
+  const [periodoObj, setPeriodoObj] = useState<PeriodoValue>({ label: `1º Semestre ${new Date().getFullYear()}`, inicio: `${new Date().getFullYear()}-01-01`, fim: `${new Date().getFullYear()}-06-30` });
+  const periodoLabel = periodoObj.label;
+  const periodoInicio = periodoObj.inicio;
+  const periodoFim = periodoObj.fim;
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
@@ -345,9 +347,16 @@ function PerformancePage() {
       return;
     }
     setDlgMode(mode);
-    setPeriodoLabel(mode === "replace" && currentUpload ? currentUpload.periodo_label : "1º Semestre 2026");
-    setPeriodoInicio(mode === "replace" && currentUpload?.periodo_inicio ? currentUpload.periodo_inicio : "2026-01-01");
-    setPeriodoFim(mode === "replace" && currentUpload?.periodo_fim ? currentUpload.periodo_fim : "2026-06-30");
+    if (mode === "replace" && currentUpload) {
+      setPeriodoObj({
+        label: currentUpload.periodo_label || `1º Semestre ${new Date().getFullYear()}`,
+        inicio: currentUpload.periodo_inicio || `${new Date().getFullYear()}-01-01`,
+        fim: currentUpload.periodo_fim || `${new Date().getFullYear()}-06-30`,
+      });
+    } else {
+      const y = new Date().getFullYear();
+      setPeriodoObj({ label: `1º Semestre ${y}`, inicio: `${y}-01-01`, fim: `${y}-06-30` });
+    }
     setPendingFile(null);
     setDlgOpen(true);
   }
@@ -1272,20 +1281,7 @@ function PerformancePage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label>Rótulo do período</Label>
-              <Input value={periodoLabel} onChange={(e) => setPeriodoLabel(e.target.value)} placeholder="Ex.: 1º Semestre 2026" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Início</Label>
-                <Input type="date" value={periodoInicio} onChange={(e) => setPeriodoInicio(e.target.value)} />
-              </div>
-              <div>
-                <Label>Fim</Label>
-                <Input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} />
-              </div>
-            </div>
+            <PeriodoPicker value={periodoObj} onChange={setPeriodoObj} required />
             <div>
               <Label>Planilha (.xlsx)</Label>
               <Input
