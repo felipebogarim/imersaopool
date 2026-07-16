@@ -217,8 +217,161 @@ function GeradorPerformancePage() {
     });
   }
 
+  function downloadPdf() {
+    if (!result || !derived) return;
+    exportPerformancePdf({
+      filename: `Performance-${(representante || "gerada").replace(/\s+/g, "_")}.pdf`,
+      representante: representante || "—",
+      periodo: periodo || "—",
+      familias: result.familias,
+      rows: result.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: derived.perFamilia, grand: derived.grand },
+      participacao: derived.participacao,
+    });
+  }
 
-  function openSend() {
+  function openSaveDialog() {
+    if (!result) return;
+    setSaveNome(
+      `${representante || "Planilha"} — ${periodo || new Date().toLocaleDateString("pt-BR")}`,
+    );
+    setSaveOpen(true);
+  }
+
+  async function saveGenerated() {
+    if (!result || !derived) return;
+    if (!saveNome.trim()) return toast.error("Dê um nome à planilha.");
+    setSaving(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Sessão expirada. Entre novamente.");
+      const { error } = await supabase.from("gerador_performance_salvos").insert({
+        uploaded_by: uid,
+        nome: saveNome.trim(),
+        representante: representante || null,
+        periodo_label: periodoObj.label || null,
+        periodo_inicio: periodoObj.inicio || null,
+        periodo_fim: periodoObj.fim || null,
+        familias: result.familias as any,
+        rows: result.rows as any,
+        participacao: derived.participacao as any,
+        observacoes: result.observacoes ?? null,
+      } as any);
+      if (error) throw error;
+      toast.success("Planilha salva no repositório.");
+      setSaveOpen(false);
+      qc.invalidateQueries({ queryKey: ["gerador-perf-salvos"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openSaved(row: any) {
+    setResult({
+      familias: (row.familias ?? []) as string[],
+      rows: (row.rows ?? []) as any,
+      observacoes: row.observacoes ?? undefined,
+    });
+    if (row.representante) setRepresentante(row.representante);
+    if (row.periodo_label) {
+      setPeriodoObj({
+        label: row.periodo_label,
+        inicio: row.periodo_inicio ?? "",
+        fim: row.periodo_fim ?? "",
+      });
+    }
+    toast.success(`"${row.nome}" carregado.`);
+    setTimeout(() => {
+      document.getElementById("resultado-gerador")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  function derivedFromSaved(row: any) {
+    const familias = (row.familias ?? []) as string[];
+    const rows = (row.rows ?? []) as any[];
+    const perFamilia = Object.fromEntries(
+      familias.map((f) => [f, rows.reduce((s, r) => s + (Number(r.metas?.[f]) || 0), 0)]),
+    ) as Record<string, number>;
+    const grand = rows.reduce((s, r) => {
+      const t =
+        Number(r.total_meta) || familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
+      return s + t;
+    }, 0);
+    const participacao =
+      (row.participacao && Object.keys(row.participacao).length
+        ? row.participacao
+        : {
+            __total__: grand > 0 ? 100 : null,
+            ...Object.fromEntries(
+              familias.map((f) => [f, grand > 0 ? (perFamilia[f] / grand) * 100 : null]),
+            ),
+          }) as { __total__: number | null } & Record<string, number | null>;
+    return { familias, rows, perFamilia, grand, participacao };
+  }
+
+  function exportSavedXlsx(row: any) {
+    const d = derivedFromSaved(row);
+    exportPerformanceXlsx({
+      filename: `${row.nome}.xlsx`,
+      representante: row.representante ?? "—",
+      periodo: row.periodo_label ?? "—",
+      familias: d.familias,
+      rows: d.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: d.perFamilia, grand: d.grand },
+      participacao: d.participacao,
+    });
+  }
+
+  function exportSavedPdf(row: any) {
+    const d = derivedFromSaved(row);
+    exportPerformancePdf({
+      filename: `${row.nome}.pdf`,
+      representante: row.representante ?? "—",
+      periodo: row.periodo_label ?? "—",
+      familias: d.familias,
+      rows: d.rows.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas: r.metas,
+        metas_status: r.metas_status,
+        total_meta: r.total_meta,
+        total_pct_status: r.total_pct_status,
+      })),
+      totals: { perFamilia: d.perFamilia, grand: d.grand },
+      participacao: d.participacao,
+    });
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    const { error } = await supabase
+      .from("gerador_performance_salvos")
+      .delete()
+      .eq("id", deleteId);
+    if (error) return toast.error(error.message);
+    toast.success("Planilha excluída.");
+    setDeleteId(null);
+    qc.invalidateQueries({ queryKey: ["gerador-perf-salvos"] });
+  }
+
+
     if (!result) return;
     const found = reps.find((r: any) => r.nome?.toLowerCase() === representante.trim().toLowerCase());
     setSendRepId(found?.id ?? "");
