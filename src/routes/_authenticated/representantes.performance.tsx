@@ -95,7 +95,7 @@ function PerformancePage() {
   const { data: reps = [] } = useQuery({
     queryKey: ["perf-reps"],
     queryFn: async () =>
-      (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
+      (await supabase.from("representatives").select("id, nome, company_id").order("nome")).data ?? [],
   });
 
   // Lista da landing: uma linha por representante com sua última versão ativa
