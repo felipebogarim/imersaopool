@@ -69,6 +69,16 @@ export const FAROL_FAIXA_TEXT: Record<FarolStatus, string> = {
   excelente: ">100",
 };
 
+// Ponto médio da faixa em % — usado para estimar atingimento quando só temos o farol.
+export const FAROL_MIDPOINT: Record<FarolStatus, number> = {
+  sem_compra: 0,
+  abaixo_meta: 25,
+  pode_melhorar: 60,
+  proximo: 80,
+  otimo: 95,
+  excelente: 110,
+};
+
 /** Converte a string de faixa da planilha (ex.: "0%", "<50", "50-69", ">100") em FarolStatus. */
 export function statusFromFaixa(text: string | null | undefined): FarolStatus | null {
   if (text == null) return null;
