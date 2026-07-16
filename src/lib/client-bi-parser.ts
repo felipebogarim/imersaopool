@@ -154,3 +154,138 @@ export function parseClientFamiliasWorkbook(buf: ArrayBuffer): ClientFamiliasDat
   }
   return { itens };
 }
+
+// ============= Batch: uma planilha com dados de todos os clientes =============
+
+const HAS_BI_MARKERS = (ws: any): boolean => {
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
+  return rows.some((r) =>
+    (r ?? []).some(
+      (c) =>
+        typeof c === "string" &&
+        (c.toUpperCase().includes("ATINGIMENTO PONDERADO GERAL") ||
+          c.toUpperCase().includes("PARTICIPAÇÃO DAS FAMÍLIAS")),
+    ),
+  );
+};
+
+/**
+ * Planilha BI multi-cliente: cada aba do workbook representa UM cliente.
+ * O nome da aba é usado como razão social (limitada a 31 chars pelo Excel;
+ * o parser também procura por um rótulo "CLIENTE:" / "RAZÃO SOCIAL:" dentro
+ * da aba e, se encontrar, prioriza esse valor).
+ */
+export function parseClientBIWorkbookBatch(
+  buf: ArrayBuffer,
+): Array<{ razao_social: string; data: ClientBIData }> {
+  const wb = XLSX.read(buf, { type: "array" });
+  const out: Array<{ razao_social: string; data: ClientBIData }> = [];
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name];
+    if (!ws) continue;
+    if (!HAS_BI_MARKERS(ws)) continue; // ignora abas de índice/instruções
+    const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
+    let razao: string | null = null;
+    for (const r of rows.slice(0, 12)) {
+      for (let i = 0; i < (r?.length ?? 0); i++) {
+        const c = r[i];
+        if (typeof c !== "string") continue;
+        const up = c.toUpperCase();
+        if (up.includes("RAZÃO SOCIAL") || up.includes("CLIENTE:") || up === "CLIENTE") {
+          const v = r[i + 1];
+          if (typeof v === "string" && v.trim()) {
+            razao = v.trim();
+            break;
+          }
+        }
+      }
+      if (razao) break;
+    }
+    const data = parseClientBISheet(ws);
+    out.push({ razao_social: (razao ?? name).trim(), data });
+  }
+  if (!out.length) throw new Error("Nenhuma aba de BI reconhecida no arquivo.");
+  return out;
+}
+
+/**
+ * Planilha de resultado por família multi-cliente:
+ * Estratégia 1: workbook com várias abas — cada aba é um cliente.
+ * Estratégia 2: uma única aba com coluna CLIENTE/RAZÃO SOCIAL — agrupa por cliente.
+ */
+export function parseClientFamiliasWorkbookBatch(
+  buf: ArrayBuffer,
+): Array<{ razao_social: string; data: ClientFamiliasData }> {
+  const wb = XLSX.read(buf, { type: "array" });
+
+  // Estratégia 1: múltiplas abas com dados por cliente
+  if (wb.SheetNames.length > 1) {
+    const out: Array<{ razao_social: string; data: ClientFamiliasData }> = [];
+    for (const name of wb.SheetNames) {
+      const ws = wb.Sheets[name];
+      if (!ws) continue;
+      try {
+        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
+        const hasFam = rows.some((r) =>
+          (r ?? []).some(
+            (c) =>
+              typeof c === "string" && (c.toUpperCase().includes("FAMÍLIA") || c.toUpperCase().includes("FAMILIA")),
+          ),
+        );
+        if (!hasFam) continue;
+        // reaproveita o parser single-sheet re-serializando
+        const single = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(single, ws, "S");
+        const bufSingle = XLSX.write(single, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+        const data = parseClientFamiliasWorkbook(bufSingle);
+        if (data.itens.length) out.push({ razao_social: name.trim(), data });
+      } catch {
+        /* aba sem formato válido é ignorada */
+      }
+    }
+    if (out.length) return out;
+  }
+
+  // Estratégia 2: uma única aba com coluna cliente
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) throw new Error("Planilha vazia.");
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
+
+  let headerIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 12); i++) {
+    const cells = (rows[i] ?? []).map((c) => String(c ?? "").toUpperCase());
+    if (
+      cells.some((c) => c.includes("FAMÍLIA") || c.includes("FAMILIA")) &&
+      cells.some((c) => c.includes("CLIENTE") || c.includes("RAZÃO"))
+    ) {
+      headerIdx = i;
+      break;
+    }
+  }
+  if (headerIdx < 0) throw new Error("Cabeçalho com colunas CLIENTE e FAMÍLIA não encontrado.");
+
+  const header = (rows[headerIdx] ?? []).map((c) => String(c ?? "").toUpperCase().trim());
+  const idxCli = header.findIndex((h) => h.includes("CLIENTE") || h.includes("RAZÃO"));
+  const idxFam = header.findIndex((h) => h.includes("FAMÍLIA") || h.includes("FAMILIA"));
+  const idxMeta = header.findIndex((h) => h.includes("META"));
+  const idxReal = header.findIndex((h) => h.includes("REAL") || h.includes("FATUR"));
+  const idxAtg = header.findIndex((h) => h.includes("ATING") || h === "%");
+
+  const map = new Map<string, ClientFamiliasData>();
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const r = rows[i] ?? [];
+    const cli = str(r[idxCli]);
+    const fam = str(r[idxFam]);
+    if (!cli || !fam) continue;
+    const up = fam.toUpperCase();
+    if (up.startsWith("TOTAL") || up.startsWith("SOMA")) continue;
+    if (!map.has(cli)) map.set(cli, { itens: [] });
+    map.get(cli)!.itens.push({
+      familia: fam,
+      meta: idxMeta >= 0 ? num(r[idxMeta]) : null,
+      realizado: idxReal >= 0 ? num(r[idxReal]) : null,
+      atingimento: idxAtg >= 0 ? num(r[idxAtg]) : null,
+    });
+  }
+  return Array.from(map.entries()).map(([razao_social, data]) => ({ razao_social, data }));
+}
