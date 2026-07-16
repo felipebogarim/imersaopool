@@ -80,15 +80,6 @@ function PerformancePage() {
   const [draft, setDraft] = useState<Row[] | null>(null);
 
   // Filtros da matriz
-  const CATEGORIA_OPTIONS = [
-    "DECOR NEW",
-    "DECOR STUDIO",
-    "SISTEMAS E MODULOS",
-    "PRO LED",
-    "PRO LAMP",
-    "PERFIL",
-    "FITAS E FONTES",
-  ];
   const [filterQ, setFilterQ] = useState("");
   const [filterCats, setFilterCats] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
