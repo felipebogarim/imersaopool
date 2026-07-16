@@ -59,6 +59,20 @@ function GeradorPerformancePage() {
   const [representante, setRepresentante] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<GeneratedPerformance | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendRepId, setSendRepId] = useState("");
+  const [sendPeriodoLabel, setSendPeriodoLabel] = useState("");
+  const [sendPeriodoInicio, setSendPeriodoInicio] = useState("");
+  const [sendPeriodoFim, setSendPeriodoFim] = useState("");
+  const [sending, setSending] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const runFn = useServerFn(generatePerformanceFromRaw);
+
+  const { data: reps = [] } = useQuery({
+    queryKey: ["gerador-perf-reps"],
+    queryFn: async () =>
+      (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
+  });
   const fileRef = useRef<HTMLInputElement>(null);
   const runFn = useServerFn(generatePerformanceFromRaw);
 
