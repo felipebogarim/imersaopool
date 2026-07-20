@@ -148,6 +148,65 @@ ${rows.map(r => `<tr>${keys.map(k => {
     }
   }
 
+  async function exportAllPDF() {
+    setGenerating(true);
+    try {
+      const kinds = Object.keys(KIND_LABEL) as Kind[];
+      const datasets = await Promise.all(kinds.map(async k => ({ kind: k, rows: await fetchData(k) })));
+      const stamp = new Date().toLocaleString("pt-BR");
+      const escHtml = (s: string) => s.replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
+      const sections = datasets.map(({ kind: k, rows }) => `
+<section class="section">
+  <h2>${KIND_LABEL[k]}</h2>
+  <div class="meta">${rows.length} registro(s)</div>
+  ${rows.length === 0 ? "<p class='empty'>Sem registros.</p>" : (() => {
+    const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
+    return `<table><thead><tr>${keys.map(kk => `<th>${escHtml(kk)}</th>`).join("")}</tr></thead><tbody>
+${rows.map(r => `<tr>${keys.map(kk => {
+  let v = r[kk]; if (v == null) v = "";
+  if (typeof v === "object") v = JSON.stringify(v);
+  return `<td>${escHtml(String(v))}</td>`;
+}).join("")}</tr>`).join("")}
+</tbody></table>`;
+  })()}
+</section>`).join("");
+      const totals = datasets.map(d => `<li><strong>${KIND_LABEL[d.kind]}:</strong> ${d.rows.length}</li>`).join("");
+      const html = `<!doctype html><html><head><meta charset="utf-8">
+<title>Relatório Consolidado de Segurança</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; color: #111; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 6px; color: #0f172a; }
+  .meta { color: #666; font-size: 12px; margin-bottom: 12px; }
+  .section { margin-bottom: 28px; page-break-inside: avoid; }
+  .section + .section { page-break-before: always; }
+  table { border-collapse: collapse; width: 100%; font-size: 10px; table-layout: fixed; word-break: break-word; }
+  th, td { border: 1px solid #ddd; padding: 5px 6px; text-align: left; vertical-align: top; }
+  th { background: #f4f4f5; }
+  tr:nth-child(even) td { background: #fafafa; }
+  ul { font-size: 12px; }
+  .empty { color: #888; font-style: italic; }
+  @media print { body { padding: 12px; } }
+</style></head><body>
+<h1>Relatório Consolidado de Segurança e Privacidade</h1>
+<div class="meta">Gerado em ${stamp}</div>
+<section class="section">
+  <h2>Sumário</h2>
+  <ul>${totals}</ul>
+</section>
+${sections}
+<script>window.onload=()=>{setTimeout(()=>window.print(),400)}</script>
+</body></html>`;
+      const w = window.open("", "_blank");
+      if (!w) return alert("Bloqueado pelo navegador. Permita pop-ups.");
+      w.document.write(html); w.document.close();
+    } catch (e: any) {
+      alert(e?.message ?? String(e));
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   const idx = lastAuditQ.data?.indice_seguranca;
 
   return (
