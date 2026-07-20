@@ -16,7 +16,7 @@ const INPUTS = [
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
   { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
-  { to: "/planos", label: "Planos de ação", icon: ListChecks },
+  { to: "/tarefas", label: "Gestão de Tarefas", icon: ListChecks },
   { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
 
