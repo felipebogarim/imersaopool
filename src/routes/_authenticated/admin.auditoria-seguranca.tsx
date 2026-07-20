@@ -318,18 +318,28 @@ function Page() {
             <IncidentsTab />
           </TabsContent>
 
+          {/* ====== PROTEÇÃO DE DADOS (Fase 3) ====== */}
+          <TabsContent value="dados" className="mt-4">
+            <DataProtectionTab />
+          </TabsContent>
+
+          {/* ====== SEGURANÇA DE ARQUIVOS (Fase 3) ====== */}
+          <TabsContent value="arquivos" className="mt-4">
+            <FileSecurityTab />
+          </TabsContent>
+
           {/* ====== CONFIGURAÇÕES ====== */}
           <TabsContent value="config" className="mt-4">
             <SettingsTab settings={settingsQ.data} />
           </TabsContent>
 
-          {/* ===== ABAS PLACEHOLDER (Fases seguintes) ===== */}
-          {["acessos", "dados", "arquivos", "lgpd", "relatorios"].map((tab) => (
+          {/* ===== ABAS PLACEHOLDER (Fase 4) ===== */}
+          {["acessos", "lgpd", "relatorios"].map((tab) => (
             <TabsContent key={tab} value={tab} className="mt-4">
               <Card>
                 <CardContent className="py-10 text-center text-sm text-muted-foreground">
                   <ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                  Módulo previsto para as próximas fases da Auditoria de Segurança e Privacidade.
+                  Módulo previsto para a Fase 4 da Auditoria de Segurança e Privacidade.
                 </CardContent>
               </Card>
             </TabsContent>
