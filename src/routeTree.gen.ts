@@ -60,6 +60,7 @@ import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './rout
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
+import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
@@ -344,6 +345,12 @@ const ApiPublicMpCreatePreferenceRoute =
     path: '/api/public/mp/create-preference',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWeeklySecurityAuditRoute =
+  ApiPublicHooksWeeklySecurityAuditRouteImport.update({
+    id: '/api/public/hooks/weekly-security-audit',
+    path: '/api/public/hooks/weekly-security-audit',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTarefasBBoardIdRoute =
   AuthenticatedTarefasBBoardIdRouteImport.update({
     id: '/tarefas/b/$boardId',
@@ -439,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -498,6 +506,7 @@ export interface FileRoutesByTo {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -559,6 +568,7 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -679,6 +690,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -739,6 +751,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
+    | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -761,6 +774,7 @@ export interface RootRouteChildren {
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
+  ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -1127,6 +1141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpCreatePreferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/weekly-security-audit': {
+      id: '/api/public/hooks/weekly-security-audit'
+      path: '/api/public/hooks/weekly-security-audit'
+      fullPath: '/api/public/hooks/weekly-security-audit'
+      preLoaderRoute: typeof ApiPublicHooksWeeklySecurityAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/tarefas/b/$boardId': {
       id: '/_authenticated/tarefas/b/$boardId'
       path: '/tarefas/b/$boardId'
@@ -1321,6 +1342,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
+  ApiPublicHooksWeeklySecurityAuditRoute:
+    ApiPublicHooksWeeklySecurityAuditRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
