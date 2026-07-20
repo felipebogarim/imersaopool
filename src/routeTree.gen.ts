@@ -56,6 +56,7 @@ import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
+import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
@@ -319,6 +320,12 @@ const AuthenticatedAdminBackupRoute =
     path: '/backup',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditoriaSegurancaRoute =
+  AuthenticatedAdminAuditoriaSegurancaRouteImport.update({
+    id: '/auditoria-seguranca',
+    path: '/auditoria-seguranca',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp/webhook',
   path: '/api/public/mp/webhook',
@@ -393,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
@@ -450,6 +458,7 @@ export interface FileRoutesByTo {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
@@ -509,6 +518,7 @@ export interface FileRoutesById {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
@@ -568,6 +578,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/r/$token'
+    | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
@@ -625,6 +636,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/r/$token'
+    | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
@@ -683,6 +695,7 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/r/$token'
+    | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/gerador-performance'
@@ -1072,6 +1085,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBackupRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/auditoria-seguranca': {
+      id: '/_authenticated/admin/auditoria-seguranca'
+      path: '/auditoria-seguranca'
+      fullPath: '/admin/auditoria-seguranca'
+      preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/public/mp/webhook': {
       id: '/api/public/mp/webhook'
       path: '/api/public/mp/webhook'
@@ -1139,6 +1159,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditoriaSegurancaRoute: typeof AuthenticatedAdminAuditoriaSegurancaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
@@ -1147,6 +1168,8 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditoriaSegurancaRoute:
+    AuthenticatedAdminAuditoriaSegurancaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminEventoCheckoutTesteRoute:
     AuthenticatedAdminEventoCheckoutTesteRoute,
