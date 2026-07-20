@@ -336,17 +336,20 @@ function Page() {
             <SettingsTab settings={settingsQ.data} />
           </TabsContent>
 
-          {/* ===== ABAS PLACEHOLDER (Fase 4) ===== */}
-          {["acessos", "lgpd", "relatorios"].map((tab) => (
-            <TabsContent key={tab} value={tab} className="mt-4">
-              <Card>
-                <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                  <ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                  Módulo previsto para a Fase 4 da Auditoria de Segurança e Privacidade.
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
+          {/* ====== CONTROLE DE ACESSOS (Fase 4) ====== */}
+          <TabsContent value="acessos" className="mt-4">
+            <AccessControlTab />
+          </TabsContent>
+
+          {/* ====== LGPD (Fase 4) ====== */}
+          <TabsContent value="lgpd" className="mt-4">
+            <LGPDTab />
+          </TabsContent>
+
+          {/* ====== RELATÓRIOS (Fase 4) ====== */}
+          <TabsContent value="relatorios" className="mt-4">
+            <ReportsTab />
+          </TabsContent>
         </Tabs>
 
       </div>
