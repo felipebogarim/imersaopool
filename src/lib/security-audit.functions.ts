@@ -367,7 +367,7 @@ export const runSecurityAudit = createServerFn({ method: "POST" })
           descricao: c.descricao ?? null,
           status: c.status,
           severidade: c.severidade,
-          evidencia: c.evidencia ?? {},
+          evidencia: (c.evidencia ?? {}) as any,
           recomendacao: c.recomendacao ?? null,
           peso: c.peso ?? 1,
         })),
