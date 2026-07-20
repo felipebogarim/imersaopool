@@ -177,8 +177,10 @@ function Page() {
             <TabsTrigger value="arquivos">Segurança de Arquivos</TabsTrigger>
             <TabsTrigger value="logs">Logs e Atividades</TabsTrigger>
             <TabsTrigger value="riscos">Vulnerabilidades e Riscos</TabsTrigger>
+            <TabsTrigger value="matriz">Matriz de Riscos</TabsTrigger>
             <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
             <TabsTrigger value="lgpd">Privacidade e LGPD</TabsTrigger>
+
             <TabsTrigger value="config">Configurações</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
