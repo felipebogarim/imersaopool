@@ -19,6 +19,8 @@ import {
   Shield, ShieldQuestion, PlayCircle, RefreshCw, Loader2,
   AlertTriangle, CheckCircle2, HelpCircle, XCircle, ClipboardList,
 } from "lucide-react";
+import { DataProtectionTab } from "@/components/security/DataProtectionTab";
+import { FileSecurityTab } from "@/components/security/FileSecurityTab";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-seguranca")({
   component: Page,
