@@ -821,6 +821,54 @@ export type Database = {
           },
         ]
       }
+      data_classifications: {
+        Row: {
+          base_legal: string | null
+          created_at: string
+          criado_por: string | null
+          criptografia: string | null
+          descricao: string | null
+          dominio: string
+          id: string
+          observacoes: string | null
+          responsavel: string | null
+          retencao_dias: number | null
+          sensibilidade: string
+          tabelas: string[]
+          updated_at: string
+        }
+        Insert: {
+          base_legal?: string | null
+          created_at?: string
+          criado_por?: string | null
+          criptografia?: string | null
+          descricao?: string | null
+          dominio: string
+          id?: string
+          observacoes?: string | null
+          responsavel?: string | null
+          retencao_dias?: number | null
+          sensibilidade?: string
+          tabelas?: string[]
+          updated_at?: string
+        }
+        Update: {
+          base_legal?: string | null
+          created_at?: string
+          criado_por?: string | null
+          criptografia?: string | null
+          descricao?: string | null
+          dominio?: string
+          id?: string
+          observacoes?: string | null
+          responsavel?: string | null
+          retencao_dias?: number | null
+          sensibilidade?: string
+          tabelas?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entity_permissions: {
         Row: {
           allowed: boolean
@@ -1086,6 +1134,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      file_security_events: {
+        Row: {
+          bucket: string
+          created_at: string
+          evento: string
+          id: string
+          metadata: Json | null
+          mimetype: string | null
+          nivel_risco: string | null
+          path: string
+          tamanho_bytes: number | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          evento: string
+          id?: string
+          metadata?: Json | null
+          mimetype?: string | null
+          nivel_risco?: string | null
+          path: string
+          tamanho_bytes?: number | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          evento?: string
+          id?: string
+          metadata?: Json | null
+          mimetype?: string | null
+          nivel_risco?: string | null
+          path?: string
+          tamanho_bytes?: number | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
       }
       form_responses: {
         Row: {
