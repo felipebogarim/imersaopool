@@ -166,10 +166,10 @@ function Page() {
       <div className="p-6 space-y-6">
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertTitle>Fase 3 — Proteção de Dados e Segurança de Arquivos</AlertTitle>
+          <AlertTitle>Fase 4 — Acessos, LGPD e Relatórios</AlertTitle>
           <AlertDescription>
-            Inventário de classificação LGPD por domínio, visibilidade dos buckets de armazenamento
-            e varredura automática de anomalias (buckets públicos, arquivos anormalmente grandes).
+            Painel completo: gestão de usuários e papéis, solicitações LGPD de titulares
+            com controle de prazo legal, e exportação de relatórios em CSV/PDF.
           </AlertDescription>
         </Alert>
 
