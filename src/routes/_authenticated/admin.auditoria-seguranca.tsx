@@ -742,7 +742,7 @@ function IncidentsTab() {
               </TableCell></TableRow>
             )}
             {(data ?? []).map((i: any) => (
-              <TableRow key={i.id}>
+              <TableRow key={i.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelected(i)}>
                 <TableCell className="text-xs">#{i.numero}</TableCell>
                 <TableCell>
                   <div className="font-medium">{i.titulo}</div>
@@ -755,10 +755,100 @@ function IncidentsTab() {
             ))}
           </TableBody>
         </Table>
+
+        {selected && (
+          <IncidentDetailDialog
+            incident={selected}
+            onClose={() => setSelected(null)}
+            onChanged={() => qc.invalidateQueries({ queryKey: ["sec-incidents"] })}
+          />
+        )}
       </CardContent>
     </Card>
   );
 }
+
+function IncidentDetailDialog({ incident, onClose, onChanged }: { incident: any; onClose: () => void; onChanged: () => void }) {
+  const [entry, setEntry] = useState("");
+  const [status, setStatus] = useState<string>(incident.status);
+  const [saving, setSaving] = useState(false);
+  const timeline: any[] = Array.isArray(incident.timeline) ? incident.timeline : [];
+
+  async function addEntry() {
+    if (!entry.trim()) return;
+    setSaving(true);
+    const next = [...timeline, { ts: new Date().toISOString(), texto: entry.trim() }];
+    await supabase.from("security_incidents").update({ timeline: next as any }).eq("id", incident.id);
+    setEntry("");
+    setSaving(false);
+    onChanged();
+    incident.timeline = next;
+  }
+
+  async function changeStatus(v: string) {
+    setStatus(v);
+    const next = [...timeline, { ts: new Date().toISOString(), texto: `Status alterado para: ${v}` }];
+    await supabase.from("security_incidents").update({ status: v, timeline: next as any }).eq("id", incident.id);
+    await supabase.rpc("log_security_event", {
+      _tipo: "security.incident.status_changed", _acao: "update",
+      _recurso: `security_incidents:${incident.id}`, _resultado: "sucesso",
+      _nivel_risco: "medio", _metadata: { status: v } as any,
+    });
+    onChanged();
+    incident.timeline = next;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">Incidente #{incident.numero}</div>
+            <div className="text-lg font-semibold">{incident.titulo}</div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>Fechar</Button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div><span className="text-muted-foreground">Gravidade:</span> {statusBadgeRisk(incident.gravidade)}</div>
+            <div>
+              <span className="text-muted-foreground text-xs">Status:</span>
+              <Select value={status} onValueChange={changeStatus}>
+                <SelectTrigger className="w-full h-8 mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>{["detectado","em_investigacao","contido","em_correcao","em_monitoramento","encerrado"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><span className="text-muted-foreground">Categoria:</span> {incident.categoria ?? "—"}</div>
+            <div><span className="text-muted-foreground">Ocorrido em:</span> {fmtDate(incident.ocorrido_em)}</div>
+          </div>
+          {incident.descricao && (
+            <div className="text-sm">
+              <div className="text-xs text-muted-foreground mb-1">Descrição</div>
+              <div>{incident.descricao}</div>
+            </div>
+          )}
+          <div>
+            <div className="text-sm font-medium mb-2">Timeline</div>
+            <div className="space-y-2">
+              {timeline.length === 0 && <div className="text-xs text-muted-foreground">Sem entradas.</div>}
+              {timeline.map((t: any, idx: number) => (
+                <div key={idx} className="border-l-2 border-cyan-500 pl-3 py-1">
+                  <div className="text-[11px] text-muted-foreground">{fmtDate(t.ts)}</div>
+                  <div className="text-sm">{t.texto}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Input placeholder="Adicionar entrada na timeline…" value={entry} onChange={(e) => setEntry(e.target.value)} />
+            <Button onClick={addEntry} disabled={saving || !entry.trim()}>Adicionar</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function SettingsTab({ settings }: { settings: any }) {
   const qc = useQueryClient();
