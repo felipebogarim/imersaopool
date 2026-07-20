@@ -1417,6 +1417,665 @@ export type Database = {
           },
         ]
       }
+      kanban_activities: {
+        Row: {
+          board_id: string
+          card_id: string | null
+          created_at: string
+          id: string
+          payload: Json
+          type: Database["public"]["Enums"]["kanban_activity_type"]
+          user_id: string | null
+        }
+        Insert: {
+          board_id: string
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          type: Database["public"]["Enums"]["kanban_activity_type"]
+          user_id?: string | null
+        }
+        Update: {
+          board_id?: string
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          type?: Database["public"]["Enums"]["kanban_activity_type"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_activities_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_activities_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_attachments: {
+        Row: {
+          card_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          uploaded_by: string
+          url: string | null
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          uploaded_by: string
+          url?: string | null
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          uploaded_by?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_attachments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_automations: {
+        Row: {
+          action: Database["public"]["Enums"]["kanban_automation_action"]
+          action_config: Json
+          board_id: string
+          created_at: string
+          created_by: string
+          enabled: boolean
+          id: string
+          name: string
+          trigger: Database["public"]["Enums"]["kanban_automation_trigger"]
+          trigger_config: Json
+          updated_at: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["kanban_automation_action"]
+          action_config?: Json
+          board_id: string
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          id?: string
+          name: string
+          trigger: Database["public"]["Enums"]["kanban_automation_trigger"]
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["kanban_automation_action"]
+          action_config?: Json
+          board_id?: string
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          id?: string
+          name?: string
+          trigger?: Database["public"]["Enums"]["kanban_automation_trigger"]
+          trigger_config?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_automations_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_boards: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          cover_image: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_template: boolean
+          name: string
+          position: number
+          updated_at: string
+          visibility: string
+          workspace_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_template?: boolean
+          name: string
+          position?: number
+          updated_at?: string
+          visibility?: string
+          workspace_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_template?: boolean
+          name?: string
+          position?: number
+          updated_at?: string
+          visibility?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_boards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_card_labels: {
+        Row: {
+          card_id: string
+          label_id: string
+        }
+        Insert: {
+          card_id: string
+          label_id: string
+        }
+        Update: {
+          card_id?: string
+          label_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_card_labels_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_card_labels_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_labels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_card_members: {
+        Row: {
+          assigned_at: string
+          card_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          card_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          card_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_card_members_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_cards: {
+        Row: {
+          archived_at: string | null
+          board_id: string
+          completed_at: string | null
+          cover_color: string | null
+          cover_image: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          list_id: string
+          metadata: Json
+          origin_action_plan_id: string | null
+          position: number
+          priority: Database["public"]["Enums"]["kanban_card_priority"]
+          start_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          board_id: string
+          completed_at?: string | null
+          cover_color?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          list_id: string
+          metadata?: Json
+          origin_action_plan_id?: string | null
+          position?: number
+          priority?: Database["public"]["Enums"]["kanban_card_priority"]
+          start_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          board_id?: string
+          completed_at?: string | null
+          cover_color?: string | null
+          cover_image?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          list_id?: string
+          metadata?: Json
+          origin_action_plan_id?: string | null
+          position?: number
+          priority?: Database["public"]["Enums"]["kanban_card_priority"]
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_cards_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_cards_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_cards_origin_action_plan_id_fkey"
+            columns: ["origin_action_plan_id"]
+            isOneToOne: false
+            referencedRelation: "action_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_checklist_items: {
+        Row: {
+          assignee: string | null
+          checklist_id: string
+          completed_at: string | null
+          completed_by: string | null
+          content: string
+          created_at: string
+          done: boolean
+          due_date: string | null
+          id: string
+          position: number
+        }
+        Insert: {
+          assignee?: string | null
+          checklist_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          content: string
+          created_at?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          position?: number
+        }
+        Update: {
+          assignee?: string | null
+          checklist_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          content?: string
+          created_at?: string
+          done?: boolean
+          due_date?: string | null
+          id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_checklists: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          position: number
+          title: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          position?: number
+          title: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_checklists_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_comments: {
+        Row: {
+          card_id: string
+          content: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          mentions: string[]
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          content: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          mentions?: string[]
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          content?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          mentions?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_comments_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_labels: {
+        Row: {
+          board_id: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          board_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          board_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_labels_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_lists: {
+        Row: {
+          archived_at: string | null
+          board_id: string
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          wip_limit: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          board_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          wip_limit?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          board_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          wip_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_lists_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_notifications: {
+        Row: {
+          board_id: string | null
+          body: string | null
+          card_id: string | null
+          created_at: string
+          id: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          board_id?: string | null
+          body?: string | null
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          board_id?: string | null
+          body?: string | null
+          card_id?: string | null
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_notifications_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_notifications_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["kanban_member_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["kanban_member_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["kanban_member_role"]
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_workspaces: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_workspaces_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       own_products: {
         Row: {
           categoria: string | null
@@ -2395,6 +3054,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      kanban_can_access_board: {
+        Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
+      kanban_is_workspace_member: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      kanban_workspace_role: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: Database["public"]["Enums"]["kanban_member_role"]
+      }
       list_storage_objects: {
         Args: never
         Returns: {
@@ -2446,6 +3117,41 @@ export type Database = {
         | "diagnostico_gerado"
         | "plano_acao"
         | "concluida"
+      kanban_activity_type:
+        | "card_created"
+        | "card_moved"
+        | "card_updated"
+        | "card_archived"
+        | "card_restored"
+        | "card_deleted"
+        | "comment_added"
+        | "comment_edited"
+        | "comment_deleted"
+        | "checklist_added"
+        | "checklist_item_toggled"
+        | "member_assigned"
+        | "member_removed"
+        | "label_added"
+        | "label_removed"
+        | "attachment_added"
+        | "attachment_removed"
+        | "due_date_changed"
+        | "automation_run"
+      kanban_automation_action:
+        | "move_to_list"
+        | "assign_member"
+        | "add_label"
+        | "set_due_date"
+        | "send_notification"
+        | "archive_card"
+      kanban_automation_trigger:
+        | "card_created"
+        | "card_moved_to_list"
+        | "due_date_approaching"
+        | "card_archived"
+        | "checklist_completed"
+      kanban_card_priority: "baixa" | "media" | "alta" | "urgente"
+      kanban_member_role: "owner" | "admin" | "member" | "observer"
       perspectiva_escopo: "cliente" | "familia" | "competidor" | "empresa"
       perspectiva_lente:
         | "percepcao_marca"
@@ -2627,6 +3333,44 @@ export const Constants = {
         "plano_acao",
         "concluida",
       ],
+      kanban_activity_type: [
+        "card_created",
+        "card_moved",
+        "card_updated",
+        "card_archived",
+        "card_restored",
+        "card_deleted",
+        "comment_added",
+        "comment_edited",
+        "comment_deleted",
+        "checklist_added",
+        "checklist_item_toggled",
+        "member_assigned",
+        "member_removed",
+        "label_added",
+        "label_removed",
+        "attachment_added",
+        "attachment_removed",
+        "due_date_changed",
+        "automation_run",
+      ],
+      kanban_automation_action: [
+        "move_to_list",
+        "assign_member",
+        "add_label",
+        "set_due_date",
+        "send_notification",
+        "archive_card",
+      ],
+      kanban_automation_trigger: [
+        "card_created",
+        "card_moved_to_list",
+        "due_date_approaching",
+        "card_archived",
+        "checklist_completed",
+      ],
+      kanban_card_priority: ["baixa", "media", "alta", "urgente"],
+      kanban_member_role: ["owner", "admin", "member", "observer"],
       perspectiva_escopo: ["cliente", "familia", "competidor", "empresa"],
       perspectiva_lente: [
         "percepcao_marca",
