@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Shield, ShieldAlert, ShieldCheck, ShieldQuestion, PlayCircle, RefreshCw, Loader2,
-  Activity, AlertTriangle, CheckCircle2, HelpCircle, XCircle, ClipboardList,
+  Shield, ShieldQuestion, PlayCircle, RefreshCw, Loader2,
+  AlertTriangle, CheckCircle2, HelpCircle, XCircle, ClipboardList,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-seguranca")({
