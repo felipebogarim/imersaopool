@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Download, FileSpreadsheet } from "lucide-react";
+import { FileText, Download, FileSpreadsheet, Mail, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Kind = "audits" | "risks" | "incidents" | "events" | "privacy" | "classifications";
 
@@ -51,6 +52,30 @@ async function fetchData(kind: Kind): Promise<any[]> {
 export function ReportsTab() {
   const [kind, setKind] = useState<Kind>("audits");
   const [generating, setGenerating] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  async function runAndEmailAudit() {
+    setSendingEmail(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+      const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const res = await fetch("/api/public/hooks/weekly-security-audit", {
+        method: "POST",
+        headers: { "content-type": "application/json", apikey: anon },
+      });
+      void url;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || json?.enqueue_error || `HTTP ${res.status}`);
+      }
+      toast.success(`Auditoria executada (índice ${json.score}/100). E-mail enfileirado para felipe@poolbranding.com.br.`);
+      lastAuditQ.refetch();
+    } catch (e: any) {
+      toast.error(`Falha ao gerar relatório: ${e?.message ?? String(e)}`);
+    } finally {
+      setSendingEmail(false);
+    }
+  }
 
   const lastAuditQ = useQuery({
     queryKey: ["sec-audits-last"],
@@ -145,6 +170,22 @@ ${rows.map(r => `<tr>${keys.map(k => {
           <CardContent><div className="text-3xl font-bold">{privacyCountQ.data ?? 0}</div></CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Auditoria semanal por e-mail</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div className="text-sm text-muted-foreground">
+            Executa a auditoria completa agora, salva no histórico e envia o resumo para <span className="font-medium text-foreground">felipe@poolbranding.com.br</span>.
+            <div className="text-xs mt-1">Envio automático toda segunda-feira às 08:00 (BRT).</div>
+          </div>
+          <Button onClick={runAndEmailAudit} disabled={sendingEmail}>
+            {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+            Gerar e enviar relatório
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> Gerar relatório</CardTitle></CardHeader>
