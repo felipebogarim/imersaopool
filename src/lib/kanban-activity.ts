@@ -12,6 +12,6 @@ export async function logActivity(
     card_id: cardId ?? null,
     user_id: u.user?.id ?? null,
     type: type as any,
-    payload,
+    payload: payload as any,
   });
 }
