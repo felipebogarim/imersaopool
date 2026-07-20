@@ -161,12 +161,13 @@ function Page() {
       <div className="p-6 space-y-6">
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertTitle>Fase 1 — Fundação</AlertTitle>
+          <AlertTitle>Fase 2 — Gestão de Riscos e Incidentes</AlertTitle>
           <AlertDescription>
-            Esta versão traz Visão Geral, Logs, Riscos, Incidentes e Configurações com verificações automáticas reais.
-            Itens que dependem de análise manual são exibidos como <b>Não verificado</b>. Nenhum indicador é preenchido manualmente.
+            Agora com Matriz de Riscos (probabilidade × impacto), edição inline de status,
+            timeline de incidentes e registro de novas ocorrências com evidências.
           </AlertDescription>
         </Alert>
+
 
         <Tabs defaultValue="visao">
           <TabsList className="flex flex-wrap">
