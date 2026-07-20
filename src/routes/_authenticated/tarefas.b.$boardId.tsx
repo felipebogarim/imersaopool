@@ -138,7 +138,7 @@ function BoardPage() {
       (old ?? []).map((c) => c.id === activeId ? { ...c, ...patch } as KCard : c),
     );
 
-    const { error } = await supabase.from("kanban_cards").update(patch).eq("id", activeId);
+    const { error } = await supabase.from("kanban_cards").update(patch as any).eq("id", activeId);
     if (error) {
       toast.error(error.message);
       qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });

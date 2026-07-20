@@ -18,6 +18,7 @@ import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
+import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
@@ -58,6 +59,7 @@ import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './rou
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
+import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
@@ -108,6 +110,11 @@ const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
   id: '/evento/checkout',
   path: '/evento/checkout',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
   id: '/roteiros',
@@ -328,6 +335,12 @@ const ApiPublicMpCreatePreferenceRoute =
     path: '/api/public/mp/create-preference',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedTarefasBBoardIdRoute =
+  AuthenticatedTarefasBBoardIdRouteImport.update({
+    id: '/b/$boardId',
+    path: '/b/$boardId',
+    getParentRoute: () => AuthenticatedTarefasRoute,
+  } as any)
 const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
     id: '/permissoes/$type/$id',
@@ -380,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -415,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -436,6 +451,7 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -471,6 +487,7 @@ export interface FileRoutesByTo {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -494,6 +511,7 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
+  '/_authenticated/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -529,6 +547,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
+  '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -552,6 +571,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -587,6 +607,7 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
+    | '/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
@@ -608,6 +629,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -643,6 +665,7 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
+    | '/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
@@ -665,6 +688,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
+    | '/_authenticated/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -700,6 +724,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
+    | '/_authenticated/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/api/public/mp/test/create-preference'
@@ -791,6 +816,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/evento/checkout'
       preLoaderRoute: typeof EventoCheckoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/tarefas': {
+      id: '/_authenticated/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof AuthenticatedTarefasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/roteiros': {
       id: '/_authenticated/roteiros'
@@ -1072,6 +1104,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpCreatePreferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tarefas/b/$boardId': {
+      id: '/_authenticated/tarefas/b/$boardId'
+      path: '/b/$boardId'
+      fullPath: '/tarefas/b/$boardId'
+      preLoaderRoute: typeof AuthenticatedTarefasBBoardIdRouteImport
+      parentRoute: typeof AuthenticatedTarefasRoute
+    }
     '/_authenticated/permissoes/$type/$id': {
       id: '/_authenticated/permissoes/$type/$id'
       path: '/permissoes/$type/$id'
@@ -1138,6 +1177,17 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedTarefasRouteChildren {
+  AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
+}
+
+const AuthenticatedTarefasRouteChildren: AuthenticatedTarefasRouteChildren = {
+  AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
+}
+
+const AuthenticatedTarefasRouteWithChildren =
+  AuthenticatedTarefasRoute._addFileChildren(AuthenticatedTarefasRouteChildren)
+
 interface AuthenticatedClientesIdRouteChildren {
   AuthenticatedClientesIdEditarRoute: typeof AuthenticatedClientesIdEditarRoute
 }
@@ -1181,6 +1231,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
+  AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRouteWithChildren
   AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
@@ -1214,6 +1265,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
+  AuthenticatedTarefasRoute: AuthenticatedTarefasRouteWithChildren,
   AuthenticatedClientesBiBatchRepIdRoute:
     AuthenticatedClientesBiBatchRepIdRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
