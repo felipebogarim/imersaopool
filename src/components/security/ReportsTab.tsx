@@ -270,9 +270,6 @@ ${sections}
               </Button>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            O PDF abre em nova aba usando a impressão do navegador. Escolha "Salvar como PDF" no destino.
-          </div>
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
             <div className="text-xs text-muted-foreground">
               O PDF abre em nova aba usando a impressão do navegador. Escolha "Salvar como PDF" no destino.
