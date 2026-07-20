@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Shield, ShieldQuestion, PlayCircle, RefreshCw, Loader2,
-  AlertTriangle, CheckCircle2, HelpCircle, XCircle, ClipboardList,
+  AlertTriangle, CheckCircle2, HelpCircle, XCircle,
 } from "lucide-react";
 import { DataProtectionTab } from "@/components/security/DataProtectionTab";
 import { FileSecurityTab } from "@/components/security/FileSecurityTab";
