@@ -305,6 +305,11 @@ function Page() {
             <RisksTab />
           </TabsContent>
 
+          {/* ====== MATRIZ DE RISCOS ====== */}
+          <TabsContent value="matriz" className="mt-4">
+            <RiskMatrixTab />
+          </TabsContent>
+
           {/* ====== INCIDENTES ====== */}
           <TabsContent value="incidentes" className="mt-4">
             <IncidentsTab />
@@ -327,6 +332,7 @@ function Page() {
             </TabsContent>
           ))}
         </Tabs>
+
       </div>
     </AppShell>
   );
