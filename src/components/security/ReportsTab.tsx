@@ -172,6 +172,22 @@ ${rows.map(r => `<tr>${keys.map(k => {
       </div>
 
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Auditoria semanal por e-mail</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div className="text-sm text-muted-foreground">
+            Executa a auditoria completa agora, salva no histórico e envia o resumo para <span className="font-medium text-foreground">felipe@poolbranding.com.br</span>.
+            <div className="text-xs mt-1">Envio automático toda segunda-feira às 08:00 (BRT).</div>
+          </div>
+          <Button onClick={runAndEmailAudit} disabled={sendingEmail}>
+            {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+            Gerar e enviar relatório
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" /> Gerar relatório</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
