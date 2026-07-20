@@ -315,17 +315,17 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
 function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: "card" } });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
-  const pointerDown = { x: 0, y: 0 };
+  const pointerDown = useRef({ x: 0, y: 0 });
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      onPointerDownCapture={(e) => { pointerDown.x = e.clientX; pointerDown.y = e.clientY; }}
+      onPointerDownCapture={(e) => { pointerDown.current = { x: e.clientX, y: e.clientY }; }}
       onPointerUp={(e) => {
-        const dx = Math.abs(e.clientX - pointerDown.x);
-        const dy = Math.abs(e.clientY - pointerDown.y);
+        const dx = Math.abs(e.clientX - pointerDown.current.x);
+        const dy = Math.abs(e.clientY - pointerDown.current.y);
         if (dx < 5 && dy < 5 && !isDragging) onClick();
       }}
     >
