@@ -65,9 +65,15 @@ export function DataProtectionTab() {
   async function save() {
     if (!editing?.dominio) return alert("Domínio é obrigatório");
     const payload = {
-      ...editing,
+      dominio: editing.dominio,
+      descricao: editing.descricao ?? null,
       tabelas: tabelasStr.split(",").map(s => s.trim()).filter(Boolean),
+      sensibilidade: editing.sensibilidade ?? "interno",
+      base_legal: editing.base_legal ?? null,
       retencao_dias: editing.retencao_dias ? Number(editing.retencao_dias) : null,
+      criptografia: editing.criptografia ?? null,
+      responsavel: editing.responsavel ?? null,
+      observacoes: editing.observacoes ?? null,
     };
     if (editing.id) {
       const { error } = await supabase.from("data_classifications").update(payload).eq("id", editing.id);
