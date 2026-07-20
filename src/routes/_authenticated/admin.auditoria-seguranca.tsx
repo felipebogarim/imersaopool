@@ -685,7 +685,9 @@ function RiskMatrixTab() {
 function IncidentsTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
   const [form, setForm] = useState<any>({ titulo: "", descricao: "", gravidade: "medio", status: "detectado", categoria: "" });
+
 
   const { data } = useQuery({
     queryKey: ["sec-incidents"],
