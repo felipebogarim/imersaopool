@@ -17,7 +17,7 @@ import type { Board, KCard, KanbanPriority, Workspace } from "@/lib/kanban-types
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/tarefas")({
+export const Route = createFileRoute("/_authenticated/tarefas/")({
   head: () => ({ meta: [{ title: "Gestão de Tarefas — PoolFlux" }] }),
   component: TarefasPage,
 });

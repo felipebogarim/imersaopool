@@ -18,7 +18,6 @@ import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
-import { Route as AuthenticatedTarefasRouteImport } from './routes/_authenticated/tarefas'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
@@ -31,6 +30,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
@@ -110,11 +110,6 @@ const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
   path: '/evento/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTarefasRoute = AuthenticatedTarefasRouteImport.update({
-  id: '/tarefas',
-  path: '/tarefas',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
   id: '/roteiros',
   path: '/roteiros',
@@ -177,6 +172,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTarefasIndexRoute =
+  AuthenticatedTarefasIndexRouteImport.update({
+    id: '/tarefas/',
+    path: '/tarefas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRepresentantesIndexRoute =
   AuthenticatedRepresentantesIndexRouteImport.update({
     id: '/representantes/',
@@ -331,9 +332,9 @@ const ApiPublicMpCreatePreferenceRoute =
   } as any)
 const AuthenticatedTarefasBBoardIdRoute =
   AuthenticatedTarefasBBoardIdRouteImport.update({
-    id: '/b/$boardId',
-    path: '/b/$boardId',
-    getParentRoute: () => AuthenticatedTarefasRoute,
+    id: '/tarefas/b/$boardId',
+    path: '/tarefas/b/$boardId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
@@ -386,7 +387,6 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
-  '/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -418,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/tarefas/': typeof AuthenticatedTarefasIndexRoute
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
@@ -443,7 +444,6 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
-  '/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -475,6 +475,7 @@ export interface FileRoutesByTo {
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
+  '/tarefas': typeof AuthenticatedTarefasIndexRoute
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
@@ -502,7 +503,6 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
-  '/_authenticated/tarefas': typeof AuthenticatedTarefasRouteWithChildren
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -534,6 +534,7 @@ export interface FileRoutesById {
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/_authenticated/tarefas/': typeof AuthenticatedTarefasIndexRoute
   '/_authenticated/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
@@ -561,7 +562,6 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
-    | '/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -593,6 +593,7 @@ export interface FileRouteTypes {
     | '/imersoes/'
     | '/produtos/'
     | '/representantes/'
+    | '/tarefas/'
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
@@ -618,7 +619,6 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
-    | '/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -650,6 +650,7 @@ export interface FileRouteTypes {
     | '/imersoes'
     | '/produtos'
     | '/representantes'
+    | '/tarefas'
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
@@ -676,7 +677,6 @@ export interface FileRouteTypes {
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
-    | '/_authenticated/tarefas'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -708,6 +708,7 @@ export interface FileRouteTypes {
     | '/_authenticated/imersoes/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
+    | '/_authenticated/tarefas/'
     | '/_authenticated/clientes-bi/$repId/$razao'
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
@@ -805,13 +806,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventoCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/tarefas': {
-      id: '/_authenticated/tarefas'
-      path: '/tarefas'
-      fullPath: '/tarefas'
-      preLoaderRoute: typeof AuthenticatedTarefasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/roteiros': {
       id: '/_authenticated/roteiros'
       path: '/roteiros'
@@ -894,6 +888,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tarefas/': {
+      id: '/_authenticated/tarefas/'
+      path: '/tarefas'
+      fullPath: '/tarefas/'
+      preLoaderRoute: typeof AuthenticatedTarefasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/representantes/': {
@@ -1087,10 +1088,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/tarefas/b/$boardId': {
       id: '/_authenticated/tarefas/b/$boardId'
-      path: '/b/$boardId'
+      path: '/tarefas/b/$boardId'
       fullPath: '/tarefas/b/$boardId'
       preLoaderRoute: typeof AuthenticatedTarefasBBoardIdRouteImport
-      parentRoute: typeof AuthenticatedTarefasRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/permissoes/$type/$id': {
       id: '/_authenticated/permissoes/$type/$id'
@@ -1158,17 +1159,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
-interface AuthenticatedTarefasRouteChildren {
-  AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
-}
-
-const AuthenticatedTarefasRouteChildren: AuthenticatedTarefasRouteChildren = {
-  AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
-}
-
-const AuthenticatedTarefasRouteWithChildren =
-  AuthenticatedTarefasRoute._addFileChildren(AuthenticatedTarefasRouteChildren)
-
 interface AuthenticatedClientesIdRouteChildren {
   AuthenticatedClientesIdEditarRoute: typeof AuthenticatedClientesIdEditarRoute
 }
@@ -1211,7 +1201,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
-  AuthenticatedTarefasRoute: typeof AuthenticatedTarefasRouteWithChildren
   AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
@@ -1227,8 +1216,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
+  AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
+  AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1244,7 +1235,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
-  AuthenticatedTarefasRoute: AuthenticatedTarefasRouteWithChildren,
   AuthenticatedClientesBiBatchRepIdRoute:
     AuthenticatedClientesBiBatchRepIdRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
@@ -1262,9 +1252,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
+  AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
   AuthenticatedClientesBiRepIdRazaoRoute:
     AuthenticatedClientesBiRepIdRazaoRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
+  AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
