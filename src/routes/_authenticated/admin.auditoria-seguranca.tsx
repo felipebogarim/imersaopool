@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { DataProtectionTab } from "@/components/security/DataProtectionTab";
 import { FileSecurityTab } from "@/components/security/FileSecurityTab";
+import { AccessControlTab } from "@/components/security/AccessControlTab";
+import { LGPDTab } from "@/components/security/LGPDTab";
+import { ReportsTab } from "@/components/security/ReportsTab";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-seguranca")({
   component: Page,
