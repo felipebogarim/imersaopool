@@ -17,10 +17,13 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Shield, ShieldQuestion, PlayCircle, RefreshCw, Loader2,
-  AlertTriangle, CheckCircle2, HelpCircle, XCircle, ClipboardList,
+  AlertTriangle, CheckCircle2, HelpCircle, XCircle,
 } from "lucide-react";
 import { DataProtectionTab } from "@/components/security/DataProtectionTab";
 import { FileSecurityTab } from "@/components/security/FileSecurityTab";
+import { AccessControlTab } from "@/components/security/AccessControlTab";
+import { LGPDTab } from "@/components/security/LGPDTab";
+import { ReportsTab } from "@/components/security/ReportsTab";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-seguranca")({
   component: Page,
@@ -163,10 +166,10 @@ function Page() {
       <div className="p-6 space-y-6">
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertTitle>Fase 3 — Proteção de Dados e Segurança de Arquivos</AlertTitle>
+          <AlertTitle>Fase 4 — Acessos, LGPD e Relatórios</AlertTitle>
           <AlertDescription>
-            Inventário de classificação LGPD por domínio, visibilidade dos buckets de armazenamento
-            e varredura automática de anomalias (buckets públicos, arquivos anormalmente grandes).
+            Painel completo: gestão de usuários e papéis, solicitações LGPD de titulares
+            com controle de prazo legal, e exportação de relatórios em CSV/PDF.
           </AlertDescription>
         </Alert>
 
@@ -333,17 +336,20 @@ function Page() {
             <SettingsTab settings={settingsQ.data} />
           </TabsContent>
 
-          {/* ===== ABAS PLACEHOLDER (Fase 4) ===== */}
-          {["acessos", "lgpd", "relatorios"].map((tab) => (
-            <TabsContent key={tab} value={tab} className="mt-4">
-              <Card>
-                <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                  <ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                  Módulo previsto para a Fase 4 da Auditoria de Segurança e Privacidade.
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
+          {/* ====== CONTROLE DE ACESSOS (Fase 4) ====== */}
+          <TabsContent value="acessos" className="mt-4">
+            <AccessControlTab />
+          </TabsContent>
+
+          {/* ====== LGPD (Fase 4) ====== */}
+          <TabsContent value="lgpd" className="mt-4">
+            <LGPDTab />
+          </TabsContent>
+
+          {/* ====== RELATÓRIOS (Fase 4) ====== */}
+          <TabsContent value="relatorios" className="mt-4">
+            <ReportsTab />
+          </TabsContent>
         </Tabs>
 
       </div>
