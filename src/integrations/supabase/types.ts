@@ -2847,6 +2847,368 @@ export type Database = {
           },
         ]
       }
+      security_audit_checks: {
+        Row: {
+          audit_id: string
+          categoria: string
+          chave: string
+          created_at: string
+          descricao: string | null
+          evidencia: Json | null
+          id: string
+          peso: number
+          recomendacao: string | null
+          severidade: string
+          status: string
+          titulo: string
+        }
+        Insert: {
+          audit_id: string
+          categoria: string
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          evidencia?: Json | null
+          id?: string
+          peso?: number
+          recomendacao?: string | null
+          severidade?: string
+          status: string
+          titulo: string
+        }
+        Update: {
+          audit_id?: string
+          categoria?: string
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          evidencia?: Json | null
+          id?: string
+          peso?: number
+          recomendacao?: string | null
+          severidade?: string
+          status?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_audit_checks_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "security_audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_audits: {
+        Row: {
+          checks_atencao: number | null
+          checks_critico: number | null
+          checks_nao_verificado: number | null
+          checks_ok: number | null
+          concluido_em: string | null
+          created_at: string
+          duracao_ms: number | null
+          erro: string | null
+          escopo: string
+          id: string
+          indice_seguranca: number | null
+          iniciado_em: string
+          iniciado_por: string | null
+          resultado: Json | null
+          status: string
+          total_checks: number | null
+        }
+        Insert: {
+          checks_atencao?: number | null
+          checks_critico?: number | null
+          checks_nao_verificado?: number | null
+          checks_ok?: number | null
+          concluido_em?: string | null
+          created_at?: string
+          duracao_ms?: number | null
+          erro?: string | null
+          escopo?: string
+          id?: string
+          indice_seguranca?: number | null
+          iniciado_em?: string
+          iniciado_por?: string | null
+          resultado?: Json | null
+          status?: string
+          total_checks?: number | null
+        }
+        Update: {
+          checks_atencao?: number | null
+          checks_critico?: number | null
+          checks_nao_verificado?: number | null
+          checks_ok?: number | null
+          concluido_em?: string | null
+          created_at?: string
+          duracao_ms?: number | null
+          erro?: string | null
+          escopo?: string
+          id?: string
+          indice_seguranca?: number | null
+          iniciado_em?: string
+          iniciado_por?: string | null
+          resultado?: Json | null
+          status?: string
+          total_checks?: number | null
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          acao: string | null
+          categoria: string | null
+          correlation_id: string | null
+          id: string
+          ip: string | null
+          metadata: Json | null
+          nivel_risco: string | null
+          ocorrido_em: string
+          recurso: string | null
+          resultado: string | null
+          sessao_id: string | null
+          tipo: string
+          user_agent: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          acao?: string | null
+          categoria?: string | null
+          correlation_id?: string | null
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          nivel_risco?: string | null
+          ocorrido_em?: string
+          recurso?: string | null
+          resultado?: string | null
+          sessao_id?: string | null
+          tipo: string
+          user_agent?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string | null
+          categoria?: string | null
+          correlation_id?: string | null
+          id?: string
+          ip?: string | null
+          metadata?: Json | null
+          nivel_risco?: string | null
+          ocorrido_em?: string
+          recurso?: string | null
+          resultado?: string | null
+          sessao_id?: string | null
+          tipo?: string
+          user_agent?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      security_incidents: {
+        Row: {
+          categoria: string | null
+          causa: string | null
+          comunicacoes: string | null
+          contencao: string | null
+          created_at: string
+          dados_afetados: string | null
+          descricao: string | null
+          evidencias: Json | null
+          gravidade: string
+          id: string
+          numero: number
+          ocorrido_em: string
+          organizacoes_afetadas: Json | null
+          origem: string | null
+          plano_correcao: string | null
+          responsavel: string | null
+          sistemas_afetados: string | null
+          status: string
+          timeline: Json
+          titulo: string
+          updated_at: string
+          usuarios_afetados: Json | null
+        }
+        Insert: {
+          categoria?: string | null
+          causa?: string | null
+          comunicacoes?: string | null
+          contencao?: string | null
+          created_at?: string
+          dados_afetados?: string | null
+          descricao?: string | null
+          evidencias?: Json | null
+          gravidade?: string
+          id?: string
+          numero?: number
+          ocorrido_em?: string
+          organizacoes_afetadas?: Json | null
+          origem?: string | null
+          plano_correcao?: string | null
+          responsavel?: string | null
+          sistemas_afetados?: string | null
+          status?: string
+          timeline?: Json
+          titulo: string
+          updated_at?: string
+          usuarios_afetados?: Json | null
+        }
+        Update: {
+          categoria?: string | null
+          causa?: string | null
+          comunicacoes?: string | null
+          contencao?: string | null
+          created_at?: string
+          dados_afetados?: string | null
+          descricao?: string | null
+          evidencias?: Json | null
+          gravidade?: string
+          id?: string
+          numero?: number
+          ocorrido_em?: string
+          organizacoes_afetadas?: Json | null
+          origem?: string | null
+          plano_correcao?: string | null
+          responsavel?: string | null
+          sistemas_afetados?: string | null
+          status?: string
+          timeline?: Json
+          titulo?: string
+          updated_at?: string
+          usuarios_afetados?: Json | null
+        }
+        Relationships: []
+      }
+      security_risks: {
+        Row: {
+          categoria: string
+          created_at: string
+          dados_afetados: string | null
+          data_correcao: string | null
+          data_identificacao: string
+          descricao: string | null
+          evidencias: Json | null
+          gravidade: string
+          id: string
+          impacto: string | null
+          origem: string | null
+          prazo: string | null
+          probabilidade: string | null
+          recomendacao: string | null
+          responsavel: string | null
+          sistema_afetado: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          validacao_em: string | null
+          validacao_por: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          dados_afetados?: string | null
+          data_correcao?: string | null
+          data_identificacao?: string
+          descricao?: string | null
+          evidencias?: Json | null
+          gravidade?: string
+          id?: string
+          impacto?: string | null
+          origem?: string | null
+          prazo?: string | null
+          probabilidade?: string | null
+          recomendacao?: string | null
+          responsavel?: string | null
+          sistema_afetado?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          validacao_em?: string | null
+          validacao_por?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          dados_afetados?: string | null
+          data_correcao?: string | null
+          data_identificacao?: string
+          descricao?: string | null
+          evidencias?: Json | null
+          gravidade?: string
+          id?: string
+          impacto?: string | null
+          origem?: string | null
+          prazo?: string | null
+          probabilidade?: string | null
+          recomendacao?: string | null
+          responsavel?: string | null
+          sistema_afetado?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          validacao_em?: string | null
+          validacao_por?: string | null
+        }
+        Relationships: []
+      }
+      security_settings: {
+        Row: {
+          alert_emails: string[]
+          created_at: string
+          extensoes_permitidas: string[]
+          id: string
+          link_expiration_seconds: number
+          log_retention_days: number
+          max_login_attempts: number
+          max_upload_mb: number
+          mfa_required_admin: boolean
+          min_password_length: number
+          retention_days: number
+          session_timeout_minutes: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          alert_emails?: string[]
+          created_at?: string
+          extensoes_permitidas?: string[]
+          id?: string
+          link_expiration_seconds?: number
+          log_retention_days?: number
+          max_login_attempts?: number
+          max_upload_mb?: number
+          mfa_required_admin?: boolean
+          min_password_length?: number
+          retention_days?: number
+          session_timeout_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          alert_emails?: string[]
+          created_at?: string
+          extensoes_permitidas?: string[]
+          id?: string
+          link_expiration_seconds?: number
+          log_retention_days?: number
+          max_login_attempts?: number
+          max_upload_mb?: number
+          mfa_required_admin?: boolean
+          min_password_length?: number
+          retention_days?: number
+          session_timeout_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       sessao_capitulo_itens: {
         Row: {
           campos: Json
@@ -3075,6 +3437,17 @@ export type Database = {
           size: number
           updated_at: string
         }[]
+      }
+      log_security_event: {
+        Args: {
+          _acao?: string
+          _metadata?: Json
+          _nivel_risco?: string
+          _recurso?: string
+          _resultado?: string
+          _tipo: string
+        }
+        Returns: string
       }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
