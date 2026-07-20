@@ -2416,6 +2416,60 @@ export type Database = {
           },
         ]
       }
+      privacy_requests: {
+        Row: {
+          canal: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          metadata: Json | null
+          prazo_legal_em: string | null
+          respondida_em: string | null
+          responsavel_id: string | null
+          resposta: string | null
+          status: string
+          tipo: string
+          titular_documento: string | null
+          titular_email: string
+          titular_nome: string
+          updated_at: string
+        }
+        Insert: {
+          canal?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          prazo_legal_em?: string | null
+          respondida_em?: string | null
+          responsavel_id?: string | null
+          resposta?: string | null
+          status?: string
+          tipo: string
+          titular_documento?: string | null
+          titular_email: string
+          titular_nome: string
+          updated_at?: string
+        }
+        Update: {
+          canal?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json | null
+          prazo_legal_em?: string | null
+          respondida_em?: string | null
+          responsavel_id?: string | null
+          resposta?: string | null
+          status?: string
+          tipo?: string
+          titular_documento?: string | null
+          titular_email?: string
+          titular_nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_equivalences: {
         Row: {
           company_id: string | null
@@ -3478,6 +3532,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: never
+        Returns: {
+          banned_until: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       current_company_id: { Args: never; Returns: string }
       get_active_form_by_slug: {
         Args: { _slug: string }
