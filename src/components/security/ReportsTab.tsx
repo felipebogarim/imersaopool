@@ -273,6 +273,14 @@ ${sections}
           <div className="text-xs text-muted-foreground">
             O PDF abre em nova aba usando a impressão do navegador. Escolha "Salvar como PDF" no destino.
           </div>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
+            <div className="text-xs text-muted-foreground">
+              O PDF abre em nova aba usando a impressão do navegador. Escolha "Salvar como PDF" no destino.
+            </div>
+            <Button onClick={exportAllPDF} disabled={generating} variant="secondary">
+              <Download className="h-4 w-4 mr-2" /> Baixar PDF com todos os resultados
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
