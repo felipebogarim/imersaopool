@@ -441,8 +441,12 @@ function statusBadgeRisk(nivel: string) {
 function RisksTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [filterGrav, setFilterGrav] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [form, setForm] = useState<any>({
-    titulo: "", descricao: "", categoria: "Autenticação", gravidade: "medio", status: "identificado",
+    titulo: "", descricao: "", categoria: "Autenticação", gravidade: "medio",
+    probabilidade: "media", impacto: "medio", status: "identificado",
+    responsavel: "", prazo: "", recomendacao: "",
   });
 
   const { data } = useQuery({
@@ -452,11 +456,34 @@ function RisksTab() {
 
   async function submit() {
     if (!form.titulo) return;
-    await supabase.from("security_risks").insert(form);
+    const payload: any = { ...form };
+    if (!payload.prazo) delete payload.prazo;
+    await supabase.from("security_risks").insert(payload);
     setOpen(false);
-    setForm({ titulo: "", descricao: "", categoria: "Autenticação", gravidade: "medio", status: "identificado" });
+    setForm({
+      titulo: "", descricao: "", categoria: "Autenticação", gravidade: "medio",
+      probabilidade: "media", impacto: "medio", status: "identificado",
+      responsavel: "", prazo: "", recomendacao: "",
+    });
     qc.invalidateQueries({ queryKey: ["sec-risks"] });
   }
+
+  async function updateStatus(id: string, status: string) {
+    const patch: any = { status };
+    if (status === "corrigido") patch.data_correcao = new Date().toISOString();
+    await supabase.from("security_risks").update(patch).eq("id", id);
+    await supabase.rpc("log_security_event", {
+      _tipo: "security.risk.status_changed", _acao: "update",
+      _recurso: `security_risks:${id}`, _resultado: "sucesso",
+      _nivel_risco: "info", _metadata: { status } as any,
+    });
+    qc.invalidateQueries({ queryKey: ["sec-risks"] });
+  }
+
+  const filtered = (data ?? []).filter((r: any) =>
+    (!filterGrav || r.gravidade === filterGrav) &&
+    (!filterStatus || r.status === filterStatus),
+  );
 
   return (
     <Card>
@@ -476,47 +503,97 @@ function RisksTab() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={form.gravidade} onValueChange={(v) => setForm({ ...form, gravidade: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["critico","alto","medio","baixo","info"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["identificado","em_analise","correcao_planejada","em_correcao","aguardando_validacao","corrigido","risco_aceito","nao_aplicavel"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Gravidade</label>
+              <Select value={form.gravidade} onValueChange={(v) => setForm({ ...form, gravidade: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["critico","alto","medio","baixo","info"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Status</label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["identificado","em_analise","correcao_planejada","em_correcao","aguardando_validacao","corrigido","risco_aceito","nao_aplicavel"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Probabilidade</label>
+              <Select value={form.probabilidade} onValueChange={(v) => setForm({ ...form, probabilidade: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["baixa","media","alta","muito_alta"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Impacto</label>
+              <Select value={form.impacto} onValueChange={(v) => setForm({ ...form, impacto: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["baixo","medio","alto","muito_alto"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <Input placeholder="Responsável" value={form.responsavel} onChange={e => setForm({ ...form, responsavel: e.target.value })} />
+            <Input type="date" placeholder="Prazo" value={form.prazo} onChange={e => setForm({ ...form, prazo: e.target.value })} />
             <Input placeholder="Descrição" value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} className="md:col-span-2" />
+            <Input placeholder="Recomendação" value={form.recomendacao} onChange={e => setForm({ ...form, recomendacao: e.target.value })} className="md:col-span-2" />
             <div className="md:col-span-2"><Button onClick={submit}>Salvar risco</Button></div>
           </div>
         )}
+
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={filterGrav} onValueChange={setFilterGrav}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Gravidade" /></SelectTrigger>
+            <SelectContent>{["critico","alto","medio","baixo","info"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              {["identificado","em_analise","correcao_planejada","em_correcao","aguardando_validacao","corrigido","risco_aceito","nao_aplicavel"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(filterGrav || filterStatus) && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterGrav(""); setFilterStatus(""); }}>Limpar</Button>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto">{filtered.length} de {(data ?? []).length}</span>
+        </div>
 
         <Table>
           <TableHeader><TableRow>
             <TableHead>Título</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Gravidade</TableHead>
+            <TableHead>Prob. × Impacto</TableHead>
+            <TableHead>Responsável</TableHead>
+            <TableHead>Prazo</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Identificado</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {(data ?? []).length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">
+            {filtered.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">
                 Nenhum risco cadastrado.
               </TableCell></TableRow>
             )}
-            {(data ?? []).map((r: any) => (
+            {filtered.map((r: any) => (
               <TableRow key={r.id}>
                 <TableCell>
                   <div className="font-medium">{r.titulo}</div>
                   {r.descricao && <div className="text-xs text-muted-foreground">{r.descricao}</div>}
+                  {r.recomendacao && <div className="text-xs text-cyan-700 mt-1">→ {r.recomendacao}</div>}
                 </TableCell>
                 <TableCell className="text-xs">{r.categoria}</TableCell>
                 <TableCell>{statusBadgeRisk(r.gravidade)}</TableCell>
-                <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
-                <TableCell className="text-xs">{fmtDate(r.data_identificacao)}</TableCell>
+                <TableCell className="text-xs">{r.probabilidade ?? "—"} × {r.impacto ?? "—"}</TableCell>
+                <TableCell className="text-xs">{r.responsavel ?? "—"}</TableCell>
+                <TableCell className="text-xs">{r.prazo ? new Date(r.prazo).toLocaleDateString("pt-BR") : "—"}</TableCell>
+                <TableCell>
+                  <Select value={r.status} onValueChange={(v) => updateStatus(r.id, v)}>
+                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["identificado","em_analise","correcao_planejada","em_correcao","aguardando_validacao","corrigido","risco_aceito","nao_aplicavel"].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -525,6 +602,85 @@ function RisksTab() {
     </Card>
   );
 }
+
+function RiskMatrixTab() {
+  const { data } = useQuery({
+    queryKey: ["sec-risks-matrix"],
+    queryFn: async () => (await supabase.from("security_risks").select("id, titulo, probabilidade, impacto, status, gravidade").order("created_at", { ascending: false })).data ?? [],
+  });
+
+  const probs = ["muito_alta", "alta", "media", "baixa"];
+  const imps = ["baixo", "medio", "alto", "muito_alto"];
+  const openRisks = (data ?? []).filter((r: any) => !["corrigido","risco_aceito","nao_aplicavel"].includes(r.status));
+
+  function cellColor(p: string, i: string) {
+    const pScore = { baixa: 1, media: 2, alta: 3, muito_alta: 4 }[p] ?? 2;
+    const iScore = { baixo: 1, medio: 2, alto: 3, muito_alto: 4 }[i] ?? 2;
+    const s = pScore * iScore;
+    if (s >= 12) return "bg-red-100 border-red-300";
+    if (s >= 8) return "bg-orange-100 border-orange-300";
+    if (s >= 4) return "bg-amber-100 border-amber-300";
+    return "bg-lime-100 border-lime-300";
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Matriz de Riscos (Probabilidade × Impacto)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-xs text-muted-foreground mb-3">
+            Exibe apenas riscos em aberto ({openRisks.length} de {(data ?? []).length} totais).
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="p-2 text-xs text-muted-foreground text-left">Probabilidade ↓ / Impacto →</th>
+                  {imps.map(i => <th key={i} className="p-2 text-xs font-medium">{i.replace("_"," ")}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {probs.map(p => (
+                  <tr key={p}>
+                    <td className="p-2 text-xs font-medium">{p.replace("_"," ")}</td>
+                    {imps.map(i => {
+                      const cells = openRisks.filter((r: any) => r.probabilidade === p && r.impacto === i);
+                      return (
+                        <td key={i} className={`border p-2 align-top min-w-32 ${cellColor(p, i)}`}>
+                          {cells.length === 0 ? (
+                            <div className="text-xs text-muted-foreground">—</div>
+                          ) : (
+                            <div className="space-y-1">
+                              {cells.map((r: any) => (
+                                <div key={r.id} className="text-xs bg-white/70 rounded px-1.5 py-0.5 border border-white">
+                                  {r.titulo}
+                                </div>
+                              ))}
+                              <div className="text-[10px] text-muted-foreground">{cells.length} risco(s)</div>
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 flex gap-2 text-xs">
+            <span className="px-2 py-0.5 rounded bg-lime-100 border border-lime-300">Baixo</span>
+            <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-300">Moderado</span>
+            <span className="px-2 py-0.5 rounded bg-orange-100 border border-orange-300">Alto</span>
+            <span className="px-2 py-0.5 rounded bg-red-100 border border-red-300">Crítico</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 function IncidentsTab() {
   const qc = useQueryClient();
