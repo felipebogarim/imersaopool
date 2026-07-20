@@ -57,6 +57,7 @@ import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './rout
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
@@ -326,6 +327,12 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp/webhook',
   path: '/api/public/mp/webhook',
@@ -434,6 +441,7 @@ export interface FileRoutesByFullPath {
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -492,6 +500,7 @@ export interface FileRoutesByTo {
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -552,6 +561,7 @@ export interface FileRoutesById {
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -612,6 +622,7 @@ export interface FileRouteTypes {
     | '/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/lovable/email/queue/process'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -670,6 +681,7 @@ export interface FileRouteTypes {
     | '/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/lovable/email/queue/process'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   id:
@@ -729,6 +741,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tarefas/b/$boardId'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
+    | '/lovable/email/queue/process'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesById: FileRoutesById
@@ -750,6 +763,7 @@ export interface RootRouteChildren {
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicMpTestCreatePreferenceRoute: typeof ApiPublicMpTestCreatePreferenceRoute
   ApiPublicMpTestWebhookRoute: typeof ApiPublicMpTestWebhookRoute
 }
@@ -1092,6 +1106,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp/webhook': {
       id: '/api/public/mp/webhook'
       path: '/api/public/mp/webhook'
@@ -1302,6 +1323,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicMpTestCreatePreferenceRoute: ApiPublicMpTestCreatePreferenceRoute,
   ApiPublicMpTestWebhookRoute: ApiPublicMpTestWebhookRoute,
 }
