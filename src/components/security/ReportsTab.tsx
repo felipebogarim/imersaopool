@@ -52,6 +52,30 @@ async function fetchData(kind: Kind): Promise<any[]> {
 export function ReportsTab() {
   const [kind, setKind] = useState<Kind>("audits");
   const [generating, setGenerating] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  async function runAndEmailAudit() {
+    setSendingEmail(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+      const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const res = await fetch("/api/public/hooks/weekly-security-audit", {
+        method: "POST",
+        headers: { "content-type": "application/json", apikey: anon },
+      });
+      void url;
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || json?.enqueue_error || `HTTP ${res.status}`);
+      }
+      toast.success(`Auditoria executada (índice ${json.score}/100). E-mail enfileirado para felipe@poolbranding.com.br.`);
+      lastAuditQ.refetch();
+    } catch (e: any) {
+      toast.error(`Falha ao gerar relatório: ${e?.message ?? String(e)}`);
+    } finally {
+      setSendingEmail(false);
+    }
+  }
 
   const lastAuditQ = useQuery({
     queryKey: ["sec-audits-last"],
