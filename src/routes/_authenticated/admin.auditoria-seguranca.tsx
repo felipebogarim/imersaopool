@@ -163,12 +163,13 @@ function Page() {
       <div className="p-6 space-y-6">
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertTitle>Fase 2 — Gestão de Riscos e Incidentes</AlertTitle>
+          <AlertTitle>Fase 3 — Proteção de Dados e Segurança de Arquivos</AlertTitle>
           <AlertDescription>
-            Agora com Matriz de Riscos (probabilidade × impacto), edição inline de status,
-            timeline de incidentes e registro de novas ocorrências com evidências.
+            Inventário de classificação LGPD por domínio, visibilidade dos buckets de armazenamento
+            e varredura automática de anomalias (buckets públicos, arquivos anormalmente grandes).
           </AlertDescription>
         </Alert>
+
 
 
         <Tabs defaultValue="visao">
