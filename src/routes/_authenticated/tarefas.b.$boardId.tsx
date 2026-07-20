@@ -1,21 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowLeft, MoreHorizontal, Settings, Users, Zap } from "lucide-react";
+import { Plus, ArrowLeft, MoreHorizontal, Users, Zap, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   closestCorners, type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Board, KCard, KList } from "@/lib/kanban-types";
-import { PRIORITY_COLOR, PRIORITY_LABEL, midPosition } from "@/lib/kanban-types";
+import { midPosition } from "@/lib/kanban-types";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { CardDetailDialog } from "@/components/kanban/CardDetailDialog";
 import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
@@ -194,7 +194,10 @@ function BoardPage() {
                   key={list.id}
                   list={list}
                   cards={cardsByList[list.id] ?? []}
-                  onOpenCard={(id) => navigate({ to: ".", search: { card: id }, replace: true })}
+                  onOpenCard={(id) => {
+                    setOpenCardId(id);
+                    navigate({ to: "/tarefas/b/$boardId", params: { boardId }, search: { card: id }, replace: true });
+                  }}
                 />
               ))}
             </SortableContext>
@@ -217,7 +220,12 @@ function BoardPage() {
           board={board!}
           lists={lists}
           open={!!openCard}
-          onOpenChange={(o) => { if (!o) navigate({ to: ".", search: {}, replace: true }); }}
+          onOpenChange={(o) => {
+            if (!o) {
+              setOpenCardId(null);
+              navigate({ to: "/tarefas/b/$boardId", params: { boardId }, search: {}, replace: true });
+            }
+          }}
         />
       )}
       {board && <BoardMembersDialog board={board} open={openMembers} onOpenChange={setOpenMembers} />}
@@ -313,23 +321,26 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
 }
 
 function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: "card" } });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: "card" } });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
-  const pointerDown = useRef({ x: 0, y: 0 });
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      onPointerDownCapture={(e) => { pointerDown.current = { x: e.clientX, y: e.clientY }; }}
-      onPointerUp={(e) => {
-        const dx = Math.abs(e.clientX - pointerDown.current.x);
-        const dy = Math.abs(e.clientY - pointerDown.current.y);
-        if (dx < 5 && dy < 5 && !isDragging) onClick();
-      }}
+      className="group relative"
     >
-      <KanbanCard card={card} onClick={() => {}} />
+      <button
+        ref={setActivatorNodeRef}
+        type="button"
+        aria-label="Arrastar card"
+        className="absolute right-1.5 top-1.5 z-10 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-muted group-hover:opacity-100"
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <KanbanCard card={card} onClick={onClick} />
     </div>
   );
 }
