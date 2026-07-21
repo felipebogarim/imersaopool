@@ -1333,6 +1333,14 @@ function PerformancePage() {
         description="Todas as versões e dados de performance deste representante serão removidos. Digite a senha do gestor master para confirmar."
         onConfirmed={async () => { await deleteRepConfirmed(); }}
       />
+
+      <AcoesSugeridasDialog
+        open={acoesOpen}
+        onOpenChange={setAcoesOpen}
+        repId={repId}
+        uploadId={currentUpload?.id ?? null}
+        repName={reps.find((r: any) => r.id === repId)?.nome}
+      />
     </div>
   );
 }
