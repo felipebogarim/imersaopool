@@ -39,6 +39,25 @@ const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
   return (found as any) ?? null;
 };
 
+const normKey = (value: string | null | undefined) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .toUpperCase();
+
+const getNestedNumber = (source: unknown, key: string) => {
+  if (!source || typeof source !== "object") return 0;
+  const record = source as Record<string, unknown>;
+  const direct = Number(record[key]);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  const wanted = normKey(key);
+  const foundKey = Object.keys(record).find((k) => normKey(k) === wanted);
+  const found = foundKey ? Number(record[foundKey]) : 0;
+  return Number.isFinite(found) && found > 0 ? found : 0;
+};
+
 export type FamilyShare = {
   familyKey: string;
   familyName: string;
@@ -131,7 +150,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     queryFn: async () => {
       const { data: up } = await supabase
         .from("rep_performance_uploads")
-        .select("id, familias, participacao")
+        .select("id, familias, categoria_metas")
         .eq("representative_id", repId)
         .is("substituida_em", null)
         .order("created_at", { ascending: false })
@@ -142,7 +161,11 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
         .from("rep_performance_rows")
         .select("categoria, razao_social, metas, metas_status, total_meta")
         .eq("upload_id", up.id);
-      return { familias: (up.familias as string[]) ?? [], participacao: (up as any).participacao ?? {}, rows: rows ?? [] };
+      return {
+        familias: (up.familias as string[]) ?? [],
+        categoriaMetas: (up as any).categoria_metas ?? {},
+        rows: rows ?? [],
+      };
     },
   });
 
@@ -157,7 +180,14 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     if (!currentPerf) return out;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
-    const participacaoBase = (currentPerf as any).participacao ?? {};
+    const familyMetasByCategory =
+      ((currentPerf as any).categoriaMetas?.__family_metas_by_category__ ?? {}) as Record<string, unknown>;
+
+    const categoryFamilyMeta = (category: string, family: string) => {
+      const wanted = normKey(category);
+      const categoryKey = Object.keys(familyMetasByCategory).find((k) => normKey(k) === wanted);
+      return categoryKey ? getNestedNumber(familyMetasByCategory[categoryKey], family) : 0;
+    };
 
     // Acumuladores por categoria → família.
     const metaAcc: Record<string, Record<string, number>> = {};
@@ -171,15 +201,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       metaAcc[cat] ??= {};
       estAcc[cat] ??= {};
       for (const f of familias) {
-        // Meta financeira da célula: valor direto; fallback = totalMeta × participação salva.
-        let cellMeta = Number(r.metas?.[f]) || 0;
-        if (cellMeta <= 0) {
-          const totalMeta =
-            Number(r.total_meta) ||
-            familias.reduce((s, fam) => s + (Number(r.metas?.[fam]) || 0), 0);
-          const shareFamilia = Number(participacaoBase?.[f]) || 0;
-          cellMeta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
-        }
+        // Meta financeira da célula: usa a meta original da família no cliente.
+        // Se a versão visual só trouxe faixas, usa a configuração da própria versão
+        // por categoria/família. Nunca usa “Participação estimada na venda”.
+        const cellMeta = getNestedNumber(r.metas, f) || categoryFamilyMeta(cat, f);
         if (cellMeta <= 0) continue;
         const st = r.metas_status?.[f] as FarolStatus | undefined;
         const factor = st ? RANGE_FACTOR[st] : 0;
@@ -188,7 +213,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       }
     }
 
-    for (const cat of Object.keys(estAcc)) {
+    const buildFamilySharesByCategory = (cat: string): FamilyShare[] => {
       const famMap = estAcc[cat];
       const metaMap = metaAcc[cat] ?? {};
       const categoryEstimatedTotal = familias.reduce((s, f) => s + (famMap[f] ?? 0), 0);
@@ -205,11 +230,22 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
         };
       });
 
+      return list;
+    };
+
+    for (const cat of Object.keys(estAcc)) {
+      const list = buildFamilySharesByCategory(cat);
+      const categoryEstimatedTotal = list.reduce((s, x) => s + x.estimatedRealized, 0);
+      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
+      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
+
       // Validações automáticas — logadas no console; não bloqueiam render.
       const soma = list.reduce((s, x) => s + x.shareRatio, 0);
       const anyNeg = list.some((x) => x.shareRatio < 0);
       const anyOver = list.some((x) => x.shareRatio > 1);
       const uniq = new Set(list.map((x) => x.familyKey)).size === list.length;
+      const menoresOrdenadas = menores.every((x, i, arr) => i === 0 || arr[i - 1].shareRatio <= x.shareRatio);
+      const maioresOrdenadas = maiores.every((x, i, arr) => i === 0 || arr[i - 1].shareRatio >= x.shareRatio);
       // eslint-disable-next-line no-console
       console.debug(`[BI shares] ${cat}`, {
         categoryEstimatedTotal,
@@ -224,6 +260,11 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
         anyNeg,
         anyOver,
         uniqueFamilias: uniq,
+        seteFamiliasUnicas: uniq && list.length === familias.length,
+        menoresOrdenadas,
+        maioresOrdenadas,
+        menores: menores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
+        maiores: maiores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
       });
 
       out[cat] = list;

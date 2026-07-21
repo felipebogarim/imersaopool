@@ -303,6 +303,7 @@ function GeradorPerformancePage() {
         periodo_fim: periodoObj.fim || null,
         familias: result.familias as any,
         rows: result.rows as any,
+        categoria_metas: (result.categoria_metas ?? {}) as any,
         participacao: derived.participacao as any,
         observacoes: result.observacoes ?? null,
       } as any);
@@ -320,6 +321,7 @@ function GeradorPerformancePage() {
   function openSaved(row: any) {
     setResult({
       familias: (row.familias ?? []) as string[],
+      categoria_metas: (row.categoria_metas ?? {}) as any,
       rows: (row.rows ?? []) as any,
       observacoes: row.observacoes ?? undefined,
     });
@@ -489,12 +491,12 @@ function GeradorPerformancePage() {
       }
 
       const familias = result.familias;
-      const categoria_metas: Record<string, number> = {};
+      const categoria_metas: Record<string, any> = { ...((result.categoria_metas ?? {}) as Record<string, any>) };
       for (const r of result.rows) {
         const c = (r.categoria ?? "").trim();
         if (!c) continue;
         const t = Number(r.total_meta) || familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-        categoria_metas[c] = (categoria_metas[c] ?? 0) + t;
+        categoria_metas[c] = (Number(categoria_metas[c]) || 0) + t;
       }
 
       const { data: up, error: upErr } = await supabase
