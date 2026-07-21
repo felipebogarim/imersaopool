@@ -104,7 +104,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     queryFn: async () => {
       const { data: up } = await supabase
         .from("rep_performance_uploads")
-        .select("id, familias")
+        .select("id, familias, participacao")
         .eq("representative_id", repId)
         .is("substituida_em", null)
         .order("created_at", { ascending: false })
@@ -113,9 +113,9 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       if (!up?.id) return null;
       const { data: rows } = await supabase
         .from("rep_performance_rows")
-        .select("categoria, razao_social, metas, metas_status")
+        .select("categoria, razao_social, metas, metas_status, total_meta")
         .eq("upload_id", up.id);
-      return { familias: (up.familias as string[]) ?? [], rows: rows ?? [] };
+      return { familias: (up.familias as string[]) ?? [], participacao: (up as any).participacao ?? {}, rows: rows ?? [] };
     },
   });
 
@@ -125,6 +125,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null; idx: number }>>;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
+    const participacaoBase = (currentPerf as any).participacao ?? {};
     const est: Record<string, Record<string, number>> = {};
     for (const r of currentPerf.rows as any[]) {
       const cat = String(r.categoria ?? "").trim();
@@ -135,8 +136,15 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       for (const f of familias) {
         const st = r.metas_status?.[f] as FarolStatus | undefined;
         if (!st) continue;
-        const meta = Number(r.metas?.[f]) || 0;
-        if (meta <= 0) continue; // ponderação exige valor financeiro da meta
+        let meta = Number(r.metas?.[f]) || 0;
+        if (meta <= 0) {
+          const totalMeta =
+            Number(r.total_meta) ||
+            familias.reduce((s, fam) => s + (Number(r.metas?.[fam]) || 0), 0);
+          const shareFamilia = Number(participacaoBase?.[f]) || 0;
+          meta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
+        }
+        if (meta <= 0) continue; // ponderação exige uma base financeira estimável
         const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
         est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
       }
