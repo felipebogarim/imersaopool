@@ -23,6 +23,7 @@ import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDial
 import { logActivity } from "@/lib/kanban-activity";
 import { runAutomationsForMove } from "@/lib/kanban-automations";
 import { cn } from "@/lib/utils";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
