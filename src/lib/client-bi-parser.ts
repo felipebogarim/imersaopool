@@ -258,6 +258,55 @@ function tryLongWorkbook(buf: ArrayBuffer): LongGrouped | null {
   return null;
 }
 
+function tryBaseWorkbook(buf: ArrayBuffer): Array<{ razao_social: string; data: ClientBIData }> | null {
+  const wb = XLSX.read(buf, { type: "array" });
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name];
+    if (!ws) continue;
+    const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
+    // Header esperado: CLIENTE | CATEGORIA | FAMÍLIA | META | FAROL | COEFICIENTE | ÍNDICE PONDERADO
+    let headerIdx = -1;
+    let iCli = -1, iCat = -1, iFam = -1, iFarol = -1, iCoef = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const cells = (rows[i] ?? []).map((c) => (c == null ? "" : normalize(String(c))));
+      const cli = cells.findIndex((c) => c === "CLIENTE" || c === "RAZAO SOCIAL");
+      const fam = cells.findIndex((c) => c.includes("FAMILIA"));
+      const farol = cells.findIndex((c) => c.includes("FAROL"));
+      if (cli >= 0 && fam >= 0 && farol >= 0) {
+        headerIdx = i;
+        iCli = cli;
+        iCat = cells.findIndex((c) => c === "CATEGORIA");
+        iFam = fam;
+        iFarol = farol;
+        iCoef = cells.findIndex((c) => c === "COEFICIENTE" || c.includes("INDICE PONDERADO"));
+        break;
+      }
+    }
+    if (headerIdx < 0) continue;
+
+    const groups = new Map<string, { categoria: string | null; familias: FamiliaResultado[] }>();
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const r = rows[i] ?? [];
+      const cli = str(r[iCli]);
+      const fam = str(r[iFam]);
+      if (!cli || !fam) continue;
+      let g = groups.get(cli);
+      if (!g) { g = { categoria: null, familias: [] }; groups.set(cli, g); }
+      if (iCat >= 0 && !g.categoria) g.categoria = str(r[iCat]);
+      const farol = iFarol >= 0 ? str(r[iFarol]) : null;
+      const coef = iCoef >= 0 ? num(r[iCoef]) : null;
+      g.familias.push({ familia: fam, atingimento: coef, farol });
+    }
+    if (groups.size > 0) {
+      return Array.from(groups.entries()).map(([cli, g]) => ({
+        razao_social: cli,
+        data: buildBIData(g.categoria, null, g.familias),
+      }));
+    }
+  }
+  return null;
+}
+
 export function parseClientBIWorkbookBatch(
   buf: ArrayBuffer,
 ): Array<{ razao_social: string; data: ClientBIData }> {
@@ -270,7 +319,11 @@ export function parseClientBIWorkbookBatch(
     }));
   }
 
-  // 2) Formato "Graficos_Barras" — uma aba por cliente
+  // 2) Formato "BI de Desempenho" — aba Base com CLIENTE/FAMÍLIA/FAROL/COEFICIENTE
+  const base = tryBaseWorkbook(buf);
+  if (base && base.length) return base;
+
+  // 3) Formato "Graficos_Barras" — uma aba por cliente
   const wb = XLSX.read(buf, { type: "array" });
   const out: Array<{ razao_social: string; data: ClientBIData }> = [];
   for (const name of wb.SheetNames) {
