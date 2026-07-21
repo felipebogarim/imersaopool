@@ -154,6 +154,39 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     return out;
   }, [currentPerf]);
 
+  const maioresPorCat = useMemo(() => {
+    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null }>>;
+    const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
+    const familias = currentPerf.familias;
+    const est: Record<string, Record<string, number>> = {};
+    for (const r of currentPerf.rows as any[]) {
+      const cat = String(r.categoria ?? "").trim();
+      if (!cat) continue;
+      const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
+      if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
+      est[cat] ??= {};
+      for (const f of familias) {
+        const st = r.metas_status?.[f] as FarolStatus | undefined;
+        if (!st) continue;
+        const metaRaw = Number(r.metas?.[f]) || 0;
+        const meta = metaRaw > 0 ? metaRaw : 1;
+        const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
+        est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
+      }
+    }
+    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+    for (const [cat, famMap] of Object.entries(est)) {
+      const total = Object.values(famMap).reduce((s, v) => s + v, 0);
+      const list = familias.map((f) => ({
+        familia: f,
+        participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
+      }));
+      list.sort((a, b) => (b.participacao ?? -Infinity) - (a.participacao ?? -Infinity));
+      out[cat] = total > 0 ? list.slice(0, 3) : [];
+    }
+    return out;
+  }, [currentPerf]);
+
   return (
     <div className="surface rounded-xl overflow-hidden">
       <div className="w-full px-4 py-3 border-b border-border flex items-center justify-between gap-3">
@@ -306,7 +339,39 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                       ) : (
                         <ol className="space-y-1.5 text-sm">
                           {list.map((p, i) => (
-                            <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
+                            <li key={`${cat}-min-${i}`} className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground w-4">{i + 1}.</span>
+                              <span className="flex-1 truncate">{p.familia}</span>
+                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3 famílias com maior participação estimada por categoria */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  3 famílias com maior participação estimada por categoria
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {Object.entries(maioresPorCat).map(([cat, list]) => (
+                    <div key={cat} className="rounded-xl border border-border p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                          {cat}
+                        </span>
+                        <span className="text-xs text-muted-foreground">maiores 3</span>
+                      </div>
+                      {list.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">Sem base</div>
+                      ) : (
+                        <ol className="space-y-1.5 text-sm">
+                          {list.map((p, i) => (
+                            <li key={`${cat}-max-${i}`} className="flex items-center justify-between gap-2">
                               <span className="text-muted-foreground w-4">{i + 1}.</span>
                               <span className="flex-1 truncate">{p.familia}</span>
                               <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
