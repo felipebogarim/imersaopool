@@ -159,15 +159,17 @@ function parsePerClientSheet(ws: any, fallbackName: string): {
   const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: true, defval: null });
   if (!rows.length) return null;
 
-  // Título
+  // Título — aceita separadores "—", "–", "-" e "·"
   let cliente: string | null = null;
   for (let i = 0; i < Math.min(rows.length, 4); i++) {
     const t = str(rows[i]?.[0]);
     if (!t) continue;
-    // ex: "RESULTADO GERAL E POR FAMÍLIA — LUMEN PRIME ILUMINAÇÃO LTDA"
-    const m = t.match(/[—–-]\s*(.+)$/);
-    if (m && (t.toUpperCase().includes("RESULTADO") || t.toUpperCase().includes("FAMÍLIA"))) {
-      cliente = m[1].trim();
+    const up = t.toUpperCase();
+    if (!(up.includes("RESULTADO") || up.includes("FAMÍLIA") || up.includes("FAMILIA") || up.includes("INDICADORES"))) continue;
+    // Pega o último segmento após qualquer separador
+    const parts = t.split(/\s*[—–\-·]\s*/);
+    if (parts.length >= 2) {
+      cliente = parts[parts.length - 1].trim();
       break;
     }
   }
@@ -181,20 +183,21 @@ function parsePerClientSheet(ws: any, fallbackName: string): {
     }
   }
 
-  // Header ORDEM | TIPO | INDICADOR | RESULTADO | GRUPO DO FAROL
+  // Header — aceita variações:
+  //   ORDEM | TIPO | INDICADOR | RESULTADO | GRUPO DO FAROL
+  //   FAMÍLIA | RESULTADO | PARTICIPAÇÃO | GRUPO DO FAROL
   let headerIdx = -1;
   let iTipo = -1;
   let iInd = -1;
   let iRes = -1;
   let iFarol = -1;
-  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+  for (let i = 0; i < Math.min(rows.length, 12); i++) {
     const cells = (rows[i] ?? []).map((c) => (c == null ? "" : normalize(String(c))));
-    const t = cells.indexOf("TIPO");
-    const ind = cells.findIndex((c) => c.includes("INDICADOR") || c.includes("FAMILIA"));
-    const res = cells.findIndex((c) => c.includes("RESULTADO") || c.includes("ATING"));
-    if (t >= 0 && ind >= 0 && res >= 0) {
+    const ind = cells.findIndex((c) => c.includes("INDICADOR") || c === "FAMILIA" || c.startsWith("FAMILIA"));
+    const res = cells.findIndex((c) => c === "RESULTADO" || c.includes("ATING"));
+    if (ind >= 0 && res >= 0) {
       headerIdx = i;
-      iTipo = t;
+      iTipo = cells.indexOf("TIPO");
       iInd = ind;
       iRes = res;
       iFarol = cells.findIndex((c) => c.includes("FAROL"));
@@ -207,7 +210,7 @@ function parsePerClientSheet(ws: any, fallbackName: string): {
   const familias: FamiliaResultado[] = [];
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const r = rows[i] ?? [];
-    const tipo = normalize(String(r[iTipo] ?? ""));
+    const tipo = iTipo >= 0 ? normalize(String(r[iTipo] ?? "")) : "";
     const indicador = str(r[iInd]);
     const resultado = num(r[iRes]);
     const farol = iFarol >= 0 ? str(r[iFarol]) : null;
