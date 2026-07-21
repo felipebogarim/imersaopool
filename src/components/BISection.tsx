@@ -441,31 +441,35 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   3 famílias com maior participação estimada por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {Object.entries(maioresPorCat).map(([cat, list]) => (
-                    <div key={cat} className="rounded-xl border border-border p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
-                          {cat}
-                        </span>
-                        <span className="text-xs text-muted-foreground">maiores 3</span>
+                  {orderedCats.map((cat) => {
+                    const list = rankingsPorCat[cat]?.maiores ?? [];
+                    return (
+                      <div key={cat} className="rounded-xl border border-border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                            {cat}
+                          </span>
+                          <span className="text-xs text-muted-foreground">maiores 3</span>
+                        </div>
+                        {list.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">Sem base</div>
+                        ) : (
+                          <ol className="space-y-1.5 text-sm">
+                            {list.map((item, i) => (
+                              <li key={`${cat}-max-${item.familyKey}`} className="flex items-center justify-between gap-2">
+                                <span className="text-muted-foreground w-4">{i + 1}.</span>
+                                <span className="flex-1 truncate">{item.familyName}</span>
+                                <span className="tabular-nums font-medium">{fmtShare(item.shareRatio)}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
-                      {list.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Sem base</div>
-                      ) : (
-                        <ol className="space-y-1.5 text-sm">
-                          {list.map((p, i) => (
-                            <li key={`${cat}-max-${i}`} className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground w-4">{i + 1}.</span>
-                              <span className="flex-1 truncate">{p.familia}</span>
-                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
+
 
             </>
           )}
