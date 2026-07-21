@@ -342,6 +342,7 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
                 <TableRow>
                   <TableHead>Enviado em</TableHead>
                   {form.schema.fields.map((f) => <TableHead key={f.id}>{f.label}</TableHead>)}
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,6 +356,18 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
                         const display = Array.isArray(v) ? v.join(", ") : v === null || v === undefined ? "" : String(v);
                         return <TableCell key={f.id} className="max-w-xs truncate" title={display}>{display}</TableCell>;
                       })}
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive" onClick={() => setPendingDelete(r.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -363,6 +376,13 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
           </div>
         )}
       </DialogContent>
+      <PasswordConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => { if (!v) setPendingDelete(null); }}
+        title="Excluir resposta"
+        description="Esta ação é irreversível. Digite a senha do gestor master para confirmar a exclusão desta resposta."
+        onConfirmed={doDelete}
+      />
     </Dialog>
   );
 }
