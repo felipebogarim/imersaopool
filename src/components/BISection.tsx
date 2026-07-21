@@ -141,136 +141,20 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
     [d],
   );
-  // ----- 3 famílias com menor participação estimada por categoria -----
-  // Reutiliza a mesma lógica de estimativa do "Atingimento ponderado" e
-  // "Participação estimada na venda": realizado_est(fam) = meta(fam) * midpoint(status)/100.
-  const { data: currentPerf } = useQuery({
-    queryKey: ["rep-perf-current", repId],
+  // Rankings de participação por família — cálculo agora ocorre no banco
+  // (função SECURITY DEFINER `compute_bi_shares`) para não expor metas em R$
+  // ao cliente. Retorna shareRatio (0..1) por família, agrupado por categoria.
+  const { data: sharesByCategory = {} } = useQuery({
+    queryKey: ["bi-shares", repId],
     enabled: !!repId,
     queryFn: async () => {
-      const { data: up } = await (supabase as any)
-        .from("rep_performance_uploads")
-        .select("id, familias, categoria_metas")
-        .eq("representative_id", repId)
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!up?.id) return null;
-      const { data: rows } = await supabase
-        .from("rep_performance_rows")
-        .select("categoria, razao_social, metas, metas_status, total_meta")
-        .eq("upload_id", up.id);
-      return {
-        familias: (up.familias as string[]) ?? [],
-        categoriaMetas: (up as any).categoria_metas ?? {},
-        rows: rows ?? [],
-      };
+      const { data, error } = await (supabase as any).rpc("compute_bi_shares", { _rep_id: repId });
+      if (error) throw error;
+      return (data ?? {}) as Record<string, FamilyShare[]>;
     },
   });
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
-
-  // Função central única: constrói os shares (0..1) das 7 famílias de uma categoria,
-  // ponderados pelo realizado estimado (cellMeta × rangeFactor). Retorna sempre a
-  // lista completa (uma entrada por família), com objetos completos — jamais
-  // arrays paralelos de nome/percentual.
-  const sharesByCategory = useMemo(() => {
-    const out: Record<string, FamilyShare[]> = {};
-    if (!currentPerf) return out;
-    const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
-    const familias = currentPerf.familias;
-    const familyMetasByCategory =
-      ((currentPerf as any).categoriaMetas?.__family_metas_by_category__ ?? {}) as Record<string, unknown>;
-
-    const categoryFamilyMeta = (category: string, family: string) => {
-      const wanted = normKey(category);
-      const categoryKey = Object.keys(familyMetasByCategory).find((k) => normKey(k) === wanted);
-      return categoryKey ? getNestedNumber(familyMetasByCategory[categoryKey], family) : 0;
-    };
-
-    // Acumuladores por categoria → família.
-    const metaAcc: Record<string, Record<string, number>> = {};
-    const estAcc: Record<string, Record<string, number>> = {};
-
-    for (const r of currentPerf.rows as any[]) {
-      const cat = String(r.categoria ?? "").trim();
-      if (!cat) continue;
-      const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
-      if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
-      metaAcc[cat] ??= {};
-      estAcc[cat] ??= {};
-      for (const f of familias) {
-        // Meta financeira da célula: usa a meta original da família no cliente.
-        // Se a versão visual só trouxe faixas, usa a configuração da própria versão
-        // por categoria/família. Nunca usa “Participação estimada na venda”.
-        const cellMeta = getNestedNumber(r.metas, f) || categoryFamilyMeta(cat, f);
-        if (cellMeta <= 0) continue;
-        const st = r.metas_status?.[f] as FarolStatus | undefined;
-        const factor = st ? RANGE_FACTOR[st] : 0;
-        metaAcc[cat][f] = (metaAcc[cat][f] ?? 0) + cellMeta;
-        estAcc[cat][f] = (estAcc[cat][f] ?? 0) + cellMeta * factor;
-      }
-    }
-
-    const buildFamilySharesByCategory = (cat: string): FamilyShare[] => {
-      const famMap = estAcc[cat];
-      const metaMap = metaAcc[cat] ?? {};
-      const categoryEstimatedTotal = familias.reduce((s, f) => s + (famMap[f] ?? 0), 0);
-      const list: FamilyShare[] = familias.map((f) => {
-        const estimatedRealized = famMap[f] ?? 0;
-        const shareRatio =
-          categoryEstimatedTotal > 0 ? estimatedRealized / categoryEstimatedTotal : 0;
-        return {
-          familyKey: f,
-          familyName: f,
-          metaTotal: metaMap[f] ?? 0,
-          estimatedRealized,
-          shareRatio,
-        };
-      });
-
-      return list;
-    };
-
-    for (const cat of Object.keys(estAcc)) {
-      const list = buildFamilySharesByCategory(cat);
-      const categoryEstimatedTotal = list.reduce((s, x) => s + x.estimatedRealized, 0);
-      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
-      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
-
-      // Validações automáticas — logadas no console; não bloqueiam render.
-      const soma = list.reduce((s, x) => s + x.shareRatio, 0);
-      const anyNeg = list.some((x) => x.shareRatio < 0);
-      const anyOver = list.some((x) => x.shareRatio > 1);
-      const uniq = new Set(list.map((x) => x.familyKey)).size === list.length;
-      const menoresOrdenadas = menores.every((x, i, arr) => i === 0 || arr[i - 1].shareRatio <= x.shareRatio);
-      const maioresOrdenadas = maiores.every((x, i, arr) => i === 0 || arr[i - 1].shareRatio >= x.shareRatio);
-      // eslint-disable-next-line no-console
-      console.debug(`[BI shares] ${cat}`, {
-        categoryEstimatedTotal,
-        familias: list.map((x) => ({
-          familia: x.familyName,
-          meta: x.metaTotal,
-          estimado: x.estimatedRealized,
-          share: x.shareRatio,
-        })),
-        somaShares: soma,
-        somaOk: soma > 0.999 && soma < 1.001,
-        anyNeg,
-        anyOver,
-        uniqueFamilias: uniq,
-        seteFamiliasUnicas: uniq && list.length === familias.length,
-        menoresOrdenadas,
-        maioresOrdenadas,
-        menores: menores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
-        maiores: maiores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
-      });
-
-      out[cat] = list;
-    }
-    return out;
-  }, [currentPerf]);
 
   const orderedCats = useMemo(
     () =>
@@ -288,22 +172,18 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
       const list = sharesByCategory[cat] ?? [];
-      const total = list.reduce((s, x) => s + x.estimatedRealized, 0);
+      const total = list.reduce((s, x) => s + (x.shareRatio ?? 0), 0);
       if (total <= 0) {
         out[cat] = { menores: [], maiores: [] };
         continue;
       }
       const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
       const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
-      // eslint-disable-next-line no-console
-      console.debug(`[BI ranking] ${cat}`, {
-        menores: menores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
-        maiores: maiores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
-      });
       out[cat] = { menores, maiores };
     }
     return out;
   }, [sharesByCategory, orderedCats]);
+
 
 
 
