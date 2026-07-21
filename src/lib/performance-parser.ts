@@ -150,7 +150,8 @@ function parseNovo(
     const metas_cores: Record<string, string> = {};
     familias.forEach((f, i) => {
       const cell = row[famCols[i]];
-      const st = statusFromFaixa(cell?.v);
+      if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
+      const st = statusFromFaixa(cell?.v) ?? statusFromHex(cell?.c);
       if (st) metas_status[f] = st;
       if (cell?.c) metas_cores[f] = cell.c;
     });
