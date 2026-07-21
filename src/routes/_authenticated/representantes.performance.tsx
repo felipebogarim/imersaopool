@@ -208,7 +208,7 @@ function PerformancePage() {
   }, [effectiveUploadId]);
 
   const familias: string[] = (currentUpload?.familias as string[]) ?? [];
-  const categoriaMetas: Record<string, number> = (currentUpload?.categoria_metas as Record<string, number>) ?? {};
+  const categoriaMetas: Record<string, number> = ((currentUpload as any)?.categoria_metas as Record<string, number>) ?? {};
 
   // Fonte de verdade para render/totais: draft se editando, senão rows
   const view: Row[] = editing && draft ? draft : rows;
@@ -489,10 +489,10 @@ function PerformancePage() {
           periodo_inicio: currentUpload.periodo_inicio,
           periodo_fim: currentUpload.periodo_fim,
           familias: currentUpload.familias,
-          categoria_metas: currentUpload.categoria_metas,
+          categoria_metas: (currentUpload as any).categoria_metas,
           escala_percentual: currentUpload.escala_percentual,
-          participacao: currentUpload.participacao,
-          atingimento: currentUpload.atingimento,
+          participacao: (currentUpload as any).participacao,
+          atingimento: (currentUpload as any).atingimento,
           filename: currentUpload.filename,
           observacao: `Edição manual em ${new Date().toLocaleString("pt-BR")}`,
           uploaded_by: uid,
