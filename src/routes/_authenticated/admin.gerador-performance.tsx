@@ -463,88 +463,54 @@ function GeradorPerformancePage() {
     if (!result) return;
     if (!sendRepId) return toast.error("Selecione um representante.");
     if (!sendPeriodoLabel.trim()) return toast.error("Informe o período.");
+
+    // Extrai a matriz financeira categoria × família de `categoria_metas.__family_metas_by_category__`.
+    // Sem ela, o upload é bloqueado — não estimamos metas por participação global.
+    const cm = (result.categoria_metas ?? {}) as Record<string, any>;
+    const targetsMatrix = (cm.__family_metas_by_category__ ?? {}) as Record<string, Record<string, number>>;
+    const familias = result.familias;
+    const categoriasUsadas = Array.from(
+      new Set(result.rows.map((r) => (r.categoria ?? "").trim()).filter(Boolean)),
+    );
+    const missing: string[] = [];
+    for (const cat of categoriasUsadas) {
+      const row = targetsMatrix[cat];
+      if (!row) { missing.push(`${cat} (categoria inteira)`); continue; }
+      for (const fam of familias) {
+        const v = Number(row[fam]);
+        if (!Number.isFinite(v) || v <= 0) missing.push(`${cat} / ${fam}`);
+      }
+    }
+    if (missing.length > 0) {
+      toast.error(
+        `Matriz financeira incompleta. Faltam: ${missing.slice(0, 6).join("; ")}${missing.length > 6 ? "…" : ""}. Revise a planilha ou cadastre as metas por categoria × família antes de enviar.`,
+      );
+      return;
+    }
+
     setSending(true);
     try {
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user?.id;
+      const payload = {
+        representative_id: sendRepId,
+        periodo_label: sendPeriodoLabel.trim(),
+        periodo_inicio: sendPeriodoInicio || null,
+        periodo_fim: sendPeriodoFim || null,
+        familias,
+        filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
+        targets_matrix: targetsMatrix,
+        rows: result.rows.map((r) => ({
+          razao_social: r.razao_social,
+          categoria: r.categoria,
+          metas_status: r.metas_status ?? {},
+          total_pct_status: r.total_pct_status,
+        })),
+      };
 
-      const { data: existing } = await supabase
-        .from("rep_performance_uploads")
-        .select("id, periodo_label, periodo_inicio, periodo_fim")
-        .eq("representative_id", sendRepId)
-        .is("substituida_em", null);
-
-      const norm = (s: string) => (s ?? "").trim().toLowerCase();
-      const sameLabel = (a: string, b: string) => norm(a) === norm(b);
-      const sameDates = (a: any) =>
-        (sendPeriodoInicio || null) === (a.periodo_inicio || null) &&
-        (sendPeriodoFim || null) === (a.periodo_fim || null);
-      const match = (existing ?? []).find(
-        (u: any) => sameLabel(u.periodo_label, sendPeriodoLabel) || sameDates(u),
-      );
-
-      if (match) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_em: new Date().toISOString() } as any)
-          .eq("id", match.id);
-      }
-
-      const familias = result.familias;
-      const categoria_metas: Record<string, any> = { ...((result.categoria_metas ?? {}) as Record<string, any>) };
-      for (const r of result.rows) {
-        const c = (r.categoria ?? "").trim();
-        if (!c) continue;
-        const t = Number(r.total_meta) || familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-        categoria_metas[c] = (Number(categoria_metas[c]) || 0) + t;
-      }
-
-      const { data: up, error: upErr } = await supabase
-        .from("rep_performance_uploads")
-        .insert({
-          representative_id: sendRepId,
-          periodo_label: sendPeriodoLabel.trim(),
-          periodo_inicio: sendPeriodoInicio || null,
-          periodo_fim: sendPeriodoFim || null,
-          familias,
-          categoria_metas,
-          escala_percentual: {},
-          participacao: derived?.participacao ?? {},
-          atingimento: derived?.atingimento ?? {},
-          filename: `IA-${(representante || "gerada").replace(/\s+/g, "_")}.xlsx`,
-          uploaded_by: uid,
-          origem: match ? "ia-atualizada" : "ia",
-        } as any)
-        .select("id")
-        .single();
-      if (upErr || !up) throw upErr ?? new Error("Falha ao criar upload");
-
-      if (match) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_por: up.id } as any)
-          .eq("id", match.id);
-      }
-
-      const payload = result.rows.map((r, i) => ({
-        upload_id: up.id,
-        ordem: i + 1,
-        razao_social: r.razao_social,
-        categoria: r.categoria,
-        metas: r.metas,
-        metas_status: r.metas_status,
-        metas_cores: {},
-        total_meta: r.total_meta,
-        total_pct_status: r.total_pct_status,
-      }));
-      for (let i = 0; i < payload.length; i += 200) {
-        const chunk = payload.slice(i, i + 200);
-        const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
-        if (error) throw error;
-      }
-
+      const { data, error } = await (supabase as any).rpc("submit_performance_upload", { _payload: payload });
+      if (error) throw error;
+      const replaced = data?.replaced_upload_id;
       toast.success(
-        match
+        replaced
           ? "Enviado como atualização da performance existente."
           : "Enviado como nova performance no painel.",
       );
