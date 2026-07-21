@@ -58,7 +58,7 @@ function ClientBIPage() {
   });
 
   const familias = useMemo(
-    () => (rowInfo ? Object.keys(rowInfo.metas ?? {}) : []),
+    () => (rowInfo ? Object.keys((rowInfo as any).metas ?? {}) : []),
     [rowInfo],
   );
   const [filterFams, setFilterFams] = useState<string[]>([]);
