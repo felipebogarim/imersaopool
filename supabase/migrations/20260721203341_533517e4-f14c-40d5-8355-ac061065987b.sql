@@ -1,0 +1,1 @@
+UPDATE public.kanban_boards SET name = 'Comercial' WHERE name = 'Planos de Ação';
