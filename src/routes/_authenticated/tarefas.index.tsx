@@ -63,7 +63,27 @@ function TarefasPage() {
 // ============= WORKSPACES + BOARDS =============
 function BoardsView() {
   const qc = useQueryClient();
+  const isMaster = useIsMasterAdmin();
   const [openNewBoard, setOpenNewBoard] = useState<string | null>(null);
+
+  async function editWorkspace(ws: Workspace) {
+    const name = prompt("Nome do workspace:", ws.name)?.trim();
+    if (!name || name === ws.name) return;
+    const { error } = await supabase.from("kanban_workspaces").update({ name }).eq("id", ws.id);
+    if (error) return toast.error(error.message);
+    toast.success("Workspace atualizado");
+    qc.invalidateQueries({ queryKey: ["kanban-workspaces"] });
+  }
+  async function deleteWorkspace(ws: Workspace) {
+    if (!confirm(`Excluir workspace "${ws.name}"? Os boards também serão arquivados.`)) return;
+    const now = new Date().toISOString();
+    await supabase.from("kanban_boards").update({ archived_at: now }).eq("workspace_id", ws.id);
+    const { error } = await supabase.from("kanban_workspaces").update({ archived_at: now }).eq("id", ws.id);
+    if (error) return toast.error(error.message);
+    toast.success("Workspace excluído");
+    qc.invalidateQueries({ queryKey: ["kanban-workspaces"] });
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
 
   const { data: workspaces = [], isLoading: loadingWs } = useQuery({
     queryKey: ["kanban-workspaces"],
