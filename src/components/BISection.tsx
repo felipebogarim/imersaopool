@@ -285,33 +285,38 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* Três piores famílias por categoria */}
+              {/* 3 famílias com menor participação estimada por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Três piores famílias por categoria
+                  3 famílias com menor participação estimada por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {Object.entries(piorePorCat).map(([cat, list]) => (
+                  {Object.entries(menoresPorCat).map(([cat, list]) => (
                     <div key={cat} className="rounded-xl border border-border p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
                           {cat}
                         </span>
-                        <span className="text-xs text-muted-foreground">piores 3</span>
+                        <span className="text-xs text-muted-foreground">menores 3</span>
                       </div>
-                      <ol className="space-y-1.5 text-sm">
-                        {list.map((p, i) => (
-                          <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground w-4">{p.posicao ?? i + 1}.</span>
-                            <span className="flex-1 truncate">{p.familia_pior_atingimento ?? "—"}</span>
-                            <span className="tabular-nums font-medium">{fmtPct(p.atingimento_pior)}</span>
-                          </li>
-                        ))}
-                      </ol>
+                      {list.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">Sem base</div>
+                      ) : (
+                        <ol className="space-y-1.5 text-sm">
+                          {list.map((p, i) => (
+                            <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground w-4">{i + 1}.</span>
+                              <span className="flex-1 truncate">{p.familia}</span>
+                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
+
             </>
           )}
         </div>
