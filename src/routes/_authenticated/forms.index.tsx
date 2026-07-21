@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { FormRenderer } from "@/components/FormRenderer";
 import { generateFormSchema } from "@/lib/generate-form.functions";
 import { slugify, RESERVED_SLUGS, FormSchemaSchema, type FormSchema } from "@/lib/form-schema";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/forms/")({
   head: () => ({ meta: [{ title: "Forms — PoolFlux" }] }),
@@ -270,6 +271,8 @@ function FormsPage() {
 }
 
 function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const { data: responses } = useQuery({
     queryKey: ["form-responses", form?.id],
     enabled: !!form,
@@ -283,6 +286,15 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
       return data ?? [];
     },
   });
+
+  async function doDelete() {
+    if (!pendingDelete) return;
+    const { error } = await supabase.from("form_responses").delete().eq("id", pendingDelete);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Resposta excluída");
+    qc.invalidateQueries({ queryKey: ["form-responses", form?.id] });
+    qc.invalidateQueries({ queryKey: ["forms-response-counts"] });
+  }
 
   function exportCsv() {
     if (!form || !responses) return;
@@ -330,6 +342,7 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
                 <TableRow>
                   <TableHead>Enviado em</TableHead>
                   {form.schema.fields.map((f) => <TableHead key={f.id}>{f.label}</TableHead>)}
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -343,6 +356,18 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
                         const display = Array.isArray(v) ? v.join(", ") : v === null || v === undefined ? "" : String(v);
                         return <TableCell key={f.id} className="max-w-xs truncate" title={display}>{display}</TableCell>;
                       })}
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive" onClick={() => setPendingDelete(r.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -351,6 +376,13 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
           </div>
         )}
       </DialogContent>
+      <PasswordConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(v) => { if (!v) setPendingDelete(null); }}
+        title="Excluir resposta"
+        description="Esta ação é irreversível. Digite a senha do gestor master para confirmar a exclusão desta resposta."
+        onConfirmed={doDelete}
+      />
     </Dialog>
   );
 }
