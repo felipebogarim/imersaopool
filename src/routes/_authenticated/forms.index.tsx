@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { FormRenderer } from "@/components/FormRenderer";
 import { generateFormSchema } from "@/lib/generate-form.functions";
 import { slugify, RESERVED_SLUGS, FormSchemaSchema, type FormSchema } from "@/lib/form-schema";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/forms/")({
   head: () => ({ meta: [{ title: "Forms — PoolFlux" }] }),
