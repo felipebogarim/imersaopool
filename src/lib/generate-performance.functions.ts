@@ -28,7 +28,7 @@ export type GeneratedRow = {
 
 export type GeneratedPerformance = {
   familias: string[];
-  categoria_metas?: Record<string, unknown>;
+  categoria_metas?: Record<string, number | Record<string, Record<string, number>>>;
   rows: GeneratedRow[];
   observacoes?: string;
 };
@@ -141,6 +141,8 @@ ${JSON.stringify(compact).slice(0, 180000)}`;
     }
     // Sanitiza mínimo
     parsed.familias = Array.isArray(parsed.familias) ? parsed.familias.map(String) : [];
+    parsed.categoria_metas =
+      parsed.categoria_metas && typeof parsed.categoria_metas === "object" ? parsed.categoria_metas : {};
     parsed.rows = Array.isArray(parsed.rows) ? parsed.rows : [];
     return parsed;
   });
