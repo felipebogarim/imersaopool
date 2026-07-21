@@ -11,11 +11,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trello, LayoutGrid, Calendar, AlertTriangle, CheckCircle2, Clock, ListChecks, Users } from "lucide-react";
+import { Plus, Trello, LayoutGrid, Calendar, AlertTriangle, CheckCircle2, Clock, ListChecks, Users, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KanbanPriority, Workspace } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { cn } from "@/lib/utils";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/tarefas/")({
   head: () => ({ meta: [{ title: "Gestão de Tarefas — PoolFlux" }] }),
