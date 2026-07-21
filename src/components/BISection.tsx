@@ -61,10 +61,9 @@ const getNestedNumber = (source: unknown, key: string) => {
 export type FamilyShare = {
   familyKey: string;
   familyName: string;
-  metaTotal: number;
-  estimatedRealized: number;
   shareRatio: number; // 0..1
 };
+
 
 export function BISection({ repId, repName }: { repId: string; repName: string }) {
   const qc = useQueryClient();
