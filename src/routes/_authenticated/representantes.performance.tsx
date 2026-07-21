@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users } from "lucide-react";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
+import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
@@ -72,6 +73,7 @@ function PerformancePage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
+  const [acoesOpen, setAcoesOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "meta";
     return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
@@ -713,8 +715,8 @@ function PerformancePage() {
               <Button variant="ghost" onClick={() => { setRepId(""); setUploadId(""); }}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
-              <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
-                <Pencil className="h-4 w-4 mr-1" /> Editar metas
+              <Button variant="outline" onClick={() => setAcoesOpen(true)} disabled={!repId}>
+                <Lightbulb className="h-4 w-4 mr-1" /> Ações Sugeridas
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/clientes-bi-batch/$repId" params={{ repId }}>
@@ -1330,6 +1332,14 @@ function PerformancePage() {
         title="Excluir performance do representante"
         description="Todas as versões e dados de performance deste representante serão removidos. Digite a senha do gestor master para confirmar."
         onConfirmed={async () => { await deleteRepConfirmed(); }}
+      />
+
+      <AcoesSugeridasDialog
+        open={acoesOpen}
+        onOpenChange={setAcoesOpen}
+        repId={repId}
+        uploadId={currentUpload?.id ?? null}
+        repName={reps.find((r: any) => r.id === repId)?.nome}
       />
     </div>
   );
