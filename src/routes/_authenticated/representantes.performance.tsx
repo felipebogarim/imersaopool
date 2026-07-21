@@ -1154,29 +1154,12 @@ function PerformancePage() {
                       };
                       return (
                         <>
-                          {/* TOTAL GERAL DA META */}
-                          <tr className="border-t-2 border-border bg-muted/60 font-semibold">
-                            <td className="px-3 py-3 sticky left-0 bg-muted/80 z-10 uppercase text-xs tracking-wider">
-                              Total geral da meta
-                            </td>
-                            <td className="px-3 py-3 sticky left-[240px] bg-muted/80 z-10"></td>
-                            <td className="px-3 py-3 text-right tabular-nums">
-                              {fmtBRL(filteredTotals.grand)}
-                            </td>
-                            <td className="px-3 py-3"></td>
-                            {visibleFams.map((f) => (
-                              <td key={f} className="px-3 py-3 text-right tabular-nums">
-                                {fmtBRL(filteredTotals.perFamilia[f] || 0)}
-                              </td>
-                            ))}
-                          </tr>
                           {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
-                          <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
+                          <tr className="border-t-2 border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
                             <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
                               Participação estimada na venda
                             </td>
                             <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
-                            <td className="px-3 py-2.5"></td>
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(participacao?.__total__ ?? null)}
                             </td>
@@ -1192,7 +1175,6 @@ function PerformancePage() {
                               Atingimento estimado da meta
                             </td>
                             <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
-                            <td className="px-3 py-2.5"></td>
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(atingimento?.__total__ ?? null)}
                             </td>
