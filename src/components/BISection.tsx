@@ -145,13 +145,19 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
       const list = sharesByCategory[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.shareRatio ?? 0), 0);
-      if (total <= 0) {
+      // Rankings agora por atingimento ponderado da família na categoria,
+      // não por participação. Só considera famílias com meta > 0.
+      const withAttain = list.filter((x) => x.attainmentRatio != null && (x.metaTotal ?? 0) > 0);
+      if (withAttain.length === 0) {
         out[cat] = { menores: [], maiores: [] };
         continue;
       }
-      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
-      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
+      const menores = [...withAttain]
+        .sort((a, b) => (a.attainmentRatio ?? 0) - (b.attainmentRatio ?? 0))
+        .slice(0, 3);
+      const maiores = [...withAttain]
+        .sort((a, b) => (b.attainmentRatio ?? 0) - (a.attainmentRatio ?? 0))
+        .slice(0, 3);
       out[cat] = { menores, maiores };
     }
     return out;
