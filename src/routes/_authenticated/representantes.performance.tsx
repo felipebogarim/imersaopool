@@ -1048,7 +1048,7 @@ function PerformancePage() {
               <tbody>
                 {!currentUpload ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       {repId
                         ? 'Nenhuma planilha importada para este representante. Clique em "Nova planilha".'
                         : "Selecione um representante."}
@@ -1056,13 +1056,13 @@ function PerformancePage() {
                   </tr>
                 ) : view.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Carregando…
                     </td>
                   </tr>
                 ) : filteredView.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Nenhum cliente encontrado com os filtros atuais.
                     </td>
                   </tr>
