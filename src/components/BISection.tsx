@@ -6,7 +6,7 @@ import { ChevronRight, Upload, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
-import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_MIDPOINT, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 
 const fmtPct = (n: number | null | undefined) => {
   if (n == null || Number.isNaN(n)) return "—";
@@ -14,10 +14,37 @@ const fmtPct = (n: number | null | undefined) => {
   return `${v.toFixed(1).replace(".", ",")}%`;
 };
 
+// Formatador único para shareRatio (decimal entre 0 e 1) → "12,3%".
+const pctFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const fmtShare = (ratio: number | null | undefined) =>
+  ratio == null || Number.isNaN(ratio) ? "—" : pctFormatter.format(ratio);
+
+// Fatores exatos por faixa do farol (ponderação do realizado estimado).
+const RANGE_FACTOR: Record<FarolStatus, number> = {
+  sem_compra: 0,
+  abaixo_meta: 0.25,
+  pode_melhorar: 0.6,
+  proximo: 0.8,
+  otimo: 0.95,
+  excelente: 1.1,
+};
+
 const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
   const g = grupo.toLowerCase();
   const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
   return (found as any) ?? null;
+};
+
+export type FamilyShare = {
+  familyKey: string;
+  familyName: string;
+  metaTotal: number;
+  estimatedRealized: number;
+  shareRatio: number; // 0..1
 };
 
 export function BISection({ repId, repName }: { repId: string; repName: string }) {
