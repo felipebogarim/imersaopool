@@ -23,40 +23,12 @@ const pctFormatter = new Intl.NumberFormat("pt-BR", {
 const fmtShare = (ratio: number | null | undefined) =>
   ratio == null || Number.isNaN(ratio) ? "—" : pctFormatter.format(ratio);
 
-// Fatores exatos por faixa do farol (ponderação do realizado estimado).
-const RANGE_FACTOR: Record<FarolStatus, number> = {
-  sem_compra: 0,
-  abaixo_meta: 0.25,
-  pode_melhorar: 0.6,
-  proximo: 0.8,
-  otimo: 0.95,
-  excelente: 1.1,
-};
-
 const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
   const g = grupo.toLowerCase();
   const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
   return (found as any) ?? null;
 };
 
-const normKey = (value: string | null | undefined) =>
-  String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, " ")
-    .trim()
-    .toUpperCase();
-
-const getNestedNumber = (source: unknown, key: string) => {
-  if (!source || typeof source !== "object") return 0;
-  const record = source as Record<string, unknown>;
-  const direct = Number(record[key]);
-  if (Number.isFinite(direct) && direct > 0) return direct;
-  const wanted = normKey(key);
-  const foundKey = Object.keys(record).find((k) => normKey(k) === wanted);
-  const found = foundKey ? Number(record[foundKey]) : 0;
-  return Number.isFinite(found) && found > 0 ? found : 0;
-};
 
 export type FamilyShare = {
   familyKey: string;
