@@ -81,7 +81,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
         company_id: rep.company_id,
         periodo_label: "1º Semestre 2026",
         filename: file.name,
-        data: parsed,
+        data_safe: parsed,
         uploaded_by: userRes.user?.id ?? null,
       });
       if (error) throw error;
