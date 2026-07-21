@@ -34,6 +34,8 @@ export type FamilyShare = {
   familyKey: string;
   familyName: string;
   shareRatio: number; // 0..1
+  attainmentRatio: number | null; // 0..1+, null when meta = 0
+  metaTotal?: number;
 };
 
 
