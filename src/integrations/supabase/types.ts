@@ -2370,6 +2370,80 @@ export type Database = {
           },
         ]
       }
+      perf_acoes_sugeridas: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          linked_board_id: string | null
+          linked_card_id: string | null
+          representative_id: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          upload_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          linked_board_id?: string | null
+          linked_card_id?: string | null
+          representative_id: string
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          linked_board_id?: string | null
+          linked_card_id?: string | null
+          representative_id?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perf_acoes_sugeridas_linked_board_id_fkey"
+            columns: ["linked_board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perf_acoes_sugeridas_linked_card_id_fkey"
+            columns: ["linked_card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perf_acoes_sugeridas_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perf_acoes_sugeridas_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "rep_performance_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perspectivas: {
         Row: {
           aprovada_em: string | null
