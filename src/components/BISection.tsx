@@ -119,8 +119,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     },
   });
 
-  const menoresPorCat = useMemo(() => {
-    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null }>>;
+  const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
+
+  const sharesPorCat = useMemo(() => {
+    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null; idx: number }>>;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
     const est: Record<string, Record<string, number>> = {};
@@ -133,59 +135,64 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       for (const f of familias) {
         const st = r.metas_status?.[f] as FarolStatus | undefined;
         if (!st) continue;
-        // Faixa mode: se a planilha só tem farol (meta numérica ausente), usa peso 1
-        // por família para não zerar a base, mantendo a estimativa via midpoint do farol.
-        const metaRaw = Number(r.metas?.[f]) || 0;
-        const meta = metaRaw > 0 ? metaRaw : 1;
+        const meta = Number(r.metas?.[f]) || 0;
+        if (meta <= 0) continue; // ponderação exige valor financeiro da meta
         const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
         est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
       }
     }
-    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+    const out: Record<string, Array<{ familia: string; participacao: number | null; idx: number }>> = {};
     for (const [cat, famMap] of Object.entries(est)) {
       const total = Object.values(famMap).reduce((s, v) => s + v, 0);
-      const list = familias.map((f) => ({
+      out[cat] = familias.map((f, idx) => ({
         familia: f,
         participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
+        idx,
       }));
-      list.sort((a, b) => (a.participacao ?? Infinity) - (b.participacao ?? Infinity));
-      out[cat] = total > 0 ? list.slice(0, 3) : [];
     }
     return out;
   }, [currentPerf]);
 
-  const maioresPorCat = useMemo(() => {
-    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null }>>;
-    const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
-    const familias = currentPerf.familias;
-    const est: Record<string, Record<string, number>> = {};
-    for (const r of currentPerf.rows as any[]) {
-      const cat = String(r.categoria ?? "").trim();
-      if (!cat) continue;
-      const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
-      if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
-      est[cat] ??= {};
-      for (const f of familias) {
-        const st = r.metas_status?.[f] as FarolStatus | undefined;
-        if (!st) continue;
-        const metaRaw = Number(r.metas?.[f]) || 0;
-        const meta = metaRaw > 0 ? metaRaw : 1;
-        const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
-        est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
-      }
-    }
+  const orderedCats = useMemo(
+    () => (CAT_ORDER as readonly string[]).filter((c) => sharesPorCat[c]).concat(
+      Object.keys(sharesPorCat).filter((c) => !(CAT_ORDER as readonly string[]).includes(c)),
+    ),
+    [sharesPorCat],
+  );
+
+  const menoresPorCat = useMemo(() => {
     const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
-    for (const [cat, famMap] of Object.entries(est)) {
-      const total = Object.values(famMap).reduce((s, v) => s + v, 0);
-      const list = familias.map((f) => ({
-        familia: f,
-        participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
-      }));
-      list.sort((a, b) => (b.participacao ?? -Infinity) - (a.participacao ?? -Infinity));
-      out[cat] = total > 0 ? list.slice(0, 3) : [];
+    for (const cat of orderedCats) {
+      const list = sharesPorCat[cat] ?? [];
+      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
+      if (total <= 0) { out[cat] = []; continue; }
+      const sorted = list.slice().sort((a, b) => {
+        const pa = a.participacao ?? Infinity;
+        const pb = b.participacao ?? Infinity;
+        if (pa !== pb) return pa - pb;
+        return a.idx - b.idx;
+      });
+      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
     }
     return out;
-  }, [currentPerf]);
+  }, [sharesPorCat, orderedCats]);
+
+  const maioresPorCat = useMemo(() => {
+    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+    for (const cat of orderedCats) {
+      const list = sharesPorCat[cat] ?? [];
+      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
+      if (total <= 0) { out[cat] = []; continue; }
+      const sorted = list.slice().sort((a, b) => {
+        const pa = a.participacao ?? -Infinity;
+        const pb = b.participacao ?? -Infinity;
+        if (pa !== pb) return pb - pa;
+        return a.idx - b.idx;
+      });
+      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
+    }
+    return out;
+  }, [sharesPorCat, orderedCats]);
 
   return (
     <div className="surface rounded-xl overflow-hidden">
