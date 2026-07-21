@@ -148,86 +148,123 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
 
-  const sharesPorCat = useMemo(() => {
-    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null; idx: number }>>;
+  // Função central única: constrói os shares (0..1) das 7 famílias de uma categoria,
+  // ponderados pelo realizado estimado (cellMeta × rangeFactor). Retorna sempre a
+  // lista completa (uma entrada por família), com objetos completos — jamais
+  // arrays paralelos de nome/percentual.
+  const sharesByCategory = useMemo(() => {
+    const out: Record<string, FamilyShare[]> = {};
+    if (!currentPerf) return out;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
     const participacaoBase = (currentPerf as any).participacao ?? {};
-    const est: Record<string, Record<string, number>> = {};
+
+    // Acumuladores por categoria → família.
+    const metaAcc: Record<string, Record<string, number>> = {};
+    const estAcc: Record<string, Record<string, number>> = {};
+
     for (const r of currentPerf.rows as any[]) {
       const cat = String(r.categoria ?? "").trim();
       if (!cat) continue;
       const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
       if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
-      est[cat] ??= {};
+      metaAcc[cat] ??= {};
+      estAcc[cat] ??= {};
       for (const f of familias) {
-        const st = r.metas_status?.[f] as FarolStatus | undefined;
-        if (!st) continue;
-        let meta = Number(r.metas?.[f]) || 0;
-        if (meta <= 0) {
+        // Meta financeira da célula: valor direto; fallback = totalMeta × participação salva.
+        let cellMeta = Number(r.metas?.[f]) || 0;
+        if (cellMeta <= 0) {
           const totalMeta =
             Number(r.total_meta) ||
             familias.reduce((s, fam) => s + (Number(r.metas?.[fam]) || 0), 0);
           const shareFamilia = Number(participacaoBase?.[f]) || 0;
-          meta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
+          cellMeta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
         }
-        if (meta <= 0) continue; // ponderação exige uma base financeira estimável
-        const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
-        est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
+        if (cellMeta <= 0) continue;
+        const st = r.metas_status?.[f] as FarolStatus | undefined;
+        const factor = st ? RANGE_FACTOR[st] : 0;
+        metaAcc[cat][f] = (metaAcc[cat][f] ?? 0) + cellMeta;
+        estAcc[cat][f] = (estAcc[cat][f] ?? 0) + cellMeta * factor;
       }
     }
-    const out: Record<string, Array<{ familia: string; participacao: number | null; idx: number }>> = {};
-    for (const [cat, famMap] of Object.entries(est)) {
-      const total = Object.values(famMap).reduce((s, v) => s + v, 0);
-      out[cat] = familias.map((f, idx) => ({
-        familia: f,
-        participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
-        idx,
-      }));
+
+    for (const cat of Object.keys(estAcc)) {
+      const famMap = estAcc[cat];
+      const metaMap = metaAcc[cat] ?? {};
+      const categoryEstimatedTotal = familias.reduce((s, f) => s + (famMap[f] ?? 0), 0);
+      const list: FamilyShare[] = familias.map((f) => {
+        const estimatedRealized = famMap[f] ?? 0;
+        const shareRatio =
+          categoryEstimatedTotal > 0 ? estimatedRealized / categoryEstimatedTotal : 0;
+        return {
+          familyKey: f,
+          familyName: f,
+          metaTotal: metaMap[f] ?? 0,
+          estimatedRealized,
+          shareRatio,
+        };
+      });
+
+      // Validações automáticas — logadas no console; não bloqueiam render.
+      const soma = list.reduce((s, x) => s + x.shareRatio, 0);
+      const anyNeg = list.some((x) => x.shareRatio < 0);
+      const anyOver = list.some((x) => x.shareRatio > 1);
+      const uniq = new Set(list.map((x) => x.familyKey)).size === list.length;
+      // eslint-disable-next-line no-console
+      console.debug(`[BI shares] ${cat}`, {
+        categoryEstimatedTotal,
+        familias: list.map((x) => ({
+          familia: x.familyName,
+          meta: x.metaTotal,
+          estimado: x.estimatedRealized,
+          share: x.shareRatio,
+        })),
+        somaShares: soma,
+        somaOk: soma > 0.999 && soma < 1.001,
+        anyNeg,
+        anyOver,
+        uniqueFamilias: uniq,
+      });
+
+      out[cat] = list;
     }
     return out;
   }, [currentPerf]);
 
   const orderedCats = useMemo(
-    () => (CAT_ORDER as readonly string[]).filter((c) => sharesPorCat[c]).concat(
-      Object.keys(sharesPorCat).filter((c) => !(CAT_ORDER as readonly string[]).includes(c)),
-    ),
-    [sharesPorCat],
+    () =>
+      (CAT_ORDER as readonly string[])
+        .filter((c) => sharesByCategory[c])
+        .concat(
+          Object.keys(sharesByCategory).filter(
+            (c) => !(CAT_ORDER as readonly string[]).includes(c),
+          ),
+        ),
+    [sharesByCategory],
   );
 
-  const menoresPorCat = useMemo(() => {
-    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+  const rankingsPorCat = useMemo(() => {
+    const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
-      const list = sharesPorCat[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
-      if (total <= 0) { out[cat] = []; continue; }
-      const sorted = list.slice().sort((a, b) => {
-        const pa = a.participacao ?? Infinity;
-        const pb = b.participacao ?? Infinity;
-        if (pa !== pb) return pa - pb;
-        return a.idx - b.idx;
+      const list = sharesByCategory[cat] ?? [];
+      const total = list.reduce((s, x) => s + x.estimatedRealized, 0);
+      if (total <= 0) {
+        out[cat] = { menores: [], maiores: [] };
+        continue;
+      }
+      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
+      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
+      // eslint-disable-next-line no-console
+      console.debug(`[BI ranking] ${cat}`, {
+        menores: menores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
+        maiores: maiores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
       });
-      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
+      out[cat] = { menores, maiores };
     }
     return out;
-  }, [sharesPorCat, orderedCats]);
+  }, [sharesByCategory, orderedCats]);
 
-  const maioresPorCat = useMemo(() => {
-    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
-    for (const cat of orderedCats) {
-      const list = sharesPorCat[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
-      if (total <= 0) { out[cat] = []; continue; }
-      const sorted = list.slice().sort((a, b) => {
-        const pa = a.participacao ?? -Infinity;
-        const pb = b.participacao ?? -Infinity;
-        if (pa !== pb) return pb - pa;
-        return a.idx - b.idx;
-      });
-      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
-    }
-    return out;
-  }, [sharesPorCat, orderedCats]);
+
 
   return (
     <div className="surface rounded-xl overflow-hidden">
