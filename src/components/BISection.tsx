@@ -148,23 +148,24 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
       const list = sharesByCategory[cat] ?? [];
-      // Rankings agora por atingimento ponderado da família na categoria,
-      // não por participação. Só considera famílias com meta > 0.
-      const withAttain = list.filter((x) => x.attainmentRatio != null && (x.metaTotal ?? 0) > 0);
-      if (withAttain.length === 0) {
+      // Só famílias com meta financeira > 0 entram no ranking.
+      const base = list.filter((x) => (x.metaTotal ?? 0) > 0);
+      const key: keyof FamilyShare = metric === "participation" ? "shareRatio" : "attainmentRatio";
+      const withMetric = base.filter((x) => x[key] != null);
+      if (withMetric.length === 0) {
         out[cat] = { menores: [], maiores: [] };
         continue;
       }
-      const menores = [...withAttain]
-        .sort((a, b) => (a.attainmentRatio ?? 0) - (b.attainmentRatio ?? 0))
+      const menores = [...withMetric]
+        .sort((a, b) => ((a[key] as number) ?? 0) - ((b[key] as number) ?? 0))
         .slice(0, 3);
-      const maiores = [...withAttain]
-        .sort((a, b) => (b.attainmentRatio ?? 0) - (a.attainmentRatio ?? 0))
+      const maiores = [...withMetric]
+        .sort((a, b) => ((b[key] as number) ?? 0) - ((a[key] as number) ?? 0))
         .slice(0, 3);
       out[cat] = { menores, maiores };
     }
     return out;
-  }, [sharesByCategory, orderedCats]);
+  }, [sharesByCategory, orderedCats, metric]);
 
 
 
