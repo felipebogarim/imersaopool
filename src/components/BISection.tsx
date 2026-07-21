@@ -306,10 +306,48 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* 3 famílias com menor atingimento por categoria */}
+              {/* Toggle de métrica dos rankings */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Analisar famílias por:
+                </span>
+                <div className="inline-flex rounded-lg border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setMetric("participation")}
+                    className={cn(
+                      "px-3 py-1 text-xs transition",
+                      metric === "participation"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted",
+                    )}
+                  >
+                    Participação estimada
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMetric("attainment")}
+                    className={cn(
+                      "px-3 py-1 text-xs transition",
+                      metric === "attainment"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted",
+                    )}
+                  >
+                    Atingimento da meta
+                  </button>
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  {metric === "participation"
+                    ? "Quanto cada família representa dentro do realizado estimado da categoria."
+                    : "Quanto cada família atingiu da meta financeira estabelecida."}
+                </span>
+              </div>
+
+              {/* 3 famílias com menor {métrica} por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  3 famílias com menor atingimento por categoria
+                  3 famílias com menor {metric === "participation" ? "participação estimada" : "atingimento"} por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {orderedCats.map((cat) => {
@@ -330,7 +368,9 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                               <li key={`${cat}-min-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
                                 <span className="flex-1 truncate">{item.familyName}</span>
-                                <span className="tabular-nums font-medium">{fmtShare(item.attainmentRatio)}</span>
+                                <span className="tabular-nums font-medium">
+                                  {fmtShare(metric === "participation" ? item.shareRatio : item.attainmentRatio)}
+                                </span>
                               </li>
                             ))}
                           </ol>
@@ -342,10 +382,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
               </div>
 
 
-              {/* 3 famílias com maior atingimento por categoria */}
+              {/* 3 famílias com maior {métrica} por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  3 famílias com maior atingimento por categoria
+                  3 famílias com maior {metric === "participation" ? "participação estimada" : "atingimento"} por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {orderedCats.map((cat) => {
@@ -366,7 +406,9 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                               <li key={`${cat}-max-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
                                 <span className="flex-1 truncate">{item.familyName}</span>
-                                <span className="tabular-nums font-medium">{fmtShare(item.attainmentRatio)}</span>
+                                <span className="tabular-nums font-medium">
+                                  {fmtShare(metric === "participation" ? item.shareRatio : item.attainmentRatio)}
+                                </span>
                               </li>
                             ))}
                           </ol>
