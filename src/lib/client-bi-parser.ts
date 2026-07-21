@@ -125,15 +125,12 @@ function isStopMarker(cell: unknown): boolean {
   const n = normalize(cell);
   if (!n) return false;
   return (
-    n === "POSICAO" ||
-    n === "POSIÇÃO" ||
     n.startsWith("POSICAO") ||
     n.startsWith("TRES PIORES") ||
     n.startsWith("COEFICIENTES") ||
     n.startsWith("LEITURA DO GRAFICO") ||
     n.startsWith("MELHOR FAMILIA") ||
-    n.startsWith("PIOR FAMILIA") ||
-    n.startsWith("RESULTADO GERAL") // rodapé "LEITURA DO GRÁFICO" tem essa linha
+    n.startsWith("PIOR FAMILIA")
   );
 }
 
