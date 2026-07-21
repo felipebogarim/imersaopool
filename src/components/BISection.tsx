@@ -148,7 +148,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     queryKey: ["rep-perf-current", repId],
     enabled: !!repId,
     queryFn: async () => {
-      const { data: up } = await supabase
+      const { data: up } = await (supabase as any)
         .from("rep_performance_uploads")
         .select("id, familias, categoria_metas")
         .eq("representative_id", repId)
