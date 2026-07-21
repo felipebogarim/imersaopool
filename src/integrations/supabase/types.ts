@@ -3655,6 +3655,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       current_company_id: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
