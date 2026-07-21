@@ -6,7 +6,7 @@ import { ChevronRight, Upload, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
-import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_MIDPOINT, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 
 const fmtPct = (n: number | null | undefined) => {
   if (n == null || Number.isNaN(n)) return "—";
@@ -95,11 +95,62 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
     [d],
   );
-  const piorePorCat = useMemo(() => {
-    const m: Record<string, BIData["piores_familias"]> = {};
-    for (const p of d?.piores_familias ?? []) (m[p.categoria] ??= []).push(p);
-    return m;
-  }, [d]);
+  // ----- 3 famílias com menor participação estimada por categoria -----
+  // Reutiliza a mesma lógica de estimativa do "Atingimento ponderado" e
+  // "Participação estimada na venda": realizado_est(fam) = meta(fam) * midpoint(status)/100.
+  const { data: currentPerf } = useQuery({
+    queryKey: ["rep-perf-current", repId],
+    enabled: !!repId,
+    queryFn: async () => {
+      const { data: up } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, familias")
+        .eq("representative_id", repId)
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!up?.id) return null;
+      const { data: rows } = await supabase
+        .from("rep_performance_rows")
+        .select("categoria, metas, metas_status")
+        .eq("upload_id", up.id);
+      return { familias: (up.familias as string[]) ?? [], rows: rows ?? [] };
+    },
+  });
+
+  const menoresPorCat = useMemo(() => {
+    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null }>>;
+    const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
+    const familias = currentPerf.familias;
+    // categoria -> familia -> soma do realizado estimado
+    const est: Record<string, Record<string, number>> = {};
+    for (const r of currentPerf.rows as any[]) {
+      const cat = String(r.categoria ?? "").trim();
+      if (!cat) continue;
+      const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
+      if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
+      est[cat] ??= {};
+      for (const f of familias) {
+        const meta = Number(r.metas?.[f]) || 0;
+        const st = r.metas_status?.[f] as FarolStatus | undefined;
+        if (!st || meta <= 0) continue;
+        const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
+        est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
+      }
+    }
+    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+    for (const [cat, famMap] of Object.entries(est)) {
+      const total = Object.values(famMap).reduce((s, v) => s + v, 0);
+      const list = familias.map((f) => ({
+        familia: f,
+        participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
+      }));
+      list.sort((a, b) => (a.participacao ?? Infinity) - (b.participacao ?? Infinity));
+      out[cat] = total > 0 ? list.slice(0, 3) : [];
+    }
+    return out;
+  }, [currentPerf]);
 
   return (
     <div className="surface rounded-xl overflow-hidden">
@@ -234,33 +285,38 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* Três piores famílias por categoria */}
+              {/* 3 famílias com menor participação estimada por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Três piores famílias por categoria
+                  3 famílias com menor participação estimada por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {Object.entries(piorePorCat).map(([cat, list]) => (
+                  {Object.entries(menoresPorCat).map(([cat, list]) => (
                     <div key={cat} className="rounded-xl border border-border p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
                           {cat}
                         </span>
-                        <span className="text-xs text-muted-foreground">piores 3</span>
+                        <span className="text-xs text-muted-foreground">menores 3</span>
                       </div>
-                      <ol className="space-y-1.5 text-sm">
-                        {list.map((p, i) => (
-                          <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground w-4">{p.posicao ?? i + 1}.</span>
-                            <span className="flex-1 truncate">{p.familia_pior_atingimento ?? "—"}</span>
-                            <span className="tabular-nums font-medium">{fmtPct(p.atingimento_pior)}</span>
-                          </li>
-                        ))}
-                      </ol>
+                      {list.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">Sem base</div>
+                      ) : (
+                        <ol className="space-y-1.5 text-sm">
+                          {list.map((p, i) => (
+                            <li key={`${cat}-${i}`} className="flex items-center justify-between gap-2">
+                              <span className="text-muted-foreground w-4">{i + 1}.</span>
+                              <span className="flex-1 truncate">{p.familia}</span>
+                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
+
             </>
           )}
         </div>
