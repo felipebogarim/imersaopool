@@ -73,6 +73,7 @@ function PerformancePage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
+  const [acoesOpen, setAcoesOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "meta";
     return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
