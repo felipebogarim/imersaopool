@@ -252,10 +252,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* Participação das categorias */}
+              {/* Participação ponderada por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Participação das categorias no total
+                  Participação ponderada por categoria (%)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {catsSorted.map((c) => (
