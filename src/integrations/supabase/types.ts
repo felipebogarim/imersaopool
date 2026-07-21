@@ -2784,6 +2784,7 @@ export type Database = {
       rep_performance_uploads: {
         Row: {
           atingimento_geral: number | null
+          calculation_version: string
           categoria_participacao: Json
           company_id: string
           created_at: string
@@ -2807,6 +2808,7 @@ export type Database = {
         }
         Insert: {
           atingimento_geral?: number | null
+          calculation_version?: string
           categoria_participacao?: Json
           company_id: string
           created_at?: string
@@ -2830,6 +2832,7 @@ export type Database = {
         }
         Update: {
           atingimento_geral?: number | null
+          calculation_version?: string
           categoria_participacao?: Json
           company_id?: string
           created_at?: string
@@ -3747,6 +3750,7 @@ export type Database = {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
         Returns: string
       }
+      submit_performance_upload: { Args: { _payload: Json }; Returns: Json }
       submit_representative_input: {
         Args: { _data: Json; _token: string }
         Returns: string
