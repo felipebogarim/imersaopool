@@ -6,7 +6,7 @@ import { ChevronRight, Upload, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
-import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_MIDPOINT, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 
 const fmtPct = (n: number | null | undefined) => {
   if (n == null || Number.isNaN(n)) return "—";
@@ -14,10 +14,37 @@ const fmtPct = (n: number | null | undefined) => {
   return `${v.toFixed(1).replace(".", ",")}%`;
 };
 
+// Formatador único para shareRatio (decimal entre 0 e 1) → "12,3%".
+const pctFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const fmtShare = (ratio: number | null | undefined) =>
+  ratio == null || Number.isNaN(ratio) ? "—" : pctFormatter.format(ratio);
+
+// Fatores exatos por faixa do farol (ponderação do realizado estimado).
+const RANGE_FACTOR: Record<FarolStatus, number> = {
+  sem_compra: 0,
+  abaixo_meta: 0.25,
+  pode_melhorar: 0.6,
+  proximo: 0.8,
+  otimo: 0.95,
+  excelente: 1.1,
+};
+
 const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
   const g = grupo.toLowerCase();
   const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
   return (found as any) ?? null;
+};
+
+export type FamilyShare = {
+  familyKey: string;
+  familyName: string;
+  metaTotal: number;
+  estimatedRealized: number;
+  shareRatio: number; // 0..1
 };
 
 export function BISection({ repId, repName }: { repId: string; repName: string }) {
@@ -121,86 +148,123 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
 
-  const sharesPorCat = useMemo(() => {
-    if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null; idx: number }>>;
+  // Função central única: constrói os shares (0..1) das 7 famílias de uma categoria,
+  // ponderados pelo realizado estimado (cellMeta × rangeFactor). Retorna sempre a
+  // lista completa (uma entrada por família), com objetos completos — jamais
+  // arrays paralelos de nome/percentual.
+  const sharesByCategory = useMemo(() => {
+    const out: Record<string, FamilyShare[]> = {};
+    if (!currentPerf) return out;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
     const participacaoBase = (currentPerf as any).participacao ?? {};
-    const est: Record<string, Record<string, number>> = {};
+
+    // Acumuladores por categoria → família.
+    const metaAcc: Record<string, Record<string, number>> = {};
+    const estAcc: Record<string, Record<string, number>> = {};
+
     for (const r of currentPerf.rows as any[]) {
       const cat = String(r.categoria ?? "").trim();
       if (!cat) continue;
       const razaoU = String(r.razao_social ?? "").trim().toUpperCase();
       if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
-      est[cat] ??= {};
+      metaAcc[cat] ??= {};
+      estAcc[cat] ??= {};
       for (const f of familias) {
-        const st = r.metas_status?.[f] as FarolStatus | undefined;
-        if (!st) continue;
-        let meta = Number(r.metas?.[f]) || 0;
-        if (meta <= 0) {
+        // Meta financeira da célula: valor direto; fallback = totalMeta × participação salva.
+        let cellMeta = Number(r.metas?.[f]) || 0;
+        if (cellMeta <= 0) {
           const totalMeta =
             Number(r.total_meta) ||
             familias.reduce((s, fam) => s + (Number(r.metas?.[fam]) || 0), 0);
           const shareFamilia = Number(participacaoBase?.[f]) || 0;
-          meta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
+          cellMeta = totalMeta > 0 && shareFamilia > 0 ? totalMeta * (shareFamilia / 100) : 0;
         }
-        if (meta <= 0) continue; // ponderação exige uma base financeira estimável
-        const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
-        est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
+        if (cellMeta <= 0) continue;
+        const st = r.metas_status?.[f] as FarolStatus | undefined;
+        const factor = st ? RANGE_FACTOR[st] : 0;
+        metaAcc[cat][f] = (metaAcc[cat][f] ?? 0) + cellMeta;
+        estAcc[cat][f] = (estAcc[cat][f] ?? 0) + cellMeta * factor;
       }
     }
-    const out: Record<string, Array<{ familia: string; participacao: number | null; idx: number }>> = {};
-    for (const [cat, famMap] of Object.entries(est)) {
-      const total = Object.values(famMap).reduce((s, v) => s + v, 0);
-      out[cat] = familias.map((f, idx) => ({
-        familia: f,
-        participacao: total > 0 ? ((famMap[f] ?? 0) / total) * 100 : null,
-        idx,
-      }));
+
+    for (const cat of Object.keys(estAcc)) {
+      const famMap = estAcc[cat];
+      const metaMap = metaAcc[cat] ?? {};
+      const categoryEstimatedTotal = familias.reduce((s, f) => s + (famMap[f] ?? 0), 0);
+      const list: FamilyShare[] = familias.map((f) => {
+        const estimatedRealized = famMap[f] ?? 0;
+        const shareRatio =
+          categoryEstimatedTotal > 0 ? estimatedRealized / categoryEstimatedTotal : 0;
+        return {
+          familyKey: f,
+          familyName: f,
+          metaTotal: metaMap[f] ?? 0,
+          estimatedRealized,
+          shareRatio,
+        };
+      });
+
+      // Validações automáticas — logadas no console; não bloqueiam render.
+      const soma = list.reduce((s, x) => s + x.shareRatio, 0);
+      const anyNeg = list.some((x) => x.shareRatio < 0);
+      const anyOver = list.some((x) => x.shareRatio > 1);
+      const uniq = new Set(list.map((x) => x.familyKey)).size === list.length;
+      // eslint-disable-next-line no-console
+      console.debug(`[BI shares] ${cat}`, {
+        categoryEstimatedTotal,
+        familias: list.map((x) => ({
+          familia: x.familyName,
+          meta: x.metaTotal,
+          estimado: x.estimatedRealized,
+          share: x.shareRatio,
+        })),
+        somaShares: soma,
+        somaOk: soma > 0.999 && soma < 1.001,
+        anyNeg,
+        anyOver,
+        uniqueFamilias: uniq,
+      });
+
+      out[cat] = list;
     }
     return out;
   }, [currentPerf]);
 
   const orderedCats = useMemo(
-    () => (CAT_ORDER as readonly string[]).filter((c) => sharesPorCat[c]).concat(
-      Object.keys(sharesPorCat).filter((c) => !(CAT_ORDER as readonly string[]).includes(c)),
-    ),
-    [sharesPorCat],
+    () =>
+      (CAT_ORDER as readonly string[])
+        .filter((c) => sharesByCategory[c])
+        .concat(
+          Object.keys(sharesByCategory).filter(
+            (c) => !(CAT_ORDER as readonly string[]).includes(c),
+          ),
+        ),
+    [sharesByCategory],
   );
 
-  const menoresPorCat = useMemo(() => {
-    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
+  const rankingsPorCat = useMemo(() => {
+    const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
-      const list = sharesPorCat[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
-      if (total <= 0) { out[cat] = []; continue; }
-      const sorted = list.slice().sort((a, b) => {
-        const pa = a.participacao ?? Infinity;
-        const pb = b.participacao ?? Infinity;
-        if (pa !== pb) return pa - pb;
-        return a.idx - b.idx;
+      const list = sharesByCategory[cat] ?? [];
+      const total = list.reduce((s, x) => s + x.estimatedRealized, 0);
+      if (total <= 0) {
+        out[cat] = { menores: [], maiores: [] };
+        continue;
+      }
+      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
+      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
+      // eslint-disable-next-line no-console
+      console.debug(`[BI ranking] ${cat}`, {
+        menores: menores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
+        maiores: maiores.map((x) => ({ familia: x.familyName, share: x.shareRatio })),
       });
-      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
+      out[cat] = { menores, maiores };
     }
     return out;
-  }, [sharesPorCat, orderedCats]);
+  }, [sharesByCategory, orderedCats]);
 
-  const maioresPorCat = useMemo(() => {
-    const out: Record<string, Array<{ familia: string; participacao: number | null }>> = {};
-    for (const cat of orderedCats) {
-      const list = sharesPorCat[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.participacao ?? 0), 0);
-      if (total <= 0) { out[cat] = []; continue; }
-      const sorted = list.slice().sort((a, b) => {
-        const pa = a.participacao ?? -Infinity;
-        const pb = b.participacao ?? -Infinity;
-        if (pa !== pb) return pb - pa;
-        return a.idx - b.idx;
-      });
-      out[cat] = sorted.slice(0, 3).map(({ familia, participacao }) => ({ familia, participacao }));
-    }
-    return out;
-  }, [sharesPorCat, orderedCats]);
+
 
   return (
     <div className="surface rounded-xl overflow-hidden">
@@ -341,31 +405,35 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   3 famílias com menor participação estimada por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {Object.entries(menoresPorCat).map(([cat, list]) => (
-                    <div key={cat} className="rounded-xl border border-border p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
-                          {cat}
-                        </span>
-                        <span className="text-xs text-muted-foreground">menores 3</span>
+                  {orderedCats.map((cat) => {
+                    const list = rankingsPorCat[cat]?.menores ?? [];
+                    return (
+                      <div key={cat} className="rounded-xl border border-border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                            {cat}
+                          </span>
+                          <span className="text-xs text-muted-foreground">menores 3</span>
+                        </div>
+                        {list.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">Sem base</div>
+                        ) : (
+                          <ol className="space-y-1.5 text-sm">
+                            {list.map((item, i) => (
+                              <li key={`${cat}-min-${item.familyKey}`} className="flex items-center justify-between gap-2">
+                                <span className="text-muted-foreground w-4">{i + 1}.</span>
+                                <span className="flex-1 truncate">{item.familyName}</span>
+                                <span className="tabular-nums font-medium">{fmtShare(item.shareRatio)}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
-                      {list.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Sem base</div>
-                      ) : (
-                        <ol className="space-y-1.5 text-sm">
-                          {list.map((p, i) => (
-                            <li key={`${cat}-min-${i}`} className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground w-4">{i + 1}.</span>
-                              <span className="flex-1 truncate">{p.familia}</span>
-                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
+
 
               {/* 3 famílias com maior participação estimada por categoria */}
               <div>
@@ -373,31 +441,35 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   3 famílias com maior participação estimada por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {Object.entries(maioresPorCat).map(([cat, list]) => (
-                    <div key={cat} className="rounded-xl border border-border p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
-                          {cat}
-                        </span>
-                        <span className="text-xs text-muted-foreground">maiores 3</span>
+                  {orderedCats.map((cat) => {
+                    const list = rankingsPorCat[cat]?.maiores ?? [];
+                    return (
+                      <div key={cat} className="rounded-xl border border-border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(cat))}>
+                            {cat}
+                          </span>
+                          <span className="text-xs text-muted-foreground">maiores 3</span>
+                        </div>
+                        {list.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">Sem base</div>
+                        ) : (
+                          <ol className="space-y-1.5 text-sm">
+                            {list.map((item, i) => (
+                              <li key={`${cat}-max-${item.familyKey}`} className="flex items-center justify-between gap-2">
+                                <span className="text-muted-foreground w-4">{i + 1}.</span>
+                                <span className="flex-1 truncate">{item.familyName}</span>
+                                <span className="tabular-nums font-medium">{fmtShare(item.shareRatio)}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
-                      {list.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Sem base</div>
-                      ) : (
-                        <ol className="space-y-1.5 text-sm">
-                          {list.map((p, i) => (
-                            <li key={`${cat}-max-${i}`} className="flex items-center justify-between gap-2">
-                              <span className="text-muted-foreground w-4">{i + 1}.</span>
-                              <span className="flex-1 truncate">{p.familia}</span>
-                              <span className="tabular-nums font-medium">{fmtPct(p.participacao)}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
+
 
             </>
           )}
