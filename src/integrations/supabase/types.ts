@@ -1343,7 +1343,6 @@ export type Database = {
       }
       gerador_performance_salvos: {
         Row: {
-          categoria_metas: Json
           created_at: string
           familias: Json
           id: string
@@ -1359,7 +1358,6 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
-          categoria_metas?: Json
           created_at?: string
           familias?: Json
           id?: string
@@ -1375,7 +1373,6 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
-          categoria_metas?: Json
           created_at?: string
           familias?: Json
           id?: string
@@ -2682,7 +2679,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
-          data: Json
+          data_safe: Json
           filename: string | null
           id: string
           periodo_label: string
@@ -2694,7 +2691,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
-          data: Json
+          data_safe?: Json
           filename?: string | null
           id?: string
           periodo_label: string
@@ -2706,7 +2703,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
-          data?: Json
+          data_safe?: Json
           filename?: string | null
           id?: string
           periodo_label?: string
@@ -2731,15 +2728,14 @@ export type Database = {
           categoria: string | null
           company_id: string
           created_at: string
+          familia_pct: Json
           id: string
-          metas: Json
           metas_cores: Json
           metas_status: Json
           observacao: string | null
           ordem: number
           razao_social: string
-          realizado: Json
-          total_meta: number | null
+          total_pct: number | null
           total_pct_status: string | null
           upload_id: string
         }
@@ -2748,15 +2744,14 @@ export type Database = {
           categoria?: string | null
           company_id: string
           created_at?: string
+          familia_pct?: Json
           id?: string
-          metas?: Json
           metas_cores?: Json
           metas_status?: Json
           observacao?: string | null
           ordem?: number
           razao_social: string
-          realizado?: Json
-          total_meta?: number | null
+          total_pct?: number | null
           total_pct_status?: string | null
           upload_id: string
         }
@@ -2765,15 +2760,14 @@ export type Database = {
           categoria?: string | null
           company_id?: string
           created_at?: string
+          familia_pct?: Json
           id?: string
-          metas?: Json
           metas_cores?: Json
           metas_status?: Json
           observacao?: string | null
           ordem?: number
           razao_social?: string
-          realizado?: Json
-          total_meta?: number | null
+          total_pct?: number | null
           total_pct_status?: string | null
           upload_id?: string
         }
@@ -2789,17 +2783,18 @@ export type Database = {
       }
       rep_performance_uploads: {
         Row: {
-          atingimento: Json | null
-          categoria_metas: Json
+          atingimento_geral: number | null
+          categoria_participacao: Json
           company_id: string
           created_at: string
           escala_percentual: Json
+          familia_atingimento_categoria: Json
+          familia_participacao_categoria: Json
           familias: string[]
           filename: string | null
           id: string
           observacao: string | null
           origem: string
-          participacao: Json | null
           periodo_fim: string | null
           periodo_inicio: string | null
           periodo_label: string
@@ -2811,17 +2806,18 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
-          atingimento?: Json | null
-          categoria_metas?: Json
+          atingimento_geral?: number | null
+          categoria_participacao?: Json
           company_id: string
           created_at?: string
           escala_percentual?: Json
+          familia_atingimento_categoria?: Json
+          familia_participacao_categoria?: Json
           familias?: string[]
           filename?: string | null
           id?: string
           observacao?: string | null
           origem?: string
-          participacao?: Json | null
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label: string
@@ -2833,17 +2829,18 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
-          atingimento?: Json | null
-          categoria_metas?: Json
+          atingimento_geral?: number | null
+          categoria_participacao?: Json
           company_id?: string
           created_at?: string
           escala_percentual?: Json
+          familia_atingimento_categoria?: Json
+          familia_participacao_categoria?: Json
           familias?: string[]
           filename?: string | null
           id?: string
           observacao?: string | null
           origem?: string
-          participacao?: Json | null
           periodo_fim?: string | null
           periodo_inicio?: string | null
           periodo_label?: string
