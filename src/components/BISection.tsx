@@ -113,7 +113,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       if (!up?.id) return null;
       const { data: rows } = await supabase
         .from("rep_performance_rows")
-        .select("categoria, razao_social, metas, metas_status")
+        .select("categoria, razao_social, metas, metas_status, total_meta")
         .eq("upload_id", up.id);
       return { familias: (up.familias as string[]) ?? [], participacao: (up as any).participacao ?? {}, rows: rows ?? [] };
     },
