@@ -113,7 +113,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       if (!up?.id) return null;
       const { data: rows } = await supabase
         .from("rep_performance_rows")
-        .select("categoria, metas, metas_status")
+        .select("categoria, razao_social, metas, metas_status")
         .eq("upload_id", up.id);
       return { familias: (up.familias as string[]) ?? [], rows: rows ?? [] };
     },
@@ -123,7 +123,6 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     if (!currentPerf) return {} as Record<string, Array<{ familia: string; participacao: number | null }>>;
     const SUMMARY = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
     const familias = currentPerf.familias;
-    // categoria -> familia -> soma do realizado estimado
     const est: Record<string, Record<string, number>> = {};
     for (const r of currentPerf.rows as any[]) {
       const cat = String(r.categoria ?? "").trim();
@@ -132,9 +131,12 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       if (SUMMARY.some((p) => razaoU.startsWith(p))) continue;
       est[cat] ??= {};
       for (const f of familias) {
-        const meta = Number(r.metas?.[f]) || 0;
         const st = r.metas_status?.[f] as FarolStatus | undefined;
-        if (!st || meta <= 0) continue;
+        if (!st) continue;
+        // Faixa mode: se a planilha só tem farol (meta numérica ausente), usa peso 1
+        // por família para não zerar a base, mantendo a estimativa via midpoint do farol.
+        const metaRaw = Number(r.metas?.[f]) || 0;
+        const meta = metaRaw > 0 ? metaRaw : 1;
         const realizadoEst = meta * (FAROL_MIDPOINT[st] / 100);
         est[cat][f] = (est[cat][f] ?? 0) + realizadoEst;
       }
