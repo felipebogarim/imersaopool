@@ -39,10 +39,13 @@ export type FamilyShare = {
 };
 
 
+type Metric = "participation" | "attainment";
+
 export function BISection({ repId, repName }: { repId: string; repName: string }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [metric, setMetric] = useState<Metric>("participation");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: bi = null, isLoading } = useQuery({
