@@ -208,7 +208,7 @@ function PerformancePage() {
   }, [effectiveUploadId]);
 
   const familias: string[] = (currentUpload?.familias as string[]) ?? [];
-  const categoriaMetas: Record<string, number> = (currentUpload?.categoria_metas as Record<string, number>) ?? {};
+  const categoriaMetas: Record<string, number> = ((currentUpload as any)?.categoria_metas as Record<string, number>) ?? {};
 
   // Fonte de verdade para render/totais: draft se editando, senão rows
   const view: Row[] = editing && draft ? draft : rows;
