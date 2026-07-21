@@ -271,6 +271,8 @@ function FormsPage() {
 }
 
 function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const { data: responses } = useQuery({
     queryKey: ["form-responses", form?.id],
     enabled: !!form,
@@ -284,6 +286,15 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
       return data ?? [];
     },
   });
+
+  async function doDelete() {
+    if (!pendingDelete) return;
+    const { error } = await supabase.from("form_responses").delete().eq("id", pendingDelete);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Resposta excluída");
+    qc.invalidateQueries({ queryKey: ["form-responses", form?.id] });
+    qc.invalidateQueries({ queryKey: ["forms-response-counts"] });
+  }
 
   function exportCsv() {
     if (!form || !responses) return;
