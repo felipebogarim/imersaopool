@@ -23,6 +23,7 @@ import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDial
 import { logActivity } from "@/lib/kanban-activity";
 import { runAutomationsForMove } from "@/lib/kanban-automations";
 import { cn } from "@/lib/utils";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
@@ -321,8 +322,28 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
 }
 
 function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
+  const qc = useQueryClient();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: "card" } });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  const isMaster = useIsMasterAdmin();
+
+  async function editCard(e: React.MouseEvent) {
+    e.stopPropagation();
+    const title = prompt("Título do card:", card.title)?.trim();
+    if (!title || title === card.title) return;
+    const { error } = await supabase.from("kanban_cards").update({ title }).eq("id", card.id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["kanban-cards", card.board_id] });
+  }
+  async function deleteCard(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm(`Excluir card "${card.title}"?`)) return;
+    const { error } = await supabase.from("kanban_cards").update({ archived_at: new Date().toISOString() }).eq("id", card.id);
+    if (error) return toast.error(error.message);
+    toast.success("Card excluído");
+    qc.invalidateQueries({ queryKey: ["kanban-cards", card.board_id] });
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -340,6 +361,21 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
+      {isMaster && (
+        <div className="absolute right-7 top-1.5 z-10 opacity-0 transition group-hover:opacity-100">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={editCard}>Editar</DropdownMenuItem>
+              <DropdownMenuItem onClick={deleteCard} className="text-destructive">Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
       <KanbanCard card={card} onClick={onClick} />
     </div>
   );

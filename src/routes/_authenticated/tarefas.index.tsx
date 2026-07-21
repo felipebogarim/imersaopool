@@ -11,11 +11,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trello, LayoutGrid, Calendar, AlertTriangle, CheckCircle2, Clock, ListChecks, Users } from "lucide-react";
+import { Plus, Trello, LayoutGrid, Calendar, AlertTriangle, CheckCircle2, Clock, ListChecks, Users, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KanbanPriority, Workspace } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { cn } from "@/lib/utils";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/tarefas/")({
   head: () => ({ meta: [{ title: "Gestão de Tarefas — PoolFlux" }] }),
@@ -59,7 +63,27 @@ function TarefasPage() {
 // ============= WORKSPACES + BOARDS =============
 function BoardsView() {
   const qc = useQueryClient();
+  const isMaster = useIsMasterAdmin();
   const [openNewBoard, setOpenNewBoard] = useState<string | null>(null);
+
+  async function editWorkspace(ws: Workspace) {
+    const name = prompt("Nome do workspace:", ws.name)?.trim();
+    if (!name || name === ws.name) return;
+    const { error } = await supabase.from("kanban_workspaces").update({ name }).eq("id", ws.id);
+    if (error) return toast.error(error.message);
+    toast.success("Workspace atualizado");
+    qc.invalidateQueries({ queryKey: ["kanban-workspaces"] });
+  }
+  async function deleteWorkspace(ws: Workspace) {
+    if (!confirm(`Excluir workspace "${ws.name}"? Os boards também serão arquivados.`)) return;
+    const now = new Date().toISOString();
+    await supabase.from("kanban_boards").update({ archived_at: now }).eq("workspace_id", ws.id);
+    const { error } = await supabase.from("kanban_workspaces").update({ archived_at: now }).eq("id", ws.id);
+    if (error) return toast.error(error.message);
+    toast.success("Workspace excluído");
+    qc.invalidateQueries({ queryKey: ["kanban-workspaces"] });
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
 
   const { data: workspaces = [], isLoading: loadingWs } = useQuery({
     queryKey: ["kanban-workspaces"],
@@ -112,12 +136,25 @@ function BoardsView() {
                   {ws.description && <p className="text-xs text-muted-foreground">{ws.description}</p>}
                 </div>
               </div>
-              <Dialog open={openNewBoard === ws.id} onOpenChange={(o) => setOpenNewBoard(o ? ws.id : null)}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="gap-2"><Plus className="h-3.5 w-3.5" /> Novo board</Button>
-                </DialogTrigger>
-                <NewBoardDialog workspaceId={ws.id} onDone={() => { setOpenNewBoard(null); qc.invalidateQueries({ queryKey: ["kanban-boards-all"] }); }} />
-              </Dialog>
+              <div className="flex items-center gap-2">
+                <Dialog open={openNewBoard === ws.id} onOpenChange={(o) => setOpenNewBoard(o ? ws.id : null)}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="gap-2"><Plus className="h-3.5 w-3.5" /> Novo board</Button>
+                  </DialogTrigger>
+                  <NewBoardDialog workspaceId={ws.id} onDone={() => { setOpenNewBoard(null); qc.invalidateQueries({ queryKey: ["kanban-boards-all"] }); }} />
+                </Dialog>
+                {isMaster && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => editWorkspace(ws)}>Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => deleteWorkspace(ws)} className="text-destructive">Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
             {wsBoards.length === 0 ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -125,7 +162,7 @@ function BoardsView() {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {wsBoards.map((b) => <BoardCard key={b.id} board={b} />)}
+                {wsBoards.map((b) => <BoardCard key={b.id} board={b} isMaster={isMaster} />)}
               </div>
             )}
           </section>
@@ -135,7 +172,8 @@ function BoardsView() {
   );
 }
 
-function BoardCard({ board }: { board: Board }) {
+function BoardCard({ board, isMaster }: { board: Board; isMaster: boolean }) {
+  const qc = useQueryClient();
   const { data: counts } = useQuery({
     queryKey: ["board-card-count", board.id],
     queryFn: async () => {
@@ -147,12 +185,46 @@ function BoardCard({ board }: { board: Board }) {
       return count ?? 0;
     },
   });
+
+  async function editBoard(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    const name = prompt("Nome do board:", board.name)?.trim();
+    if (!name || name === board.name) return;
+    const { error } = await supabase.from("kanban_boards").update({ name }).eq("id", board.id);
+    if (error) return toast.error(error.message);
+    toast.success("Board atualizado");
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
+  async function deleteBoard(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm(`Excluir board "${board.name}"?`)) return;
+    const { error } = await supabase.from("kanban_boards").update({ archived_at: new Date().toISOString() }).eq("id", board.id);
+    if (error) return toast.error(error.message);
+    toast.success("Board excluído");
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
+
   return (
     <Link
       to="/tarefas/b/$boardId"
       params={{ boardId: board.id }}
-      className="group rounded-lg border bg-card p-4 shadow-sm transition hover:shadow-md"
+      className="group relative rounded-lg border bg-card p-4 shadow-sm transition hover:shadow-md"
     >
+      {isMaster && (
+        <div className="absolute right-2 top-2" onClick={(e) => e.preventDefault()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={editBoard}>Editar</DropdownMenuItem>
+              <DropdownMenuItem onClick={deleteBoard} className="text-destructive">Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
       <div className="mb-2 h-2 w-16 rounded" style={{ background: board.color ?? "#3B82F6" }} />
       <div className="font-medium">{board.name}</div>
       {board.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{board.description}</p>}
