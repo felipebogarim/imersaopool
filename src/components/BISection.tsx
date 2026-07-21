@@ -81,7 +81,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
         company_id: rep.company_id,
         periodo_label: "1º Semestre 2026",
         filename: file.name,
-        data: parsed,
+        data_safe: parsed,
         uploaded_by: userRes.user?.id ?? null,
       });
       if (error) throw error;
@@ -103,7 +103,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     upload.mutate(f);
   }
 
-  const d: BIData | null = (bi?.data as BIData) ?? null;
+  const d: BIData | null = ((bi?.data_safe ?? bi?.data) as BIData) ?? null;
   const catsSorted = useMemo(
     () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
     [d],
