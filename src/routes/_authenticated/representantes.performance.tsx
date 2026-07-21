@@ -715,8 +715,8 @@ function PerformancePage() {
               <Button variant="ghost" onClick={() => { setRepId(""); setUploadId(""); }}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
-              <Button variant="outline" onClick={startEdit} disabled={!currentUpload}>
-                <Pencil className="h-4 w-4 mr-1" /> Editar metas
+              <Button variant="outline" onClick={() => setAcoesOpen(true)} disabled={!repId}>
+                <Lightbulb className="h-4 w-4 mr-1" /> Ações Sugeridas
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/clientes-bi-batch/$repId" params={{ repId }}>
