@@ -34,6 +34,8 @@ export type FamilyShare = {
   familyKey: string;
   familyName: string;
   shareRatio: number; // 0..1
+  attainmentRatio: number | null; // 0..1+, null when meta = 0
+  metaTotal?: number;
 };
 
 
@@ -143,13 +145,19 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
       const list = sharesByCategory[cat] ?? [];
-      const total = list.reduce((s, x) => s + (x.shareRatio ?? 0), 0);
-      if (total <= 0) {
+      // Rankings agora por atingimento ponderado da família na categoria,
+      // não por participação. Só considera famílias com meta > 0.
+      const withAttain = list.filter((x) => x.attainmentRatio != null && (x.metaTotal ?? 0) > 0);
+      if (withAttain.length === 0) {
         out[cat] = { menores: [], maiores: [] };
         continue;
       }
-      const menores = [...list].sort((a, b) => a.shareRatio - b.shareRatio).slice(0, 3);
-      const maiores = [...list].sort((a, b) => b.shareRatio - a.shareRatio).slice(0, 3);
+      const menores = [...withAttain]
+        .sort((a, b) => (a.attainmentRatio ?? 0) - (b.attainmentRatio ?? 0))
+        .slice(0, 3);
+      const maiores = [...withAttain]
+        .sort((a, b) => (b.attainmentRatio ?? 0) - (a.attainmentRatio ?? 0))
+        .slice(0, 3);
       out[cat] = { menores, maiores };
     }
     return out;
@@ -244,10 +252,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* Participação das categorias */}
+              {/* Participação ponderada por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Participação das categorias no total
+                  Participação ponderada por categoria (%)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {catsSorted.map((c) => (
@@ -267,10 +275,13 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* Distribuição do farol */}
+              {/* Participação ponderada por faixa do farol */}
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Distribuição dos grupos do farol
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  Participação ponderada por faixa do farol (%)
+                </div>
+                <div className="text-[11px] text-muted-foreground mb-2">
+                  Percentual de participação de cada faixa no total ponderado. Registros sem compra não geram participação.
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   {farolSorted.map((f) => {
@@ -291,10 +302,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-              {/* 3 famílias com menor participação estimada por categoria */}
+              {/* 3 famílias com menor atingimento por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  3 famílias com menor participação estimada por categoria
+                  3 famílias com menor atingimento por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {orderedCats.map((cat) => {
@@ -315,7 +326,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                               <li key={`${cat}-min-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
                                 <span className="flex-1 truncate">{item.familyName}</span>
-                                <span className="tabular-nums font-medium">{fmtShare(item.shareRatio)}</span>
+                                <span className="tabular-nums font-medium">{fmtShare(item.attainmentRatio)}</span>
                               </li>
                             ))}
                           </ol>
@@ -327,10 +338,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
               </div>
 
 
-              {/* 3 famílias com maior participação estimada por categoria */}
+              {/* 3 famílias com maior atingimento por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  3 famílias com maior participação estimada por categoria
+                  3 famílias com maior atingimento por categoria
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {orderedCats.map((cat) => {
@@ -351,7 +362,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                               <li key={`${cat}-max-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
                                 <span className="flex-1 truncate">{item.familyName}</span>
-                                <span className="tabular-nums font-medium">{fmtShare(item.shareRatio)}</span>
+                                <span className="tabular-nums font-medium">{fmtShare(item.attainmentRatio)}</span>
                               </li>
                             ))}
                           </ol>
@@ -361,6 +372,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   })}
                 </div>
               </div>
+
 
 
             </>
