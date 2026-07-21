@@ -1037,7 +1037,6 @@ function PerformancePage() {
                   <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
                     Categoria
                   </th>
-                  <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted">Total meta</th>
                   <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Total %</th>
                   {visibleFams.map((f) => (
                     <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
@@ -1049,7 +1048,7 @@ function PerformancePage() {
               <tbody>
                 {!currentUpload ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       {repId
                         ? 'Nenhuma planilha importada para este representante. Clique em "Nova planilha".'
                         : "Selecione um representante."}
@@ -1057,13 +1056,13 @@ function PerformancePage() {
                   </tr>
                 ) : view.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Carregando…
                     </td>
                   </tr>
                 ) : filteredView.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={3 + visibleFams.length} className="px-4 py-12 text-center text-muted-foreground">
                       Nenhum cliente encontrado com os filtros atuais.
                     </td>
                   </tr>
@@ -1115,9 +1114,6 @@ function PerformancePage() {
                               {r.categoria ?? "—"}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/20">
-                            {fmtBRL(r.total_meta ?? totalRow)}
-                          </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
                             {r.total_pct_status ? (
                               <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
@@ -1158,29 +1154,12 @@ function PerformancePage() {
                       };
                       return (
                         <>
-                          {/* TOTAL GERAL DA META */}
-                          <tr className="border-t-2 border-border bg-muted/60 font-semibold">
-                            <td className="px-3 py-3 sticky left-0 bg-muted/80 z-10 uppercase text-xs tracking-wider">
-                              Total geral da meta
-                            </td>
-                            <td className="px-3 py-3 sticky left-[240px] bg-muted/80 z-10"></td>
-                            <td className="px-3 py-3 text-right tabular-nums">
-                              {fmtBRL(filteredTotals.grand)}
-                            </td>
-                            <td className="px-3 py-3"></td>
-                            {visibleFams.map((f) => (
-                              <td key={f} className="px-3 py-3 text-right tabular-nums">
-                                {fmtBRL(filteredTotals.perFamilia[f] || 0)}
-                              </td>
-                            ))}
-                          </tr>
                           {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
-                          <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
+                          <tr className="border-t-2 border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
                             <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
                               Participação estimada na venda
                             </td>
                             <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
-                            <td className="px-3 py-2.5"></td>
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(participacao?.__total__ ?? null)}
                             </td>
@@ -1196,7 +1175,6 @@ function PerformancePage() {
                               Atingimento estimado da meta
                             </td>
                             <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
-                            <td className="px-3 py-2.5"></td>
                             <td className="px-3 py-2.5 text-center tabular-nums">
                               {fmtPct(atingimento?.__total__ ?? null)}
                             </td>
