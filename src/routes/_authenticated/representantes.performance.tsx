@@ -1114,9 +1114,6 @@ function PerformancePage() {
                               {r.categoria ?? "—"}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/20">
-                            {fmtBRL(r.total_meta ?? totalRow)}
-                          </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
                             {r.total_pct_status ? (
                               <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
