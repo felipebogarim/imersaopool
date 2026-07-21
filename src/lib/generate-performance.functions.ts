@@ -28,6 +28,7 @@ export type GeneratedRow = {
 
 export type GeneratedPerformance = {
   familias: string[];
+  categoria_metas?: Record<string, unknown>;
   rows: GeneratedRow[];
   observacoes?: string;
 };
@@ -59,6 +60,14 @@ export const generatePerformanceFromRaw = createServerFn({ method: "POST" })
 
     const schema = `{
   "familias": string[],
+  "categoria_metas": {
+    "Black"?: number,
+    "Gold"?: number,
+    "Silver"?: number,
+    "__family_metas_by_category__"?: {
+      [categoria: string]: { [familia: string]: number }
+    }
+  },
   "rows": [
     {
       "razao_social": string,
@@ -90,6 +99,9 @@ Regras:
     Se a planilha já traz faixa textual ("<50", "50-69", ">100", "0%") ou cor semântica, use-a diretamente.
   - "total_pct_status": mesmo cálculo para o total do cliente.
 - IMPORTANTE: NUNCA retorne valores realizados/faturados nem valores brutos além da META. Só META em R$ e status de farol.
+- IMPORTANTE: preserve as metas financeiras originais por família. Se a planilha visual consolidada mostrar apenas faixas nas células, mas houver uma matriz/configuração de metas por categoria (ex.: Black/Gold/Silver) em outra aba ou área, preencha "categoria_metas.__family_metas_by_category__[categoria][familia]" com esses valores absolutos em R$.
+- "categoria_metas.Black/Gold/Silver" deve conter o total de meta da categoria, quando conhecido.
+- Não use participação global de famílias como substituto para metas financeiras por categoria.
 - Se a mesma "razão social" aparecer em várias abas, consolide em UMA linha.
 - Se a planilha for ambígua, use o campo "observacoes" para explicar suposições.
 - Retorne APENAS JSON válido no schema abaixo. Sem markdown, sem comentários.
