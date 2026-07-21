@@ -103,7 +103,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     upload.mutate(f);
   }
 
-  const d: BIData | null = (bi?.data as BIData) ?? null;
+  const d: BIData | null = ((bi?.data_safe ?? bi?.data) as BIData) ?? null;
   const catsSorted = useMemo(
     () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
     [d],
