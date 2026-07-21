@@ -136,12 +136,25 @@ function BoardsView() {
                   {ws.description && <p className="text-xs text-muted-foreground">{ws.description}</p>}
                 </div>
               </div>
-              <Dialog open={openNewBoard === ws.id} onOpenChange={(o) => setOpenNewBoard(o ? ws.id : null)}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="gap-2"><Plus className="h-3.5 w-3.5" /> Novo board</Button>
-                </DialogTrigger>
-                <NewBoardDialog workspaceId={ws.id} onDone={() => { setOpenNewBoard(null); qc.invalidateQueries({ queryKey: ["kanban-boards-all"] }); }} />
-              </Dialog>
+              <div className="flex items-center gap-2">
+                <Dialog open={openNewBoard === ws.id} onOpenChange={(o) => setOpenNewBoard(o ? ws.id : null)}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="gap-2"><Plus className="h-3.5 w-3.5" /> Novo board</Button>
+                  </DialogTrigger>
+                  <NewBoardDialog workspaceId={ws.id} onDone={() => { setOpenNewBoard(null); qc.invalidateQueries({ queryKey: ["kanban-boards-all"] }); }} />
+                </Dialog>
+                {isMaster && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => editWorkspace(ws)}>Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => deleteWorkspace(ws)} className="text-destructive">Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
             {wsBoards.length === 0 ? (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -149,7 +162,7 @@ function BoardsView() {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {wsBoards.map((b) => <BoardCard key={b.id} board={b} />)}
+                {wsBoards.map((b) => <BoardCard key={b.id} board={b} isMaster={isMaster} />)}
               </div>
             )}
           </section>
