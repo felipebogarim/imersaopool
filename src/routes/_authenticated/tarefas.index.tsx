@@ -172,7 +172,8 @@ function BoardsView() {
   );
 }
 
-function BoardCard({ board }: { board: Board }) {
+function BoardCard({ board, isMaster }: { board: Board; isMaster: boolean }) {
+  const qc = useQueryClient();
   const { data: counts } = useQuery({
     queryKey: ["board-card-count", board.id],
     queryFn: async () => {
@@ -184,12 +185,46 @@ function BoardCard({ board }: { board: Board }) {
       return count ?? 0;
     },
   });
+
+  async function editBoard(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    const name = prompt("Nome do board:", board.name)?.trim();
+    if (!name || name === board.name) return;
+    const { error } = await supabase.from("kanban_boards").update({ name }).eq("id", board.id);
+    if (error) return toast.error(error.message);
+    toast.success("Board atualizado");
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
+  async function deleteBoard(e: React.MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm(`Excluir board "${board.name}"?`)) return;
+    const { error } = await supabase.from("kanban_boards").update({ archived_at: new Date().toISOString() }).eq("id", board.id);
+    if (error) return toast.error(error.message);
+    toast.success("Board excluído");
+    qc.invalidateQueries({ queryKey: ["kanban-boards-all"] });
+  }
+
   return (
     <Link
       to="/tarefas/b/$boardId"
       params={{ boardId: board.id }}
-      className="group rounded-lg border bg-card p-4 shadow-sm transition hover:shadow-md"
+      className="group relative rounded-lg border bg-card p-4 shadow-sm transition hover:shadow-md"
     >
+      {isMaster && (
+        <div className="absolute right-2 top-2" onClick={(e) => e.preventDefault()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={editBoard}>Editar</DropdownMenuItem>
+              <DropdownMenuItem onClick={deleteBoard} className="text-destructive">Excluir</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
       <div className="mb-2 h-2 w-16 rounded" style={{ background: board.color ?? "#3B82F6" }} />
       <div className="font-medium">{board.name}</div>
       {board.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{board.description}</p>}
