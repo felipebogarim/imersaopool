@@ -311,7 +311,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                         { to: "/admin/mfa-recuperacao", label: "Recuperação de MFA", icon: KeyRound },
                         { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
                         { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
+                        { to: "/admin/criterios-seguranca", label: "Critérios de Segurança", icon: ShieldCheck },
                         { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
+
                       ].map(item => (
                         <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
                       ))}
