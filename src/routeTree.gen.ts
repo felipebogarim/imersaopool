@@ -55,6 +55,8 @@ import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedClientesBiBatchRepIdRouteImport } from './routes/_authenticated/clientes-bi-batch.$repId'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminMfaRecuperacaoRouteImport } from './routes/_authenticated/admin.mfa-recuperacao'
+import { Route as AuthenticatedAdminMfaPoliticaRouteImport } from './routes/_authenticated/admin.mfa-politica'
 import { Route as AuthenticatedAdminMfaRouteImport } from './routes/_authenticated/admin.mfa'
 import { Route as AuthenticatedAdminLgpdRouteImport } from './routes/_authenticated/admin.lgpd'
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
@@ -321,6 +323,18 @@ const AuthenticatedAdminPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMfaRecuperacaoRoute =
+  AuthenticatedAdminMfaRecuperacaoRouteImport.update({
+    id: '/mfa-recuperacao',
+    path: '/mfa-recuperacao',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMfaPoliticaRoute =
+  AuthenticatedAdminMfaPoliticaRouteImport.update({
+    id: '/mfa-politica',
+    path: '/mfa-politica',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminMfaRoute = AuthenticatedAdminMfaRouteImport.update({
   id: '/mfa',
   path: '/mfa',
@@ -456,6 +470,8 @@ export interface FileRoutesByFullPath {
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/admin/mfa': typeof AuthenticatedAdminMfaRoute
+  '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
+  '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -521,6 +537,8 @@ export interface FileRoutesByTo {
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/admin/mfa': typeof AuthenticatedAdminMfaRoute
+  '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
+  '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -588,6 +606,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/_authenticated/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/_authenticated/admin/mfa': typeof AuthenticatedAdminMfaRoute
+  '/_authenticated/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
+  '/_authenticated/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -655,6 +675,8 @@ export interface FileRouteTypes {
     | '/admin/gerador-performance'
     | '/admin/lgpd'
     | '/admin/mfa'
+    | '/admin/mfa-politica'
+    | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
@@ -720,6 +742,8 @@ export interface FileRouteTypes {
     | '/admin/gerador-performance'
     | '/admin/lgpd'
     | '/admin/mfa'
+    | '/admin/mfa-politica'
+    | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
@@ -786,6 +810,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/gerador-performance'
     | '/_authenticated/admin/lgpd'
     | '/_authenticated/admin/mfa'
+    | '/_authenticated/admin/mfa-politica'
+    | '/_authenticated/admin/mfa-recuperacao'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes-bi-batch/$repId'
@@ -1169,6 +1195,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/mfa-recuperacao': {
+      id: '/_authenticated/admin/mfa-recuperacao'
+      path: '/mfa-recuperacao'
+      fullPath: '/admin/mfa-recuperacao'
+      preLoaderRoute: typeof AuthenticatedAdminMfaRecuperacaoRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/mfa-politica': {
+      id: '/_authenticated/admin/mfa-politica'
+      path: '/mfa-politica'
+      fullPath: '/admin/mfa-politica'
+      preLoaderRoute: typeof AuthenticatedAdminMfaPoliticaRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/mfa': {
       id: '/_authenticated/admin/mfa'
       path: '/mfa'
@@ -1306,6 +1346,8 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
   AuthenticatedAdminLgpdRoute: typeof AuthenticatedAdminLgpdRoute
   AuthenticatedAdminMfaRoute: typeof AuthenticatedAdminMfaRoute
+  AuthenticatedAdminMfaPoliticaRoute: typeof AuthenticatedAdminMfaPoliticaRoute
+  AuthenticatedAdminMfaRecuperacaoRoute: typeof AuthenticatedAdminMfaRecuperacaoRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
@@ -1321,6 +1363,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminGeradorPerformanceRoute,
   AuthenticatedAdminLgpdRoute: AuthenticatedAdminLgpdRoute,
   AuthenticatedAdminMfaRoute: AuthenticatedAdminMfaRoute,
+  AuthenticatedAdminMfaPoliticaRoute: AuthenticatedAdminMfaPoliticaRoute,
+  AuthenticatedAdminMfaRecuperacaoRoute: AuthenticatedAdminMfaRecuperacaoRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
