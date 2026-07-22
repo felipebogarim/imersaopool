@@ -4061,6 +4061,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      log_auth_failure: {
+        Args: { _email: string; _metadata?: Json; _reason?: string }
+        Returns: string
+      }
       log_mfa_event: {
         Args: {
           _event: Database["public"]["Enums"]["admin_mfa_event"]
@@ -4077,6 +4081,15 @@ export type Database = {
           _recurso?: string
           _resultado?: string
           _tipo: string
+        }
+        Returns: string
+      }
+      log_sensitive_access: {
+        Args: {
+          _acao: string
+          _metadata?: Json
+          _nivel_risco?: string
+          _recurso: string
         }
         Returns: string
       }
@@ -4106,6 +4119,16 @@ export type Database = {
         Returns: string
       }
       require_admin_aal2: { Args: never; Returns: undefined }
+      sec_intrusion_summary: {
+        Args: { _hours?: number }
+        Returns: {
+          bucket: string
+          chave: string
+          nivel_max: string
+          total: number
+          ultimo: string
+        }[]
+      }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
         Returns: string
