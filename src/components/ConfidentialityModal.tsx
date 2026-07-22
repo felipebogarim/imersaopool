@@ -38,9 +38,9 @@ export function ConfidentialityModal() {
     setError(null);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const sessionId = (await supabase.auth.getSession()).data.session?.access_token?.slice(-16) ?? null;
+      const sessionId = (await supabase.auth.getSession()).data.session?.access_token?.slice(-16);
       const { error: rpcErr } = await supabase.rpc("record_login_acknowledgement", {
-        _session_id: sessionId,
+        _session_id: sessionId ?? undefined,
         _user_agent: navigator.userAgent.slice(0, 500),
       });
       if (rpcErr) throw rpcErr;
