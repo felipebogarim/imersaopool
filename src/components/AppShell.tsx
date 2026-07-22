@@ -189,9 +189,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
-              {NAV_BOTTOM.map(item => (
-                <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-              ))}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPriceOpen(o => !o)}
+                  title="Price"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Tag className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Price</span>
+                  {priceOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {priceOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {PRICE.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
 
               <div className="pt-2">
                 <button
