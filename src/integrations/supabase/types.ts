@@ -3694,6 +3694,110 @@ export type Database = {
         }
         Relationships: []
       }
+      terms_acceptances: {
+        Row: {
+          acceptance_type: string
+          accepted_at: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          session_id: string | null
+          terms_version_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          acceptance_type: string
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          session_id?: string | null
+          terms_version_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          acceptance_type?: string
+          accepted_at?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          session_id?: string | null
+          terms_version_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_acceptances_terms_version_id_fkey"
+            columns: ["terms_version_id"]
+            isOneToOne: false
+            referencedRelation: "terms_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      terms_versions: {
+        Row: {
+          change_summary: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          is_active: boolean
+          published_at: string
+          published_by: string | null
+          requires_new_acceptance: boolean
+          summary_content: string | null
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string
+          published_by?: string | null
+          requires_new_acceptance?: boolean
+          summary_content?: string | null
+          title: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          published_at?: string
+          published_by?: string | null
+          requires_new_acceptance?: boolean
+          summary_content?: string | null
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -3720,6 +3824,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_terms_conformidade: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          accepted_version: string
+          active_version: string
+          email: string
+          full_name: string
+          last_login_ack_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          user_id: string
+        }[]
+      }
       admin_list_users: {
         Args: never
         Returns: {
@@ -3760,6 +3878,18 @@ export type Database = {
           immersion_id: string
           representative_name: string
           titulo: string
+        }[]
+      }
+      get_my_terms_status: {
+        Args: never
+        Returns: {
+          active_effective_at: string
+          active_published_at: string
+          active_version: string
+          active_version_id: string
+          last_accepted_at: string
+          last_accepted_version: string
+          status: string
         }[]
       }
       has_role: {
@@ -3819,6 +3949,14 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_login_acknowledgement: {
+        Args: { _session_id?: string; _user_agent?: string }
+        Returns: string
+      }
+      record_terms_acceptance: {
+        Args: { _session_id?: string; _user_agent?: string }
+        Returns: string
       }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
