@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandMark } from "@/components/Brand";
@@ -19,17 +20,17 @@ const NAV = [
 const INPUTS = [
   { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
-  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
-  { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
   { to: "/tarefas", label: "Gestão de Tarefas", icon: ListChecks },
   { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
 
+const ANALISES = [
+  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
+  { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
+] as const;
+
 const NAV_BOTTOM = [
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/agentes", label: "Agentes", icon: UserCog },
-  { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
-  { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
 ] as const;
 
 const REPS = [
@@ -37,8 +38,13 @@ const REPS = [
   { to: "/representantes/performance", label: "Performance", icon: TrendingUp },
 ] as const;
 
-const BASES = [
+const CLIENTES = [
   { to: "/clientes", label: "Clientes", icon: Briefcase },
+  { to: "/projecao", label: "Projeção de Categorias / Benefícios", icon: TrendingUp },
+  { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
+] as const;
+
+const BASES = [
   { to: "/produtos", label: "Produtos", icon: Package },
   { to: "/familias", label: "Famílias", icon: Package },
   { to: "/roteiros", label: "Roteiros", icon: BookOpen },
