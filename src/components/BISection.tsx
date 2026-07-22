@@ -478,8 +478,30 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   </Button>
                 </form>
                 {aiAnswer != null && (
-                  <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm whitespace-pre-wrap">
-                    {aiAnswer || "Sem resposta."}
+                  <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="whitespace-pre-wrap flex-1">{aiAnswer || "Sem resposta."}</div>
+                      {aiAnswer && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => exportAiPdf(repName, aiQuestion, aiAnswer)}>
+                              <FileText className="h-4 w-4 mr-2" /> Salvar em PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportAiXlsx(repName, aiQuestion, aiAnswer)}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" /> Salvar em Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => shareAiWhats(repName, aiQuestion, aiAnswer)}>
+                              <Share2 className="h-4 w-4 mr-2" /> Compartilhar no WhatsApp
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
