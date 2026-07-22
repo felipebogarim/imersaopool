@@ -33,7 +33,17 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Registra tentativa suspeita/falha para o monitor de intrusão
+      try {
+        await supabase.rpc("log_auth_failure", {
+          _email: email,
+          _reason: error.message,
+          _metadata: { user_agent: navigator.userAgent } as any,
+        });
+      } catch { /* silencioso */ }
+      return toast.error(error.message);
+    }
     toast.success("Bem-vindo!");
     navigate({ to: "/dashboard" });
   }
