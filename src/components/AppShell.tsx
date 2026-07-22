@@ -203,6 +203,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {[
                     { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
                     { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                    { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
                     { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
                     { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
                     { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
