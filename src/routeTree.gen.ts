@@ -61,6 +61,7 @@ import { Route as AuthenticatedAdminMfaRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminLgpdRouteImport } from './routes/_authenticated/admin.lgpd'
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
+import { Route as AuthenticatedAdminCriteriosSegurancaRouteImport } from './routes/_authenticated/admin.criterios-seguranca'
 import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_authenticated/admin.conformidade'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
@@ -357,6 +358,12 @@ const AuthenticatedAdminEventoCheckoutTesteRoute =
     path: '/evento-checkout-teste',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCriteriosSegurancaRoute =
+  AuthenticatedAdminCriteriosSegurancaRouteImport.update({
+    id: '/criterios-seguranca',
+    path: '/criterios-seguranca',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminConformidadeRoute =
   AuthenticatedAdminConformidadeRouteImport.update({
     id: '/conformidade',
@@ -466,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
+  '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
@@ -533,6 +541,7 @@ export interface FileRoutesByTo {
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
+  '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
@@ -602,6 +611,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
+  '/_authenticated/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/_authenticated/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/conformidade'
+    | '/admin/criterios-seguranca'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
     | '/admin/lgpd'
@@ -738,6 +749,7 @@ export interface FileRouteTypes {
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/conformidade'
+    | '/admin/criterios-seguranca'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
     | '/admin/lgpd'
@@ -806,6 +818,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/conformidade'
+    | '/_authenticated/admin/criterios-seguranca'
     | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/gerador-performance'
     | '/_authenticated/admin/lgpd'
@@ -1237,6 +1250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventoCheckoutTesteRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/criterios-seguranca': {
+      id: '/_authenticated/admin/criterios-seguranca'
+      path: '/criterios-seguranca'
+      fullPath: '/admin/criterios-seguranca'
+      preLoaderRoute: typeof AuthenticatedAdminCriteriosSegurancaRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/conformidade': {
       id: '/_authenticated/admin/conformidade'
       path: '/conformidade'
@@ -1342,6 +1362,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaSegurancaRoute: typeof AuthenticatedAdminAuditoriaSegurancaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
   AuthenticatedAdminConformidadeRoute: typeof AuthenticatedAdminConformidadeRoute
+  AuthenticatedAdminCriteriosSegurancaRoute: typeof AuthenticatedAdminCriteriosSegurancaRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
   AuthenticatedAdminLgpdRoute: typeof AuthenticatedAdminLgpdRoute
@@ -1357,6 +1378,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminAuditoriaSegurancaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminConformidadeRoute: AuthenticatedAdminConformidadeRoute,
+  AuthenticatedAdminCriteriosSegurancaRoute:
+    AuthenticatedAdminCriteriosSegurancaRoute,
   AuthenticatedAdminEventoCheckoutTesteRoute:
     AuthenticatedAdminEventoCheckoutTesteRoute,
   AuthenticatedAdminGeradorPerformanceRoute:
