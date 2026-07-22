@@ -3,7 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Upload, BarChart3, Sparkles, Loader2 } from "lucide-react";
+import { ChevronRight, Upload, BarChart3, Sparkles, Loader2, MoreVertical, FileText, FileSpreadsheet, Share2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
@@ -43,6 +49,63 @@ export type FamilyShare = {
 
 
 type Metric = "participation" | "attainment";
+
+const sanitizeFilename = (s: string) =>
+  s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "pesquisa_ia";
+
+async function exportAiPdf(repName: string, question: string, answer: string) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 40;
+  const width = doc.internal.pageSize.getWidth() - margin * 2;
+  let y = margin;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Pesquisa via IA — BI", margin, y); y += 20;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Representante: ${repName}`, margin, y); y += 14;
+  doc.text(`Data: ${new Date().toLocaleString("pt-BR")}`, margin, y); y += 20;
+  doc.setFont("helvetica", "bold");
+  doc.text("Pergunta:", margin, y); y += 14;
+  doc.setFont("helvetica", "normal");
+  const qLines = doc.splitTextToSize(question || "—", width);
+  doc.text(qLines, margin, y); y += qLines.length * 12 + 10;
+  doc.setFont("helvetica", "bold");
+  doc.text("Resposta:", margin, y); y += 14;
+  doc.setFont("helvetica", "normal");
+  const aLines = doc.splitTextToSize(answer || "—", width);
+  const pageH = doc.internal.pageSize.getHeight();
+  for (const line of aLines) {
+    if (y > pageH - margin) { doc.addPage(); y = margin; }
+    doc.text(line, margin, y); y += 12;
+  }
+  doc.save(`pesquisa_ia_${sanitizeFilename(repName)}.pdf`);
+}
+
+async function exportAiXlsx(repName: string, question: string, answer: string) {
+  const XLSX = await import("xlsx");
+  const rows = [
+    ["Representante", repName],
+    ["Data", new Date().toLocaleString("pt-BR")],
+    [],
+    ["Pergunta", question],
+    [],
+    ["Resposta", answer],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 20 }, { wch: 100 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Pesquisa IA");
+  XLSX.writeFile(wb, `pesquisa_ia_${sanitizeFilename(repName)}.xlsx`);
+}
+
+function shareAiWhats(repName: string, question: string, answer: string) {
+  const text = `*Pesquisa via IA — BI*\n*Representante:* ${repName}\n\n*Pergunta:*\n${question}\n\n*Resposta:*\n${answer}`;
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 
 export function BISection({ repId, repName }: { repId: string; repName: string }) {
   const qc = useQueryClient();
@@ -472,8 +535,30 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   </Button>
                 </form>
                 {aiAnswer != null && (
-                  <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm whitespace-pre-wrap">
-                    {aiAnswer || "Sem resposta."}
+                  <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="whitespace-pre-wrap flex-1">{aiAnswer || "Sem resposta."}</div>
+                      {aiAnswer && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => exportAiPdf(repName, aiQuestion, aiAnswer)}>
+                              <FileText className="h-4 w-4 mr-2" /> Salvar em PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportAiXlsx(repName, aiQuestion, aiAnswer)}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" /> Salvar em Excel
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => shareAiWhats(repName, aiQuestion, aiAnswer)}>
+                              <Share2 className="h-4 w-4 mr-2" /> Compartilhar no WhatsApp
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
