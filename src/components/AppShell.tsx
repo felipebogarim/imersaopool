@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 import { Watermark } from "@/components/Watermark";
+import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
@@ -205,6 +206,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
                     { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
                     { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
+                    { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
+                    { to: "/admin/mfa-politica", label: "Política de MFA", icon: Shield },
+                    { to: "/admin/mfa-recuperacao", label: "Recuperação de MFA", icon: KeyRound },
                     { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
                     { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
                     { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
@@ -243,7 +247,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 overflow-x-hidden relative">{children}</main>
+      <main className="flex-1 min-w-0 overflow-x-hidden relative">
+        <AdminMfaBanner />
+        {children}
+      </main>
       <ConfidentialityModal />
       <Watermark />
     </div>

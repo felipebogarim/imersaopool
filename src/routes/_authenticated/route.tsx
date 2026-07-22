@@ -44,6 +44,22 @@ export const Route = createFileRoute("/_authenticated")({
     if (p?.nda_accepted_at && !p?.active_company_id && path !== "/empresas" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/empresas" });
     }
+
+    // MFA obrigatório para admins após o prazo de adaptação
+    if (roleList.includes("admin")) {
+      const ALLOWED_WITHOUT_MFA = new Set([
+        "/admin/mfa",
+        ...Array.from(ALLOWED_WITHOUT_TERMS),
+      ]);
+      if (!ALLOWED_WITHOUT_MFA.has(path)) {
+        const { data: mfaSt } = await supabase.rpc("get_admin_mfa_status");
+        const mfaRow: any = Array.isArray(mfaSt) ? mfaSt[0] : mfaSt;
+        if (mfaRow?.must_enroll_now) {
+          throw redirect({ to: "/admin/mfa" });
+        }
+      }
+    }
+
     return { user: data.user };
   },
 

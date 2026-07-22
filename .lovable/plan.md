@@ -1,61 +1,115 @@
-# Rodada 2 — Blindagem de Privacidade e Conformidade
 
-Quatro frentes independentes. Vou executar em 4 fases, cada uma com verificação antes da seguinte.
+# MFA obrigatório para administradores
 
-## Fase 1 — Auditoria técnica + frase absoluta sobre admins
+Implementação completa em fases. Nada é ativado como bloqueio até que enrollment, challenge, verify, recuperação e auditoria estejam validados. Depois disso, inicia-se automaticamente o período de adaptação de 7 dias.
 
-**Objetivo:** garantir que nenhum humano (inclusive admin) enxerga valores brutos de metas/vendas, e então trocar a frase condicional dos Termos pela absoluta.
+## Fase 1 — Base de dados e auditoria
 
-Varredura e correção:
-- RLS de `rep_performance_uploads`, `rep_performance_rows`, `client_bi_uploads`, `rep_bi_uploads`, `gerador_performance_salvos`, `perf_acoes_sugeridas`: revogar SELECT direto de colunas monetárias para todo humano; leitura só via RPCs `SECURITY DEFINER` que retornam percentuais/faróis.
-- Mover qualquer coluna monetária residual em tabelas `public` para o schema `performance_private` (se ainda houver). Confirmar via `information_schema.columns`.
-- Revogar EXECUTE de RPCs que retornam valores brutos para `authenticated` e `anon`; manter apenas `service_role` + funções compute que devolvem só %.
-- Exports (PDF/XLSX do gerador, do BI, das ações sugeridas): auditar o código e garantir que nenhum caminho lê `performance_private.*` para renderizar na UI.
-- Logs (`security_events`, `email_send_log`, edge/worker logs): validar que payloads não incluem valores monetários.
-- `admin_list_users`, `admin_list_terms_conformidade`, painéis admin: revisar colunas retornadas — nenhuma numérica financeira.
+Nova tabela `admin_mfa_policy` (linha única, singleton):
+- `enforcement_started_at timestamptz` — marca o início dos 7 dias.
+- `grace_period_days int default 7`.
+- `enforcement_deadline timestamptz` (gerada).
+- `created_by`, timestamps.
 
-Após verificação, atualizar o texto v1.1 dos Termos com a **frase absoluta**: publica nova versão em `terms_versions`, marca v1.0 como inativa, força reaceite de todos.
+Nova tabela `admin_mfa_audit` (histórico imutável, RLS somente admins podem ler; escrita via SECURITY DEFINER):
+- `user_id`, `actor_id`, `event_type` (enum), `metadata jsonb`, `created_at`.
+- Eventos: `enroll_started`, `enroll_completed`, `enroll_abandoned`, `verify_failed`, `challenge_completed`, `admin_blocked_no_mfa`, `factor_removed_admin`, `recovery_executed`, `enroll_after_recovery`, `deadline_changed`, `policy_changed`, `admin_op_rejected_aal1`.
+- Nunca grava: secret TOTP, QR, código, tokens, senha, service key.
 
-## Fase 2 — MFA obrigatório para admins
+Nova função `public.get_admin_mfa_status()` (SECURITY DEFINER):
+- Retorna `{ is_admin, has_verified_factor, deadline, days_left, must_enroll_now, grace_active }`.
+- Fonte da verdade de "é admin" = `has_role(auth.uid(),'admin')` + `is_admin_or_gestor`.
 
-- Habilitar TOTP no Supabase Auth (`configure_auth`).
-- Página `/mfa/setup` (QR code + verificação) usando `supabase.auth.mfa.enroll/challenge/verify`.
-- Gate no `_authenticated/route.tsx`: se `has_role(user, 'admin')` e `aal !== 'aal2'`, redirecionar para `/mfa/setup` (enrollment) ou `/mfa/challenge` (verificação por sessão).
-- Bloquear rotas `/admin/*` server-side: middleware `requireAdminAAL2` em cada server fn admin (verifica `context.claims.aal === 'aal2'`).
-- Painel de conformidade mostra status MFA por admin.
+Nova função `public.assert_aal2()` (SECURITY DEFINER + STABLE):
+- Lê `auth.jwt() -> 'aal'` do claim.
+- Retorna boolean; usada em RPCs sensíveis e políticas RLS.
 
-## Fase 3 — Marca d'água nas telas sensíveis
+Nova função `public.log_mfa_event(event_type, target_user, metadata)` SECURITY DEFINER.
 
-- Componente `<Watermark />`: overlay `pointer-events-none` `fixed inset-0 z-[9999]` com email do usuário + timestamp + IP hash, repetido em grid diagonal, opacidade ~7%.
-- Aplicar em: `/representantes/performance`, `/clientes-bi/*`, `/admin/gerador-performance`, `/admin/conformidade`, `/admin/auditoria-seguranca`, resposta da IA em BI.
-- Registrar evento `watermark_view` em `security_events` na entrada de cada tela sensível (frequência limitada — 1x por sessão por rota).
+## Fase 2 — RLS + RPC enforcement (aal2)
 
-## Fase 4 — Revogação de acesso + expurgo LGPD
+Adiciona cláusula `AND public.assert_aal2()` (ou nova policy dedicada) nas operações sensíveis já existentes:
+- `data_purge_requests` (INSERT/UPDATE)
+- `backup_config`, `backup_jobs`, `backup_historico`, `backup_auditoria`
+- `security_settings`, `security_incidents`, `security_risks`, `security_audits`
+- `terms_versions` (INSERT/UPDATE — publicar nova versão)
+- `user_roles` (INSERT/UPDATE/DELETE — promover admins)
+- `entity_permissions`
 
-Banco:
-- Tabela `data_purge_requests` (solicitante, alvo, tipo: `revoke_sessions` | `anonymize` | `delete`, status, motivo, executor, data).
-- Tabela `revoked_sessions` (user_id, revoked_at, motivo).
-- Função `admin_revoke_user_sessions(user_id)` → chama Supabase Auth Admin API para deslogar todas sessões (via `supabaseAdmin.auth.admin.signOut`).
-- Função `admin_anonymize_user(user_id)`: substitui email/nome em `profiles`, marca `deleted_at`, mantém FK.
-- Função `admin_delete_user_data(user_id)`: expurgo em cascata (respostas de forms, ações sugeridas, cards Kanban criados, uploads); registrado em `security_events`.
+RPCs SECURITY DEFINER passam a exigir aal2 no topo:
+- `admin_anonymize_profile`, `admin_log_purge_action`, `admin_list_terms_conformidade`, `admin_list_users`
+- Nova `admin_remove_mfa_factor(_target_user_id, _password_confirm, _justificativa)` — chama `auth.admin` via Edge? Não: usa a Auth Admin API pelo `supabaseAdmin` dentro de um serverFn. Exige reautenticação por senha do superadmin, aal2, justificativa >= 10 chars. Registra em `admin_mfa_audit` + revoga sessões do alvo (`auth.admin.signOut`).
 
-UI `/admin/lgpd`:
-- Lista de usuários com ações: **Revogar sessões**, **Anonimizar**, **Excluir dados** (cada uma exige senha do gestor + justificativa obrigatória).
-- Lista pública `privacy_requests` (já existe) integrada — solicitações vindas de titulares.
-- Histórico imutável de expurgos.
+ServerFns que carregam `supabaseAdmin` recebem checagem obrigatória de aal2 do chamador antes de qualquer operação.
+
+Rotas `/api/public/*` de backup passam a exigir header assinado (já assinado por cron); operações interativas de backup passam por serverFn com aal2.
+
+## Fase 3 — Fluxo TOTP (frontend)
+
+Componentes novos:
+- `src/components/mfa/MfaEnrollDialog.tsx` — enroll → QR + secret manual → challenge → verify. Nada persistido no cliente além do factorId temporário.
+- `src/components/mfa/MfaChallengeDialog.tsx` — quando `nextLevel==='aal2'` e `currentLevel==='aal1'`, pede código e chama `challenge()` + `verify()`.
+- `src/components/mfa/AdminMfaBanner.tsx` — aviso obrigatório em cada login durante o grace period. Título/textos exatos do briefing, com "CONFIGURAR AGORA" (abre enroll) e "LEMBRAR NO PRÓXIMO LOGIN" (dismiss só nesta sessão).
+- `src/routes/_authenticated/admin/mfa.tsx` — página dedicada para gerenciar fatores (ver fatores, adicionar segundo TOTP de contingência, remover próprio fator só se não-admin).
+
+Hook `useAdminMfaGate()`:
+- Chama `supabase.auth.mfa.getAuthenticatorAssuranceLevel()` + `get_admin_mfa_status()`.
+- Retorna `{ mustChallenge, mustEnrollNow, showBanner, deadline, daysLeft }`.
+- Reavalia em mudança de rota, foco de janela, `onAuthStateChange`.
+
+Integração em `src/routes/_authenticated/route.tsx`:
+- Depois do bloco de termos, chama o gate:
+  - `mustChallenge` → força `MfaChallengeDialog` modal (não permite navegação).
+  - `mustEnrollNow` (admin sem fator + prazo vencido) → redirect `/admin/mfa`.
+  - `showBanner` (admin sem fator, grace ativo) → `<AdminMfaBanner />` no `AppShell`.
+  - Usuário comum → nada muda.
+
+## Fase 4 — Recuperação
+
+- Página `/admin/mfa-recovery` restrita a admin.
+- Server function `recoverAdminMfa({ target_user_id, password, justification })`:
+  - `requireSupabaseAuth` + `assert_aal2` no chamador.
+  - Re-verifica senha do superadmin (`signInWithPassword` num client isolado, descartado).
+  - Carrega `supabaseAdmin`, lista fatores do alvo, remove todos via `auth.admin.mfa.deleteFactor`.
+  - `auth.admin.signOut(target)`.
+  - `log_mfa_event('recovery_executed', target, {actor, justificativa})`.
+- UI lista admins, pesquisa por email, dialog de justificativa.
+
+## Fase 5 — Ativação controlada
+
+- Painel `/admin/mfa-policy` (super admin):
+  - Estado atual (`enforcement_started_at`, `deadline`, dias restantes).
+  - Botão "Iniciar período de adaptação (7 dias)" — só habilita depois que o super admin tiver enrolled e um fator verificado, e depois de um checklist:
+    1. ≥1 admin com fator verificado.
+    2. Fluxo de recuperação executado com sucesso em conta de teste.
+    3. Nenhuma service key exposta ao frontend (verificação estática).
+  - Também botão "Estender prazo" (registra `deadline_changed`).
+
+Enquanto `enforcement_started_at IS NULL`, nenhum bloqueio ocorre — só o banner opcional para o super admin que quiser testar.
+
+## Fase 6 — Testes e QA
+
+Roteiro completo dos 23 cenários do briefing, executado manualmente contra o preview. Reportar resultado item a item na mensagem de entrega, com marcação PASS/FAIL.
 
 ## Detalhes técnicos
 
-- Todas migrações seguem GRANT explícito, RLS, `search_path=public`, `SECURITY DEFINER` só onde necessário com REVOKE de anon/authenticated quando aplicável.
-- MFA: `configure_auth` não expõe TOTP toggle direto — verificar com `supabase--project_info`; se não, orientar via dashboard. Fallback: exigir reautenticação recente (`aal1` + timestamp < 15min) em rotas admin sem MFA.
-- Marca d'água: hash do IP calculado server-side via server fn `get_watermark_token` para evitar expor IP no bundle.
-- Expurgo: `supabaseAdmin.auth.admin.deleteUser` para exclusão total; cascade FK já cobre a maioria das tabelas.
+- `supabase.auth.mfa.enroll({ factorType: 'totp' })` retorna `{ id, totp: { qr_code, secret, uri } }`. Renderizamos `qr_code` (SVG data URL) e `secret`.
+- `challenge({ factorId })` + `verify({ factorId, challengeId, code })`.
+- Após `verify` bem-sucedido, `getSession()` reflete `aal2` no JWT; forçamos `router.invalidate()` para reavaliar gates.
+- `getAuthenticatorAssuranceLevel()` é a fonte de verdade no cliente; no backend, `auth.jwt()->>'aal'` no Postgres (Supabase inclui o claim `aal`).
+- Grace period calculado em SQL para evitar drift de relógio no cliente.
+- Auth webhook / trigger não é necessário — status é derivado on-demand.
+
+## Escopo fora desta rodada
+- SMS/WebAuthn como segundo fator (mantemos TOTP conforme briefing).
+- MFA para roles não-admin.
+- Recovery codes offline (Supabase ainda não expõe API estável; o TOTP de contingência cobre o caso).
 
 ## Ordem de execução
+1. Migration única com tabelas, funções, políticas aal2, seeds.
+2. Frontend: hooks, dialogs, banner, rotas `/admin/mfa`, `/admin/mfa-recovery`, `/admin/mfa-policy`.
+3. Server functions de recuperação e política.
+4. Integração no `_authenticated/route.tsx` e `AppShell`.
+5. QA manual + entrega final com checklist.
 
-1. Fase 1 (auditoria + v1.1 Termos) — impacta todos usuários (reaceite obrigatório).
-2. Fase 2 (MFA) — impacta só admins.
-3. Fase 3 (marca d'água) — puramente visual, sem migração.
-4. Fase 4 (LGPD) — nova área admin.
-
-Cada fase termina com verificação antes de seguir. Confirma para começar pela Fase 1?
+Confirma que sigo com esta ordem e escopo? Se ok, começo pela migration.
