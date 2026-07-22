@@ -8,6 +8,7 @@ import newlineLogo from "@/assets/newline-logo.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
+import { Watermark } from "@/components/Watermark";
 
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
@@ -206,6 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
                     { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
                     { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
+                    { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
                     { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
                   ].map(item => (
                     <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
@@ -241,8 +243,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>
+      <main className="flex-1 min-w-0 overflow-x-hidden relative">{children}</main>
       <ConfidentialityModal />
+      <Watermark />
     </div>
   );
 }
