@@ -229,6 +229,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </Button>
           )}
+          <Button asChild variant="ghost" size="sm" className="w-full justify-start px-2 text-muted-foreground" title="Termos de Uso">
+            <Link to="/termos-de-uso">
+              <ScrollText className="h-4 w-4 shrink-0" />
+              <span className={cn("ml-2", LBL)}>Termos de Uso</span>
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start px-2 text-muted-foreground" title="Sair">
             <LogOut className="h-4 w-4 shrink-0" />
             <span className={cn("ml-2", LBL)}>Sair</span>
@@ -236,6 +242,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>
+      <ConfidentialityModal />
     </div>
   );
 }
