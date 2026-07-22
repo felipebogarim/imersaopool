@@ -79,7 +79,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
   const [inputsOpen, setInputsOpen] = useState(() => INPUTS.some(b => pathname.startsWith(b.to)));
+  const [analisesOpen, setAnalisesOpen] = useState(() => ANALISES.some(b => pathname.startsWith(b.to)));
   const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
+  const [clientesOpen, setClientesOpen] = useState(() => CLIENTES.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
+  const [ferramentasOpen, setFerramentasOpen] = useState(() => pathname.startsWith("/admin/gerador-performance"));
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
