@@ -2679,6 +2679,68 @@ export type Database = {
           },
         ]
       }
+      price_tables: {
+        Row: {
+          categoria: Database["public"]["Enums"]["price_table_categoria"]
+          categoria_outra: string | null
+          company_id: string
+          competitor_id: string
+          created_at: string
+          created_by: string | null
+          data_referencia: string
+          file_mime: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          observacoes: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria?: Database["public"]["Enums"]["price_table_categoria"]
+          categoria_outra?: string | null
+          company_id: string
+          competitor_id: string
+          created_at?: string
+          created_by?: string | null
+          data_referencia?: string
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          observacoes?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: Database["public"]["Enums"]["price_table_categoria"]
+          categoria_outra?: string | null
+          company_id?: string
+          competitor_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_referencia?: string
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          observacoes?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_tables_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "price_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       privacy_requests: {
         Row: {
           canal: string | null
@@ -4238,6 +4300,7 @@ export type Database = {
         | "aprovada"
         | "descartada"
         | "aguardando_revisao"
+      price_table_categoria: "normal" | "atacado" | "promocional" | "outra"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4473,6 +4536,7 @@ export const Constants = {
         "descartada",
         "aguardando_revisao",
       ],
+      price_table_categoria: ["normal", "atacado", "promocional", "outra"],
     },
   },
 } as const

@@ -29,9 +29,12 @@ const ANALISES = [
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
 ] as const;
 
-const NAV_BOTTOM = [
-  { to: "/price", label: "Price", icon: Tag },
+const PRICE = [
+  { to: "/price/competidores", label: "Competidores", icon: Users },
+  { to: "/price/tabelas", label: "Tabelas", icon: FileText },
+  { to: "/price/comparativos", label: "Comparativos", icon: BarChart3 },
 ] as const;
+
 
 const REPS = [
   { to: "/representantes", label: "Atuais Reps", icon: Users },
@@ -83,6 +86,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
   const [clientesOpen, setClientesOpen] = useState(() => CLIENTES.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
   const [ferramentasOpen, setFerramentasOpen] = useState(() => pathname.startsWith("/admin/gerador-performance") || pathname.startsWith("/tarefas"));
+  const [priceOpen, setPriceOpen] = useState(() => pathname.startsWith("/price"));
+
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin") || pathname.startsWith("/agentes"));
 
   const { data: workspace } = useQuery({
@@ -184,9 +189,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
-              {NAV_BOTTOM.map(item => (
-                <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-              ))}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPriceOpen(o => !o)}
+                  title="Price"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Tag className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Price</span>
+                  {priceOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {priceOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {PRICE.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
 
               <div className="pt-2">
                 <button
