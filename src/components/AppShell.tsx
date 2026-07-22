@@ -29,9 +29,12 @@ const ANALISES = [
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
 ] as const;
 
-const NAV_BOTTOM = [
-  { to: "/price", label: "Price", icon: Tag },
+const PRICE = [
+  { to: "/price/competidores", label: "Competidores", icon: Users },
+  { to: "/price/tabelas", label: "Tabelas", icon: FileText },
+  { to: "/price/comparativos", label: "Comparativos", icon: BarChart3 },
 ] as const;
+
 
 const REPS = [
   { to: "/representantes", label: "Atuais Reps", icon: Users },
