@@ -49,7 +49,16 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [metric, setMetric] = useState<Metric>("participation");
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const askAI = useServerFn(askBIAssistant);
+  const aiMutation = useMutation({
+    mutationFn: (question: string) => askAI({ data: { repId, question } }),
+    onSuccess: (res: any) => setAiAnswer(res?.answer ?? ""),
+    onError: (e: any) => toast.error(e?.message ?? "Erro na consulta IA."),
+  });
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const { data: bi = null, isLoading } = useQuery({
     queryKey: ["rep-bi", repId],
