@@ -55,6 +55,7 @@ import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedClientesBiBatchRepIdRouteImport } from './routes/_authenticated/clientes-bi-batch.$repId'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminLgpdRouteImport } from './routes/_authenticated/admin.lgpd'
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_authenticated/admin.conformidade'
@@ -319,6 +320,11 @@ const AuthenticatedAdminPermissoesRoute =
     path: '/permissoes',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminLgpdRoute = AuthenticatedAdminLgpdRouteImport.update({
+  id: '/lgpd',
+  path: '/lgpd',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminGeradorPerformanceRoute =
   AuthenticatedAdminGeradorPerformanceRouteImport.update({
     id: '/gerador-performance',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
+  '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -505,6 +512,7 @@ export interface FileRoutesByTo {
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
+  '/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -570,6 +578,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
+  '/_authenticated/admin/lgpd': typeof AuthenticatedAdminLgpdRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -635,6 +644,7 @@ export interface FileRouteTypes {
     | '/admin/conformidade'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
+    | '/admin/lgpd'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
@@ -698,6 +708,7 @@ export interface FileRouteTypes {
     | '/admin/conformidade'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
+    | '/admin/lgpd'
     | '/admin/permissoes'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
@@ -762,6 +773,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/conformidade'
     | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/gerador-performance'
+    | '/_authenticated/admin/lgpd'
     | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes-bi-batch/$repId'
@@ -1145,6 +1157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/lgpd': {
+      id: '/_authenticated/admin/lgpd'
+      path: '/lgpd'
+      fullPath: '/admin/lgpd'
+      preLoaderRoute: typeof AuthenticatedAdminLgpdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/gerador-performance': {
       id: '/_authenticated/admin/gerador-performance'
       path: '/gerador-performance'
@@ -1266,6 +1285,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminConformidadeRoute: typeof AuthenticatedAdminConformidadeRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
+  AuthenticatedAdminLgpdRoute: typeof AuthenticatedAdminLgpdRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
@@ -1279,6 +1299,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminEventoCheckoutTesteRoute,
   AuthenticatedAdminGeradorPerformanceRoute:
     AuthenticatedAdminGeradorPerformanceRoute,
+  AuthenticatedAdminLgpdRoute: AuthenticatedAdminLgpdRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
