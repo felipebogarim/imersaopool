@@ -460,6 +460,238 @@ function LogsTab() {
   );
 }
 
+function IntrusionTab() {
+  const [hours, setHours] = useState<string>("24");
+
+  const summaryQ = useQuery({
+    queryKey: ["sec-intrusion-summary", hours],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("sec_intrusion_summary" as any, {
+        _hours: Number(hours),
+      });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const eventsQ = useQuery({
+    queryKey: ["sec-intrusion-events", hours],
+    queryFn: async () => {
+      const since = new Date(Date.now() - Number(hours) * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("security_events")
+        .select("*")
+        .gte("ocorrido_em", since)
+        .or("resultado.in.(falha,bloqueado,suspeito),nivel_risco.in.(alto,critico)")
+        .order("ocorrido_em", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const totalEventos = eventsQ.data?.length ?? 0;
+  const criticos = (eventsQ.data ?? []).filter((e: any) => e.nivel_risco === "critico").length;
+  const altos = (eventsQ.data ?? []).filter((e: any) => e.nivel_risco === "alto").length;
+
+  return (
+    <div className="space-y-4">
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Monitor de tentativas de intrusão</AlertTitle>
+        <AlertDescription>
+          Consolida falhas de autenticação, ações bloqueadas e eventos com risco alto/crítico.
+          Múltiplas falhas do mesmo e-mail em curto intervalo elevam automaticamente o nível de risco.
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Janela:</span>
+        <Select value={hours} onValueChange={setHours}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Última 1 hora</SelectItem>
+            <SelectItem value="24">Últimas 24 horas</SelectItem>
+            <SelectItem value="168">Últimos 7 dias</SelectItem>
+            <SelectItem value="720">Últimos 30 dias</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Eventos suspeitos</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{totalEventos}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Nível crítico</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-red-700">{criticos}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Nível alto</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-orange-600">{altos}</div></CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Origens com mais tentativas suspeitas</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>E-mail / Origem</TableHead>
+              <TableHead>Tentativas</TableHead>
+              <TableHead>Último evento</TableHead>
+              <TableHead>Nível máx.</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(summaryQ.data ?? []).length === 0 && (
+                <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">
+                  Nenhuma atividade suspeita na janela selecionada.
+                </TableCell></TableRow>
+              )}
+              {(summaryQ.data ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="text-xs font-mono">{r.chave}</TableCell>
+                  <TableCell className="font-semibold">{r.total}</TableCell>
+                  <TableCell className="text-xs">{fmtDate(r.ultimo)}</TableCell>
+                  <TableCell>{statusBadgeRisk(r.nivel_max ?? "info")}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Eventos detalhados</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Usuário / Origem</TableHead>
+              <TableHead>Ação</TableHead>
+              <TableHead>Resultado</TableHead>
+              <TableHead>Risco</TableHead>
+              <TableHead>Detalhes</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(eventsQ.data ?? []).length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">
+                  Nenhum evento suspeito registrado.
+                </TableCell></TableRow>
+              )}
+              {(eventsQ.data ?? []).map((e: any) => (
+                <TableRow key={e.id}>
+                  <TableCell className="text-xs">{fmtDate(e.ocorrido_em)}</TableCell>
+                  <TableCell className="text-xs"><code>{e.tipo}</code></TableCell>
+                  <TableCell className="text-xs">{e.usuario_email ?? e.ip ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{e.acao ?? "—"}</TableCell>
+                  <TableCell><Badge variant="outline">{e.resultado ?? "—"}</Badge></TableCell>
+                  <TableCell>{statusBadgeRisk(e.nivel_risco)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
+                    {e.metadata && Object.keys(e.metadata).length > 0 ? JSON.stringify(e.metadata) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SensitiveAccessTab() {
+  const [hours, setHours] = useState<string>("168");
+
+  const { data } = useQuery({
+    queryKey: ["sec-sensitive-access", hours],
+    queryFn: async () => {
+      const since = new Date(Date.now() - Number(hours) * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("security_events")
+        .select("*")
+        .eq("categoria", "dados_sensiveis")
+        .gte("ocorrido_em", since)
+        .order("ocorrido_em", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const total = data?.length ?? 0;
+  const usuariosUnicos = new Set((data ?? []).map((e: any) => e.usuario_email).filter(Boolean)).size;
+  const recursosUnicos = new Set((data ?? []).map((e: any) => e.recurso).filter(Boolean)).size;
+
+  return (
+    <div className="space-y-4">
+      <Alert>
+        <Shield className="h-4 w-4" />
+        <AlertTitle>Monitor de acesso a dados sensíveis</AlertTitle>
+        <AlertDescription>
+          Registra todo acesso a áreas que manipulam dados sensíveis, como upload de planilhas
+          brutas no Gerador de Performance, exports privilegiados e ações administrativas
+          sobre dados pessoais. Todos os eventos são imutáveis.
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">Janela:</span>
+        <Select value={hours} onValueChange={setHours}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="24">Últimas 24 horas</SelectItem>
+            <SelectItem value="168">Últimos 7 dias</SelectItem>
+            <SelectItem value="720">Últimos 30 dias</SelectItem>
+            <SelectItem value="8760">Últimos 12 meses</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Acessos registrados</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{total}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Usuários distintos</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{usuariosUnicos}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Recursos distintos</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{recursosUnicos}</div></CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Histórico de acessos</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Usuário</TableHead>
+              <TableHead>Recurso</TableHead>
+              <TableHead>Ação</TableHead>
+              <TableHead>Risco</TableHead>
+              <TableHead>Detalhes</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {(data ?? []).length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                  Nenhum acesso a dados sensíveis registrado nesta janela.
+                </TableCell></TableRow>
+              )}
+              {(data ?? []).map((e: any) => (
+                <TableRow key={e.id}>
+                  <TableCell className="text-xs">{fmtDate(e.ocorrido_em)}</TableCell>
+                  <TableCell className="text-xs">{e.usuario_email ?? "—"}</TableCell>
+                  <TableCell className="text-xs"><code>{e.recurso ?? "—"}</code></TableCell>
+                  <TableCell className="text-xs">{e.acao ?? "—"}</TableCell>
+                  <TableCell>{statusBadgeRisk(e.nivel_risco)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
+                    {e.metadata && Object.keys(e.metadata).length > 0 ? JSON.stringify(e.metadata) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function statusBadgeRisk(nivel: string) {
   const cls =
     nivel === "critico" ? "bg-red-100 text-red-800"
