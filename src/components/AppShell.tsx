@@ -281,25 +281,35 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
 
               {workspace?.isAdmin && (
-                <div className="pt-4">
-                  <div className={cn("px-3 pb-2 items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground", ONLY_EXPANDED)}>
-                    <Shield className="h-3 w-3" /> Admin
-                  </div>
-                  {[
-                    { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
-                    { to: "/agentes", label: "Agentes", icon: UserCog },
-                    { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
-                    { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
-                    { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
-                    { to: "/admin/mfa-politica", label: "Política de MFA", icon: Shield },
-                    { to: "/admin/mfa-recuperacao", label: "Recuperação de MFA", icon: KeyRound },
-                    { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
-                    { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
-                    { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
-                    { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
-                  ].map(item => (
-                    <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                  ))}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdminOpen(o => !o)}
+                    title="Admin"
+                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                  >
+                    <Shield className="h-4 w-4 shrink-0" />
+                    <span className={cn("flex-1 text-left", LBL)}>Admin</span>
+                    {adminOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                  </button>
+                  {adminOpen && (
+                    <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                      {[
+                        { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+                        { to: "/agentes", label: "Agentes", icon: UserCog },
+                        { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                        { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
+                        { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
+                        { to: "/admin/mfa-politica", label: "Política de MFA", icon: Shield },
+                        { to: "/admin/mfa-recuperacao", label: "Recuperação de MFA", icon: KeyRound },
+                        { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
+                        { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
+                        { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
+                      ].map(item => (
+                        <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>
