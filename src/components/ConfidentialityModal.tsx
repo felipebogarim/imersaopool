@@ -13,13 +13,25 @@ export function ConfidentialityModal() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
-      const key = `${SESSION_KEY}:${data.user.id}`;
+    async function check() {
+      const { data: s } = await supabase.auth.getSession();
+      const session = s.session;
+      if (!session?.user) return;
+      // Key by access_token so a new login (new token) always re-triggers the modal.
+      const token = session.access_token.slice(-24);
+      const key = `${SESSION_KEY}:${session.user.id}:${token}`;
       if (sessionStorage.getItem(key)) return;
       setOpen(true);
-    })();
+    }
+    check();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        setChecked(false);
+        check();
+      }
+      if (event === "SIGNED_OUT") setOpen(false);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
