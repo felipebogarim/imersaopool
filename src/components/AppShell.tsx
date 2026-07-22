@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
+import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
 
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
@@ -252,6 +253,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <ConfidentialityModal />
+      <SensitiveAdminGate />
       <Watermark />
     </div>
   );

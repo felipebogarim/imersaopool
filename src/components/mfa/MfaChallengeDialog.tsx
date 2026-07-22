@@ -52,6 +52,14 @@ export function MfaChallengeDialog({ open, onOpenChange, onVerified }: Props) {
         await supabase.rpc("log_mfa_event", { _event: "verify_failed" });
         throw v.error;
       }
+      // Força atualização do JWT para promover a sessão a aal2
+      await supabase.auth.refreshSession().catch(() => {});
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2") {
+        // ainda não promoveu — tenta um novo refresh após pequeno delay
+        await new Promise((r) => setTimeout(r, 300));
+        await supabase.auth.refreshSession().catch(() => {});
+      }
       await supabase.rpc("log_mfa_event", { _event: "challenge_completed" });
       qc.invalidateQueries();
       onVerified?.();

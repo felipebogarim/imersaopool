@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AdminMfaStatus = {
@@ -16,6 +16,7 @@ export type AdminMfaStatus = {
 export type AalInfo = {
   currentLevel: "aal1" | "aal2" | null;
   nextLevel: "aal1" | "aal2" | null;
+  loading: boolean;
 };
 
 export function useAdminMfaStatus() {
@@ -32,19 +33,33 @@ export function useAdminMfaStatus() {
 }
 
 export function useAalLevels() {
-  const [info, setInfo] = useState<AalInfo>({ currentLevel: null, nextLevel: null });
+  const qc = useQueryClient();
+  const [info, setInfo] = useState<AalInfo>({ currentLevel: null, nextLevel: null, loading: true });
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setInfo({
+      currentLevel: (data?.currentLevel as any) ?? null,
+      nextLevel: (data?.nextLevel as any) ?? null,
+      loading: false,
+    });
+  }, []);
+
+  const refresh = useCallback(async () => {
+    // Força refresh do JWT (a claim aal só muda após um novo token)
+    await supabase.auth.refreshSession().catch(() => {});
+    await load();
+    qc.invalidateQueries({ queryKey: ["admin-mfa-status"] });
+  }, [load, qc]);
+
   useEffect(() => {
     let mounted = true;
-    async function load() {
-      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (!mounted) return;
-      setInfo({
-        currentLevel: (data?.currentLevel as any) ?? null,
-        nextLevel: (data?.nextLevel as any) ?? null,
-      });
-    }
     load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "TOKEN_REFRESHED") {
+        if (mounted) load();
+      }
+    });
     const onFocus = () => load();
     window.addEventListener("focus", onFocus);
     return () => {
@@ -52,8 +67,9 @@ export function useAalLevels() {
       sub.subscription.unsubscribe();
       window.removeEventListener("focus", onFocus);
     };
-  }, []);
-  return info;
+  }, [load]);
+
+  return { ...info, refresh };
 }
 
 /** Dismiss the grace banner for a single session. */
