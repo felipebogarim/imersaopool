@@ -42,10 +42,28 @@ export const generatePerformanceFromRaw = createServerFn({ method: "POST" })
       hint?: string | null;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
     if (!data.sheets?.length) throw new Error("Nenhuma planilha enviada.");
+
+    // Registra acesso a dados sensíveis (upload de planilha bruta no gerador)
+    try {
+      await context.supabase.rpc("log_sensitive_access", {
+        _recurso: "gerador_performance:upload",
+        _acao: "upload_planilha_bruta",
+        _metadata: {
+          arquivos: data.sheets.map((s) => ({
+            filename: s.filename,
+            aba: s.sheetName,
+            linhas: s.aoa?.length ?? 0,
+          })),
+          periodo: data.periodoLabel ?? null,
+        } as any,
+        _nivel_risco: "alto",
+      });
+    } catch { /* não bloquear o fluxo por falha de log */ }
+
 
     // Compacta cada planilha limitando linhas para caber no contexto.
     const MAX_ROWS = 400;
