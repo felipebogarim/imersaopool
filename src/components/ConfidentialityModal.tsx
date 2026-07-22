@@ -50,13 +50,17 @@ export function ConfidentialityModal() {
     setError(null);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const sessionId = (await supabase.auth.getSession()).data.session?.access_token?.slice(-16);
+      const session = (await supabase.auth.getSession()).data.session;
+      const sessionId = session?.access_token?.slice(-16);
       const { error: rpcErr } = await supabase.rpc("record_login_acknowledgement", {
         _session_id: sessionId ?? undefined,
         _user_agent: navigator.userAgent.slice(0, 500),
       });
       if (rpcErr) throw rpcErr;
-      if (u.user) sessionStorage.setItem(`${SESSION_KEY}:${u.user.id}`, "1");
+      if (u.user && session) {
+        const token = session.access_token.slice(-24);
+        sessionStorage.setItem(`${SESSION_KEY}:${u.user.id}:${token}`, "1");
+      }
       setOpen(false);
     } catch (e: any) {
       setError(e?.message ?? "Não foi possível registrar sua ciência. Tente novamente.");
