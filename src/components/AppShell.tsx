@@ -267,6 +267,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                       Icon={Sparkles}
                       active={pathname === "/admin/gerador-performance"}
                     />
+                    <NavItem
+                      to="/tarefas"
+                      label="Gestão de Tarefas"
+                      Icon={ListChecks}
+                      active={pathname.startsWith("/tarefas")}
+                    />
+
                     <button
                       type="button"
                       onClick={() => toast.info("Tabela de Preços", { description: "Área em construção." })}
