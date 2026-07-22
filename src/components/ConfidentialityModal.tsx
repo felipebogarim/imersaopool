@@ -128,14 +128,24 @@ export function ConfidentialityModal() {
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
           <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <a
-              href="/termos-de-uso"
-              target="_blank"
-              rel="noopener"
-              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <ExternalLink className="h-3.5 w-3.5" /> Consultar os Termos de Uso completos
-            </a>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+              <a
+                href="/termos-de-uso"
+                target="_blank"
+                rel="noopener"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Consultar os Termos de Uso completos
+              </a>
+              <a
+                href="/__l5e/assets-v1/b3cfe05f-1f3f-48bd-a147-7bb152e1800a/Relatorio_Final_Seguranca_Privacidade_Conformidade.pdf"
+                target="_blank"
+                rel="noopener"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Entenda porque é seguro
+              </a>
+            </div>
             <Button
               onClick={confirm}
               disabled={!checked || submitting}
@@ -145,6 +155,7 @@ export function ConfidentialityModal() {
               ESTOU CIENTE E DESEJO PROSSEGUIR
             </Button>
           </div>
+
         </div>
       </div>
     </div>
