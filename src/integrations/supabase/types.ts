@@ -869,6 +869,51 @@ export type Database = {
         }
         Relationships: []
       }
+      data_purge_requests: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          executed_at: string
+          id: string
+          justificativa: string
+          metadata: Json
+          request_type: string
+          requested_by: string
+          requester_email: string
+          status: string
+          target_email: string
+          target_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          justificativa: string
+          metadata?: Json
+          request_type: string
+          requested_by: string
+          requester_email: string
+          status?: string
+          target_email: string
+          target_user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          justificativa?: string
+          metadata?: Json
+          request_type?: string
+          requested_by?: string
+          requester_email?: string
+          status?: string
+          target_email?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -3824,6 +3869,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_anonymize_profile: {
+        Args: { _justificativa: string; _target_user_id: string }
+        Returns: undefined
+      }
       admin_list_terms_conformidade: {
         Args: never
         Returns: {
@@ -3849,6 +3898,17 @@ export type Database = {
           last_sign_in_at: string
           role: Database["public"]["Enums"]["app_role"]
         }[]
+      }
+      admin_log_purge_action: {
+        Args: {
+          _error?: string
+          _justificativa: string
+          _metadata?: Json
+          _request_type: string
+          _status?: string
+          _target_user_id: string
+        }
+        Returns: string
       }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       current_company_id: { Args: never; Returns: string }
