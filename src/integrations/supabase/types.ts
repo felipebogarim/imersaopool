@@ -94,6 +94,63 @@ export type Database = {
           },
         ]
       }
+      admin_mfa_audit: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: Database["public"]["Enums"]["admin_mfa_event"]
+          id: string
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: Database["public"]["Enums"]["admin_mfa_event"]
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["admin_mfa_event"]
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_mfa_policy: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          enforcement_started_at: string | null
+          grace_period_days: number
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          enforcement_started_at?: string | null
+          grace_period_days?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          enforcement_started_at?: string | null
+          grace_period_days?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_compilations: {
         Row: {
           company_id: string | null
@@ -3910,6 +3967,7 @@ export type Database = {
         }
         Returns: string
       }
+      assert_aal2: { Args: never; Returns: boolean }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       current_company_id: { Args: never; Returns: string }
       delete_email: {
@@ -3927,6 +3985,19 @@ export type Database = {
           id: string
           schema: Json
           title: string
+        }[]
+      }
+      get_admin_mfa_status: {
+        Args: never
+        Returns: {
+          current_aal: string
+          days_left: number
+          deadline: string
+          enforcement_started_at: string
+          grace_active: boolean
+          has_verified_factor: boolean
+          is_admin: boolean
+          must_enroll_now: boolean
         }[]
       }
       get_immersion_by_token: {
@@ -3982,6 +4053,14 @@ export type Database = {
           updated_at: string
         }[]
       }
+      log_mfa_event: {
+        Args: {
+          _event: Database["public"]["Enums"]["admin_mfa_event"]
+          _metadata?: Json
+          _target_user?: string
+        }
+        Returns: string
+      }
       log_security_event: {
         Args: {
           _acao?: string
@@ -4018,6 +4097,7 @@ export type Database = {
         Args: { _session_id?: string; _user_agent?: string }
         Returns: string
       }
+      require_admin_aal2: { Args: never; Returns: undefined }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
         Returns: string
@@ -4031,6 +4111,19 @@ export type Database = {
     Enums: {
       action_priority: "alta" | "media" | "baixa"
       action_status: "pendente" | "em_andamento" | "concluida" | "cancelada"
+      admin_mfa_event:
+        | "enroll_started"
+        | "enroll_completed"
+        | "enroll_abandoned"
+        | "verify_failed"
+        | "challenge_completed"
+        | "admin_blocked_no_mfa"
+        | "factor_removed_admin"
+        | "recovery_executed"
+        | "enroll_after_recovery"
+        | "deadline_changed"
+        | "policy_changed"
+        | "admin_op_rejected_aal1"
       ai_compilation_type:
         | "representante"
         | "visita"
@@ -4243,6 +4336,20 @@ export const Constants = {
     Enums: {
       action_priority: ["alta", "media", "baixa"],
       action_status: ["pendente", "em_andamento", "concluida", "cancelada"],
+      admin_mfa_event: [
+        "enroll_started",
+        "enroll_completed",
+        "enroll_abandoned",
+        "verify_failed",
+        "challenge_completed",
+        "admin_blocked_no_mfa",
+        "factor_removed_admin",
+        "recovery_executed",
+        "enroll_after_recovery",
+        "deadline_changed",
+        "policy_changed",
+        "admin_op_rejected_aal1",
+      ],
       ai_compilation_type: [
         "representante",
         "visita",
