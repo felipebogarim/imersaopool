@@ -18,6 +18,7 @@ import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
+import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPriceRouteImport } from './routes/_authenticated/price'
@@ -113,6 +114,12 @@ const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
   path: '/evento/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTermosDeUsoRoute =
+  AuthenticatedTermosDeUsoRouteImport.update({
+    id: '/termos-de-uso',
+    path: '/termos-de-uso',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
   id: '/roteiros',
   path: '/roteiros',
@@ -408,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -468,6 +476,7 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
+  '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -530,6 +539,7 @@ export interface FileRoutesById {
   '/_authenticated/price': typeof AuthenticatedPriceRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
+  '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -592,6 +602,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/termos-de-uso'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -652,6 +663,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/projecao'
     | '/roteiros'
+    | '/termos-de-uso'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -713,6 +725,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price'
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
+    | '/_authenticated/termos-de-uso'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -846,6 +859,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/evento/checkout'
       preLoaderRoute: typeof EventoCheckoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/termos-de-uso': {
+      id: '/_authenticated/termos-de-uso'
+      path: '/termos-de-uso'
+      fullPath: '/termos-de-uso'
+      preLoaderRoute: typeof AuthenticatedTermosDeUsoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/roteiros': {
       id: '/_authenticated/roteiros'
@@ -1266,6 +1286,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPriceRoute: typeof AuthenticatedPriceRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
+  AuthenticatedTermosDeUsoRoute: typeof AuthenticatedTermosDeUsoRoute
   AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
@@ -1300,6 +1321,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPriceRoute: AuthenticatedPriceRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
+  AuthenticatedTermosDeUsoRoute: AuthenticatedTermosDeUsoRoute,
   AuthenticatedClientesBiBatchRepIdRoute:
     AuthenticatedClientesBiBatchRepIdRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
