@@ -3967,6 +3967,14 @@ export type Database = {
         }
         Returns: string
       }
+      admin_log_session_revocation: {
+        Args: { _justificativa: string; _target_user_id: string }
+        Returns: string
+      }
+      admin_mfa_start_enforcement: {
+        Args: { _grace_days?: number }
+        Returns: Json
+      }
       assert_aal2: { Args: never; Returns: boolean }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       current_company_id: { Args: never; Returns: string }

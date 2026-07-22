@@ -86,9 +86,11 @@ export function MfaEnrollDialog({ open, onOpenChange, onSuccess, mandatory }: Pr
         throw v.error;
       }
       await supabase.rpc("log_mfa_event", { _event: "enroll_completed" });
+      // Promover a sessão para aal2 imediatamente
+      await supabase.auth.refreshSession().catch(() => {});
       setStep("done");
       toast.success("MFA configurado com sucesso.");
-      qc.invalidateQueries({ queryKey: ["admin-mfa-status"] });
+      qc.invalidateQueries();
       onSuccess?.();
       setTimeout(() => onOpenChange(false), 800);
     } catch (e: any) {
