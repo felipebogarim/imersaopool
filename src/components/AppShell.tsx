@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandMark } from "@/components/Brand";
+import newlineLogo from "@/assets/newline-logo.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -108,7 +109,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="group/sidebar fixed inset-y-0 left-0 z-40 w-16 hover:w-60 border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden transition-[width] duration-200 ease-out"
       >
         <div className="p-3 border-b border-sidebar-border flex items-center gap-3 h-[73px]">
-          <BrandMark className="h-8 shrink-0" />
+          {workspace?.companyName?.toLowerCase().includes("newline") ? (
+            <img src={newlineLogo.url} alt="Newline" className="h-8 w-auto shrink-0 object-contain" />
+          ) : (
+            <BrandMark className="h-8 shrink-0" />
+          )}
           <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>Imersões Comerciais</p>
         </div>
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
