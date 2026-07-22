@@ -13,13 +13,25 @@ export function ConfidentialityModal() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
-      const key = `${SESSION_KEY}:${data.user.id}`;
+    async function check() {
+      const { data: s } = await supabase.auth.getSession();
+      const session = s.session;
+      if (!session?.user) return;
+      // Key by access_token so a new login (new token) always re-triggers the modal.
+      const token = session.access_token.slice(-24);
+      const key = `${SESSION_KEY}:${session.user.id}:${token}`;
       if (sessionStorage.getItem(key)) return;
       setOpen(true);
-    })();
+    }
+    check();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        setChecked(false);
+        check();
+      }
+      if (event === "SIGNED_OUT") setOpen(false);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -38,13 +50,17 @@ export function ConfidentialityModal() {
     setError(null);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const sessionId = (await supabase.auth.getSession()).data.session?.access_token?.slice(-16);
+      const session = (await supabase.auth.getSession()).data.session;
+      const sessionId = session?.access_token?.slice(-16);
       const { error: rpcErr } = await supabase.rpc("record_login_acknowledgement", {
         _session_id: sessionId ?? undefined,
         _user_agent: navigator.userAgent.slice(0, 500),
       });
       if (rpcErr) throw rpcErr;
-      if (u.user) sessionStorage.setItem(`${SESSION_KEY}:${u.user.id}`, "1");
+      if (u.user && session) {
+        const token = session.access_token.slice(-24);
+        sessionStorage.setItem(`${SESSION_KEY}:${u.user.id}:${token}`, "1");
+      }
       setOpen(false);
     } catch (e: any) {
       setError(e?.message ?? "Não foi possível registrar sua ciência. Tente novamente.");
