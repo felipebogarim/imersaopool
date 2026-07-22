@@ -163,6 +163,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAnalisesOpen(o => !o)}
+                  title="Análises"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <LineChart className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Análises</span>
+                  {analisesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {analisesOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {ANALISES.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {NAV_BOTTOM.map(item => (
                 <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
               ))}
@@ -190,6 +210,26 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="pt-2">
                 <button
                   type="button"
+                  onClick={() => setClientesOpen(o => !o)}
+                  title="Clientes"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Briefcase className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Clientes</span>
+                  {clientesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {clientesOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {CLIENTES.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
                   onClick={() => setBasesOpen(o => !o)}
                   title="Bases"
                   className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
@@ -207,6 +247,38 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFerramentasOpen(o => !o)}
+                  title="Ferramentas"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Wrench className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Ferramentas</span>
+                  {ferramentasOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {ferramentasOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    <NavItem
+                      to="/admin/gerador-performance"
+                      label="Gerador de Performance"
+                      Icon={Sparkles}
+                      active={pathname === "/admin/gerador-performance"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toast.info("Tabela de Preços", { description: "Área em construção." })}
+                      title="Tabela de Preços"
+                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition text-left"
+                    >
+                      <Tag className="h-4 w-4 shrink-0" />
+                      <span className={LBL}>Tabela de Preços</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {workspace?.isAdmin && (
                 <div className="pt-4">
                   <div className={cn("px-3 pb-2 items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground", ONLY_EXPANDED)}>
@@ -214,6 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
                   {[
                     { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+                    { to: "/agentes", label: "Agentes", icon: UserCog },
                     { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
                     { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
                     { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
