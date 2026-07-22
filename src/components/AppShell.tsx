@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { BrandMark } from "@/components/Brand";
 import newlineLogo from "@/assets/newline-logo.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 
 const NAV = [
   { to: "/dashboard", label: "BI", icon: BarChart3 },
@@ -202,6 +203,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {[
                     { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
                     { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
+                    { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
                     { to: "/admin/gerador-performance", label: "Gerador de Performance", icon: Sparkles },
                     { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
                     { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
@@ -227,6 +229,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </Button>
           )}
+          <Button asChild variant="ghost" size="sm" className="w-full justify-start px-2 text-muted-foreground" title="Termos de Uso">
+            <Link to="/termos-de-uso">
+              <ScrollText className="h-4 w-4 shrink-0" />
+              <span className={cn("ml-2", LBL)}>Termos de Uso</span>
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start px-2 text-muted-foreground" title="Sair">
             <LogOut className="h-4 w-4 shrink-0" />
             <span className={cn("ml-2", LBL)}>Sair</span>
@@ -234,6 +242,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden">{children}</main>
+      <ConfidentialityModal />
     </div>
   );
 }

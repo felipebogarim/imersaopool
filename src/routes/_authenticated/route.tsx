@@ -28,10 +28,20 @@ export const Route = createFileRoute("/_authenticated")({
       return { user: data.user };
     }
 
-    if (!p?.nda_accepted_at && path !== "/nda") {
+    // Aceite dos Termos de Uso (versão vigente) — bloqueia app até aceitar
+    const ALLOWED_WITHOUT_TERMS = new Set(["/aceite-termos", "/termos-de-uso", "/nda"]);
+    if (!ALLOWED_WITHOUT_TERMS.has(path)) {
+      const { data: st } = await supabase.rpc("get_my_terms_status");
+      const row = Array.isArray(st) ? st[0] : st;
+      if (row && row.status !== "aceito") {
+        throw redirect({ to: "/aceite-termos" });
+      }
+    }
+
+    if (!p?.nda_accepted_at && path !== "/nda" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/nda" });
     }
-    if (p?.nda_accepted_at && !p?.active_company_id && path !== "/empresas" && path !== "/nda") {
+    if (p?.nda_accepted_at && !p?.active_company_id && path !== "/empresas" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/empresas" });
     }
     return { user: data.user };
