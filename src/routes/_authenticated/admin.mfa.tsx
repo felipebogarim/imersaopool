@@ -32,6 +32,15 @@ function MfaPage() {
 
   const [removingId, setRemovingId] = useState<string | null>(null);
   async function remove(id: string) {
+    const verifiedCount = (factors ?? []).filter((f) => f.status === "verified").length;
+    // Admins com política de MFA ativa não podem remover o próprio último fator;
+    // isso exige recuperação por um superadministrador (com auditoria).
+    if (status?.is_admin && status.enforcement_started_at && verifiedCount <= 1) {
+      toast.error(
+        "Com o MFA obrigatório ativo, apenas um superadministrador pode remover o seu fator. Solicite a recuperação em /admin/mfa-recuperacao."
+      );
+      return;
+    }
     if (!confirm("Remover este fator? Você precisará configurar novamente.")) return;
     setRemovingId(id);
     const { error } = await supabase.auth.mfa.unenroll({ factorId: id });
