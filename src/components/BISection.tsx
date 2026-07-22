@@ -431,9 +431,55 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
               </div>
 
-
+              {/* Pesquisa via IA */}
+              <div className="rounded-xl border border-border p-4 bg-primary/[0.03]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Pesquisa via IA nos BIs dos clientes
+                  </div>
+                </div>
+                <div className="text-[11px] text-muted-foreground mb-3">
+                  Faça perguntas sobre a base (ex.: "liste os clientes que não compraram nada de fitas e fontes").
+                  As respostas usam apenas percentuais, faixas e faróis — nunca valores em R$ ou volumes.
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const q = aiQuestion.trim();
+                    if (!q) return;
+                    setAiAnswer(null);
+                    aiMutation.mutate(q);
+                  }}
+                  className="flex flex-col sm:flex-row gap-2"
+                >
+                  <input
+                    type="text"
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    placeholder="Digite sua pergunta…"
+                    maxLength={500}
+                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                    disabled={aiMutation.isPending}
+                  />
+                  <Button type="submit" size="sm" disabled={aiMutation.isPending || !aiQuestion.trim()}>
+                    {aiMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Perguntar
+                  </Button>
+                </form>
+                {aiAnswer != null && (
+                  <div className="mt-3 rounded-lg border border-border bg-background p-3 text-sm whitespace-pre-wrap">
+                    {aiAnswer || "Sem resposta."}
+                  </div>
+                )}
+              </div>
 
             </>
+
           )}
         </div>
       )}
