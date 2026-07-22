@@ -308,6 +308,17 @@ function Page() {
             <LogsTab />
           </TabsContent>
 
+          {/* ====== INTRUSÃO ====== */}
+          <TabsContent value="intrusao" className="mt-4">
+            <IntrusionTab />
+          </TabsContent>
+
+          {/* ====== DADOS SENSÍVEIS ====== */}
+          <TabsContent value="sensiveis" className="mt-4">
+            <SensitiveAccessTab />
+          </TabsContent>
+
+
           {/* ====== RISCOS ====== */}
           <TabsContent value="riscos" className="mt-4">
             <RisksTab />
