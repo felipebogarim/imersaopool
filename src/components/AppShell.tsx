@@ -86,6 +86,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
   const [clientesOpen, setClientesOpen] = useState(() => CLIENTES.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
   const [ferramentasOpen, setFerramentasOpen] = useState(() => pathname.startsWith("/admin/gerador-performance") || pathname.startsWith("/tarefas"));
+  const [priceOpen, setPriceOpen] = useState(() => pathname.startsWith("/price"));
+
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin") || pathname.startsWith("/agentes"));
 
   const { data: workspace } = useQuery({
