@@ -101,7 +101,7 @@ export function MfaEnrollDialog({ open, onOpenChange, onSuccess, mandatory }: Pr
     if (!next && mandatory && step !== "done") return;
     if (!next && step === "qr") {
       // marca como abandonado
-      supabase.rpc("log_mfa_event", { _event: "enroll_abandoned" }).catch(() => {});
+      supabase.rpc("log_mfa_event", { _event: "enroll_abandoned" }).then(() => {}, () => {});
       if (factorId) await supabase.auth.mfa.unenroll({ factorId }).catch(() => {});
     }
     onOpenChange(next);
