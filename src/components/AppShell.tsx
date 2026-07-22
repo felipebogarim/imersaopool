@@ -20,9 +20,9 @@ const NAV = [
 const INPUTS = [
   { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
-  { to: "/tarefas", label: "Gestão de Tarefas", icon: ListChecks },
   { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
+
 
 const ANALISES = [
   { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
