@@ -31,6 +31,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
@@ -56,6 +57,7 @@ import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './routes/_authenticated/admin.gerador-performance'
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
+import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_authenticated/admin.conformidade'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -182,6 +184,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAceiteTermosRoute =
+  AuthenticatedAceiteTermosRouteImport.update({
+    id: '/aceite-termos',
+    path: '/aceite-termos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTarefasIndexRoute =
   AuthenticatedTarefasIndexRouteImport.update({
     id: '/tarefas/',
@@ -323,6 +331,12 @@ const AuthenticatedAdminEventoCheckoutTesteRoute =
     path: '/evento-checkout-teste',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminConformidadeRoute =
+  AuthenticatedAdminConformidadeRouteImport.update({
+    id: '/conformidade',
+    path: '/conformidade',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/backup',
@@ -403,6 +417,7 @@ const ApiPublicMpTestCreatePreferenceRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
@@ -424,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -464,6 +480,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
@@ -485,6 +502,7 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -527,6 +545,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
   '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
@@ -548,6 +567,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
   '/_authenticated/admin/gerador-performance': typeof AuthenticatedAdminGeradorPerformanceRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
@@ -590,6 +610,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/aceite-termos'
     | '/admin'
     | '/agentes'
     | '/compilacoes'
@@ -611,6 +632,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
+    | '/admin/conformidade'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
     | '/admin/permissoes'
@@ -651,6 +673,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/aceite-termos'
     | '/admin'
     | '/agentes'
     | '/compilacoes'
@@ -672,6 +695,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
+    | '/admin/conformidade'
     | '/admin/evento-checkout-teste'
     | '/admin/gerador-performance'
     | '/admin/permissoes'
@@ -713,6 +737,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/aceite-termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/compilacoes'
@@ -734,6 +759,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/conformidade'
     | '/_authenticated/admin/evento-checkout-teste'
     | '/_authenticated/admin/gerador-performance'
     | '/_authenticated/admin/permissoes'
@@ -951,6 +977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/aceite-termos': {
+      id: '/_authenticated/aceite-termos'
+      path: '/aceite-termos'
+      fullPath: '/aceite-termos'
+      preLoaderRoute: typeof AuthenticatedAceiteTermosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tarefas/': {
       id: '/_authenticated/tarefas/'
       path: '/tarefas'
@@ -1126,6 +1159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventoCheckoutTesteRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/conformidade': {
+      id: '/_authenticated/admin/conformidade'
+      path: '/conformidade'
+      fullPath: '/admin/conformidade'
+      preLoaderRoute: typeof AuthenticatedAdminConformidadeRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/backup'
@@ -1223,6 +1263,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaSegurancaRoute: typeof AuthenticatedAdminAuditoriaSegurancaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminConformidadeRoute: typeof AuthenticatedAdminConformidadeRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
   AuthenticatedAdminGeradorPerformanceRoute: typeof AuthenticatedAdminGeradorPerformanceRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
@@ -1233,6 +1274,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaSegurancaRoute:
     AuthenticatedAdminAuditoriaSegurancaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminConformidadeRoute: AuthenticatedAdminConformidadeRoute,
   AuthenticatedAdminEventoCheckoutTesteRoute:
     AuthenticatedAdminEventoCheckoutTesteRoute,
   AuthenticatedAdminGeradorPerformanceRoute:
@@ -1274,6 +1316,7 @@ const AuthenticatedEntrevistasIdRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAceiteTermosRoute: typeof AuthenticatedAceiteTermosRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
   AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
@@ -1309,6 +1352,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAceiteTermosRoute: AuthenticatedAceiteTermosRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
   AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
