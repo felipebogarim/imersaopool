@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandMark } from "@/components/Brand";
@@ -19,17 +20,17 @@ const NAV = [
 const INPUTS = [
   { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
-  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
-  { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
   { to: "/tarefas", label: "Gestão de Tarefas", icon: ListChecks },
   { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
 
+const ANALISES = [
+  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
+  { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
+] as const;
+
 const NAV_BOTTOM = [
   { to: "/price", label: "Price", icon: Tag },
-  { to: "/agentes", label: "Agentes", icon: UserCog },
-  { to: "/projecao", label: "Projeção Categoria / Benefício", icon: TrendingUp },
-  { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
 ] as const;
 
 const REPS = [
@@ -37,8 +38,13 @@ const REPS = [
   { to: "/representantes/performance", label: "Performance", icon: TrendingUp },
 ] as const;
 
-const BASES = [
+const CLIENTES = [
   { to: "/clientes", label: "Clientes", icon: Briefcase },
+  { to: "/projecao", label: "Projeção de Categorias / Benefícios", icon: TrendingUp },
+  { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
+] as const;
+
+const BASES = [
   { to: "/produtos", label: "Produtos", icon: Package },
   { to: "/familias", label: "Famílias", icon: Package },
   { to: "/roteiros", label: "Roteiros", icon: BookOpen },
@@ -73,7 +79,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
   const [inputsOpen, setInputsOpen] = useState(() => INPUTS.some(b => pathname.startsWith(b.to)));
+  const [analisesOpen, setAnalisesOpen] = useState(() => ANALISES.some(b => pathname.startsWith(b.to)));
   const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
+  const [clientesOpen, setClientesOpen] = useState(() => CLIENTES.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
+  const [ferramentasOpen, setFerramentasOpen] = useState(() => pathname.startsWith("/admin/gerador-performance"));
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -154,6 +163,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAnalisesOpen(o => !o)}
+                  title="Análises"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <LineChart className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Análises</span>
+                  {analisesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {analisesOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {ANALISES.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {NAV_BOTTOM.map(item => (
                 <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
               ))}
@@ -181,6 +210,26 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="pt-2">
                 <button
                   type="button"
+                  onClick={() => setClientesOpen(o => !o)}
+                  title="Clientes"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Briefcase className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Clientes</span>
+                  {clientesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {clientesOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    {CLIENTES.map(item => (
+                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
                   onClick={() => setBasesOpen(o => !o)}
                   title="Bases"
                   className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
@@ -198,6 +247,38 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               </div>
 
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFerramentasOpen(o => !o)}
+                  title="Ferramentas"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+                >
+                  <Wrench className="h-4 w-4 shrink-0" />
+                  <span className={cn("flex-1 text-left", LBL)}>Ferramentas</span>
+                  {ferramentasOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+                </button>
+                {ferramentasOpen && (
+                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                    <NavItem
+                      to="/admin/gerador-performance"
+                      label="Gerador de Performance"
+                      Icon={Sparkles}
+                      active={pathname === "/admin/gerador-performance"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toast.info("Tabela de Preços", { description: "Área em construção." })}
+                      title="Tabela de Preços"
+                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition text-left"
+                    >
+                      <Tag className="h-4 w-4 shrink-0" />
+                      <span className={LBL}>Tabela de Preços</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {workspace?.isAdmin && (
                 <div className="pt-4">
                   <div className={cn("px-3 pb-2 items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground", ONLY_EXPANDED)}>
@@ -205,6 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </div>
                   {[
                     { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
+                    { to: "/agentes", label: "Agentes", icon: UserCog },
                     { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
                     { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
                     { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
