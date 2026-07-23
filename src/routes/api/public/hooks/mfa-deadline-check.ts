@@ -67,11 +67,14 @@ export const Route = createFileRoute("/api/public/hooks/mfa-deadline-check")({
             // Practical approach: write a notification row that the sign-in
             // hook can pick up. We keep the send route unchanged.
             const idem = `mfa-warn-${row.user_id}-${today}`;
+            const since = new Date(); since.setUTCHours(0, 0, 0, 0);
             const { data: existing } = await supabaseAdmin
               .from("email_send_log")
               .select("id")
               .eq("template_name", "mfa-deadline-warning")
-              .eq("idempotency_key", idem)
+              .eq("recipient_email", email)
+              .gte("created_at", since.toISOString())
+              .limit(1)
               .maybeSingle();
             if (existing) continue;
 
