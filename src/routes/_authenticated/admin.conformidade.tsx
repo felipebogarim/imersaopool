@@ -120,7 +120,91 @@ function ConformidadePage() {
         title="Conformidade e Aceites"
         subtitle="Status de aceite dos Termos de Uso por usuário — somente informações de controle"
       />
-      <div className="p-4 sm:p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-6">
+        {kpis && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">MFA administrativo</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Kpi
+                icon={ShieldCheck}
+                title="Cobertura MFA (admins)"
+                value={`${kpis.mfa.pct_cobertura}%`}
+                hint={`${kpis.mfa.admins_com_fator}/${kpis.mfa.total_admins} com fator verificado`}
+                tone={mfaTone}
+              />
+              <Kpi
+                icon={ShieldAlert}
+                title="Admins sem MFA"
+                value={kpis.mfa.admins_sem_fator}
+                hint={kpis.mfa.admins_sem_fator === 0 ? "Todos configurados" : "Pendentes de cadastro"}
+                tone={kpis.mfa.admins_sem_fator === 0 ? "ok" : "warn"}
+              />
+              <Kpi
+                icon={Clock}
+                title="Tempo médio de cadastro"
+                value={kpis.mfa.avg_hours_enroll != null ? `${kpis.mfa.avg_hours_enroll} h` : "—"}
+                hint="Do início ao fim do enroll TOTP"
+              />
+              <Kpi
+                icon={ShieldCheck}
+                title="Enforcement"
+                value={kpis.mfa.enforcement_started_at ? "Ativo" : "Desativado"}
+                hint={deadlineLabel ? `Prazo: ${deadlineLabel}` : "Sem prazo definido"}
+                tone={kpis.mfa.enforcement_started_at ? "ok" : "warn"}
+              />
+            </div>
+
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">
+              Intrusão e operações sensíveis (24h)
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Kpi
+                icon={AlertTriangle}
+                title="Falhas de login"
+                value={kpis.intrusao.auth_falhas_24h}
+                tone={kpis.intrusao.auth_falhas_24h > 20 ? "danger" : kpis.intrusao.auth_falhas_24h > 5 ? "warn" : "ok"}
+              />
+              <Kpi
+                icon={ShieldAlert}
+                title="Operações admin recusadas"
+                value={kpis.intrusao.admin_op_rejeitadas_24h}
+                hint="AAL1 tentando ação sensível"
+                tone={kpis.intrusao.admin_op_rejeitadas_24h > 0 ? "warn" : "ok"}
+              />
+              <Kpi
+                icon={Trash2}
+                title="Purgas LGPD pendentes"
+                value={kpis.lgpd.purges_pendentes}
+                tone={kpis.lgpd.purges_pendentes > 0 ? "warn" : "ok"}
+              />
+              <Kpi
+                icon={FileCheck2}
+                title="Purgas executadas (30d)"
+                value={kpis.lgpd.purges_executadas_30d}
+              />
+            </div>
+
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Termos de Uso</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Kpi icon={FileCheck2} title="Usuários" value={kpis.termos.total_usuarios} />
+              <Kpi icon={ShieldCheck} title="Aceites atuais" value={kpis.termos.aceitos} tone="ok" />
+              <Kpi
+                icon={AlertTriangle}
+                title="Aceite pendente"
+                value={kpis.termos.pendentes}
+                tone={kpis.termos.pendentes > 0 ? "warn" : "ok"}
+              />
+              <Kpi
+                icon={AlertTriangle}
+                title="Nova versão disponível"
+                value={kpis.termos.nova_versao_disponivel}
+                tone={kpis.termos.nova_versao_disponivel > 0 ? "warn" : "ok"}
+              />
+            </div>
+          </section>
+        )}
+
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Input placeholder="Buscar por e-mail, nome ou perfil…" value={filter} onChange={(e) => setFilter(e.target.value)} className="sm:max-w-sm" />
           <select
