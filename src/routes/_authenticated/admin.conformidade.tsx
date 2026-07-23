@@ -77,6 +77,16 @@ function ConformidadePage() {
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const { data: kpis } = useQuery<Kpis | null>({
+    queryKey: ["admin-conformidade-kpis"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_conformidade_kpis");
+      if (error) throw error;
+      return (data as unknown as Kpis) ?? null;
+    },
+    staleTime: 60_000,
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-conformidade"],
     queryFn: async () => {
@@ -94,6 +104,15 @@ function ConformidadePage() {
       return [r.email, r.full_name, r.role].some((v) => String(v ?? "").toLowerCase().includes(q));
     });
   }, [data, filter, statusFilter]);
+
+  const deadlineLabel = kpis?.mfa.deadline
+    ? new Date(kpis.mfa.deadline).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+    : null;
+  const mfaTone: "ok" | "warn" | "danger" =
+    !kpis ? "warn"
+    : kpis.mfa.pct_cobertura >= 100 ? "ok"
+    : kpis.mfa.pct_cobertura >= 60 ? "warn"
+    : "danger";
 
   return (
     <div className="min-h-screen">
