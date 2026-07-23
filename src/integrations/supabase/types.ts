@@ -3992,6 +3992,7 @@ export type Database = {
         Args: { _justificativa: string; _target_user_id: string }
         Returns: undefined
       }
+      admin_conformidade_kpis: { Args: never; Returns: Json }
       admin_list_terms_conformidade: {
         Args: never
         Returns: {
