@@ -5,7 +5,61 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, ShieldCheck, ShieldAlert, AlertTriangle, FileCheck2, Clock, Trash2 } from "lucide-react";
+
+type Kpis = {
+  mfa: {
+    total_admins: number;
+    admins_com_fator: number;
+    admins_sem_fator: number;
+    pct_cobertura: number;
+    avg_hours_enroll: number | null;
+    enforcement_started_at: string | null;
+    deadline: string | null;
+    grace_days: number | null;
+  };
+  intrusao: { auth_falhas_24h: number; admin_op_rejeitadas_24h: number };
+  lgpd: { purges_pendentes: number; purges_executadas_30d: number };
+  termos: { total_usuarios: number; aceitos: number; pendentes: number; nova_versao_disponivel: number };
+  gerado_em: string;
+};
+
+function Kpi({
+  icon: Icon,
+  title,
+  value,
+  hint,
+  tone = "default",
+}: {
+  icon: any;
+  title: string;
+  value: string | number;
+  hint?: string;
+  tone?: "default" | "warn" | "danger" | "ok";
+}) {
+  const toneCls =
+    tone === "danger"
+      ? "text-destructive"
+      : tone === "warn"
+      ? "text-amber-600 dark:text-amber-400"
+      : tone === "ok"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "";
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+          <Icon className={`h-4 w-4 ${toneCls}`} /> {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-semibold tabular-nums ${toneCls}`}>{value}</div>
+        {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/admin/conformidade")({
   head: () => ({ meta: [{ title: "Conformidade e Aceites" }, { name: "robots", content: "noindex" }] }),
