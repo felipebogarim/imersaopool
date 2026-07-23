@@ -78,6 +78,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
+import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
@@ -464,6 +465,12 @@ const ApiPublicHooksWeeklySecurityAuditRoute =
     path: '/api/public/hooks/weekly-security-audit',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMfaDeadlineCheckRoute =
+  ApiPublicHooksMfaDeadlineCheckRouteImport.update({
+    id: '/api/public/hooks/mfa-deadline-check',
+    path: '/api/public/hooks/mfa-deadline-check',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTarefasBBoardIdRoute =
   AuthenticatedTarefasBBoardIdRouteImport.update({
     id: '/tarefas/b/$boardId',
@@ -574,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -650,6 +658,7 @@ export interface FileRoutesByTo {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -729,6 +738,7 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -808,6 +818,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -884,6 +895,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -962,6 +974,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
+    | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -990,6 +1003,7 @@ export interface RootRouteChildren {
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -1485,6 +1499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWeeklySecurityAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/mfa-deadline-check': {
+      id: '/api/public/hooks/mfa-deadline-check'
+      path: '/api/public/hooks/mfa-deadline-check'
+      fullPath: '/api/public/hooks/mfa-deadline-check'
+      preLoaderRoute: typeof ApiPublicHooksMfaDeadlineCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/tarefas/b/$boardId': {
       id: '/_authenticated/tarefas/b/$boardId'
       path: '/tarefas/b/$boardId'
@@ -1716,6 +1737,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
     ApiPublicHooksWeeklySecurityAuditRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
