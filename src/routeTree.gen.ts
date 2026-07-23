@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -85,6 +86,11 @@ import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/
 import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
 import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -503,6 +509,7 @@ const ApiPublicMpTestCreatePreferenceRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -579,6 +586,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -656,6 +664,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
@@ -734,6 +743,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/unsubscribe'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -810,6 +820,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/unsubscribe'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -886,6 +897,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/unsubscribe'
     | '/_authenticated/aceite-termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
@@ -964,6 +976,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
   EventoFalhaRoute: typeof EventoFalhaRoute
@@ -989,6 +1002,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -1682,6 +1702,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
   EventoFalhaRoute: EventoFalhaRoute,

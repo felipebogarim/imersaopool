@@ -11,7 +11,7 @@ interface Props {
 const Email = ({ name, daysLeft, deadline }: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Faltam {daysLeft ?? "poucos"} dias para o MFA obrigatório</Preview>
+    <Preview>{`Faltam ${daysLeft ?? "poucos"} dias para o MFA obrigatório`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Ative o MFA antes do prazo</Heading>
