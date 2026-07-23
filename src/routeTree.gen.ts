@@ -18,6 +18,7 @@ import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
@@ -40,6 +41,7 @@ import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
 import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
@@ -69,6 +71,8 @@ import { Route as AuthenticatedAdminCriteriosSegurancaRouteImport } from './rout
 import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_authenticated/admin.conformidade'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
@@ -123,6 +127,11 @@ const EventoFalhaRoute = EventoFalhaRouteImport.update({
 const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
   id: '/evento/checkout',
   path: '/evento/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTermosDeUsoRoute =
@@ -245,6 +254,11 @@ const AuthenticatedClientesIndexRoute =
     path: '/clientes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicBackupToDriveRoute = ApiPublicBackupToDriveRouteImport.update({
   id: '/api/public/backup-to-drive',
   path: '/api/public/backup-to-drive',
@@ -409,6 +423,18 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -491,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -526,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
@@ -543,6 +571,8 @@ export interface FileRoutesByFullPath {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -562,6 +592,7 @@ export interface FileRoutesByTo {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -597,6 +628,7 @@ export interface FileRoutesByTo {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
@@ -614,6 +646,8 @@ export interface FileRoutesByTo {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -636,6 +670,7 @@ export interface FileRoutesById {
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -671,6 +706,7 @@ export interface FileRoutesById {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
@@ -688,6 +724,8 @@ export interface FileRoutesById {
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -710,6 +748,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/termos-de-uso'
+    | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -745,6 +784,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/lovable/email/suppression'
     | '/clientes/'
     | '/entrevistas/'
     | '/forms/'
@@ -762,6 +802,8 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -781,6 +823,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/termos-de-uso'
+    | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -816,6 +859,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/lovable/email/suppression'
     | '/clientes'
     | '/entrevistas'
     | '/forms'
@@ -833,6 +877,8 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   id:
@@ -854,6 +900,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
     | '/_authenticated/termos-de-uso'
+    | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -889,6 +936,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/lovable/email/suppression'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
     | '/_authenticated/forms/'
@@ -906,6 +954,8 @@ export interface FileRouteTypes {
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesById: FileRoutesById
@@ -914,6 +964,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
   EventoFalhaRoute: typeof EventoFalhaRoute
   EventoPendenteRoute: typeof EventoPendenteRoute
@@ -925,10 +976,13 @@ export interface RootRouteChildren {
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
+  LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
   ApiPublicMpTestCreatePreferenceRoute: typeof ApiPublicMpTestCreatePreferenceRoute
   ApiPublicMpTestWebhookRoute: typeof ApiPublicMpTestWebhookRoute
 }
@@ -996,6 +1050,13 @@ declare module '@tanstack/react-router' {
       path: '/evento/checkout'
       fullPath: '/evento/checkout'
       preLoaderRoute: typeof EventoCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/termos-de-uso': {
@@ -1151,6 +1212,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/clientes/'
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/backup-to-drive': {
       id: '/api/public/backup-to-drive'
@@ -1354,6 +1422,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/auditoria-seguranca'
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
@@ -1600,6 +1682,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
   EventoFalhaRoute: EventoFalhaRoute,
   EventoPendenteRoute: EventoPendenteRoute,
@@ -1611,11 +1694,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
+  LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
     ApiPublicHooksWeeklySecurityAuditRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
   ApiPublicMpTestCreatePreferenceRoute: ApiPublicMpTestCreatePreferenceRoute,
   ApiPublicMpTestWebhookRoute: ApiPublicMpTestWebhookRoute,
 }
