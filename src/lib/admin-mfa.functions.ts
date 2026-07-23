@@ -51,6 +51,29 @@ export const adminMfaRecoverUser = createServerFn({ method: "POST" })
       metadata: { factors_removed: removed, justificativa: data.justificativa },
     });
 
+    // Notify the target admin by e-mail (best-effort; never blocks the recovery).
+    try {
+      const { data: targetUser } = await supabaseAdmin.auth.admin.getUserById(data.target_user_id);
+      const { data: actorUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const targetEmail = targetUser?.user?.email;
+      if (targetEmail) {
+        const { sendTransactionalEmail } = await import("@/lib/email/send.server");
+        await sendTransactionalEmail({
+          templateName: "mfa-factor-removed",
+          recipientEmail: targetEmail,
+          idempotencyKey: `mfa-recovery-${data.target_user_id}-${Date.now()}`,
+          templateData: {
+            name: (targetUser?.user?.user_metadata as any)?.full_name ?? targetEmail,
+            actorName: actorUser?.user?.email ?? "superadministrador",
+            justificativa: data.justificativa,
+            when: new Date().toLocaleString("pt-BR"),
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[mfa-recovery] email notify failed", err);
+    }
+
     return { ok: true, factors_removed: removed.length };
   });
 
