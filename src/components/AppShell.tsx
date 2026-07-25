@@ -53,10 +53,10 @@ const BASES = [
   { to: "/roteiros", label: "Roteiros", icon: BookOpen },
 ] as const;
 
-// Label span: hidden when sidebar is collapsed, shown on hover.
-const LBL = "hidden group-hover/sidebar:inline whitespace-nowrap";
-// Chevron / secondary UI: only when expanded.
-const ONLY_EXPANDED = "hidden group-hover/sidebar:flex";
+// Label span: hidden when sidebar is collapsed on desktop; shown on hover or when mobile drawer is open.
+const LBL = "hidden group-hover/sidebar:inline group-data-[mobile-open=true]/sidebar:inline whitespace-nowrap";
+// Chevron / secondary UI: only when expanded (hover or mobile-open).
+const ONLY_EXPANDED = "hidden group-hover/sidebar:flex group-data-[mobile-open=true]/sidebar:flex";
 
 function NavItem({ to, label, Icon, active }: { to: string; label: string; Icon: typeof BarChart3; active: boolean }) {
   return (
