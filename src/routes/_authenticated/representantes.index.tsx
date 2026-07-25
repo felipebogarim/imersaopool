@@ -82,36 +82,67 @@ function RepsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      <div className="p-8">
-        <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="text-left px-4 py-3">Nome</th>
-                <th className="text-left px-4 py-3">Representação</th>
-                <th className="text-left px-4 py-3">E-mail</th>
-                <th className="text-left px-4 py-3">Telefone</th>
-                <th className="text-left px-4 py-3">Região</th>
-                <th className="px-4 py-3 w-20"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {reps.length === 0 ? <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum representante cadastrado.</td></tr> :
-                reps.map((r: any) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="px-4 py-3 font-medium">{r.nome}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.representacao || "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.telefone || "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.regiao || "—"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <EntityKebab type="representante" id={r.id} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />
-                    </td>
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
+      <div className="p-4 sm:p-8">
+        {/* Desktop / tablet: table */}
+        <div className="surface rounded-xl overflow-hidden hidden md:block">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left px-4 py-3">Nome</th>
+                  <th className="text-left px-4 py-3">Representação</th>
+                  <th className="text-left px-4 py-3">E-mail</th>
+                  <th className="text-left px-4 py-3">Telefone</th>
+                  <th className="text-left px-4 py-3">Região</th>
+                  <th className="px-4 py-3 w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {reps.length === 0 ? <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhum representante cadastrado.</td></tr> :
+                  reps.map((r: any) => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-4 py-3 font-medium">{r.nome}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{r.representacao || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{r.email || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{r.telefone || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{r.regiao || "—"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <EntityKebab type="representante" id={r.id} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile: stacked cards */}
+        <div className="md:hidden space-y-3">
+          {reps.length === 0 ? (
+            <div className="surface rounded-xl px-4 py-12 text-center text-sm text-muted-foreground">
+              Nenhum representante cadastrado.
+            </div>
+          ) : reps.map((r: any) => (
+            <div key={r.id} className="surface rounded-xl p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate">{r.nome}</p>
+                  {r.representacao && (
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.representacao}</p>
+                  )}
+                </div>
+                <div className="shrink-0">
+                  <EntityKebab type="representante" id={r.id} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />
+                </div>
+              </div>
+              <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+                {r.email && (<><dt className="text-muted-foreground">E-mail</dt><dd className="min-w-0 truncate">{r.email}</dd></>)}
+                {r.telefone && (<><dt className="text-muted-foreground">Telefone</dt><dd className="min-w-0 truncate">{r.telefone}</dd></>)}
+                {r.regiao && (<><dt className="text-muted-foreground">Região</dt><dd className="min-w-0 truncate">{r.regiao}</dd></>)}
+              </dl>
+            </div>
+          ))}
         </div>
       </div>
     </div>
