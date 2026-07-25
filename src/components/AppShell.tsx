@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X } from "lucide-react";
+import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,10 +53,10 @@ const BASES = [
   { to: "/roteiros", label: "Roteiros", icon: BookOpen },
 ] as const;
 
-// Label span: hidden when sidebar is collapsed, shown on hover.
-const LBL = "hidden group-hover/sidebar:inline whitespace-nowrap";
-// Chevron / secondary UI: only when expanded.
-const ONLY_EXPANDED = "hidden group-hover/sidebar:flex";
+// Label span: hidden when sidebar is collapsed on desktop; shown on hover or when mobile drawer is open.
+const LBL = "hidden group-hover/sidebar:inline group-data-[mobile-open=true]/sidebar:inline whitespace-nowrap";
+// Chevron / secondary UI: only when expanded (hover or mobile-open).
+const ONLY_EXPANDED = "hidden group-hover/sidebar:flex group-data-[mobile-open=true]/sidebar:flex";
 
 function NavItem({ to, label, Icon, active }: { to: string; label: string; Icon: typeof BarChart3; active: boolean }) {
   return (
@@ -89,6 +89,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [priceOpen, setPriceOpen] = useState(() => pathname.startsWith("/price"));
 
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin") || pathname.startsWith("/agentes"));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Close mobile drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -122,10 +125,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Spacer to reserve the collapsed rail width in layout */}
-      <div className="w-16 shrink-0" aria-hidden />
+      {/* Spacer to reserve the collapsed rail width in layout (desktop only) */}
+      <div className="hidden md:block w-16 shrink-0" aria-hidden />
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+        />
+      )}
       <aside
-        className="group/sidebar fixed inset-y-0 left-0 z-40 w-16 hover:w-60 border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden transition-[width] duration-200 ease-out"
+        data-mobile-open={mobileOpen ? "true" : "false"}
+        className={cn(
+          "group/sidebar fixed inset-y-0 left-0 z-40 border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden transition-[width,transform] duration-200 ease-out",
+          // Desktop: rail that expands on hover
+          "md:w-16 md:hover:w-60 md:translate-x-0",
+          // Mobile: full drawer, off-canvas by default
+          mobileOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0"
+        )}
       >
         <div className="p-3 border-b border-sidebar-border flex items-center gap-3 h-[73px]">
           {workspace?.companyName?.toLowerCase().includes("newline") ? (
@@ -349,7 +368,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block")}>
+          <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block group-data-[mobile-open=true]/sidebar:block")}>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
             <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
           </div>
@@ -374,6 +393,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden relative">
+        {/* Mobile top bar with hamburger */}
+        <div className="md:hidden sticky top-0 z-20 flex items-center gap-2 h-12 px-3 border-b border-border bg-background/95 backdrop-blur">
+          <button
+            type="button"
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMobileOpen(o => !o)}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted transition"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            {workspace?.companyName?.toLowerCase().includes("newline") ? (
+              <img src={newlineLogo.url} alt="Newline" className="h-6 w-auto shrink-0 object-contain" />
+            ) : (
+              <BrandMark className="h-6 shrink-0" />
+            )}
+            <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
+          </div>
+        </div>
         <AdminMfaBanner />
         {children}
       </main>
