@@ -368,7 +368,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block")}>
+          <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block group-data-[mobile-open=true]/sidebar:block")}>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
             <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
           </div>
