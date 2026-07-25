@@ -393,6 +393,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden relative">
+        {/* Mobile top bar with hamburger */}
+        <div className="md:hidden sticky top-0 z-20 flex items-center gap-2 h-12 px-3 border-b border-border bg-background/95 backdrop-blur">
+          <button
+            type="button"
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMobileOpen(o => !o)}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted transition"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <div className="flex items-center gap-2 min-w-0">
+            {workspace?.companyName?.toLowerCase().includes("newline") ? (
+              <img src={newlineLogo.url} alt="Newline" className="h-6 w-auto shrink-0 object-contain" />
+            ) : (
+              <BrandMark className="h-6 shrink-0" />
+            )}
+            <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
+          </div>
+        </div>
         <AdminMfaBanner />
         {children}
       </main>
