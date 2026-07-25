@@ -89,6 +89,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [priceOpen, setPriceOpen] = useState(() => pathname.startsWith("/price"));
 
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin") || pathname.startsWith("/agentes"));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Close mobile drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
