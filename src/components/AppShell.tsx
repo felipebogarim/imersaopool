@@ -125,10 +125,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* Spacer to reserve the collapsed rail width in layout */}
-      <div className="w-16 shrink-0" aria-hidden />
+      {/* Spacer to reserve the collapsed rail width in layout (desktop only) */}
+      <div className="hidden md:block w-16 shrink-0" aria-hidden />
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Fechar menu"
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+        />
+      )}
       <aside
-        className="group/sidebar fixed inset-y-0 left-0 z-40 w-16 hover:w-60 border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden transition-[width] duration-200 ease-out"
+        data-mobile-open={mobileOpen ? "true" : "false"}
+        className={cn(
+          "group/sidebar fixed inset-y-0 left-0 z-40 border-r border-sidebar-border bg-sidebar flex flex-col overflow-hidden transition-[width,transform] duration-200 ease-out",
+          // Desktop: rail that expands on hover
+          "md:w-16 md:hover:w-60 md:translate-x-0",
+          // Mobile: full drawer, off-canvas by default
+          mobileOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0"
+        )}
       >
         <div className="p-3 border-b border-sidebar-border flex items-center gap-3 h-[73px]">
           {workspace?.companyName?.toLowerCase().includes("newline") ? (
