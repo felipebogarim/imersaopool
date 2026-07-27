@@ -380,66 +380,38 @@ function PerformancePage() {
       const parsed = await parseWorkbook(buf);
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada na planilha.");
 
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user?.id;
+      const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
+      const targetsMatrix = (cm.__family_metas_by_category__ ?? {}) as Record<
+        string,
+        Record<string, number>
+      >;
 
-      // Modo substituir: marca a versão atual como substituída (não apaga)
-      if (dlgMode === "replace" && currentUpload) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_em: new Date().toISOString() } as any)
-          .eq("id", currentUpload.id);
-      }
+      const payload = {
+        representative_id: repId,
+        periodo_label: periodoLabel.trim(),
+        periodo_inicio: periodoInicio || null,
+        periodo_fim: periodoFim || null,
+        familias: parsed.familias,
+        filename: pendingFile.name,
+        targets_matrix: targetsMatrix,
+        rows: parsed.rows.map((r) => ({
+          razao_social: r.razao_social,
+          categoria: r.categoria,
+          metas_status: r.metas_status ?? {},
+          total_pct_status: r.total_pct_status,
+        })),
+      };
 
-      const { data: up, error: upErr } = await supabase
-        .from("rep_performance_uploads")
-        .insert({
-          representative_id: repId,
-          periodo_label: periodoLabel.trim(),
-          periodo_inicio: periodoInicio || null,
-          periodo_fim: periodoFim || null,
-          familias: parsed.familias,
-          categoria_metas: parsed.categoriaMetas,
-          escala_percentual: parsed.escala,
-          participacao: parsed.participacao,
-          atingimento: parsed.atingimento,
-          filename: pendingFile.name,
-          uploaded_by: uid,
-          origem: "import",
-        } as any)
-        .select("id")
-        .single();
-      if (upErr || !up) throw upErr ?? new Error("Falha ao criar upload");
-
-      if (dlgMode === "replace" && currentUpload) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_por: up.id } as any)
-          .eq("id", currentUpload.id);
-      }
-
-      const payload = parsed.rows.map((r) => ({
-        upload_id: up.id,
-        ordem: r.ordem,
-        razao_social: r.razao_social,
-        categoria: r.categoria,
-        metas: r.metas,
-        metas_status: r.metas_status,
-        metas_cores: r.metas_cores,
-        total_meta: r.total_meta,
-        total_pct_status: r.total_pct_status,
-      }));
-      for (let i = 0; i < payload.length; i += 200) {
-        const chunk = payload.slice(i, i + 200);
-        const { error } = await supabase.from("rep_performance_rows").insert(chunk as any);
-        if (error) throw error;
-      }
+      const { data, error } = await (supabase as any).rpc("submit_performance_upload", {
+        _payload: payload,
+      });
+      if (error) throw error;
 
       toast.success(`Planilha importada: ${parsed.rows.length} clientes.`);
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
       qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
-      setUploadId(up.id);
+      if (data?.upload_id) setUploadId(data.upload_id);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Erro ao importar planilha.");
@@ -447,6 +419,7 @@ function PerformancePage() {
       setBusy(false);
     }
   }
+
 
   async function handleDelete() {
     if (!currentUpload) return;
