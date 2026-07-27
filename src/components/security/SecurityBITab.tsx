@@ -1,9 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, ShieldAlert, Bug, Activity, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShieldCheck, ShieldAlert, Bug, Activity, Loader2, MoreVertical, ScrollText } from "lucide-react";
+
+type LogEntry = { id: string; quando: string | null; titulo: string; detalhe?: string | null; nivel?: string | null };
 
 type Tone = "ok" | "warn" | "bad";
 
@@ -68,8 +78,78 @@ function Gauge({
   );
 }
 
+const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pt-BR") : "—");
+
+function LogsKebab({ count, onOpen }: { count: number; onOpen: () => void }) {
+  if (count <= 0) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-7 w-7">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onOpen}>
+          <ScrollText className="h-4 w-4 mr-2" /> Ver logs ({count})
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function LogsDialog({
+  open,
+  onOpenChange,
+  title,
+  entries,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  entries: LogEntry[];
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">{title}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-auto -mx-2 px-2">
+          {entries.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">Nenhum evento registrado.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted-foreground text-left">
+                  <th className="py-2 pr-3 font-medium">Quando</th>
+                  <th className="py-2 pr-3 font-medium">Evento</th>
+                  <th className="py-2 pr-3 font-medium">Detalhe</th>
+                  <th className="py-2 font-medium">Nível</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e.id} className="border-t border-border/60 align-top">
+                    <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{fmt(e.quando)}</td>
+                    <td className="py-2 pr-3 font-medium">{e.titulo}</td>
+                    <td className="py-2 pr-3 text-muted-foreground break-words">{e.detalhe ?? "—"}</td>
+                    <td className="py-2 whitespace-nowrap">{e.nivel ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function SecurityBITab() {
   const since = useMemo(() => new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(), []);
+  const [logs, setLogs] = useState<{ title: string; entries: LogEntry[] } | null>(null);
+
 
   const eventsQ = useQuery({
     queryKey: ["sec-bi-events", since],
@@ -165,6 +245,42 @@ export function SecurityBITab() {
   const riskScore = gCrit * 4 + gAlto * 3 + gMedio * 2 + gBaixo;
   const riskTone: Tone = gCrit > 0 ? "bad" : gAlto > 0 || openRisks.length > 5 ? "warn" : openRisks.length === 0 ? "ok" : "warn";
 
+  // ---- Logs por card ----
+  const evLog = (e: any): LogEntry => ({
+    id: `ev-${e.id}`,
+    quando: e.ocorrido_em,
+    titulo: e.tipo ?? e.categoria ?? "Evento",
+    detalhe: [e.usuario_email, e.resultado].filter(Boolean).join(" • "),
+    nivel: e.nivel_risco,
+  });
+  const leakLogs: LogEntry[] = [
+    ...leakIncidents.map((i: any) => ({
+      id: `inc-${i.id}`,
+      quando: i.ocorrido_em,
+      titulo: i.titulo ?? "Incidente",
+      detalhe: [i.categoria, i.status].filter(Boolean).join(" • "),
+      nivel: i.gravidade,
+    })),
+    ...leakEvents.map(evLog),
+    ...leakFiles.map((f: any) => ({
+      id: `file-${f.id}`,
+      quando: f.created_at,
+      titulo: f.evento ?? "Evento de arquivo",
+      detalhe: null,
+      nivel: f.nivel_risco,
+    })),
+  ].sort((a, b) => String(b.quando ?? "").localeCompare(String(a.quando ?? "")));
+  const authLogs = authFailures.map(evLog);
+  const blockedLogs = blocked.map(evLog);
+  const highRiskLogs = highRisk.map(evLog);
+  const riskLogs: LogEntry[] = openRisks.map((r: any) => ({
+    id: `risk-${r.id}`,
+    quando: null,
+    titulo: r.titulo ?? "Risco",
+    detalhe: r.status,
+    nivel: r.gravidade,
+  }));
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
@@ -188,11 +304,13 @@ export function SecurityBITab() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <ShieldAlert className="h-4 w-4" /> Vazamento de dados sensíveis
             </CardTitle>
+            <LogsKebab count={leakLogs.length} onOpen={() => setLogs({ title: "Vazamento de dados sensíveis", entries: leakLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={leaks}
@@ -210,11 +328,13 @@ export function SecurityBITab() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bug className="h-4 w-4" /> Falhas de autenticação
             </CardTitle>
+            <LogsKebab count={authLogs.length} onOpen={() => setLogs({ title: "Falhas de autenticação (30 dias)", entries: authLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={authFailures.length}
@@ -233,11 +353,13 @@ export function SecurityBITab() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bug className="h-4 w-4" /> Acessos bloqueados
             </CardTitle>
+            <LogsKebab count={blockedLogs.length} onOpen={() => setLogs({ title: "Acessos bloqueados (30 dias)", entries: blockedLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={blocked.length}
@@ -256,11 +378,13 @@ export function SecurityBITab() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bug className="h-4 w-4" /> Eventos de risco alto/crítico
             </CardTitle>
+            <LogsKebab count={highRiskLogs.length} onOpen={() => setLogs({ title: "Eventos de risco alto/crítico (30 dias)", entries: highRiskLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={highRisk.length}
@@ -280,11 +404,13 @@ export function SecurityBITab() {
 
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Activity className="h-4 w-4" /> Riscos de segurança
             </CardTitle>
+            <LogsKebab count={riskLogs.length} onOpen={() => setLogs({ title: "Riscos de segurança em aberto", entries: riskLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={openRisks.length}
@@ -312,6 +438,14 @@ export function SecurityBITab() {
           </AlertDescription>
         </Alert>
       )}
+
+      <LogsDialog
+        open={!!logs}
+        onOpenChange={(v) => !v && setLogs(null)}
+        title={logs?.title ?? ""}
+        entries={logs?.entries ?? []}
+      />
     </div>
   );
 }
+
