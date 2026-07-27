@@ -396,11 +396,13 @@ export function SecurityBITab() {
 
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Activity className="h-4 w-4" /> Riscos de segurança
             </CardTitle>
+            <LogsKebab count={riskLogs.length} onOpen={() => setLogs({ title: "Riscos de segurança em aberto", entries: riskLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={openRisks.length}
