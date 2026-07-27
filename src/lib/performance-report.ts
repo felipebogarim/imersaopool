@@ -116,9 +116,20 @@ export function exportPerformanceReport(opts: {
     .sort((a, b) => b.zeros - a.zeros || a.score - b.score)
     .slice(0, 10);
 
+  // Clientes por faixa, agrupados por categoria (para kebab: visualizar / exportar)
+  const clientesPorFaixa: Record<string, { cat: string; nome: string; score: number }[]> = {};
+  for (const s of FAROL_ORDER) clientesPorFaixa[s] = [];
+  for (const r of rowScores) {
+    if (r.status) clientesPorFaixa[r.status].push({ cat: r.cat, nome: r.nome, score: r.score });
+  }
+  for (const s of FAROL_ORDER) {
+    clientesPorFaixa[s].sort((a, b) => a.cat.localeCompare(b.cat) || a.nome.localeCompare(b.nome));
+  }
+
   const legenda = FAROL_ORDER.map(
     (s) => `<span class="lg"><i style="background:#${FAROL_HEX[s]}"></i>${FAROL_LABEL[s]}</span>`,
   ).join("");
+
 
   const kpi = (label: string, value: string, sub: string) =>
     `<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`;
