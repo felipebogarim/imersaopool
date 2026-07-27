@@ -245,6 +245,42 @@ export function SecurityBITab() {
   const riskScore = gCrit * 4 + gAlto * 3 + gMedio * 2 + gBaixo;
   const riskTone: Tone = gCrit > 0 ? "bad" : gAlto > 0 || openRisks.length > 5 ? "warn" : openRisks.length === 0 ? "ok" : "warn";
 
+  // ---- Logs por card ----
+  const evLog = (e: any): LogEntry => ({
+    id: `ev-${e.id}`,
+    quando: e.ocorrido_em,
+    titulo: e.tipo ?? e.categoria ?? "Evento",
+    detalhe: [e.usuario_email, e.resultado].filter(Boolean).join(" • "),
+    nivel: e.nivel_risco,
+  });
+  const leakLogs: LogEntry[] = [
+    ...leakIncidents.map((i: any) => ({
+      id: `inc-${i.id}`,
+      quando: i.ocorrido_em,
+      titulo: i.titulo ?? "Incidente",
+      detalhe: [i.categoria, i.status].filter(Boolean).join(" • "),
+      nivel: i.gravidade,
+    })),
+    ...leakEvents.map(evLog),
+    ...leakFiles.map((f: any) => ({
+      id: `file-${f.id}`,
+      quando: f.created_at,
+      titulo: f.evento ?? "Evento de arquivo",
+      detalhe: null,
+      nivel: f.nivel_risco,
+    })),
+  ].sort((a, b) => String(b.quando ?? "").localeCompare(String(a.quando ?? "")));
+  const authLogs = authFailures.map(evLog);
+  const blockedLogs = blocked.map(evLog);
+  const highRiskLogs = highRisk.map(evLog);
+  const riskLogs: LogEntry[] = openRisks.map((r: any) => ({
+    id: `risk-${r.id}`,
+    quando: null,
+    titulo: r.titulo ?? "Risco",
+    detalhe: r.status,
+    nivel: r.gravidade,
+  }));
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
