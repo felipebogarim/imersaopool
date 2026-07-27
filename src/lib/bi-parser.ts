@@ -171,8 +171,12 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
   const hasMeta = headerMap.meta != null;
   const hasAting = headerMap.atingimento != null;
   const hasReal = headerMap.realizado != null;
+  const hasCoef = headerMap.coeficiente != null;
+  const hasIndice = headerMap.indice != null;
+  const hasFarol = headerMap.farol != null;
   if (!hasMeta && headerMap.participacao == null) missing.push('"Meta" (ou "Participação")');
-  if (!hasAting && !(hasMeta && hasReal)) missing.push('"Atingimento" (ou "Meta" + "Realizado")');
+  if (!hasAting && !(hasMeta && hasReal) && !hasCoef && !(hasIndice && hasMeta) && !hasFarol)
+    missing.push('"Atingimento" (ou "Meta" + "Realizado", ou "Coeficiente"/"Índice ponderado", ou "Grupo do farol")');
 
   if (missing.length) {
     throw new Error(
@@ -197,8 +201,15 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
 
     const meta = hasMeta ? num(row[headerMap.meta]) ?? 0 : 0;
     const realizado = hasReal ? num(row[headerMap.realizado]) ?? 0 : 0;
+    const coef = hasCoef ? num(row[headerMap.coeficiente]) : null;
+    const indice = hasIndice ? num(row[headerMap.indice]) : null;
+    const farolRaw = hasFarol ? str(row[headerMap.farol]) : null;
     let ating = hasAting ? toPct(num(row[headerMap.atingimento])) : null;
-    if (ating == null && meta > 0) ating = (realizado / meta) * 100;
+    if (ating == null && hasReal && meta > 0) ating = (realizado / meta) * 100;
+    if (ating == null && coef != null) ating = coef * 100;
+    if (ating == null && indice != null && meta > 0) ating = (indice / meta) * 100;
+    if (ating == null && farolRaw) ating = coefFromFarol(farolRaw);
+
     const farolRaw = headerMap.farol != null ? str(row[headerMap.farol]) : null;
     const farolLabel = normalizeFarolLabel(farolRaw, ating);
 
