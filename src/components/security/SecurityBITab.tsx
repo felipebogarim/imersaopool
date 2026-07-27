@@ -1,0 +1,266 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldCheck, ShieldAlert, Bug, Activity, Loader2 } from "lucide-react";
+
+type Tone = "ok" | "warn" | "bad";
+
+const TONE: Record<Tone, { stroke: string; text: string; chip: string; label: string }> = {
+  ok: { stroke: "#059669", text: "text-emerald-700", chip: "bg-emerald-100 text-emerald-800", label: "Sob controle" },
+  warn: { stroke: "#d97706", text: "text-amber-700", chip: "bg-amber-100 text-amber-800", label: "Atenção" },
+  bad: { stroke: "#dc2626", text: "text-red-700", chip: "bg-red-100 text-red-800", label: "Crítico" },
+};
+
+/** Gauge semicircular (0..1 do arco preenchido). */
+function Gauge({
+  value,
+  ratio,
+  tone,
+  caption,
+  suffix,
+}: {
+  value: number;
+  ratio: number;
+  tone: Tone;
+  caption: string;
+  suffix?: string;
+}) {
+  const r = 78;
+  const cx = 100;
+  const cy = 96;
+  const circ = Math.PI * r;
+  const clamped = Math.max(0, Math.min(1, ratio));
+  const t = TONE[tone];
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox="0 0 200 118" className="w-full max-w-[240px]">
+        <path
+          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+          fill="none"
+          stroke="currentColor"
+          className="text-muted"
+          strokeWidth={16}
+          strokeLinecap="round"
+        />
+        <path
+          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+          fill="none"
+          stroke={t.stroke}
+          strokeWidth={16}
+          strokeLinecap="round"
+          strokeDasharray={`${circ * clamped} ${circ}`}
+        />
+        <text x={cx} y={cy - 16} textAnchor="middle" fontSize="38" fontWeight="800" fill={t.stroke}>
+          {value}
+        </text>
+        {suffix ? (
+          <text x={cx} y={cy + 6} textAnchor="middle" fontSize="11" fill="#6b7280">
+            {suffix}
+          </text>
+        ) : null}
+      </svg>
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${t.chip}`}>{t.label}</span>
+      <p className="text-xs text-muted-foreground text-center mt-2">{caption}</p>
+    </div>
+  );
+}
+
+export function SecurityBITab() {
+  const since = useMemo(() => new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(), []);
+
+  const eventsQ = useQuery({
+    queryKey: ["sec-bi-events", since],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("security_events")
+        .select("id, tipo, categoria, resultado, nivel_risco, ocorrido_em, usuario_email")
+        .gte("ocorrido_em", since)
+        .order("ocorrido_em", { ascending: false })
+        .limit(2000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const incidentsQ = useQuery({
+    queryKey: ["sec-bi-incidents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("security_incidents")
+        .select("id, titulo, categoria, gravidade, status, dados_afetados, ocorrido_em");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const risksQ = useQuery({
+    queryKey: ["sec-bi-risks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("security_risks")
+        .select("id, titulo, gravidade, status");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const filesQ = useQuery({
+    queryKey: ["sec-bi-files", since],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("file_security_events")
+        .select("id, evento, nivel_risco, created_at")
+        .gte("created_at", since)
+        .limit(2000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const loading = eventsQ.isLoading || incidentsQ.isLoading || risksQ.isLoading || filesQ.isLoading;
+
+  const events = eventsQ.data ?? [];
+  const incidents = incidentsQ.data ?? [];
+  const risks = risksQ.data ?? [];
+  const files = filesQ.data ?? [];
+
+  // ---- 1) Vazamento de dados sensíveis (ideal = 0) ----
+  const leakIncidents = incidents.filter((i: any) => {
+    const txt = `${i.categoria ?? ""} ${i.titulo ?? ""}`.toLowerCase();
+    return txt.includes("vazam") || txt.includes("leak") || txt.includes("exposi") || !!i.dados_afetados;
+  });
+  const leakEvents = events.filter(
+    (e: any) =>
+      (e.categoria === "dados_sensiveis" || String(e.tipo ?? "").startsWith("data.")) &&
+      ["falha", "bloqueado", "suspeito"].includes(e.resultado),
+  );
+  const leakFiles = files.filter((f: any) => f.nivel_risco === "critico");
+  const leaks = leakIncidents.length + leakEvents.length + leakFiles.length;
+  const leakTone: Tone = leaks === 0 ? "ok" : leaks <= 2 ? "warn" : "bad";
+
+  // ---- 2) Tentativas de invasão (30 dias) ----
+  const intrusions = events.filter(
+    (e: any) => ["falha", "bloqueado", "suspeito"].includes(e.resultado) || ["alto", "critico"].includes(e.nivel_risco),
+  );
+  const intrusionCritical = intrusions.filter((e: any) => ["alto", "critico"].includes(e.nivel_risco)).length;
+  const intrusionTone: Tone = intrusions.length === 0 ? "ok" : intrusionCritical > 0 || intrusions.length > 20 ? "bad" : "warn";
+
+  // ---- 3) Riscos de segurança em aberto ----
+  const openRisks = risks.filter((r: any) => !["corrigido", "risco_aceito", "nao_aplicavel"].includes(r.status));
+  const byGrav = (g: string) => openRisks.filter((r: any) => r.gravidade === g).length;
+  const gCrit = byGrav("critico");
+  const gAlto = byGrav("alto");
+  const gMedio = byGrav("medio");
+  const gBaixo = byGrav("baixo");
+  const riskScore = gCrit * 4 + gAlto * 3 + gMedio * 2 + gBaixo;
+  const riskTone: Tone = gCrit > 0 ? "bad" : gAlto > 0 || openRisks.length > 5 ? "warn" : openRisks.length === 0 ? "ok" : "warn";
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
+        <Loader2 className="h-4 w-4 animate-spin" /> Carregando indicadores de segurança…
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {leaks > 0 && (
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Alerta de vazamento de dados sensíveis</AlertTitle>
+          <AlertDescription>
+            Foram identificados <b>{leaks}</b> registro(s) relacionados a exposição de dados sensíveis. O valor
+            esperado é <b>zero</b> — investigue nas abas Incidentes, Dados Sensíveis e Segurança de Arquivos.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4" /> Vazamento de dados sensíveis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Gauge
+              value={leaks}
+              ratio={leaks === 0 ? 0.02 : Math.min(1, leaks / 10)}
+              tone={leakTone}
+              suffix="ocorrências"
+              caption="Meta: 0. Soma de incidentes de vazamento, acessos negados a dados sensíveis e eventos críticos de arquivos (30 dias)."
+            />
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div><div className="font-semibold">{leakIncidents.length}</div><div className="text-muted-foreground">Incidentes</div></div>
+              <div><div className="font-semibold">{leakEvents.length}</div><div className="text-muted-foreground">Acessos</div></div>
+              <div><div className="font-semibold">{leakFiles.length}</div><div className="text-muted-foreground">Arquivos</div></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Bug className="h-4 w-4" /> Tentativas de invasão
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Gauge
+              value={intrusions.length}
+              ratio={intrusions.length === 0 ? 0.02 : Math.min(1, intrusions.length / 50)}
+              tone={intrusionTone}
+              suffix="últimos 30 dias"
+              caption="Falhas de autenticação, acessos bloqueados e eventos de risco alto/crítico registrados no período."
+            />
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+              <div><div className="font-semibold">{intrusionCritical}</div><div className="text-muted-foreground">Alto/crítico</div></div>
+              <div>
+                <div className="font-semibold">
+                  {new Set(intrusions.map((e: any) => e.usuario_email ?? "—")).size}
+                </div>
+                <div className="text-muted-foreground">Origens distintas</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Activity className="h-4 w-4" /> Riscos de segurança
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Gauge
+              value={openRisks.length}
+              ratio={openRisks.length === 0 ? 0.02 : Math.min(1, riskScore / 30)}
+              tone={riskTone}
+              suffix="riscos em aberto"
+              caption="Riscos ainda não corrigidos, ponderados por gravidade (crítico ×4, alto ×3, médio ×2, baixo ×1)."
+            />
+            <div className="mt-3 grid grid-cols-4 gap-1 text-center text-xs">
+              <div><div className="font-semibold text-red-700">{gCrit}</div><div className="text-muted-foreground">Crít.</div></div>
+              <div><div className="font-semibold text-orange-600">{gAlto}</div><div className="text-muted-foreground">Alto</div></div>
+              <div><div className="font-semibold text-amber-700">{gMedio}</div><div className="text-muted-foreground">Médio</div></div>
+              <div><div className="font-semibold text-lime-700">{gBaixo}</div><div className="text-muted-foreground">Baixo</div></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {leaks === 0 && intrusions.length === 0 && openRisks.length === 0 && (
+        <Alert>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertTitle>Nenhum evento crítico no período</AlertTitle>
+          <AlertDescription>
+            Sem vazamentos, tentativas de invasão ou riscos em aberto nos últimos 30 dias.
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
