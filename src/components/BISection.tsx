@@ -242,6 +242,32 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     return out;
   }, [sharesByCategory, orderedCats, metric]);
 
+  // Consolidação por família (todas as categorias) para o gráfico de barras.
+  // Média ponderada pela meta de cada família dentro de cada categoria.
+  const familyChart = useMemo(() => {
+    const acc = new Map<string, { name: string; num: number; den: number }>();
+    for (const cat of orderedCats) {
+      for (const f of sharesByCategory[cat] ?? []) {
+        const value = metric === "participation" ? f.shareRatio : f.attainmentRatio;
+        if (value == null || Number.isNaN(value)) continue;
+        const w = (f.metaTotal ?? 0) > 0 ? (f.metaTotal as number) : 1;
+        const cur = acc.get(f.familyKey) ?? { name: f.familyName, num: 0, den: 0 };
+        cur.num += value * w;
+        cur.den += w;
+        acc.set(f.familyKey, cur);
+      }
+    }
+    return [...acc.entries()]
+      .map(([key, v]) => ({ key, name: v.name, ratio: v.den > 0 ? v.num / v.den : 0 }))
+      .sort((a, b) => b.ratio - a.ratio);
+  }, [sharesByCategory, orderedCats, metric]);
+
+  const familyChartMax = useMemo(
+    () => Math.max(0.0001, ...familyChart.map((f) => f.ratio)),
+    [familyChart],
+  );
+
+
 
 
 
