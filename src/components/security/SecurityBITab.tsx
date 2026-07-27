@@ -326,11 +326,13 @@ export function SecurityBITab() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bug className="h-4 w-4" /> Falhas de autenticação
             </CardTitle>
+            <LogsKebab count={authLogs.length} onOpen={() => setLogs({ title: "Falhas de autenticação (30 dias)", entries: authLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={authFailures.length}
