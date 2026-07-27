@@ -273,7 +273,7 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
       familia: c.familia,
       participacao: metaCat > 0 ? (c.meta / metaCat) * 100 : null,
       atingimento: c.atingimento,
-      farol: c.farol ?? farolFromPct(c.atingimento),
+      farol: farolFromPct(c.atingimento) ?? c.farol ?? null,
     };
   });
 
