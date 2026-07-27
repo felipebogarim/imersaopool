@@ -224,7 +224,14 @@ export function exportPerformanceReport(opts: {
   .modal h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #334155; margin: 16px 0 4px; }
   .modal .cnt { color: #94a3b8; font-weight: 400; }
 
-  @media print { body { background: #fff; padding: 0 6px; } .toolbar { display: none; } .card, .kpi { break-inside: avoid; } h2 { break-after: avoid; } }
+  @page { margin: 12mm 10mm; }
+  @media print {
+    body { background: #f8fafc; padding: 0 6px; }
+    .toolbar, .kebabcell, .menu, .overlay { display: none !important; }
+    .card, .kpi { break-inside: avoid; background: #fff !important; border-color: #e2e8f0 !important; }
+    .bar, .hbar, .bar .seg, .hbar span, .pill, .lg i { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    h2 { break-after: avoid; }
+  }
   @media (max-width: 780px) { .grid { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
 </style></head><body>
 <div class="toolbar"><button onclick="window.print()">Salvar como PDF</button></div>
