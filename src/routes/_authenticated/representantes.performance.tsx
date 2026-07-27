@@ -742,6 +742,9 @@ function PerformancePage() {
                   <Users className="h-4 w-4 mr-1" /> BI dos clientes
                 </Link>
               </Button>
+              <Button variant="outline" onClick={doExportReport} disabled={!currentUpload}>
+                <FileText className="h-4 w-4 mr-1" /> Exportar relatório
+              </Button>
               <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
                 <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
               </Button>
