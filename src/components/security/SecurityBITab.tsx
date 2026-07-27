@@ -78,8 +78,78 @@ function Gauge({
   );
 }
 
+const fmt = (d: string | null) => (d ? new Date(d).toLocaleString("pt-BR") : "—");
+
+function LogsKebab({ count, onOpen }: { count: number; onOpen: () => void }) {
+  if (count <= 0) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="ghost" className="h-7 w-7">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onOpen}>
+          <ScrollText className="h-4 w-4 mr-2" /> Ver logs ({count})
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function LogsDialog({
+  open,
+  onOpenChange,
+  title,
+  entries,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  entries: LogEntry[];
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">{title}</DialogTitle>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-auto -mx-2 px-2">
+          {entries.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">Nenhum evento registrado.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted-foreground text-left">
+                  <th className="py-2 pr-3 font-medium">Quando</th>
+                  <th className="py-2 pr-3 font-medium">Evento</th>
+                  <th className="py-2 pr-3 font-medium">Detalhe</th>
+                  <th className="py-2 font-medium">Nível</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e.id} className="border-t border-border/60 align-top">
+                    <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{fmt(e.quando)}</td>
+                    <td className="py-2 pr-3 font-medium">{e.titulo}</td>
+                    <td className="py-2 pr-3 text-muted-foreground break-words">{e.detalhe ?? "—"}</td>
+                    <td className="py-2 whitespace-nowrap">{e.nivel ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function SecurityBITab() {
   const since = useMemo(() => new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(), []);
+  const [logs, setLogs] = useState<{ title: string; entries: LogEntry[] } | null>(null);
+
 
   const eventsQ = useQuery({
     queryKey: ["sec-bi-events", since],
