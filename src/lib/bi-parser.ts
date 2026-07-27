@@ -210,7 +210,7 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     if (ating == null && indice != null && meta > 0) ating = (indice / meta) * 100;
     if (ating == null && farolRaw) ating = coefFromFarol(farolRaw);
 
-    const farolRaw = headerMap.farol != null ? str(row[headerMap.farol]) : null;
+    
     const farolLabel = normalizeFarolLabel(farolRaw, ating);
 
     anyRow = true;
