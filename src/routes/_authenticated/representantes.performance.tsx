@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+import { exportPerformanceReport } from "@/lib/performance-report";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import {
