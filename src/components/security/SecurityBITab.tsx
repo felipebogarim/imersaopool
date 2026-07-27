@@ -431,3 +431,10 @@ export function SecurityBITab() {
     </div>
   );
 }
+
+      <LogsDialog
+        open={!!logs}
+        onOpenChange={(v) => !v && setLogs(null)}
+        title={logs?.title ?? ""}
+        entries={logs?.entries ?? []}
+      />
