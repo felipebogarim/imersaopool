@@ -445,6 +445,41 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </span>
               </div>
 
+              {/* Gráfico de barras — performance por família de produtos */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  Performance por família de produtos —{" "}
+                  {metric === "participation" ? "participação estimada" : "atingimento da meta"}
+                </div>
+                <div className="text-[11px] text-muted-foreground mb-3">
+                  Consolidado de todas as categorias (média ponderada pela meta da família).
+                </div>
+                {familyChart.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Sem base para o gráfico.</div>
+                ) : (
+                  <div className="rounded-xl border border-border p-3 space-y-1.5">
+                    {familyChart.map((f) => (
+                      <div key={f.key} className="flex items-center gap-2">
+                        <span className="w-32 sm:w-44 shrink-0 truncate text-[11px] text-muted-foreground">
+                          {f.name}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/80"
+                            style={{ width: `${Math.min(100, (f.ratio / familyChartMax) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="w-14 shrink-0 text-right text-[11px] tabular-nums font-medium">
+                          {fmtShare(f.ratio)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
+
               {/* 3 famílias com menor {métrica} por categoria */}
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
