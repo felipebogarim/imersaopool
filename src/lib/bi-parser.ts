@@ -124,7 +124,20 @@ const farolFromPct = (p: number | null): string | null => {
   return FAROL_FAIXAS.find((f) => f.test(p))?.label ?? null;
 };
 
+/** Coeficiente gerencial (ponto médio da faixa) a partir do rótulo do farol, em %. */
+const coefFromFarol = (raw: string): number | null => {
+  const r = norm(raw);
+  if (r.includes("sem")) return 0;
+  if (r.includes("abaixo")) return 25;
+  if (r.includes("melhorar")) return 60;
+  if (r.includes("proximo")) return 80;
+  if (r.includes("otimo")) return 95;
+  if (r.includes("excelente")) return 110;
+  return null;
+};
+
 const normalizeFarolLabel = (raw: string | null, pct: number | null): string | null => {
+
   if (!raw) return farolFromPct(pct);
   const r = norm(raw);
   const direct = FAROL_LABELS.find((l) => norm(l) === r || r.includes(norm(l)));
