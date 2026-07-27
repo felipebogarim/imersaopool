@@ -265,7 +265,7 @@ export function exportPerformanceReport(opts: {
 
 <h2>Performance por família de produto</h2>
 <div class="card">
-  <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento</th><th>Escala</th><th>Distribuição do farol</th><th style="text-align:right">Clientes</th></tr></thead>
+  <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento</th><th>Escala</th><th>Distribuição do farol</th><th style="text-align:right">Clientes que compraram</th></tr></thead>
   <tbody>${famRows || `<tr><td colspan="5" class="small">Sem dados de família.</td></tr>`}</tbody></table>
   <div class="legend">${legenda}</div>
 </div>
