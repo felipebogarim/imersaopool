@@ -304,11 +304,13 @@ export function SecurityBITab() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <ShieldAlert className="h-4 w-4" /> Vazamento de dados sensíveis
             </CardTitle>
+            <LogsKebab count={leakLogs.length} onOpen={() => setLogs({ title: "Vazamento de dados sensíveis", entries: leakLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={leaks}
