@@ -83,16 +83,19 @@ export function exportPerformanceReport(opts: {
   const perFam = familias.map((f) => {
     const c = zero();
     let n = 0;
+    let compradores = 0;
     let acc = 0;
     for (const r of rows) {
       const st = r.metas_status?.[f];
       if (!st) continue;
       c[st] += 1;
       n += 1;
+      if (st !== "sem_compra") compradores += 1;
       acc += FAROL_MIDPOINT[st];
     }
-    return { familia: f, counts: c, total: n, media: n ? acc / n : 0 };
+    return { familia: f, counts: c, total: n, compradores, media: n ? acc / n : 0 };
   });
+
   const famOrdenadas = [...perFam].sort((a, b) => b.media - a.media);
 
   // Distribuição por categoria
