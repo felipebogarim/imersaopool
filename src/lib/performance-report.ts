@@ -116,9 +116,20 @@ export function exportPerformanceReport(opts: {
     .sort((a, b) => b.zeros - a.zeros || a.score - b.score)
     .slice(0, 10);
 
+  // Clientes por faixa, agrupados por categoria (para kebab: visualizar / exportar)
+  const clientesPorFaixa: Record<string, { cat: string; nome: string; score: number }[]> = {};
+  for (const s of FAROL_ORDER) clientesPorFaixa[s] = [];
+  for (const r of rowScores) {
+    if (r.status) clientesPorFaixa[r.status].push({ cat: r.cat, nome: r.nome, score: r.score });
+  }
+  for (const s of FAROL_ORDER) {
+    clientesPorFaixa[s].sort((a, b) => a.cat.localeCompare(b.cat) || a.nome.localeCompare(b.nome));
+  }
+
   const legenda = FAROL_ORDER.map(
     (s) => `<span class="lg"><i style="background:#${FAROL_HEX[s]}"></i>${FAROL_LABEL[s]}</span>`,
   ).join("");
+
 
   const kpi = (label: string, value: string, sub: string) =>
     `<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`;
@@ -195,6 +206,20 @@ export function exportPerformanceReport(opts: {
   .note { margin-top: 26px; font-size: 10.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
   .toolbar { position: fixed; top: 14px; right: 18px; }
   .toolbar button { background: #0f172a; color: #fff; border: 0; border-radius: 8px; padding: 9px 14px; font-size: 12px; cursor: pointer; }
+  .kebabcell { position: relative; width: 36px; text-align: right; }
+  .kebab { background: transparent; border: 0; font-size: 18px; line-height: 1; cursor: pointer; color: #64748b; padding: 2px 6px; border-radius: 6px; }
+  .kebab:hover { background: #f1f5f9; color: #0f172a; }
+  .menu { display: none; position: absolute; right: 4px; top: 28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.12); z-index: 20; min-width: 210px; overflow: hidden; }
+  .menu.open { display: block; }
+  .menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 12px; font-size: 12px; cursor: pointer; color: #0f172a; }
+  .menu button:hover { background: #f8fafc; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; }
+  .modal { background: #fff; border-radius: 14px; width: min(760px, 100%); max-height: 82vh; overflow: auto; padding: 16px 20px 22px; }
+  .mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: -16px; background: #fff; padding: 6px 0 12px; }
+  .mhead button { background: #0f172a; color: #fff; border: 0; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+  .modal h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #334155; margin: 16px 0 4px; }
+  .modal .cnt { color: #94a3b8; font-weight: 400; }
+
   @media print { body { background: #fff; padding: 0 6px; } .toolbar { display: none; } .card, .kpi { break-inside: avoid; } h2 { break-after: avoid; } }
   @media (max-width: 780px) { .grid { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
 </style></head><body>
@@ -215,16 +240,24 @@ export function exportPerformanceReport(opts: {
 <div class="card">
   <div style="padding:12px 0 2px">${distBar(geral, comStatus)}</div>
   <div class="legend">${legenda}</div>
-  <table><thead><tr><th>Faixa</th><th>Clientes</th><th>Participação</th><th style="width:40%"></th></tr></thead><tbody>
+  <table><thead><tr><th>Faixa</th><th>Clientes</th><th>Participação</th><th style="width:40%"></th><th style="width:36px"></th></tr></thead><tbody>
   ${FAROL_ORDER.map(
     (s) => `<tr>
       <td class="nm"><span class="pill" style="background:#${FAROL_HEX[s]}">${FAROL_LABEL[s]}</span></td>
       <td class="num">${geral[s]}</td>
       <td class="num">${comStatus ? pct((geral[s] / comStatus) * 100) : "—"}</td>
       <td class="barcell"><div class="hbar"><span style="width:${comStatus ? (geral[s] / comStatus) * 100 : 0}%;background:#${FAROL_HEX[s]}"></span></div></td>
+      <td class="kebabcell">
+        <button class="kebab" data-faixa="${s}" title="Ações">⋮</button>
+        <div class="menu" id="menu-${s}">
+          <button data-act="view" data-faixa="${s}">Visualizar clientes</button>
+          <button data-act="csv" data-faixa="${s}">Exportar lista de clientes</button>
+        </div>
+      </td>
     </tr>`,
   ).join("")}
   </tbody></table>
+
 </div>
 
 <h2>Performance por família de produto</h2>
@@ -258,7 +291,68 @@ export function exportPerformanceReport(opts: {
   Documento gerencial confidencial. Os percentuais são estimativas derivadas das faixas de farol (ponto médio de cada faixa);
   nenhum valor monetário de meta ou venda é exibido.
 </div>
+
+<div class="overlay" id="ov"><div class="modal">
+  <div class="mhead"><strong id="mtitle"></strong><button id="mclose">Fechar</button></div>
+  <div id="mbody"></div>
+</div></div>
+
+<script>
+  var DATA = ${JSON.stringify(clientesPorFaixa)};
+  var LABEL = ${JSON.stringify(FAROL_LABEL)};
+  var HEX = ${JSON.stringify(FAROL_HEX)};
+  var REP = ${JSON.stringify(representante)};
+  var PER = ${JSON.stringify(periodo)};
+  function esc(s){return String(s==null?"":s).replace(/[<>&"]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c];});}
+  function groupByCat(list){var m={};list.forEach(function(c){(m[c.cat]=m[c.cat]||[]).push(c);});return m;}
+  function closeMenus(){document.querySelectorAll('.menu.open').forEach(function(m){m.classList.remove('open');});}
+  document.addEventListener('click',function(e){
+    var t=e.target;
+    if(t.classList&&t.classList.contains('kebab')){
+      e.stopPropagation();
+      var m=document.getElementById('menu-'+t.dataset.faixa);
+      var was=m.classList.contains('open'); closeMenus(); if(!was)m.classList.add('open');
+      return;
+    }
+    if(t.dataset&&t.dataset.act){
+      closeMenus();
+      var f=t.dataset.faixa;
+      if(t.dataset.act==='view')view(f); else csv(f);
+      return;
+    }
+    closeMenus();
+  });
+  function view(f){
+    var g=groupByCat(DATA[f]||[]);
+    var cats=Object.keys(g).sort();
+    var html=cats.length?cats.map(function(c){
+      return '<h3>'+esc(c)+' <span class="cnt">'+g[c].length+'</span></h3><table><thead><tr><th>Cliente</th><th style="text-align:right">Atingimento</th></tr></thead><tbody>'+
+        g[c].map(function(r){return '<tr><td class="nm">'+esc(r.nome)+'</td><td class="num">'+r.score.toFixed(1).replace('.',',')+'%</td></tr>';}).join('')+
+      '</tbody></table>';
+    }).join(''):'<p class="small">Nenhum cliente nesta faixa.</p>';
+    document.getElementById('mtitle').innerHTML='Clientes — <span class="pill" style="background:#'+HEX[f]+'">'+esc(LABEL[f])+'</span>';
+    document.getElementById('mbody').innerHTML=html;
+    document.getElementById('ov').style.display='flex';
+  }
+  document.getElementById('mclose').onclick=function(){document.getElementById('ov').style.display='none';};
+  document.getElementById('ov').onclick=function(e){if(e.target.id==='ov')this.style.display='none';};
+  function csv(f){
+    var g=groupByCat(DATA[f]||[]);
+    var cats=Object.keys(g).sort();
+    var lines=['sep=;','Representante;'+REP,'Periodo;'+PER,'Faixa;'+LABEL[f],'','Categoria;Cliente;Atingimento (%)'];
+    cats.forEach(function(c){
+      g[c].forEach(function(r){lines.push('"'+c.replace(/"/g,'""')+'";"'+r.nome.replace(/"/g,'""')+'";'+r.score.toFixed(1).replace('.',','));});
+      lines.push('');
+    });
+    var blob=new Blob(['\\uFEFF'+lines.join('\\r\\n')],{type:'text/csv;charset=utf-8;'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='clientes-'+f+'-'+REP.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+  }
+</script>
 </body></html>`;
+
 
   const w = window.open("", "_blank");
   if (!w) {
