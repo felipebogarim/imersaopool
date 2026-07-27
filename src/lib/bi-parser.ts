@@ -83,9 +83,12 @@ const COL_SYNONYMS: Record<string, string[]> = {
     "realizado valor",
   ],
   atingimento: ["atingimento", "atingimento %", "atingimento meta", "ating", "% atingimento", "perc atingimento"],
+  coeficiente: ["coeficiente", "coef", "fator", "fator farol"],
+  indice: ["indice ponderado", "indice", "index ponderado"],
   participacao: ["participacao", "participacao %", "% participacao", "share", "part"],
-  farol: ["farol", "faixa", "faixa %", "status", "grupo farol"],
+  farol: ["farol", "faixa", "faixa %", "status", "grupo farol", "grupo do farol"],
   cliente: ["cliente", "razao social", "razao", "nome cliente"],
+
 };
 
 function matchColumn(header: string): string | null {
@@ -121,7 +124,20 @@ const farolFromPct = (p: number | null): string | null => {
   return FAROL_FAIXAS.find((f) => f.test(p))?.label ?? null;
 };
 
+/** Coeficiente gerencial (ponto médio da faixa) a partir do rótulo do farol, em %. */
+const coefFromFarol = (raw: string): number | null => {
+  const r = norm(raw);
+  if (r.includes("sem")) return 0;
+  if (r.includes("abaixo")) return 25;
+  if (r.includes("melhorar")) return 60;
+  if (r.includes("proximo")) return 80;
+  if (r.includes("otimo")) return 95;
+  if (r.includes("excelente")) return 110;
+  return null;
+};
+
 const normalizeFarolLabel = (raw: string | null, pct: number | null): string | null => {
+
   if (!raw) return farolFromPct(pct);
   const r = norm(raw);
   const direct = FAROL_LABELS.find((l) => norm(l) === r || r.includes(norm(l)));
@@ -168,8 +184,12 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
   const hasMeta = headerMap.meta != null;
   const hasAting = headerMap.atingimento != null;
   const hasReal = headerMap.realizado != null;
+  const hasCoef = headerMap.coeficiente != null;
+  const hasIndice = headerMap.indice != null;
+  const hasFarol = headerMap.farol != null;
   if (!hasMeta && headerMap.participacao == null) missing.push('"Meta" (ou "Participação")');
-  if (!hasAting && !(hasMeta && hasReal)) missing.push('"Atingimento" (ou "Meta" + "Realizado")');
+  if (!hasAting && !(hasMeta && hasReal) && !hasCoef && !(hasIndice && hasMeta) && !hasFarol)
+    missing.push('"Atingimento" (ou "Meta" + "Realizado", ou "Coeficiente"/"Índice ponderado", ou "Grupo do farol")');
 
   if (missing.length) {
     throw new Error(
@@ -194,9 +214,16 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
 
     const meta = hasMeta ? num(row[headerMap.meta]) ?? 0 : 0;
     const realizado = hasReal ? num(row[headerMap.realizado]) ?? 0 : 0;
+    const coef = hasCoef ? num(row[headerMap.coeficiente]) : null;
+    const indice = hasIndice ? num(row[headerMap.indice]) : null;
+    const farolRaw = hasFarol ? str(row[headerMap.farol]) : null;
     let ating = hasAting ? toPct(num(row[headerMap.atingimento])) : null;
-    if (ating == null && meta > 0) ating = (realizado / meta) * 100;
-    const farolRaw = headerMap.farol != null ? str(row[headerMap.farol]) : null;
+    if (ating == null && hasReal && meta > 0) ating = (realizado / meta) * 100;
+    if (ating == null && coef != null) ating = coef * 100;
+    if (ating == null && indice != null && meta > 0) ating = (indice / meta) * 100;
+    if (ating == null && farolRaw) ating = coefFromFarol(farolRaw);
+
+    
     const farolLabel = normalizeFarolLabel(farolRaw, ating);
 
     anyRow = true;
@@ -214,39 +241,46 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     cur.farol = cur.farol ?? farolLabel;
     cells.set(k, cur);
 
-    if (farolLabel) farolMeta.set(farolLabel, (farolMeta.get(farolLabel) ?? 0) + (meta > 0 ? meta : 1));
+    if (farolLabel) {
+      const w = meta > 0 ? meta : 1;
+      const contrib = ating != null ? (w * ating) / 100 : w;
+      farolMeta.set(farolLabel, (farolMeta.get(farolLabel) ?? 0) + contrib);
+    }
   }
 
   if (!anyRow) throw new Error('Aba "Base BI" sem linhas válidas (Categoria + Família).');
 
-  const list = [...cells.values()].map((c) => ({
-    ...c,
-    atingimento: c.atingWeight > 0 ? c.atingSum / c.atingWeight : c.meta > 0 ? (c.realizado / c.meta) * 100 : null,
-  }));
+  const list = [...cells.values()].map((c) => {
+    const atingimento =
+      c.atingWeight > 0 ? c.atingSum / c.atingWeight : c.meta > 0 ? (c.realizado / c.meta) * 100 : null;
+    // Índice ponderado = meta × atingimento (base da participação ponderada).
+    const indice = atingimento != null ? (c.meta > 0 ? c.meta : 1) * (atingimento / 100) : c.meta;
+    return { ...c, atingimento, indice };
+  });
 
-  const metaTotal = list.reduce((s, c) => s + c.meta, 0);
+  const indiceTotal = list.reduce((s, c) => s + c.indice, 0);
   const catNames = [...new Set(list.map((c) => c.categoria))];
 
   const categorias = catNames.map((cat) => {
     const items = list.filter((c) => c.categoria === cat);
-    const metaCat = items.reduce((s, c) => s + c.meta, 0);
+    const indiceCat = items.reduce((s, c) => s + c.indice, 0);
     const num_ = items.reduce((s, c) => s + (c.atingimento ?? 0) * (c.meta > 0 ? c.meta : 1), 0);
     const den = items.reduce((s, c) => s + (c.atingimento != null ? (c.meta > 0 ? c.meta : 1) : 0), 0);
     return {
       categoria: cat,
-      participacao: metaTotal > 0 ? (metaCat / metaTotal) * 100 : null,
+      participacao: indiceTotal > 0 ? (indiceCat / indiceTotal) * 100 : null,
       atingimento: den > 0 ? num_ / den : null,
     };
   });
 
   const familias: FamiliaAgg[] = list.map((c) => {
-    const metaCat = list.filter((x) => x.categoria === c.categoria).reduce((s, x) => s + x.meta, 0);
+    const indiceCat = list.filter((x) => x.categoria === c.categoria).reduce((s, x) => s + x.indice, 0);
     return {
       categoria: c.categoria,
       familia: c.familia,
-      participacao: metaCat > 0 ? (c.meta / metaCat) * 100 : null,
+      participacao: indiceCat > 0 ? (c.indice / indiceCat) * 100 : null,
       atingimento: c.atingimento,
-      farol: c.farol ?? farolFromPct(c.atingimento),
+      farol: farolFromPct(c.atingimento) ?? c.farol ?? null,
     };
   });
 
@@ -255,6 +289,8 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     grupo: label,
     participacao: farolTotal > 0 ? ((farolMeta.get(label) ?? 0) / farolTotal) * 100 : 0,
   }));
+
+
 
   // Três menores (pior atingimento) e três maiores (maior participação) por categoria.
   const piores_familias: BIData["piores_familias"] = [];
