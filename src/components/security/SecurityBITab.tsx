@@ -141,12 +141,19 @@ export function SecurityBITab() {
   const leaks = leakIncidents.length + leakEvents.length + leakFiles.length;
   const leakTone: Tone = leaks === 0 ? "ok" : leaks <= 2 ? "warn" : "bad";
 
-  // ---- 2) Tentativas de invasão (30 dias) ----
+  // ---- 2) Tentativas de invasão — separadas por natureza (30 dias) ----
+  const authFailures = events.filter((e: any) => e.resultado === "falha");
+  const blocked = events.filter((e: any) => e.resultado === "bloqueado" || e.resultado === "suspeito");
+  const highRisk = events.filter((e: any) => ["alto", "critico"].includes(e.nivel_risco));
   const intrusions = events.filter(
     (e: any) => ["falha", "bloqueado", "suspeito"].includes(e.resultado) || ["alto", "critico"].includes(e.nivel_risco),
   );
-  const intrusionCritical = intrusions.filter((e: any) => ["alto", "critico"].includes(e.nivel_risco)).length;
-  const intrusionTone: Tone = intrusions.length === 0 ? "ok" : intrusionCritical > 0 || intrusions.length > 20 ? "bad" : "warn";
+  const intrusionCritical = highRisk.length;
+  const toneFor = (n: number, warnAt: number, badAt: number): Tone => (n === 0 ? "ok" : n < badAt ? "warn" : "bad");
+  const authTone = toneFor(authFailures.length, 1, 10);
+  const blockedTone = toneFor(blocked.length, 1, 5);
+  const riskEventTone: Tone = highRisk.length === 0 ? "ok" : "bad";
+
 
   // ---- 3) Riscos de segurança em aberto ----
   const openRisks = risks.filter((r: any) => !["corrigido", "risco_aceito", "nao_aplicavel"].includes(r.status));
