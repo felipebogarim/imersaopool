@@ -177,8 +177,9 @@ export function exportPerformanceReport(opts: {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>Relatório Gerencial — ${esc(representante)}</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 28px 32px 48px; color: #0f172a; background: #f8fafc; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 28px 32px 48px; color: #0f172a; background: #f8fafc; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   header { border-bottom: 3px solid #0f172a; padding-bottom: 14px; margin-bottom: 22px; }
   h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.02em; }
   .sub { color: #64748b; font-size: 13px; }
