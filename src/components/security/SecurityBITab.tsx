@@ -428,9 +428,6 @@ export function SecurityBITab() {
           </AlertDescription>
         </Alert>
       )}
-    </div>
-  );
-}
 
       <LogsDialog
         open={!!logs}
@@ -438,3 +435,7 @@ export function SecurityBITab() {
         title={logs?.title ?? ""}
         entries={logs?.entries ?? []}
       />
+    </div>
+  );
+}
+
