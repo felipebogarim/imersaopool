@@ -372,11 +372,13 @@ export function SecurityBITab() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-0">
+          <CardHeader className="pb-0 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Bug className="h-4 w-4" /> Eventos de risco alto/crítico
             </CardTitle>
+            <LogsKebab count={highRiskLogs.length} onOpen={() => setLogs({ title: "Eventos de risco alto/crítico (30 dias)", entries: highRiskLogs })} />
           </CardHeader>
+
           <CardContent className="pt-2">
             <Gauge
               value={highRisk.length}
