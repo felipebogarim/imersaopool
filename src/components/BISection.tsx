@@ -242,6 +242,32 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     return out;
   }, [sharesByCategory, orderedCats, metric]);
 
+  // Consolidação por família (todas as categorias) para o gráfico de barras.
+  // Média ponderada pela meta de cada família dentro de cada categoria.
+  const familyChart = useMemo(() => {
+    const acc = new Map<string, { name: string; num: number; den: number }>();
+    for (const cat of orderedCats) {
+      for (const f of sharesByCategory[cat] ?? []) {
+        const value = metric === "participation" ? f.shareRatio : f.attainmentRatio;
+        if (value == null || Number.isNaN(value)) continue;
+        const w = (f.metaTotal ?? 0) > 0 ? (f.metaTotal as number) : 1;
+        const cur = acc.get(f.familyKey) ?? { name: f.familyName, num: 0, den: 0 };
+        cur.num += value * w;
+        cur.den += w;
+        acc.set(f.familyKey, cur);
+      }
+    }
+    return [...acc.entries()]
+      .map(([key, v]) => ({ key, name: v.name, ratio: v.den > 0 ? v.num / v.den : 0 }))
+      .sort((a, b) => b.ratio - a.ratio);
+  }, [sharesByCategory, orderedCats, metric]);
+
+  const familyChartMax = useMemo(
+    () => Math.max(0.0001, ...familyChart.map((f) => f.ratio)),
+    [familyChart],
+  );
+
+
 
 
 
@@ -418,6 +444,41 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                     : "Quanto cada família atingiu da meta financeira estabelecida."}
                 </span>
               </div>
+
+              {/* Gráfico de barras — performance por família de produtos */}
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  Performance por família de produtos —{" "}
+                  {metric === "participation" ? "participação estimada" : "atingimento da meta"}
+                </div>
+                <div className="text-[11px] text-muted-foreground mb-3">
+                  Consolidado de todas as categorias (média ponderada pela meta da família).
+                </div>
+                {familyChart.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Sem base para o gráfico.</div>
+                ) : (
+                  <div className="rounded-xl border border-border p-3 space-y-1.5">
+                    {familyChart.map((f) => (
+                      <div key={f.key} className="flex items-center gap-2">
+                        <span className="w-32 sm:w-44 shrink-0 truncate text-[11px] text-muted-foreground">
+                          {f.name}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/80"
+                            style={{ width: `${Math.min(100, (f.ratio / familyChartMax) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="w-14 shrink-0 text-right text-[11px] tabular-nums font-medium">
+                          {fmtShare(f.ratio)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+
 
               {/* 3 famílias com menor {métrica} por categoria */}
               <div>
