@@ -83,16 +83,19 @@ export function exportPerformanceReport(opts: {
   const perFam = familias.map((f) => {
     const c = zero();
     let n = 0;
+    let compradores = 0;
     let acc = 0;
     for (const r of rows) {
       const st = r.metas_status?.[f];
       if (!st) continue;
       c[st] += 1;
       n += 1;
+      if (st !== "sem_compra") compradores += 1;
       acc += FAROL_MIDPOINT[st];
     }
-    return { familia: f, counts: c, total: n, media: n ? acc / n : 0 };
+    return { familia: f, counts: c, total: n, compradores, media: n ? acc / n : 0 };
   });
+
   const famOrdenadas = [...perFam].sort((a, b) => b.media - a.media);
 
   // Distribuição por categoria
@@ -143,7 +146,7 @@ export function exportPerformanceReport(opts: {
         <div class="hbar"><span style="width:${Math.min(100, f.media)}%"></span></div>
       </td>
       <td class="barcell">${distBar(f.counts, f.total)}</td>
-      <td class="num small">${f.total}</td>
+      <td class="num small">${f.compradores}</td>
     </tr>`,
     )
     .join("");
@@ -262,7 +265,7 @@ export function exportPerformanceReport(opts: {
 
 <h2>Performance por família de produto</h2>
 <div class="card">
-  <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento</th><th>Escala</th><th>Distribuição do farol</th><th style="text-align:right">Clientes</th></tr></thead>
+  <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento</th><th>Escala</th><th>Distribuição do farol</th><th style="text-align:right">Clientes que compraram</th></tr></thead>
   <tbody>${famRows || `<tr><td colspan="5" class="small">Sem dados de família.</td></tr>`}</tbody></table>
   <div class="legend">${legenda}</div>
 </div>
