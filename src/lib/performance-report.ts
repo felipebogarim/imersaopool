@@ -277,7 +277,68 @@ export function exportPerformanceReport(opts: {
   Documento gerencial confidencial. Os percentuais são estimativas derivadas das faixas de farol (ponto médio de cada faixa);
   nenhum valor monetário de meta ou venda é exibido.
 </div>
+
+<div class="overlay" id="ov"><div class="modal">
+  <div class="mhead"><strong id="mtitle"></strong><button id="mclose">Fechar</button></div>
+  <div id="mbody"></div>
+</div></div>
+
+<script>
+  var DATA = ${JSON.stringify(clientesPorFaixa)};
+  var LABEL = ${JSON.stringify(FAROL_LABEL)};
+  var HEX = ${JSON.stringify(FAROL_HEX)};
+  var REP = ${JSON.stringify(representante)};
+  var PER = ${JSON.stringify(periodo)};
+  function esc(s){return String(s==null?"":s).replace(/[<>&"]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c];});}
+  function groupByCat(list){var m={};list.forEach(function(c){(m[c.cat]=m[c.cat]||[]).push(c);});return m;}
+  function closeMenus(){document.querySelectorAll('.menu.open').forEach(function(m){m.classList.remove('open');});}
+  document.addEventListener('click',function(e){
+    var t=e.target;
+    if(t.classList&&t.classList.contains('kebab')){
+      e.stopPropagation();
+      var m=document.getElementById('menu-'+t.dataset.faixa);
+      var was=m.classList.contains('open'); closeMenus(); if(!was)m.classList.add('open');
+      return;
+    }
+    if(t.dataset&&t.dataset.act){
+      closeMenus();
+      var f=t.dataset.faixa;
+      if(t.dataset.act==='view')view(f); else csv(f);
+      return;
+    }
+    closeMenus();
+  });
+  function view(f){
+    var g=groupByCat(DATA[f]||[]);
+    var cats=Object.keys(g).sort();
+    var html=cats.length?cats.map(function(c){
+      return '<h3>'+esc(c)+' <span class="cnt">'+g[c].length+'</span></h3><table><thead><tr><th>Cliente</th><th style="text-align:right">Atingimento</th></tr></thead><tbody>'+
+        g[c].map(function(r){return '<tr><td class="nm">'+esc(r.nome)+'</td><td class="num">'+r.score.toFixed(1).replace('.',',')+'%</td></tr>';}).join('')+
+      '</tbody></table>';
+    }).join(''):'<p class="small">Nenhum cliente nesta faixa.</p>';
+    document.getElementById('mtitle').innerHTML='Clientes — <span class="pill" style="background:#'+HEX[f]+'">'+esc(LABEL[f])+'</span>';
+    document.getElementById('mbody').innerHTML=html;
+    document.getElementById('ov').style.display='flex';
+  }
+  document.getElementById('mclose').onclick=function(){document.getElementById('ov').style.display='none';};
+  document.getElementById('ov').onclick=function(e){if(e.target.id==='ov')this.style.display='none';};
+  function csv(f){
+    var g=groupByCat(DATA[f]||[]);
+    var cats=Object.keys(g).sort();
+    var lines=['sep=;','Representante;'+REP,'Periodo;'+PER,'Faixa;'+LABEL[f],'','Categoria;Cliente;Atingimento (%)'];
+    cats.forEach(function(c){
+      g[c].forEach(function(r){lines.push('"'+c.replace(/"/g,'""')+'";"'+r.nome.replace(/"/g,'""')+'";'+r.score.toFixed(1).replace('.',','));});
+      lines.push('');
+    });
+    var blob=new Blob(['\\uFEFF'+lines.join('\\r\\n')],{type:'text/csv;charset=utf-8;'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='clientes-'+f+'-'+REP.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+  }
+</script>
 </body></html>`;
+
 
   const w = window.open("", "_blank");
   if (!w) {
