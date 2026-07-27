@@ -206,6 +206,20 @@ export function exportPerformanceReport(opts: {
   .note { margin-top: 26px; font-size: 10.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
   .toolbar { position: fixed; top: 14px; right: 18px; }
   .toolbar button { background: #0f172a; color: #fff; border: 0; border-radius: 8px; padding: 9px 14px; font-size: 12px; cursor: pointer; }
+  .kebabcell { position: relative; width: 36px; text-align: right; }
+  .kebab { background: transparent; border: 0; font-size: 18px; line-height: 1; cursor: pointer; color: #64748b; padding: 2px 6px; border-radius: 6px; }
+  .kebab:hover { background: #f1f5f9; color: #0f172a; }
+  .menu { display: none; position: absolute; right: 4px; top: 28px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.12); z-index: 20; min-width: 210px; overflow: hidden; }
+  .menu.open { display: block; }
+  .menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 12px; font-size: 12px; cursor: pointer; color: #0f172a; }
+  .menu button:hover { background: #f8fafc; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; }
+  .modal { background: #fff; border-radius: 14px; width: min(760px, 100%); max-height: 82vh; overflow: auto; padding: 16px 20px 22px; }
+  .mhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: -16px; background: #fff; padding: 6px 0 12px; }
+  .mhead button { background: #0f172a; color: #fff; border: 0; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+  .modal h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #334155; margin: 16px 0 4px; }
+  .modal .cnt { color: #94a3b8; font-weight: 400; }
+
   @media print { body { background: #fff; padding: 0 6px; } .toolbar { display: none; } .card, .kpi { break-inside: avoid; } h2 { break-after: avoid; } }
   @media (max-width: 780px) { .grid { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
 </style></head><body>
