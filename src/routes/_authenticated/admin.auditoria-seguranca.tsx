@@ -24,6 +24,7 @@ import { FileSecurityTab } from "@/components/security/FileSecurityTab";
 import { AccessControlTab } from "@/components/security/AccessControlTab";
 import { LGPDTab } from "@/components/security/LGPDTab";
 import { ReportsTab } from "@/components/security/ReportsTab";
+import { SecurityBITab } from "@/components/security/SecurityBITab";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria-seguranca")({
   component: Page,
@@ -175,8 +176,9 @@ function Page() {
 
 
 
-        <Tabs defaultValue="visao">
+        <Tabs defaultValue="bi">
           <TabsList className="flex flex-wrap">
+            <TabsTrigger value="bi">BI de Segurança</TabsTrigger>
             <TabsTrigger value="visao">Visão Geral</TabsTrigger>
             <TabsTrigger value="acessos">Controle de Acessos</TabsTrigger>
             <TabsTrigger value="dados">Proteção de Dados</TabsTrigger>
@@ -192,6 +194,10 @@ function Page() {
             <TabsTrigger value="config">Configurações</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="bi" className="mt-4">
+            <SecurityBITab />
+          </TabsContent>
 
           {/* ====== VISÃO GERAL ====== */}
           <TabsContent value="visao" className="mt-4 space-y-4">
