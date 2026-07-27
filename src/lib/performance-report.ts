@@ -146,7 +146,7 @@ export function exportPerformanceReport(opts: {
         <div class="hbar"><span style="width:${Math.min(100, f.media)}%"></span></div>
       </td>
       <td class="barcell">${distBar(f.counts, f.total)}</td>
-      <td class="num small">${f.total}</td>
+      <td class="num small">${f.compradores}</td>
     </tr>`,
     )
     .join("");
