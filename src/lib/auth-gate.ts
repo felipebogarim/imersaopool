@@ -37,9 +37,10 @@ async function load(userId: string): Promise<AuthGateData> {
   let mustEnrollMfa = false;
 
   if (!isComercialOnly) {
-    const promises: Promise<any>[] = [supabase.rpc("get_my_terms_status")];
-    if (roleList.includes("admin")) promises.push(supabase.rpc("get_admin_mfa_status"));
-    const [termsRes, mfaRes] = await Promise.all(promises);
+    const promises: Promise<any>[] = [Promise.resolve(supabase.rpc("get_my_terms_status"))];
+    if (roleList.includes("admin"))
+      promises.push(Promise.resolve(supabase.rpc("get_admin_mfa_status")));
+
     const row: any = Array.isArray(termsRes?.data) ? termsRes.data[0] : termsRes?.data;
     termsOk = !row || row.status === "aceito";
     const mfaRow: any = Array.isArray(mfaRes?.data) ? mfaRes.data[0] : mfaRes?.data;
