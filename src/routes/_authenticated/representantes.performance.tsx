@@ -642,6 +642,24 @@ function PerformancePage() {
     });
   }
 
+  function doExportReport() {
+    if (!currentUpload) return;
+    const rep = reps.find((r: any) => r.id === repId)?.nome ?? "";
+    exportPerformanceReport({
+      representante: rep,
+      periodo: currentUpload.periodo_label,
+      familias,
+      rows: view.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas_status: r.metas_status,
+        total_pct_status: r.total_pct_status,
+      })),
+    });
+  }
+
+
+
   // Exporta a partir da lista (sem abrir o representante)
   async function exportFromList(rid: string, upload: any) {
     const rep = reps.find((r: any) => r.id === rid)?.nome ?? "";
