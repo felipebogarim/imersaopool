@@ -241,37 +241,44 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     cur.farol = cur.farol ?? farolLabel;
     cells.set(k, cur);
 
-    if (farolLabel) farolMeta.set(farolLabel, (farolMeta.get(farolLabel) ?? 0) + (meta > 0 ? meta : 1));
+    if (farolLabel) {
+      const w = meta > 0 ? meta : 1;
+      const contrib = ating != null ? (w * ating) / 100 : w;
+      farolMeta.set(farolLabel, (farolMeta.get(farolLabel) ?? 0) + contrib);
+    }
   }
 
   if (!anyRow) throw new Error('Aba "Base BI" sem linhas válidas (Categoria + Família).');
 
-  const list = [...cells.values()].map((c) => ({
-    ...c,
-    atingimento: c.atingWeight > 0 ? c.atingSum / c.atingWeight : c.meta > 0 ? (c.realizado / c.meta) * 100 : null,
-  }));
+  const list = [...cells.values()].map((c) => {
+    const atingimento =
+      c.atingWeight > 0 ? c.atingSum / c.atingWeight : c.meta > 0 ? (c.realizado / c.meta) * 100 : null;
+    // Índice ponderado = meta × atingimento (base da participação ponderada).
+    const indice = atingimento != null ? (c.meta > 0 ? c.meta : 1) * (atingimento / 100) : c.meta;
+    return { ...c, atingimento, indice };
+  });
 
-  const metaTotal = list.reduce((s, c) => s + c.meta, 0);
+  const indiceTotal = list.reduce((s, c) => s + c.indice, 0);
   const catNames = [...new Set(list.map((c) => c.categoria))];
 
   const categorias = catNames.map((cat) => {
     const items = list.filter((c) => c.categoria === cat);
-    const metaCat = items.reduce((s, c) => s + c.meta, 0);
+    const indiceCat = items.reduce((s, c) => s + c.indice, 0);
     const num_ = items.reduce((s, c) => s + (c.atingimento ?? 0) * (c.meta > 0 ? c.meta : 1), 0);
     const den = items.reduce((s, c) => s + (c.atingimento != null ? (c.meta > 0 ? c.meta : 1) : 0), 0);
     return {
       categoria: cat,
-      participacao: metaTotal > 0 ? (metaCat / metaTotal) * 100 : null,
+      participacao: indiceTotal > 0 ? (indiceCat / indiceTotal) * 100 : null,
       atingimento: den > 0 ? num_ / den : null,
     };
   });
 
   const familias: FamiliaAgg[] = list.map((c) => {
-    const metaCat = list.filter((x) => x.categoria === c.categoria).reduce((s, x) => s + x.meta, 0);
+    const indiceCat = list.filter((x) => x.categoria === c.categoria).reduce((s, x) => s + x.indice, 0);
     return {
       categoria: c.categoria,
       familia: c.familia,
-      participacao: metaCat > 0 ? (c.meta / metaCat) * 100 : null,
+      participacao: indiceCat > 0 ? (c.indice / indiceCat) * 100 : null,
       atingimento: c.atingimento,
       farol: farolFromPct(c.atingimento) ?? c.farol ?? null,
     };
@@ -282,6 +289,8 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     grupo: label,
     participacao: farolTotal > 0 ? ((farolMeta.get(label) ?? 0) / farolTotal) * 100 : 0,
   }));
+
+
 
   // Três menores (pior atingimento) e três maiores (maior participação) por categoria.
   const piores_familias: BIData["piores_familias"] = [];
