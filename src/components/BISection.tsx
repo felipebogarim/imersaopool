@@ -195,7 +195,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
   // Rankings de participação por família — cálculo agora ocorre no banco
   // (função SECURITY DEFINER `compute_bi_shares`) para não expor metas em R$
   // ao cliente. Retorna shareRatio (0..1) por família, agrupado por categoria.
-  const { data: sharesByCategory = {} } = useQuery({
+  const { data: sharesRpc = {} } = useQuery({
     queryKey: ["bi-shares", repId],
     enabled: !!repId,
     queryFn: async () => {
@@ -204,6 +204,27 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
       return (data ?? {}) as Record<string, FamilyShare[]>;
     },
   });
+
+  // Fallback determinístico: quando não há base de performance no banco, usa a
+  // matriz categoria × família extraída da aba "Base BI" do arquivo importado.
+  const sharesByCategory: Record<string, FamilyShare[]> = useMemo(() => {
+    const rpcHas = Object.values(sharesRpc ?? {}).some((v) => (v?.length ?? 0) > 0);
+    if (rpcHas) return sharesRpc;
+    const fams = d?.familias ?? [];
+    if (!fams.length) return sharesRpc;
+    const out: Record<string, FamilyShare[]> = {};
+    for (const f of fams) {
+      (out[f.categoria] ??= []).push({
+        familyKey: `${f.categoria}:${f.familia}`,
+        familyName: f.familia,
+        shareRatio: (f.participacao ?? 0) / 100,
+        attainmentRatio: f.atingimento == null ? null : f.atingimento / 100,
+        metaTotal: (f.participacao ?? 0) > 0 ? f.participacao ?? 0 : 0,
+      });
+    }
+    return out;
+  }, [sharesRpc, d]);
+
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
 
