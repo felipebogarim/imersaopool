@@ -83,9 +83,12 @@ const COL_SYNONYMS: Record<string, string[]> = {
     "realizado valor",
   ],
   atingimento: ["atingimento", "atingimento %", "atingimento meta", "ating", "% atingimento", "perc atingimento"],
+  coeficiente: ["coeficiente", "coef", "fator", "fator farol"],
+  indice: ["indice ponderado", "indice", "index ponderado"],
   participacao: ["participacao", "participacao %", "% participacao", "share", "part"],
-  farol: ["farol", "faixa", "faixa %", "status", "grupo farol"],
+  farol: ["farol", "faixa", "faixa %", "status", "grupo farol", "grupo do farol"],
   cliente: ["cliente", "razao social", "razao", "nome cliente"],
+
 };
 
 function matchColumn(header: string): string | null {
