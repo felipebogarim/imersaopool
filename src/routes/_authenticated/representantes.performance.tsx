@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
+import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, FileText, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
 import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
+import { exportPerformanceReport } from "@/lib/performance-report";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import {
@@ -641,6 +642,24 @@ function PerformancePage() {
     });
   }
 
+  function doExportReport() {
+    if (!currentUpload) return;
+    const rep = reps.find((r: any) => r.id === repId)?.nome ?? "";
+    exportPerformanceReport({
+      representante: rep,
+      periodo: currentUpload.periodo_label,
+      familias,
+      rows: view.map((r) => ({
+        razao_social: r.razao_social,
+        categoria: r.categoria,
+        metas_status: r.metas_status,
+        total_pct_status: r.total_pct_status,
+      })),
+    });
+  }
+
+
+
   // Exporta a partir da lista (sem abrir o representante)
   async function exportFromList(rid: string, upload: any) {
     const rep = reps.find((r: any) => r.id === rid)?.nome ?? "";
@@ -722,6 +741,9 @@ function PerformancePage() {
                 <Link to="/clientes-bi-batch/$repId" params={{ repId }}>
                   <Users className="h-4 w-4 mr-1" /> BI dos clientes
                 </Link>
+              </Button>
+              <Button variant="outline" onClick={doExportReport} disabled={!currentUpload}>
+                <FileText className="h-4 w-4 mr-1" /> Exportar relatório
               </Button>
               <Button variant="outline" onClick={doExport} disabled={!currentUpload}>
                 <FileDown className="h-4 w-4 mr-1" /> Exportar Excel
