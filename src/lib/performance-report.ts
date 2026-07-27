@@ -226,16 +226,24 @@ export function exportPerformanceReport(opts: {
 <div class="card">
   <div style="padding:12px 0 2px">${distBar(geral, comStatus)}</div>
   <div class="legend">${legenda}</div>
-  <table><thead><tr><th>Faixa</th><th>Clientes</th><th>Participação</th><th style="width:40%"></th></tr></thead><tbody>
+  <table><thead><tr><th>Faixa</th><th>Clientes</th><th>Participação</th><th style="width:40%"></th><th style="width:36px"></th></tr></thead><tbody>
   ${FAROL_ORDER.map(
     (s) => `<tr>
       <td class="nm"><span class="pill" style="background:#${FAROL_HEX[s]}">${FAROL_LABEL[s]}</span></td>
       <td class="num">${geral[s]}</td>
       <td class="num">${comStatus ? pct((geral[s] / comStatus) * 100) : "—"}</td>
       <td class="barcell"><div class="hbar"><span style="width:${comStatus ? (geral[s] / comStatus) * 100 : 0}%;background:#${FAROL_HEX[s]}"></span></div></td>
+      <td class="kebabcell">
+        <button class="kebab" data-faixa="${s}" title="Ações">⋮</button>
+        <div class="menu" id="menu-${s}">
+          <button data-act="view" data-faixa="${s}">Visualizar clientes</button>
+          <button data-act="csv" data-faixa="${s}">Exportar lista de clientes</button>
+        </div>
+      </td>
     </tr>`,
   ).join("")}
   </tbody></table>
+
 </div>
 
 <h2>Performance por família de produto</h2>
