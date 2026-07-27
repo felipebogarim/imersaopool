@@ -141,12 +141,19 @@ export function SecurityBITab() {
   const leaks = leakIncidents.length + leakEvents.length + leakFiles.length;
   const leakTone: Tone = leaks === 0 ? "ok" : leaks <= 2 ? "warn" : "bad";
 
-  // ---- 2) Tentativas de invasão (30 dias) ----
+  // ---- 2) Tentativas de invasão — separadas por natureza (30 dias) ----
+  const authFailures = events.filter((e: any) => e.resultado === "falha");
+  const blocked = events.filter((e: any) => e.resultado === "bloqueado" || e.resultado === "suspeito");
+  const highRisk = events.filter((e: any) => ["alto", "critico"].includes(e.nivel_risco));
   const intrusions = events.filter(
     (e: any) => ["falha", "bloqueado", "suspeito"].includes(e.resultado) || ["alto", "critico"].includes(e.nivel_risco),
   );
-  const intrusionCritical = intrusions.filter((e: any) => ["alto", "critico"].includes(e.nivel_risco)).length;
-  const intrusionTone: Tone = intrusions.length === 0 ? "ok" : intrusionCritical > 0 || intrusions.length > 20 ? "bad" : "warn";
+  const intrusionCritical = highRisk.length;
+  const toneFor = (n: number, warnAt: number, badAt: number): Tone => (n === 0 ? "ok" : n < badAt ? "warn" : "bad");
+  const authTone = toneFor(authFailures.length, 1, 10);
+  const blockedTone = toneFor(blocked.length, 1, 5);
+  const riskEventTone: Tone = highRisk.length === 0 ? "ok" : "bad";
+
 
   // ---- 3) Riscos de segurança em aberto ----
   const openRisks = risks.filter((r: any) => !["corrigido", "risco_aceito", "nao_aplicavel"].includes(r.status));
@@ -205,28 +212,72 @@ export function SecurityBITab() {
         <Card>
           <CardHeader className="pb-0">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Bug className="h-4 w-4" /> Tentativas de invasão
+              <Bug className="h-4 w-4" /> Falhas de autenticação
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
             <Gauge
-              value={intrusions.length}
-              ratio={intrusions.length === 0 ? 0.02 : Math.min(1, intrusions.length / 50)}
-              tone={intrusionTone}
+              value={authFailures.length}
+              ratio={authFailures.length === 0 ? 0.02 : Math.min(1, authFailures.length / 20)}
+              tone={authTone}
               suffix="últimos 30 dias"
-              caption="Falhas de autenticação, acessos bloqueados e eventos de risco alto/crítico registrados no período."
+              caption="Tentativas de login malsucedidas registradas no período."
             />
-            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
-              <div><div className="font-semibold">{intrusionCritical}</div><div className="text-muted-foreground">Alto/crítico</div></div>
-              <div>
-                <div className="font-semibold">
-                  {new Set(intrusions.map((e: any) => e.usuario_email ?? "—")).size}
-                </div>
-                <div className="text-muted-foreground">Origens distintas</div>
+            <div className="mt-3 text-center text-xs">
+              <div className="font-semibold">
+                {new Set(authFailures.map((e: any) => e.usuario_email ?? "—")).size}
               </div>
+              <div className="text-muted-foreground">Origens distintas</div>
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Bug className="h-4 w-4" /> Acessos bloqueados
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Gauge
+              value={blocked.length}
+              ratio={blocked.length === 0 ? 0.02 : Math.min(1, blocked.length / 10)}
+              tone={blockedTone}
+              suffix="últimos 30 dias"
+              caption="Acessos negados ou marcados como suspeitos pelo controle de permissões."
+            />
+            <div className="mt-3 text-center text-xs">
+              <div className="font-semibold">
+                {new Set(blocked.map((e: any) => e.usuario_email ?? "—")).size}
+              </div>
+              <div className="text-muted-foreground">Origens distintas</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Bug className="h-4 w-4" /> Eventos de risco alto/crítico
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Gauge
+              value={highRisk.length}
+              ratio={highRisk.length === 0 ? 0.02 : Math.min(1, highRisk.length / 5)}
+              tone={riskEventTone}
+              suffix="últimos 30 dias"
+              caption="Meta: 0. Eventos classificados com nível de risco alto ou crítico."
+            />
+            <div className="mt-3 text-center text-xs">
+              <div className="font-semibold">
+                {new Set(highRisk.map((e: any) => e.usuario_email ?? "—")).size}
+              </div>
+              <div className="text-muted-foreground">Origens distintas</div>
+            </div>
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader className="pb-0">
