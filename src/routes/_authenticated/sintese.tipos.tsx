@@ -391,23 +391,56 @@ function MetricCard({ label, value, tone }: { label: string; value: number; tone
   );
 }
 
-function Bloco({ titulo, cor, children }: { titulo: string; cor: "teal" | "amber" | "neutral"; children: React.ReactNode }) {
+function Convergencia({
+  item,
+  link,
+}: {
+  item: NonNullable<SinteseResultado["lentes"][string]>["convergencia"][number];
+  link: (id: string) => string | null;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const evidencias = item.evidencias?.length
+    ? item.evidencias
+    : item.fala_representativa
+      ? [{ fonteId: item.fontes[0]?.id ?? "", fonte: item.fontes[0]?.nome ?? "", regiao: item.fontes[0]?.regiao ?? null, fala: item.fala_representativa }]
+      : [];
+
   return (
-    <section className="space-y-2">
-      <h2
-        className={cn(
-          "text-sm font-semibold",
-          cor === "teal" && "text-emerald-600 dark:text-emerald-400",
-          cor === "amber" && "text-amber-600 dark:text-amber-400",
-          cor === "neutral" && "text-muted-foreground",
-        )}
+    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
+      <div className="flex items-start gap-3">
+        <p className="flex-1 text-base font-medium leading-snug">{item.texto}</p>
+        <Badge variant="outline" className="shrink-0 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+          {item.peso} de {item.total}
+        </Badge>
+      </div>
+      {item.reforcada && (
+        <p className="text-xs text-emerald-600 dark:text-emerald-400">Reforçada por perfis de carteira diferentes</p>
+      )}
+      <button
+        type="button"
+        onClick={() => setAberto(v => !v)}
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
       >
-        {titulo}
-      </h2>
-      <div className="space-y-2">{children}</div>
-    </section>
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", aberto && "rotate-180")} />
+        {aberto ? "Ocultar evidências" : `Ver evidências (${item.fontes.length} fontes)`}
+      </button>
+      {aberto && (
+        <div className="space-y-2 pt-1">
+          {evidencias.map((e, i) => (
+            <div key={i} className="space-y-1">
+              <Fala texto={e.fala} />
+              <p className="text-[11px] text-muted-foreground pl-5">
+                {e.fonte}{e.regiao ? ` · ${e.regiao}` : ""}
+              </p>
+            </div>
+          ))}
+          <Fontes refs={item.fontes} link={link} />
+        </div>
+      )}
+    </div>
   );
 }
+
 
 function Vazio() {
   return <p className="text-xs text-muted-foreground">Nada nesta categoria para a lente e filtros atuais.</p>;
