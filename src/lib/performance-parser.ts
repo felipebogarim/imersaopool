@@ -6,6 +6,7 @@
 
 import * as XLSXStyle from "xlsx-js-style";
 import { statusFromFaixa, statusFromHex, type FarolStatus } from "./performance-farol";
+import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 
 export type ParsedRow = {
   ordem: number;
@@ -27,6 +28,8 @@ export type ParsedSheet = {
   rows: ParsedRow[];
   participacao: ResumoPct | null;
   atingimento: ResumoPct | null;
+  /** Linhas descartadas (totais, legendas, sem categoria) com o motivo. */
+  ignoradas: IgnoredRow[];
 };
 
 function cellHex(cell: any): string | null {
@@ -112,6 +115,7 @@ function parseNovo(
   const rows: ParsedRow[] = [];
   let participacao: ResumoPct | null = null;
   let atingimento: ResumoPct | null = null;
+  const ignoradas: IgnoredRow[] = [];
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
     const row = grid[r] ?? [];
@@ -174,7 +178,7 @@ function parseNovo(
     });
   }
 
-  return { familias, categoriaMetas: {}, escala: [], rows, participacao, atingimento };
+  return { familias, categoriaMetas: {}, escala: [], rows, participacao, atingimento, ignoradas };
 }
 
 // ---------- Formato antigo (mantido para compatibilidade) ----------
@@ -211,12 +215,17 @@ function parseAntigo(
   }
 
   const rows: ParsedRow[] = [];
+  const ignoradas: IgnoredRow[] = [];
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
     const row = grid[r] ?? [];
     const razao = String(row[0]?.v ?? "").trim();
     const categoria = String(row[1]?.v ?? "").trim();
     if (!razao) continue;
+    if (isTotalRowName(razao)) {
+      ignoradas.push({ razao_social: razao, motivo: "Linha de totalização/legenda" });
+      continue;
+    }
     if (!categoria && typeof row[2]?.v === "number") continue;
 
     const metas: Record<string, number> = {};
@@ -244,5 +253,5 @@ function parseAntigo(
     });
   }
 
-  return { familias, categoriaMetas, escala, rows, participacao: null, atingimento: null };
+  return { familias, categoriaMetas, escala, rows, participacao: null, atingimento: null, ignoradas };
 }
