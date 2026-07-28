@@ -1,6 +1,6 @@
 // Exporta o painel de síntese (8 lentes) para PDF.
 import jsPDF from "jspdf";
-import { LENTES, LENTE_DEF, TIPO_LABEL, type FonteTipo, type Lente } from "@/lib/insight-lentes";
+import { LENTES, LENTE_DEF, TIPO_LABEL, type FonteTipo } from "@/lib/insight-lentes";
 import type { SinteseResultado } from "@/lib/sintese-engine";
 
 type Opts = {
