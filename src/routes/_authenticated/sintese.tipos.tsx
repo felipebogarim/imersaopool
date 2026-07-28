@@ -13,7 +13,7 @@ import { FONTE_TIPOS, LENTES, LENTE_DEF, TIPO_LABEL, type FonteTipo, type Lente 
 import type { SinteseResultado } from "@/lib/sintese-engine";
 import { gerarPainelSintese } from "@/lib/sintese.functions";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
-import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote } from "lucide-react";
+import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,11 @@ function SinteseTipos() {
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
+  const tiposVazios = useMemo<FonteTipo[]>(
+    () => (tipos.length > 1 ? tipos.filter(t => !fontes.some((f: any) => f.tipo === t)) : []),
+    [tipos, fontes],
+  );
+
   const novas = useMemo(() => {
     if (!painel) return elegiveis;
     const inc = new Set((painel.fontes_incluidas as string[]) ?? []);
@@ -90,7 +95,27 @@ function SinteseTipos() {
     setTipos(cur => (cur.includes(t) ? (cur.length === 1 ? cur : cur.filter(x => x !== t)) : [...cur, t]));
   }
 
+  async function reprocessar() {
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
+      if (error) throw error;
+      const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
+      toast.success(`Fontes reprocessadas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas.`);
+      qc.invalidateQueries({ queryKey: ["insight-fontes-sintese"] });
+      qc.invalidateQueries({ queryKey: ["insight-fontes"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reprocessar fontes.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function atualizar() {
+    if (!elegiveis.length) {
+      toast.error("Nenhuma fonte processada para consolidar.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await gerar({ data: { tipos } });
@@ -122,9 +147,14 @@ function SinteseTipos() {
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
-            <Button onClick={atualizar} disabled={busy}>
-              <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
-            </Button>
+            <>
+              <Button variant="outline" onClick={reprocessar} disabled={busy}>
+                <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
+              </Button>
+              <Button onClick={atualizar} disabled={busy || !elegiveis.length}>
+                <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
+              </Button>
+            </>
           }
         />
 
@@ -157,7 +187,13 @@ function SinteseTipos() {
             </div>
           </div>
 
-          {novas.length > 0 ? (
+          {tiposVazios.length > 0 && (
+            <p className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              Ainda não há fontes do tipo {tiposVazios.map(t => TIPO_LABEL[t]).join(", ")}. Adicione fontes desse tipo para cruzar.
+            </p>
+          )}
+
+          {elegiveis.length > 0 && novas.length > 0 ? (
             <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex flex-wrap items-center gap-3">
               <Sparkles className="h-4 w-4 text-primary" />
               <p className="text-sm">
@@ -172,11 +208,23 @@ function SinteseTipos() {
             </p>
           ) : null}
 
-          {!resultado ? (
+          {!elegiveis.length ? (
+            <EmptyState
+              icon={Layers}
+              title="Nenhuma fonte processada ainda para este tipo."
+              description="Traga as entrevistas já existentes para o modelo de fontes e a síntese passa a funcionar."
+              action={
+                <Button onClick={reprocessar} disabled={busy}>
+                  <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
+                </Button>
+              }
+            />
+          ) : !resultado ? (
             <EmptyState
               icon={Layers}
               title="Sem síntese para esta seleção"
-              description="Escolha os tipos de fonte e clique em Atualizar análise para consolidar as 8 lentes."
+              description={`${elegiveis.length} fonte(s) pronta(s). Clique em Atualizar análise para consolidar as 8 lentes.`}
+              action={<Button onClick={atualizar} disabled={busy}>Atualizar análise</Button>}
             />
           ) : (
             <>

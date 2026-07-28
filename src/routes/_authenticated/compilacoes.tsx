@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileText, Download, FileDown } from "lucide-react";
+import { Sparkles, FileText, Download, FileDown, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { exportCompilationPdf, exportCompilationCsv } from "@/lib/export-compilation";
 
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateCompilation } from "@/lib/generate-compilation.functions";
+import { gerarCompilacaoDeSintese } from "@/lib/compilacao-sintese.functions";
 
 export const Route = createFileRoute("/_authenticated/compilacoes")({
   head: () => ({ meta: [{ title: "Compilações IA — PoolFlux" }] }),
@@ -30,12 +31,28 @@ type Escopo = "cliente" | "familia" | "competidor" | "empresa";
 function CompilacoesPage() {
   const qc = useQueryClient();
   const runGenerate = useServerFn(generateCompilation);
+  const runFromSintese = useServerFn(gerarCompilacaoDeSintese);
 
   const [tipo, setTipo] = useState<Tipo>("diagnostico_final");
   const [escopoTipo, setEscopoTipo] = useState<Escopo>("empresa");
   const [escopoRefId, setEscopoRefId] = useState<string>("");
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busySintese, setBusySintese] = useState(false);
+
+  async function handleGenerateFromSintese() {
+    setBusySintese(true);
+    try {
+      const r = await runFromSintese({ data: { painelId: null } });
+      toast.success(`Compilação v${r.versao} criada a partir da síntese (${r.fontes} fontes).`);
+      qc.invalidateQueries({ queryKey: ["compilations"] });
+      setSelected(r.id);
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setBusySintese(false);
+    }
+  }
 
   const { data: compilations = [] } = useQuery({
     queryKey: ["compilations"],
@@ -105,7 +122,16 @@ function CompilacoesPage() {
 
   return (
     <div>
-      <PageHeader title="Compilações IA" subtitle="Sinteses executivas a partir das perspectivas aprovadas." />
+      <PageHeader
+        title="Compilações IA"
+        subtitle="Documento executivo gerado a partir de uma síntese."
+        actions={
+          <Button variant="outline" onClick={handleGenerateFromSintese} disabled={busySintese} className="gap-2">
+            <Layers className="h-4 w-4" />
+            {busySintese ? "Gerando..." : "Gerar a partir do painel de síntese atual"}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
         <div>

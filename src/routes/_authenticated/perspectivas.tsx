@@ -100,7 +100,7 @@ function PerspectivasPage() {
 
   return (
     <div>
-      <PageHeader title="Perspectivas" subtitle="Revisão humana das leituras geradas a partir das sessões" />
+      <PageHeader title="Perspectivas" subtitle="Revisão opcional das leituras de cada fonte." />
       <div className="p-8 space-y-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[160px]">
