@@ -19,15 +19,18 @@ const NAV = [
 
 const INPUTS = [
   { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
+  { to: "/fontes", label: "Fontes de Insight", icon: Lightbulb },
   { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
   { to: "/forms", label: "Forms", icon: FileText },
 ] as const;
 
 
 const ANALISES = [
+  { to: "/sintese/tipos", label: "Síntese por tipo", icon: LineChart },
   { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
 ] as const;
+
 
 const PRICE = [
   { to: "/price/competidores", label: "Competidores", icon: Users },
