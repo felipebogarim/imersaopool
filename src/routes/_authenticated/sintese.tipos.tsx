@@ -133,6 +133,38 @@ function SinteseTipos() {
     }
   }
 
+  async function onImportFile(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      toast.info("Lendo arquivo…");
+      const texto = await extractFileText(file);
+      const r = await importar({ data: { tipos, texto, arquivo: file.name } });
+      toast.success(`Análise importada como v${r.versao}. Ela prevalece sobre a consolidação interna.`);
+      qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao importar a análise.");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function exportarPdf() {
+    if (!resultado || !painel) {
+      toast.error("Nenhuma síntese para exportar.");
+      return;
+    }
+    exportSintesePdf({
+      resultado,
+      tipos,
+      geradoEm: painel.gerado_em,
+      versao: painel.versao,
+      regiao,
+      origem: (resultado.meta as any)?.origem ?? null,
+    });
+  }
+
   function relatorioLink(fonteId: string): string | null {
     const f: any = fonteById.get(fonteId);
     if (!f) return null;
@@ -144,15 +176,28 @@ function SinteseTipos() {
   return (
     <TooltipProvider delayDuration={200}>
       <div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.xlsx,.xls,.csv,.docx,.txt,.md"
+          className="hidden"
+          onChange={e => onImportFile(e.target.files?.[0])}
+        />
         <PageHeader
           title="Síntese por tipo"
           subtitle={
             painel
-              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}`
+              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
             <>
+              <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
+                <Upload className="h-4 w-4 mr-1" /> Carregar análise própria
+              </Button>
+              <Button variant="outline" onClick={exportarPdf} disabled={busy || !resultado}>
+                <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
+              </Button>
               <Button variant="outline" onClick={reprocessar} disabled={busy}>
                 <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
               </Button>
