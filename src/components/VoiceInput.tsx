@@ -75,6 +75,7 @@ function MicBtn({ state, start, stop }: { state: string; start: () => void; stop
       onClick={() => (state === "rec" ? stop() : state === "idle" ? start() : null)}
       disabled={state === "loading"}
       title={state === "rec" ? "Parar gravação" : "Gravar voz"}
+      aria-label={state === "rec" ? "Parar gravação" : "Gravar voz"}
       className="shrink-0"
     >
       {state === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : state === "rec" ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -131,6 +132,7 @@ function MediaBtn({
         size="icon"
         variant="outline"
         title={title}
+        aria-label={title}
         disabled={!!loading}
         onClick={() => ref.current?.click()}
         className="shrink-0"
