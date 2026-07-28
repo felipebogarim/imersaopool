@@ -118,6 +118,12 @@ export function statusFromHex(hex: string | null | undefined): FarolStatus | nul
   if (!hex) return null;
   const clean = hex.replace(/^#/, "").padStart(6, "0");
   const h = clean.length === 8 ? clean.slice(2) : clean.slice(-6);
+  // Correspondência exata com a paleta canônica (planilhas geradas pelo sistema)
+  const exact = (Object.keys(FAROL_HEX) as FarolStatus[]).find(
+    (s) => FAROL_HEX[s].toUpperCase() === h.toUpperCase(),
+  );
+  if (exact) return exact;
+
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
