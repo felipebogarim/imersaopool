@@ -14,6 +14,20 @@ import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
+import { conflictMessage } from "@/lib/performance-cell-status";
+
+/** SHA-256 do arquivo, usado para identificar reimportações do mesmo arquivo. */
+async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
+  try {
+    const d = await crypto.subtle.digest("SHA-256", buf);
+    return Array.from(new Uint8Array(d))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } catch {
+    return null;
+  }
+}
+
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { exportPerformanceReport } from "@/lib/performance-report";
