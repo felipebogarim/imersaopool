@@ -192,6 +192,25 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
     [d],
   );
+  // Fallback: quando a planilha não traz os destaques prontos, derivamos
+  // do próprio ranking de categorias / grupos do farol já calculado.
+  const maiorCategoria = useMemo(() => {
+    const v = d?.maior_categoria;
+    if (v?.label && v.participacao != null) return v;
+    const top = catsSorted[0];
+    return top
+      ? { label: top.categoria, participacao: top.participacao }
+      : { label: null, participacao: null };
+  }, [d, catsSorted]);
+  const maiorGrupoFarol = useMemo(() => {
+    const v = d?.maior_grupo_farol;
+    if (v?.label && v.participacao != null) return v;
+    const top = (d?.farol ?? [])
+      .slice()
+      .sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0];
+    return top ? { label: top.grupo, participacao: top.participacao } : { label: null, participacao: null };
+  }, [d]);
+
   // Rankings de participação por família — cálculo agora ocorre no banco
   // (função SECURITY DEFINER `compute_bi_shares`) para não expor metas em R$
   // ao cliente. Retorna shareRatio (0..1) por família, agrupado por categoria.
