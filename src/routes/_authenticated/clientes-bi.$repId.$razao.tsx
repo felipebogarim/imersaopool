@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BarChart2 } from "lucide-react";
 import { ClientBISection } from "@/components/ClientBISection";
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { catBadge } from "@/lib/performance-farol";
