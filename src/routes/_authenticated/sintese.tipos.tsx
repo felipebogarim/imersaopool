@@ -90,7 +90,27 @@ function SinteseTipos() {
     setTipos(cur => (cur.includes(t) ? (cur.length === 1 ? cur : cur.filter(x => x !== t)) : [...cur, t]));
   }
 
+  async function reprocessar() {
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
+      if (error) throw error;
+      const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
+      toast.success(`Fontes reprocessadas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas.`);
+      qc.invalidateQueries({ queryKey: ["insight-fontes-sintese"] });
+      qc.invalidateQueries({ queryKey: ["insight-fontes"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reprocessar fontes.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function atualizar() {
+    if (!elegiveis.length) {
+      toast.error("Nenhuma fonte processada para consolidar.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await gerar({ data: { tipos } });
