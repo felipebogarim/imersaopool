@@ -56,7 +56,7 @@ export function exportSintesePdf({ resultado, tipos, geradoEm, versao, regiao, o
   );
   y += 10;
 
-  for (const l of LENTES as Lente[]) {
+  for (const l of LENTES) {
     const r = resultado.lentes?.[l];
     if (!r) continue;
     br(40);
