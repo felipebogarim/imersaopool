@@ -416,24 +416,25 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por categoria</div>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(d.maior_categoria.label ?? ""))}>
-                      {d.maior_categoria.label ?? "—"}
+                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(maiorCategoria.label ?? ""))}>
+                      {maiorCategoria.label ?? "—"}
                     </span>
-                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_categoria.participacao)}</span>
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(maiorCategoria.participacao)}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por grupo do farol</div>
                   <div className="mt-1 flex items-baseline gap-2">
                     {(() => {
-                      const k = farolKey(d.maior_grupo_farol.label ?? "");
+                      const k = farolKey(maiorGrupoFarol.label ?? "");
                       return (
                         <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as FarolStatus])}>
-                          {d.maior_grupo_farol.label ?? "—"}
+                          {maiorGrupoFarol.label ?? "—"}
                         </span>
                       );
                     })()}
-                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_grupo_farol.participacao)}</span>
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(maiorGrupoFarol.participacao)}</span>
+
                   </div>
                 </div>
               </div>
