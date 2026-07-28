@@ -17,10 +17,9 @@ export function ConfidentialityModal() {
       const { data: s } = await supabase.auth.getSession();
       const session = s.session;
       if (!session?.user) return;
-      // Key by access_token so a new login (new token) always re-triggers the modal.
-      const token = session.access_token.slice(-24);
-      const key = `${SESSION_KEY}:${session.user.id}:${token}`;
-      if (sessionStorage.getItem(key)) return;
+      // Aviso exibido apenas no primeiro login do usuário neste dispositivo.
+      const key = `${SESSION_KEY}:${session.user.id}`;
+      if (localStorage.getItem(key)) return;
       setOpen(true);
     }
     check();
@@ -57,9 +56,8 @@ export function ConfidentialityModal() {
         _user_agent: navigator.userAgent.slice(0, 500),
       });
       if (rpcErr) throw rpcErr;
-      if (u.user && session) {
-        const token = session.access_token.slice(-24);
-        sessionStorage.setItem(`${SESSION_KEY}:${u.user.id}:${token}`, "1");
+      if (u.user) {
+        localStorage.setItem(`${SESSION_KEY}:${u.user.id}`, "1");
       }
       setOpen(false);
     } catch (e: any) {
