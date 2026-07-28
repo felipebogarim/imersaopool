@@ -2,7 +2,12 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3 } from "lucide-react";
-import type { ClientFamiliasData } from "@/lib/client-bi-parser";
+import {
+  getFamiliasCliente,
+  toPercent,
+  type FamiliaResultado,
+} from "@/lib/client-bi-familias";
+
 import {
   Bar,
   BarChart,
@@ -38,6 +43,7 @@ export function ClientFamiliasChart({
   companyId: string | null;
   filterFams: string[];
 }) {
+  // Fonte única: o gráfico consome exatamente `bi.familias` (mesmos dados dos cards).
   const { data: up = null, isLoading } = useQuery({
     queryKey: ["client-familias", repId, razaoSocial],
     enabled: !!repId && !!razaoSocial,
@@ -47,7 +53,7 @@ export function ClientFamiliasChart({
         .select("*")
         .eq("representative_id", repId)
         .eq("razao_social", razaoSocial)
-        .eq("kind", "familias")
+        .eq("kind", "bi")
         .is("substituida_em", null)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -56,20 +62,15 @@ export function ClientFamiliasChart({
     },
   });
 
-  const d: ClientFamiliasData | null = (up?.data as ClientFamiliasData) ?? null;
+  const d = (up?.data as { familias?: FamiliaResultado[] } | null) ?? null;
 
   const chartData = useMemo(() => {
-    const itens = d?.itens ?? [];
+    const itens = getFamiliasCliente(d);
     const wanted = new Set(filterFams);
     return itens
       .filter((r) => (filterFams.length === 0 ? true : wanted.has(r.familia)))
       .map((r) => {
-        const pct =
-          r.atingimento != null
-            ? Math.abs(r.atingimento) <= 1.5
-              ? r.atingimento * 100
-              : r.atingimento
-            : null;
+        const pct = toPercent(r.atingimento);
         const st = r.farol ? farolKey(r.farol) : statusFromPercent(pct);
         return {
           familia: r.familia,
@@ -79,6 +80,7 @@ export function ClientFamiliasChart({
         };
       });
   }, [d, filterFams]);
+
 
   return (
     <div className="surface rounded-xl overflow-hidden">
