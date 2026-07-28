@@ -208,22 +208,33 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
   // Fallback determinístico: quando não há base de performance no banco, usa a
   // matriz categoria × família extraída da aba "Base BI" do arquivo importado.
   const sharesByCategory: Record<string, FamilyShare[]> = useMemo(() => {
-    const rpcHas = Object.values(sharesRpc ?? {}).some((v) => (v?.length ?? 0) > 0);
+    // O RPC só é considerado útil quando traz valores efetivos (meta/participação/
+    // atingimento). Retornos "vazios" (tudo zero) caem para a base do arquivo.
+    const rpcHas = Object.values(sharesRpc ?? {}).some((v) =>
+      (v ?? []).some(
+        (x) => (x?.metaTotal ?? 0) > 0 || (x?.shareRatio ?? 0) > 0 || (x?.attainmentRatio ?? 0) > 0,
+      ),
+    );
     if (rpcHas) return sharesRpc;
     const fams = d?.familias ?? [];
     if (!fams.length) return sharesRpc;
     const out: Record<string, FamilyShare[]> = {};
     for (const f of fams) {
-      (out[f.categoria] ??= []).push({
-        familyKey: `${f.categoria}:${f.familia}`,
+      const part = f.participacao ?? 0;
+      out[f.categoria] ??= [];
+      out[f.categoria].push({
+        familyKey: f.familia,
         familyName: f.familia,
-        shareRatio: (f.participacao ?? 0) / 100,
+        shareRatio: part / 100,
         attainmentRatio: f.atingimento == null ? null : f.atingimento / 100,
-        metaTotal: (f.participacao ?? 0) > 0 ? f.participacao ?? 0 : 0,
+        // Peso relativo dentro da categoria: usa a participação como proxy da meta
+        // (metas em R$ não trafegam para o cliente).
+        metaTotal: part > 0 ? part : 0.0001,
       });
     }
     return out;
   }, [sharesRpc, d]);
+
 
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
