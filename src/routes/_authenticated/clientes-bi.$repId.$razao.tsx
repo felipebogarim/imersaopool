@@ -68,11 +68,21 @@ function ClientBIPage() {
       <PageHeader
         title={razaoSocial}
         actions={
-          <Button variant="ghost" asChild>
-            <Link to="/representantes/performance">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild aria-label="Comparar dentro do perfil">
+              <Link
+                to="/clientes-bi/comparar/$repId/$razao"
+                params={{ repId, razao }}
+              >
+                <BarChart2 className="h-4 w-4 mr-1" /> Comparar dentro do perfil
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/representantes/performance">
+                <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+              </Link>
+            </Button>
+          </div>
         }
       />
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-4">
