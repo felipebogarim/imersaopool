@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FormRenderer } from "@/components/FormRenderer";
 import { FormSchemaSchema, type FormSchema } from "@/lib/form-schema";
 import { toast } from "sonner";
