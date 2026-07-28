@@ -2546,6 +2546,95 @@ export type Database = {
           },
         ]
       }
+      performance_import_audit: {
+        Row: {
+          categorias: string[]
+          clientes_validos: number
+          company_id: string
+          created_at: string
+          descartes: Json
+          divergencias: Json
+          divergencias_texto_cor: number
+          familias: string[]
+          file_hash: string | null
+          filename: string | null
+          id: string
+          linhas_ignoradas: number
+          linhas_lidas: number
+          matriz_erros: Json
+          matriz_status: string
+          mensagem: string | null
+          parser_version: string | null
+          performed_by: string | null
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          periodo_label: string | null
+          representative_id: string | null
+          status: string
+          upload_id: string | null
+        }
+        Insert: {
+          categorias?: string[]
+          clientes_validos?: number
+          company_id: string
+          created_at?: string
+          descartes?: Json
+          divergencias?: Json
+          divergencias_texto_cor?: number
+          familias?: string[]
+          file_hash?: string | null
+          filename?: string | null
+          id?: string
+          linhas_ignoradas?: number
+          linhas_lidas?: number
+          matriz_erros?: Json
+          matriz_status?: string
+          mensagem?: string | null
+          parser_version?: string | null
+          performed_by?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label?: string | null
+          representative_id?: string | null
+          status: string
+          upload_id?: string | null
+        }
+        Update: {
+          categorias?: string[]
+          clientes_validos?: number
+          company_id?: string
+          created_at?: string
+          descartes?: Json
+          divergencias?: Json
+          divergencias_texto_cor?: number
+          familias?: string[]
+          file_hash?: string | null
+          filename?: string | null
+          id?: string
+          linhas_ignoradas?: number
+          linhas_lidas?: number
+          matriz_erros?: Json
+          matriz_status?: string
+          mensagem?: string | null
+          parser_version?: string | null
+          performed_by?: string | null
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          periodo_label?: string | null
+          representative_id?: string | null
+          status?: string
+          upload_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_import_audit_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "rep_performance_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perspectivas: {
         Row: {
           aprovada_em: string | null
@@ -4137,6 +4226,7 @@ export type Database = {
         }
         Returns: string
       }
+      log_performance_import: { Args: { _payload: Json }; Returns: string }
       log_security_event: {
         Args: {
           _acao?: string

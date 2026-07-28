@@ -3,10 +3,20 @@
 // [RAZÃO SOCIAL, CATEGORIA, TOTAL META, TOTAL %, <famílias...>] e valores
 // de família como faixa em texto ("0%", "<50", "50-69", "70-89", "90-100", ">100").
 // Também mantém compatibilidade retroativa com o formato antigo (numérico + cor).
+//
+// Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromFaixa, statusFromHex, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, type FarolStatus } from "./performance-farol";
+import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
+import {
+  parseMatrizFinanceiraGrid,
+  validateMatrizFinanceira,
+  type MatrizParseResult,
+} from "./performance-matriz";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
+
+export const PARSER_VERSION = "performance-parser@3";
 
 export type ParsedRow = {
   ordem: number;
@@ -30,6 +40,15 @@ export type ParsedSheet = {
   atingimento: ResumoPct | null;
   /** Linhas descartadas (totais, legendas, sem categoria) com o motivo. */
   ignoradas: IgnoredRow[];
+  /** Total de linhas de dados lidas (antes de qualquer filtro). */
+  linhas_lidas: number;
+  /** Matriz financeira lida da aba dedicada (null quando a aba não existe). */
+  matriz: MatrizParseResult | null;
+  /** Erros de validação da matriz financeira (sem valores brutos). */
+  matriz_erros: string[];
+  /** Divergências entre faixa textual e cor (bloqueiam a importação). */
+  conflitos: CellConflict[];
+  parser_version: string;
 };
 
 function cellHex(cell: any): string | null {
@@ -58,6 +77,26 @@ function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "a
   return null;
 }
 
+const normSheet = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+function readMatriz(wb: XLSXStyle.WorkBook): MatrizParseResult | null {
+  const name = wb.SheetNames.find((n) => {
+    const v = normSheet(n);
+    return v.includes("MATRIZ") && v.includes("FINANC");
+  });
+  if (!name) return null;
+  const ws = wb.Sheets[name];
+  if (!ws) return null;
+  const grid = XLSXStyle.utils.sheet_to_json<unknown[]>(ws, { header: 1, blankrows: false, raw: true });
+  return parseMatrizFinanceiraGrid(grid as unknown[][]);
+}
+
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
@@ -78,10 +117,13 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const head = findHeaderRow(grid);
   if (!head) throw new Error("Cabeçalho não encontrado (linha com RAZÃO SOCIAL + CATEGORIA).");
 
-  if (head.layout === "novo") {
-    return parseNovo(grid, head.row);
-  }
-  return parseAntigo(grid, head.row);
+  const matriz = readMatriz(wb);
+  const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
+
+  const base =
+    head.layout === "novo" ? parseNovo(grid, head.row) : parseAntigo(grid, head.row);
+
+  return { ...base, matriz, matriz_erros };
 }
 
 // ---------- Novo formato (planilha ajustada) ----------
@@ -96,10 +138,9 @@ function toPct(v: any): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function parseNovo(
-  grid: { v: any; c: string | null }[][],
-  headerRow: number,
-): ParsedSheet {
+type BaseSheet = Omit<ParsedSheet, "matriz" | "matriz_erros">;
+
+function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
   const hdr = grid[headerRow] ?? [];
   // colunas: 0 Razão, 1 Categoria, 2 Total Meta, 3 Total %, 4.. famílias
   const familias: string[] = [];
@@ -116,11 +157,14 @@ function parseNovo(
   let participacao: ResumoPct | null = null;
   let atingimento: ResumoPct | null = null;
   const ignoradas: IgnoredRow[] = [];
+  const conflitos: CellConflict[] = [];
+  let linhas_lidas = 0;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
     const row = grid[r] ?? [];
     const razao = String(row[0]?.v ?? "").trim();
     if (!razao) continue;
+    linhas_lidas++;
     const razaoU = razao.toUpperCase();
 
     if (razaoU.startsWith("PARTICIPA")) {
@@ -161,8 +205,12 @@ function parseNovo(
     familias.forEach((f, i) => {
       const cell = row[famCols[i]];
       if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
-      const st = statusFromFaixa(cell?.v) ?? statusFromHex(cell?.c);
-      if (st) metas_status[f] = st;
+      const res = resolveCellStatus(cell?.v, cell?.c);
+      if (res.ok) {
+        if (res.status) metas_status[f] = res.status;
+      } else {
+        conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia: f });
+      }
       if (cell?.c) metas_cores[f] = cell.c;
     });
 
@@ -178,14 +226,22 @@ function parseNovo(
     });
   }
 
-  return { familias, categoriaMetas: {}, escala: [], rows, participacao, atingimento, ignoradas };
+  return {
+    familias,
+    categoriaMetas: {},
+    escala: [],
+    rows,
+    participacao,
+    atingimento,
+    ignoradas,
+    linhas_lidas,
+    conflitos,
+    parser_version: PARSER_VERSION,
+  };
 }
 
 // ---------- Formato antigo (mantido para compatibilidade) ----------
-function parseAntigo(
-  grid: { v: any; c: string | null }[][],
-  headerRow: number,
-): ParsedSheet {
+function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
   const familias: string[] = [];
   const famCols: number[] = [];
@@ -216,12 +272,14 @@ function parseAntigo(
 
   const rows: ParsedRow[] = [];
   const ignoradas: IgnoredRow[] = [];
+  let linhas_lidas = 0;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
     const row = grid[r] ?? [];
     const razao = String(row[0]?.v ?? "").trim();
     const categoria = String(row[1]?.v ?? "").trim();
     if (!razao) continue;
+    linhas_lidas++;
     if (isTotalRowName(razao)) {
       ignoradas.push({ razao_social: razao, motivo: "Linha de totalização/legenda" });
       continue;
@@ -236,8 +294,8 @@ function parseAntigo(
       if (typeof cell?.v === "number") metas[f] = cell.v;
       if (cell?.c) {
         metas_cores[f] = cell.c;
-        const st = statusFromHex(cell.c);
-        if (st) metas_status[f] = st;
+        const res = resolveCellStatus(null, cell.c);
+        if (res.ok && res.status) metas_status[f] = res.status;
       }
     });
     const total = typeof row[totalCol]?.v === "number" ? (row[totalCol].v as number) : null;
@@ -253,5 +311,16 @@ function parseAntigo(
     });
   }
 
-  return { familias, categoriaMetas, escala, rows, participacao: null, atingimento: null, ignoradas };
+  return {
+    familias,
+    categoriaMetas,
+    escala,
+    rows,
+    participacao: null,
+    atingimento: null,
+    ignoradas,
+    linhas_lidas,
+    conflitos: [],
+    parser_version: PARSER_VERSION,
+  };
 }
