@@ -49,6 +49,7 @@ import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/back
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
+import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price.tabelas'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price.competidores'
@@ -299,6 +300,12 @@ const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
   path: '/api/public/backup-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSinteseTiposRoute =
+  AuthenticatedSinteseTiposRouteImport.update({
+    id: '/sintese/tipos',
+    path: '/sintese/tipos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRepresentantesPerformanceRoute =
   AuthenticatedRepresentantesPerformanceRouteImport.update({
     id: '/representantes/performance',
@@ -576,6 +583,7 @@ export interface FileRoutesByFullPath {
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -655,6 +663,7 @@ export interface FileRoutesByTo {
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -737,6 +746,7 @@ export interface FileRoutesById {
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -819,6 +829,7 @@ export interface FileRouteTypes {
     | '/price/competidores'
     | '/price/tabelas'
     | '/representantes/performance'
+    | '/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -898,6 +909,7 @@ export interface FileRouteTypes {
     | '/price/competidores'
     | '/price/tabelas'
     | '/representantes/performance'
+    | '/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -979,6 +991,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price/competidores'
     | '/_authenticated/price/tabelas'
     | '/_authenticated/representantes/performance'
+    | '/_authenticated/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1320,6 +1333,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/backup-audit'
       preLoaderRoute: typeof ApiPublicBackupAuditRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/sintese/tipos': {
+      id: '/_authenticated/sintese/tipos'
+      path: '/sintese/tipos'
+      fullPath: '/sintese/tipos'
+      preLoaderRoute: typeof AuthenticatedSinteseTiposRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/representantes/performance': {
       id: '/_authenticated/representantes/performance'
@@ -1705,6 +1725,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
+  AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
   AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
@@ -1745,6 +1766,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
+  AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
   AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
