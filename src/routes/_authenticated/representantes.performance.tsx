@@ -407,7 +407,11 @@ function PerformancePage() {
       });
       if (error) throw error;
 
-      toast.success(`Planilha importada: ${parsed.rows.length} clientes.`);
+      const ign = parsed.ignoradas?.length ?? 0;
+      toast.success(
+        `Planilha importada: ${parsed.rows.length} clientes.` +
+          (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),
+      );
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
       qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
