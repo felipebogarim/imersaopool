@@ -12,6 +12,8 @@ export type FonteInput = {
 
 export type FonteRef = { id: string; nome: string; regiao: string | null; perfil: string | null; tipo: string };
 
+export type Evidencia = { fonteId: string; fonte: string; regiao: string | null; fala: string };
+
 export type ItemConvergencia = {
   texto: string;
   campo: string;
@@ -20,6 +22,7 @@ export type ItemConvergencia = {
   fala_representativa: string | null;
   fontes: FonteRef[];
   reforcada: boolean;
+  evidencias?: Evidencia[];
 };
 export type ItemDivergencia = {
   tema: string;
@@ -44,8 +47,12 @@ export type SinteseResultado = {
     convergencias_fortes: number;
     divergencias: number;
     especificos: number;
+    motor?: string;
+    origem?: string;
+    arquivo?: string;
   };
 };
+
 
 const STOP = new Set([
   "para","com","que","dos","das","the","and","por","uma","como","mais","não","nao","tem","são","sao","está","esta",
