@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,11 @@ import { EmptyState } from "@/components/EmptyState";
 import { FONTE_TIPOS, LENTES, LENTE_DEF, TIPO_LABEL, type FonteTipo, type Lente } from "@/lib/insight-lentes";
 import type { SinteseResultado } from "@/lib/sintese-engine";
 import { gerarPainelSintese } from "@/lib/sintese.functions";
+import { importarAnaliseSintese } from "@/lib/sintese-import.functions";
+import { extractFileText } from "@/lib/sintese-file-text";
+import { exportSintesePdf } from "@/lib/sintese-pdf";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
-import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2 } from "lucide-react";
+import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2, FileDown, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +35,8 @@ export const Route = createFileRoute("/_authenticated/sintese/tipos")({
 function SinteseTipos() {
   const qc = useQueryClient();
   const gerar = useServerFn(gerarPainelSintese);
+  const importar = useServerFn(importarAnaliseSintese);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [tipos, setTipos] = useState<FonteTipo[]>(["entrevista"]);
   const [regiao, setRegiao] = useState<string>("todas");
   const [ativa, setAtiva] = useState<Lente>("marca_preco");
@@ -128,6 +133,38 @@ function SinteseTipos() {
     }
   }
 
+  async function onImportFile(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      toast.info("Lendo arquivo…");
+      const texto = await extractFileText(file);
+      const r = await importar({ data: { tipos, texto, arquivo: file.name } });
+      toast.success(`Análise importada como v${r.versao}. Ela prevalece sobre a consolidação interna.`);
+      qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao importar a análise.");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function exportarPdf() {
+    if (!resultado || !painel) {
+      toast.error("Nenhuma síntese para exportar.");
+      return;
+    }
+    exportSintesePdf({
+      resultado,
+      tipos,
+      geradoEm: painel.gerado_em,
+      versao: painel.versao,
+      regiao,
+      origem: (resultado.meta as any)?.origem ?? null,
+    });
+  }
+
   function relatorioLink(fonteId: string): string | null {
     const f: any = fonteById.get(fonteId);
     if (!f) return null;
@@ -139,15 +176,28 @@ function SinteseTipos() {
   return (
     <TooltipProvider delayDuration={200}>
       <div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.xlsx,.xls,.csv,.docx,.txt,.md"
+          className="hidden"
+          onChange={e => onImportFile(e.target.files?.[0])}
+        />
         <PageHeader
           title="Síntese por tipo"
           subtitle={
             painel
-              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}`
+              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
             <>
+              <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
+                <Upload className="h-4 w-4 mr-1" /> Carregar análise própria
+              </Button>
+              <Button variant="outline" onClick={exportarPdf} disabled={busy || !resultado}>
+                <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
+              </Button>
               <Button variant="outline" onClick={reprocessar} disabled={busy}>
                 <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
               </Button>
@@ -208,7 +258,7 @@ function SinteseTipos() {
             </p>
           ) : null}
 
-          {!elegiveis.length ? (
+          {!elegiveis.length && !resultado ? (
             <EmptyState
               icon={Layers}
               title="Nenhuma fonte processada ainda para este tipo."
