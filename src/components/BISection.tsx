@@ -277,10 +277,39 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
   // Consolidação por família (todas as categorias) para o gráfico de barras.
   // Média ponderada pela meta de cada família dentro de cada categoria.
   const familyChart = useMemo(() => {
+    // Participação estimada: denominador único = soma do índice ponderado de
+    // todas as famílias (todas as categorias). O índice global de cada célula é
+    // participação da família na categoria × participação da categoria no total.
+    if (metric === "participation") {
+      const catShare = new Map<string, number>();
+      for (const c of d?.categorias ?? []) {
+        if (c.participacao != null) catShare.set(c.categoria, c.participacao / 100);
+      }
+      const acc = new Map<string, { name: string; v: number }>();
+      let total = 0;
+      for (const cat of orderedCats) {
+        const list = sharesByCategory[cat] ?? [];
+        const cs =
+          catShare.get(cat) ??
+          list.reduce((s, f) => s + (f.metaTotal ?? 0) * (f.attainmentRatio ?? 1), 0);
+        for (const f of list) {
+          const v = (f.shareRatio ?? 0) * cs;
+          if (!Number.isFinite(v)) continue;
+          const cur = acc.get(f.familyKey) ?? { name: f.familyName, v: 0 };
+          cur.v += v;
+          acc.set(f.familyKey, cur);
+          total += v;
+        }
+      }
+      return [...acc.entries()]
+        .map(([key, v]) => ({ key, name: v.name, ratio: total > 0 ? v.v / total : 0 }))
+        .sort((a, b) => b.ratio - a.ratio);
+    }
+
     const acc = new Map<string, { name: string; num: number; den: number }>();
     for (const cat of orderedCats) {
       for (const f of sharesByCategory[cat] ?? []) {
-        const value = metric === "participation" ? f.shareRatio : f.attainmentRatio;
+        const value = f.attainmentRatio;
         if (value == null || Number.isNaN(value)) continue;
         const w = (f.metaTotal ?? 0) > 0 ? (f.metaTotal as number) : 1;
         const cur = acc.get(f.familyKey) ?? { name: f.familyName, num: 0, den: 0 };
@@ -292,7 +321,8 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     return [...acc.entries()]
       .map(([key, v]) => ({ key, name: v.name, ratio: v.den > 0 ? v.num / v.den : 0 }))
       .sort((a, b) => b.ratio - a.ratio);
-  }, [sharesByCategory, orderedCats, metric]);
+  }, [sharesByCategory, orderedCats, metric, d]);
+
 
   const familyChartMax = useMemo(
     () => Math.max(0.0001, ...familyChart.map((f) => f.ratio)),
@@ -484,7 +514,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   {metric === "participation" ? "participação estimada" : "atingimento da meta"}
                 </div>
                 <div className="text-[11px] text-muted-foreground mb-3">
-                  Consolidado de todas as categorias (média ponderada pela meta da família).
+                  {metric === "participation"
+                    ? "Denominador único: índice ponderado da família ÷ índice ponderado total (soma = 100%)."
+                    : "Consolidado de todas as categorias (média ponderada pela meta da família)."}
+
                 </div>
                 {familyChart.length === 0 ? (
                   <div className="text-sm text-muted-foreground">Sem base para o gráfico.</div>
