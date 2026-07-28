@@ -40,6 +40,7 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authenticated/price.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
+import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenticated/fontes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -249,6 +250,12 @@ const AuthenticatedFormsIndexRoute = AuthenticatedFormsIndexRouteImport.update({
   path: '/forms/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFontesIndexRoute =
+  AuthenticatedFontesIndexRouteImport.update({
+    id: '/fontes/',
+    path: '/fontes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEntrevistasIndexRoute =
   AuthenticatedEntrevistasIndexRouteImport.update({
     id: '/entrevistas/',
@@ -570,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/fontes/': typeof AuthenticatedFontesIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
@@ -647,6 +655,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
+  '/fontes': typeof AuthenticatedFontesIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
@@ -727,6 +736,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
@@ -807,6 +817,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/clientes/'
     | '/entrevistas/'
+    | '/fontes/'
     | '/forms/'
     | '/imersoes/'
     | '/price/'
@@ -884,6 +895,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/clientes'
     | '/entrevistas'
+    | '/fontes'
     | '/forms'
     | '/imersoes'
     | '/price'
@@ -963,6 +975,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
+    | '/_authenticated/fontes/'
     | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/price/'
@@ -1231,6 +1244,13 @@ declare module '@tanstack/react-router' {
       path: '/forms'
       fullPath: '/forms/'
       preLoaderRoute: typeof AuthenticatedFormsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fontes/': {
+      id: '/_authenticated/fontes/'
+      path: '/fontes'
+      fullPath: '/fontes/'
+      preLoaderRoute: typeof AuthenticatedFontesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/entrevistas/': {
@@ -1667,6 +1687,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
+  AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
@@ -1705,6 +1726,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
+  AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
