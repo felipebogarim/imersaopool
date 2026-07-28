@@ -192,6 +192,25 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
     () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
     [d],
   );
+  // Fallback: quando a planilha não traz os destaques prontos, derivamos
+  // do próprio ranking de categorias / grupos do farol já calculado.
+  const maiorCategoria = useMemo(() => {
+    const v = d?.maior_categoria;
+    if (v?.label && v.participacao != null) return v;
+    const top = catsSorted[0];
+    return top
+      ? { label: top.categoria, participacao: top.participacao }
+      : { label: null, participacao: null };
+  }, [d, catsSorted]);
+  const maiorGrupoFarol = useMemo(() => {
+    const v = d?.maior_grupo_farol;
+    if (v?.label && v.participacao != null) return v;
+    const top = (d?.farol ?? [])
+      .slice()
+      .sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0];
+    return top ? { label: top.grupo, participacao: top.participacao } : { label: null, participacao: null };
+  }, [d]);
+
   // Rankings de participação por família — cálculo agora ocorre no banco
   // (função SECURITY DEFINER `compute_bi_shares`) para não expor metas em R$
   // ao cliente. Retorna shareRatio (0..1) por família, agrupado por categoria.
@@ -397,24 +416,25 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por categoria</div>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(d.maior_categoria.label ?? ""))}>
-                      {d.maior_categoria.label ?? "—"}
+                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(maiorCategoria.label ?? ""))}>
+                      {maiorCategoria.label ?? "—"}
                     </span>
-                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_categoria.participacao)}</span>
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(maiorCategoria.participacao)}</span>
                   </div>
                 </div>
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por grupo do farol</div>
                   <div className="mt-1 flex items-baseline gap-2">
                     {(() => {
-                      const k = farolKey(d.maior_grupo_farol.label ?? "");
+                      const k = farolKey(maiorGrupoFarol.label ?? "");
                       return (
                         <span className={cn("inline-flex px-2 py-0.5 rounded text-xs border", k && FAROL_CELL_CLASS[k as FarolStatus])}>
-                          {d.maior_grupo_farol.label ?? "—"}
+                          {maiorGrupoFarol.label ?? "—"}
                         </span>
                       );
                     })()}
-                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(d.maior_grupo_farol.participacao)}</span>
+                    <span className="text-2xl font-semibold tabular-nums">{fmtPct(maiorGrupoFarol.participacao)}</span>
+
                   </div>
                 </div>
               </div>
