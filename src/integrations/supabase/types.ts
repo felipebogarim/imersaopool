@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _seed_payloads: {
-        Row: {
-          done: boolean
-          id: number
-          payload: Json
-        }
-        Insert: {
-          done?: boolean
-          id?: number
-          payload: Json
-        }
-        Update: {
-          done?: boolean
-          id?: number
-          payload?: Json
-        }
-        Relationships: []
-      }
       action_plans: {
         Row: {
           acao: string
@@ -4200,7 +4182,6 @@ export type Database = {
         Returns: string
       }
       require_admin_aal2: { Args: never; Returns: undefined }
-      run_seed_payloads: { Args: never; Returns: Json }
       sec_intrusion_summary: {
         Args: { _hours?: number }
         Returns: {
@@ -4211,7 +4192,6 @@ export type Database = {
           ultimo: string
         }[]
       }
-      seed_performance_upload: { Args: { _payload: Json }; Returns: Json }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
         Returns: string
