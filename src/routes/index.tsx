@@ -89,6 +89,7 @@ function Landing() {
               <p className="text-sm text-muted-foreground">{desc}</p>
             </div>
           ))}
+          </div>
         </section>
       </main>
     </div>
