@@ -258,7 +258,7 @@ function SinteseTipos() {
             </p>
           ) : null}
 
-          {!elegiveis.length ? (
+          {!elegiveis.length && !resultado ? (
             <EmptyState
               icon={Layers}
               title="Nenhuma fonte processada ainda para este tipo."
