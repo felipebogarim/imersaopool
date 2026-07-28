@@ -105,7 +105,16 @@ function CompilacoesPage() {
 
   return (
     <div>
-      <PageHeader title="Compilações IA" subtitle="Sinteses executivas a partir das perspectivas aprovadas." />
+      <PageHeader
+        title="Compilações IA"
+        subtitle="Documento executivo gerado a partir de uma síntese."
+        actions={
+          <Button variant="outline" onClick={handleGenerateFromSintese} disabled={busySintese} className="gap-2">
+            <Layers className="h-4 w-4" />
+            {busySintese ? "Gerando..." : "Gerar a partir do painel de síntese atual"}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-[1fr_1fr_1fr_auto]">
         <div>
