@@ -451,6 +451,7 @@ function PerformancePage() {
         familias: parsed.familias,
         filename: pendingFile.name,
         targets_matrix: targetsMatrix,
+        conflitos: parsed.conflitos ?? [],
         rows: parsed.rows.map((r) => ({
           razao_social: r.razao_social,
           categoria: r.categoria,
