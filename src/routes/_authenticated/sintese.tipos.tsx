@@ -62,6 +62,11 @@ function SinteseTipos() {
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
+  const tiposVazios = useMemo<FonteTipo[]>(
+    () => (tipos.length > 1 ? tipos.filter(t => !fontes.some((f: any) => f.tipo === t)) : []),
+    [tipos, fontes],
+  );
+
   const novas = useMemo(() => {
     if (!painel) return elegiveis;
     const inc = new Set((painel.fontes_incluidas as string[]) ?? []);
