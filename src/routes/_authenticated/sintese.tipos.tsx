@@ -300,51 +300,50 @@ function SinteseTipos() {
                 ))}
               </div>
 
-              <div className="space-y-4">
-                <Bloco titulo="Convergência" cor="teal">
-                  {conv.length === 0 ? <Vazio /> : conv.map((c, i) => (
-                    <div key={i} className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-2">
-                      <div className="flex items-start gap-2">
-                        <p className="text-sm flex-1">{c.texto}</p>
-                        <Badge variant="outline" className="shrink-0">{c.peso} de {c.total}</Badge>
-                        {c.reforcada && <Badge className="shrink-0">reforçada</Badge>}
-                      </div>
-                      {c.fala_representativa && <Fala texto={c.fala_representativa} />}
-                      <Fontes refs={c.fontes} link={relatorioLink} />
+              <div className="space-y-8">
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Convergência</h2>
+                  {conv.length === 0 ? <Vazio /> : (
+                    <div className="space-y-3">
+                      {conv.map((c, i) => <Convergencia key={i} item={c} link={relatorioLink} />)}
                     </div>
-                  ))}
-                </Bloco>
+                  )}
+                </section>
 
-                <Bloco titulo="Divergência" cor="amber">
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold text-amber-600 dark:text-amber-400">Divergência</h2>
                   {div.length === 0 ? <Vazio /> : div.map((d, i) => (
-                    <div key={i} className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+                    <div key={i} className="border-l-2 border-amber-500/60 pl-4 py-1 space-y-3">
                       <p className="text-sm font-medium">{d.tema}</p>
                       {d.posicoes.map((p, j) => (
-                        <div key={j} className="border-l-2 border-amber-500/50 pl-3 space-y-1">
-                          <p className="text-sm">{p.posicao}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.fonte}{p.regiao ? ` · ${p.regiao}` : ""}{" "}
-                            {relatorioLink(p.fonteId) && (
-                              <Link to={relatorioLink(p.fonteId) as any} className="underline">ver relatório</Link>
-                            )}
+                        <div key={j} className="space-y-1">
+                          <p className="text-sm">
+                            <span className="font-medium">{p.fonte}</span>
+                            {p.regiao ? <span className="text-muted-foreground"> · {p.regiao}</span> : null} — {p.posicao}
                           </p>
                           {p.fala && <Fala texto={p.fala} />}
                         </div>
                       ))}
                     </div>
                   ))}
-                </Bloco>
+                </section>
 
-                <Bloco titulo="Específico da região" cor="neutral">
-                  {esp.length === 0 ? <Vazio /> : esp.map((e, i) => (
-                    <div key={i} className="rounded-lg border border-border bg-muted/30 p-3 flex items-start gap-2">
-                      <p className="text-sm flex-1">{e.texto}</p>
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {e.fonte}{e.regiao ? ` · ${e.regiao}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                </Bloco>
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold text-muted-foreground">Específico</h2>
+                  {esp.length === 0 ? <Vazio /> : (
+                    <ul className="space-y-1.5">
+                      {esp.map((e, i) => (
+                        <li key={i} className="text-sm flex flex-wrap gap-x-2">
+                          <span>{e.texto}</span>
+                          <span className="text-xs text-muted-foreground self-center">
+                            {e.fonte}{e.regiao ? ` · ${e.regiao}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
 
                 {lente?.acao_convergente && (
                   <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 flex flex-wrap items-center gap-3">
