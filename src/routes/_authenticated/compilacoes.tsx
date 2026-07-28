@@ -31,12 +31,28 @@ type Escopo = "cliente" | "familia" | "competidor" | "empresa";
 function CompilacoesPage() {
   const qc = useQueryClient();
   const runGenerate = useServerFn(generateCompilation);
+  const runFromSintese = useServerFn(gerarCompilacaoDeSintese);
 
   const [tipo, setTipo] = useState<Tipo>("diagnostico_final");
   const [escopoTipo, setEscopoTipo] = useState<Escopo>("empresa");
   const [escopoRefId, setEscopoRefId] = useState<string>("");
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busySintese, setBusySintese] = useState(false);
+
+  async function handleGenerateFromSintese() {
+    setBusySintese(true);
+    try {
+      const r = await runFromSintese({ data: { painelId: null } });
+      toast.success(`Compilação v${r.versao} criada a partir da síntese (${r.fontes} fontes).`);
+      qc.invalidateQueries({ queryKey: ["compilations"] });
+      setSelected(r.id);
+    } catch (e: any) {
+      toast.error(e?.message ?? String(e));
+    } finally {
+      setBusySintese(false);
+    }
+  }
 
   const { data: compilations = [] } = useQuery({
     queryKey: ["compilations"],
