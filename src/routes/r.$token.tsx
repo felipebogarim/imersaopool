@@ -17,7 +17,16 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/r/$token")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Formulário do Representante — PoolFlux" }] }),
+  head: () => ({
+    meta: [
+      { title: "Formulário do Representante — PoolFlux" },
+      { name: "description", content: "Formulário seguro para o representante registrar percepções de marca, concorrência, oportunidades e ameaças do cliente." },
+      { property: "og:title", content: "Formulário do Representante — PoolFlux" },
+      { property: "og:description", content: "Registre percepções de marca, concorrência, oportunidades e ameaças do cliente por link seguro." },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: PublicRepForm,
 });
 

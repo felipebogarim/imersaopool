@@ -12,7 +12,17 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Entrar — PoolFlux" }] }),
+  head: () => ({
+    meta: [
+      { title: "Entrar — PoolFlux" },
+      { name: "description", content: "Acesse a plataforma PoolFlux para conduzir imersões comerciais, acompanhar performance de representantes e consultar o BI de clientes." },
+      { property: "og:title", content: "Entrar — PoolFlux" },
+      { property: "og:description", content: "Acesse a plataforma PoolFlux para conduzir imersões comerciais e acompanhar performance de representantes." },
+      { property: "og:url", content: "https://poolflux.app/auth" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://poolflux.app/auth" }],
+  }),
   component: AuthPage,
 });
 
