@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, FileText, Download, FileDown } from "lucide-react";
+import { Sparkles, FileText, Download, FileDown, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { exportCompilationPdf, exportCompilationCsv } from "@/lib/export-compilation";
 
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateCompilation } from "@/lib/generate-compilation.functions";
+import { gerarCompilacaoDeSintese } from "@/lib/compilacao-sintese.functions";
 
 export const Route = createFileRoute("/_authenticated/compilacoes")({
   head: () => ({ meta: [{ title: "Compilações IA — PoolFlux" }] }),
