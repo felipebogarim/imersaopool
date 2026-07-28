@@ -5,8 +5,27 @@ import { BrandLogo } from "@/components/Brand";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PoolFlux Imersões Comerciais" },
-      { name: "description", content: "Prepare, conduza e analise imersões comerciais com diagnóstico estratégico gerado por IA." },
+      { title: "PoolFlux — Diagnóstico comercial com IA para imersões" },
+      { name: "description", content: "Transforme visitas comerciais em diagnóstico estratégico: histórico, campo, preços e BI cruzados por IA em um só lugar." },
+      { property: "og:title", content: "PoolFlux — Diagnóstico comercial com IA para imersões" },
+      { property: "og:description", content: "Transforme visitas comerciais em diagnóstico estratégico: histórico, campo, preços e BI cruzados por IA em um só lugar." },
+      { property: "og:url", content: "https://poolflux.app/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://poolflux.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Service",
+          name: "Imersões Comerciais PoolFlux",
+          serviceType: "Diagnóstico comercial com inteligência artificial",
+          url: "https://poolflux.app/",
+          provider: { "@type": "Organization", name: "PoolFlux", url: "https://poolflux.app" },
+          areaServed: "BR",
+        }),
+      },
     ],
   }),
   component: Landing,
@@ -52,7 +71,11 @@ function Landing() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3 pb-24">
+        <section className="pb-24">
+          <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-6">
+            O que a plataforma entrega
+          </h2>
+          <div className="grid gap-4 md:grid-cols-3">
           {[
             { icon: Users, title: "Visão do representante", desc: "Link seguro para o representante preencher percepções por texto, áudio e anexos." },
             { icon: Brain, title: "Diagnóstico com IA", desc: "Cruzamento de histórico, campo e preços competitivos para gerar plano de ação." },
@@ -66,6 +89,7 @@ function Landing() {
               <p className="text-sm text-muted-foreground">{desc}</p>
             </div>
           ))}
+          </div>
         </section>
       </main>
     </div>

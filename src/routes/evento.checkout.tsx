@@ -17,8 +17,12 @@ export const Route = createFileRoute("/evento/checkout")({
   validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [
-      { title: "Garanta sua vaga — Evento Simplesmente Terapias" },
+      { title: "Garanta sua vaga — PoolFlux" },
       { name: "description", content: "Escolha sua experiência e finalize a inscrição via Mercado Pago (Pix ou cartão em até 12x)." },
+      { property: "og:title", content: "Garanta sua vaga — PoolFlux" },
+      { property: "og:description", content: "Escolha sua experiência e finalize a inscrição via Mercado Pago (Pix ou cartão em até 12x)." },
+      { property: "og:url", content: "https://poolflux.app/evento/checkout" },
+      { property: "og:type", content: "website" },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),

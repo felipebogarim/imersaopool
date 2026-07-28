@@ -3,7 +3,17 @@ import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/unsubscribe")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Cancelar assinatura — PoolFlux" }] }),
+  head: () => ({
+    meta: [
+      { title: "Cancelar assinatura de e-mails — PoolFlux" },
+      { name: "description", content: "Cancele o recebimento de e-mails da PoolFlux em poucos segundos usando o link seguro enviado na sua mensagem." },
+      { property: "og:title", content: "Cancelar assinatura de e-mails — PoolFlux" },
+      { property: "og:description", content: "Cancele o recebimento de e-mails da PoolFlux usando o link seguro enviado na sua mensagem." },
+      { property: "og:url", content: "https://poolflux.app/unsubscribe" },
+      { property: "og:type", content: "website" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: UnsubscribePage,
 });
 
