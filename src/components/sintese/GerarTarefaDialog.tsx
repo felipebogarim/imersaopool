@@ -34,18 +34,18 @@ export function GerarTarefaDialog({
     queryFn: async () => {
       const { data: boards } = await supabase
         .from("kanban_boards")
-        .select("id, title")
+        .select("id, name")
         .order("created_at", { ascending: true });
       const ids = (boards ?? []).map(b => b.id);
       if (!ids.length) return [];
       const { data: lists } = await supabase
         .from("kanban_lists")
-        .select("id, title, board_id, position")
+        .select("id, name, board_id, position")
         .in("board_id", ids)
         .order("position", { ascending: true });
       return (lists ?? []).map(l => ({
         ...l,
-        boardTitle: boards?.find(b => b.id === l.board_id)?.title ?? "Quadro",
+        boardTitle: boards?.find(b => b.id === l.board_id)?.name ?? "Quadro",
       }));
     },
   });
@@ -91,7 +91,7 @@ export function GerarTarefaDialog({
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
                 {listas.map((l: any) => (
-                  <SelectItem key={l.id} value={l.id}>{l.boardTitle} · {l.title}</SelectItem>
+                  <SelectItem key={l.id} value={l.id}>{l.boardTitle} · {l.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
