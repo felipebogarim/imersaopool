@@ -1574,6 +1574,109 @@ export type Database = {
           },
         ]
       }
+      insight_fonte_lentes: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          fonte_id: string
+          highlights: Json
+          id: string
+          leitura_estrategica: string | null
+          lente: Database["public"]["Enums"]["insight_lente"]
+          sintese_campos: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          fonte_id: string
+          highlights?: Json
+          id?: string
+          leitura_estrategica?: string | null
+          lente: Database["public"]["Enums"]["insight_lente"]
+          sintese_campos?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          fonte_id?: string
+          highlights?: Json
+          id?: string
+          leitura_estrategica?: string | null
+          lente?: Database["public"]["Enums"]["insight_lente"]
+          sintese_campos?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_fonte_lentes_fonte_id_fkey"
+            columns: ["fonte_id"]
+            isOneToOne: false
+            referencedRelation: "insight_fontes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insight_fontes: {
+        Row: {
+          arquivo_relatorio: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          data_coleta: string | null
+          id: string
+          interview_id: string | null
+          perfil_carteira: string | null
+          pessoa: string | null
+          regiao: string | null
+          status_processamento: Database["public"]["Enums"]["insight_fonte_status"]
+          tipo: Database["public"]["Enums"]["insight_fonte_tipo"]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_relatorio?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_coleta?: string | null
+          id?: string
+          interview_id?: string | null
+          perfil_carteira?: string | null
+          pessoa?: string | null
+          regiao?: string | null
+          status_processamento?: Database["public"]["Enums"]["insight_fonte_status"]
+          tipo?: Database["public"]["Enums"]["insight_fonte_tipo"]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_relatorio?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_coleta?: string | null
+          id?: string
+          interview_id?: string | null
+          perfil_carteira?: string | null
+          pessoa?: string | null
+          regiao?: string | null
+          status_processamento?: Database["public"]["Enums"]["insight_fonte_status"]
+          tipo?: Database["public"]["Enums"]["insight_fonte_tipo"]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_fontes_interview_id_fkey"
+            columns: ["interview_id"]
+            isOneToOne: false
+            referencedRelation: "interviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interviews: {
         Row: {
           cidade: string | null
@@ -2471,6 +2574,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      paineis_sintese: {
+        Row: {
+          company_id: string | null
+          corte_convergencia: number
+          created_at: string
+          created_by: string | null
+          fontes_incluidas: string[]
+          gerado_em: string
+          id: string
+          resultado: Json
+          tipos_incluidos: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          company_id?: string | null
+          corte_convergencia?: number
+          created_at?: string
+          created_by?: string | null
+          fontes_incluidas?: string[]
+          gerado_em?: string
+          id?: string
+          resultado?: Json
+          tipos_incluidos: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          company_id?: string | null
+          corte_convergencia?: number
+          created_at?: string
+          created_by?: string | null
+          fontes_incluidas?: string[]
+          gerado_em?: string
+          id?: string
+          resultado?: Json
+          tipos_incluidos?: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: []
       }
       perf_acoes_sugeridas: {
         Row: {
@@ -4338,6 +4483,21 @@ export type Database = {
         | "diagnostico_gerado"
         | "plano_acao"
         | "concluida"
+      insight_fonte_status: "pendente" | "processada" | "incluida_na_sintese"
+      insight_fonte_tipo:
+        | "entrevista"
+        | "visita_campo"
+        | "voz_loja"
+        | "diretoria"
+      insight_lente:
+        | "marca_preco"
+        | "mix"
+        | "concorrencia"
+        | "argumento"
+        | "decisao"
+        | "oportunidades"
+        | "governanca"
+        | "adicionais"
       kanban_activity_type:
         | "card_created"
         | "card_moved"
@@ -4568,6 +4728,23 @@ export const Constants = {
         "diagnostico_gerado",
         "plano_acao",
         "concluida",
+      ],
+      insight_fonte_status: ["pendente", "processada", "incluida_na_sintese"],
+      insight_fonte_tipo: [
+        "entrevista",
+        "visita_campo",
+        "voz_loja",
+        "diretoria",
+      ],
+      insight_lente: [
+        "marca_preco",
+        "mix",
+        "concorrencia",
+        "argumento",
+        "decisao",
+        "oportunidades",
+        "governanca",
+        "adicionais",
       ],
       kanban_activity_type: [
         "card_created",

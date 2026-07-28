@@ -40,6 +40,7 @@ import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authenticated/price.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
+import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenticated/fontes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -48,6 +49,7 @@ import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/back
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
+import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price.tabelas'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price.competidores'
@@ -55,6 +57,7 @@ import { Route as AuthenticatedPriceComparativosRouteImport } from './routes/_au
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
+import { Route as AuthenticatedFontesIdRouteImport } from './routes/_authenticated/fontes.$id'
 import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
 import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
 import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authenticated/clientes.novo'
@@ -249,6 +252,12 @@ const AuthenticatedFormsIndexRoute = AuthenticatedFormsIndexRouteImport.update({
   path: '/forms/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFontesIndexRoute =
+  AuthenticatedFontesIndexRouteImport.update({
+    id: '/fontes/',
+    path: '/fontes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEntrevistasIndexRoute =
   AuthenticatedEntrevistasIndexRouteImport.update({
     id: '/entrevistas/',
@@ -291,6 +300,12 @@ const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
   path: '/api/public/backup-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSinteseTiposRoute =
+  AuthenticatedSinteseTiposRouteImport.update({
+    id: '/sintese/tipos',
+    path: '/sintese/tipos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRepresentantesPerformanceRoute =
   AuthenticatedRepresentantesPerformanceRouteImport.update({
     id: '/representantes/performance',
@@ -329,6 +344,11 @@ const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
 const AuthenticatedFormsIdRoute = AuthenticatedFormsIdRouteImport.update({
   id: '/forms/$id',
   path: '/forms/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFontesIdRoute = AuthenticatedFontesIdRouteImport.update({
+  id: '/fontes/$id',
+  path: '/fontes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEntrevistasNovaRoute =
@@ -555,6 +575,7 @@ export interface FileRoutesByFullPath {
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -562,6 +583,7 @@ export interface FileRoutesByFullPath {
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -570,6 +592,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/fontes/': typeof AuthenticatedFontesIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
@@ -632,6 +655,7 @@ export interface FileRoutesByTo {
   '/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -639,6 +663,7 @@ export interface FileRoutesByTo {
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -647,6 +672,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
+  '/fontes': typeof AuthenticatedFontesIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
@@ -712,6 +738,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/novo': typeof AuthenticatedClientesNovoRoute
   '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
+  '/_authenticated/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
@@ -719,6 +746,7 @@ export interface FileRoutesById {
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
+  '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -727,6 +755,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
+  '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
@@ -792,6 +821,7 @@ export interface FileRouteTypes {
     | '/clientes/novo'
     | '/entrevistas/$id'
     | '/entrevistas/nova'
+    | '/fontes/$id'
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
@@ -799,6 +829,7 @@ export interface FileRouteTypes {
     | '/price/competidores'
     | '/price/tabelas'
     | '/representantes/performance'
+    | '/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -807,6 +838,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/clientes/'
     | '/entrevistas/'
+    | '/fontes/'
     | '/forms/'
     | '/imersoes/'
     | '/price/'
@@ -869,6 +901,7 @@ export interface FileRouteTypes {
     | '/clientes/novo'
     | '/entrevistas/$id'
     | '/entrevistas/nova'
+    | '/fontes/$id'
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
@@ -876,6 +909,7 @@ export interface FileRouteTypes {
     | '/price/competidores'
     | '/price/tabelas'
     | '/representantes/performance'
+    | '/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -884,6 +918,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/clientes'
     | '/entrevistas'
+    | '/fontes'
     | '/forms'
     | '/imersoes'
     | '/price'
@@ -948,6 +983,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/novo'
     | '/_authenticated/entrevistas/$id'
     | '/_authenticated/entrevistas/nova'
+    | '/_authenticated/fontes/$id'
     | '/_authenticated/forms/$id'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
@@ -955,6 +991,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price/competidores'
     | '/_authenticated/price/tabelas'
     | '/_authenticated/representantes/performance'
+    | '/_authenticated/sintese/tipos'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -963,6 +1000,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
+    | '/_authenticated/fontes/'
     | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/price/'
@@ -1233,6 +1271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/fontes/': {
+      id: '/_authenticated/fontes/'
+      path: '/fontes'
+      fullPath: '/fontes/'
+      preLoaderRoute: typeof AuthenticatedFontesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/entrevistas/': {
       id: '/_authenticated/entrevistas/'
       path: '/entrevistas'
@@ -1289,6 +1334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicBackupAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/sintese/tipos': {
+      id: '/_authenticated/sintese/tipos'
+      path: '/sintese/tipos'
+      fullPath: '/sintese/tipos'
+      preLoaderRoute: typeof AuthenticatedSinteseTiposRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/representantes/performance': {
       id: '/_authenticated/representantes/performance'
       path: '/representantes/performance'
@@ -1336,6 +1388,13 @@ declare module '@tanstack/react-router' {
       path: '/forms/$id'
       fullPath: '/forms/$id'
       preLoaderRoute: typeof AuthenticatedFormsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fontes/$id': {
+      id: '/_authenticated/fontes/$id'
+      path: '/fontes/$id'
+      fullPath: '/fontes/$id'
+      preLoaderRoute: typeof AuthenticatedFontesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/entrevistas/nova': {
@@ -1661,12 +1720,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
   AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRouteWithChildren
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
+  AuthenticatedFontesIdRoute: typeof AuthenticatedFontesIdRoute
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
+  AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
+  AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
@@ -1698,13 +1760,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesNovoRoute: AuthenticatedClientesNovoRoute,
   AuthenticatedEntrevistasIdRoute: AuthenticatedEntrevistasIdRouteWithChildren,
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
+  AuthenticatedFontesIdRoute: AuthenticatedFontesIdRoute,
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
+  AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
+  AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
