@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, famLabel } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
@@ -546,7 +546,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                     {familyChart.map((f) => (
                       <div key={f.key} className="flex items-center gap-2">
                         <span className="w-32 sm:w-44 shrink-0 truncate text-[11px] text-muted-foreground">
-                          {f.name}
+                          {famLabel(f.name)}
                         </span>
                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                           <div
@@ -588,7 +588,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                             {list.map((item, i) => (
                               <li key={`${cat}-min-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
-                                <span className="flex-1 truncate">{item.familyName}</span>
+                                <span className="flex-1 truncate">{famLabel(item.familyName)}</span>
                                 <span className="tabular-nums font-medium">
                                   {fmtShare(metric === "participation" ? item.shareRatio : item.attainmentRatio)}
                                 </span>
@@ -626,7 +626,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                             {list.map((item, i) => (
                               <li key={`${cat}-max-${item.familyKey}`} className="flex items-center justify-between gap-2">
                                 <span className="text-muted-foreground w-4">{i + 1}.</span>
-                                <span className="flex-1 truncate">{item.familyName}</span>
+                                <span className="flex-1 truncate">{famLabel(item.familyName)}</span>
                                 <span className="tabular-nums font-medium">
                                   {fmtShare(metric === "participation" ? item.shareRatio : item.attainmentRatio)}
                                 </span>

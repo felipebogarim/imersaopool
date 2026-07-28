@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, FileText, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
 import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
 import { BISection } from "@/components/BISection";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
@@ -995,7 +995,7 @@ function PerformancePage() {
                             : "bg-transparent text-muted-foreground border-border hover:bg-muted",
                         )}
                       >
-                        {f}
+                        {famLabel(f)}
                       </button>
                     );
                   })}
@@ -1037,7 +1037,7 @@ function PerformancePage() {
                   <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Atingimento %</th>
                   {visibleFams.map((f) => (
                     <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
-                      {f}
+                      {famLabel(f)}
                     </th>
                   ))}
                 </tr>
