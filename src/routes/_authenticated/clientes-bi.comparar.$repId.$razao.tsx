@@ -303,9 +303,9 @@ function CompararPerfilPage() {
                       <Tooltip formatter={(v: any) => formatPct(v as number)} />
                       <Legend />
                       <ReferenceLine x={100} stroke="#94a3b8" strokeDasharray="4 4" />
-                      <Bar dataKey="Cliente" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="Cliente" fill="var(--primary)" radius={[0, 4, 4, 0]} />
                       {!result.soCliente && (
-                        <Bar dataKey={mediaKey} fill="hsl(var(--muted-foreground))" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey={mediaKey} fill="var(--chart-compare)" radius={[0, 4, 4, 0]} />
                       )}
                     </BarChart>
                   </ResponsiveContainer>
