@@ -69,7 +69,7 @@ function PublicForm() {
     <PublicShell>
       <Card>
         <CardHeader>
-          <CardTitle asChild><h1>{data.title}</h1></CardTitle>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">{data.title}</h1>
         </CardHeader>
         <CardContent>
           {sent ? (
