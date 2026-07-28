@@ -66,17 +66,26 @@ export function exportSintesePdf({ resultado, tipos, geradoEm, versao, regiao, o
     text("Convergência", 10, "bold", [5, 150, 105]);
     if (!r.convergencia?.length) text("—", 9, "italic", [156, 163, 175], 10);
     for (const c of r.convergencia ?? []) {
-      text(`• ${c.texto} (${c.peso} de ${c.total})`, 9.5, "normal", [31, 41, 55], 10);
-      if (c.fala_representativa) text(`“${c.fala_representativa}”`, 9, "italic", [107, 114, 128], 22);
+      text(`• ${c.texto}`, 10, "bold", [17, 24, 39], 10);
+      text(`${c.peso} de ${c.total} fontes${c.reforcada ? " · reforçada por perfis diferentes" : ""}`, 8, "normal", [107, 114, 128], 22);
+      const evs = c.evidencias?.length
+        ? c.evidencias
+        : c.fala_representativa
+          ? [{ fonte: c.fontes?.[0]?.nome ?? "", regiao: c.fontes?.[0]?.regiao ?? null, fala: c.fala_representativa }]
+          : [];
+      for (const e of evs) {
+        text(`“${e.fala}” — ${e.fonte}${e.regiao ? ` · ${e.regiao}` : ""}`, 9, "italic", [107, 114, 128], 22);
+      }
       if (c.fontes?.length)
         text(c.fontes.map(f => `${f.nome}${f.regiao ? ` · ${f.regiao}` : ""}`).join(" | "), 8, "normal", [156, 163, 175], 22);
+      y += 2;
     }
 
     y += 4;
     text("Divergência", 10, "bold", [180, 83, 9]);
     if (!r.divergencia?.length) text("—", 9, "italic", [156, 163, 175], 10);
     for (const d of r.divergencia ?? []) {
-      text(`• ${d.tema}`, 9.5, "normal", [31, 41, 55], 10);
+      text(`• ${d.tema}`, 9.5, "bold", [31, 41, 55], 10);
       for (const p of d.posicoes ?? []) {
         text(`– ${p.fonte}${p.regiao ? ` (${p.regiao})` : ""}: ${p.posicao}`, 9, "normal", [55, 65, 81], 22);
         if (p.fala) text(`“${p.fala}”`, 9, "italic", [107, 114, 128], 32);
@@ -84,11 +93,12 @@ export function exportSintesePdf({ resultado, tipos, geradoEm, versao, regiao, o
     }
 
     y += 4;
-    text("Específico da região", 10, "bold", [71, 85, 105]);
+    text("Específico", 10, "bold", [71, 85, 105]);
     if (!r.especifico?.length) text("—", 9, "italic", [156, 163, 175], 10);
     for (const e of r.especifico ?? []) {
       text(`• ${e.texto} — ${e.fonte}${e.regiao ? ` · ${e.regiao}` : ""}`, 9, "normal", [55, 65, 81], 10);
     }
+
 
     if (r.acao_convergente) {
       y += 4;
