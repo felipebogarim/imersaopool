@@ -182,7 +182,13 @@ function SinteseTipos() {
             </div>
           </div>
 
-          {novas.length > 0 ? (
+          {tiposVazios.length > 0 && (
+            <p className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              Ainda não há fontes do tipo {tiposVazios.map(t => TIPO_LABEL[t]).join(", ")}. Adicione fontes desse tipo para cruzar.
+            </p>
+          )}
+
+          {elegiveis.length > 0 && novas.length > 0 ? (
             <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex flex-wrap items-center gap-3">
               <Sparkles className="h-4 w-4 text-primary" />
               <p className="text-sm">
@@ -197,11 +203,23 @@ function SinteseTipos() {
             </p>
           ) : null}
 
-          {!resultado ? (
+          {!elegiveis.length ? (
+            <EmptyState
+              icon={Layers}
+              title="Nenhuma fonte processada ainda para este tipo."
+              description="Traga as entrevistas já existentes para o modelo de fontes e a síntese passa a funcionar."
+              action={
+                <Button onClick={reprocessar} disabled={busy}>
+                  <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
+                </Button>
+              }
+            />
+          ) : !resultado ? (
             <EmptyState
               icon={Layers}
               title="Sem síntese para esta seleção"
-              description="Escolha os tipos de fonte e clique em Atualizar análise para consolidar as 8 lentes."
+              description={`${elegiveis.length} fonte(s) pronta(s). Clique em Atualizar análise para consolidar as 8 lentes.`}
+              action={<Button onClick={atualizar} disabled={busy}>Atualizar análise</Button>}
             />
           ) : (
             <>
