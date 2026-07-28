@@ -375,16 +375,59 @@ function PerformancePage() {
       return;
     }
     setBusy(true);
+    const audit: Record<string, any> = {
+      representative_id: repId,
+      periodo_label: periodoLabel.trim(),
+      periodo_inicio: periodoInicio || null,
+      periodo_fim: periodoFim || null,
+      filename: pendingFile.name,
+    };
+    const logAudit = async () => {
+      try {
+        await (supabase as any).rpc("log_performance_import", { _payload: audit });
+      } catch (err) {
+        console.error("Falha ao registrar auditoria de importação", err);
+      }
+    };
     try {
       const buf = await pendingFile.arrayBuffer();
+      audit.file_hash = await sha256Hex(buf);
       const parsed = await parseWorkbook(buf);
+      audit.parser_version = parsed.parser_version;
+      audit.linhas_lidas = parsed.linhas_lidas;
+      audit.clientes_validos = parsed.rows.length;
+      audit.linhas_ignoradas = parsed.ignoradas?.length ?? 0;
+      audit.descartes = parsed.ignoradas ?? [];
+      audit.familias = parsed.familias;
+      audit.categorias = Array.from(
+        new Set(parsed.rows.map((r) => r.categoria).filter(Boolean) as string[]),
+      );
+      audit.matriz_erros = parsed.matriz_erros ?? [];
+      audit.divergencias_texto_cor = parsed.conflitos?.length ?? 0;
+      audit.divergencias = (parsed.conflitos ?? []).slice(0, 50);
+      audit.matriz_status = !parsed.matriz
+        ? "ausente"
+        : parsed.matriz_erros.length
+          ? "invalida"
+          : "valida";
+
+      // 1) Divergência entre faixa textual e cor interrompe a importação.
+      if (parsed.conflitos?.length) {
+        const head = parsed.conflitos.slice(0, 3).map(conflictMessage).join("\n");
+        throw new Error(
+          `${head}${parsed.conflitos.length > 3 ? `\n(+${parsed.conflitos.length - 3} divergência(s))` : ""}`,
+        );
+      }
+      // 2) Matriz financeira presente porém inválida também interrompe.
+      if (parsed.matriz && parsed.matriz_erros.length) {
+        throw new Error(parsed.matriz_erros.slice(0, 3).join("\n"));
+      }
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada na planilha.");
 
       const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
-      const targetsMatrix = (cm.__family_metas_by_category__ ?? {}) as Record<
-        string,
-        Record<string, number>
-      >;
+      const targetsMatrix =
+        parsed.matriz?.matriz ??
+        ((cm.__family_metas_by_category__ ?? {}) as Record<string, Record<string, number>>);
 
       const payload = {
         representative_id: repId,
@@ -407,6 +450,10 @@ function PerformancePage() {
       });
       if (error) throw error;
 
+      audit.status = "sucesso";
+      audit.upload_id = data?.upload_id ?? null;
+      await logAudit();
+
       const ign = parsed.ignoradas?.length ?? 0;
       toast.success(
         `Planilha importada: ${parsed.rows.length} clientes.` +
@@ -418,11 +465,15 @@ function PerformancePage() {
       if (data?.upload_id) setUploadId(data.upload_id);
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ?? "Erro ao importar planilha.");
+      audit.status = audit.divergencias_texto_cor || audit.matriz_status === "invalida" ? "rejeitada" : "erro";
+      audit.mensagem = String(e?.message ?? e);
+      await logAudit();
+      toast.error(audit.mensagem || "Erro ao importar planilha.");
     } finally {
       setBusy(false);
     }
   }
+
 
 
   async function handleDelete() {
