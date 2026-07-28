@@ -514,7 +514,10 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                   {metric === "participation" ? "participação estimada" : "atingimento da meta"}
                 </div>
                 <div className="text-[11px] text-muted-foreground mb-3">
-                  Consolidado de todas as categorias (média ponderada pela meta da família).
+                  {metric === "participation"
+                    ? "Denominador único: índice ponderado da família ÷ índice ponderado total (soma = 100%)."
+                    : "Consolidado de todas as categorias (média ponderada pela meta da família)."}
+
                 </div>
                 {familyChart.length === 0 ? (
                   <div className="text-sm text-muted-foreground">Sem base para o gráfico.</div>
