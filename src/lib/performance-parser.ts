@@ -137,11 +137,17 @@ function parseNovo(
       atingimento = out;
       continue;
     }
-    if (razaoU.startsWith("TOTAL")) continue; // linha "TOTAL GERAL DA META"
-    if (razaoU.startsWith("ESTIMATIVA")) continue; // rodapé explicativo
-    if (razaoU === "FAIXA %" || razaoU === "FAIXA%") continue;
+    // Nunca importar totais, subtotais, legendas ou rodapés como cliente
+    if (isTotalRowName(razao)) {
+      ignoradas.push({ razao_social: razao, motivo: "Linha de totalização/legenda" });
+      continue;
+    }
 
     const categoria = String(row[1]?.v ?? "").trim();
+    if (!isClientRow({ razao_social: razao, categoria })) {
+      ignoradas.push({ razao_social: razao, motivo: "Categoria ausente ou inválida" });
+      continue;
+    }
     const total_meta = typeof row[2]?.v === "number" ? (row[2].v as number) : null;
     const total_pct_status = statusFromFaixa(row[3]?.v);
 
