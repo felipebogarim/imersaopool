@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isClientRow } from "./client-row-filter";
 
 type SheetPayload = {
   filename: string;
@@ -162,5 +163,7 @@ ${JSON.stringify(compact).slice(0, 180000)}`;
     parsed.categoria_metas =
       parsed.categoria_metas && typeof parsed.categoria_metas === "object" ? parsed.categoria_metas : {};
     parsed.rows = Array.isArray(parsed.rows) ? parsed.rows : [];
+    // Descarta linhas de totalização/legenda e sem categoria — nunca são clientes.
+    parsed.rows = parsed.rows.filter((r: any) => isClientRow(r));
     return parsed;
   });

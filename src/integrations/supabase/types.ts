@@ -4102,6 +4102,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      is_total_row: { Args: { _name: string }; Returns: boolean }
       kanban_can_access_board: {
         Args: { _board_id: string; _user_id: string }
         Returns: boolean
