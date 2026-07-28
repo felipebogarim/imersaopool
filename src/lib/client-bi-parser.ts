@@ -1,79 +1,39 @@
 import * as XLSX from "xlsx";
-import { FAROL_LABEL, FAROL_ORDER, statusFromPercent, type FarolStatus } from "./performance-farol";
+import {
+  CANONICAL_ORDER,
+  buildBI,
+  clientBiErrorMessage,
+  isCanonicalFamily,
+  normalizeFamilyName,
+  normalizeText as normalize,
+  normalizeTrafficLightGroup,
+  validateFamilias,
+  farolFromAtingimento,
+  deriveFamiliasItens,
+  type ClientBIData,
+  type ClientFamiliasData,
+  type FamiliaResultado,
+} from "./client-bi-familias";
 
-// ============= Types =============
+// Reexporta a fonte única de verdade para consumidores antigos.
+export {
+  CANONICAL_FAMILIES,
+  CANONICAL_ORDER,
+  calculateBestFamily,
+  calculateWorstFamily,
+  calculateTrafficLightDistribution,
+  deriveFamiliasItens,
+  getFamiliasCliente,
+  isCanonicalFamily,
+  normalizeFamilyName,
+  normalizeTrafficLightGroup,
+  validateFamilias,
+  validateClientBI,
+} from "./client-bi-familias";
+export type { ClientBIData, ClientFamiliasData, FamiliaResultado } from "./client-bi-familias";
 
-export type FamiliaResultado = {
-  familia: string;
-  atingimento: number | null; // decimal (0..>1) ou percent (0..>100) — sempre preservamos 0
-  participacao?: number | null; // decimal 0..1
-  farol: string | null;
-};
+void CANONICAL_ORDER;
 
-export type ClientBIData = {
-  geral: number | null; // decimal 0..>1
-  categoria: string | null;
-  familias: FamiliaResultado[];
-  melhor_familia: { label: string | null; atingimento: number | null };
-  pior_familia: { label: string | null; atingimento: number | null };
-  distribuicao_farol: Array<{ grupo: string; quantidade: number }>;
-};
-
-export type ClientFamiliasData = { itens: FamiliaResultado[] };
-
-// ============= Famílias canônicas =============
-
-export const CANONICAL_FAMILIES = [
-  "DECOR NEWLINE",
-  "DECOR STUDIO",
-  "SISTEMAS E MÓDULOS",
-  "PRO LED",
-  "PRO LAMP",
-  "PERFIL",
-  "FITAS E FONTES",
-] as const;
-
-const CANONICAL_ORDER: Record<string, number> = Object.fromEntries(
-  CANONICAL_FAMILIES.map((f, i) => [f, i]),
-);
-
-const normalize = (s: unknown): string =>
-  String(s ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .toUpperCase()
-    .trim();
-
-const CANONICAL_BY_NORM: Record<string, string> = (() => {
-  const m: Record<string, string> = {};
-  for (const f of CANONICAL_FAMILIES) m[normalize(f)] = f;
-  // aliases
-  m["SISTEMAS E MODULOS"] = "SISTEMAS E MÓDULOS";
-  return m;
-})();
-
-export function normalizeFamilyName(v: unknown): string | null {
-  const n = normalize(v);
-  return CANONICAL_BY_NORM[n] ?? null;
-}
-
-export function isCanonicalFamily(v: unknown): boolean {
-  return normalizeFamilyName(v) !== null;
-}
-
-const FAROL_BY_NORM: Record<string, FarolStatus> = (() => {
-  const m: Record<string, FarolStatus> = {};
-  for (const k of FAROL_ORDER) m[normalize(FAROL_LABEL[k])] = k;
-  return m;
-})();
-
-export function normalizeTrafficLightGroup(v: unknown): string | null {
-  const n = normalize(v);
-  if (!n) return null;
-  const k = FAROL_BY_NORM[n];
-  return k ? FAROL_LABEL[k] : null;
-}
 
 // ============= Helpers =============
 
@@ -135,76 +95,11 @@ function isStopMarker(cell: unknown): boolean {
 }
 
 // ============= Cálculos =============
+// Toda a lógica de cálculo/validação vive em ./client-bi-familias (fonte única).
 
-export function calculateBestFamily(fams: FamiliaResultado[]): FamiliaResultado | null {
-  if (!fams.length) return null;
-  return fams.slice().sort((a, b) => {
-    const ar = a.atingimento ?? -Infinity;
-    const br = b.atingimento ?? -Infinity;
-    if (br !== ar) return br - ar;
-    const ap = a.participacao ?? -Infinity;
-    const bp = b.participacao ?? -Infinity;
-    if (bp !== ap) return bp - ap;
-    return (CANONICAL_ORDER[a.familia] ?? 99) - (CANONICAL_ORDER[b.familia] ?? 99);
-  })[0];
-}
+/** @deprecated use validateFamilias */
+export const validateSevenFamilies = validateFamilias;
 
-export function calculateWorstFamily(fams: FamiliaResultado[]): FamiliaResultado | null {
-  if (!fams.length) return null;
-  return fams.slice().sort((a, b) => {
-    const ar = a.atingimento ?? Infinity;
-    const br = b.atingimento ?? Infinity;
-    if (ar !== br) return ar - br;
-    const ap = a.participacao ?? Infinity;
-    const bp = b.participacao ?? Infinity;
-    if (ap !== bp) return ap - bp;
-    return (CANONICAL_ORDER[a.familia] ?? 99) - (CANONICAL_ORDER[b.familia] ?? 99);
-  })[0];
-}
-
-export function calculateTrafficLightDistribution(
-  fams: FamiliaResultado[],
-): Array<{ grupo: string; quantidade: number }> {
-  const counts = new Map<string, number>();
-  for (const f of fams) {
-    const g = normalizeTrafficLightGroup(f.farol);
-    if (!g) continue;
-    counts.set(g, (counts.get(g) ?? 0) + 1);
-  }
-  return Array.from(counts.entries()).map(([grupo, quantidade]) => ({ grupo, quantidade }));
-}
-
-export function validateSevenFamilies(fams: FamiliaResultado[]): string | null {
-  if (fams.length !== 7) return `Esperado 7 famílias, encontradas ${fams.length}.`;
-  const seen = new Set<string>();
-  for (const f of fams) {
-    if (!isCanonicalFamily(f.familia)) return `Família desconhecida: ${f.familia}`;
-    if (seen.has(f.familia)) return `Família duplicada: ${f.familia}`;
-    seen.add(f.familia);
-  }
-  return null;
-}
-
-function buildBI(
-  categoria: string | null,
-  geral: number | null,
-  familias: FamiliaResultado[],
-): ClientBIData {
-  const best = calculateBestFamily(familias);
-  const worst = calculateWorstFamily(familias);
-  return {
-    geral,
-    categoria,
-    familias,
-    melhor_familia: best
-      ? { label: best.familia, atingimento: best.atingimento }
-      : { label: null, atingimento: null },
-    pior_familia: worst
-      ? { label: worst.familia, atingimento: worst.atingimento }
-      : { label: null, atingimento: null },
-    distribuicao_farol: calculateTrafficLightDistribution(familias),
-  };
-}
 
 // ============= 1) BI POR CLIENTE — Índice + abas =============
 // Índice: ID | CLIENTE | CATEGORIA | ATINGIMENTO GERAL | ABA
@@ -300,11 +195,7 @@ function parseBiPorCliente(
     if (!ws) continue;
     const { familias, geralFallback, categoriaFallback } = parseBiClientSheet(ws);
     const err = validateSevenFamilies(familias);
-    if (err) {
-      // eslint-disable-next-line no-console
-      console.warn(`[BI] ${row.cliente} (${row.aba}): ${err}`);
-      continue;
-    }
+    if (err) throw new Error(clientBiErrorMessage(row.cliente, err));
     out.push({
       razao_social: row.cliente,
       data: buildBI(row.categoria ?? categoriaFallback, row.geral ?? geralFallback, familias),
@@ -400,11 +291,9 @@ function parseGrafClientSheet(ws: XLSX.WorkSheet): {
 }
 
 function statusToLabel(decimal: number | null): string | null {
-  if (decimal == null) return null;
-  const pct = Math.abs(decimal) <= 1.5 ? decimal * 100 : decimal;
-  const st = statusFromPercent(pct);
-  return st ? FAROL_LABEL[st] : null;
+  return farolFromAtingimento(decimal);
 }
+
 
 function parseGrafPorCliente(
   wb: XLSX.WorkBook,
@@ -419,11 +308,7 @@ function parseGrafPorCliente(
     if (!ws) continue;
     const { familias, geral, categoria } = parseGrafClientSheet(ws);
     const err = validateSevenFamilies(familias);
-    if (err) {
-      // eslint-disable-next-line no-console
-      console.warn(`[Gráfico] ${row.cliente} (${row.aba}): ${err}`);
-      continue;
-    }
+    if (err) throw new Error(clientBiErrorMessage(row.cliente, err));
     out.push({
       razao_social: row.cliente,
       data: buildBI(row.categoria ?? categoria, row.geral ?? geral, familias),
@@ -484,11 +369,7 @@ function parseDadosGraficoLong(
     const out: Array<{ razao_social: string; data: ClientBIData }> = [];
     for (const g of groups.values()) {
       const err = validateSevenFamilies(g.familias);
-      if (err) {
-        // eslint-disable-next-line no-console
-        console.warn(`[Long] ${g.cliente}: ${err}`);
-        continue;
-      }
+      if (err) throw new Error(clientBiErrorMessage(g.cliente, err));
       out.push({ razao_social: g.cliente, data: buildBI(g.categoria, g.geral, g.familias) });
     }
     if (out.length) return out;
@@ -554,11 +435,7 @@ function parseBaseLong(
     const out: Array<{ razao_social: string; data: ClientBIData }> = [];
     for (const g of groups.values()) {
       const err = validateSevenFamilies(g.familias);
-      if (err) {
-        // eslint-disable-next-line no-console
-        console.warn(`[Base] ${g.cliente}: ${err}`);
-        continue;
-      }
+      if (err) throw new Error(clientBiErrorMessage(g.cliente, err));
       const geral = g.totalMeta > 0 ? g.totalPonderado / g.totalMeta : null;
       out.push({ razao_social: g.cliente, data: buildBI(g.categoria, geral, g.familias) });
     }
@@ -588,24 +465,18 @@ export function parseClientBiWorkbook(buf: ArrayBuffer): Array<{
   throw new Error("Formato de planilha não reconhecido para BI por cliente.");
 }
 
+/**
+ * `familias.itens` NUNCA é montado por lógica própria: é sempre derivado do BI
+ * canônico (bi.familias), garantindo fonte única entre cards e gráfico.
+ */
 export function parseFamilyChartWorkbook(buf: ArrayBuffer): Array<{
   razao_social: string;
   data: ClientFamiliasData;
 }> {
-  const wb = XLSX.read(buf, { type: "array" });
-  // 1) Gráficos de barras — Índice + abas
-  const g = parseGrafPorCliente(wb);
-  if (g && g.length) return g.map((it) => ({ razao_social: it.razao_social, data: { itens: it.data.familias } }));
-  // 2) "Dados para gráfico" (long)
-  const l = parseDadosGraficoLong(wb);
-  if (l && l.length) return l.map((it) => ({ razao_social: it.razao_social, data: { itens: it.data.familias } }));
-  // 3) BI canônico — reaproveita famílias
-  const bi = parseBiPorCliente(wb);
-  if (bi && bi.length) return bi.map((it) => ({ razao_social: it.razao_social, data: { itens: it.data.familias } }));
-  const base = parseBaseLong(wb);
-  if (base && base.length) return base.map((it) => ({ razao_social: it.razao_social, data: { itens: it.data.familias } }));
-  throw new Error("Formato de planilha não reconhecido para resultado por família.");
+  const items = parseClientBiWorkbook(buf);
+  return items.map((it) => ({ razao_social: it.razao_social, data: deriveFamiliasItens(it.data) }));
 }
+
 
 // ============= Backwards-compat exports =============
 // (Mantém os nomes usados pelo ClientBIBatchUpload atual.)
