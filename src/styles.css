@@ -120,6 +120,8 @@
   --primary: oklch(0.82 0.16 215);
   --primary-foreground: oklch(0.15 0.03 245);
 
+  --chart-compare: oklch(0.78 0.15 62);
+
   --secondary: oklch(0.26 0.03 245);
   --secondary-foreground: oklch(0.98 0.005 240);
 
