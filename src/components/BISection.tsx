@@ -522,7 +522,7 @@ export function BISection({ repId, repName }: { repId: string; repName: string }
                 </div>
                 <span className="text-[11px] text-muted-foreground">
                   {metric === "participation"
-                    ? "Participação de cada família no resultado ponderado total."
+                    ? "Participação de cada família no resultado ponderado total do representante."
                     : "Quanto cada família atingiu da meta financeira estabelecida."}
                 </span>
               </div>
