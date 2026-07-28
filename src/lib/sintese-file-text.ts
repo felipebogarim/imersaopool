@@ -21,7 +21,7 @@ export async function extractFileText(file: File): Promise<string> {
   }
 
   if (ext === "docx") {
-    const mammoth = await import("mammoth/mammoth.browser.js");
+    const mammoth: any = await import(/* @vite-ignore */ "mammoth/mammoth.browser.js" as string);
     const buf = await file.arrayBuffer();
     const r = await (mammoth as any).extractRawText({ arrayBuffer: buf });
     return r.value as string;
