@@ -4417,6 +4417,7 @@ export type Database = {
         Args: { _session_id?: string; _user_agent?: string }
         Returns: string
       }
+      reprocessar_fontes_entrevistas: { Args: never; Returns: Json }
       require_admin_aal2: { Args: never; Returns: undefined }
       sec_intrusion_summary: {
         Args: { _hours?: number }
