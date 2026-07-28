@@ -113,7 +113,7 @@ const FAROL_FAIXAS: Array<{ label: string; test: (p: number) => boolean }> = [
   { label: "Sem compra", test: (p) => p === 0 },
   { label: "Abaixo da meta", test: (p) => p > 0 && p < 50 },
   { label: "Pode melhorar", test: (p) => p >= 50 && p < 70 },
-  { label: "Próximo da meta", test: (p) => p >= 70 && p < 90 },
+  { label: "Próximo", test: (p) => p >= 70 && p < 90 },
   { label: "Ótimo", test: (p) => p >= 90 && p <= 100 },
   { label: "Excelente", test: (p) => p > 100 },
 ];
@@ -145,7 +145,7 @@ const normalizeFarolLabel = (raw: string | null, pct: number | null): string | n
   if (r.includes("sem")) return "Sem compra";
   if (r.includes("abaixo") || r.startsWith("50")) return "Abaixo da meta";
   if (r.includes("melhorar")) return "Pode melhorar";
-  if (r.includes("proximo")) return "Próximo da meta";
+  if (r.includes("proximo")) return "Próximo";
   if (r.includes("otimo")) return "Ótimo";
   if (r.includes("excelente")) return "Excelente";
   return farolFromPct(pct);
