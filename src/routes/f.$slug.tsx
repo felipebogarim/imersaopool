@@ -69,7 +69,7 @@ function PublicForm() {
     <PublicShell>
       <Card>
         <CardHeader>
-          <CardTitle>{data.title}</CardTitle>
+          <CardTitle asChild><h1>{data.title}</h1></CardTitle>
         </CardHeader>
         <CardContent>
           {sent ? (
