@@ -434,10 +434,10 @@ export function buildProfileComparison(params: {
     maiorLacuna = null;
     destaquesMensagem = "Desempenho alinhado à média em todas as famílias.";
   } else if (todasAcima) {
-    maiorLacuna = null;
+    // Não existe lacuna: o segundo card vira "Ponto de menor diferenciação".
     destaquesMensagem = "Ponto de menor diferenciação";
   } else if (todasAbaixo) {
-    maiorVantagem = null;
+    // Não existe vantagem: o primeiro card vira "Resultado mais próximo da média".
     destaquesMensagem = "Resultado mais próximo da média";
   }
 
