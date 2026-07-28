@@ -48,9 +48,17 @@ export const gerarPainelSintese = createServerFn({ method: "POST" })
       };
     });
 
-    const base = consolidar(entrada, data.corte ?? undefined);
-    const { refinarComIA } = await import("@/lib/sintese-refine.server");
-    const resultado = await refinarComIA(base);
+    // Motor v2: clustering semântico por tema via IA. Fallback determinístico
+    // apenas se a IA falhar por completo (sem chave, indisponível, JSON inválido).
+    const { clusterizar } = await import("@/lib/sintese-cluster.server");
+    let resultado = await clusterizar(entrada, data.corte ?? undefined);
+    if (!resultado) {
+      const base = consolidar(entrada, data.corte ?? undefined);
+      const { refinarComIA } = await import("@/lib/sintese-refine.server");
+      resultado = await refinarComIA(base);
+      resultado.meta.motor = "deterministico";
+    }
+
 
     const { data: anterior } = await supabase
       .from("paineis_sintese")
