@@ -13,7 +13,7 @@ import { FONTE_TIPOS, LENTES, LENTE_DEF, TIPO_LABEL, type FonteTipo, type Lente 
 import type { SinteseResultado } from "@/lib/sintese-engine";
 import { gerarPainelSintese } from "@/lib/sintese.functions";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
-import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote } from "lucide-react";
+import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -142,9 +142,14 @@ function SinteseTipos() {
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
-            <Button onClick={atualizar} disabled={busy}>
-              <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
-            </Button>
+            <>
+              <Button variant="outline" onClick={reprocessar} disabled={busy}>
+                <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
+              </Button>
+              <Button onClick={atualizar} disabled={busy || !elegiveis.length}>
+                <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
+              </Button>
+            </>
           }
         />
 
