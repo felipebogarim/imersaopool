@@ -35,6 +35,8 @@ export const Route = createFileRoute("/_authenticated/sintese/tipos")({
 function SinteseTipos() {
   const qc = useQueryClient();
   const gerar = useServerFn(gerarPainelSintese);
+  const importar = useServerFn(importarAnaliseSintese);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [tipos, setTipos] = useState<FonteTipo[]>(["entrevista"]);
   const [regiao, setRegiao] = useState<string>("todas");
   const [ativa, setAtiva] = useState<Lente>("marca_preco");
