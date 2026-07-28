@@ -89,6 +89,7 @@ import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_aut
 import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.$repId.$razao'
 import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
 import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
+import { Route as AuthenticatedClientesBiCompararRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.comparar.$repId.$razao'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -532,6 +533,12 @@ const ApiPublicMpTestCreatePreferenceRoute =
     path: '/api/public/mp/test/create-preference',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedClientesBiCompararRepIdRazaoRoute =
+  AuthenticatedClientesBiCompararRepIdRazaoRouteImport.update({
+    id: '/clientes-bi/comparar/$repId/$razao',
+    path: '/clientes-bi/comparar/$repId/$razao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -611,6 +618,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -691,6 +699,7 @@ export interface FileRoutesByTo {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -774,6 +783,7 @@ export interface FileRoutesById {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
 }
@@ -857,6 +867,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -937,6 +948,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   id:
@@ -1019,6 +1031,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/_authenticated/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
   fileRoutesById: FileRoutesById
@@ -1614,6 +1627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpTestCreatePreferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/clientes-bi/comparar/$repId/$razao': {
+      id: '/_authenticated/clientes-bi/comparar/$repId/$razao'
+      path: '/clientes-bi/comparar/$repId/$razao'
+      fullPath: '/clientes-bi/comparar/$repId/$razao'
+      preLoaderRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -1737,6 +1757,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
+  AuthenticatedClientesBiCompararRepIdRazaoRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1779,6 +1800,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedClientesBiRepIdRazaoRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
+  AuthenticatedClientesBiCompararRepIdRazaoRoute:
+    AuthenticatedClientesBiCompararRepIdRazaoRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
