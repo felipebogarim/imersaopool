@@ -68,6 +68,8 @@ export type ProfileComparison = {
   familias: FamilyComparison[];
   maiorVantagem: FamilyComparison | null;
   maiorLacuna: FamilyComparison | null;
+  vantagemLabel: string | null;
+  lacunaLabel: string | null;
   destaquesMensagem: string | null;
   farol: FarolDistributionItem[];
   leituraExecutiva: string;
@@ -382,6 +384,8 @@ export function buildProfileComparison(params: {
     familias: [],
     maiorVantagem: null,
     maiorLacuna: null,
+    vantagemLabel: null,
+    lacunaLabel: null,
     destaquesMensagem: null,
     farol: [],
     leituraExecutiva: "",
@@ -429,16 +433,22 @@ export function buildProfileComparison(params: {
   let maiorVantagem = getLargestAdvantage(familias);
   let maiorLacuna = getLargestGap(familias);
   let destaquesMensagem: string | null = null;
+  let vantagemLabel: string | null = "Maior vantagem";
+  let lacunaLabel: string | null = "Maior lacuna";
   if (todasIguais) {
     maiorVantagem = null;
     maiorLacuna = null;
+    vantagemLabel = null;
+    lacunaLabel = null;
     destaquesMensagem = "Desempenho alinhado à média em todas as famílias.";
   } else if (todasAcima) {
     // Não existe lacuna: o segundo card vira "Ponto de menor diferenciação".
-    destaquesMensagem = "Ponto de menor diferenciação";
+    lacunaLabel = "Ponto de menor diferenciação";
+    destaquesMensagem = "Todas as famílias estão acima da média do perfil.";
   } else if (todasAbaixo) {
     // Não existe vantagem: o primeiro card vira "Resultado mais próximo da média".
-    destaquesMensagem = "Resultado mais próximo da média";
+    vantagemLabel = "Resultado mais próximo da média";
+    destaquesMensagem = "Todas as famílias estão abaixo da média do perfil.";
   }
 
   return {
@@ -457,6 +467,8 @@ export function buildProfileComparison(params: {
     familias,
     maiorVantagem,
     maiorLacuna,
+    vantagemLabel,
+    lacunaLabel,
     destaquesMensagem,
     farol: calculateProfileFarolDistribution(cliente, validos),
     leituraExecutiva: generateExecutiveComparisonText({
