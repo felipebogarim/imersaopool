@@ -399,6 +399,50 @@ export async function exportInterviewPdf(
       .trim());
   };
 
+  // Condensa um texto para ~ratio do tamanho original, mantendo as frases
+  // mais informativas na ordem original (síntese mais objetiva).
+  const condense = (s?: string | null, ratio = 0.5): string => {
+    const src = (s ?? "").trim();
+    if (!src) return "";
+    const sentences = src
+      .split(/(?<=[.!?;])\s+(?=[A-ZÀ-ÖØ-Þ0-9"“(])/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (sentences.length <= 2) return src;
+
+    const budget = Math.max(160, Math.round(src.length * ratio));
+    const stop = new Set([
+      "a","o","as","os","de","da","do","das","dos","e","em","um","uma","que","para",
+      "com","por","no","na","nos","nas","se","ao","à","às","aos","é","são","ou","mas",
+      "como","mais","menos","muito","também","já","ser","está","foi","essa","esse",
+      "isso","este","esta","seu","sua","seus","suas","nao","não","há","pelo","pela",
+    ]);
+    const freq = new Map<string, number>();
+    const words = (t: string) =>
+      t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length > 3 && !stop.has(w));
+    for (const sen of sentences) for (const w of words(sen)) freq.set(w, (freq.get(w) ?? 0) + 1);
+
+    const scored = sentences.map((text, i) => {
+      const ws = words(text);
+      const base = ws.reduce((acc, w) => acc + (freq.get(w) ?? 0), 0) / Math.max(1, ws.length);
+      // leve preferência pelas primeiras frases (abertura costuma trazer o retrato geral)
+      const position = i === 0 ? 1.25 : i < 3 ? 1.08 : 1;
+      return { i, text, score: base * position };
+    });
+
+    const picked = new Set<number>();
+    let len = 0;
+    for (const s of [...scored].sort((a, b) => b.score - a.score)) {
+      if (len && len + s.text.length + 1 > budget) continue;
+      picked.add(s.i);
+      len += s.text.length + 1;
+      if (len >= budget) break;
+    }
+    if (!picked.size) picked.add(0);
+    return sentences.filter((_, i) => picked.has(i)).join(" ").trim();
+  };
+
+
   const contentBottom = () => pageH - margin - 44;
 
   const ensure = (n: number) => {
@@ -1017,7 +1061,8 @@ export async function exportInterviewPdf(
       | { kind: "chips"; label: string; items: Array<{ key: string; value: string }> };
     const blocks: Block[] = [];
     if (sumario.sintese_geral)
-      blocks.push({ kind: "text", label: "Síntese geral", text: sumario.sintese_geral });
+      blocks.push({ kind: "text", label: "Síntese geral", text: condense(sumario.sintese_geral, 0.5) });
+
     if (sumario.sinais_prioritarios?.length)
       blocks.push({ kind: "chips", label: "Sinais prioritários", items: sumario.sinais_prioritarios });
     if (sumario.risco_estrategico)
