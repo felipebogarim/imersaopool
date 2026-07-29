@@ -1071,93 +1071,112 @@ export async function exportInterviewPdf(
       chosen = s;
     }
 
+    type Row = { h: number; draw: (yy: number) => void };
+
     for (const b of blocks) {
-      const startY = y;
-      // header do bloco
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(chosen.label);
-      setText(CYAN);
-      doc.text(b.label.toUpperCase(), margin + 12, startY + chosen.label + 2, { charSpace: 1.3 });
-      const contentTop = startY + chosen.label + 10;
+      // 1) transforma o bloco em linhas atômicas mensuráveis
+      const rows: Row[] = [];
+      rows.push({
+        h: chosen.label + 10,
+        draw: (yy) => {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(chosen.label);
+          setText(CYAN);
+          doc.text(b.label.toUpperCase(), margin + 12, yy + chosen.label + 2, { charSpace: 1.3 });
+        },
+      });
 
-      let blockH = 0;
       if (b.kind === "text") {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(chosen.body);
-        setText(INK);
         const lines = doc.splitTextToSize(md(b.text), innerW);
-        let ly = contentTop + chosen.lineH;
         for (const line of lines) {
-          doc.text(line, margin + 12, ly);
-          ly += chosen.lineH;
-        }
-        blockH = ly - startY + 4;
-      } else {
-        let ly = contentTop;
-        for (const it of b.items) {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(chosen.label);
-          setText(CYAN_DEEP);
-          doc.text(humanize(it.key).toUpperCase(), margin + 12, ly + chosen.label, {
-            charSpace: 1.1,
+          rows.push({
+            h: chosen.lineH,
+            draw: (yy) => {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(chosen.body);
+              setText(INK);
+              doc.text(line, margin + 12, yy + chosen.lineH);
+            },
           });
-          ly += chosen.label + 4;
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(chosen.chipVal);
-          setText(INK);
-          const vl = doc.splitTextToSize(md(it.value), innerW);
-          for (const line of vl) {
-            doc.text(line, margin + 12, ly + chosen.chipLineH);
-            ly += chosen.chipLineH;
-          }
-          ly += 6;
-        }
-        blockH = ly - startY + 4;
-      }
-
-      // fundo sutil
-      setFill(SURFACE);
-      doc.roundedRect(margin, startY, maxW, blockH, 6, 6, "F");
-      setFill(CORAL);
-      doc.rect(margin, startY + 4, 3, blockH - 8, "F");
-      // redesenha o conteúdo por cima do fundo
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(chosen.label);
-      setText(CYAN);
-      doc.text(b.label.toUpperCase(), margin + 12, startY + chosen.label + 2, { charSpace: 1.3 });
-      let ly = contentTop;
-      if (b.kind === "text") {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(chosen.body);
-        setText(INK);
-        const lines = doc.splitTextToSize(md(b.text), innerW);
-        ly = contentTop + chosen.lineH;
-        for (const line of lines) {
-          doc.text(line, margin + 12, ly);
-          ly += chosen.lineH;
         }
       } else {
         for (const it of b.items) {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(chosen.label);
-          setText(CYAN_DEEP);
-          doc.text(humanize(it.key).toUpperCase(), margin + 12, ly + chosen.label, {
-            charSpace: 1.1,
+          rows.push({
+            h: chosen.label + 4,
+            draw: (yy) => {
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(chosen.label);
+              setText(CYAN_DEEP);
+              doc.text(humanize(it.key).toUpperCase(), margin + 12, yy + chosen.label, {
+                charSpace: 1.1,
+              });
+            },
           });
-          ly += chosen.label + 4;
           doc.setFont("helvetica", "normal");
           doc.setFontSize(chosen.chipVal);
-          setText(INK);
           const vl = doc.splitTextToSize(md(it.value), innerW);
           for (const line of vl) {
-            doc.text(line, margin + 12, ly + chosen.chipLineH);
-            ly += chosen.chipLineH;
+            rows.push({
+              h: chosen.chipLineH,
+              draw: (yy) => {
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(chosen.chipVal);
+                setText(INK);
+                doc.text(line, margin + 12, yy + chosen.chipLineH);
+              },
+            });
           }
-          ly += 6;
+          rows.push({ h: 6, draw: () => {} });
         }
       }
 
-      y = startY + blockH + chosen.gap;
+      // 2) desenha paginando: nunca ultrapassa o rodapé
+      let i = 0;
+      let freshPage = false;
+      while (i < rows.length) {
+        const startY = y;
+        const limit = contentBottom();
+        let h = 4;
+        const seg: Row[] = [];
+        while (i < rows.length && startY + h + rows[i].h + 6 <= limit) {
+          h += rows[i].h;
+          seg.push(rows[i]);
+          i++;
+        }
+        if (!seg.length) {
+          if (freshPage) {
+            // linha maior que uma página inteira: desenha mesmo assim para não travar
+            h += rows[i].h;
+            seg.push(rows[i]);
+            i++;
+          } else {
+            addContentPage();
+            freshPage = true;
+            continue;
+          }
+        }
+        freshPage = false;
+
+        const blockH = h + 4;
+        setFill(SURFACE);
+        doc.roundedRect(margin, startY, maxW, blockH, 6, 6, "F");
+        setFill(CORAL);
+        doc.rect(margin, startY + 4, 3, blockH - 8, "F");
+
+        let yy = startY;
+        for (const r of seg) {
+          r.draw(yy);
+          yy += r.h;
+        }
+
+        y = startY + blockH + chosen.gap;
+        if (i < rows.length) {
+          addContentPage();
+          freshPage = true;
+        }
+      }
     }
   }
 
