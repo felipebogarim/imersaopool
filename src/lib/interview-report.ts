@@ -1192,6 +1192,12 @@ export async function exportInterviewPdf(
           seg.push(rows[i]);
           i++;
         }
+        // evita rótulo órfão no fim da página: devolve linhas presas à seguinte
+        while (seg.length && seg[seg.length - 1].keepWithNext && i < rows.length) {
+          const last = seg.pop()!;
+          h -= last.h;
+          i--;
+        }
         if (!seg.length) {
           if (freshPage) {
             // linha maior que uma página inteira: desenha mesmo assim para não travar
