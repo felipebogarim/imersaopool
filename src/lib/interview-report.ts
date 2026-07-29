@@ -1061,7 +1061,8 @@ export async function exportInterviewPdf(
       | { kind: "chips"; label: string; items: Array<{ key: string; value: string }> };
     const blocks: Block[] = [];
     if (sumario.sintese_geral)
-      blocks.push({ kind: "text", label: "Síntese geral", text: sumario.sintese_geral });
+      blocks.push({ kind: "text", label: "Síntese geral", text: condense(sumario.sintese_geral, 0.5) });
+
     if (sumario.sinais_prioritarios?.length)
       blocks.push({ kind: "chips", label: "Sinais prioritários", items: sumario.sinais_prioritarios });
     if (sumario.risco_estrategico)
