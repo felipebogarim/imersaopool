@@ -18,7 +18,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "surface rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3",
+        "surface rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-3",
         className,
       )}
     >

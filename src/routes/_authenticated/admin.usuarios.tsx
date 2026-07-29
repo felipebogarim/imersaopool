@@ -77,7 +77,7 @@ function UsuariosPage() {
 
   return (
     <div>
-      <div className="border-b border-border px-8 py-6">
+      <div className="border-b border-border px-4 sm:px-8 py-6">
         <div className="flex items-center gap-3">
           <UserCog className="h-7 w-7 text-primary" />
           <div>

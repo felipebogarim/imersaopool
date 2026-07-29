@@ -85,7 +85,7 @@ function ClientBIPage() {
           </div>
         }
       />
-      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-4">
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4">
         <div className="surface rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
           <div className="text-sm text-muted-foreground">Representante</div>
           <div className="font-medium">{rep?.nome ?? "—"}</div>

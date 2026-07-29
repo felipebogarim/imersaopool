@@ -105,7 +105,7 @@ function CheckoutTestePage() {
   if (!isAdmin) {
     return (
       <div className="min-h-[60vh] grid place-items-center px-4">
-        <div className="surface rounded-2xl p-8 max-w-md text-center">
+        <div className="surface rounded-2xl p-6 sm:p-8 max-w-md text-center">
           <h1 className="text-lg font-semibold mb-2">Acesso restrito</h1>
           <p className="text-sm text-muted-foreground">
             Esta página é exclusiva para administradores validarem a integração de pagamento em ambiente de teste.
@@ -119,7 +119,7 @@ function CheckoutTestePage() {
   return (
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="surface rounded-2xl p-8">
+        <div className="surface rounded-2xl p-6 sm:p-8">
           <div className="text-xs uppercase tracking-widest text-amber-400 mb-2">Ambiente de TESTE — Mercado Pago</div>
           <h1 className="text-2xl font-bold mb-1">Checkout de teste</h1>
           <p className="text-sm text-muted-foreground mb-6">
