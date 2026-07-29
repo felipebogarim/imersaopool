@@ -1123,6 +1123,7 @@ export async function exportInterviewPdf(
       const rows: Row[] = [];
       rows.push({
         h: chosen.label + 10,
+        keepWithNext: true,
         draw: (yy) => {
           doc.setFont("helvetica", "bold");
           doc.setFontSize(chosen.label);
