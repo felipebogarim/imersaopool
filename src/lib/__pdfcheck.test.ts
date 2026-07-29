@@ -14,6 +14,11 @@ function res(data: any) {
   return chain;
 }
 
+vi.mock("@/lib/interview-cover", async (imp) => {
+  const a: any = await imp();
+  return { ...a, loadCoverImage: async () => { throw new Error("no image"); } };
+});
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: null } }) },
