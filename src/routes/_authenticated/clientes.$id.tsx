@@ -52,7 +52,7 @@ function ClientDetail() {
       .limit(20)).data ?? [],
   });
 
-  if (!client) return <div className="p-8">Carregando...</div>;
+  if (!client) return <div className="p-4 sm:p-8">Carregando...</div>;
   return (
     <div>
       <PageHeader
@@ -65,7 +65,7 @@ function ClientDetail() {
           </div>
         }
       />
-      <div className="p-8 grid lg:grid-cols-3 gap-6">
+      <div className="p-4 sm:p-8 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="surface rounded-xl p-6">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Dados do cliente</h3>

@@ -177,7 +177,7 @@ function Page() {
 
 
         <Tabs defaultValue="bi">
-          <TabsList className="flex flex-wrap">
+          <TabsList className="flex flex-wrap h-auto gap-1">
             <TabsTrigger value="bi">BI de Segurança</TabsTrigger>
             <TabsTrigger value="visao">Visão Geral</TabsTrigger>
             <TabsTrigger value="acessos">Controle de Acessos</TabsTrigger>

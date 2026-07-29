@@ -531,7 +531,7 @@ function GeradorPerformancePage() {
         title="Gerador de Performance"
         subtitle="Faça upload de uma ou mais planilhas brutas — a IA extrai metas, categorias e faróis e gera a planilha padrão de Performance."
       />
-      <div className="p-8 space-y-6 max-w-6xl">
+      <div className="p-4 sm:p-8 space-y-6 max-w-6xl">
         {/* Aviso de privacidade */}
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex gap-3">
           <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />

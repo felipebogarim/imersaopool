@@ -171,7 +171,7 @@ function CompararPerfilPage() {
         }
       />
 
-      <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-4">
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4">
         <p className="text-sm text-muted-foreground">
           {isLoading
             ? "Carregando comparação…"

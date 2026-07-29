@@ -126,7 +126,7 @@ function ClientsPage() {
           </div>
         }
       />
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -145,8 +145,8 @@ function ClientsPage() {
           )}
         </div>
         <div className="text-xs text-muted-foreground">{filtered.length} de {clients.length} clientes</div>
-        <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="surface rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Código</th>

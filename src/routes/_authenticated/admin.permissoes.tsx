@@ -23,7 +23,7 @@ const MATRIX: Record<string, Record<string, boolean>> = {
 function PermissoesPage() {
   return (
     <div>
-      <div className="border-b border-border px-8 py-6">
+      <div className="border-b border-border px-4 sm:px-8 py-6">
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-7 w-7 text-primary" />
           <div>
@@ -35,7 +35,7 @@ function PermissoesPage() {
 
       <PageHeader title="Perfis × Módulos" subtitle="Defina o que cada perfil pode acessar" />
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

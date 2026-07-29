@@ -86,8 +86,8 @@ function CompetidoresPage() {
         </Dialog>
       </div>
 
-      <div className="surface rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="surface rounded-xl overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="text-left px-4 py-3">Nome</th>

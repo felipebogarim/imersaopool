@@ -62,7 +62,7 @@ function CheckoutPage() {
   return (
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="surface rounded-2xl p-8">
+        <div className="surface rounded-2xl p-6 sm:p-8">
           <div className="text-xs uppercase tracking-widest text-cyan mb-2">Inscrição</div>
           <h1 className="text-2xl font-bold mb-1">Garanta sua vaga</h1>
           <p className="text-sm text-muted-foreground mb-6">

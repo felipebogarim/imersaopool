@@ -175,7 +175,7 @@ function NovaEntrevista() {
   return (
     <div>
       <PageHeader title="Nova entrevista" subtitle="Registre uma conversa de campo" />
-      <form onSubmit={submit} className="p-8 max-w-3xl">
+      <form onSubmit={submit} className="p-4 sm:p-8 max-w-3xl">
         <div className="surface rounded-xl p-6 space-y-4">
           {/* Nome do entrevistado — renderizado após Perfil (abaixo) */}
 

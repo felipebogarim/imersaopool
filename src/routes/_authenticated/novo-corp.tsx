@@ -9,7 +9,7 @@ function NovoCorpPage() {
   return (
     <div>
       <PageHeader title="Novo Corp" subtitle="Em breve" />
-      <div className="p-8 text-sm text-muted-foreground">
+      <div className="p-4 sm:p-8 text-sm text-muted-foreground">
         Conteúdo desta seção será definido em breve.
       </div>
     </div>

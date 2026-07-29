@@ -75,7 +75,7 @@ function EntrevistasIndex() {
           </Button>
         }
       />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         {isLoading ? (
           <LoadingRows rows={4} />
         ) : data.length === 0 ? (

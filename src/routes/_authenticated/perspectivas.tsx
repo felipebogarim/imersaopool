@@ -101,7 +101,7 @@ function PerspectivasPage() {
   return (
     <div>
       <PageHeader title="Perspectivas" subtitle="Revisão opcional das leituras de cada fonte." />
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <div className="flex flex-wrap gap-3 items-end">
           <div className="min-w-[160px]">
             <label className="mb-1 block text-xs text-muted-foreground">Escopo</label>

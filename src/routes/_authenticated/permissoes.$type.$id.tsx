@@ -64,7 +64,7 @@ function PermissionsPage() {
         subtitle={`${type.charAt(0).toUpperCase() + type.slice(1)}: ${entityName}`}
         actions={<Button variant="ghost" asChild><Link to={backTo}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
       />
-      <div className="p-8 max-w-3xl">
+      <div className="p-4 sm:p-8 max-w-3xl">
         <div className="surface rounded-xl divide-y divide-border">
           {AREAS.map(a => {
             const checked = map.get(a.key) ?? false;

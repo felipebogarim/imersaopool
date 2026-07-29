@@ -76,7 +76,7 @@ function RoteirosPage() {
         subtitle="Framework de capítulos usados nas sessões de campo"
         actions={<Button onClick={() => setCreatingRoteiro(true)}><Plus className="h-4 w-4 mr-1" /> Novo roteiro</Button>}
       />
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-8 space-y-6">
         {data.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs uppercase tracking-wide text-muted-foreground mr-1">Filtrar:</span>

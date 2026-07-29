@@ -23,8 +23,8 @@ function PriceLayout() {
   return (
     <div>
       <PageHeader title="Price" subtitle="Competidores, tabelas de preços e comparativos" />
-      <div className="px-8 pt-4">
-        <nav className="flex gap-1 border-b border-border">
+      <div className="px-4 sm:px-8 pt-4">
+        <nav className="flex gap-1 border-b border-border overflow-x-auto">
           {TABS.map((t) => {
             const active = pathname.startsWith(t.to);
             return (
@@ -44,7 +44,7 @@ function PriceLayout() {
           })}
         </nav>
       </div>
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <Outlet />
       </div>
     </div>

@@ -76,7 +76,7 @@ function NewImmersion() {
         title="Nova imersão"
         actions={<Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
       />
-      <div className="p-8 max-w-3xl">
+      <div className="p-4 sm:p-8 max-w-3xl">
         <div className="surface rounded-xl p-6 space-y-4">
           <div><LabelHelp label="Título da imersão" required help={IMMERSION_HELP.titulo} /><VoiceInput value={form.titulo ?? ""} onChange={v => setForm(f => ({ ...f, titulo: v }))} placeholder="Ex: Imersão Cliente XYZ — Out/2025" /></div>
           <div className="grid md:grid-cols-2 gap-4">

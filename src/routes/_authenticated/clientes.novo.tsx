@@ -49,7 +49,7 @@ function NewClient() {
         title="Novo cliente"
         actions={<Button variant="ghost" asChild><Link to="/clientes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
       />
-      <div className="p-8 max-w-4xl">
+      <div className="p-4 sm:p-8 max-w-4xl">
         <div className="surface rounded-xl p-6 space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
             <div><LabelHelp label="Nome fantasia" required help={CLIENT_HELP.nome_fantasia} /><VoiceInput value={form.nome_fantasia ?? ""} onChange={v => set("nome_fantasia", v)} /></div>

@@ -83,7 +83,7 @@ function PublicRepForm() {
   if (!info) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="surface rounded-2xl p-8 max-w-md text-center">
+        <div className="surface rounded-2xl p-6 sm:p-8 max-w-md text-center">
           <h1 className="text-xl font-bold mb-2">Link inválido ou expirado</h1>
           <p className="text-sm text-muted-foreground">Solicite um novo link ao agente responsável.</p>
         </div>
@@ -105,7 +105,7 @@ function PublicRepForm() {
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-center mb-8"><BrandLogo /></div>
-        <div className="surface rounded-2xl p-8">
+        <div className="surface rounded-2xl p-6 sm:p-8">
           <div className="text-xs uppercase tracking-widest text-cyan mb-2">Visão prévia do representante</div>
           <h1 className="text-2xl font-bold mb-1">{info.titulo}</h1>
           <p className="text-sm text-muted-foreground mb-8">

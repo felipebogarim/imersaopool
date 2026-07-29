@@ -295,7 +295,7 @@ function ProductsPage() {
           </div>
         }
       />
-      <div className="p-8 space-y-4">
+      <div className="p-4 sm:p-8 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -331,8 +331,8 @@ function ProductsPage() {
         </div>
 
 
-        <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm table-fixed">
+        <div className="surface rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[900px] text-sm table-fixed">
             <colgroup>
               <col className="w-16" />
               <col className="w-32" />
