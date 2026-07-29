@@ -16,7 +16,7 @@ function res(data: any) {
 
 vi.mock("@/lib/interview-cover", async (imp) => {
   const a: any = await imp();
-  return { ...a, loadCoverImage: async () => { throw new Error("no image"); } };
+  return { ...a, loadCoverImage: async () => "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" };
 });
 
 vi.mock("@/integrations/supabase/client", () => ({
