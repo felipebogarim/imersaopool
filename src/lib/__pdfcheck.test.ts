@@ -14,6 +14,21 @@ function res(data: any) {
   return chain;
 }
 
+vi.mock("jspdf", async (imp) => {
+  const m: any = await imp();
+  const Base = m.default;
+  class Patched extends Base {
+    constructor(...a: any[]) {
+      super(...a);
+      (this as any).save = (name: string) => {
+        fs.writeFileSync("/tmp/pdfchk/out.pdf", Buffer.from((this as any).output("arraybuffer")));
+        return this;
+      };
+    }
+  }
+  return { ...m, default: Patched };
+});
+
 vi.mock("@/lib/interview-cover", async (imp) => {
   const a: any = await imp();
   return { ...a, loadCoverImage: async () => "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" };
@@ -40,12 +55,6 @@ describe("interview pdf", () => {
     const { exportInterviewPdf } = await import("./interview-report");
     const saved: any[] = [];
     (globalThis as any).__saved = saved;
-    const mod = await import("jspdf");
-    const proto: any = (mod.default as any).prototype;
-    proto.save = function (name: string) {
-      fs.writeFileSync("/tmp/pdfchk/out.pdf", Buffer.from(this.output("arraybuffer")));
-      saved.push(name);
-    };
     await exportInterviewPdf(raw.interview.id);
     expect(fs.existsSync("/tmp/pdfchk/out.pdf")).toBe(true);
   }, 120000);
