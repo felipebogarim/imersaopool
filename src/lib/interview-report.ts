@@ -1116,13 +1116,14 @@ export async function exportInterviewPdf(
       chosen = s;
     }
 
-    type Row = { h: number; draw: (yy: number) => void };
+    type Row = { h: number; draw: (yy: number) => void; keepWithNext?: boolean };
 
     for (const b of blocks) {
       // 1) transforma o bloco em linhas atômicas mensuráveis
       const rows: Row[] = [];
       rows.push({
         h: chosen.label + 10,
+        keepWithNext: true,
         draw: (yy) => {
           doc.setFont("helvetica", "bold");
           doc.setFontSize(chosen.label);
@@ -1150,6 +1151,7 @@ export async function exportInterviewPdf(
         for (const it of b.items) {
           rows.push({
             h: chosen.label + 4,
+            keepWithNext: true,
             draw: (yy) => {
               doc.setFont("helvetica", "bold");
               doc.setFontSize(chosen.label);
@@ -1189,6 +1191,12 @@ export async function exportInterviewPdf(
           h += rows[i].h;
           seg.push(rows[i]);
           i++;
+        }
+        // evita rótulo órfão no fim da página: devolve linhas presas à seguinte
+        while (seg.length && seg[seg.length - 1].keepWithNext && i < rows.length) {
+          const last = seg.pop()!;
+          h -= last.h;
+          i--;
         }
         if (!seg.length) {
           if (freshPage) {
