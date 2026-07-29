@@ -1116,7 +1116,7 @@ export async function exportInterviewPdf(
       chosen = s;
     }
 
-    type Row = { h: number; draw: (yy: number) => void };
+    type Row = { h: number; draw: (yy: number) => void; keepWithNext?: boolean };
 
     for (const b of blocks) {
       // 1) transforma o bloco em linhas atômicas mensuráveis
