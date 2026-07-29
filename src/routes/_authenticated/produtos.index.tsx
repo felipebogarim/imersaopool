@@ -332,7 +332,7 @@ function ProductsPage() {
 
 
         <div className="surface rounded-xl overflow-x-auto">
-          <table className="w-full text-sm table-fixed">
+          <table className="w-full min-w-[900px] text-sm table-fixed">
             <colgroup>
               <col className="w-16" />
               <col className="w-32" />

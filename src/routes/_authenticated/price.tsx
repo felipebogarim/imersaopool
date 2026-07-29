@@ -24,7 +24,7 @@ function PriceLayout() {
     <div>
       <PageHeader title="Price" subtitle="Competidores, tabelas de preços e comparativos" />
       <div className="px-4 sm:px-8 pt-4">
-        <nav className="flex gap-1 border-b border-border">
+        <nav className="flex gap-1 border-b border-border overflow-x-auto">
           {TABS.map((t) => {
             const active = pathname.startsWith(t.to);
             return (
