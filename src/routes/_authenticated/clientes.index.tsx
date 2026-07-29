@@ -145,8 +145,8 @@ function ClientsPage() {
           )}
         </div>
         <div className="text-xs text-muted-foreground">{filtered.length} de {clients.length} clientes</div>
-        <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="surface rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-muted/40">
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Código</th>

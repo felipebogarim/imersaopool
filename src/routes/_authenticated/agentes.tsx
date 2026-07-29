@@ -25,8 +25,8 @@ function AgentsPage() {
     <div>
       <PageHeader title="Agentes" subtitle="Usuários internos da plataforma" />
       <div className="p-4 sm:p-8">
-        <div className="surface rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="surface rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
               <tr><th className="text-left px-4 py-3">Nome</th><th className="text-left px-4 py-3">E-mail</th><th className="text-left px-4 py-3">Cargo</th><th className="text-left px-4 py-3">Região</th><th className="text-left px-4 py-3">Perfil</th><th className="px-4 py-3 w-12"></th></tr>
             </thead>

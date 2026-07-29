@@ -331,7 +331,7 @@ function ProductsPage() {
         </div>
 
 
-        <div className="surface rounded-xl overflow-hidden">
+        <div className="surface rounded-xl overflow-x-auto">
           <table className="w-full text-sm table-fixed">
             <colgroup>
               <col className="w-16" />
