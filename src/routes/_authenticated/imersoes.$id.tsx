@@ -87,7 +87,7 @@ function ImmersionDetail() {
         </div>
 
         <Tabs defaultValue={roteiroId ? "roteiro" : "visao"}>
-          <TabsList className="grid grid-cols-9 w-full max-w-5xl">
+          <TabsList className="flex w-full max-w-5xl flex-wrap h-auto gap-1">
             <TabsTrigger value="visao">Visão geral</TabsTrigger>
             <TabsTrigger value="roteiro">Roteiro</TabsTrigger>
             <TabsTrigger value="antes">Antes</TabsTrigger>
