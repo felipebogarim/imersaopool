@@ -97,7 +97,7 @@ function UsuariosPage() {
         }
       />
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="rounded-xl border border-border bg-card">
           <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
             <Users className="h-5 w-5" />

@@ -69,7 +69,7 @@ function ImmersionsIndex() {
         subtitle="Dossiês comerciais por cliente"
         actions={<Button asChild><Link to="/imersoes/nova"><Plus className="h-4 w-4 mr-1" /> Nova imersão</Link></Button>}
       />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         {isLoading ? <LoadingRows rows={4} /> :
           imms.length === 0 ? (
             <EmptyState

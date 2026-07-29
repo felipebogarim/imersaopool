@@ -15,8 +15,8 @@ import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog"
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
   component: EntrevistaDetail,
-  errorComponent: ({ error }) => <div className="p-8 text-destructive">{String(error)}</div>,
-  notFoundComponent: () => <div className="p-8">Entrevista não encontrada.</div>,
+  errorComponent: ({ error }) => <div className="p-4 sm:p-8 text-destructive">{String(error)}</div>,
+  notFoundComponent: () => <div className="p-4 sm:p-8">Entrevista não encontrada.</div>,
 });
 
 const CLASSIF = Object.fromEntries(CLASSIFICACOES.map(c => [c.value, c.label]));
@@ -39,8 +39,8 @@ function EntrevistaDetail() {
     navigate({ to: "/entrevistas" });
   }
 
-  if (isLoading) return <div className="p-8 text-muted-foreground">Carregando...</div>;
-  if (!data) return <div className="p-8">Não encontrada.</div>;
+  if (isLoading) return <div className="p-4 sm:p-8 text-muted-foreground">Carregando...</div>;
+  if (!data) return <div className="p-4 sm:p-8">Não encontrada.</div>;
 
   return (
     <div>
@@ -69,7 +69,7 @@ function EntrevistaDetail() {
           </div>
         }
       />
-      <div className="p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         <section className="surface rounded-xl p-6">
           <h2 className="font-semibold mb-3">Ficha</h2>
           <div className="grid md:grid-cols-2 gap-3 text-sm">

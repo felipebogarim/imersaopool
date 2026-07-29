@@ -147,7 +147,7 @@ function EditClient() {
     navigate({ to: "/clientes/$id", params: { id } });
   }
 
-  if (!client) return <div className="p-8">Carregando...</div>;
+  if (!client) return <div className="p-4 sm:p-8">Carregando...</div>;
 
   return (
     <div>
@@ -155,7 +155,7 @@ function EditClient() {
         title="Editar cliente"
         actions={<Button variant="ghost" asChild><Link to="/clientes/$id" params={{ id }}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button>}
       />
-      <div className="p-8 max-w-5xl">
+      <div className="p-4 sm:p-8 max-w-5xl">
         <div className="surface rounded-xl p-6 space-y-5">
           {/* Fixed top: enums + representative */}
           <div className="grid md:grid-cols-3 gap-4">

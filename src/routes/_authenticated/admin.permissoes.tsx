@@ -35,7 +35,7 @@ function PermissoesPage() {
 
       <PageHeader title="Perfis × Módulos" subtitle="Defina o que cada perfil pode acessar" />
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

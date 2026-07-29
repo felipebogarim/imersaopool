@@ -116,7 +116,7 @@ function FamiliasPage() {
           </Button>
         }
       />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="surface rounded-xl p-4">
           {roots.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhuma família cadastrada.</p>

@@ -194,7 +194,7 @@ function EmpresasPage() {
           ) : null
         }
       />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         {list.length === 0 ? (
           <div className="surface rounded-xl p-10 text-center">
             <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

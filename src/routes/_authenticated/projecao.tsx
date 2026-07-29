@@ -13,7 +13,7 @@ function ProjecaoPage() {
         title="Projeção Categoria / Benefício"
         subtitle="Em breve"
       />
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="surface rounded-xl p-12 text-center text-muted-foreground">
           Esta área está em construção. Em breve traremos a projeção de categoria e os benefícios.
         </div>

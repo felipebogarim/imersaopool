@@ -423,7 +423,7 @@ function PoolBackupPage() {
     return (
       <div>
         <PageHeader title="Backup" />
-        <div className="p-8 text-sm text-muted-foreground">Carregando…</div>
+        <div className="p-4 sm:p-8 text-sm text-muted-foreground">Carregando…</div>
       </div>
     );
   }
@@ -431,7 +431,7 @@ function PoolBackupPage() {
     return (
       <div>
         <PageHeader title="Backup" />
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           <Card>
             <CardContent className="pt-6 flex items-center gap-3">
               <ShieldAlert className="h-5 w-5 text-amber-600" />

@@ -62,7 +62,7 @@ function ImmersionDetail() {
     },
   });
 
-  if (!imm) return <div className="p-8">Carregando...</div>;
+  if (!imm) return <div className="p-4 sm:p-8">Carregando...</div>;
 
   const repUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${imm.representative_token}` : "";
 
@@ -78,7 +78,7 @@ function ImmersionDetail() {
         subtitle={imm.client?.nome_fantasia}
         actions={<div className="flex gap-2"><SessionNotes entityType="immersion" entityId={id} /><Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button></div>}
       />
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-8 space-y-6">
         <div className="grid md:grid-cols-4 gap-3">
           <Card label="Cliente" value={imm.client?.nome_fantasia} />
           <Card label="Grupo / Categoria" value={[imm.client?.grupo, imm.client?.categoria].filter(Boolean).join(" / ") || "—"} />
