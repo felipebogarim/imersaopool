@@ -417,8 +417,18 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       central_thesis: asText(ev.central_thesis) ?? null,
       strategic_risk: asText(ev.strategic_risk) ?? null,
       priority_signals: asArray(ev.priority_signals)
-        .map(s => (typeof s === "string" ? { ...emptySignal, finding: s } : coerceRecord(emptySignal, s)))
+        .map(s =>
+          typeof s === "string"
+            ? { ...emptySignal, finding: s }
+            : {
+                ...coerceRecord(emptySignal, s),
+                signal_id: asText((s as any)?.signal_id),
+                validation_note: asText((s as any)?.validation_note ?? (s as any)?.validacao),
+                related_perspectives: asNumList((s as any)?.related_perspectives),
+              },
+        )
         .slice(0, MAX_SIGNALS),
+
       decisions_required: asTextList(ev.decisions_required).slice(0, MAX_DECISIONS),
       validation_required: asTextList(ev.validation_required).slice(0, MAX_VALIDATIONS),
       final_synthesis: asText(ev.final_synthesis) ?? null,
