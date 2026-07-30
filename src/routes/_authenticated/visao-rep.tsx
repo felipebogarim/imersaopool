@@ -23,6 +23,7 @@ import {
   introRaioX,
   leituraCruzada,
   type FonteLite,
+  type ParaleloExtras,
   type PerfRowLite,
   type UploadLite,
 } from "@/lib/visao-rep";
