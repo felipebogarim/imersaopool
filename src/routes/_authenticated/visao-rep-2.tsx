@@ -576,8 +576,16 @@ function VisaoRep2Page() {
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), selectedId === r.id ? perf : null)}
+                  title="Exportar PDF visual"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => exportar(normalizeVisaoRep2(r.data), r.representative_name)}
-                  title="Exportar relatório estruturado"
+                  title="Exportar relatório estruturado (.md)"
                 >
                   <FileDown className="h-4 w-4" />
                 </Button>
