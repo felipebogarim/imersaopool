@@ -776,51 +776,8 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
-      {/* Contexto */}
-      {ctx.represented_brands.length || has(ctx.region_summary) || has(ctx.regional_structure) || has(ctx.service_model) ? (
-        <Card title="Contexto do representante">
-          <div className="space-y-3">
-            {ctx.represented_brands.length ? (
-              <div>
-                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Marcas que representa além da Newline
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {ctx.represented_brands.map(m => (
-                    <Badge key={m} variant="outline">
-                      {m}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <Field label="Região e modelo de atendimento" value={ctx.region_summary} />
-            <Field label="Modelo de atendimento" value={ctx.service_model} />
-            <Field label="Estrutura regional" value={ctx.regional_structure} />
-            <Field label="Contexto adicional" value={ctx.additional_context} />
-          </div>
-        </Card>
-      ) : null}
 
-      {/* Clientes estratégicos */}
-      {visao.strategic_clients.length ? (
-        <Card title="Clientes estratégicos">
-          <div className="grid gap-2 md:grid-cols-2">
-            {visao.strategic_clients.map((c, i) => (
-              <div key={i} className="space-y-2 rounded-lg border p-3">
-                <div className="text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
-                <Field label="Motivo estratégico" value={c.strategic_reason} />
-                <Field label="Potencial percebido" value={c.perceived_potential} />
-                <Field label="Oportunidade" value={c.identified_opportunity} />
-                <Field label="Linhas prioritárias" value={c.priority_product_lines} />
-                <Field label="Concorrente principal" value={c.main_competitor} />
-                <Field label="Próxima ação" value={c.recommended_next_action} />
-                <Field label="Ponto de atenção" value={c.attention_point} />
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : null}
+
 
       {/* Linhas de produto */}
       {visao.product_line_views.length ? (
