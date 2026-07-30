@@ -27,6 +27,7 @@ const INPUTS = [
 
 const ANALISES = [
   { to: "/sintese/tipos", label: "Síntese por tipo", icon: LineChart },
+  { to: "/visao-rep", label: "Visão Rep", icon: Users },
   { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
   { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
 ] as const;
