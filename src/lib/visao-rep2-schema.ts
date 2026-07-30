@@ -56,7 +56,12 @@ export type PrioritySignal = {
   evidence_status: EvidenceStatus | null;
   source_chapter: string | null;
   source_quote: string | null;
+  /** Vínculos opcionais (Leitura integrada da Visão Rep 2). Relatórios antigos não possuem. */
+  signal_id?: string | null;
+  validation_note?: string | null;
+  related_perspectives?: number[];
 };
+
 
 export type Metadata = {
   schema_version: string;
@@ -127,6 +132,8 @@ export type Perspective = {
   comparative_classification: string | null;
   full_reading: string | null;
   structured_fields: Record<string, string | string[]>;
+  /** Vínculo opcional com os sinais executivos (Leitura integrada). */
+  signal_ids?: string[];
 };
 
 export type ConsensusPoint = {
@@ -134,6 +141,7 @@ export type ConsensusPoint = {
   supporting_source_count: number | null;
   comparable_source_count: number | null;
   supporting_sources: string[];
+  signal_id?: string | null;
 };
 
 export type UnaddressedTopic = {
@@ -142,6 +150,7 @@ export type UnaddressedTopic = {
   comparison_is_valid: boolean | null;
   classification: string | null;
   methodological_note: string | null;
+  signal_id?: string | null;
 };
 
 export type Divergence = {
@@ -151,6 +160,7 @@ export type Divergence = {
   sources_supporting_predominant_view: string[];
   sources_supporting_representative_view: string[];
   evidence: string | null;
+  signal_id?: string | null;
 };
 
 export type ExclusiveReading = {
@@ -158,7 +168,9 @@ export type ExclusiveReading = {
   region: string | null;
   supporting_evidence: string | null;
   validation_required: string | null;
+  signal_id?: string | null;
 };
+
 
 export type ComparativeView = {
   comparable_source_count: number | null;
@@ -374,6 +386,17 @@ const emptyExclusive: ExclusiveReading = {
 
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
+/** Lista de números de perspectiva (1..8) informada explicitamente no relatório. */
+const asNumList = (v: unknown): number[] =>
+  asArray(v)
+    .map(x => {
+      const t = asText(x);
+      const n = t ? Number(/(\d{1,2})/.exec(t)?.[1]) : NaN;
+      return Number.isFinite(n) ? n : null;
+    })
+    .filter((n): n is number => n != null && n >= 1 && n <= 8);
+
+
 function coerceStructuredFields(v: unknown): Record<string, string | string[]> {
   const o = (v && typeof v === "object" && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
   const out: Record<string, string | string[]> = {};
@@ -405,8 +428,18 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       central_thesis: asText(ev.central_thesis) ?? null,
       strategic_risk: asText(ev.strategic_risk) ?? null,
       priority_signals: asArray(ev.priority_signals)
-        .map(s => (typeof s === "string" ? { ...emptySignal, finding: s } : coerceRecord(emptySignal, s)))
+        .map(s =>
+          typeof s === "string"
+            ? { ...emptySignal, finding: s }
+            : {
+                ...coerceRecord(emptySignal, s),
+                signal_id: asText((s as any)?.signal_id),
+                validation_note: asText((s as any)?.validation_note ?? (s as any)?.validacao),
+                related_perspectives: asNumList((s as any)?.related_perspectives),
+              },
+        )
         .slice(0, MAX_SIGNALS),
+
       decisions_required: asTextList(ev.decisions_required).slice(0, MAX_DECISIONS),
       validation_required: asTextList(ev.validation_required).slice(0, MAX_VALIDATIONS),
       final_synthesis: asText(ev.final_synthesis) ?? null,
@@ -432,6 +465,7 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
         perspective_number: i + 1,
         perspective_title: asText((bruto as any)?.perspective_title) || t,
         structured_fields: coerceStructuredFields((bruto as any)?.structured_fields),
+        signal_ids: asTextList((bruto as any)?.signal_ids),
       };
     }),
     comparative_view: {
@@ -445,6 +479,7 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
               ...coerceRecord(emptyConsensus, c, ["supporting_sources"]),
               supporting_source_count: asNum((c as any)?.supporting_source_count),
               comparable_source_count: asNum((c as any)?.comparable_source_count),
+              signal_id: asText((c as any)?.signal_id),
             },
       ),
       unaddressed_topics: asArray(cv.unaddressed_topics).map(u =>
@@ -454,16 +489,23 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
               ...coerceRecord(emptyUnaddressed, u, [], ["question_was_asked", "comparison_is_valid"]),
               question_was_asked: typeof (u as any)?.question_was_asked === "boolean" ? (u as any).question_was_asked : null,
               comparison_is_valid: typeof (u as any)?.comparison_is_valid === "boolean" ? (u as any).comparison_is_valid : null,
+              signal_id: asText((u as any)?.signal_id),
             },
       ),
       divergences: asArray(cv.divergences).map(d =>
         typeof d === "string"
           ? { ...emptyDivergence, topic: d }
-          : coerceRecord(emptyDivergence, d, ["sources_supporting_predominant_view", "sources_supporting_representative_view"]),
+          : {
+              ...coerceRecord(emptyDivergence, d, ["sources_supporting_predominant_view", "sources_supporting_representative_view"]),
+              signal_id: asText((d as any)?.signal_id),
+            },
       ),
       exclusive_readings: asArray(cv.exclusive_readings).map(e =>
-        typeof e === "string" ? { ...emptyExclusive, statement: e } : coerceRecord(emptyExclusive, e),
+        typeof e === "string"
+          ? { ...emptyExclusive, statement: e }
+          : { ...coerceRecord(emptyExclusive, e), signal_id: asText((e as any)?.signal_id) },
       ),
+
       methodology_note: asText(cv.methodology_note) ?? null,
     },
     performance_connection: { ...base.performance_connection, ...(o.performance_connection ?? {}) },

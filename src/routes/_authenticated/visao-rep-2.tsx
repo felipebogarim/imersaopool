@@ -26,6 +26,7 @@ import {
   type LineClassification,
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
+import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
@@ -707,107 +708,50 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
+      <LeituraIntegradaV2 visao={visao} />
 
-      {/* Visão executiva */}
-      {has(ev.central_thesis) || ev.priority_signals.length ? (
-
-        <Card title="Visão executiva">
+      {/* Performance */}
+      <Card title="Conexão com a Performance">
+        {perf ? (
           <div className="space-y-3">
-            <Field label="Tese central" value={ev.central_thesis} />
-            <Field label="Risco estratégico" value={ev.strategic_risk} />
-            {ev.priority_signals.length ? (
-              <div className="grid gap-2 md:grid-cols-2">
-                {ev.priority_signals.map((s, i) => (
-                  <div key={i} className="rounded-lg border p-3">
-                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                      <span className="text-sm font-semibold">{s.title ?? `Sinal ${i + 1}`}</span>
-                      {s.confidence_level ? <Badge variant="outline">{CONFIDENCE_LABEL[s.confidence_level]}</Badge> : null}
-                      {s.evidence_status ? <Badge variant="secondary">{EVIDENCE_LABEL[s.evidence_status]}</Badge> : null}
-                    </div>
-                    <div className="space-y-2">
-                      <Field label="Achado" value={s.finding} />
-                      <Field label="Impacto comercial" value={s.business_impact} />
-                      <Field label="Ação recomendada" value={s.recommended_action} />
-                      <Field label="Capítulo de origem" value={s.source_chapter} />
-                      {has(s.source_quote) ? (
-                        <blockquote className="border-l-2 pl-3 text-sm italic text-muted-foreground">{s.source_quote}</blockquote>
-                      ) : null}
-                    </div>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Badge variant="secondary">{perf.periodoLabel}</Badge>
+              <Badge variant="outline">Resultado geral {fmtPct(perf.geralPct)}</Badge>
+              <Badge variant="outline">{perf.clientes} clientes</Badge>
+            </div>
+            {perf.familias.length ? (
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {perf.familias.map(f => (
+                  <div key={f.familia} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+                    <span>{f.familia}</span>
+                    <span className="text-muted-foreground">{fmtPct(f.pct)}</span>
                   </div>
                 ))}
               </div>
             ) : null}
-            <div className="grid gap-3 md:grid-cols-2">
-              {ev.decisions_required.length ? (
-                <div className="rounded-lg border p-3">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Decisões requeridas</div>
-                  <ul className="list-disc space-y-1 pl-4 text-sm">
-                    {ev.decisions_required.map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {ev.validation_required.length ? (
-                <div className="rounded-lg border p-3">
-                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validações necessárias</div>
-                  <ul className="list-disc space-y-1 pl-4 text-sm">
-                    {ev.validation_required.map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-            <Field label="Síntese final" value={ev.final_synthesis} />
+            {perf.criticas.length ? (
+              <p className="text-xs text-muted-foreground">
+                Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
+              </p>
+            ) : null}
           </div>
-        </Card>
-      ) : null}
-
-
-
-
-      {/* Linhas de produto */}
-      {visao.product_line_views.length ? (
-        <Card title="Visão por linha de produto">
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {(["todas", ...(Object.keys(CLASSIFICATION_LABEL) as LineClassification[])] as const).map(k => (
-              <button
-                key={k}
-                onClick={() => setFiltroLinha(k as any)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs",
-                  filtroLinha === k ? "border-primary bg-primary/10 text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {k === "todas" ? "Todas" : CLASSIFICATION_LABEL[k as LineClassification]}
-              </button>
-            ))}
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Ainda não há uma Performance ativa para este representante. Após a integração, será possível validar os sinais da entrevista por cliente, família e faixa de atendimento.
+            </p>
+            <Button asChild size="sm" variant="secondary">
+              <a href="/representantes/performance">
+                <Link2 className="mr-2 h-4 w-4" />
+                Vincular Performance
+              </a>
+            </Button>
           </div>
-          <div className="space-y-2">
-            {linhas.map((l, i) => (
-              <Collapse key={i} title={`${l.product_line ?? "Linha"}${l.classification ? ` · ${CLASSIFICATION_LABEL[l.classification]}` : ""}`}>
-                <div className="space-y-2">
-                  <Field label="Leitura resumida" value={l.summary} />
-                  <Field label="O que funciona" value={l.what_works} />
-                  <Field label="Principal barreira" value={l.main_barrier} />
-                  <Field label="Concorrente principal" value={l.main_competitor} />
-                  <Field label="Vantagem do concorrente" value={l.competitor_advantage} />
-                  <Field label="Oportunidade" value={l.opportunity} />
-                  <Field label="Ação recomendada" value={l.recommended_action} />
-                  <Field label="Evidência" value={l.evidence} />
-                  {has(l.source_quote) ? (
-                    <blockquote className="border-l-2 pl-3 text-sm italic text-muted-foreground">{l.source_quote}</blockquote>
-                  ) : null}
-                </div>
-              </Collapse>
-            ))}
-          </div>
-        </Card>
-      ) : null}
+        )}
+      </Card>
 
-      {/* Perspectivas */}
-      <Card title="Perspectivas da entrevista">
+      {/* Perspectivas completas */}
+      <Card title="Perspectivas completas">
         <div className="grid gap-2 md:grid-cols-2">
           {visao.perspectives.map(p => {
             const vazia = !has(p.executive_finding) && !has(p.full_reading);
@@ -846,7 +790,7 @@ function VisaoRep2View({
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
-        <Card title="Paralelo com o grupo">
+        <Card title="Paralelo completo">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {cv.supported_points != null && cv.comparable_point_count != null ? (
               <Badge variant="secondary">
@@ -920,45 +864,102 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
-      {/* Performance */}
-      <Card title="Conexão com a Performance">
-        {perf ? (
+
+      {/* Visão executiva */}
+      {has(ev.central_thesis) || ev.priority_signals.length ? (
+
+        <Card title="Relatório de origem · visão executiva">
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Badge variant="secondary">{perf.periodoLabel}</Badge>
-              <Badge variant="outline">Resultado geral {fmtPct(perf.geralPct)}</Badge>
-              <Badge variant="outline">{perf.clientes} clientes</Badge>
-            </div>
-            {perf.familias.length ? (
-              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-                {perf.familias.map(f => (
-                  <div key={f.familia} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
-                    <span>{f.familia}</span>
-                    <span className="text-muted-foreground">{fmtPct(f.pct)}</span>
+            <Field label="Tese central" value={ev.central_thesis} />
+            <Field label="Risco estratégico" value={ev.strategic_risk} />
+            {ev.priority_signals.length ? (
+              <div className="grid gap-2 md:grid-cols-2">
+                {ev.priority_signals.map((s, i) => (
+                  <div key={i} className="rounded-lg border p-3">
+                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                      <span className="text-sm font-semibold">{s.title ?? `Sinal ${i + 1}`}</span>
+                      {s.confidence_level ? <Badge variant="outline">{CONFIDENCE_LABEL[s.confidence_level]}</Badge> : null}
+                      {s.evidence_status ? <Badge variant="secondary">{EVIDENCE_LABEL[s.evidence_status]}</Badge> : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Field label="Achado" value={s.finding} />
+                      <Field label="Impacto comercial" value={s.business_impact} />
+                      <Field label="Ação recomendada" value={s.recommended_action} />
+                      <Field label="Capítulo de origem" value={s.source_chapter} />
+                      {has(s.source_quote) ? (
+                        <blockquote className="border-l-2 pl-3 text-sm italic text-muted-foreground">{s.source_quote}</blockquote>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : null}
-            {perf.criticas.length ? (
-              <p className="text-xs text-muted-foreground">
-                Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
-              </p>
-            ) : null}
+            <div className="grid gap-3 md:grid-cols-2">
+              {ev.decisions_required.length ? (
+                <div className="rounded-lg border p-3">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Decisões requeridas</div>
+                  <ul className="list-disc space-y-1 pl-4 text-sm">
+                    {ev.decisions_required.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {ev.validation_required.length ? (
+                <div className="rounded-lg border p-3">
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Validações necessárias</div>
+                  <ul className="list-disc space-y-1 pl-4 text-sm">
+                    {ev.validation_required.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+            <Field label="Síntese final" value={ev.final_synthesis} />
           </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Ainda não há uma Performance ativa para este representante. Após a integração, será possível validar os sinais da entrevista por cliente, família e faixa de atendimento.
-            </p>
-            <Button asChild size="sm" variant="secondary">
-              <a href="/representantes/performance">
-                <Link2 className="mr-2 h-4 w-4" />
-                Vincular Performance
-              </a>
-            </Button>
+        </Card>
+      ) : null}
+
+
+      {/* Linhas de produto */}
+      {visao.product_line_views.length ? (
+        <Card title="Informações adicionais · linhas de produto">
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {(["todas", ...(Object.keys(CLASSIFICATION_LABEL) as LineClassification[])] as const).map(k => (
+              <button
+                key={k}
+                onClick={() => setFiltroLinha(k as any)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs",
+                  filtroLinha === k ? "border-primary bg-primary/10 text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {k === "todas" ? "Todas" : CLASSIFICATION_LABEL[k as LineClassification]}
+              </button>
+            ))}
           </div>
-        )}
-      </Card>
+          <div className="space-y-2">
+            {linhas.map((l, i) => (
+              <Collapse key={i} title={`${l.product_line ?? "Linha"}${l.classification ? ` · ${CLASSIFICATION_LABEL[l.classification]}` : ""}`}>
+                <div className="space-y-2">
+                  <Field label="Leitura resumida" value={l.summary} />
+                  <Field label="O que funciona" value={l.what_works} />
+                  <Field label="Principal barreira" value={l.main_barrier} />
+                  <Field label="Concorrente principal" value={l.main_competitor} />
+                  <Field label="Vantagem do concorrente" value={l.competitor_advantage} />
+                  <Field label="Oportunidade" value={l.opportunity} />
+                  <Field label="Ação recomendada" value={l.recommended_action} />
+                  <Field label="Evidência" value={l.evidence} />
+                  {has(l.source_quote) ? (
+                    <blockquote className="border-l-2 pl-3 text-sm italic text-muted-foreground">{l.source_quote}</blockquote>
+                  ) : null}
+                </div>
+              </Collapse>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Shield className="h-3.5 w-3.5" />

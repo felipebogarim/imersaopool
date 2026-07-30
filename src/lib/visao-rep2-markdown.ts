@@ -209,8 +209,15 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           evidence_status: evid(f.status_evidencia),
           source_chapter: nz(f.capitulo_origem),
           source_quote: nz(f.citacao),
+          // Vínculos opcionais (Leitura integrada). Ausentes em relatórios antigos.
+          signal_id: nz(f.signal_id) ?? nz(f.id_sinal),
+          validation_note: nz(f.validacao) ?? nz(f.validacao_necessaria),
+          related_perspectives: list(f.perspectivas_relacionadas ?? f.related_perspectives)
+            .map(s => Number(/(\d{1,2})/.exec(s)?.[1]))
+            .filter(n => Number.isFinite(n) && n >= 1 && n <= 8),
         };
       });
+
     v.executive_view.priority_signals = sinais;
   }
 
@@ -290,6 +297,8 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
       comparative_classification: nz(f.classificacao_comparativa),
       full_reading: text(lb.leitura_completa),
       structured_fields: {},
+      signal_ids: list(f.sinais_relacionados ?? f.signal_ids ?? f.sinal_relacionado),
+
     };
   }
 
@@ -304,6 +313,9 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     v.comparative_view.methodology_note = text(lb.nota_metodologica);
 
     const kids = childrenOf(par);
+    /** Vínculo opcional do item comparativo com um sinal executivo. */
+    const sig = (f: Record<string, string>) =>
+      nz(f.sinal_relacionado) ?? nz(f.signal_id) ?? nz(f.comparison_signal_id);
     const consensos: ConsensusPoint[] = kids
       .filter(b => /^consenso/.test(norm(b.title)))
       .map(b => {
@@ -313,6 +325,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           supporting_source_count: num(f.fontes_que_sustentam),
           comparable_source_count: num(f.total_de_fontes_comparaveis),
           supporting_sources: list(f.fontes),
+          signal_id: sig(f),
         };
       });
     const temas: UnaddressedTopic[] = kids
@@ -325,6 +338,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           comparison_is_valid: bool(f.comparacao_valida),
           classification: nz(f.classificacao),
           methodological_note: nz(f.nota_metodologica),
+          signal_id: sig(f),
         };
       });
     const divs: Divergence[] = kids
@@ -338,6 +352,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           sources_supporting_predominant_view: list(f.fontes_leitura_predominante),
           sources_supporting_representative_view: list(f.fontes_leitura_representante),
           evidence: nz(f.evidencia),
+          signal_id: sig(f),
         };
       });
     const excl: ExclusiveReading[] = kids
@@ -349,8 +364,10 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           region: nz(f.regiao),
           supporting_evidence: nz(f.evidencia),
           validation_required: nz(f.validacao_necessaria),
+          signal_id: sig(f),
         };
       });
+
 
     v.comparative_view.consensus_points = consensos;
     v.comparative_view.unaddressed_topics = temas;
@@ -390,7 +407,10 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- nivel_confianca: ${S(s.confidence_level)}`);
     L.push(`- status_evidencia: ${S(s.evidence_status)}`);
     L.push(`- capitulo_origem: ${S(s.source_chapter)}`);
-    L.push(`- citacao: ${S(s.source_quote)}`, "");
+    L.push(`- citacao: ${S(s.source_quote)}`);
+    L.push(`- signal_id: ${S(s.signal_id)}`);
+    L.push(`- validacao: ${S(s.validation_note)}`);
+    L.push(`- perspectivas_relacionadas: ${(s.related_perspectives ?? []).join(", ")}`, "");
   });
   L.push("**Decisões requeridas**", "");
   v.executive_view.decisions_required.forEach(d => L.push(`- ${d}`));
@@ -442,7 +462,8 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- citacao: ${S(p.source_quote)}`);
     L.push(`- nivel_confianca: ${S(p.confidence_level)}`);
     L.push(`- status_evidencia: ${S(p.evidence_status)}`);
-    L.push(`- classificacao_comparativa: ${S(p.comparative_classification)}`, "");
+    L.push(`- classificacao_comparativa: ${S(p.comparative_classification)}`);
+    L.push(`- sinais_relacionados: ${(p.signal_ids ?? []).join(", ")}`, "");
     L.push("**Leitura completa**", "", S(p.full_reading), "");
   });
 
@@ -456,7 +477,8 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`### Consenso ${i + 1}`, "");
     L.push(`- afirmacao: ${S(c.statement)}`);
     L.push(`- fontes_que_sustentam: ${S(c.supporting_source_count)}`);
-    L.push(`- total_de_fontes_comparaveis: ${S(c.comparable_source_count)}`, "");
+    L.push(`- total_de_fontes_comparaveis: ${S(c.comparable_source_count)}`);
+    L.push(`- sinal_relacionado: ${S(c.signal_id)}`, "");
   });
   L.push("**Temas não abordados**", "");
   v.comparative_view.unaddressed_topics.forEach((t, i) => {
@@ -465,7 +487,8 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- pergunta_foi_feita: ${t.question_was_asked == null ? "" : t.question_was_asked ? "sim" : "nao"}`);
     L.push(`- comparacao_valida: ${t.comparison_is_valid == null ? "" : t.comparison_is_valid ? "sim" : "nao"}`);
     L.push(`- classificacao: ${S(t.classification)}`);
-    L.push(`- nota_metodologica: ${S(t.methodological_note)}`, "");
+    L.push(`- nota_metodologica: ${S(t.methodological_note)}`);
+    L.push(`- sinal_relacionado: ${S(t.signal_id)}`, "");
   });
   L.push("**Divergências**", "");
   v.comparative_view.divergences.forEach((d, i) => {
@@ -475,7 +498,8 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- leitura_do_representante: ${S(d.representative_view)}`);
     L.push(`- fontes_leitura_predominante: ${d.sources_supporting_predominant_view.join(", ")}`);
     L.push(`- fontes_leitura_representante: ${d.sources_supporting_representative_view.join(", ")}`);
-    L.push(`- evidencia: ${S(d.evidence)}`, "");
+    L.push(`- evidencia: ${S(d.evidence)}`);
+    L.push(`- sinal_relacionado: ${S(d.signal_id)}`, "");
   });
   L.push("**Leituras exclusivas**", "");
   v.comparative_view.exclusive_readings.forEach((e, i) => {
@@ -483,7 +507,8 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- afirmacao: ${S(e.statement)}`);
     L.push(`- regiao: ${S(e.region)}`);
     L.push(`- evidencia: ${S(e.supporting_evidence)}`);
-    L.push(`- validacao_necessaria: ${S(e.validation_required)}`, "");
+    L.push(`- validacao_necessaria: ${S(e.validation_required)}`);
+    L.push(`- sinal_relacionado: ${S(e.signal_id)}`, "");
   });
 
   return L.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
