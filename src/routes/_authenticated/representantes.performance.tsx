@@ -607,16 +607,8 @@ function PerformancePage() {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
 
-      // Marca a atual como substituída
-      if (currentUpload) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_em: new Date().toISOString() } as any)
-          .eq("id", currentUpload.id);
-      }
-
-      // Duplica a antiga como nova ativa
-      const { data: up } = await supabase
+      // Duplica a antiga como nova ativa PRIMEIRO
+      const { data: up, error: upErr } = await supabase
         .from("rep_performance_uploads")
         .insert({
           representative_id: repId,
@@ -636,7 +628,16 @@ function PerformancePage() {
         } as any)
         .select("id")
         .single();
-      if (!up) throw new Error("Falha ao restaurar");
+      if (upErr || !up) throw upErr ?? new Error("Falha ao restaurar");
+
+      // Só então marca a atual como substituída
+      if (currentUpload) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString(), substituida_por: up.id } as any)
+          .eq("id", currentUpload.id);
+      }
+
 
       const { data: srcRows } = await supabase
         .from("rep_performance_rows")
