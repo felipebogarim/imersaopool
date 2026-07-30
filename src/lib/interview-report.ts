@@ -6,19 +6,55 @@ const CLASSIF = Object.fromEntries(CLASSIFICACOES.map((c) => [c.value, c.label])
 const TIPO = Object.fromEntries(TIPOS_EMPRESA.map((t) => [t.value, t.label]));
 
 // Paleta editorial — alinhada à identidade poolFlux (dark navy + cyan elétrico)
-const BG: [number, number, number] = [6, 14, 26]; // background principal (near-black navy)
-const SURFACE: [number, number, number] = [14, 26, 44]; // cartões / superfícies elevadas
-const SURFACE_SOFT: [number, number, number] = [20, 36, 58];
-const NAVY: [number, number, number] = [10, 20, 44];
-const NAVY_SOFT: [number, number, number] = [180, 210, 235];
-const CYAN: [number, number, number] = [0, 229, 255]; // primária
-const CYAN_DEEP: [number, number, number] = [90, 220, 240];
-const CORAL: [number, number, number] = [0, 229, 255]; // acentos remapeados para o cyan da marca
-const INK: [number, number, number] = [232, 240, 250]; // texto principal sobre dark
-const MUTED: [number, number, number] = [130, 150, 175];
-const HAIRLINE: [number, number, number] = [30, 50, 78];
-const CREAM: [number, number, number] = [6, 14, 26]; // background das páginas
-const HIGHLIGHT: [number, number, number] = [12, 40, 58]; // fundo de callouts
+export type ReportTheme = "dark" | "light";
+type RGB = [number, number, number];
+
+let BG: RGB = [6, 14, 26]; // background principal (near-black navy)
+let SURFACE: RGB = [14, 26, 44]; // cartões / superfícies elevadas
+let SURFACE_SOFT: RGB = [20, 36, 58];
+let NAVY: RGB = [10, 20, 44];
+let NAVY_SOFT: RGB = [180, 210, 235];
+let CYAN: RGB = [0, 229, 255]; // primária
+let CYAN_DEEP: RGB = [90, 220, 240];
+let CORAL: RGB = [0, 229, 255]; // acentos remapeados para o cyan da marca
+let INK: RGB = [232, 240, 250]; // texto principal
+let MUTED: RGB = [130, 150, 175];
+let HAIRLINE: RGB = [30, 50, 78];
+let CREAM: RGB = [6, 14, 26]; // background das páginas
+let HIGHLIGHT: RGB = [12, 40, 58]; // fundo de callouts
+
+function applyTheme(theme: ReportTheme) {
+  if (theme === "light") {
+    BG = [255, 255, 255];
+    SURFACE = [244, 248, 252];
+    SURFACE_SOFT = [232, 240, 248];
+    NAVY = [10, 20, 44];
+    NAVY_SOFT = [60, 90, 120];
+    CYAN = [0, 150, 180];
+    CYAN_DEEP = [0, 120, 150];
+    CORAL = [0, 150, 180];
+    INK = [17, 24, 39];
+    MUTED = [100, 116, 139];
+    HAIRLINE = [205, 218, 230];
+    CREAM = [255, 255, 255];
+    HIGHLIGHT = [226, 243, 248];
+    return;
+  }
+  BG = [6, 14, 26];
+  SURFACE = [14, 26, 44];
+  SURFACE_SOFT = [20, 36, 58];
+  NAVY = [10, 20, 44];
+  NAVY_SOFT = [180, 210, 235];
+  CYAN = [0, 229, 255];
+  CYAN_DEEP = [90, 220, 240];
+  CORAL = [0, 229, 255];
+  INK = [232, 240, 250];
+  MUTED = [130, 150, 175];
+  HAIRLINE = [30, 50, 78];
+  CREAM = [6, 14, 26];
+  HIGHLIGHT = [12, 40, 58];
+}
+
 
 import {
   drawCover,
