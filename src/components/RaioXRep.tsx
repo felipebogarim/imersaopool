@@ -115,7 +115,8 @@ export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] })
                   <DetalheLente d={sel} ordem={i + 1} onClose={() => setAtiva(null)} />
                 </div>
               )}
-            </div>
+            </Fragment>
+
           );
         })}
       </div>
