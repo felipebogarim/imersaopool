@@ -46,6 +46,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     entrevistado: defaults?.entrevistado ?? "",
     modelo: defaults?.modelo ?? "",
   });
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [includeInterviewee, setIncludeInterviewee] = useState(false);
   const [intervName, setIntervName] = useState<string>("");
   const [intervPhoto, setIntervPhoto] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         modelo: defaults?.modelo ?? "",
       });
       setIncludeInterviewee(false);
+      setTheme("dark");
       setIntervName(defaults?.entrevistado ?? "");
       setIntervPhoto(null);
       setCoverPreview(null);
@@ -120,6 +122,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         intervieweePage: includeInterviewee
           ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado, template }
           : null,
+        theme,
       });
 
       toast.success("PDF gerado");
@@ -211,6 +214,31 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
                 onChange={(e) => setFields((f) => ({ ...f, modelo: e.target.value }))}
               />
             </div>
+
+            <div className="grid gap-2">
+              <Label>Tema do relatório</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { id: "dark" as const, label: "Tema escuro" },
+                  { id: "light" as const, label: "Tema claro" },
+                ]).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    className={`rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
+                      theme === t.id ? "border-primary" : "border-border hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Define o fundo e as cores das páginas internas do relatório.
+              </p>
+            </div>
+
 
             <div className="rounded-lg border p-4 space-y-3">
               <label className="flex items-center gap-2 cursor-pointer">
