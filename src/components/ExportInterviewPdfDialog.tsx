@@ -46,6 +46,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     entrevistado: defaults?.entrevistado ?? "",
     modelo: defaults?.modelo ?? "",
   });
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [includeInterviewee, setIncludeInterviewee] = useState(false);
   const [intervName, setIntervName] = useState<string>("");
   const [intervPhoto, setIntervPhoto] = useState<string | null>(null);
