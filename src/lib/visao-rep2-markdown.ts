@@ -180,10 +180,71 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
   // Metadados
   const meta = kv(secOf(/^metadados?$/)?.lines ?? []);
   v.metadata.schema_version = nz(meta.schema_version) ?? VISAO_REP_SCHEMA_VERSION;
+  v.metadata.view_model = nz(meta.view_model) ?? nz(meta.modelo_de_visualizacao) ?? null;
   v.metadata.representative_name = nz(meta.representante) ?? nz(meta.representative_name);
   v.metadata.region = nz(meta.regiao) ?? nz(meta.region);
   v.metadata.interview_date = nz(meta.data_entrevista);
   v.metadata.report_date = nz(meta.data_relatorio);
+
+  // Schema 3.0 — Síntese presidencial + Temas estratégicos (executive_brief_v1)
+  const sintesePres = secOf(/sintese_presidencial/);
+  const temasSec = secOf(/temas_estrategicos/);
+  const temaBlocos = childrenOf(temasSec).filter(b => /^tema/.test(norm(b.title)));
+
+  if (sintesePres || temaBlocos.length) {
+    const presidential_synthesis = sintesePres
+      ? text([...sintesePres.lines, ...childrenOf(sintesePres).flatMap(c => c.lines)])
+      : null;
+
+    const themes: ExecutiveTheme[] = temaBlocos.map(b => {
+      const f = kv(b.lines);
+      const lb = labeled(b.lines);
+      const pick = (...keys: string[]) => {
+        for (const k of keys) {
+          const direto = nz(f[k]);
+          if (direto) return direto;
+          const bloco = text(lb[k]);
+          if (bloco) return bloco;
+        }
+        return null;
+      };
+      const pickList = (...keys: string[]) => {
+        for (const k of keys) {
+          const b1 = bullets(lb[k]);
+          if (b1.length) return b1;
+          const l1 = list(f[k]);
+          if (l1.length) return l1;
+        }
+        return [];
+      };
+      const tituloHeader = b.title.replace(/^Tema\s*\d*\s*[—:-]?\s*/i, "").trim() || null;
+      return {
+        ...emptyExecutiveTheme(),
+        id: nz(f.id) ?? nz(f.id_tema),
+        selector: pick("seletor", "rotulo"),
+        title: pick("titulo", "titulo_conclusivo", "conclusao") ?? tituloHeader,
+        context: pick("contexto", "leitura", "narrativa"),
+        where_appears: pickList("onde_aparece", "onde_isso_aparece"),
+        represents: pick("representa", "o_que_isso_representa", "significado_executivo"),
+        decision: pick("decisao", "decisao_requerida"),
+        validation: pick("validacao", "validacao_necessaria"),
+        evidence: pick("evidencia", "citacao"),
+        comparison: pick("comparacao", "comparacao_com_o_grupo", "paralelo_com_o_grupo"),
+        confidence: pick("confianca", "nivel_confianca"),
+        perspectives: pickList("perspectivas", "perspectivas_relacionadas"),
+        entities: {
+          produtos: pickList("produtos", "produtos_citados"),
+          concorrentes: pickList("concorrentes", "concorrentes_citados"),
+          clientes: pickList("clientes", "clientes_citados"),
+          ferramentas: pickList("ferramentas", "ferramentas_citadas"),
+          nota: pick("nota", "nota_metodologica"),
+        },
+      };
+    });
+
+    v.executive_brief = { presidential_synthesis, themes };
+  }
+
 
   // 00 — Visão executiva
   const exec = secOf(/visao_executiva/);
