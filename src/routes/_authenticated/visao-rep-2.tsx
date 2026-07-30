@@ -30,6 +30,7 @@ import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/li
 import {
   AlertTriangle,
   ChevronDown,
+  Eraser,
   FileDown,
   FileUp,
   Link2,
