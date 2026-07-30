@@ -521,12 +521,8 @@ function PerformancePage() {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
 
-      // Cria nova versão (não sobrescreve)
-      await supabase
-        .from("rep_performance_uploads")
-        .update({ substituida_em: new Date().toISOString() } as any)
-        .eq("id", currentUpload.id);
-
+      // Cria a nova versão PRIMEIRO; só depois marca a anterior como substituída.
+      // (Se o insert falhar, o representante continua com a versão atual ativa.)
       const { data: up, error: upErr } = await supabase
         .from("rep_performance_uploads")
         .insert({
@@ -551,8 +547,9 @@ function PerformancePage() {
 
       await supabase
         .from("rep_performance_uploads")
-        .update({ substituida_por: up.id } as any)
+        .update({ substituida_em: new Date().toISOString(), substituida_por: up.id } as any)
         .eq("id", currentUpload.id);
+
 
       const payload = draft.map((r) => {
         const total = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
