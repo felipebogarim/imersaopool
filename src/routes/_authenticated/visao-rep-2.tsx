@@ -651,7 +651,7 @@ function VisaoRep2View({
       {/* Contexto e carteira estratégica */}
       {temContexto || clientesPrincipais.length ? (
         <Card title="Contexto e carteira estratégica">
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-4">
             {temContexto ? (
               <div className="space-y-3">
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -689,7 +689,7 @@ function VisaoRep2View({
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Clientes estratégicos
                 </div>
-                <div className="space-y-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   {clientesPrincipais.map((c, i) => (
                     <div key={i} className="rounded-lg border p-3">
                       <div className="break-words text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
@@ -706,6 +706,7 @@ function VisaoRep2View({
           </div>
         </Card>
       ) : null}
+
 
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
