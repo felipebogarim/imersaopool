@@ -198,7 +198,7 @@ export type VisaoRep2 = {
   performance_connection: PerformanceConnection;
   source_control: SourceControl;
   /** Campos herdados da Visão Rep original (percentuais de alinhamento etc.). */
-  legacy?: Record<string, unknown>;
+  legacy?: Record<string, string | number | boolean | null>;
 };
 
 export const MAX_SIGNALS = 5;
