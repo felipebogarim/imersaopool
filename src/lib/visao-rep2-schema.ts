@@ -386,6 +386,17 @@ const emptyExclusive: ExclusiveReading = {
 
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
+/** Lista de números de perspectiva (1..8) informada explicitamente no relatório. */
+const asNumList = (v: unknown): number[] =>
+  asArray(v)
+    .map(x => {
+      const t = asText(x);
+      const n = t ? Number(/(\d{1,2})/.exec(t)?.[1]) : NaN;
+      return Number.isFinite(n) ? n : null;
+    })
+    .filter((n): n is number => n != null && n >= 1 && n <= 8);
+
+
 function coerceStructuredFields(v: unknown): Record<string, string | string[]> {
   const o = (v && typeof v === "object" && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
   const out: Record<string, string | string[]> = {};
