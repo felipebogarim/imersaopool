@@ -543,9 +543,18 @@ function VisaoRep2Page() {
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirmar importação
             </Button>
+            <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+            <Button variant="secondary" onClick={() => exportar(normalizeVisaoRep2(draft), draft.metadata.representative_name ?? "relatorio")}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar relatório estruturado
+            </Button>
             <Button variant="ghost" onClick={() => { setDraft(null); setDraftFile(null); setDraftHash(null); }}>
               Cancelar
             </Button>
+
           </div>
         </Card>
       ) : null}
