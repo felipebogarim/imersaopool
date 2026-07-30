@@ -496,38 +496,25 @@ function VisaoRep2Page() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border p-3">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">Campos reconhecidos</div>
-              <ul className="space-y-0.5 text-xs">
-                {validacao.recognized.map(r => (
-                  <li key={r}>• {r}</li>
-                ))}
-              </ul>
-            </div>
-            <div className={cn("rounded-lg border p-3", validacao.missingRequired.length && "border-destructive/50")}>
-              <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5" /> Obrigatórios ausentes
-              </div>
-              {validacao.missingRequired.length ? (
-                <ul className="space-y-0.5 text-xs text-destructive">
+          <div className="mt-4">
+            {validacao.missingRequired.length ? (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
+                <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
+                  <AlertTriangle className="h-4 w-4" /> Corrija antes de importar
+                </div>
+                <ul className="space-y-1 text-destructive">
                   {validacao.missingRequired.map(r => (
-                    <li key={r}>• {r}</li>
+                    <li key={r}>• Informe “{r}” no relatório e envie o arquivo novamente.</li>
                   ))}
                 </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhum.</p>
-              )}
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">Opcionais ausentes (ignorados)</div>
-              <ul className="space-y-0.5 text-xs text-muted-foreground">
-                {validacao.missingOptional.map(r => (
-                  <li key={r}>• {r}</li>
-                ))}
-              </ul>
-            </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                Arquivo validado e pronto para importação.
+              </p>
+            )}
           </div>
+
 
           <div className="mt-4">
             <Collapse title="Prévia do conteúdo" defaultOpen>
