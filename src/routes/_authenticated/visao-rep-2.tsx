@@ -892,13 +892,15 @@ function VisaoRep2View({
       ) : null}
 
 
-      {/* Visão executiva */}
-      {has(ev.central_thesis) || ev.priority_signals.length ? (
+      {/* Visão executiva — oculta no schema 3.0 (executive_brief_v1): tese central e
+          sinais prioritários existem apenas como espelho interno do briefing. */}
+      {!briefV1 && (has(ev.central_thesis) || ev.priority_signals.length) ? (
 
         <Collapse title="Relatório de origem · visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
             <Field label="Risco estratégico" value={ev.strategic_risk} />
+
             {ev.priority_signals.length ? (
               <div className="grid gap-2 md:grid-cols-2">
                 {ev.priority_signals.map((s, i) => (
