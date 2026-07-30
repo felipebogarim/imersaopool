@@ -280,36 +280,198 @@ export function emptyVisaoRep2(partial?: Partial<Metadata>): VisaoRep2 {
   };
 }
 
-/** Normaliza um objeto vindo do banco (inclusive registros antigos/parciais). */
+// ---- Coerção defensiva ----------------------------------------------------
+// A IA às vezes devolve objetos ({title, description, impact}) onde o modelo
+// canônico espera texto. Renderizar isso quebra a página (React #31), então
+// tudo que deve ser texto é achatado aqui, sem perder conteúdo.
+
+const TEXT_KEYS = [
+  "text", "texto", "statement", "title", "titulo", "topic", "tema", "name", "nome",
+  "finding", "descricao", "description", "detalhe", "detail", "value", "valor",
+  "impact", "business_impact", "impacto", "action", "recommended_action", "acao", "quote",
+];
+
+function asText(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) {
+    const partes = v.map(asText).filter(Boolean) as string[];
+    return partes.length ? partes.join(" · ") : null;
+  }
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    const ordenadas = [
+      ...TEXT_KEYS.filter(k => k in o),
+      ...Object.keys(o).filter(k => !TEXT_KEYS.includes(k)),
+    ];
+    const partes: string[] = [];
+    for (const k of ordenadas) {
+      const t = asText(o[k]);
+      if (t && !partes.includes(t)) partes.push(t);
+    }
+    return partes.length ? partes.join(" — ") : null;
+  }
+  return null;
+}
+
+function asTextList(v: unknown): string[] {
+  if (v == null) return [];
+  const arr = Array.isArray(v) ? v : [v];
+  return arr.map(asText).filter((s): s is string => !!s);
+}
+
+const asNum = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** Aplica asText a todos os campos de texto conhecidos de um registro. */
+function coerceRecord<T extends Record<string, any>>(
+  base: T,
+  raw: unknown,
+  listKeys: (keyof T)[] = [],
+  keepKeys: (keyof T)[] = [],
+): T {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
+  const out = { ...base } as Record<string, any>;
+  for (const k of Object.keys(base)) {
+    if (!(k in o)) continue;
+    if (keepKeys.includes(k as keyof T)) out[k] = o[k];
+    else if (listKeys.includes(k as keyof T)) out[k] = asTextList(o[k]);
+    else if (typeof base[k] === "number" || base[k] === null) out[k] = asText(o[k]);
+    else out[k] = asText(o[k]) ?? base[k];
+  }
+  return out as T;
+}
+
+const emptySignal: PrioritySignal = {
+  title: null, finding: null, business_impact: null, recommended_action: null,
+  confidence_level: null, evidence_status: null, source_chapter: null, source_quote: null,
+};
+const emptyClient: StrategicClient = {
+  client_name: null, strategic_reason: null, perceived_potential: null, identified_opportunity: null,
+  priority_product_lines: null, main_competitor: null, recommended_next_action: null, attention_point: null,
+};
+const emptyLine: ProductLineView = {
+  product_line: null, summary: null, classification: null, what_works: null, main_barrier: null,
+  main_competitor: null, competitor_advantage: null, opportunity: null, recommended_action: null,
+  evidence: null, source_quote: null,
+};
+const emptyConsensus: ConsensusPoint = {
+  statement: null, supporting_source_count: null, comparable_source_count: null, supporting_sources: [],
+};
+const emptyUnaddressed: UnaddressedTopic = {
+  statement: null, question_was_asked: null, comparison_is_valid: null, classification: null, methodological_note: null,
+};
+const emptyDivergence: Divergence = {
+  topic: null, predominant_view: null, representative_view: null,
+  sources_supporting_predominant_view: [], sources_supporting_representative_view: [], evidence: null,
+};
+const emptyExclusive: ExclusiveReading = {
+  statement: null, region: null, supporting_evidence: null, validation_required: null,
+};
+
+const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : v == null ? [] : [v]);
+
+function coerceStructuredFields(v: unknown): Record<string, string | string[]> {
+  const o = (v && typeof v === "object" && !Array.isArray(v) ? v : {}) as Record<string, unknown>;
+  const out: Record<string, string | string[]> = {};
+  for (const [k, val] of Object.entries(o)) {
+    if (Array.isArray(val)) {
+      const list = asTextList(val);
+      if (list.length) out[k] = list;
+    } else {
+      const t = asText(val);
+      if (t) out[k] = t;
+    }
+  }
+  return out;
+}
+
+/** Normaliza um objeto vindo do banco ou da IA (inclusive registros antigos/parciais). */
 export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
   const base = emptyVisaoRep2();
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, any>;
+  const ev = (o.executive_view ?? {}) as Record<string, any>;
+  const ctx = (o.representative_context ?? {}) as Record<string, any>;
+  const cv = (o.comparative_view ?? {}) as Record<string, any>;
+
   const merged: VisaoRep2 = {
     ...base,
     ...o,
     metadata: { ...base.metadata, ...(o.metadata ?? {}) },
-    executive_view: { ...base.executive_view, ...(o.executive_view ?? {}) },
-    representative_context: { ...base.representative_context, ...(o.representative_context ?? {}) },
-    strategic_clients: Array.isArray(o.strategic_clients) ? o.strategic_clients : [],
-    product_line_views: Array.isArray(o.product_line_views) ? o.product_line_views : [],
-    perspectives: Array.isArray(o.perspectives) && o.perspectives.length
-      ? PERSPECTIVE_TITLES.map((t, i) => ({
-          ...emptyPerspective(i),
-          ...(o.perspectives.find((p: any) => Number(p?.perspective_number) === i + 1) ?? {}),
-          perspective_number: i + 1,
-          perspective_title: o.perspectives.find((p: any) => Number(p?.perspective_number) === i + 1)?.perspective_title || t,
-        }))
-      : base.perspectives,
-    comparative_view: { ...base.comparative_view, ...(o.comparative_view ?? {}) },
+    executive_view: {
+      central_thesis: asText(ev.central_thesis) ?? null,
+      strategic_risk: asText(ev.strategic_risk) ?? null,
+      priority_signals: asArray(ev.priority_signals)
+        .map(s => (typeof s === "string" ? { ...emptySignal, finding: s } : coerceRecord(emptySignal, s)))
+        .slice(0, MAX_SIGNALS),
+      decisions_required: asTextList(ev.decisions_required).slice(0, MAX_DECISIONS),
+      validation_required: asTextList(ev.validation_required).slice(0, MAX_VALIDATIONS),
+      final_synthesis: asText(ev.final_synthesis) ?? null,
+    },
+    representative_context: {
+      represented_brands: asTextList(ctx.represented_brands),
+      region_summary: asText(ctx.region_summary) ?? null,
+      service_model: asText(ctx.service_model) ?? null,
+      regional_structure: asText(ctx.regional_structure) ?? null,
+      additional_context: asText(ctx.additional_context) ?? null,
+    },
+    strategic_clients: asArray(o.strategic_clients)
+      .map(c => (typeof c === "string" ? { ...emptyClient, client_name: c } : coerceRecord(emptyClient, c)))
+      .slice(0, MAX_CLIENTS),
+    product_line_views: asArray(o.product_line_views).map(l =>
+      typeof l === "string" ? { ...emptyLine, product_line: l } : coerceRecord(emptyLine, l),
+    ),
+    perspectives: PERSPECTIVE_TITLES.map((t, i) => {
+      const bruto = asArray(o.perspectives).find((p: any) => Number(p?.perspective_number) === i + 1);
+      const p = coerceRecord(emptyPerspective(i), bruto, [], ["perspective_number", "structured_fields"]);
+      return {
+        ...p,
+        perspective_number: i + 1,
+        perspective_title: asText((bruto as any)?.perspective_title) || t,
+        structured_fields: coerceStructuredFields((bruto as any)?.structured_fields),
+      };
+    }),
+    comparative_view: {
+      comparable_source_count: asNum(cv.comparable_source_count),
+      comparable_point_count: asNum(cv.comparable_point_count),
+      supported_points: asNum(cv.supported_points),
+      consensus_points: asArray(cv.consensus_points).map(c =>
+        typeof c === "string"
+          ? { ...emptyConsensus, statement: c }
+          : {
+              ...coerceRecord(emptyConsensus, c, ["supporting_sources"]),
+              supporting_source_count: asNum((c as any)?.supporting_source_count),
+              comparable_source_count: asNum((c as any)?.comparable_source_count),
+            },
+      ),
+      unaddressed_topics: asArray(cv.unaddressed_topics).map(u =>
+        typeof u === "string"
+          ? { ...emptyUnaddressed, statement: u }
+          : {
+              ...coerceRecord(emptyUnaddressed, u, [], ["question_was_asked", "comparison_is_valid"]),
+              question_was_asked: typeof (u as any)?.question_was_asked === "boolean" ? (u as any).question_was_asked : null,
+              comparison_is_valid: typeof (u as any)?.comparison_is_valid === "boolean" ? (u as any).comparison_is_valid : null,
+            },
+      ),
+      divergences: asArray(cv.divergences).map(d =>
+        typeof d === "string"
+          ? { ...emptyDivergence, topic: d }
+          : coerceRecord(emptyDivergence, d, ["sources_supporting_predominant_view", "sources_supporting_representative_view"]),
+      ),
+      exclusive_readings: asArray(cv.exclusive_readings).map(e =>
+        typeof e === "string" ? { ...emptyExclusive, statement: e } : coerceRecord(emptyExclusive, e),
+      ),
+      methodology_note: asText(cv.methodology_note) ?? null,
+    },
     performance_connection: { ...base.performance_connection, ...(o.performance_connection ?? {}) },
     source_control: { ...base.source_control, ...(o.source_control ?? {}) },
   };
-  merged.executive_view.priority_signals = (merged.executive_view.priority_signals ?? []).slice(0, MAX_SIGNALS);
-  merged.executive_view.decisions_required = (merged.executive_view.decisions_required ?? []).slice(0, MAX_DECISIONS);
-  merged.executive_view.validation_required = (merged.executive_view.validation_required ?? []).slice(0, MAX_VALIDATIONS);
-  merged.strategic_clients = merged.strategic_clients.slice(0, MAX_CLIENTS);
   return merged;
 }
+
 
 export type ValidationReport = {
   missingRequired: string[];
