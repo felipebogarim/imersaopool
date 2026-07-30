@@ -193,8 +193,17 @@ function VisaoRep() {
                 </p>
               ) : (
                 <>
+                  {perf.estimado && (
+                    <p className="text-xs text-muted-foreground rounded-lg border border-dashed px-3 py-2">
+                      Esta planilha não trouxe o atingimento consolidado: os percentuais abaixo são um índice
+                      estimado a partir do farol de cada célula da matriz.
+                    </p>
+                  )}
                   <div className="grid gap-3 sm:grid-cols-4">
-                    <Metric label={`Atingimento geral · ${perf.periodoLabel}`} value={fmtPct(perf.geralPct)} />
+                    <Metric
+                      label={`${perf.estimado ? "Índice de farol" : "Atingimento geral"} · ${perf.periodoLabel}`}
+                      value={fmtPct(perf.geralPct)}
+                    />
                     <Metric label="Média do grupo" value={fmtPct(perf.mediaGrupoPct)} />
                     <Metric label="Diferença" value={fmtPp(perf.diffPp)} tone={perf.diffPp != null && perf.diffPp < 0 ? "amber" : "teal"} />
                     <Metric
@@ -206,8 +215,13 @@ function VisaoRep() {
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="surface rounded-xl p-4 space-y-2">
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground">Famílias por atingimento</p>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                        {perf.estimado ? "Famílias por índice de farol" : "Famílias por atingimento"}
+                      </p>
                       <ul className="space-y-1.5">
+                        {perf.familias.length === 0 && (
+                          <li className="text-xs text-muted-foreground">Sem dados por família nesta planilha.</li>
+                        )}
                         {perf.familias.map(f => (
                           <li key={f.familia} className="flex items-center gap-2 text-sm">
                             <span className="w-40 shrink-0 truncate">{f.familia}</span>
