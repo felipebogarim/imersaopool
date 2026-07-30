@@ -325,6 +325,34 @@ export function exportVisaoRepPdf({ repNome, regiao, leitura, intro, raiox, para
         color: C.foreground,
       },
     ]);
+
+    // Legenda das cores usadas nos itens de cada perspectiva.
+    const legenda: { cor: RGB; texto: string }[] = [
+      { cor: C.success, texto: "Confirma o grupo — o rep sustenta um ponto que a maioria também aponta" },
+      { cor: C.mutedFg, texto: "Ponto cego — tema forte no grupo que ele não menciona" },
+      { cor: C.compare, texto: "Diverge — posição oposta à leitura predominante do grupo" },
+      { cor: C.foreground, texto: "Leitura exclusiva — percepção só dele / da região dele" },
+    ];
+    const legPad = 10;
+    const legH = legPad * 2 + 13 + legenda.length * 13;
+    br(legH + 8);
+    card(legH, { accent: C.border, fill: C.muted });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...C.primaryDeep);
+    doc.text("Legenda das cores", M + legPad + 4, y + legPad + 8);
+    let ly = y + legPad + 8 + 13;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    for (const it of legenda) {
+      doc.setFillColor(...it.cor);
+      doc.circle(M + legPad + 7, ly - 3, 3, "F");
+      doc.setTextColor(...C.foreground);
+      doc.text(it.texto, M + legPad + 16, ly);
+      ly += 13;
+    }
+    y += legH + 8;
+
     for (const l of paralelo.lentes) {
       const total = l.alinhado.length + l.foraDaCurva.length + l.divergencias.length + l.unicos.length;
       if (!total) continue;
