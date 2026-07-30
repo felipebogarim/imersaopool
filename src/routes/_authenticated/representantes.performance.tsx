@@ -809,7 +809,25 @@ function PerformancePage() {
         }
       />
 
+      {repId && uploads.length === 0 && allVersions.length > 0 && (
+        <div className="px-4 sm:px-8 pt-4">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm">
+              <p className="font-medium">Este representante está sem versão ativa.</p>
+              <p className="text-muted-foreground text-xs">
+                Existem {allVersions.length} versão(ões) no histórico. Os dados não foram perdidos — é
+                possível reativar a mais recente.
+              </p>
+            </div>
+            <Button size="sm" onClick={reactivateLast} disabled={busy}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Reativar última versão
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!repId ? (
+
         <div className="p-4 sm:p-8">
           <div className="surface rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
