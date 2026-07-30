@@ -125,6 +125,8 @@ export async function exportInterviewPdf(
       ? (optsOrCover as ExportInterviewOptions)
       : { cover: optsOrCover as Partial<CoverFields> | undefined };
   const coverOverride = opts.cover;
+  applyTheme(opts.theme ?? "dark");
+
 
   const { data: interview } = await supabase
     .from("interviews")
