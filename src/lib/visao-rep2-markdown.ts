@@ -9,7 +9,11 @@ import {
   VISAO_REP_SCHEMA_VERSION,
   emptyPerspective,
   emptyVisaoRep2,
+  emptyExecutiveTheme,
+  isExecutiveBriefV1,
+  type ExecutiveTheme,
   type ConfidenceLevel,
+
   type ConsensusPoint,
   type Divergence,
   type EvidenceStatus,
