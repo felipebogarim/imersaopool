@@ -100,11 +100,8 @@ export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] })
         {data.map((d, i) => {
           const isAtiva = d.lente === ativa;
           return (
-            <div
-              key={d.lente}
-              className={cn("contents")}
-              style={undefined}
-            >
+            <Fragment key={d.lente}>
+
               <div className={cn(isAtiva ? "order-1" : ativa ? "order-3" : "order-none")}>
                 <LenteCard
                   d={d}
