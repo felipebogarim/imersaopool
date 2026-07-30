@@ -496,10 +496,12 @@ function PerformancePage() {
     if (!confirm(`Excluir a versão "${currentUpload.periodo_label}"? Esta ação não pode ser desfeita.`)) return;
     const { error } = await supabase.from("rep_performance_uploads").delete().eq("id", currentUpload.id);
     if (error) return toast.error(error.message);
-    toast.success("Versão excluída.");
+    toast.success("Versão excluída. Se houver versão anterior, ela volta a ficar ativa.");
     setUploadId("");
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
     qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+    qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+
   }
 
   function startEdit() {
@@ -521,12 +523,8 @@ function PerformancePage() {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
 
-      // Cria nova versão (não sobrescreve)
-      await supabase
-        .from("rep_performance_uploads")
-        .update({ substituida_em: new Date().toISOString() } as any)
-        .eq("id", currentUpload.id);
-
+      // Cria a nova versão PRIMEIRO; só depois marca a anterior como substituída.
+      // (Se o insert falhar, o representante continua com a versão atual ativa.)
       const { data: up, error: upErr } = await supabase
         .from("rep_performance_uploads")
         .insert({
@@ -551,8 +549,9 @@ function PerformancePage() {
 
       await supabase
         .from("rep_performance_uploads")
-        .update({ substituida_por: up.id } as any)
+        .update({ substituida_em: new Date().toISOString(), substituida_por: up.id } as any)
         .eq("id", currentUpload.id);
+
 
       const payload = draft.map((r) => {
         const total = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
@@ -603,23 +602,44 @@ function PerformancePage() {
     });
   }
 
+  async function reactivateLast() {
+    if (!repId) return;
+    setBusy(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("reactivate_last_performance_upload", {
+        _rep_id: repId,
+      });
+      if (error) throw error;
+      if (!data?.reactivated) {
+        toast.info(
+          data?.reason === "sem_historico"
+            ? "Não há versões no histórico deste representante."
+            : "Este representante já possui uma versão ativa.",
+        );
+      } else {
+        toast.success("Versão reativada.");
+        setUploadId(data.upload_id);
+      }
+      qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reativar versão.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function restoreVersion(v: any) {
+
     if (!confirm(`Restaurar a versão de ${new Date(v.created_at).toLocaleString("pt-BR")} como versão ativa?`)) return;
     setBusy(true);
     try {
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
 
-      // Marca a atual como substituída
-      if (currentUpload) {
-        await supabase
-          .from("rep_performance_uploads")
-          .update({ substituida_em: new Date().toISOString() } as any)
-          .eq("id", currentUpload.id);
-      }
-
-      // Duplica a antiga como nova ativa
-      const { data: up } = await supabase
+      // Duplica a antiga como nova ativa PRIMEIRO
+      const { data: up, error: upErr } = await supabase
         .from("rep_performance_uploads")
         .insert({
           representative_id: repId,
@@ -639,7 +659,16 @@ function PerformancePage() {
         } as any)
         .select("id")
         .single();
-      if (!up) throw new Error("Falha ao restaurar");
+      if (upErr || !up) throw upErr ?? new Error("Falha ao restaurar");
+
+      // Só então marca a atual como substituída
+      if (currentUpload) {
+        await supabase
+          .from("rep_performance_uploads")
+          .update({ substituida_em: new Date().toISOString(), substituida_por: up.id } as any)
+          .eq("id", currentUpload.id);
+      }
+
 
       const { data: srcRows } = await supabase
         .from("rep_performance_rows")
@@ -811,7 +840,25 @@ function PerformancePage() {
         }
       />
 
+      {repId && uploads.length === 0 && allVersions.length > 0 && (
+        <div className="px-4 sm:px-8 pt-4">
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-sm">
+              <p className="font-medium">Este representante está sem versão ativa.</p>
+              <p className="text-muted-foreground text-xs">
+                Existem {allVersions.length} versão(ões) no histórico. Os dados não foram perdidos — é
+                possível reativar a mais recente.
+              </p>
+            </div>
+            <Button size="sm" onClick={reactivateLast} disabled={busy}>
+              <RefreshCw className="h-4 w-4 mr-1" /> Reativar última versão
+            </Button>
+          </div>
+        </div>
+      )}
+
       {!repId ? (
+
         <div className="p-4 sm:p-8">
           <div className="surface rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
