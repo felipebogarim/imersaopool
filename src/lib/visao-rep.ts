@@ -331,3 +331,61 @@ export function leituraCruzada(nomeRep: string, par: ParaleloRep | null, perf: P
   if (!partes.length) partes.push(`Ainda não há dados suficientes para o raio-x de ${nomeRep}.`);
   return partes.join(" ");
 }
+
+// ============ Raio-x visual ============
+
+export type RaioXLente = {
+  lente: Lente;
+  label: string;
+  descricao: string;
+  leitura: string | null;
+  campos: QuadroCampo[];
+  termos: string[];
+  highlight: string | null;
+  sinais: number;
+  intensidade: number; // 0-100, relativo à lente mais densa
+  vazia: boolean;
+};
+
+const curto = (s: string) => s.trim().replace(/\s+/g, " ");
+
+/** Converte o quadro em dados prontos para representação visual (radar + anéis). */
+export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
+  const sinaisDe = (q: QuadroLente) =>
+    q.campos.reduce((a, c) => a + c.valores.length, 0) + q.highlights.length;
+  const max = Math.max(1, ...quadro.map(sinaisDe));
+  return quadro.map(q => {
+    const sinais = sinaisDe(q);
+    const termos = q.campos
+      .flatMap(c => c.valores)
+      .map(curto)
+      .filter(v => v.length > 0 && v.length <= 42)
+      .slice(0, 5);
+    return {
+      lente: q.lente,
+      label: q.label,
+      descricao: q.descricao,
+      leitura: q.leitura,
+      campos: q.campos,
+      termos,
+      highlight: q.highlights[0] ?? null,
+      sinais,
+      intensidade: Math.round((sinais / max) * 100),
+      vazia: q.vazia,
+    };
+  });
+}
+
+/** Introdução curta que antecede as representações visuais do raio-x. */
+export function introRaioX(nomeRep: string, raiox: RaioXLente[]): string {
+  const ativas = raiox.filter(r => !r.vazia);
+  if (!ativas.length) return `Ainda não há entrevista processada para compor o raio-x de ${nomeRep}.`;
+  const ordenadas = ativas.slice().sort((a, b) => b.sinais - a.sinais);
+  const fortes = ordenadas.slice(0, 2).map(r => r.label.toLowerCase());
+  const fracas = raiox.filter(r => r.vazia || r.intensidade <= 25).map(r => r.label.toLowerCase());
+  const total = raiox.reduce((a, r) => a + r.sinais, 0);
+  const p1 = `${nomeRep} deixou ${total} sinais registrados em ${ativas.length} das 8 perspectivas da entrevista.`;
+  const p2 = fortes.length ? ` A fala se concentra em ${fortes.join(" e ")}.` : "";
+  const p3 = fracas.length ? ` Cobertura fraca em ${fracas.slice(0, 3).join(", ")}.` : "";
+  return p1 + p2 + p3;
+}
