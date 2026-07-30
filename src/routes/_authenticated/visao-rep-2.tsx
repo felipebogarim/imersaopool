@@ -343,7 +343,9 @@ function VisaoRep2Page() {
         <Card title="Gerar com IA">
           <p className="mb-3 text-sm text-muted-foreground">
             O sistema lê a entrevista já processada do representante e organiza o conteúdo no modelo canônico. Nada é inventado: campos sem base ficam vazios.
+            O relatório é salvo automaticamente e fica fixo — ao voltar nesta página você verá sempre o mesmo conteúdo, até regerar manualmente.
           </p>
+
           <div className="flex flex-col gap-2 sm:flex-row">
             <Select value={repId} onValueChange={setRepId}>
               <SelectTrigger className="sm:w-72">
