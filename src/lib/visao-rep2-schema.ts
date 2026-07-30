@@ -132,6 +132,8 @@ export type Perspective = {
   comparative_classification: string | null;
   full_reading: string | null;
   structured_fields: Record<string, string | string[]>;
+  /** Vínculo opcional com os sinais executivos (Leitura integrada). */
+  signal_ids?: string[];
 };
 
 export type ConsensusPoint = {
@@ -139,6 +141,7 @@ export type ConsensusPoint = {
   supporting_source_count: number | null;
   comparable_source_count: number | null;
   supporting_sources: string[];
+  signal_id?: string | null;
 };
 
 export type UnaddressedTopic = {
@@ -147,6 +150,7 @@ export type UnaddressedTopic = {
   comparison_is_valid: boolean | null;
   classification: string | null;
   methodological_note: string | null;
+  signal_id?: string | null;
 };
 
 export type Divergence = {
@@ -156,6 +160,7 @@ export type Divergence = {
   sources_supporting_predominant_view: string[];
   sources_supporting_representative_view: string[];
   evidence: string | null;
+  signal_id?: string | null;
 };
 
 export type ExclusiveReading = {
@@ -163,7 +168,9 @@ export type ExclusiveReading = {
   region: string | null;
   supporting_evidence: string | null;
   validation_required: string | null;
+  signal_id?: string | null;
 };
+
 
 export type ComparativeView = {
   comparable_source_count: number | null;
