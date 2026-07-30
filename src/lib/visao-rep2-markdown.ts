@@ -297,6 +297,8 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
       comparative_classification: nz(f.classificacao_comparativa),
       full_reading: text(lb.leitura_completa),
       structured_fields: {},
+      signal_ids: list(f.sinais_relacionados ?? f.signal_ids ?? f.sinal_relacionado),
+
     };
   }
 
