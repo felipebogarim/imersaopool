@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { RaioXLente } from "@/lib/visao-rep";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -80,23 +80,45 @@ function Ring({ value }: { value: number }) {
 export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] }) {
   const [ativa, setAtiva] = useState<string | null>(null);
   const [coberturaAberta, setCoberturaAberta] = useState(false);
+  const detalheRef = useRef<HTMLDivElement | null>(null);
   const sel = data.find(d => d.lente === ativa) ?? null;
+
+  // Ao abrir um detalhe, traz o bloco selecionado (e seu detalhe) para a área visível.
+  useEffect(() => {
+    if (!ativa) return;
+    const t = window.setTimeout(() => {
+      detalheRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [ativa]);
 
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">{intro}</p>
 
-      {sel && <DetalheLente d={sel} onClose={() => setAtiva(null)} />}
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {data.map(d => (
-          <LenteCard
-            key={d.lente}
-            d={d}
-            ativa={d.lente === ativa}
-            onOpen={() => setAtiva(d.lente === ativa ? null : d.lente)}
-          />
-        ))}
+        {data.map((d, i) => {
+          const isAtiva = d.lente === ativa;
+          return (
+            <Fragment key={d.lente}>
+
+              <div className={cn(isAtiva ? "order-1" : ativa ? "order-3" : "order-none")}>
+                <LenteCard
+                  d={d}
+                  ordem={i + 1}
+                  ativa={isAtiva}
+                  onOpen={() => setAtiva(isAtiva ? null : d.lente)}
+                />
+              </div>
+              {isAtiva && sel && (
+                <div ref={detalheRef} className="order-2 sm:col-span-2 xl:col-span-4 scroll-mt-24">
+                  <DetalheLente d={sel} ordem={i + 1} onClose={() => setAtiva(null)} />
+                </div>
+              )}
+            </Fragment>
+
+          );
+        })}
       </div>
 
       <Collapsible open={coberturaAberta} onOpenChange={setCoberturaAberta} className="surface rounded-xl px-4 py-3">
@@ -112,21 +134,26 @@ export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] })
   );
 }
 
+
 /** Bloco em destaque: o conteúdo da lente vira pequenos capítulos. */
-function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
+function DetalheLente({ d, ordem, onClose }: { d: RaioXLente; ordem: number; onClose: () => void }) {
   return (
     <section className="surface rounded-2xl border border-primary/30 p-4 sm:p-5 space-y-4">
       <header className="flex items-start gap-3">
         <div className="relative">
           <Ring value={d.intensidade} />
           <span className="absolute inset-0 grid place-items-center text-[11px] font-semibold tabular-nums">
-            {d.sinais}
+            {ordem}
           </span>
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold">{d.label}</p>
           <p className="text-xs text-muted-foreground">{d.descricao}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+            {d.capitulos.length} capítulos · {d.sinais} sinais · intensidade {d.intensidade}%
+          </p>
         </div>
+
         <button
           onClick={onClose}
           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -191,11 +218,11 @@ function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
   );
 }
 
-function LenteCard({ d, ativa, onOpen }: { d: RaioXLente; ativa: boolean; onOpen: () => void }) {
+function LenteCard({ d, ordem, ativa, onOpen }: { d: RaioXLente; ordem: number; ativa: boolean; onOpen: () => void }) {
   return (
     <div
       className={cn(
-        "surface rounded-xl p-3.5 transition-colors",
+        "surface h-full rounded-xl p-3.5 transition-colors",
         d.vazia && "opacity-60",
         ativa && "ring-2 ring-primary",
       )}
@@ -204,14 +231,18 @@ function LenteCard({ d, ativa, onOpen }: { d: RaioXLente; ativa: boolean; onOpen
         <div className="relative">
           <Ring value={d.intensidade} />
           <span className="absolute inset-0 grid place-items-center text-[11px] font-semibold tabular-nums">
-            {d.sinais}
+            {ordem}
           </span>
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{d.label}</p>
           <p className="text-[11px] text-muted-foreground truncate">{d.descricao}</p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">
+            {d.sinais} sinais · intensidade {d.intensidade}%
+          </p>
         </div>
       </div>
+
 
       {d.vazia ? (
         <p className="mt-2 text-[11px] text-muted-foreground">Sem registro nesta perspectiva.</p>
