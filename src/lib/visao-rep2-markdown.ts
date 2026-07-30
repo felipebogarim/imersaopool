@@ -313,6 +313,9 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     v.comparative_view.methodology_note = text(lb.nota_metodologica);
 
     const kids = childrenOf(par);
+    /** Vínculo opcional do item comparativo com um sinal executivo. */
+    const sig = (f: Record<string, string>) =>
+      nz(f.sinal_relacionado) ?? nz(f.signal_id) ?? nz(f.comparison_signal_id);
     const consensos: ConsensusPoint[] = kids
       .filter(b => /^consenso/.test(norm(b.title)))
       .map(b => {
@@ -322,6 +325,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           supporting_source_count: num(f.fontes_que_sustentam),
           comparable_source_count: num(f.total_de_fontes_comparaveis),
           supporting_sources: list(f.fontes),
+          signal_id: sig(f),
         };
       });
     const temas: UnaddressedTopic[] = kids
@@ -334,6 +338,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           comparison_is_valid: bool(f.comparacao_valida),
           classification: nz(f.classificacao),
           methodological_note: nz(f.nota_metodologica),
+          signal_id: sig(f),
         };
       });
     const divs: Divergence[] = kids
@@ -347,6 +352,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           sources_supporting_predominant_view: list(f.fontes_leitura_predominante),
           sources_supporting_representative_view: list(f.fontes_leitura_representante),
           evidence: nz(f.evidencia),
+          signal_id: sig(f),
         };
       });
     const excl: ExclusiveReading[] = kids
@@ -358,8 +364,10 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           region: nz(f.regiao),
           supporting_evidence: nz(f.evidencia),
           validation_required: nz(f.validacao_necessaria),
+          signal_id: sig(f),
         };
       });
+
 
     v.comparative_view.consensus_points = consensos;
     v.comparative_view.unaddressed_topics = temas;
