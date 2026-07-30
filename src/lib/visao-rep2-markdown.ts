@@ -201,7 +201,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
       .map(b => {
         const f = kv(b.lines);
         return {
-          title: nz(f.titulo) ?? b.title.replace(/^Sinal\s*\d*\s*[—-]?\s*/i, "").trim() || null,
+          title: nz(f.titulo) ?? (b.title.replace(/^Sinal\s*\d*\s*[—-]?\s*/i, "").trim() || null),
           finding: nz(f.achado),
           business_impact: nz(f.impacto_comercial),
           recommended_action: nz(f.acao_recomendada),
@@ -235,7 +235,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     .map(b => {
       const f = kv(b.lines);
       return {
-        client_name: nz(f.nome) ?? b.title.replace(/^Cliente\s*\d*\s*[—-]?\s*/i, "").trim() || null,
+        client_name: nz(f.nome) ?? (b.title.replace(/^Cliente\s*\d*\s*[—-]?\s*/i, "").trim() || null),
         strategic_reason: nz(f.motivo_estrategico),
         perceived_potential: nz(f.potencial_percebido),
         identified_opportunity: nz(f.oportunidade),
