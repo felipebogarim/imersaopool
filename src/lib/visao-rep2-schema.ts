@@ -487,6 +487,42 @@ function coerceStructuredFields(v: unknown): Record<string, string | string[]> {
   return out;
 }
 
+/** Normaliza o bloco executivo do schema 3.0 sem inventar conteúdo. */
+function normalizeExecutiveBrief(raw: unknown): ExecutiveBrief | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, any>;
+  const themes = asArray(o.themes).map(t => {
+    const th = (t && typeof t === "object" ? t : {}) as Record<string, any>;
+    const ent = (th.entities && typeof th.entities === "object" ? th.entities : {}) as Record<string, any>;
+    return {
+      ...emptyExecutiveTheme(),
+      id: asText(th.id),
+      selector: asText(th.selector),
+      title: asText(th.title),
+      context: asText(th.context),
+      where_appears: asTextList(th.where_appears),
+      represents: asText(th.represents),
+      decision: asText(th.decision),
+      validation: asText(th.validation),
+      evidence: asText(th.evidence),
+      comparison: asText(th.comparison),
+      confidence: asText(th.confidence),
+      perspectives: asTextList(th.perspectives),
+      entities: {
+        produtos: asTextList(ent.produtos),
+        concorrentes: asTextList(ent.concorrentes),
+        clientes: asTextList(ent.clientes),
+        ferramentas: asTextList(ent.ferramentas),
+        nota: asText(ent.nota),
+      },
+    };
+  });
+  const synthesis = asText(o.presidential_synthesis);
+  if (!synthesis && !themes.length) return null;
+  return { presidential_synthesis: synthesis, themes };
+}
+
+
 /** Normaliza um objeto vindo do banco ou da IA (inclusive registros antigos/parciais). */
 export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
   const base = emptyVisaoRep2();
