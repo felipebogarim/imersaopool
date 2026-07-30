@@ -411,6 +411,33 @@ function fatiar(texto: string, porBloco = 2): string[] {
   return out;
 }
 
+const STOP = new Set(
+  ("a o as os um uma uns umas de do da dos das em no na nos nas por para com sem sob sobre e ou mas que se ao aos à às " +
+    "não nao é ser são sao está estao estão foi era como quando onde mais menos muito pouco já ja também tambem entre " +
+    "isso isto essa esse essa aquele aquela seu sua seus suas dele dela deles delas há ha tem têm tem-se pode podem " +
+    "ainda quase parte principal relata percebe considera aparece aparecem descrito descrita").split(/\s+/),
+);
+
+/** Título curto e legível derivado do próprio conteúdo do bloco. */
+function tituloDe(texto: string, fallback: string): string {
+  const limpa = curto(texto).replace(/^["“”']+/, "");
+  const palavras = limpa
+    .split(/[\s,;:.!?()"“”']+/)
+    .map(p => p.trim())
+    .filter(Boolean);
+  const chaves: string[] = [];
+  for (const p of palavras) {
+    const base = p.toLowerCase();
+    if (STOP.has(base) || base.length <= 2) continue;
+    if (chaves.some(c => c.toLowerCase() === base)) continue;
+    chaves.push(p);
+    if (chaves.length === 4) break;
+  }
+  if (chaves.length < 2) return fallback;
+  const t = chaves.join(" ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 /** Converte o quadro em dados prontos para representação visual (radar + anéis). */
 export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
   const sinaisDe = (q: QuadroLente) =>
@@ -429,12 +456,13 @@ export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
       const partes = fatiar(q.leitura);
       partes.forEach((p, i) =>
         capitulos.push({
-          titulo: partes.length > 1 ? `Leitura estratégica ${i + 1}/${partes.length}` : "Leitura estratégica",
+          titulo: tituloDe(p, partes.length > 1 ? `Leitura estratégica ${i + 1}/${partes.length}` : "Leitura estratégica"),
           tipo: "leitura",
           itens: [p],
         }),
       );
     }
+
     for (const c of q.campos) {
       capitulos.push({ titulo: c.label, tipo: "campo", itens: c.valores.map(curto) });
     }
