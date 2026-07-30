@@ -2,7 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { RaioXLente } from "@/lib/visao-rep";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, Quote } from "lucide-react";
+import { ChevronDown, Quote, X, BookOpen } from "lucide-react";
 
 /** Radar octogonal com a densidade de cada uma das 8 perspectivas. */
 function Radar({ data }: { data: RaioXLente[] }) {
@@ -18,14 +18,9 @@ function Radar({ data }: { data: RaioXLente[] }) {
     data.map((_, i) => pt(i, frac(i)).join(",")).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[280px] mx-auto" role="img" aria-label="Densidade das 8 perspectivas">
+    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[260px] mx-auto" role="img" aria-label="Densidade das 8 perspectivas">
       {[0.25, 0.5, 0.75, 1].map(f => (
-        <polygon
-          key={f}
-          points={poly(() => f)}
-          className="fill-none stroke-border"
-          strokeWidth={1}
-        />
+        <polygon key={f} points={poly(() => f)} className="fill-none stroke-border" strokeWidth={1} />
       ))}
       {data.map((_, i) => {
         const [x, y] = pt(i, 1);
@@ -83,33 +78,123 @@ function Ring({ value }: { value: number }) {
 }
 
 export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] }) {
+  const [ativa, setAtiva] = useState<string | null>(null);
+  const [coberturaAberta, setCoberturaAberta] = useState(false);
+  const sel = data.find(d => d.lente === ativa) ?? null;
+
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">{intro}</p>
 
-      <div className="grid gap-4 lg:grid-cols-[300px_1fr] items-start">
-        <div className="surface rounded-xl p-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Cobertura da fala</p>
-          <Radar data={data} />
-        </div>
+      {sel && <DetalheLente d={sel} onClose={() => setAtiva(null)} />}
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {data.map(d => (
-            <LenteCard key={d.lente} d={d} />
-          ))}
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {data.map(d => (
+          <LenteCard
+            key={d.lente}
+            d={d}
+            ativa={d.lente === ativa}
+            onOpen={() => setAtiva(d.lente === ativa ? null : d.lente)}
+          />
+        ))}
       </div>
+
+      <Collapsible open={coberturaAberta} onOpenChange={setCoberturaAberta} className="surface rounded-xl px-4 py-3">
+        <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Cobertura da fala</span>
+          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", coberturaAberta && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-3">
+          <Radar data={data} />
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
 
-function LenteCard({ d }: { d: RaioXLente }) {
-  const [open, setOpen] = useState(false);
+/** Bloco em destaque: o conteúdo da lente vira pequenos capítulos. */
+function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className={cn("surface rounded-xl p-3.5", d.vazia && "opacity-60")}
+    <section className="surface rounded-2xl border border-primary/30 p-4 sm:p-5 space-y-4">
+      <header className="flex items-start gap-3">
+        <div className="relative">
+          <Ring value={d.intensidade} />
+          <span className="absolute inset-0 grid place-items-center text-[11px] font-semibold tabular-nums">
+            {d.sinais}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold">{d.label}</p>
+          <p className="text-xs text-muted-foreground">{d.descricao}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Fechar detalhe"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </header>
+
+      {d.capitulos.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sem registro nesta perspectiva.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {d.capitulos.map((cap, i) => (
+            <article
+              key={`${cap.titulo}-${i}`}
+              className={cn(
+                "rounded-xl border bg-card/40 p-3.5",
+                cap.tipo === "citacao" && "border-primary/30 bg-primary/5",
+              )}
+            >
+              <div className="mb-2 flex items-center gap-1.5">
+                {cap.tipo === "citacao" ? (
+                  <Quote className="h-3.5 w-3.5 text-primary/70" />
+                ) : (
+                  <BookOpen className="h-3.5 w-3.5 text-primary/70" />
+                )}
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {cap.titulo}
+                </h4>
+              </div>
+              {cap.tipo === "campo" ? (
+                <ul className="space-y-1">
+                  {cap.itens.map((v, k) => (
+                    <li key={k} className="flex gap-1.5 text-xs leading-relaxed">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                      <span>{v}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="space-y-2">
+                  {cap.itens.map((v, k) => (
+                    <p
+                      key={k}
+                      className={cn("text-xs leading-relaxed", cap.tipo === "citacao" && "italic text-muted-foreground")}
+                    >
+                      {v}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function LenteCard({ d, ativa, onOpen }: { d: RaioXLente; ativa: boolean; onOpen: () => void }) {
+  return (
+    <div
+      className={cn(
+        "surface rounded-xl p-3.5 transition-colors",
+        d.vazia && "opacity-60",
+        ativa && "ring-2 ring-primary",
+      )}
     >
       <div className="flex items-center gap-3">
         <div className="relative">
@@ -130,7 +215,7 @@ function LenteCard({ d }: { d: RaioXLente }) {
         <>
           {d.termos.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {d.termos.map((t, i) => (
+              {d.termos.slice(0, 3).map((t, i) => (
                 <span
                   key={`${t}-${i}`}
                   className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] leading-tight"
@@ -140,29 +225,15 @@ function LenteCard({ d }: { d: RaioXLente }) {
               ))}
             </div>
           )}
-          {d.highlight && (
-            <p className="mt-2.5 flex gap-1.5 text-[11px] italic text-muted-foreground">
-              <Quote className="h-3 w-3 shrink-0 mt-0.5 text-primary/60" />
-              <span className="line-clamp-2">{d.highlight}</span>
-            </p>
-          )}
-          <CollapsibleTrigger className="mt-2.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground">
-            <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-            {open ? "Ocultar detalhe" : "Ver detalhe"}
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 space-y-2 border-t pt-2">
-            {d.leitura && <p className="text-xs leading-relaxed">{d.leitura}</p>}
-            <dl className="space-y-1.5">
-              {d.campos.map(c => (
-                <div key={c.label}>
-                  <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{c.label}</dt>
-                  <dd className="text-xs">{c.valores.join(" · ")}</dd>
-                </div>
-              ))}
-            </dl>
-          </CollapsibleContent>
+          <button
+            onClick={onOpen}
+            className="mt-2.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className={cn("h-3 w-3 transition-transform", ativa && "rotate-180")} />
+            {ativa ? "Fechar detalhe" : `Ver detalhe · ${d.capitulos.length} capítulos`}
+          </button>
         </>
       )}
-    </Collapsible>
+    </div>
   );
 }
