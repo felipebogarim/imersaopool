@@ -376,35 +376,98 @@ function Metric({
   );
 }
 
+type FocoParalelo = "alinhado" | "cegos" | "divergencias" | "unicos";
+
 function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> extends infer _ ? any : never }) {
   const [open, setOpen] = useState(false);
+  const [foco, setFoco] = useState<FocoParalelo | null>(null);
   const total = lente.alinhado.length + lente.foraDaCurva.length + lente.divergencias.length + lente.unicos.length;
   const def = LENTE_DEF[lente.lente as Lente];
+
+  const mostra = (k: FocoParalelo) => foco === null || foco === k;
+
+  const chips: { key: FocoParalelo; label: string; n: number; ativo: string; base: string }[] = [
+    {
+      key: "alinhado",
+      label: "alinhados",
+      n: lente.alinhado.length,
+      base: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+      ativo: "ring-2 ring-emerald-500",
+    },
+    {
+      key: "cegos",
+      label: "cegos",
+      n: lente.foraDaCurva.length,
+      base: "bg-muted text-muted-foreground",
+      ativo: "ring-2 ring-foreground/40",
+    },
+    {
+      key: "divergencias",
+      label: "divergências",
+      n: lente.divergencias.length,
+      base: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+      ativo: "ring-2 ring-amber-500",
+    },
+    {
+      key: "unicos",
+      label: "únicos",
+      n: lente.unicos.length,
+      base: "bg-muted text-muted-foreground",
+      ativo: "ring-2 ring-foreground/40",
+    },
+  ];
+
+  const selecionar = (k: FocoParalelo, n: number) => {
+    if (!n) return;
+    setOpen(true);
+    setFoco(f => (f === k ? null : k));
+  };
+
   return (
     <div className="surface rounded-xl">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left"
-        aria-expanded={open}
-      >
-        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
-        <span className="text-sm font-medium">{def.label}</span>
+      <div className="w-full flex items-center gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-3 text-left"
+          aria-expanded={open}
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
+          <span className="text-sm font-medium">{def.label}</span>
+        </button>
         <span className="ml-auto flex flex-wrap gap-1.5 text-[11px]">
-          <span className="rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
-            {lente.alinhado.length} alinhados
-          </span>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{lente.foraDaCurva.length} cegos</span>
-          <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5">
-            {lente.divergencias.length} divergências
-          </span>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{lente.unicos.length} únicos</span>
+          {chips.map(c => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => selecionar(c.key, c.n)}
+              disabled={!c.n}
+              aria-pressed={foco === c.key}
+              className={cn(
+                "rounded-full px-2 py-0.5 transition",
+                c.base,
+                c.n ? "hover:opacity-80 cursor-pointer" : "opacity-50 cursor-default",
+                foco === c.key && c.ativo,
+              )}
+            >
+              {c.n} {c.label}
+            </button>
+          ))}
         </span>
-      </button>
+      </div>
       {open && (
         <div className="px-4 pb-4 space-y-3 text-sm">
           {total === 0 && <p className="text-xs text-muted-foreground">Sem paralelo nesta perspectiva.</p>}
-          {lente.alinhado.length > 0 && (
+          {foco && (
+            <button
+              type="button"
+              onClick={() => setFoco(null)}
+              className="text-[11px] text-muted-foreground underline underline-offset-2"
+            >
+              Ver tudo
+            </button>
+          )}
+          {mostra("alinhado") && lente.alinhado.length > 0 && (
             <Bloco titulo="Onde ele confirma o grupo" cor="text-emerald-600 dark:text-emerald-400">
               {lente.alinhado.map((i: any, k: number) => (
                 <li key={k}>
@@ -413,7 +476,7 @@ function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> e
               ))}
             </Bloco>
           )}
-          {lente.foraDaCurva.length > 0 && (
+          {mostra("cegos") && lente.foraDaCurva.length > 0 && (
             <Bloco titulo="Consenso do grupo ausente na fala dele" cor="text-muted-foreground">
               {lente.foraDaCurva.map((i: any, k: number) => (
                 <li key={k}>
@@ -422,7 +485,7 @@ function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> e
               ))}
             </Bloco>
           )}
-          {lente.divergencias.length > 0 && (
+          {mostra("divergencias") && lente.divergencias.length > 0 && (
             <Bloco titulo="Onde ele diverge" cor="text-amber-600 dark:text-amber-400">
               {lente.divergencias.map((d: any, k: number) => (
                 <li key={k}>
@@ -437,7 +500,7 @@ function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> e
               ))}
             </Bloco>
           )}
-          {lente.unicos.length > 0 && (
+          {mostra("unicos") && lente.unicos.length > 0 && (
             <Bloco titulo="Leituras exclusivas da região dele" cor="text-muted-foreground">
               {lente.unicos.map((u: any, k: number) => (
                 <li key={k}>{u.texto}</li>
