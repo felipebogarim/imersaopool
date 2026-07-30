@@ -220,11 +220,11 @@ function DetalheLente({ d, ordem, onClose }: { d: RaioXLente; ordem: number; onC
   );
 }
 
-function LenteCard({ d, ativa, onOpen }: { d: RaioXLente; ativa: boolean; onOpen: () => void }) {
+function LenteCard({ d, ordem, ativa, onOpen }: { d: RaioXLente; ordem: number; ativa: boolean; onOpen: () => void }) {
   return (
     <div
       className={cn(
-        "surface rounded-xl p-3.5 transition-colors",
+        "surface h-full rounded-xl p-3.5 transition-colors",
         d.vazia && "opacity-60",
         ativa && "ring-2 ring-primary",
       )}
@@ -233,14 +233,18 @@ function LenteCard({ d, ativa, onOpen }: { d: RaioXLente; ativa: boolean; onOpen
         <div className="relative">
           <Ring value={d.intensidade} />
           <span className="absolute inset-0 grid place-items-center text-[11px] font-semibold tabular-nums">
-            {d.sinais}
+            {ordem}
           </span>
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{d.label}</p>
           <p className="text-[11px] text-muted-foreground truncate">{d.descricao}</p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">
+            {d.sinais} sinais · intensidade {d.intensidade}%
+          </p>
         </div>
       </div>
+
 
       {d.vazia ? (
         <p className="mt-2 text-[11px] text-muted-foreground">Sem registro nesta perspectiva.</p>
