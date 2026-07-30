@@ -645,15 +645,34 @@ export function validateVisaoRep2(v: VisaoRep2): ValidationReport {
   if (!nonEmpty(v.metadata.representative_name)) missingRequired.push("Metadados › representante");
   else recognized.push("Metadados › representante");
 
-  if (!nonEmpty(v.executive_view.central_thesis)) missingRequired.push("Visão executiva › tese central");
-  else recognized.push("Visão executiva › tese central");
+  const briefV1 = isExecutiveBriefV1(v);
 
-  if (!v.executive_view.priority_signals.length) missingRequired.push("Visão executiva › sinais prioritários");
-  else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
+  if (briefV1) {
+    // Schema 3.0: "Síntese presidencial" e "Temas estratégicos" substituem
+    // "tese central" e "sinais prioritários". Estes últimos não são exigidos
+    // nem listados como ausentes.
+    const brief = v.executive_brief;
+    if (!nonEmpty(brief?.presidential_synthesis ?? null)) missingRequired.push("Síntese presidencial");
+    else recognized.push("Síntese presidencial");
+
+    const temas = brief?.themes ?? [];
+    if (!temas.length) missingRequired.push("Temas estratégicos");
+    else recognized.push(`Temas estratégicos › ${temas.length} tema(s)`);
+  } else {
+    if (!nonEmpty(v.executive_view.central_thesis)) missingRequired.push("Visão executiva › tese central");
+    else recognized.push("Visão executiva › tese central");
+
+    if (!v.executive_view.priority_signals.length) missingRequired.push("Visão executiva › sinais prioritários");
+    else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
+  }
 
   const comPersp = v.perspectives.filter(p => nonEmpty(p.executive_finding) || nonEmpty(p.full_reading));
-  if (!comPersp.length) missingRequired.push("Perspectivas da entrevista");
-  else recognized.push(`Perspectivas › ${comPersp.length} de 8 preenchidas`);
+  if (!comPersp.length) {
+    // No briefing executivo as perspectivas podem viver dentro dos temas;
+    // ausência só é impeditiva quando não há tema algum.
+    if (!briefV1 || !(v.executive_brief?.themes.length ?? 0)) missingRequired.push("Perspectivas da entrevista");
+  } else recognized.push(`Perspectivas › ${comPersp.length} de 8 preenchidas`);
+
 
   const optional: [string, boolean][] = [
     ["Metadados › região", nonEmpty(v.metadata.region)],
