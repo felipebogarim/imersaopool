@@ -114,9 +114,9 @@ function SignalCard({
 
 // ---------------------------------------------------------------- painel 1
 
-function ExecutiveSignalPanelV2({ signal }: { signal: LeituraSignal }) {
+function ExecutiveSignalPanelV2({ signal, className }: { signal: LeituraSignal; className?: string }) {
   return (
-    <PanelShell title="O que isso significa" subtitle="Conclusão e decisão exigida." emphasis>
+    <PanelShell title="O que isso significa" subtitle="Conclusão e decisão exigida." emphasis className={className}>
       <h4 className="break-words text-base font-semibold leading-snug">{signal.title}</h4>
       <div className="flex flex-wrap gap-1.5">
         {signal.confidence ? <Badge variant="outline">{CONFIDENCE_LABEL[signal.confidence]}</Badge> : null}
@@ -220,13 +220,13 @@ function PerspectiveDetail({ ev }: { ev: PerspectiveEvidence }) {
   );
 }
 
-function PerspectiveEvidencePanelV2({ signal }: { signal: LeituraSignal }) {
+function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSignal; className?: string }) {
   const [aba, setAba] = useState(0);
   useEffect(() => setAba(0), [signal.id]);
   const atual = signal.perspectives[aba] ?? signal.perspectives[0] ?? null;
 
   return (
-    <PanelShell title="Onde isso apareceu" subtitle="Produtos, marcas, clientes, casos e falas.">
+    <PanelShell title="Onde isso apareceu" subtitle="Produtos, marcas, clientes, casos e falas." className={className}>
       {!signal.perspectives.length ? (
         <Empty>Nenhuma perspectiva foi vinculada a este sinal.</Empty>
       ) : (
@@ -316,13 +316,15 @@ function ComparisonBlock({ item }: { item: ComparisonItem }) {
 function GroupComparisonPanelV2({
   signal,
   comparableSourceCount,
+  className,
 }: {
   signal: LeituraSignal;
   comparableSourceCount: number | null;
+  className?: string;
 }) {
   const sustentam = signal.comparisons.filter(c => c.kind === "consenso").length;
   return (
-    <PanelShell title="Como isso se compara ao grupo" subtitle="Consenso, ausência, divergência e exclusividade.">
+    <PanelShell title="Como isso se compara ao grupo" subtitle="Consenso, ausência, divergência e exclusividade." className={className}>
       {!signal.comparisons.length ? (
         <Empty>Este sinal ainda não possui comparação com o grupo.</Empty>
       ) : (
@@ -419,9 +421,13 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-12">
-            <ExecutiveSignalPanelV2 signal={signal} />
-            <PerspectiveEvidencePanelV2 signal={signal} />
-            <GroupComparisonPanelV2 signal={signal} comparableSourceCount={leitura.comparableSourceCount} />
+            <ExecutiveSignalPanelV2 signal={signal} className="md:col-span-4 xl:col-span-3" />
+            <PerspectiveEvidencePanelV2 signal={signal} className="md:col-span-8 xl:col-span-6" />
+            <GroupComparisonPanelV2
+              signal={signal}
+              comparableSourceCount={leitura.comparableSourceCount}
+              className="md:col-span-12 xl:col-span-3"
+            />
           </div>
         )
       ) : null}
