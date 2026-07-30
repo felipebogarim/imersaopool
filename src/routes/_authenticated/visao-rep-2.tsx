@@ -958,8 +958,10 @@ function VisaoRep2View({
               </Collapse>
             ))}
           </div>
-        </Card>
+        </Collapse>
       ) : null}
+      </div>
+
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Shield className="h-3.5 w-3.5" />
