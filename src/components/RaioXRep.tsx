@@ -80,23 +80,47 @@ function Ring({ value }: { value: number }) {
 export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] }) {
   const [ativa, setAtiva] = useState<string | null>(null);
   const [coberturaAberta, setCoberturaAberta] = useState(false);
+  const detalheRef = useRef<HTMLDivElement | null>(null);
   const sel = data.find(d => d.lente === ativa) ?? null;
+
+  // Ao abrir um detalhe, traz o bloco selecionado (e seu detalhe) para a área visível.
+  useEffect(() => {
+    if (!ativa) return;
+    const t = window.setTimeout(() => {
+      detalheRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [ativa]);
 
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground max-w-3xl">{intro}</p>
 
-      {sel && <DetalheLente d={sel} onClose={() => setAtiva(null)} />}
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {data.map(d => (
-          <LenteCard
-            key={d.lente}
-            d={d}
-            ativa={d.lente === ativa}
-            onOpen={() => setAtiva(d.lente === ativa ? null : d.lente)}
-          />
-        ))}
+        {data.map((d, i) => {
+          const isAtiva = d.lente === ativa;
+          return (
+            <div
+              key={d.lente}
+              className={cn("contents")}
+              style={undefined}
+            >
+              <div className={cn(isAtiva ? "order-1" : ativa ? "order-3" : "order-none")}>
+                <LenteCard
+                  d={d}
+                  ordem={i + 1}
+                  ativa={isAtiva}
+                  onOpen={() => setAtiva(isAtiva ? null : d.lente)}
+                />
+              </div>
+              {isAtiva && sel && (
+                <div ref={detalheRef} className="order-2 sm:col-span-2 xl:col-span-4 scroll-mt-24">
+                  <DetalheLente d={sel} ordem={i + 1} onClose={() => setAtiva(null)} />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <Collapsible open={coberturaAberta} onOpenChange={setCoberturaAberta} className="surface rounded-xl px-4 py-3">
@@ -111,6 +135,7 @@ export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] })
     </div>
   );
 }
+
 
 /** Bloco em destaque: o conteúdo da lente vira pequenos capítulos. */
 function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
