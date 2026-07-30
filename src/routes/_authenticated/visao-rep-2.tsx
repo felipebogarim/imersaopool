@@ -729,7 +729,7 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
-      <LeituraIntegradaV2 visao={visao} />
+      {briefV1 ? null : <LeituraIntegradaV2 visao={visao} />}
         </>
       )}
 
