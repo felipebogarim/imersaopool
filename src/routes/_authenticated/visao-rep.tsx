@@ -25,8 +25,10 @@ import {
   type PerfRowLite,
   type UploadLite,
 } from "@/lib/visao-rep";
+import { exportVisaoRepPdf } from "@/lib/visao-rep-pdf";
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, BarChart3, ChevronDown, ExternalLink, ScanSearch, Sparkles, Target } from "lucide-react";
+import { ArrowRightLeft, BarChart3, ChevronDown, ExternalLink, FileDown, ScanSearch, Sparkles, Target } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/visao-rep")({
   head: () => ({
