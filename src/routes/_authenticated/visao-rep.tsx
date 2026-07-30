@@ -261,36 +261,7 @@ function VisaoRep() {
                   Não há entrevista processada como fonte de insight para {rep.nome}.
                 </p>
               ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  {quadro.map(q => (
-                    <article key={q.lente} className="surface rounded-xl p-4 space-y-2">
-                      <header>
-                        <p className="text-sm font-semibold">{q.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{q.descricao}</p>
-                      </header>
-                      {q.vazia ? (
-                        <p className="text-xs text-muted-foreground">Sem registro nesta perspectiva.</p>
-                      ) : (
-                        <>
-                          {q.leitura && <p className="text-xs leading-relaxed">{q.leitura}</p>}
-                          <dl className="space-y-1.5">
-                            {q.campos.map(c => (
-                              <div key={c.label}>
-                                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{c.label}</dt>
-                                <dd className="text-xs">{c.valores.join(" · ")}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                          {q.highlights.length > 0 && (
-                            <p className="text-[11px] italic text-muted-foreground border-l-2 border-primary/40 pl-2">
-                              “{q.highlights[0]}”
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </article>
-                  ))}
-                </div>
+                <RaioXRep intro={introRaioX(rep.nome, raiox)} data={raiox} />
               )}
             </section>
 
