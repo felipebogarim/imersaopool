@@ -157,14 +157,35 @@ function VisaoRep() {
             </Select>
           </div>
           {rep?.regiao && <Badge variant="outline">{rep.regiao}</Badge>}
-          {fonte?.interview_id && (
-            <Button variant="ghost" size="sm" asChild className="ml-auto">
-              <Link to="/entrevistas/$id" params={{ id: fonte.interview_id }}>
-                <ExternalLink className="h-4 w-4 mr-1" /> Abrir entrevista
-              </Link>
+          <div className="ml-auto flex items-center gap-2">
+            {fonte?.interview_id && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/entrevistas/$id" params={{ id: fonte.interview_id }}>
+                  <ExternalLink className="h-4 w-4 mr-1" /> Abrir entrevista
+                </Link>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              disabled={!rep}
+              onClick={() =>
+                rep &&
+                exportVisaoRepPdf({
+                  repNome: rep.nome,
+                  regiao: rep.regiao,
+                  leitura: leituraCruzada(rep.nome, paralelo, perf),
+                  intro: introRaioX(rep.nome, raiox),
+                  raiox,
+                  paralelo,
+                  perf,
+                })
+              }
+            >
+              <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
             </Button>
-          )}
+          </div>
         </div>
+
 
         {!rep ? (
           <EmptyState
