@@ -68,6 +68,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         modelo: defaults?.modelo ?? "",
       });
       setIncludeInterviewee(false);
+      setTheme("dark");
       setIntervName(defaults?.entrevistado ?? "");
       setIntervPhoto(null);
       setCoverPreview(null);
