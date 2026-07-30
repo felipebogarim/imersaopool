@@ -10,13 +10,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { LENTES, LENTE_DEF, type Lente } from "@/lib/insight-lentes";
 import type { SinteseResultado } from "@/lib/sintese-engine";
 import { FAROL_CELL_CLASS } from "@/lib/performance-farol";
+import { RaioXRep } from "@/components/RaioXRep";
 import {
   buildParaleloRep,
   buildPerfResumo,
   buildQuadroRep,
+  buildRaioX,
   findFonteDoRep,
   fmtPct,
   fmtPp,
+  introRaioX,
   leituraCruzada,
   type FonteLite,
   type PerfRowLite,
