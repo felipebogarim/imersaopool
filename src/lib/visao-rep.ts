@@ -501,3 +501,77 @@ export function introRaioX(nomeRep: string, raiox: RaioXLente[]): string {
   const p3 = fracas.length ? ` Cobertura fraca em ${fracas.slice(0, 3).join(", ")}.` : "";
   return p1 + p2 + p3;
 }
+
+// ============ Exemplos e citações por lente (paralelo) ============
+
+export type ParaleloExtras = { exemplos: string[]; citacoes: string[] };
+
+const CAMPO_EXEMPLO = /produt|marca|concorr|client|linha|categoria|fam[ií]lia|item|itens|refer[eê]nci/i;
+const MARCA_EXEMPLO = /(por exemplo|exemplo|exemplos|tipo o |tipo a |como o |como a |caso d|citou|cita )/i;
+
+const frases = (t: string) =>
+  curto(t)
+    .split(/(?<=[.!?;])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+/** Heurística leve: tem nome próprio / marca (token capitalizado fora do início). */
+function temEntidade(s: string): boolean {
+  const toks = s.split(/\s+/).slice(1);
+  return toks.some(t => /^[A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÀ-ÿ&.-]{2,}$/.test(t.replace(/[",;:.()]/g, "")));
+}
+
+const dedup = (arr: string[], max: number) => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of arr) {
+    const v = curto(raw).replace(/^[-•–]\s*/, "");
+    if (v.length < 3) continue;
+    const k = v.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(v);
+    if (out.length >= max) break;
+  }
+  return out;
+};
+
+/**
+ * Extrai, da própria fala do representante naquela lente, os exemplos citados
+ * (produtos, marcas, clientes, casos) e as citações mais marcantes.
+ */
+export function extrasDaLente(r: RaioXLente | null | undefined): ParaleloExtras {
+  if (!r) return { exemplos: [], citacoes: [] };
+
+  const exemplos: string[] = [];
+  for (const c of r.campos) {
+    const rotulado = CAMPO_EXEMPLO.test(c.label);
+    for (const v of c.valores) {
+      const s = curto(v);
+      if (!s) continue;
+      if (rotulado && s.length <= 90) exemplos.push(`${c.label}: ${s}`);
+      else if (s.length <= 90 && temEntidade(s)) exemplos.push(s);
+      else if (MARCA_EXEMPLO.test(s)) exemplos.push(s);
+    }
+  }
+  for (const texto of [r.leitura ?? "", ...r.highlights]) {
+    for (const f of frases(texto)) {
+      if (f.length > 220) continue;
+      if (MARCA_EXEMPLO.test(f) || (temEntidade(f) && f.length <= 140)) exemplos.push(f);
+    }
+  }
+
+  const citacoes: string[] = [];
+  for (const h of r.highlights) {
+    const s = curto(h);
+    if (s.length >= 12) citacoes.push(s.replace(/^["“”']+|["“”']+$/g, ""));
+  }
+  if (!citacoes.length && r.leitura) {
+    const ordenadas = frases(r.leitura)
+      .filter(f => f.length >= 40 && f.length <= 220)
+      .sort((a, b) => b.length - a.length);
+    citacoes.push(...ordenadas.slice(0, 3));
+  }
+
+  return { exemplos: dedup(exemplos, 10), citacoes: dedup(citacoes, 6) };
+}
