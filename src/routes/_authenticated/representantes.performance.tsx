@@ -496,10 +496,12 @@ function PerformancePage() {
     if (!confirm(`Excluir a versão "${currentUpload.periodo_label}"? Esta ação não pode ser desfeita.`)) return;
     const { error } = await supabase.from("rep_performance_uploads").delete().eq("id", currentUpload.id);
     if (error) return toast.error(error.message);
-    toast.success("Versão excluída.");
+    toast.success("Versão excluída. Se houver versão anterior, ela volta a ficar ativa.");
     setUploadId("");
     qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
     qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+    qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+
   }
 
   function startEdit() {
