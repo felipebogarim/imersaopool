@@ -924,7 +924,7 @@ function VisaoRep2View({
 
       {/* Linhas de produto */}
       {visao.product_line_views.length ? (
-        <Card title="Informações adicionais · linhas de produto">
+        <Collapse title="Informações adicionais · linhas de produto">
           <div className="mb-3 flex flex-wrap gap-1.5">
             {(["todas", ...(Object.keys(CLASSIFICATION_LABEL) as LineClassification[])] as const).map(k => (
               <button
