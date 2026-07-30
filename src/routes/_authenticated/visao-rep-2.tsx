@@ -496,38 +496,25 @@ function VisaoRep2Page() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border p-3">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">Campos reconhecidos</div>
-              <ul className="space-y-0.5 text-xs">
-                {validacao.recognized.map(r => (
-                  <li key={r}>• {r}</li>
-                ))}
-              </ul>
-            </div>
-            <div className={cn("rounded-lg border p-3", validacao.missingRequired.length && "border-destructive/50")}>
-              <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                <AlertTriangle className="h-3.5 w-3.5" /> Obrigatórios ausentes
-              </div>
-              {validacao.missingRequired.length ? (
-                <ul className="space-y-0.5 text-xs text-destructive">
+          <div className="mt-4">
+            {validacao.missingRequired.length ? (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
+                <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
+                  <AlertTriangle className="h-4 w-4" /> Corrija antes de importar
+                </div>
+                <ul className="space-y-1 text-destructive">
                   {validacao.missingRequired.map(r => (
-                    <li key={r}>• {r}</li>
+                    <li key={r}>• Informe “{r}” no relatório e envie o arquivo novamente.</li>
                   ))}
                 </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhum.</p>
-              )}
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="mb-1 text-xs font-semibold text-muted-foreground">Opcionais ausentes (ignorados)</div>
-              <ul className="space-y-0.5 text-xs text-muted-foreground">
-                {validacao.missingOptional.map(r => (
-                  <li key={r}>• {r}</li>
-                ))}
-              </ul>
-            </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+                Arquivo validado e pronto para importação.
+              </p>
+            )}
           </div>
+
 
           <div className="mt-4">
             <Collapse title="Prévia do conteúdo" defaultOpen>
@@ -656,10 +643,73 @@ function VisaoRep2View({
 
   const linhas = visao.product_line_views.filter(l => filtroLinha === "todas" || l.classification === filtroLinha);
 
+  const clientesPrincipais = visao.strategic_clients.slice(0, 5);
+  const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
+
   return (
     <div className="space-y-4">
+      {/* Contexto e carteira estratégica */}
+      {temContexto || clientesPrincipais.length ? (
+        <Card title="Contexto e carteira estratégica">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {temContexto ? (
+              <div className="space-y-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Contexto do representante
+                </div>
+                {ctx.represented_brands.length ? (
+                  <div>
+                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Marcas que representa além da Newline
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ctx.represented_brands.map(m => (
+                        <Badge key={m} variant="outline">
+                          {m}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {has(ctx.region_summary) || has(ctx.service_model) ? (
+                  <div>
+                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Região e modelo de atendimento
+                    </div>
+                    <p className="whitespace-pre-line break-words text-sm">
+                      {[ctx.region_summary, ctx.service_model].filter(has).join("\n")}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {clientesPrincipais.length ? (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Clientes estratégicos
+                </div>
+                <div className="space-y-2">
+                  {clientesPrincipais.map((c, i) => (
+                    <div key={i} className="rounded-lg border p-3">
+                      <div className="break-words text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
+                      {has(c.strategic_reason) ? (
+                        <p className="mt-1 whitespace-pre-line break-words text-sm text-muted-foreground">
+                          {c.strategic_reason}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
+
         <Card title="Visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
@@ -713,51 +763,8 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
-      {/* Contexto */}
-      {ctx.represented_brands.length || has(ctx.region_summary) || has(ctx.regional_structure) || has(ctx.service_model) ? (
-        <Card title="Contexto do representante">
-          <div className="space-y-3">
-            {ctx.represented_brands.length ? (
-              <div>
-                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Marcas que representa além da Newline
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {ctx.represented_brands.map(m => (
-                    <Badge key={m} variant="outline">
-                      {m}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <Field label="Região e modelo de atendimento" value={ctx.region_summary} />
-            <Field label="Modelo de atendimento" value={ctx.service_model} />
-            <Field label="Estrutura regional" value={ctx.regional_structure} />
-            <Field label="Contexto adicional" value={ctx.additional_context} />
-          </div>
-        </Card>
-      ) : null}
 
-      {/* Clientes estratégicos */}
-      {visao.strategic_clients.length ? (
-        <Card title="Clientes estratégicos">
-          <div className="grid gap-2 md:grid-cols-2">
-            {visao.strategic_clients.map((c, i) => (
-              <div key={i} className="space-y-2 rounded-lg border p-3">
-                <div className="text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
-                <Field label="Motivo estratégico" value={c.strategic_reason} />
-                <Field label="Potencial percebido" value={c.perceived_potential} />
-                <Field label="Oportunidade" value={c.identified_opportunity} />
-                <Field label="Linhas prioritárias" value={c.priority_product_lines} />
-                <Field label="Concorrente principal" value={c.main_competitor} />
-                <Field label="Próxima ação" value={c.recommended_next_action} />
-                <Field label="Ponto de atenção" value={c.attention_point} />
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : null}
+
 
       {/* Linhas de produto */}
       {visao.product_line_views.length ? (
