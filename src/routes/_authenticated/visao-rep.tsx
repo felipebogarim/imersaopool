@@ -335,7 +335,11 @@ function VisaoRep() {
 
                   <div className="space-y-2">
                     {paralelo.lentes.map(l => (
-                      <LenteParalelo key={l.lente} lente={l} />
+                      <LenteParalelo
+                        key={l.lente}
+                        lente={l}
+                        extras={extrasDaLente(raiox.find(r => r.lente === l.lente))}
+                      />
                     ))}
                   </div>
                 </>
