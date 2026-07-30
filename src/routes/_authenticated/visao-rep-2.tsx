@@ -27,6 +27,9 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
+import { briefingParaRepresentante } from "@/components/visao-rep2/briefing-fabio";
+
 import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
