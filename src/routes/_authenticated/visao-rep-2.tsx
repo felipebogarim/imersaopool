@@ -750,8 +750,13 @@ function VisaoRep2View({
         )}
       </Card>
 
-      {/* Perspectivas completas */}
-      <Card title="Perspectivas completas">
+      {/* Áreas de aprofundamento */}
+      <div className="space-y-3 pt-2">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        Áreas de aprofundamento
+      </h3>
+      <Collapse title="Perspectivas completas">
+
         <div className="grid gap-2 md:grid-cols-2">
           {visao.perspectives.map(p => {
             const vazia = !has(p.executive_finding) && !has(p.full_reading);
