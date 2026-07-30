@@ -539,6 +539,28 @@ function LenteParalelo({
               ))}
             </Bloco>
           )}
+          {mostra("exemplos") && extras.exemplos.length > 0 && (
+            <Bloco titulo="Exemplos citados por ele" cor="text-sky-600 dark:text-sky-400">
+              {extras.exemplos.map((e, k) => (
+                <li key={k}>{e}</li>
+              ))}
+            </Bloco>
+          )}
+          {mostra("citacoes") && extras.citacoes.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-violet-600 dark:text-violet-400">Citações marcantes</p>
+              <div className="space-y-2">
+                {extras.citacoes.map((c, k) => (
+                  <blockquote
+                    key={k}
+                    className="border-l-2 border-violet-500/50 pl-3 text-sm italic text-muted-foreground"
+                  >
+                    “{c}”
+                  </blockquote>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
