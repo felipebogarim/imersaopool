@@ -4217,6 +4217,74 @@ export type Database = {
         }
         Relationships: []
       }
+      visao_rep_reports: {
+        Row: {
+          company_id: string | null
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          creation_mode: string
+          data: Json
+          id: string
+          import_date: string | null
+          imported_by: string | null
+          region: string | null
+          representative_id: string | null
+          representative_name: string
+          schema_version: string
+          source_file_kept: boolean
+          source_file_name: string | null
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          creation_mode?: string
+          data?: Json
+          id?: string
+          import_date?: string | null
+          imported_by?: string | null
+          region?: string | null
+          representative_id?: string | null
+          representative_name: string
+          schema_version?: string
+          source_file_kept?: boolean
+          source_file_name?: string | null
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          creation_mode?: string
+          data?: Json
+          id?: string
+          import_date?: string | null
+          imported_by?: string | null
+          region?: string | null
+          representative_id?: string | null
+          representative_name?: string
+          schema_version?: string
+          source_file_kept?: boolean
+          source_file_name?: string | null
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visao_rep_reports_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
