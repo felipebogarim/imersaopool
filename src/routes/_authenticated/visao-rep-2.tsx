@@ -918,7 +918,8 @@ function VisaoRep2View({
             </div>
             <Field label="Síntese final" value={ev.final_synthesis} />
           </div>
-        </Card>
+        </Collapse>
+
       ) : null}
 
 
