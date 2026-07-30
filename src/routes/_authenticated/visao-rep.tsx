@@ -433,6 +433,20 @@ function LenteParalelo({
       base: "bg-muted text-muted-foreground",
       ativo: "ring-2 ring-foreground/40",
     },
+    {
+      key: "exemplos",
+      label: "exemplos",
+      n: extras.exemplos.length,
+      base: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+      ativo: "ring-2 ring-sky-500",
+    },
+    {
+      key: "citacoes",
+      label: "citações",
+      n: extras.citacoes.length,
+      base: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+      ativo: "ring-2 ring-violet-500",
+    },
   ];
 
   const selecionar = (k: FocoParalelo, n: number) => {
