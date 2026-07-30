@@ -615,6 +615,10 @@ function VisaoRep2Page() {
                 hash {selected.content_hash.slice(0, 12)}
               </Badge>
             ) : null}
+            <Button size="sm" onClick={() => exportVisaoRep2Pdf(visao, perf)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
             <Button size="sm" variant="secondary" onClick={() => exportar(visao, selected.representative_name)}>
               <FileDown className="mr-2 h-4 w-4" />
               Exportar relatório estruturado
