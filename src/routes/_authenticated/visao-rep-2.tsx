@@ -27,11 +27,13 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
+import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
   ChevronDown,
   Eraser,
   FileDown,
+  FileText,
   FileUp,
   Link2,
   Loader2,
@@ -574,8 +576,16 @@ function VisaoRep2Page() {
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), selectedId === r.id ? perf : null)}
+                  title="Exportar PDF visual"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => exportar(normalizeVisaoRep2(r.data), r.representative_name)}
-                  title="Exportar relatório estruturado"
+                  title="Exportar relatório estruturado (.md)"
                 >
                   <FileDown className="h-4 w-4" />
                 </Button>
@@ -605,6 +615,10 @@ function VisaoRep2Page() {
                 hash {selected.content_hash.slice(0, 12)}
               </Badge>
             ) : null}
+            <Button size="sm" onClick={() => exportVisaoRep2Pdf(visao, perf)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
             <Button size="sm" variant="secondary" onClick={() => exportar(visao, selected.representative_name)}>
               <FileDown className="mr-2 h-4 w-4" />
               Exportar relatório estruturado
