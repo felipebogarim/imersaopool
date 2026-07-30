@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/EmptyState";
+import { PerspectivasRep2 } from "@/components/PerspectivasRep2";
+
 import { cn } from "@/lib/utils";
 import { extractFileText } from "@/lib/sintese-file-text";
 import { gerarVisaoRep2 } from "@/lib/visao-rep2.functions";
