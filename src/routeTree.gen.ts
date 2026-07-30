@@ -21,6 +21,7 @@ import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AuthenticatedVisaoRep2RouteImport } from './routes/_authenticated/visao-rep-2'
 import { Route as AuthenticatedVisaoRepRouteImport } from './routes/_authenticated/visao-rep'
 import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
@@ -151,6 +152,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVisaoRep2Route = AuthenticatedVisaoRep2RouteImport.update({
+  id: '/visao-rep-2',
+  path: '/visao-rep-2',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedVisaoRepRoute = AuthenticatedVisaoRepRouteImport.update({
   id: '/visao-rep',
@@ -572,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
+  '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -655,6 +662,7 @@ export interface FileRoutesByTo {
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
+  '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -741,6 +749,7 @@ export interface FileRoutesById {
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/_authenticated/visao-rep': typeof AuthenticatedVisaoRepRoute
+  '/_authenticated/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -827,6 +836,7 @@ export interface FileRouteTypes {
     | '/roteiros'
     | '/termos-de-uso'
     | '/visao-rep'
+    | '/visao-rep-2'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -910,6 +920,7 @@ export interface FileRouteTypes {
     | '/roteiros'
     | '/termos-de-uso'
     | '/visao-rep'
+    | '/visao-rep-2'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -995,6 +1006,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roteiros'
     | '/_authenticated/termos-de-uso'
     | '/_authenticated/visao-rep'
+    | '/_authenticated/visao-rep-2'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1175,6 +1187,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/visao-rep-2': {
+      id: '/_authenticated/visao-rep-2'
+      path: '/visao-rep-2'
+      fullPath: '/visao-rep-2'
+      preLoaderRoute: typeof AuthenticatedVisaoRep2RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/visao-rep': {
       id: '/_authenticated/visao-rep'
@@ -1775,6 +1794,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedTermosDeUsoRoute: typeof AuthenticatedTermosDeUsoRoute
   AuthenticatedVisaoRepRoute: typeof AuthenticatedVisaoRepRoute
+  AuthenticatedVisaoRep2Route: typeof AuthenticatedVisaoRep2Route
   AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
   AuthenticatedClientesIdRoute: typeof AuthenticatedClientesIdRouteWithChildren
   AuthenticatedClientesNovoRoute: typeof AuthenticatedClientesNovoRoute
@@ -1816,6 +1836,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedTermosDeUsoRoute: AuthenticatedTermosDeUsoRoute,
   AuthenticatedVisaoRepRoute: AuthenticatedVisaoRepRoute,
+  AuthenticatedVisaoRep2Route: AuthenticatedVisaoRep2Route,
   AuthenticatedClientesBiBatchRepIdRoute:
     AuthenticatedClientesBiBatchRepIdRoute,
   AuthenticatedClientesIdRoute: AuthenticatedClientesIdRouteWithChildren,
