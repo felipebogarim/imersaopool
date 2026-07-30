@@ -233,21 +233,50 @@ function VisaoRep2Page() {
     },
   });
 
+  /** Gera e salva de uma vez: o relatório do representante fica fixo na página. */
+  async function gerarESalvar(repIdAlvo: string) {
+    const v = await gerar({ data: { representativeId: repIdAlvo } });
+    setDraftFile(null);
+    setDraftHash(null);
+    await salvar.mutateAsync(normalizeVisaoRep2(v));
+  }
+
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
+    const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
+    if (existente) {
+      setSelectedId(existente.id);
+      toast.info("Este representante já tem uma Visão Rep salva. Use “Regerar com IA” para substituí-la.");
+      return;
+    }
     setBusy(true);
     try {
-      const v = await gerar({ data: { representativeId: repId } });
-      setDraft(normalizeVisaoRep2(v));
-      setDraftFile(null);
-      setDraftHash(null);
-      toast.success("Prévia gerada. Revise antes de salvar.");
+      await gerarESalvar(repId);
+      toast.success("Visão Rep gerada e salva. Ela ficará fixa nesta página.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
       setBusy(false);
     }
   }
+
+  /** Substitui o relatório salvo por uma nova geração (ação explícita do usuário). */
+  async function onRegerar(row: Row) {
+    if (!row.representative_id) return toast.error("Relatório sem representante vinculado.");
+    if (!window.confirm(`Regerar a Visão Rep de ${row.representative_name}? O relatório atual será substituído.`)) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("visao_rep_reports").delete().eq("id", row.id);
+      if (error) throw error;
+      await gerarESalvar(row.representative_id);
+      toast.success("Visão Rep regerada e salva.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao regerar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   async function onImportar(file: File) {
     setBusy(true);
