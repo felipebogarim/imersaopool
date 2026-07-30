@@ -786,7 +786,8 @@ function VisaoRep2View({
             );
           })}
         </div>
-      </Card>
+      </Collapse>
+
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
