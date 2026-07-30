@@ -23,6 +23,8 @@ import {
   VISAO_REP_SCHEMA_VERSION,
   normalizeVisaoRep2,
   validateVisaoRep2,
+  isExecutiveBriefV1,
+
   type LineClassification,
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
