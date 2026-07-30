@@ -381,12 +381,24 @@ function Metric({
   );
 }
 
-type FocoParalelo = "alinhado" | "cegos" | "divergencias" | "unicos";
+type FocoParalelo = "alinhado" | "cegos" | "divergencias" | "unicos" | "exemplos" | "citacoes";
 
-function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> extends infer _ ? any : never }) {
+function LenteParalelo({
+  lente,
+  extras,
+}: {
+  lente: ReturnType<typeof buildParaleloRep> extends infer _ ? any : never;
+  extras: ParaleloExtras;
+}) {
   const [open, setOpen] = useState(false);
   const [foco, setFoco] = useState<FocoParalelo | null>(null);
-  const total = lente.alinhado.length + lente.foraDaCurva.length + lente.divergencias.length + lente.unicos.length;
+  const total =
+    lente.alinhado.length +
+    lente.foraDaCurva.length +
+    lente.divergencias.length +
+    lente.unicos.length +
+    extras.exemplos.length +
+    extras.citacoes.length;
   const def = LENTE_DEF[lente.lente as Lente];
 
   const mostra = (k: FocoParalelo) => foco === null || foco === k;
