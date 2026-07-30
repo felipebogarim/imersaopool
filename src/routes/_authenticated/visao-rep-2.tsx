@@ -23,6 +23,8 @@ import {
   VISAO_REP_SCHEMA_VERSION,
   normalizeVisaoRep2,
   validateVisaoRep2,
+  isExecutiveBriefV1,
+
   type LineClassification,
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
@@ -205,6 +207,8 @@ function VisaoRep2Page() {
       const uid = auth.user?.id ?? null;
       const now = new Date().toISOString();
       const imported = v.metadata.creation_mode === "imported_ready";
+      // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
+      const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       const payload: VisaoRep2 = {
         ...v,
         metadata: { ...v.metadata, created_by: uid, created_at: now, updated_at: now, source_file_name: draftFile },
@@ -212,7 +216,7 @@ function VisaoRep2Page() {
           ...v.source_control,
           creation_mode: v.metadata.creation_mode,
           source_file: draftFile,
-          schema_version: VISAO_REP_SCHEMA_VERSION,
+          schema_version: schemaVersion,
           import_date: imported ? now : null,
           imported_by: imported ? uid : null,
           last_update: now,
@@ -226,8 +230,9 @@ function VisaoRep2Page() {
           representative_name: v.metadata.representative_name ?? "Sem representante",
           region: v.metadata.region,
           creation_mode: v.metadata.creation_mode,
-          schema_version: VISAO_REP_SCHEMA_VERSION,
+          schema_version: schemaVersion,
           titulo: v.executive_view.central_thesis?.slice(0, 120) ?? null,
+
           data: payload as never,
           source_file_name: draftFile,
           content_hash: draftHash,
@@ -650,6 +655,8 @@ function VisaoRep2View({
   const clientesPrincipais = visao.strategic_clients.slice(0, 5);
   const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
   const brief = briefingParaRepresentante(visao.metadata.representative_name);
+  const briefV1 = isExecutiveBriefV1(visao);
+
 
   return (
     <div className="space-y-4">
@@ -725,7 +732,7 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
-      <LeituraIntegradaV2 visao={visao} />
+      {briefV1 ? null : <LeituraIntegradaV2 visao={visao} />}
         </>
       )}
 
@@ -892,13 +899,15 @@ function VisaoRep2View({
       ) : null}
 
 
-      {/* Visão executiva */}
-      {has(ev.central_thesis) || ev.priority_signals.length ? (
+      {/* Visão executiva — oculta no schema 3.0 (executive_brief_v1): tese central e
+          sinais prioritários existem apenas como espelho interno do briefing. */}
+      {!briefV1 && (has(ev.central_thesis) || ev.priority_signals.length) ? (
 
         <Collapse title="Relatório de origem · visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
             <Field label="Risco estratégico" value={ev.strategic_risk} />
+
             {ev.priority_signals.length ? (
               <div className="grid gap-2 md:grid-cols-2">
                 {ev.priority_signals.map((s, i) => (

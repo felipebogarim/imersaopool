@@ -9,7 +9,11 @@ import {
   VISAO_REP_SCHEMA_VERSION,
   emptyPerspective,
   emptyVisaoRep2,
+  emptyExecutiveTheme,
+  isExecutiveBriefV1,
+  type ExecutiveTheme,
   type ConfidenceLevel,
+
   type ConsensusPoint,
   type Divergence,
   type EvidenceStatus,
@@ -180,10 +184,71 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
   // Metadados
   const meta = kv(secOf(/^metadados?$/)?.lines ?? []);
   v.metadata.schema_version = nz(meta.schema_version) ?? VISAO_REP_SCHEMA_VERSION;
+  v.metadata.view_model = nz(meta.view_model) ?? nz(meta.modelo_de_visualizacao) ?? null;
   v.metadata.representative_name = nz(meta.representante) ?? nz(meta.representative_name);
   v.metadata.region = nz(meta.regiao) ?? nz(meta.region);
   v.metadata.interview_date = nz(meta.data_entrevista);
   v.metadata.report_date = nz(meta.data_relatorio);
+
+  // Schema 3.0 — Síntese presidencial + Temas estratégicos (executive_brief_v1)
+  const sintesePres = secOf(/sintese_presidencial/);
+  const temasSec = secOf(/temas_estrategicos/);
+  const temaBlocos = childrenOf(temasSec).filter(b => /^tema/.test(norm(b.title)));
+
+  if (sintesePres || temaBlocos.length) {
+    const presidential_synthesis = sintesePres
+      ? text([...sintesePres.lines, ...childrenOf(sintesePres).flatMap(c => c.lines)])
+      : null;
+
+    const themes: ExecutiveTheme[] = temaBlocos.map(b => {
+      const f = kv(b.lines);
+      const lb = labeled(b.lines);
+      const pick = (...keys: string[]) => {
+        for (const k of keys) {
+          const direto = nz(f[k]);
+          if (direto) return direto;
+          const bloco = text(lb[k]);
+          if (bloco) return bloco;
+        }
+        return null;
+      };
+      const pickList = (...keys: string[]) => {
+        for (const k of keys) {
+          const b1 = bullets(lb[k]);
+          if (b1.length) return b1;
+          const l1 = list(f[k]);
+          if (l1.length) return l1;
+        }
+        return [];
+      };
+      const tituloHeader = b.title.replace(/^Tema\s*\d*\s*[—:-]?\s*/i, "").trim() || null;
+      return {
+        ...emptyExecutiveTheme(),
+        id: nz(f.id) ?? nz(f.id_tema),
+        selector: pick("seletor", "rotulo"),
+        title: pick("titulo", "titulo_conclusivo", "conclusao") ?? tituloHeader,
+        context: pick("contexto", "leitura", "narrativa"),
+        where_appears: pickList("onde_aparece", "onde_isso_aparece"),
+        represents: pick("representa", "o_que_isso_representa", "significado_executivo"),
+        decision: pick("decisao", "decisao_requerida"),
+        validation: pick("validacao", "validacao_necessaria"),
+        evidence: pick("evidencia", "citacao"),
+        comparison: pick("comparacao", "comparacao_com_o_grupo", "paralelo_com_o_grupo"),
+        confidence: pick("confianca", "nivel_confianca"),
+        perspectives: pickList("perspectivas", "perspectivas_relacionadas"),
+        entities: {
+          produtos: pickList("produtos", "produtos_citados"),
+          concorrentes: pickList("concorrentes", "concorrentes_citados"),
+          clientes: pickList("clientes", "clientes_citados"),
+          ferramentas: pickList("ferramentas", "ferramentas_citadas"),
+          nota: pick("nota", "nota_metodologica"),
+        },
+      };
+    });
+
+    v.executive_brief = { presidential_synthesis, themes };
+  }
+
 
   // 00 — Visão executiva
   const exec = secOf(/visao_executiva/);
@@ -375,7 +440,42 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     v.comparative_view.exclusive_readings = excl;
   }
 
+  // Mapeamento interno (schema 3.0 / executive_brief_v1): mantém compatibilidade
+  // com as colunas antigas do banco sem duplicar conteúdo na interface.
+  aplicarMapeamentoInterno(v);
+
   return v;
+}
+
+/**
+ * Espelha "Síntese presidencial" em central_thesis e os títulos conclusivos dos
+ * "Temas estratégicos" em priority_signals. Uso exclusivamente interno: a
+ * interface do briefing lê executive_brief, nunca esses campos espelhados.
+ */
+export function aplicarMapeamentoInterno(v: VisaoRep2): VisaoRep2 {
+  if (!isExecutiveBriefV1(v) || !v.executive_brief) return v;
+  const b = v.executive_brief;
+
+  if (!v.executive_view.central_thesis && b.presidential_synthesis) {
+    v.executive_view.central_thesis = b.presidential_synthesis;
+  }
+  if (!v.executive_view.priority_signals.length && b.themes.length) {
+    v.executive_view.priority_signals = b.themes.slice(0, 5).map((t, i) => ({
+      title: t.title ?? t.selector ?? `Tema ${i + 1}`,
+      finding: null,
+      business_impact: null,
+      recommended_action: null,
+      confidence_level: null,
+      evidence_status: null,
+      source_chapter: null,
+      source_quote: null,
+      signal_id: t.id,
+      validation_note: null,
+      related_perspectives: [],
+    }));
+  }
+  return v;
+
 }
 
 // ---------- serializador (mesmo padrão aceito pelo importador) ----------
@@ -387,6 +487,7 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
   L.push("# VISÃO REP — RELATÓRIO FINAL", "");
   L.push("## Metadados", "");
   L.push(`- schema_version: ${S(v.metadata.schema_version)}`);
+  if (v.metadata.view_model) L.push(`- view_model: ${S(v.metadata.view_model)}`);
   L.push(`- representante: ${S(v.metadata.representative_name)}`);
   L.push(`- regiao: ${S(v.metadata.region)}`);
   L.push(`- data_entrevista: ${S(v.metadata.interview_date)}`);
@@ -394,11 +495,46 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
   L.push(`- base_comparativa: ${S(v.comparative_view.comparable_source_count)}`);
   L.push(`- creation_mode: ${S(v.metadata.creation_mode)}`, "");
 
+  const briefV1 = isExecutiveBriefV1(v) && !!v.executive_brief;
+  if (briefV1 && v.executive_brief) {
+    // Schema 3.0: o bloco executivo é escrito no formato próprio, sem duplicar
+    // os campos espelhados internamente (tese central / sinais prioritários).
+    L.push("## Síntese presidencial", "", S(v.executive_brief.presidential_synthesis), "");
+    L.push("## Temas estratégicos", "");
+    v.executive_brief.themes.forEach((t, i) => {
+      L.push(`### Tema ${i + 1} — ${S(t.title)}`, "");
+      L.push(`- id: ${S(t.id)}`);
+      L.push(`- seletor: ${S(t.selector)}`);
+      L.push(`- titulo: ${S(t.title)}`);
+      L.push(`- contexto: ${S(t.context)}`);
+      L.push(`- representa: ${S(t.represents)}`);
+      L.push(`- decisao: ${S(t.decision)}`);
+      L.push(`- validacao: ${S(t.validation)}`);
+      L.push(`- evidencia: ${S(t.evidence)}`);
+      L.push(`- comparacao: ${S(t.comparison)}`);
+      L.push(`- confianca: ${S(t.confidence)}`);
+      L.push(`- perspectivas: ${t.perspectives.join(", ")}`);
+      L.push(`- produtos: ${t.entities.produtos.join(", ")}`);
+      L.push(`- concorrentes: ${t.entities.concorrentes.join(", ")}`);
+      L.push(`- clientes: ${t.entities.clientes.join(", ")}`);
+      L.push(`- ferramentas: ${t.entities.ferramentas.join(", ")}`);
+      L.push(`- nota: ${S(t.entities.nota)}`, "");
+      L.push("**Onde aparece**", "");
+      t.where_appears.forEach(w => L.push(`- ${w}`));
+      L.push("");
+    });
+  }
+
   L.push("## 00 — Visão executiva", "");
-  L.push("**Tese central**", "", S(v.executive_view.central_thesis), "");
+  if (!briefV1) {
+    L.push("**Tese central**", "", S(v.executive_view.central_thesis), "");
+  }
   L.push("**Risco estratégico**", "", S(v.executive_view.strategic_risk), "");
-  L.push("**Sinais prioritários**", "");
-  v.executive_view.priority_signals.forEach((s, i) => {
+  if (!briefV1) {
+    L.push("**Sinais prioritários**", "");
+  }
+
+  (briefV1 ? [] : v.executive_view.priority_signals).forEach((s, i) => {
     L.push(`### Sinal ${i + 1}`, "");
     L.push(`- titulo: ${S(s.title)}`);
     L.push(`- achado: ${S(s.finding)}`);

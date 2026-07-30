@@ -65,7 +65,10 @@ export type PrioritySignal = {
 
 export type Metadata = {
   schema_version: string;
+  /** Modelo de leitura do relatório (ex.: "executive_brief_v1" no schema 3.0). */
+  view_model?: string | null;
   representative_id: string | null;
+
   representative_name: string | null;
   region: string | null;
   interview_date: string | null;
@@ -199,9 +202,42 @@ export type SourceControl = {
   content_hash: string | null;
 };
 
+/** Tema estratégico do modelo executive_brief_v1 (schema 3.0). */
+export type ExecutiveTheme = {
+  id: string | null;
+  /** Rótulo curto do seletor de temas. */
+  selector: string | null;
+  /** Título conclusivo do tema (usado no mapeamento interno para priority_signals). */
+  title: string | null;
+  context: string | null;
+  where_appears: string[];
+  represents: string | null;
+  decision: string | null;
+  validation: string | null;
+  evidence: string | null;
+  comparison: string | null;
+  confidence: string | null;
+  perspectives: string[];
+  entities: {
+    produtos: string[];
+    concorrentes: string[];
+    clientes: string[];
+    ferramentas: string[];
+    nota: string | null;
+  };
+};
+
+/** Bloco executivo do schema 3.0 / executive_brief_v1. */
+export type ExecutiveBrief = {
+  presidential_synthesis: string | null;
+  themes: ExecutiveTheme[];
+};
+
 export type VisaoRep2 = {
   metadata: Metadata;
   executive_view: ExecutiveView;
+  /** Presente apenas em relatórios schema 3.0 com view_model executive_brief_v1. */
+  executive_brief?: ExecutiveBrief | null;
   representative_context: RepresentativeContext;
   strategic_clients: StrategicClient[];
   product_line_views: ProductLineView[];
@@ -212,6 +248,45 @@ export type VisaoRep2 = {
   /** Campos herdados da Visão Rep original (percentuais de alinhamento etc.). */
   legacy?: Record<string, string | number | boolean | null>;
 };
+
+export const VISAO_REP_VIEW_MODEL_BRIEF = "executive_brief_v1";
+
+/** Extrai o major numérico do schema_version ("3.0" → 3; "visao_rep.v2" → 2). */
+export function schemaMajor(version: string | null | undefined): number {
+  const s = String(version ?? "").trim();
+  const direto = /^v?(\d+)/i.exec(s);
+  if (direto) return Number(direto[1]);
+  const comSufixo = /v(\d+)/i.exec(s);
+  return comSufixo ? Number(comSufixo[1]) : 0;
+}
+
+/**
+ * Relatórios schema 3.0 no modelo executive_brief_v1 substituem
+ * "tese central" por "Síntese presidencial" e "sinais prioritários"
+ * por "Temas estratégicos".
+ */
+export function isExecutiveBriefV1(v: VisaoRep2): boolean {
+  const vm = (v.metadata.view_model ?? "").trim();
+  return schemaMajor(v.metadata.schema_version) >= 3 && vm === VISAO_REP_VIEW_MODEL_BRIEF;
+}
+
+export function emptyExecutiveTheme(): ExecutiveTheme {
+  return {
+    id: null,
+    selector: null,
+    title: null,
+    context: null,
+    where_appears: [],
+    represents: null,
+    decision: null,
+    validation: null,
+    evidence: null,
+    comparison: null,
+    confidence: null,
+    perspectives: [],
+    entities: { produtos: [], concorrentes: [], clientes: [], ferramentas: [], nota: null },
+  };
+}
 
 export const MAX_SIGNALS = 5;
 export const MAX_DECISIONS = 3;
@@ -412,6 +487,42 @@ function coerceStructuredFields(v: unknown): Record<string, string | string[]> {
   return out;
 }
 
+/** Normaliza o bloco executivo do schema 3.0 sem inventar conteúdo. */
+function normalizeExecutiveBrief(raw: unknown): ExecutiveBrief | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, any>;
+  const themes = asArray(o.themes).map(t => {
+    const th = (t && typeof t === "object" ? t : {}) as Record<string, any>;
+    const ent = (th.entities && typeof th.entities === "object" ? th.entities : {}) as Record<string, any>;
+    return {
+      ...emptyExecutiveTheme(),
+      id: asText(th.id),
+      selector: asText(th.selector),
+      title: asText(th.title),
+      context: asText(th.context),
+      where_appears: asTextList(th.where_appears),
+      represents: asText(th.represents),
+      decision: asText(th.decision),
+      validation: asText(th.validation),
+      evidence: asText(th.evidence),
+      comparison: asText(th.comparison),
+      confidence: asText(th.confidence),
+      perspectives: asTextList(th.perspectives),
+      entities: {
+        produtos: asTextList(ent.produtos),
+        concorrentes: asTextList(ent.concorrentes),
+        clientes: asTextList(ent.clientes),
+        ferramentas: asTextList(ent.ferramentas),
+        nota: asText(ent.nota),
+      },
+    };
+  });
+  const synthesis = asText(o.presidential_synthesis);
+  if (!synthesis && !themes.length) return null;
+  return { presidential_synthesis: synthesis, themes };
+}
+
+
 /** Normaliza um objeto vindo do banco ou da IA (inclusive registros antigos/parciais). */
 export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
   const base = emptyVisaoRep2();
@@ -444,6 +555,8 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       validation_required: asTextList(ev.validation_required).slice(0, MAX_VALIDATIONS),
       final_synthesis: asText(ev.final_synthesis) ?? null,
     },
+    executive_brief: normalizeExecutiveBrief(o.executive_brief),
+
     representative_context: {
       represented_brands: asTextList(ctx.represented_brands),
       region_summary: asText(ctx.region_summary) ?? null,
@@ -532,15 +645,34 @@ export function validateVisaoRep2(v: VisaoRep2): ValidationReport {
   if (!nonEmpty(v.metadata.representative_name)) missingRequired.push("Metadados › representante");
   else recognized.push("Metadados › representante");
 
-  if (!nonEmpty(v.executive_view.central_thesis)) missingRequired.push("Visão executiva › tese central");
-  else recognized.push("Visão executiva › tese central");
+  const briefV1 = isExecutiveBriefV1(v);
 
-  if (!v.executive_view.priority_signals.length) missingRequired.push("Visão executiva › sinais prioritários");
-  else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
+  if (briefV1) {
+    // Schema 3.0: "Síntese presidencial" e "Temas estratégicos" substituem
+    // "tese central" e "sinais prioritários". Estes últimos não são exigidos
+    // nem listados como ausentes.
+    const brief = v.executive_brief;
+    if (!nonEmpty(brief?.presidential_synthesis ?? null)) missingRequired.push("Síntese presidencial");
+    else recognized.push("Síntese presidencial");
+
+    const temas = brief?.themes ?? [];
+    if (!temas.length) missingRequired.push("Temas estratégicos");
+    else recognized.push(`Temas estratégicos › ${temas.length} tema(s)`);
+  } else {
+    if (!nonEmpty(v.executive_view.central_thesis)) missingRequired.push("Visão executiva › tese central");
+    else recognized.push("Visão executiva › tese central");
+
+    if (!v.executive_view.priority_signals.length) missingRequired.push("Visão executiva › sinais prioritários");
+    else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
+  }
 
   const comPersp = v.perspectives.filter(p => nonEmpty(p.executive_finding) || nonEmpty(p.full_reading));
-  if (!comPersp.length) missingRequired.push("Perspectivas da entrevista");
-  else recognized.push(`Perspectivas › ${comPersp.length} de 8 preenchidas`);
+  if (!comPersp.length) {
+    // No briefing executivo as perspectivas podem viver dentro dos temas;
+    // ausência só é impeditiva quando não há tema algum.
+    if (!briefV1 || !(v.executive_brief?.themes.length ?? 0)) missingRequired.push("Perspectivas da entrevista");
+  } else recognized.push(`Perspectivas › ${comPersp.length} de 8 preenchidas`);
+
 
   const optional: [string, boolean][] = [
     ["Metadados › região", nonEmpty(v.metadata.region)],
