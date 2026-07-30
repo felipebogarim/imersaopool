@@ -122,6 +122,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         intervieweePage: includeInterviewee
           ? { include: true, photoDataUrl: intervPhoto, name: intervName || fields.entrevistado, template }
           : null,
+        theme,
       });
 
       toast.success("PDF gerado");
