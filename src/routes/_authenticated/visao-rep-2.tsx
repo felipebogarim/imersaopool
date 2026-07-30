@@ -650,6 +650,8 @@ function VisaoRep2View({
   const clientesPrincipais = visao.strategic_clients.slice(0, 5);
   const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
   const brief = briefingParaRepresentante(visao.metadata.representative_name);
+  const briefV1 = isExecutiveBriefV1(visao);
+
 
   return (
     <div className="space-y-4">
