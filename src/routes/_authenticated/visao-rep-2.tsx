@@ -861,7 +861,8 @@ function VisaoRep2View({
             ) : null}
           </div>
           <Field label="Nota metodológica" value={cv.methodology_note} />
-        </Card>
+        </Collapse>
+
       ) : null}
 
 
