@@ -109,6 +109,8 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
   );
 }
 
+const LAST_KEY = "vr2:last-report-id";
+
 function VisaoRep2Page() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string>("");
