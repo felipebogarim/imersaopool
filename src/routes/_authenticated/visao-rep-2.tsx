@@ -751,7 +751,7 @@ function VisaoRep2View({
       </Card>
 
       {/* Perspectivas completas */}
-      <Card title="Perspectivas da entrevista">
+      <Card title="Perspectivas completas">
         <div className="grid gap-2 md:grid-cols-2">
           {visao.perspectives.map(p => {
             const vazia = !has(p.executive_finding) && !has(p.full_reading);
@@ -790,7 +790,7 @@ function VisaoRep2View({
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
-        <Card title="Paralelo com o grupo">
+        <Card title="Paralelo completo">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {cv.supported_points != null && cv.comparable_point_count != null ? (
               <Badge variant="secondary">
@@ -868,7 +868,7 @@ function VisaoRep2View({
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
 
-        <Card title="Visão executiva">
+        <Card title="Relatório de origem · visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
             <Field label="Risco estratégico" value={ev.strategic_risk} />
@@ -924,7 +924,7 @@ function VisaoRep2View({
 
       {/* Linhas de produto */}
       {visao.product_line_views.length ? (
-        <Card title="Visão por linha de produto">
+        <Card title="Informações adicionais · linhas de produto">
           <div className="mb-3 flex flex-wrap gap-1.5">
             {(["todas", ...(Object.keys(CLASSIFICATION_LABEL) as LineClassification[])] as const).map(k => (
               <button
