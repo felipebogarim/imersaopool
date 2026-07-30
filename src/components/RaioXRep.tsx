@@ -148,16 +148,20 @@ function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
                 cap.tipo === "citacao" && "border-primary/30 bg-primary/5",
               )}
             >
-              <div className="mb-2 flex items-center gap-1.5">
+              <div className="mb-2 flex items-start gap-1.5">
+                <span className="mt-[1px] grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary tabular-nums">
+                  {i + 1}
+                </span>
                 {cap.tipo === "citacao" ? (
-                  <Quote className="h-3.5 w-3.5 text-primary/70" />
+                  <Quote className="mt-[2px] h-3.5 w-3.5 shrink-0 text-primary/70" />
                 ) : (
-                  <BookOpen className="h-3.5 w-3.5 text-primary/70" />
+                  <BookOpen className="mt-[2px] h-3.5 w-3.5 shrink-0 text-primary/70" />
                 )}
-                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-foreground/80 leading-snug">
                   {cap.titulo}
                 </h4>
               </div>
+
               {cap.tipo === "campo" ? (
                 <ul className="space-y-1">
                   {cap.itens.map((v, k) => (
