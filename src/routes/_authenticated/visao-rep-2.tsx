@@ -868,7 +868,7 @@ function VisaoRep2View({
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
 
-        <Card title="Relatório de origem · visão executiva">
+        <Collapse title="Relatório de origem · visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
             <Field label="Risco estratégico" value={ev.strategic_risk} />
