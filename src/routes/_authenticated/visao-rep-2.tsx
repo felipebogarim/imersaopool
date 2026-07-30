@@ -27,6 +27,9 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
+import { briefingParaRepresentante } from "@/components/visao-rep2/briefing-fabio";
+
 import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
@@ -646,11 +649,25 @@ function VisaoRep2View({
 
   const clientesPrincipais = visao.strategic_clients.slice(0, 5);
   const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
+  const brief = briefingParaRepresentante(visao.metadata.representative_name);
 
   return (
     <div className="space-y-4">
+      {brief ? (
+        <ExecutiveBriefV2
+          brief={brief}
+          nome={visao.metadata.representative_name ?? "Representante"}
+          regiao={visao.metadata.region}
+          dataEntrevista={visao.metadata.interview_date}
+          dataRelatorio={
+            visao.metadata.updated_at ? new Date(visao.metadata.updated_at).toLocaleDateString("pt-BR") : null
+          }
+        />
+      ) : (
+        <>
       {/* Contexto e carteira estratégica */}
       {temContexto || clientesPrincipais.length ? (
+
         <Card title="Contexto e carteira estratégica">
           <div className="space-y-4">
             {temContexto ? (
@@ -709,6 +726,9 @@ function VisaoRep2View({
       ) : null}
 
       <LeituraIntegradaV2 visao={visao} />
+        </>
+      )}
+
 
       {/* Performance */}
       <Card title="Conexão com a Performance">
@@ -750,8 +770,13 @@ function VisaoRep2View({
         )}
       </Card>
 
-      {/* Perspectivas completas */}
-      <Card title="Perspectivas completas">
+      {/* Áreas de aprofundamento */}
+      <div className="space-y-3 pt-2">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        Áreas de aprofundamento
+      </h3>
+      <Collapse title="Perspectivas completas">
+
         <div className="grid gap-2 md:grid-cols-2">
           {visao.perspectives.map(p => {
             const vazia = !has(p.executive_finding) && !has(p.full_reading);
@@ -786,11 +811,12 @@ function VisaoRep2View({
             );
           })}
         </div>
-      </Card>
+      </Collapse>
+
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
-        <Card title="Paralelo completo">
+        <Collapse title="Paralelo completo">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {cv.supported_points != null && cv.comparable_point_count != null ? (
               <Badge variant="secondary">
@@ -861,14 +887,15 @@ function VisaoRep2View({
             ) : null}
           </div>
           <Field label="Nota metodológica" value={cv.methodology_note} />
-        </Card>
+        </Collapse>
+
       ) : null}
 
 
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
 
-        <Card title="Relatório de origem · visão executiva">
+        <Collapse title="Relatório de origem · visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
             <Field label="Risco estratégico" value={ev.strategic_risk} />
@@ -918,13 +945,14 @@ function VisaoRep2View({
             </div>
             <Field label="Síntese final" value={ev.final_synthesis} />
           </div>
-        </Card>
+        </Collapse>
+
       ) : null}
 
 
       {/* Linhas de produto */}
       {visao.product_line_views.length ? (
-        <Card title="Informações adicionais · linhas de produto">
+        <Collapse title="Informações adicionais · linhas de produto">
           <div className="mb-3 flex flex-wrap gap-1.5">
             {(["todas", ...(Object.keys(CLASSIFICATION_LABEL) as LineClassification[])] as const).map(k => (
               <button
@@ -958,8 +986,10 @@ function VisaoRep2View({
               </Collapse>
             ))}
           </div>
-        </Card>
+        </Collapse>
       ) : null}
+      </div>
+
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Shield className="h-3.5 w-3.5" />
