@@ -600,7 +600,36 @@ function PerformancePage() {
     });
   }
 
+  async function reactivateLast() {
+    if (!repId) return;
+    setBusy(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("reactivate_last_performance_upload", {
+        _rep_id: repId,
+      });
+      if (error) throw error;
+      if (!data?.reactivated) {
+        toast.info(
+          data?.reason === "sem_historico"
+            ? "Não há versões no histórico deste representante."
+            : "Este representante já possui uma versão ativa.",
+        );
+      } else {
+        toast.success("Versão reativada.");
+        setUploadId(data.upload_id);
+      }
+      qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
+      qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reativar versão.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function restoreVersion(v: any) {
+
     if (!confirm(`Restaurar a versão de ${new Date(v.created_at).toLocaleString("pt-BR")} como versão ativa?`)) return;
     setBusy(true);
     try {
