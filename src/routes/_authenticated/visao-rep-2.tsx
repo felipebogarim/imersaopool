@@ -207,6 +207,8 @@ function VisaoRep2Page() {
       const uid = auth.user?.id ?? null;
       const now = new Date().toISOString();
       const imported = v.metadata.creation_mode === "imported_ready";
+      // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
+      const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       const payload: VisaoRep2 = {
         ...v,
         metadata: { ...v.metadata, created_by: uid, created_at: now, updated_at: now, source_file_name: draftFile },
@@ -214,7 +216,7 @@ function VisaoRep2Page() {
           ...v.source_control,
           creation_mode: v.metadata.creation_mode,
           source_file: draftFile,
-          schema_version: VISAO_REP_SCHEMA_VERSION,
+          schema_version: schemaVersion,
           import_date: imported ? now : null,
           imported_by: imported ? uid : null,
           last_update: now,
@@ -228,8 +230,9 @@ function VisaoRep2Page() {
           representative_name: v.metadata.representative_name ?? "Sem representante",
           region: v.metadata.region,
           creation_mode: v.metadata.creation_mode,
-          schema_version: VISAO_REP_SCHEMA_VERSION,
+          schema_version: schemaVersion,
           titulo: v.executive_view.central_thesis?.slice(0, 120) ?? null,
+
           data: payload as never,
           source_file_name: draftFile,
           content_hash: draftHash,
