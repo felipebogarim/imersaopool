@@ -217,10 +217,22 @@ export type PerfResumo = {
   destaques: PerfFamilia[];
   criticas: PerfFamilia[];
   farol: { status: FarolStatus; label: string; pct: number }[];
+  /** true quando os percentuais vieram do farol (planilha sem atingimento consolidado). */
+  estimado: boolean;
 };
 
 const toPct = (n: number | null | undefined): number | null =>
   n == null || Number.isNaN(n) ? null : n <= 1.5 ? n * 100 : n;
+
+/** Índice representativo de cada faixa do farol (usado quando não há % consolidado). */
+export const FAROL_SCORE: Record<FarolStatus, number> = {
+  sem_compra: 0,
+  abaixo_meta: 25,
+  pode_melhorar: 60,
+  proximo: 80,
+  otimo: 95,
+  excelente: 105,
+};
 
 /** Média simples das categorias disponíveis para cada família. */
 export function familiaMedias(fac: unknown, familias: string[] | null): PerfFamilia[] {
@@ -243,6 +255,24 @@ export function familiaMedias(fac: unknown, familias: string[] | null): PerfFami
     });
 }
 
+/** Fallback: média do índice de farol por família, a partir das células da matriz. */
+export function familiaMediasPorFarol(rows: PerfRowLite[], familias: string[] | null): PerfFamilia[] {
+  const acc = new Map<string, number[]>();
+  for (const r of rows) {
+    const st = (r.metas_status && typeof r.metas_status === "object" ? r.metas_status : {}) as Record<string, string>;
+    for (const [fam, v] of Object.entries(st)) {
+      if (!FAROL_ORDER.includes(v as FarolStatus)) continue;
+      acc.set(fam, [...(acc.get(fam) ?? []), FAROL_SCORE[v as FarolStatus]]);
+    }
+  }
+  const ordem = (familias ?? []).filter(f => acc.has(f));
+  const extras = [...acc.keys()].filter(f => !ordem.includes(f));
+  return [...ordem, ...extras].map(f => {
+    const vals = acc.get(f)!;
+    return { familia: f, pct: vals.reduce((a, b) => a + b, 0) / vals.length };
+  });
+}
+
 export function buildPerfResumo(params: {
   upload: UploadLite | null;
   rows: PerfRowLite[];
@@ -250,15 +280,6 @@ export function buildPerfResumo(params: {
 }): PerfResumo | null {
   const { upload, rows, todosUploads } = params;
   if (!upload) return null;
-
-  const geralPct = toPct(upload.atingimento_geral);
-  const pares = todosUploads
-    .filter(u => u.periodo_label === upload.periodo_label)
-    .map(u => ({ id: u.representative_id, pct: toPct(u.atingimento_geral) }))
-    .filter((u): u is { id: string; pct: number } => u.pct != null);
-  const mediaGrupoPct = pares.length ? pares.reduce((a, b) => a + b.pct, 0) / pares.length : null;
-  const posicao =
-    geralPct != null && pares.length > 1 ? pares.filter(p => p.pct > geralPct + 1e-9).length + 1 : null;
 
   const count = new Map<FarolStatus, number>();
   let total = 0;
@@ -271,7 +292,26 @@ export function buildPerfResumo(params: {
     }
   }
 
-  const familias = familiaMedias(upload.familia_atingimento_categoria, upload.familias);
+  const familiasFac = familiaMedias(upload.familia_atingimento_categoria, upload.familias);
+  const estimado = familiasFac.length === 0 && total > 0;
+  const familias = estimado ? familiaMediasPorFarol(rows, upload.familias) : familiasFac;
+
+  const geralInformado = toPct(upload.atingimento_geral);
+  const mediaFamilias = familias.length
+    ? familias.reduce((a, f) => a + f.pct, 0) / familias.length
+    : null;
+  const geralPct = estimado || geralInformado == null ? mediaFamilias : geralInformado;
+
+  const pares = todosUploads
+    .filter(u => u.periodo_label === upload.periodo_label)
+    .map(u => ({ id: u.representative_id, pct: toPct(u.atingimento_geral) }))
+    .filter((u): u is { id: string; pct: number } => u.pct != null && u.pct > 0);
+  const mediaGrupoPct = pares.length ? pares.reduce((a, b) => a + b.pct, 0) / pares.length : null;
+  const posicao =
+    !estimado && geralPct != null && pares.length > 1
+      ? pares.filter(p => p.pct > geralPct + 1e-9).length + 1
+      : null;
+
   const ordenadas = familias.slice().sort((a, b) => b.pct - a.pct);
 
   return {
@@ -290,6 +330,7 @@ export function buildPerfResumo(params: {
       label: FAROL_LABEL[s],
       pct: total ? ((count.get(s) ?? 0) / total) * 100 : 0,
     })),
+    estimado,
   };
 }
 
