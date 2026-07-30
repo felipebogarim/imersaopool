@@ -440,7 +440,42 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     v.comparative_view.exclusive_readings = excl;
   }
 
+  // Mapeamento interno (schema 3.0 / executive_brief_v1): mantém compatibilidade
+  // com as colunas antigas do banco sem duplicar conteúdo na interface.
+  aplicarMapeamentoInterno(v);
+
   return v;
+}
+
+/**
+ * Espelha "Síntese presidencial" em central_thesis e os títulos conclusivos dos
+ * "Temas estratégicos" em priority_signals. Uso exclusivamente interno: a
+ * interface do briefing lê executive_brief, nunca esses campos espelhados.
+ */
+export function aplicarMapeamentoInterno(v: VisaoRep2): VisaoRep2 {
+  if (!isExecutiveBriefV1(v) || !v.executive_brief) return v;
+  const b = v.executive_brief;
+
+  if (!v.executive_view.central_thesis && b.presidential_synthesis) {
+    v.executive_view.central_thesis = b.presidential_synthesis;
+  }
+  if (!v.executive_view.priority_signals.length && b.themes.length) {
+    v.executive_view.priority_signals = b.themes.slice(0, 5).map((t, i) => ({
+      title: t.title ?? t.selector ?? `Tema ${i + 1}`,
+      finding: null,
+      business_impact: null,
+      recommended_action: null,
+      confidence_level: null,
+      evidence_status: null,
+      source_chapter: null,
+      source_quote: null,
+      signal_id: t.id,
+      validation_note: null,
+      related_perspectives: [],
+    }));
+  }
+  return v;
+
 }
 
 // ---------- serializador (mesmo padrão aceito pelo importador) ----------
