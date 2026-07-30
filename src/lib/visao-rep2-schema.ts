@@ -199,9 +199,42 @@ export type SourceControl = {
   content_hash: string | null;
 };
 
+/** Tema estratégico do modelo executive_brief_v1 (schema 3.0). */
+export type ExecutiveTheme = {
+  id: string | null;
+  /** Rótulo curto do seletor de temas. */
+  selector: string | null;
+  /** Título conclusivo do tema (usado no mapeamento interno para priority_signals). */
+  title: string | null;
+  context: string | null;
+  where_appears: string[];
+  represents: string | null;
+  decision: string | null;
+  validation: string | null;
+  evidence: string | null;
+  comparison: string | null;
+  confidence: string | null;
+  perspectives: string[];
+  entities: {
+    produtos: string[];
+    concorrentes: string[];
+    clientes: string[];
+    ferramentas: string[];
+    nota: string | null;
+  };
+};
+
+/** Bloco executivo do schema 3.0 / executive_brief_v1. */
+export type ExecutiveBrief = {
+  presidential_synthesis: string | null;
+  themes: ExecutiveTheme[];
+};
+
 export type VisaoRep2 = {
   metadata: Metadata;
   executive_view: ExecutiveView;
+  /** Presente apenas em relatórios schema 3.0 com view_model executive_brief_v1. */
+  executive_brief?: ExecutiveBrief | null;
   representative_context: RepresentativeContext;
   strategic_clients: StrategicClient[];
   product_line_views: ProductLineView[];
@@ -212,6 +245,45 @@ export type VisaoRep2 = {
   /** Campos herdados da Visão Rep original (percentuais de alinhamento etc.). */
   legacy?: Record<string, string | number | boolean | null>;
 };
+
+export const VISAO_REP_VIEW_MODEL_BRIEF = "executive_brief_v1";
+
+/** Extrai o major numérico do schema_version ("3.0" → 3; "visao_rep.v2" → 2). */
+export function schemaMajor(version: string | null | undefined): number {
+  const s = String(version ?? "").trim();
+  const direto = /^v?(\d+)/i.exec(s);
+  if (direto) return Number(direto[1]);
+  const comSufixo = /v(\d+)/i.exec(s);
+  return comSufixo ? Number(comSufixo[1]) : 0;
+}
+
+/**
+ * Relatórios schema 3.0 no modelo executive_brief_v1 substituem
+ * "tese central" por "Síntese presidencial" e "sinais prioritários"
+ * por "Temas estratégicos".
+ */
+export function isExecutiveBriefV1(v: VisaoRep2): boolean {
+  const vm = (v.metadata.view_model ?? "").trim();
+  return schemaMajor(v.metadata.schema_version) >= 3 && vm === VISAO_REP_VIEW_MODEL_BRIEF;
+}
+
+export function emptyExecutiveTheme(): ExecutiveTheme {
+  return {
+    id: null,
+    selector: null,
+    title: null,
+    context: null,
+    where_appears: [],
+    represents: null,
+    decision: null,
+    validation: null,
+    evidence: null,
+    comparison: null,
+    confidence: null,
+    perspectives: [],
+    entities: { produtos: [], concorrentes: [], clientes: [], ferramentas: [], nota: null },
+  };
+}
 
 export const MAX_SIGNALS = 5;
 export const MAX_DECISIONS = 3;
