@@ -56,7 +56,12 @@ export type PrioritySignal = {
   evidence_status: EvidenceStatus | null;
   source_chapter: string | null;
   source_quote: string | null;
+  /** Vínculos opcionais (Leitura integrada da Visão Rep 2). Relatórios antigos não possuem. */
+  signal_id?: string | null;
+  validation_note?: string | null;
+  related_perspectives?: number[];
 };
+
 
 export type Metadata = {
   schema_version: string;
