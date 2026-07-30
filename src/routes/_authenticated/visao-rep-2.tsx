@@ -709,6 +709,9 @@ function VisaoRep2View({
       ) : null}
 
       <LeituraIntegradaV2 visao={visao} />
+        </>
+      )}
+
 
       {/* Performance */}
       <Card title="Conexão com a Performance">
