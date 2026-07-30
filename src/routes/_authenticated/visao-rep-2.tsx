@@ -423,6 +423,22 @@ function VisaoRep2Page() {
         </Card>
       </div>
 
+      <div className="mt-4 flex justify-end">
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={limparTodos.isPending || !reports.length}
+          onClick={onLimparTudo}
+        >
+          {limparTodos.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Eraser className="mr-2 h-4 w-4" />
+          )}
+          Limpar dados
+        </Button>
+      </div>
+
       {/* Prévia da importação/geração */}
       {draft && validacao ? (
         <Card className="mt-4 border-primary/40" title="Prévia antes de salvar">
