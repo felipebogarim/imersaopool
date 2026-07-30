@@ -119,6 +119,7 @@ function VisaoRep() {
   });
 
   const quadro = useMemo(() => buildQuadroRep(lentesRows as any), [lentesRows]);
+  const raiox = useMemo(() => buildRaioX(quadro), [quadro]);
   const paralelo = useMemo(
     () => buildParaleloRep((painel?.resultado as unknown as SinteseResultado) ?? null, fonte?.id ?? null, rep?.nome ?? ""),
     [painel, fonte, rep],
