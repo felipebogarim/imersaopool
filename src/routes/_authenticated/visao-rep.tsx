@@ -16,6 +16,7 @@ import {
   buildPerfResumo,
   buildQuadroRep,
   buildRaioX,
+  extrasDaLente,
   findFonteDoRep,
   fmtPct,
   fmtPp,
