@@ -69,6 +69,7 @@ import {
 export type ExportInterviewOptions = {
   cover?: Partial<CoverFields>;
   intervieweePage?: (IntervieweePageFields & { include: boolean; template?: CoverTemplate }) | null;
+  theme?: ReportTheme;
 };
 
 
