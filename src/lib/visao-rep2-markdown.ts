@@ -534,7 +534,7 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push("**Sinais prioritários**", "");
   }
 
-  v.executive_view.priority_signals.forEach((s, i) => {
+  (briefV1 ? [] : v.executive_view.priority_signals).forEach((s, i) => {
     L.push(`### Sinal ${i + 1}`, "");
     L.push(`- titulo: ${S(s.title)}`);
     L.push(`- achado: ${S(s.finding)}`);
