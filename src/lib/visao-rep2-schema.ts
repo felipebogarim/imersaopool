@@ -519,6 +519,8 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       validation_required: asTextList(ev.validation_required).slice(0, MAX_VALIDATIONS),
       final_synthesis: asText(ev.final_synthesis) ?? null,
     },
+    executive_brief: normalizeExecutiveBrief(o.executive_brief),
+
     representative_context: {
       represented_brands: asTextList(ctx.represented_brands),
       region_summary: asText(ctx.region_summary) ?? null,
