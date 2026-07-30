@@ -375,6 +375,12 @@ export function leituraCruzada(nomeRep: string, par: ParaleloRep | null, perf: P
 
 // ============ Raio-x visual ============
 
+export type RaioXCapitulo = {
+  titulo: string;
+  tipo: "leitura" | "campo" | "citacao";
+  itens: string[];
+};
+
 export type RaioXLente = {
   lente: Lente;
   label: string;
@@ -383,12 +389,27 @@ export type RaioXLente = {
   campos: QuadroCampo[];
   termos: string[];
   highlight: string | null;
+  highlights: string[];
+  capitulos: RaioXCapitulo[];
   sinais: number;
   intensidade: number; // 0-100, relativo à lente mais densa
   vazia: boolean;
 };
 
 const curto = (s: string) => s.trim().replace(/\s+/g, " ");
+
+/** Quebra um texto longo em blocos curtos de leitura (sub-capítulos). */
+function fatiar(texto: string, porBloco = 2): string[] {
+  const frases = curto(texto)
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  const out: string[] = [];
+  for (let i = 0; i < frases.length; i += porBloco) {
+    out.push(frases.slice(i, i + porBloco).join(" "));
+  }
+  return out;
+}
 
 /** Converte o quadro em dados prontos para representação visual (radar + anéis). */
 export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
@@ -402,6 +423,25 @@ export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
       .map(curto)
       .filter(v => v.length > 0 && v.length <= 42)
       .slice(0, 5);
+
+    const capitulos: RaioXCapitulo[] = [];
+    if (q.leitura?.trim()) {
+      const partes = fatiar(q.leitura);
+      partes.forEach((p, i) =>
+        capitulos.push({
+          titulo: partes.length > 1 ? `Leitura estratégica ${i + 1}/${partes.length}` : "Leitura estratégica",
+          tipo: "leitura",
+          itens: [p],
+        }),
+      );
+    }
+    for (const c of q.campos) {
+      capitulos.push({ titulo: c.label, tipo: "campo", itens: c.valores.map(curto) });
+    }
+    if (q.highlights.length) {
+      capitulos.push({ titulo: "Nas palavras do representante", tipo: "citacao", itens: q.highlights.map(curto) });
+    }
+
     return {
       lente: q.lente,
       label: q.label,
@@ -410,12 +450,15 @@ export function buildRaioX(quadro: QuadroLente[]): RaioXLente[] {
       campos: q.campos,
       termos,
       highlight: q.highlights[0] ?? null,
+      highlights: q.highlights,
+      capitulos,
       sinais,
       intensidade: Math.round((sinais / max) * 100),
       vazia: q.vazia,
     };
   });
 }
+
 
 /** Introdução curta que antecede as representações visuais do raio-x. */
 export function introRaioX(nomeRep: string, raiox: RaioXLente[]): string {
