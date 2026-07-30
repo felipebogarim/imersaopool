@@ -530,7 +530,13 @@ function VisaoRep2Page() {
                 >
                   <FileDown className="h-4 w-4" />
                 </Button>
+                {r.creation_mode === "ai_generated" && r.representative_id ? (
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => void onRegerar(r)} title="Regerar com IA (substitui o salvo)">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="ghost" onClick={() => excluir.mutate(r.id)} title="Excluir">
+
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
