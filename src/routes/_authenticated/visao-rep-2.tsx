@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -109,6 +109,8 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
   );
 }
 
+const LAST_KEY = "vr2:last-report-id";
+
 function VisaoRep2Page() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string>("");
@@ -167,6 +169,27 @@ function VisaoRep2Page() {
       ).data ?? []) as unknown as PerfRowLite[],
   });
   const perf = useMemo(() => buildPerfResumo({ upload, rows: perfRows, todosUploads: uploads }), [upload, perfRows, uploads]);
+
+  // Ao voltar à página, reabre o mesmo relatório salvo (último aberto ou o mais recente).
+  useEffect(() => {
+    if (selectedId || !reports.length) return;
+    const lembrado = typeof window !== "undefined" ? window.localStorage.getItem(LAST_KEY) : null;
+    setSelectedId(reports.find(r => r.id === lembrado)?.id ?? reports[0].id);
+  }, [reports, selectedId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (selectedId) window.localStorage.setItem(LAST_KEY, selectedId);
+  }, [selectedId]);
+
+  // Selecionar um representante já abre o relatório salvo dele, sem gerar de novo.
+  useEffect(() => {
+    if (!repId) return;
+    const doRep = reports.find(r => r.representative_id === repId);
+    if (doRep) setSelectedId(doRep.id);
+  }, [repId, reports]);
+
+
 
   // ---- Ações ----
   const salvar = useMutation({
@@ -233,21 +256,50 @@ function VisaoRep2Page() {
     },
   });
 
+  /** Gera e salva de uma vez: o relatório do representante fica fixo na página. */
+  async function gerarESalvar(repIdAlvo: string) {
+    const v = await gerar({ data: { representativeId: repIdAlvo } });
+    setDraftFile(null);
+    setDraftHash(null);
+    await salvar.mutateAsync(normalizeVisaoRep2(v));
+  }
+
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
+    const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
+    if (existente) {
+      setSelectedId(existente.id);
+      toast.info("Este representante já tem uma Visão Rep salva. Use “Regerar com IA” para substituí-la.");
+      return;
+    }
     setBusy(true);
     try {
-      const v = await gerar({ data: { representativeId: repId } });
-      setDraft(normalizeVisaoRep2(v));
-      setDraftFile(null);
-      setDraftHash(null);
-      toast.success("Prévia gerada. Revise antes de salvar.");
+      await gerarESalvar(repId);
+      toast.success("Visão Rep gerada e salva. Ela ficará fixa nesta página.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
       setBusy(false);
     }
   }
+
+  /** Substitui o relatório salvo por uma nova geração (ação explícita do usuário). */
+  async function onRegerar(row: Row) {
+    if (!row.representative_id) return toast.error("Relatório sem representante vinculado.");
+    if (!window.confirm(`Regerar a Visão Rep de ${row.representative_name}? O relatório atual será substituído.`)) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("visao_rep_reports").delete().eq("id", row.id);
+      if (error) throw error;
+      await gerarESalvar(row.representative_id);
+      toast.success("Visão Rep regerada e salva.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao regerar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   async function onImportar(file: File) {
     setBusy(true);
@@ -291,7 +343,9 @@ function VisaoRep2Page() {
         <Card title="Gerar com IA">
           <p className="mb-3 text-sm text-muted-foreground">
             O sistema lê a entrevista já processada do representante e organiza o conteúdo no modelo canônico. Nada é inventado: campos sem base ficam vazios.
+            O relatório é salvo automaticamente e fica fixo — ao voltar nesta página você verá sempre o mesmo conteúdo, até regerar manualmente.
           </p>
+
           <div className="flex flex-col gap-2 sm:flex-row">
             <Select value={repId} onValueChange={setRepId}>
               <SelectTrigger className="sm:w-72">
@@ -478,7 +532,13 @@ function VisaoRep2Page() {
                 >
                   <FileDown className="h-4 w-4" />
                 </Button>
+                {r.creation_mode === "ai_generated" && r.representative_id ? (
+                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => void onRegerar(r)} title="Regerar com IA (substitui o salvo)">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="ghost" onClick={() => excluir.mutate(r.id)} title="Excluir">
+
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
