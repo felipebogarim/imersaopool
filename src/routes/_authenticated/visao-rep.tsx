@@ -10,13 +10,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { LENTES, LENTE_DEF, type Lente } from "@/lib/insight-lentes";
 import type { SinteseResultado } from "@/lib/sintese-engine";
 import { FAROL_CELL_CLASS } from "@/lib/performance-farol";
+import { RaioXRep } from "@/components/RaioXRep";
 import {
   buildParaleloRep,
   buildPerfResumo,
   buildQuadroRep,
+  buildRaioX,
   findFonteDoRep,
   fmtPct,
   fmtPp,
+  introRaioX,
   leituraCruzada,
   type FonteLite,
   type PerfRowLite,
@@ -116,6 +119,7 @@ function VisaoRep() {
   });
 
   const quadro = useMemo(() => buildQuadroRep(lentesRows as any), [lentesRows]);
+  const raiox = useMemo(() => buildRaioX(quadro), [quadro]);
   const paralelo = useMemo(
     () => buildParaleloRep((painel?.resultado as unknown as SinteseResultado) ?? null, fonte?.id ?? null, rep?.nome ?? ""),
     [painel, fonte, rep],
@@ -261,36 +265,7 @@ function VisaoRep() {
                   Não há entrevista processada como fonte de insight para {rep.nome}.
                 </p>
               ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  {quadro.map(q => (
-                    <article key={q.lente} className="surface rounded-xl p-4 space-y-2">
-                      <header>
-                        <p className="text-sm font-semibold">{q.label}</p>
-                        <p className="text-[11px] text-muted-foreground">{q.descricao}</p>
-                      </header>
-                      {q.vazia ? (
-                        <p className="text-xs text-muted-foreground">Sem registro nesta perspectiva.</p>
-                      ) : (
-                        <>
-                          {q.leitura && <p className="text-xs leading-relaxed">{q.leitura}</p>}
-                          <dl className="space-y-1.5">
-                            {q.campos.map(c => (
-                              <div key={c.label}>
-                                <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{c.label}</dt>
-                                <dd className="text-xs">{c.valores.join(" · ")}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                          {q.highlights.length > 0 && (
-                            <p className="text-[11px] italic text-muted-foreground border-l-2 border-primary/40 pl-2">
-                              “{q.highlights[0]}”
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </article>
-                  ))}
-                </div>
+                <RaioXRep intro={introRaioX(rep.nome, raiox)} data={raiox} />
               )}
             </section>
 
