@@ -30,6 +30,7 @@ import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/li
 import {
   AlertTriangle,
   ChevronDown,
+  Eraser,
   FileDown,
   FileUp,
   Link2,
@@ -256,6 +257,36 @@ function VisaoRep2Page() {
     },
   });
 
+  const limparTodos = useMutation({
+    mutationFn: async () => {
+      const { data: dirs } = await supabase.storage.from("visao-rep-2").list();
+      const dirsToClean = (dirs ?? []).filter(d => d.name.includes("/") || !d.id).map(d => d.name);
+      for (const dir of dirsToClean) {
+        const { data: files } = await supabase.storage.from("visao-rep-2").list(dir);
+        const paths = (files ?? []).map(f => `${dir}/${f.name}`);
+        if (paths.length) await supabase.storage.from("visao-rep-2").remove(paths);
+      }
+      const { error } = await supabase.from("visao_rep_reports").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Todos os dados de Visão Rep 2 foram limpos.");
+      setSelectedId("");
+      setDraft(null);
+      setDraftFile(null);
+      setDraftHash(null);
+      if (typeof window !== "undefined") window.localStorage.removeItem(LAST_KEY);
+      qc.invalidateQueries({ queryKey: ["vr2-reports"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Não foi possível limpar os dados."),
+  });
+
+  async function onLimparTudo() {
+    if (!reports.length) return toast.info("Não há relatórios salvos para limpar.");
+    if (!window.confirm("Tem certeza que deseja limpar TODOS os relatórios de Visão Rep 2? Esta ação não pode ser desfeita.")) return;
+    await limparTodos.mutateAsync();
+  }
+
   /** Gera e salva de uma vez: o relatório do representante fica fixo na página. */
   async function gerarESalvar(repIdAlvo: string) {
     const v = await gerar({ data: { representativeId: repIdAlvo } });
@@ -390,6 +421,22 @@ function VisaoRep2Page() {
             <span className="text-xs text-muted-foreground">.md (preferencial), .txt ou .docx</span>
           </div>
         </Card>
+      </div>
+
+      <div className="mt-4 flex justify-end">
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={limparTodos.isPending || !reports.length}
+          onClick={onLimparTudo}
+        >
+          {limparTodos.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Eraser className="mr-2 h-4 w-4" />
+          )}
+          Limpar dados
+        </Button>
       </div>
 
       {/* Prévia da importação/geração */}
