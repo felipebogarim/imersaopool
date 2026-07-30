@@ -16,12 +16,14 @@ import {
   buildPerfResumo,
   buildQuadroRep,
   buildRaioX,
+  extrasDaLente,
   findFonteDoRep,
   fmtPct,
   fmtPp,
   introRaioX,
   leituraCruzada,
   type FonteLite,
+  type ParaleloExtras,
   type PerfRowLite,
   type UploadLite,
 } from "@/lib/visao-rep";
@@ -335,7 +337,11 @@ function VisaoRep() {
 
                   <div className="space-y-2">
                     {paralelo.lentes.map(l => (
-                      <LenteParalelo key={l.lente} lente={l} />
+                      <LenteParalelo
+                        key={l.lente}
+                        lente={l}
+                        extras={extrasDaLente(raiox.find(r => r.lente === l.lente))}
+                      />
                     ))}
                   </div>
                 </>
@@ -376,12 +382,24 @@ function Metric({
   );
 }
 
-type FocoParalelo = "alinhado" | "cegos" | "divergencias" | "unicos";
+type FocoParalelo = "alinhado" | "cegos" | "divergencias" | "unicos" | "exemplos" | "citacoes";
 
-function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> extends infer _ ? any : never }) {
+function LenteParalelo({
+  lente,
+  extras,
+}: {
+  lente: ReturnType<typeof buildParaleloRep> extends infer _ ? any : never;
+  extras: ParaleloExtras;
+}) {
   const [open, setOpen] = useState(false);
   const [foco, setFoco] = useState<FocoParalelo | null>(null);
-  const total = lente.alinhado.length + lente.foraDaCurva.length + lente.divergencias.length + lente.unicos.length;
+  const total =
+    lente.alinhado.length +
+    lente.foraDaCurva.length +
+    lente.divergencias.length +
+    lente.unicos.length +
+    extras.exemplos.length +
+    extras.citacoes.length;
   const def = LENTE_DEF[lente.lente as Lente];
 
   const mostra = (k: FocoParalelo) => foco === null || foco === k;
@@ -414,6 +432,20 @@ function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> e
       n: lente.unicos.length,
       base: "bg-muted text-muted-foreground",
       ativo: "ring-2 ring-foreground/40",
+    },
+    {
+      key: "exemplos",
+      label: "exemplos",
+      n: extras.exemplos.length,
+      base: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+      ativo: "ring-2 ring-sky-500",
+    },
+    {
+      key: "citacoes",
+      label: "citações",
+      n: extras.citacoes.length,
+      base: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+      ativo: "ring-2 ring-violet-500",
     },
   ];
 
@@ -506,6 +538,28 @@ function LenteParalelo({ lente }: { lente: ReturnType<typeof buildParaleloRep> e
                 <li key={k}>{u.texto}</li>
               ))}
             </Bloco>
+          )}
+          {mostra("exemplos") && extras.exemplos.length > 0 && (
+            <Bloco titulo="Exemplos citados por ele" cor="text-sky-600 dark:text-sky-400">
+              {extras.exemplos.map((e, k) => (
+                <li key={k}>{e}</li>
+              ))}
+            </Bloco>
+          )}
+          {mostra("citacoes") && extras.citacoes.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-violet-600 dark:text-violet-400">Citações marcantes</p>
+              <div className="space-y-2">
+                {extras.citacoes.map((c, k) => (
+                  <blockquote
+                    key={k}
+                    className="border-l-2 border-violet-500/50 pl-3 text-sm italic text-muted-foreground"
+                  >
+                    “{c}”
+                  </blockquote>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}
