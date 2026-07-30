@@ -209,8 +209,15 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           evidence_status: evid(f.status_evidencia),
           source_chapter: nz(f.capitulo_origem),
           source_quote: nz(f.citacao),
+          // Vínculos opcionais (Leitura integrada). Ausentes em relatórios antigos.
+          signal_id: nz(f.signal_id) ?? nz(f.id_sinal),
+          validation_note: nz(f.validacao) ?? nz(f.validacao_necessaria),
+          related_perspectives: list(f.perspectivas_relacionadas ?? f.related_perspectives)
+            .map(s => Number(/(\d{1,2})/.exec(s)?.[1]))
+            .filter(n => Number.isFinite(n) && n >= 1 && n <= 8),
         };
       });
+
     v.executive_view.priority_signals = sinais;
   }
 
