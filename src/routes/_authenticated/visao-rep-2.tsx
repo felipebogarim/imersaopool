@@ -646,11 +646,25 @@ function VisaoRep2View({
 
   const clientesPrincipais = visao.strategic_clients.slice(0, 5);
   const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
+  const brief = briefingParaRepresentante(visao.metadata.representative_name);
 
   return (
     <div className="space-y-4">
+      {brief ? (
+        <ExecutiveBriefV2
+          brief={brief}
+          nome={visao.metadata.representative_name ?? "Representante"}
+          regiao={visao.metadata.region}
+          dataEntrevista={visao.metadata.interview_date}
+          dataRelatorio={
+            visao.metadata.updated_at ? new Date(visao.metadata.updated_at).toLocaleDateString("pt-BR") : null
+          }
+        />
+      ) : (
+        <>
       {/* Contexto e carteira estratégica */}
       {temContexto || clientesPrincipais.length ? (
+
         <Card title="Contexto e carteira estratégica">
           <div className="space-y-4">
             {temContexto ? (
