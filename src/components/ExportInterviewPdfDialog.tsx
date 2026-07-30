@@ -215,6 +215,31 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
               />
             </div>
 
+            <div className="grid gap-2">
+              <Label>Tema do relatório</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { id: "dark" as const, label: "Tema escuro" },
+                  { id: "light" as const, label: "Tema claro" },
+                ]).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTheme(t.id)}
+                    className={`rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
+                      theme === t.id ? "border-primary" : "border-border hover:border-muted-foreground/40"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Define o fundo e as cores das páginas internas do relatório.
+              </p>
+            </div>
+
+
             <div className="rounded-lg border p-4 space-y-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
