@@ -4469,6 +4469,10 @@ export type Database = {
         }
         Returns: number
       }
+      reactivate_last_performance_upload: {
+        Args: { _rep_id: string }
+        Returns: Json
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
