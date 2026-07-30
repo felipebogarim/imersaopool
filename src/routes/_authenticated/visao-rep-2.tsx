@@ -790,7 +790,7 @@ function VisaoRep2View({
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
-        <Card title="Paralelo completo">
+        <Collapse title="Paralelo completo">
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {cv.supported_points != null && cv.comparable_point_count != null ? (
               <Badge variant="secondary">
