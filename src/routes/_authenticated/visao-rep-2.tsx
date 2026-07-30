@@ -807,41 +807,9 @@ function VisaoRep2View({
 
       {/* Perspectivas */}
       <Card title="Perspectivas da entrevista">
-        <div className="grid gap-2 md:grid-cols-2">
-          {visao.perspectives.map(p => {
-            const vazia = !has(p.executive_finding) && !has(p.full_reading);
-            return (
-              <div key={p.perspective_number} className={cn("rounded-lg border p-3", vazia && "opacity-60")}>
-                <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground">{String(p.perspective_number).padStart(2, "0")}</span>
-                  <span className="text-sm font-semibold">{p.perspective_title}</span>
-                  {p.confidence_level ? <Badge variant="outline">{CONFIDENCE_LABEL[p.confidence_level]}</Badge> : null}
-                  {p.evidence_status ? <Badge variant="secondary">{EVIDENCE_LABEL[p.evidence_status]}</Badge> : null}
-                </div>
-                {vazia ? (
-                  <p className="text-xs text-muted-foreground">Sem conteúdo informado.</p>
-                ) : (
-                  <div className="space-y-2">
-                    <Field label="Achado executivo" value={p.executive_finding} />
-                    <Field label="Impacto comercial" value={p.business_impact} />
-                    <Field label="Ação recomendada" value={p.recommended_action} />
-                    <Field label="Evidência" value={p.evidence} />
-                    <Field label="Classificação comparativa" value={p.comparative_classification} />
-                    {has(p.source_quote) ? (
-                      <blockquote className="border-l-2 pl-3 text-sm italic text-muted-foreground">{p.source_quote}</blockquote>
-                    ) : null}
-                    {has(p.full_reading) ? (
-                      <Collapse title="Ver análise completa">
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed">{p.full_reading}</p>
-                      </Collapse>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <PerspectivasRep2 perspectives={visao.perspectives} />
       </Card>
+
 
       {/* Paralelo */}
       {cv.consensus_points.length || cv.divergences.length || cv.unaddressed_topics.length || cv.exclusive_readings.length || cv.comparable_source_count ? (
