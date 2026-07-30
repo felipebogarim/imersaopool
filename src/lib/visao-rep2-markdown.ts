@@ -487,6 +487,7 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
   L.push("# VISÃO REP — RELATÓRIO FINAL", "");
   L.push("## Metadados", "");
   L.push(`- schema_version: ${S(v.metadata.schema_version)}`);
+  if (v.metadata.view_model) L.push(`- view_model: ${S(v.metadata.view_model)}`);
   L.push(`- representante: ${S(v.metadata.representative_name)}`);
   L.push(`- regiao: ${S(v.metadata.region)}`);
   L.push(`- data_entrevista: ${S(v.metadata.interview_date)}`);
@@ -494,10 +495,45 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
   L.push(`- base_comparativa: ${S(v.comparative_view.comparable_source_count)}`);
   L.push(`- creation_mode: ${S(v.metadata.creation_mode)}`, "");
 
+  const briefV1 = isExecutiveBriefV1(v) && !!v.executive_brief;
+  if (briefV1 && v.executive_brief) {
+    // Schema 3.0: o bloco executivo é escrito no formato próprio, sem duplicar
+    // os campos espelhados internamente (tese central / sinais prioritários).
+    L.push("## Síntese presidencial", "", S(v.executive_brief.presidential_synthesis), "");
+    L.push("## Temas estratégicos", "");
+    v.executive_brief.themes.forEach((t, i) => {
+      L.push(`### Tema ${i + 1} — ${S(t.title)}`, "");
+      L.push(`- id: ${S(t.id)}`);
+      L.push(`- seletor: ${S(t.selector)}`);
+      L.push(`- titulo: ${S(t.title)}`);
+      L.push(`- contexto: ${S(t.context)}`);
+      L.push(`- representa: ${S(t.represents)}`);
+      L.push(`- decisao: ${S(t.decision)}`);
+      L.push(`- validacao: ${S(t.validation)}`);
+      L.push(`- evidencia: ${S(t.evidence)}`);
+      L.push(`- comparacao: ${S(t.comparison)}`);
+      L.push(`- confianca: ${S(t.confidence)}`);
+      L.push(`- perspectivas: ${t.perspectives.join(", ")}`);
+      L.push(`- produtos: ${t.entities.produtos.join(", ")}`);
+      L.push(`- concorrentes: ${t.entities.concorrentes.join(", ")}`);
+      L.push(`- clientes: ${t.entities.clientes.join(", ")}`);
+      L.push(`- ferramentas: ${t.entities.ferramentas.join(", ")}`);
+      L.push(`- nota: ${S(t.entities.nota)}`, "");
+      L.push("**Onde aparece**", "");
+      t.where_appears.forEach(w => L.push(`- ${w}`));
+      L.push("");
+    });
+  }
+
   L.push("## 00 — Visão executiva", "");
-  L.push("**Tese central**", "", S(v.executive_view.central_thesis), "");
+  if (!briefV1) {
+    L.push("**Tese central**", "", S(v.executive_view.central_thesis), "");
+  }
   L.push("**Risco estratégico**", "", S(v.executive_view.strategic_risk), "");
-  L.push("**Sinais prioritários**", "");
+  if (!briefV1) {
+    L.push("**Sinais prioritários**", "");
+  }
+
   v.executive_view.priority_signals.forEach((s, i) => {
     L.push(`### Sinal ${i + 1}`, "");
     L.push(`- titulo: ${S(s.title)}`);
