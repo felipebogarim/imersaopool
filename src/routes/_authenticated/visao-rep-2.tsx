@@ -27,11 +27,13 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
+import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
   ChevronDown,
   Eraser,
   FileDown,
+  FileText,
   FileUp,
   Link2,
   Loader2,
