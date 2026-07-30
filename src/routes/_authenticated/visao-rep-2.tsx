@@ -656,10 +656,73 @@ function VisaoRep2View({
 
   const linhas = visao.product_line_views.filter(l => filtroLinha === "todas" || l.classification === filtroLinha);
 
+  const clientesPrincipais = visao.strategic_clients.slice(0, 5);
+  const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
+
   return (
     <div className="space-y-4">
+      {/* Contexto e carteira estratégica */}
+      {temContexto || clientesPrincipais.length ? (
+        <Card title="Contexto e carteira estratégica">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {temContexto ? (
+              <div className="space-y-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Contexto do representante
+                </div>
+                {ctx.represented_brands.length ? (
+                  <div>
+                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Marcas que representa além da Newline
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ctx.represented_brands.map(m => (
+                        <Badge key={m} variant="outline">
+                          {m}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {has(ctx.region_summary) || has(ctx.service_model) ? (
+                  <div>
+                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Região e modelo de atendimento
+                    </div>
+                    <p className="whitespace-pre-line break-words text-sm">
+                      {[ctx.region_summary, ctx.service_model].filter(has).join("\n")}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {clientesPrincipais.length ? (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Clientes estratégicos
+                </div>
+                <div className="space-y-2">
+                  {clientesPrincipais.map((c, i) => (
+                    <div key={i} className="rounded-lg border p-3">
+                      <div className="break-words text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
+                      {has(c.strategic_reason) ? (
+                        <p className="mt-1 whitespace-pre-line break-words text-sm text-muted-foreground">
+                          {c.strategic_reason}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+
       {/* Visão executiva */}
       {has(ev.central_thesis) || ev.priority_signals.length ? (
+
         <Card title="Visão executiva">
           <div className="space-y-3">
             <Field label="Tese central" value={ev.central_thesis} />
