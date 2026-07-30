@@ -188,7 +188,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
   // 00 — Visão executiva
   const exec = secOf(/visao_executiva/);
   if (exec) {
-    const lb = labeled(exec.lines);
+    const lb = labeled([...exec.lines, ...childrenOf(exec).flatMap(c => c.lines)]);
     v.executive_view.central_thesis = text(lb.tese_central);
     v.executive_view.strategic_risk = text(lb.risco_estrategico);
     v.executive_view.decisions_required = bullets(lb.decisoes_requeridas).slice(0, 3);
@@ -296,7 +296,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
   // 05 — Paralelo com o grupo
   const par = secOf(/paralelo/);
   if (par) {
-    const lb = labeled(par.lines);
+    const lb = labeled([...par.lines, ...childrenOf(par).flatMap(c => c.lines)]);
     const base = kv(lb.base_comparavel ?? []);
     v.comparative_view.comparable_source_count = num(base.quantidade_de_fontes);
     v.comparative_view.comparable_point_count = num(base.quantidade_de_pontos_comparaveis);
