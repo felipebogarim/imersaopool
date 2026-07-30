@@ -138,20 +138,24 @@ export function RaioXRep({ intro, data }: { intro: string; data: RaioXLente[] })
 
 
 /** Bloco em destaque: o conteúdo da lente vira pequenos capítulos. */
-function DetalheLente({ d, onClose }: { d: RaioXLente; onClose: () => void }) {
+function DetalheLente({ d, ordem, onClose }: { d: RaioXLente; ordem: number; onClose: () => void }) {
   return (
     <section className="surface rounded-2xl border border-primary/30 p-4 sm:p-5 space-y-4">
       <header className="flex items-start gap-3">
         <div className="relative">
           <Ring value={d.intensidade} />
           <span className="absolute inset-0 grid place-items-center text-[11px] font-semibold tabular-nums">
-            {d.sinais}
+            {ordem}
           </span>
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold">{d.label}</p>
           <p className="text-xs text-muted-foreground">{d.descricao}</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+            {d.capitulos.length} capítulos · {d.sinais} sinais · intensidade {d.intensidade}%
+          </p>
         </div>
+
         <button
           onClick={onClose}
           className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
