@@ -148,8 +148,16 @@ export function exportVisaoRepPdf({ repNome, regiao, leitura, intro, raiox, para
       (titulo ? 4 : 0) +
       parts.reduce((acc, p) => acc + p.ls.length * (p.size + 4), 0);
 
-    if (h < BOTTOM - M) br(h + 8);
-    card(Math.min(h, BOTTOM - y), { accent });
+    if (h > BOTTOM - M) {
+      // Conteúdo maior que uma página: cai no fluxo simples, sem cartão.
+      if (titulo) text(titulo, 9.5, "bold", C.primaryDeep, 14);
+      for (const p of parts) text(p.s, p.size, p.style, p.color, 14);
+      y += 6;
+      return;
+    }
+    br(h + 8);
+    card(h, { accent });
+
 
     let cy = y + pad + 8;
     const draw = (s: string, size: number, style: "normal" | "bold" | "italic", color: RGB, lh: number) => {
