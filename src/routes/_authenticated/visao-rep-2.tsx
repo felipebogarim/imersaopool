@@ -151,11 +151,11 @@ function VisaoRep2Page() {
   async function onAtualizarComparativos() {
     setAtualizandoComparativos(true);
     try {
-      const [{ data }] = await Promise.all([
-        qc.refetchQueries({ queryKey: ["vr2-reports"] }).then(() => ({ data: null })),
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ["vr2-reports"] }),
         qc.refetchQueries({ queryKey: ["vr2-uploads"] }),
       ]);
-      void data;
+
       toast.success("Comparativos atualizados a partir de todos os relatórios salvos.");
     } catch (e: any) {
       console.error("[visao-rep-2] falha ao atualizar comparativos", e);
