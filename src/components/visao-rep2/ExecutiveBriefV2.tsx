@@ -127,19 +127,18 @@ export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
 
 export function SintesePresidencialV2({ texto }: { texto: string }) {
   return (
-    <section className="rounded-xl border bg-muted/30 p-5 sm:p-8" aria-labelledby="vr2-sintese">
-      <h3 id="vr2-sintese" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Síntese presidencial
-      </h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Leitura geral da entrevista e dos principais impactos para o negócio.
-      </p>
-      <div className="mt-5 border-l-2 border-primary pl-5">
+    <BlocoExpansivel
+      titulo="Síntese presidencial"
+      descricao="Leitura geral da entrevista e dos principais impactos para o negócio."
+      className="bg-muted/30"
+    >
+      <div className="border-l-2 border-primary pl-5">
         <p className="max-w-[68ch] text-base leading-8">{texto}</p>
       </div>
-    </section>
+    </BlocoExpansivel>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Temas estratégicos                                                  */
