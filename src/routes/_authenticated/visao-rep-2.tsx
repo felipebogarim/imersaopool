@@ -304,7 +304,7 @@ function VisaoRep2Page() {
     await limparTodos.mutateAsync();
   }
 
-  /** Gera e salva de uma vez: o relatório do representante fica fixo na página. */
+  /** Gera e salva de uma vez: um relatório por representante. */
   async function gerarESalvar(repIdAlvo: string) {
     const v = await gerar({ data: { representativeId: repIdAlvo } });
     setDraftFile(null);
@@ -312,17 +312,31 @@ function VisaoRep2Page() {
     await salvar.mutateAsync(normalizeVisaoRep2(v));
   }
 
+  /** Salva pedindo confirmação quando o representante já tem relatório salvo. */
+  async function salvarUnico(v: VisaoRep2) {
+    const dup = existentesDoRep(v);
+    if (dup.length) {
+      const ok = window.confirm(
+        `Já existe um relatório salvo para ${dup[0].representative_name}. Deseja substituir o relatório atual por este?`,
+      );
+      if (!ok) return;
+    }
+    await salvar.mutateAsync(v);
+  }
+
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
-    const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
+    const existente = reports.find(r => r.representative_id === repId);
     if (existente) {
-      toast.info("Este representante já tem um relatório salvo. Abra-o na lista ou use “Regerar com IA” para substituí-lo.");
-      return;
+      const ok = window.confirm(
+        `${existente.representative_name} já tem um relatório salvo. Deseja substituí-lo por uma nova geração?`,
+      );
+      if (!ok) return;
     }
     setBusy(true);
     try {
       await gerarESalvar(repId);
-      toast.success("Relatório gerado e salvo na lista.");
+      toast.success(existente ? "Relatório substituído e salvo na lista." : "Relatório gerado e salvo na lista.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
