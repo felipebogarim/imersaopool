@@ -30,6 +30,27 @@ export type BriefTema = {
 
 export type BriefAgendaItem = { texto: string; status: "A decidir" | "A validar" };
 
+/** Conclusão central: apenas orientação de leitura, nunca navegação principal. */
+export type BriefConclusao = { titulo: string; frase: string };
+
+/** Leitura de uma das oito perspectivas oficiais da entrevista. */
+export type BriefPerspectiva = {
+  numero: number;
+  tituloConclusivo: string;
+  contexto?: string;
+  ondeAparece?: string[];
+  representa?: string;
+  /** Índice (1-based) da decisão na Agenda executiva, quando houver relação. */
+  decisaoRef?: number;
+  /** Índice (1-based) da validação na Agenda executiva, quando houver relação. */
+  validacaoRef?: number;
+  evidencia?: string;
+  entidades?: BriefEntidades;
+  comparacao?: string;
+  confianca?: "Alta" | "Média" | "Baixa";
+  conclusoes?: string[];
+};
+
 export type BriefingExecutivo = {
   contexto: {
     marcas: string[];
@@ -38,9 +59,12 @@ export type BriefingExecutivo = {
   clientes: { nome: string; motivo: string }[];
   sintese: string;
   temas: BriefTema[];
+  conclusoes: BriefConclusao[];
+  perspectivas: BriefPerspectiva[];
   decisoes: BriefAgendaItem[];
   validacoes: BriefAgendaItem[];
 };
+
 
 export const BRIEFING_FABIO: BriefingExecutivo = {
   contexto: {
