@@ -133,6 +133,16 @@
 
   --chart-compare: oklch(0.78 0.15 62);
 
+  --fam-1: oklch(0.82 0.16 215);
+  --fam-2: oklch(0.80 0.14 165);
+  --fam-3: oklch(0.82 0.15 62);
+  --fam-4: oklch(0.76 0.16 295);
+  --fam-5: oklch(0.76 0.16 25);
+  --fam-6: oklch(0.80 0.13 135);
+  --fam-7: oklch(0.76 0.14 255);
+  --fam-8: oklch(0.82 0.14 100);
+
+
   --secondary: oklch(0.26 0.03 245);
   --secondary-foreground: oklch(0.98 0.005 240);
 
