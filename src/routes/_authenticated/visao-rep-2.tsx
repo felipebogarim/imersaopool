@@ -254,9 +254,18 @@ function VisaoRep2Page() {
 
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
+      // Padroniza o vínculo: relatórios importados sem id são casados pelo nome.
+      const repIdFinal = v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
       const payload: VisaoRep2 = {
         ...v,
-        metadata: { ...v.metadata, created_by: uid, created_at: now, updated_at: now, source_file_name: draftFile },
+        metadata: {
+          ...v.metadata,
+          representative_id: repIdFinal,
+          created_by: uid,
+          created_at: now,
+          updated_at: now,
+          source_file_name: draftFile,
+        },
         source_control: {
           ...v.source_control,
           creation_mode: v.metadata.creation_mode,
@@ -271,7 +280,7 @@ function VisaoRep2Page() {
       const { data, error } = await supabase
         .from("visao_rep_reports")
         .insert({
-          representative_id: v.metadata.representative_id,
+          representative_id: repIdFinal,
           representative_name: v.metadata.representative_name ?? "Sem representante",
           region: v.metadata.region,
           creation_mode: v.metadata.creation_mode,
