@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
+
 
 /* ------------------------------------------------------------------ */
 /* Cabeçalho do relatório                                              */
@@ -299,9 +303,11 @@ export function TemasEstrategicosV2({ temas }: { temas: BriefTema[] }) {
 function AgendaCard({
   titulo,
   itens,
+  onGerarTarefa,
 }: {
   titulo: string;
   itens: { texto: string; status: string }[];
+  onGerarTarefa: (it: { texto: string; status: string }) => void;
 }) {
   return (
     <div className="rounded-xl border bg-card p-5 sm:p-6">
@@ -315,6 +321,15 @@ function AgendaCard({
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">{it.status}</Badge>
                 <span>Responsável ainda não definido</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 px-2 text-xs"
+                  onClick={() => onGerarTarefa(it)}
+                >
+                  <ListPlus className="h-3.5 w-3.5" aria-hidden />
+                  Transformar em tarefa
+                </Button>
               </div>
             </div>
           </li>
@@ -325,18 +340,36 @@ function AgendaCard({
 }
 
 export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
+  const [tarefa, setTarefa] = useState<{ title: string; description: string } | null>(null);
+
+  const gerar = (origem: string, it: { texto: string; status: string }) =>
+    setTarefa({
+      title: it.texto,
+      description: `Origem: Visão Rep 2 · Agenda executiva · ${origem}\nStatus: ${it.status}\n\n${it.texto}`,
+    });
+
   return (
     <section className="space-y-4" aria-labelledby="vr2-agenda">
       <h3 id="vr2-agenda" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Agenda executiva
       </h3>
       <div className="grid gap-4 lg:grid-cols-2">
-        <AgendaCard titulo="Decisões requeridas" itens={brief.decisoes} />
-        <AgendaCard titulo="Validações necessárias" itens={brief.validacoes} />
+        <AgendaCard
+          titulo="Decisões requeridas"
+          itens={brief.decisoes}
+          onGerarTarefa={it => gerar("Decisões requeridas", it)}
+        />
+        <AgendaCard
+          titulo="Validações necessárias"
+          itens={brief.validacoes}
+          onGerarTarefa={it => gerar("Validações necessárias", it)}
+        />
       </div>
+      <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
     </section>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Composição                                                          */
