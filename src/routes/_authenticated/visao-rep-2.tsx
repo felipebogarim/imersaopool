@@ -433,71 +433,60 @@ function VisaoRep2Page() {
     );
   }
 
+  const repSel = reps.find((r: any) => r.id === repId) as any;
+
   return (
     <div>
       <PageHeader
         title="Visão Rep 2"
-        subtitle="Leitura executiva do representante em modelo canônico. Gere com IA ou importe o relatório final pronto — os dois modos alimentam a mesma estrutura."
+        subtitle="Leitura executiva do representante em modelo canônico: gere com IA ou importe o relatório final pronto."
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Modo 1 */}
-        <Card title="Gerar com IA">
-          <p className="mb-3 text-sm text-muted-foreground">
-            O sistema lê a entrevista já processada do representante e organiza o conteúdo no modelo canônico. Nada é inventado: campos sem base ficam vazios.
-            O relatório é salvo automaticamente na lista abaixo. Cada representante tem seu próprio relatório — gerar um novo não substitui os já salvos.
-          </p>
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm sm:px-5">
+        <Label className="shrink-0 text-sm text-muted-foreground">Representante</Label>
+        <Select value={repId} onValueChange={setRepId}>
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="Selecione" />
+          </SelectTrigger>
+          <SelectContent>
+            {reps.map((r: any) => (
+              <SelectItem key={r.id} value={r.id}>
+                {r.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {repSel?.regiao ? (
+          <Badge variant="secondary" className="uppercase">
+            {repSel.regiao}
+          </Badge>
+        ) : null}
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Select value={repId} onValueChange={setRepId}>
-              <SelectTrigger className="sm:w-72">
-                <SelectValue placeholder="Selecione o representante" />
-              </SelectTrigger>
-              <SelectContent>
-                {reps.map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={onGerarIA} disabled={busy}>
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Gerar Visão Rep
-            </Button>
-          </div>
-        </Card>
+        <Button onClick={onGerarIA} disabled={busy} size="sm">
+          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+          Gerar Visão Rep
+        </Button>
 
-        {/* Modo 2 */}
-        <Card title="Importar Visão Rep pronta">
-          <p className="mb-3 text-sm text-muted-foreground">
-            Envie o relatório final já estruturado. O sistema apenas lerá, validará e distribuirá os campos. Nenhum conteúdo será reescrito ou reinterpretado.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              id="vr2-file"
-              type="file"
-              accept=".md,.markdown,.txt,.docx"
-              className="hidden"
-              onChange={e => {
-                const f = e.target.files?.[0];
-                e.currentTarget.value = "";
-                if (f) void onImportar(f);
-              }}
-            />
-            <Button variant="secondary" disabled={busy} onClick={() => document.getElementById("vr2-file")?.click()}>
-              <FileUp className="mr-2 h-4 w-4" />
-              Enviar relatório pronto
-            </Button>
-            <span className="text-xs text-muted-foreground">.md (preferencial), .txt ou .docx</span>
-          </div>
-        </Card>
-      </div>
+        <input
+          id="vr2-file"
+          type="file"
+          accept=".md,.markdown,.txt,.docx"
+          className="hidden"
+          onChange={e => {
+            const f = e.target.files?.[0];
+            e.currentTarget.value = "";
+            if (f) void onImportar(f);
+          }}
+        />
+        <Button variant="secondary" size="sm" disabled={busy} onClick={() => document.getElementById("vr2-file")?.click()}>
+          <FileUp className="mr-2 h-4 w-4" />
+          Enviar relatório pronto
+        </Button>
 
-      <div className="mt-4 flex justify-end">
         <Button
-          variant="destructive"
+          variant="ghost"
           size="sm"
+          className="ml-auto text-destructive hover:text-destructive"
           disabled={limparTodos.isPending || !reports.length}
           onClick={onLimparTudo}
         >
@@ -509,6 +498,7 @@ function VisaoRep2Page() {
           Limpar dados
         </Button>
       </div>
+
 
       {/* Prévia da importação/geração */}
       {draft && validacao ? (
