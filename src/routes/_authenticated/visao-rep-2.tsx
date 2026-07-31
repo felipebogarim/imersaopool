@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -38,6 +38,7 @@ import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/li
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
+  ArrowLeft,
   ChevronDown,
   Eraser,
   FileDown,
@@ -181,24 +182,8 @@ function VisaoRep2Page() {
   });
   const perf = useMemo(() => buildPerfResumo({ upload, rows: perfRows, todosUploads: uploads }), [upload, perfRows, uploads]);
 
-  // Ao voltar à página, reabre o mesmo relatório salvo (último aberto ou o mais recente).
-  useEffect(() => {
-    if (selectedId || !reports.length) return;
-    const lembrado = typeof window !== "undefined" ? window.localStorage.getItem(LAST_KEY) : null;
-    setSelectedId(reports.find(r => r.id === lembrado)?.id ?? reports[0].id);
-  }, [reports, selectedId]);
+  // A tela inicial sempre mostra a lista; o relatório só abre por ação explícita.
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (selectedId) window.localStorage.setItem(LAST_KEY, selectedId);
-  }, [selectedId]);
-
-  // Selecionar um representante já abre o relatório salvo dele, sem gerar de novo.
-  useEffect(() => {
-    if (!repId) return;
-    const doRep = reports.find(r => r.representative_id === repId);
-    if (doRep) setSelectedId(doRep.id);
-  }, [repId, reports]);
 
 
 
@@ -247,13 +232,15 @@ function VisaoRep2Page() {
       if (error) throw error;
       return data.id as string;
     },
-    onSuccess: id => {
-      toast.success("Visão Rep 2 salva.");
+    onSuccess: () => {
+      toast.success("Relatório salvo. Ele está na lista de relatórios salvos.");
       setDraft(null);
       setDraftFile(null);
       setDraftHash(null);
+      setRepId("");
       qc.invalidateQueries({ queryKey: ["vr2-reports"] });
-      setSelectedId(id);
+      setSelectedId("");
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar."),
   });
@@ -312,14 +299,13 @@ function VisaoRep2Page() {
     if (!repId) return toast.error("Selecione um representante.");
     const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
     if (existente) {
-      setSelectedId(existente.id);
-      toast.info("Este representante já tem uma Visão Rep salva. Use “Regerar com IA” para substituí-la.");
+      toast.info("Este representante já tem um relatório salvo. Abra-o na lista ou use “Regerar com IA” para substituí-lo.");
       return;
     }
     setBusy(true);
     try {
       await gerarESalvar(repId);
-      toast.success("Visão Rep gerada e salva. Ela ficará fixa nesta página.");
+      toast.success("Relatório gerado e salvo na lista.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
@@ -375,6 +361,38 @@ function VisaoRep2Page() {
 
   const validacao = draft ? validateVisaoRep2(draft) : null;
 
+  // ---- Tela de leitura de um relatório salvo ----
+  if (visao && selected) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setSelectedId("")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar para a lista
+          </Button>
+          <Badge variant="secondary">Modo de origem: {MODE_LABEL[selected.creation_mode]}</Badge>
+          <Badge variant="outline">{selected.schema_version}</Badge>
+          {selected.content_hash ? (
+            <Badge variant="outline" className="font-mono text-[10px]">
+              hash {selected.content_hash.slice(0, 12)}
+            </Badge>
+          ) : null}
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => exportVisaoRep2Pdf(visao, perf)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => exportar(visao, selected.representative_name)}>
+              <FileDown className="mr-2 h-4 w-4" />
+              Exportar relatório estruturado
+            </Button>
+          </div>
+        </div>
+        <VisaoRep2View visao={visao} perf={perf} />
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -387,7 +405,7 @@ function VisaoRep2Page() {
         <Card title="Gerar com IA">
           <p className="mb-3 text-sm text-muted-foreground">
             O sistema lê a entrevista já processada do representante e organiza o conteúdo no modelo canônico. Nada é inventado: campos sem base ficam vazios.
-            O relatório é salvo automaticamente e fica fixo — ao voltar nesta página você verá sempre o mesmo conteúdo, até regerar manualmente.
+            O relatório é salvo automaticamente na lista abaixo. Cada representante tem seu próprio relatório — gerar um novo não substitui os já salvos.
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -539,7 +557,7 @@ function VisaoRep2Page() {
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirmar importação
+              Salvar e voltar para a lista
             </Button>
             <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
               <FileText className="mr-2 h-4 w-4" />
@@ -559,31 +577,32 @@ function VisaoRep2Page() {
 
       {/* Lista */}
       <Card className="mt-4" title="Relatórios salvos">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Cada representante fica salvo aqui. Abrir um relatório não substitui nenhum outro — para trocar o conteúdo de um
+          representante use “Regerar com IA”.
+        </p>
         {!reports.length ? (
           <EmptyState title="Nenhuma Visão Rep 2 ainda" description="Gere com IA ou importe um relatório pronto para começar." />
         ) : (
           <div className="space-y-2">
             {reports.map(r => (
-              <div
-                key={r.id}
-                className={cn(
-                  "flex flex-wrap items-center gap-2 rounded-lg border p-3",
-                  selectedId === r.id && "border-primary/60 bg-muted/30",
-                )}
-              >
-                <button className="flex-1 text-left" onClick={() => setSelectedId(selectedId === r.id ? "" : r.id)}>
+              <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">{r.representative_name}</div>
                   <div className="text-xs text-muted-foreground">
                     {r.region ? `${r.region} · ` : ""}
                     {new Date(r.created_at).toLocaleDateString("pt-BR")}
                     {r.source_file_name ? ` · ${r.source_file_name}` : ""}
                   </div>
-                </button>
+                </div>
                 <Badge variant={r.creation_mode === "imported_ready" ? "outline" : "secondary"}>{MODE_LABEL[r.creation_mode]}</Badge>
+                <Button size="sm" onClick={() => { setSelectedId(r.id); window.scrollTo({ top: 0 }); }}>
+                  Abrir relatório
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), selectedId === r.id ? perf : null)}
+                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), null)}
                   title="Exportar PDF visual"
                 >
                   <FileText className="h-4 w-4" />
@@ -602,7 +621,6 @@ function VisaoRep2Page() {
                   </Button>
                 ) : null}
                 <Button size="sm" variant="ghost" onClick={() => excluir.mutate(r.id)} title="Excluir">
-
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -611,30 +629,9 @@ function VisaoRep2Page() {
         )}
       </Card>
 
-      {/* Detalhe */}
-      {visao && selected ? (
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Modo de origem: {MODE_LABEL[selected.creation_mode]}</Badge>
-            <Badge variant="outline">{selected.schema_version}</Badge>
-            {selected.content_hash ? (
-              <Badge variant="outline" className="font-mono text-[10px]">
-                hash {selected.content_hash.slice(0, 12)}
-              </Badge>
-            ) : null}
-            <Button size="sm" onClick={() => exportVisaoRep2Pdf(visao, perf)}>
-              <FileText className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => exportar(visao, selected.representative_name)}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Exportar relatório estruturado
-            </Button>
-          </div>
-          <VisaoRep2View visao={visao} perf={perf} />
-        </div>
-      ) : null}
+
     </div>
+
   );
 }
 
