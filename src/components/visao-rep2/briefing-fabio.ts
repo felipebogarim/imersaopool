@@ -30,6 +30,27 @@ export type BriefTema = {
 
 export type BriefAgendaItem = { texto: string; status: "A decidir" | "A validar" };
 
+/** Conclusão central: apenas orientação de leitura, nunca navegação principal. */
+export type BriefConclusao = { titulo: string; frase: string };
+
+/** Leitura de uma das oito perspectivas oficiais da entrevista. */
+export type BriefPerspectiva = {
+  numero: number;
+  tituloConclusivo: string;
+  contexto?: string;
+  ondeAparece?: string[];
+  representa?: string;
+  /** Índice (1-based) da decisão na Agenda executiva, quando houver relação. */
+  decisaoRef?: number;
+  /** Índice (1-based) da validação na Agenda executiva, quando houver relação. */
+  validacaoRef?: number;
+  evidencia?: string;
+  entidades?: BriefEntidades;
+  comparacao?: string;
+  confianca?: "Alta" | "Média" | "Baixa";
+  conclusoes?: string[];
+};
+
 export type BriefingExecutivo = {
   contexto: {
     marcas: string[];
@@ -38,9 +59,12 @@ export type BriefingExecutivo = {
   clientes: { nome: string; motivo: string }[];
   sintese: string;
   temas: BriefTema[];
+  conclusoes: BriefConclusao[];
+  perspectivas: BriefPerspectiva[];
   decisoes: BriefAgendaItem[];
   validacoes: BriefAgendaItem[];
 };
+
 
 export const BRIEFING_FABIO: BriefingExecutivo = {
   contexto: {
@@ -197,7 +221,208 @@ export const BRIEFING_FABIO: BriefingExecutivo = {
       perspectivas: ["Oportunidades", "Governança"],
     },
   ],
+  conclusoes: [
+    {
+      titulo: "Preço competitivo, percepção ainda premium",
+      frase: "A marca pode ser descartada antes da cotação, mesmo quando está mais barata.",
+    },
+    {
+      titulo: "Bons produtos, famílias ainda fragmentadas",
+      frase: "Falta profundidade e coerência dentro das famílias técnicas mais disputadas.",
+    },
+    {
+      titulo: "Velocidade e disponibilidade condicionam a conversão",
+      frase: "Estoque, amostra e resposta imediata decidem a venda durante o atendimento.",
+    },
+    {
+      titulo: "Conhecimento de campo pode ser convertido em autonomia controlada",
+      frase: "O representante propõe avalizar poucas contas, com metas, prazo e revisão.",
+    },
+  ],
+  perspectivas: [
+    {
+      numero: 1,
+      tituloConclusivo: "Preço competitivo, percepção ainda premium",
+      contexto:
+        "Fabio considera que a Newline vive uma combinação favorável entre portfólio, qualidade e preço, mas percebe que essa condição ainda não foi assimilada por vendedores, compradores e proprietários de loja. Em determinadas situações, o cliente procura primeiro uma marca percebida como mais barata e somente depois compara o valor real.",
+      ondeAparece: [
+        "Pix é associada espontaneamente a mini embutidos de menor preço.",
+        "No caso dos mini embutidos, a Newline estava mais barata.",
+        "A percepção do vendedor antecedeu a consulta objetiva de tabela.",
+        "Fabio utiliza informação de custo para dar segurança ao vendedor.",
+      ],
+      representa:
+        "A Newline pode perder a entrada na cotação antes que preço e desempenho sejam efetivamente comparados.",
+      decisaoRef: 1,
+      validacaoRef: 1,
+      evidencia:
+        "Na hora em que falaram que queriam um orçamento mais barato, ele foi na Pix. Só que o nosso estava mais barato.",
+      entidades: { produtos: ["Mini embutidos"], concorrentes: ["Pix"] },
+      comparacao: "Alta convergência: a percepção premium é recorrente nas entrevistas comparáveis.",
+      confianca: "Média",
+      conclusoes: ["Preço competitivo, percepção ainda premium"],
+    },
+    {
+      numero: 2,
+      tituloConclusivo: "Bons produtos, famílias ainda fragmentadas",
+      contexto:
+        "New Pixel e Grid são bem avaliados, mas convivem com Comfort, Cross e Ace em uma organização que nem sempre é assimilada como família única. Ao combinar linhas diferentes no mesmo projeto, o cliente fica inseguro quanto a tonalidade, acabamento e padrão visual. Em Pro Lamp, faltam microbordas e graus de abertura.",
+      ondeAparece: [
+        "New Pixel, Grid, Comfort, Cross e Ace são percebidos como soluções próximas, mas fragmentadas.",
+        "Pro Lamp possui lacunas em microbordas e graus de abertura.",
+        "FIT10 e FIT15 aparecem como famílias consolidadas.",
+        "Misturar linhas pode gerar diferenças de tonalidade e acabamento.",
+      ],
+      representa:
+        "A amplitude do portfólio não substitui profundidade e coerência dentro das famílias mais importantes.",
+      decisaoRef: 1,
+      validacaoRef: 2,
+      evidencia: "Hoje nós estamos com muitas linhas e a família é curta.",
+      entidades: {
+        produtos: ["New Pixel", "Grid", "Comfort", "Cross", "Ace", "FIT10", "FIT15", "Pro Lamp"],
+        concorrentes: ["Interlight"],
+      },
+      comparacao: "Alta convergência: a necessidade de famílias mais profundas aparece em outras entrevistas.",
+      confianca: "Alta",
+      conclusoes: [
+        "Bons produtos, famílias ainda fragmentadas",
+        "Velocidade e disponibilidade condicionam a conversão",
+      ],
+    },
+    {
+      numero: 3,
+      tituloConclusivo: "Interlight, Misterled, Pix e Spotline ganham por lógicas diferentes",
+      contexto:
+        "A concorrência não avança por um único motivo. A Interlight é referência em microbordas e sustenta entregas frequentes; a Misterled simplifica a compra de perfil por metro; a Pix é procurada quando o vendedor busca preço baixo; e a Spotline disputa presença em loja. Cada concorrente vence em um ponto específico da experiência de venda.",
+      ondeAparece: [
+        "Interlight em microbordas e entregas às terças e quintas.",
+        "Misterled simplifica Perfil por metro.",
+        "Pix foi procurada no caso dos mini embutidos.",
+        "Spotline disputa presença e giro na loja.",
+      ],
+      representa:
+        "Responder à concorrência exige tratar cada frente separadamente: profundidade de família, simplicidade de compra e percepção de preço.",
+      validacaoRef: 1,
+      evidencia: "A Interlight tem uma família de microborda muito mais completa que a nossa.",
+      entidades: {
+        produtos: ["Microbordas", "Perfil"],
+        concorrentes: ["Interlight", "Misterled", "Pix", "Spotline"],
+      },
+      comparacao: "Convergência parcial: os concorrentes citados variam conforme a região de cada representante.",
+      confianca: "Alta",
+      conclusoes: ["Preço competitivo, percepção ainda premium", "Bons produtos, famílias ainda fragmentadas"],
+    },
+    {
+      numero: 4,
+      tituloConclusivo: "Demonstração física e resposta imediata convertem a venda",
+      contexto:
+        "O argumento técnico só funciona quando pode ser mostrado. Fabio mantém amostras no veículo e no escritório regional e utiliza demonstração física para explicar produtos técnicos. Quando o vendedor precisa interromper o atendimento para consultar a fábrica ou localizar material, o argumento perde força.",
+      ondeAparece: [
+        "New Pixel foi demonstrado na Bonalluce.",
+        "Amostras são mantidas no veículo do representante.",
+        "NLUX pode apoiar desenho e proposta em PDF.",
+        "Conteúdo comercial precisa ser localizado durante o atendimento.",
+      ],
+      representa:
+        "A competitividade técnica perde valor quando a experiência de venda é mais lenta do que a do concorrente.",
+      decisaoRef: 2,
+      evidencia: "O vendedor vende aquilo que ele tem na hora.",
+      entidades: { produtos: ["New Pixel"], clientes: ["Bonalluce"], ferramentas: ["NLUX"] },
+      comparacao: "Alta convergência: amostra e material de apoio aparecem como condição de venda em outras entrevistas.",
+      confianca: "Alta",
+      conclusoes: ["Velocidade e disponibilidade condicionam a conversão"],
+    },
+    {
+      numero: 5,
+      tituloConclusivo: "O vendedor escolhe o que consegue compreender e apresentar rapidamente",
+      contexto:
+        "O critério declarado é preço, mas o critério revelado é facilidade. O vendedor apresenta primeiro o produto que entende, encontra e consegue cotar sem interromper o atendimento. Por isso a comparação objetiva de tabela muitas vezes acontece depois que a escolha já foi feita.",
+      ondeAparece: [
+        "A percepção de preço antecede a consulta de tabela.",
+        "Produtos com família curta exigem mais explicação no balcão.",
+        "Consulta de estoque ainda depende de retorno da fábrica.",
+      ],
+      representa:
+        "Simplificar a apresentação do produto tem efeito comercial equivalente a ajustar preço.",
+      decisaoRef: 2,
+      validacaoRef: 1,
+      evidencia: "Ele vende o que é mais fácil de explicar para o cliente.",
+      entidades: { concorrentes: ["Pix"], ferramentas: ["NLUX"] },
+      comparacao: "Convergência parcial: a distância entre critério declarado e revelado aparece em parte das entrevistas.",
+      confianca: "Média",
+      conclusoes: [
+        "Preço competitivo, percepção ainda premium",
+        "Velocidade e disponibilidade condicionam a conversão",
+      ],
+    },
+    {
+      numero: 6,
+      tituloConclusivo: "Famílias, canais e clientes potenciais exigem testes controlados",
+      contexto:
+        "Fabio identifica oportunidades concretas em famílias técnicas, em clientes que desejam entrar na marca e no aproveitamento do escritório regional. Nenhuma delas deve ser aberta de forma ampla: cada oportunidade pede um teste delimitado, com meta, prazo e revisão.",
+      ondeAparece: [
+        "Clientes querem entrar, mas não pelas condições iniciais esperadas.",
+        "Aprofundar microbordas e graus de abertura em Pro Lamp.",
+        "Escritório regional pode receber amostras e treinamentos.",
+      ],
+      representa:
+        "A política atual pode impedir o desenvolvimento de contas potenciais já conhecidas pelo campo.",
+      decisaoRef: 3,
+      validacaoRef: 2,
+      evidencia: "Há clientes que querem vir, mas não do jeito que a empresa espera.",
+      entidades: { produtos: ["Pro Lamp"], clientes: ["Hansa", "Vivani", "Artluz"] },
+      comparacao: "Leitura exclusiva: a proposta de avalizar contas com limite semestral é específica de Fabio.",
+      confianca: "Média",
+      conclusoes: [
+        "Bons produtos, famílias ainda fragmentadas",
+        "Conhecimento de campo pode ser convertido em autonomia controlada",
+      ],
+    },
+    {
+      numero: 7,
+      tituloConclusivo: "Iniciativa de campo precisa ser convertida em processo replicável",
+      contexto:
+        "A atuação sobre estoque, amostras e treinamento de vendedores acontece hoje por iniciativa pessoal do representante. O caso da LedLuz mostra o efeito dessa atuação, mas ela não está descrita como rotina nem é medida por indicador.",
+      ondeAparece: [
+        "Na LedLuz, foram vendidas mais de 35 barras após organizar estoque e amostras.",
+        "O treinamento de vendedores é individual e não padronizado.",
+        "A indicação de contas seria acompanhada por metas e prazo.",
+      ],
+      representa:
+        "Sem processo, o resultado depende da presença de uma pessoa e não se reproduz na equipe.",
+      decisaoRef: 3,
+      validacaoRef: 3,
+      evidencia: "Fui lá, organizei o estoque, treinei o vendedor e saíram mais de 35 barras.",
+      entidades: { clientes: ["LedLuz"], ferramentas: ["NLUX"] },
+      comparacao: "Convergência parcial: a autonomia do representante é discutida em outras entrevistas com menor detalhamento.",
+      confianca: "Média",
+      conclusoes: [
+        "Velocidade e disponibilidade condicionam a conversão",
+        "Conhecimento de campo pode ser convertido em autonomia controlada",
+      ],
+    },
+    {
+      numero: 8,
+      tituloConclusivo: "Escritório, amostras e presença formam a infraestrutura regional de conversão",
+      contexto:
+        "A carteira é atendida a partir de Campinas, Limeira, Piracicaba e Jundiaí, com escritório regional, amostras no veículo e visitas frequentes. Essa infraestrutura é o que sustenta demonstração, treinamento e resposta rápida no ponto de venda.",
+      ondeAparece: [
+        "Escritório regional utilizado como apoio a amostras e reuniões.",
+        "Amostras transportadas no veículo do representante.",
+        "Visitas frequentes a Campinas, Limeira, Piracicaba e Jundiaí.",
+      ],
+      representa:
+        "A estrutura regional já existente pode ser usada como base para treinamento e demonstração organizados.",
+      decisaoRef: 2,
+      evidencia: "Eu levo amostra comigo, senão o vendedor não consegue mostrar.",
+      entidades: { ferramentas: ["NLUX"] },
+      comparacao: "Sem comparação suficiente com o grupo para este tema.",
+      confianca: "Média",
+      conclusoes: ["Velocidade e disponibilidade condicionam a conversão"],
+    },
+  ],
   decisoes: [
+
     { texto: "Escolher duas famílias prioritárias para aprofundamento.", status: "A decidir" },
     { texto: "Priorizar o fluxo de estoque, conteúdo, amostras e proposta.", status: "A decidir" },
     { texto: "Aprovar ou rejeitar o piloto de clientes avalizados.", status: "A decidir" },
