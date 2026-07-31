@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -405,7 +405,7 @@ function VisaoRep2Page() {
         <Card title="Gerar com IA">
           <p className="mb-3 text-sm text-muted-foreground">
             O sistema lê a entrevista já processada do representante e organiza o conteúdo no modelo canônico. Nada é inventado: campos sem base ficam vazios.
-            O relatório é salvo automaticamente e fica fixo — ao voltar nesta página você verá sempre o mesmo conteúdo, até regerar manualmente.
+            O relatório é salvo automaticamente na lista abaixo. Cada representante tem seu próprio relatório — gerar um novo não substitui os já salvos.
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row">
