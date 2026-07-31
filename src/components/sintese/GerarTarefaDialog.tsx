@@ -28,21 +28,25 @@ export function GerarTarefaDialog({
     }
   }, [tarefa]);
 
-  const { data: listas = [] } = useQuery({
+  const { data: listas = [], isLoading: loadingListas, error: erroListas } = useQuery({
     queryKey: ["kanban-listas-sintese"],
     enabled: !!tarefa,
     queryFn: async () => {
-      const { data: boards } = await supabase
+      const { data: boards, error: eb } = await supabase
         .from("kanban_boards")
-        .select("id, name")
+        .select("id, name, archived_at")
+        .is("archived_at", null)
         .order("created_at", { ascending: true });
+      if (eb) throw eb;
       const ids = (boards ?? []).map(b => b.id);
       if (!ids.length) return [];
-      const { data: lists } = await supabase
+      const { data: lists, error: el } = await supabase
         .from("kanban_lists")
-        .select("id, name, board_id, position")
+        .select("id, name, board_id, position, archived_at")
         .in("board_id", ids)
+        .is("archived_at", null)
         .order("position", { ascending: true });
+      if (el) throw el;
       return (lists ?? []).map(l => ({
         ...l,
         boardTitle: boards?.find(b => b.id === l.board_id)?.name ?? "Quadro",
@@ -88,13 +92,28 @@ export function GerarTarefaDialog({
           <div>
             <Label>Lista de destino</Label>
             <Select value={listId} onValueChange={setListId}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingListas ? "Carregando listas…" : "Selecione"} />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
                 {listas.map((l: any) => (
                   <SelectItem key={l.id} value={l.id}>{l.boardTitle} · {l.name}</SelectItem>
                 ))}
+                {!loadingListas && listas.length === 0 && (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">Nenhuma lista disponível</div>
+                )}
               </SelectContent>
             </Select>
+            {erroListas && (
+              <p className="mt-1 text-xs text-destructive">
+                Não foi possível carregar as listas: {(erroListas as any)?.message ?? "erro desconhecido"}
+              </p>
+            )}
+            {!loadingListas && !erroListas && listas.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nenhum quadro/lista ativo encontrado. Crie um quadro em Gestão de Tarefas.
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
