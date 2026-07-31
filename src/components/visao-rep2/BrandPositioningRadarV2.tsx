@@ -94,7 +94,7 @@ export function BrandPositioningRadarV2({
     media: p.media,
     ponto: p,
   }));
-  const temMedia = vm.baseCount >= 2;
+  const temMedia = vm.baseCount >= 1;
 
   return (
     <div className="flex flex-col items-center justify-center gap-2">

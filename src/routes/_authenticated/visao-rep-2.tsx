@@ -436,7 +436,9 @@ function VisaoRep2Page() {
       setDraftHash(await contentHash(texto));
       toast.success("Relatório lido. Confira a prévia antes de confirmar.");
     } catch (e: any) {
+      console.error("[visao-rep-2] falha ao importar relatório", e);
       toast.error(e?.message ?? "Não foi possível ler o arquivo.");
+
     } finally {
       setBusy(false);
     }

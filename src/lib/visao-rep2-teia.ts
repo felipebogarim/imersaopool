@@ -70,7 +70,7 @@ export function buildTeiaVM(atual: VisaoRep2, outros: VisaoRep2[]): TeiaVM {
 
   const bases = outros.map(scoresComparaveis).filter(Boolean) as Record<BrandDimensionKey, number | null>[];
   const metodologiaIncompativel = outros.some(o => !!o.brand_positioning) && bases.length < outros.filter(o => !!o.brand_positioning).length;
-  const usarMedia = bases.length >= 2;
+  const usarMedia = bases.length >= 1;
 
   const pontos: TeiaPonto[] = BRAND_DIMENSIONS.map(d => {
     const dim: BrandDimension = bp.dimensions[d.key];
