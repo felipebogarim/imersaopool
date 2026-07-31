@@ -119,22 +119,26 @@ export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
 
 
 /* ------------------------------------------------------------------ */
-/* Síntese presidencial                                                */
+/* Síntese estratégica                                                 */
 /* ------------------------------------------------------------------ */
 
-export function SintesePresidencialV2({ texto }: { texto: string }) {
+export function SintesePresidencialV2({ texto, teia }: { texto: string; teia?: ReactNode }) {
   return (
     <BlocoExpansivel
-      titulo="Síntese presidencial"
+      titulo="Síntese estratégica"
       descricao="Leitura geral da entrevista e dos principais impactos para o negócio."
       className="bg-muted/30"
     >
-      <div className="border-l-2 border-primary pl-5">
-        <p className="max-w-[68ch] text-base leading-8">{texto}</p>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] lg:gap-10">
+        <div className="min-w-0 border-l-2 border-primary pl-5">
+          <p className="max-w-[68ch] text-base leading-8">{texto}</p>
+        </div>
+        {teia ? <div className="min-w-0">{teia}</div> : null}
       </div>
     </BlocoExpansivel>
   );
 }
+
 
 
 /* ------------------------------------------------------------------ */
@@ -406,6 +410,7 @@ export function ExecutiveBriefV2({
   perspectivas: perspectivasProp,
   perf = null,
   leitura,
+  teia,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -417,6 +422,8 @@ export function ExecutiveBriefV2({
   perf?: PerfResumo | null;
   /** Bloco "Leitura integrada" do relatório. */
   leitura?: ReactNode;
+  /** Teia comparativa exibida ao lado da síntese estratégica. */
+  teia?: ReactNode;
 }) {
   const perspectivas =
     perspectivasProp ??
@@ -438,7 +445,8 @@ export function ExecutiveBriefV2({
         atingimento={perf ? fmtPct(perf.geralPct) : null}
         periodo={perf?.periodoLabel ?? null}
       />
-      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} /> : null}
+      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
+
       <PerformanceFamiliasV2 perf={perf} />
       {leitura ?? null}
       <ContextPortfolioV2 brief={brief} />

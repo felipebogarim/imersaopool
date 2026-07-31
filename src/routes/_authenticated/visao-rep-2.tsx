@@ -29,6 +29,8 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
+
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
@@ -164,6 +166,26 @@ function VisaoRep2Page() {
 
   const selected = useMemo(() => reports.find(r => r.id === selectedId) ?? null, [reports, selectedId]);
   const visao = useMemo(() => (selected ? normalizeVisaoRep2(selected.data) : null), [selected]);
+
+  /**
+   * Base comparativa da teia: apenas relatórios salvos, um por representante
+   * (o mais recente), excluindo o relatório e o representante atualmente abertos.
+   */
+  const comparaveis = useMemo(() => {
+    const vistos = new Set<string>();
+    const atualKey = (selected?.representative_id ?? norm(selected?.representative_name ?? "")) || "";
+    return reports
+      .filter(r => r.id !== selected?.id)
+      .filter(r => {
+        const key = r.representative_id ?? norm(r.representative_name ?? "");
+        if (!key || key === atualKey || vistos.has(key)) return false;
+        vistos.add(key);
+        return true;
+      })
+      .map(r => normalizeVisaoRep2(r.data));
+  }, [reports, selected]);
+
+
 
   // ---- Performance vinculada ----
   const { data: uploads = [] } = useQuery({
@@ -454,7 +476,7 @@ function VisaoRep2Page() {
             </Button>
           </div>
         </div>
-        <VisaoRep2View visao={visao} perf={perf} />
+        <VisaoRep2View visao={visao} perf={perf} comparaveis={comparaveis} />
       </div>
     );
   }
@@ -692,9 +714,12 @@ function VisaoRep2Page() {
 function VisaoRep2View({
   visao,
   perf,
+  comparaveis = [],
 }: {
   visao: VisaoRep2;
   perf: ReturnType<typeof buildPerfResumo> | null;
+  /** Relatórios usados na média da teia comparativa. */
+  comparaveis?: VisaoRep2[];
 }) {
   const [filtroLinha, setFiltroLinha] = useState<LineClassification | "todas">("todas");
   const ev = visao.executive_view;
@@ -724,7 +749,9 @@ function VisaoRep2View({
         perspectivas={perspectivas}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
+        teia={visao.brand_positioning ? <BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} /> : null}
       />
+
 
 
 

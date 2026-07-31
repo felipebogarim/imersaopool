@@ -233,11 +233,48 @@ export type ExecutiveBrief = {
   themes: ExecutiveTheme[];
 };
 
+/* ---------- Teia comparativa de posicionamento (brand_positioning_v1) ---------- */
+
+export const BRAND_POSITIONING_VERSION = "brand_positioning_v1";
+
+/** Seis dimensões, sempre nesta ordem, iguais para todos os representantes. */
+export const BRAND_DIMENSIONS = [
+  { key: "qualidade", label: "Qualidade", longLabel: "Qualidade" },
+  { key: "preco_competitivo", label: "Preço competitivo", longLabel: "Preço competitivo" },
+  { key: "portfolio", label: "Portfólio", longLabel: "Portfólio" },
+  { key: "disponibilidade", label: "Disponibilidade", longLabel: "Disponibilidade" },
+  { key: "preferencia", label: "Preferência", longLabel: "Preferência e afiliação" },
+  { key: "especificacao", label: "Especificação", longLabel: "Especificação" },
+] as const;
+
+export type BrandDimensionKey = (typeof BRAND_DIMENSIONS)[number]["key"];
+
+export type BrandDimension = {
+  /** 0 a 100. null quando não há evidência suficiente (nunca zero). */
+  score: number | null;
+  confidence: string | null;
+  reading: string | null;
+  perspective_ids: string[];
+  evidence_count: number | null;
+};
+
+export type BrandPositioning = {
+  scoring_version: string | null;
+  dimensions: Record<BrandDimensionKey, BrandDimension>;
+};
+
+export function emptyBrandDimension(): BrandDimension {
+  return { score: null, confidence: null, reading: null, perspective_ids: [], evidence_count: null };
+}
+
 export type VisaoRep2 = {
   metadata: Metadata;
   executive_view: ExecutiveView;
   /** Presente apenas em relatórios schema 3.0 com view_model executive_brief_v1. */
   executive_brief?: ExecutiveBrief | null;
+  /** Opcional: índices analíticos da teia comparativa. Ausente em relatórios antigos. */
+  brand_positioning?: BrandPositioning | null;
+
   representative_context: RepresentativeContext;
   strategic_clients: StrategicClient[];
   product_line_views: ProductLineView[];
@@ -522,6 +559,32 @@ function normalizeExecutiveBrief(raw: unknown): ExecutiveBrief | null {
   return { presidential_synthesis: synthesis, themes };
 }
 
+/** Normaliza a teia comparativa. Retorna null quando o relatório não possui a seção. */
+export function normalizeBrandPositioning(raw: unknown): BrandPositioning | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, any>;
+  const dimsRaw = (o.dimensions ?? o.dimensoes ?? {}) as Record<string, any>;
+  const dimensions = {} as Record<BrandDimensionKey, BrandDimension>;
+  let algum = false;
+  for (const d of BRAND_DIMENSIONS) {
+    const r = (dimsRaw?.[d.key] ?? {}) as Record<string, any>;
+    const score = asNum(r.score);
+    const dim: BrandDimension = {
+      score: score == null ? null : Math.max(0, Math.min(100, score)),
+      confidence: asText(r.confidence ?? r.confianca),
+      reading: asText(r.reading ?? r.leitura),
+      perspective_ids: asTextList(r.perspective_ids ?? r.perspectivas_relacionadas),
+      evidence_count: asNum(r.evidence_count ?? r.evidencias_relacionadas),
+    };
+    if (dim.score != null || dim.reading) algum = true;
+    dimensions[d.key] = dim;
+  }
+  if (!algum) return null;
+  return { scoring_version: asText(o.scoring_version) ?? BRAND_POSITIONING_VERSION, dimensions };
+}
+
+
+
 
 /** Normaliza um objeto vindo do banco ou da IA (inclusive registros antigos/parciais). */
 export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
@@ -556,6 +619,8 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       final_synthesis: asText(ev.final_synthesis) ?? null,
     },
     executive_brief: normalizeExecutiveBrief(o.executive_brief),
+    brand_positioning: normalizeBrandPositioning(o.brand_positioning),
+
 
     representative_context: {
       represented_brands: asTextList(ctx.represented_brands),
@@ -665,6 +730,13 @@ export function validateVisaoRep2(v: VisaoRep2): ValidationReport {
     if (!v.executive_view.priority_signals.length) missingRequired.push("Visão executiva › sinais prioritários");
     else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
   }
+
+  // Teia comparativa: sempre opcional. Relatórios antigos seguem válidos.
+  if (v.brand_positioning) {
+    const preenchidas = BRAND_DIMENSIONS.filter(d => v.brand_positioning?.dimensions[d.key]?.score != null).length;
+    recognized.push(`Teia comparativa de posicionamento › ${preenchidas}/${BRAND_DIMENSIONS.length} dimensões`);
+  }
+
 
   const comPersp = v.perspectives.filter(p => nonEmpty(p.executive_finding) || nonEmpty(p.full_reading));
   if (!comPersp.length) {

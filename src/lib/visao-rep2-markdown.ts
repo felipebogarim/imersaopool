@@ -4,15 +4,20 @@
 // reescrito, corrigido ou completado.
 
 import {
+  BRAND_DIMENSIONS,
+  BRAND_POSITIONING_VERSION,
   CLASSIFICATION_LABEL,
   PERSPECTIVE_TITLES,
   VISAO_REP_SCHEMA_VERSION,
+  emptyBrandDimension,
   emptyPerspective,
   emptyVisaoRep2,
   emptyExecutiveTheme,
   isExecutiveBriefV1,
+  type BrandDimensionKey,
   type ExecutiveTheme,
   type ConfidenceLevel,
+
 
   type ConsensusPoint,
   type Divergence,
@@ -247,6 +252,37 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
     });
 
     v.executive_brief = { presidential_synthesis, themes };
+  }
+
+
+  // Teia comparativa de posicionamento (opcional, brand_positioning_v1).
+  const teiaSec = secOf(/teia_comparativa/);
+  if (teiaSec) {
+    const cabec = kv(teiaSec.lines);
+    const dims = {} as Record<BrandDimensionKey, ReturnType<typeof emptyBrandDimension>>;
+    let algum = false;
+    const filhos = childrenOf(teiaSec);
+    for (const d of BRAND_DIMENSIONS) {
+      const bloco = filhos.find(b => norm(b.title) === norm(d.label));
+      const f = bloco ? kv(bloco.lines) : {};
+      const raw = nz(f.score);
+      const n = raw == null ? null : Number(raw.replace(",", "."));
+      const dim = emptyBrandDimension();
+      dim.score = n != null && Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
+      dim.confidence = nz(f.confianca);
+      dim.reading = nz(f.leitura);
+      dim.perspective_ids = list(f.perspectivas_relacionadas);
+      const ev2 = nz(f.evidencias_relacionadas);
+      dim.evidence_count = ev2 != null && Number.isFinite(Number(ev2)) ? Number(ev2) : null;
+      if (dim.score != null || dim.reading) algum = true;
+      dims[d.key] = dim;
+    }
+    if (algum) {
+      v.brand_positioning = {
+        scoring_version: nz(cabec.scoring_version) ?? BRAND_POSITIONING_VERSION,
+        dimensions: dims,
+      };
+    }
   }
 
 
@@ -500,6 +536,20 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     // Schema 3.0: o bloco executivo é escrito no formato próprio, sem duplicar
     // os campos espelhados internamente (tese central / sinais prioritários).
     L.push("## Síntese presidencial", "", S(v.executive_brief.presidential_synthesis), "");
+    if (v.brand_positioning) {
+      L.push("## Teia comparativa de posicionamento", "");
+      L.push(`- scoring_version: ${S(v.brand_positioning.scoring_version)}`, "");
+      for (const d of BRAND_DIMENSIONS) {
+        const dim = v.brand_positioning.dimensions[d.key];
+        L.push(`### ${d.label}`, "");
+        L.push(`- score: ${dim.score ?? ""}`);
+        L.push(`- confianca: ${S(dim.confidence)}`);
+        L.push(`- leitura: ${S(dim.reading)}`);
+        L.push(`- perspectivas_relacionadas: ${dim.perspective_ids.join("; ")}`);
+        L.push(`- evidencias_relacionadas: ${dim.evidence_count ?? ""}`, "");
+      }
+    }
+
     L.push("## Temas estratégicos", "");
     v.executive_brief.themes.forEach((t, i) => {
       L.push(`### Tema ${i + 1} — ${S(t.title)}`, "");
