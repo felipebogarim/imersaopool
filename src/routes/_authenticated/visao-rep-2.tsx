@@ -38,6 +38,7 @@ import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/li
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
+  ArrowLeft,
   ChevronDown,
   Eraser,
   FileDown,
