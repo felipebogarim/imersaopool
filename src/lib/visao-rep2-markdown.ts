@@ -333,6 +333,10 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
           related_perspectives: list(f.perspectivas_relacionadas ?? f.related_perspectives)
             .map(s => Number(/(\d{1,2})/.exec(s)?.[1]))
             .filter(n => Number.isFinite(n) && n >= 1 && n <= 8),
+          // Comparação com o grupo enviada dentro do próprio sinal.
+          comparison_classification: nz(f.classificacao_comparativa) ?? nz(f.comparison_classification),
+          comparable_sources: num(f.fontes_comparaveis ?? f.comparable_sources),
+          group_comparison: nz(f.comparacao_grupo) ?? nz(f.group_comparison),
         };
       });
 
