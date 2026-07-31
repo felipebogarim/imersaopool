@@ -233,11 +233,48 @@ export type ExecutiveBrief = {
   themes: ExecutiveTheme[];
 };
 
+/* ---------- Teia comparativa de posicionamento (brand_positioning_v1) ---------- */
+
+export const BRAND_POSITIONING_VERSION = "brand_positioning_v1";
+
+/** Seis dimensões, sempre nesta ordem, iguais para todos os representantes. */
+export const BRAND_DIMENSIONS = [
+  { key: "qualidade", label: "Qualidade", longLabel: "Qualidade" },
+  { key: "preco_competitivo", label: "Preço competitivo", longLabel: "Preço competitivo" },
+  { key: "portfolio", label: "Portfólio", longLabel: "Portfólio" },
+  { key: "disponibilidade", label: "Disponibilidade", longLabel: "Disponibilidade" },
+  { key: "preferencia", label: "Preferência", longLabel: "Preferência e afiliação" },
+  { key: "especificacao", label: "Especificação", longLabel: "Especificação" },
+] as const;
+
+export type BrandDimensionKey = (typeof BRAND_DIMENSIONS)[number]["key"];
+
+export type BrandDimension = {
+  /** 0 a 100. null quando não há evidência suficiente (nunca zero). */
+  score: number | null;
+  confidence: string | null;
+  reading: string | null;
+  perspective_ids: string[];
+  evidence_count: number | null;
+};
+
+export type BrandPositioning = {
+  scoring_version: string | null;
+  dimensions: Record<BrandDimensionKey, BrandDimension>;
+};
+
+export function emptyBrandDimension(): BrandDimension {
+  return { score: null, confidence: null, reading: null, perspective_ids: [], evidence_count: null };
+}
+
 export type VisaoRep2 = {
   metadata: Metadata;
   executive_view: ExecutiveView;
   /** Presente apenas em relatórios schema 3.0 com view_model executive_brief_v1. */
   executive_brief?: ExecutiveBrief | null;
+  /** Opcional: índices analíticos da teia comparativa. Ausente em relatórios antigos. */
+  brand_positioning?: BrandPositioning | null;
+
   representative_context: RepresentativeContext;
   strategic_clients: StrategicClient[];
   product_line_views: ProductLineView[];
