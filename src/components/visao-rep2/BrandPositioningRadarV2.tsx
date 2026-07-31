@@ -39,31 +39,6 @@ function BrandPositioningTooltipV2({ active, payload }: { active?: boolean; payl
   );
 }
 
-function BrandPositioningInsightV2({
-  insight,
-  indicadores,
-}: {
-  insight: string;
-  indicadores: { rotulo: string; dimensao: string; delta: number }[];
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm leading-6 text-muted-foreground">{insight}</p>
-      {indicadores.length ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {indicadores.map(i => (
-            <div key={i.rotulo} className="rounded-lg border px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{i.rotulo}</p>
-              <p className="mt-0.5 text-sm">
-                {i.dimensao} <span className="tabular-nums text-muted-foreground">{fmtDelta(i.delta)}</span>
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function BrandPositioningRadarV2({
   atual,
