@@ -23,7 +23,7 @@ export function BriefHeaderV2({
   nome,
   regiao,
   marcas = [],
-  atingimento,
+  atingimentoPct,
   periodo,
 }: {
   nome: string;
@@ -31,7 +31,7 @@ export function BriefHeaderV2({
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
   marcas?: string[];
-  atingimento?: string | null;
+  atingimentoPct?: number | null;
   periodo?: string | null;
 }) {
   return (
