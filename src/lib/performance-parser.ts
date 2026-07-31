@@ -60,8 +60,10 @@ export type ParsedSheet = {
   matriz: MatrizParseResult | null;
   /** Erros de validação da matriz financeira (sem valores brutos). */
   matriz_erros: string[];
-  /** Divergências entre faixa textual e cor (bloqueiam a importação). */
+  /** Conflitos de validação (bloqueiam a importação). */
   conflitos: CellConflict[];
+  /** Contagens de validação de células/cores. */
+  stats: CellStats;
   parser_version: string;
 };
 
