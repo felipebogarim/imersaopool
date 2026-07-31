@@ -39,31 +39,6 @@ function BrandPositioningTooltipV2({ active, payload }: { active?: boolean; payl
   );
 }
 
-function BrandPositioningInsightV2({
-  insight,
-  indicadores,
-}: {
-  insight: string;
-  indicadores: { rotulo: string; dimensao: string; delta: number }[];
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm leading-6 text-muted-foreground">{insight}</p>
-      {indicadores.length ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {indicadores.map(i => (
-            <div key={i.rotulo} className="rounded-lg border px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{i.rotulo}</p>
-              <p className="mt-0.5 text-sm">
-                {i.dimensao} <span className="tabular-nums text-muted-foreground">{fmtDelta(i.delta)}</span>
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function BrandPositioningRadarV2({
   atual,
@@ -122,17 +97,13 @@ export function BrandPositioningRadarV2({
   const temMedia = vm.baseCount >= 2;
 
   return (
-    <div className="space-y-3">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Teia comparativa de posicionamento
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">Entrevista atual versus média das demais entrevistas</p>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">Índices analíticos derivados das entrevistas</p>
-      </div>
+    <div className="flex flex-col items-center justify-center gap-2">
+      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        Teia comparativa de posicionamento
+      </p>
 
       <div
-        className="h-[320px] w-full sm:h-[380px] lg:h-[400px]"
+        className="h-[300px] w-full sm:h-[340px]"
         role="img"
         aria-label={vm.descricaoAcessivel}
       >
@@ -173,25 +144,16 @@ export function BrandPositioningRadarV2({
               dot={{ r: 3, fill: "var(--primary)" }}
             />
             <Tooltip content={<BrandPositioningTooltipV2 />} />
-            <Legend
-              verticalAlign="bottom"
-              height={28}
-              wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
-            />
+            {temMedia ? (
+              <Legend
+                verticalAlign="bottom"
+                height={24}
+                wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
+              />
+            ) : null}
           </RadarChart>
         </ResponsiveContainer>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        {temMedia
-          ? `Base comparável: ${vm.baseCount} representantes`
-          : vm.baseCount === 1
-            ? "Base comparativa insuficiente."
-            : "Ainda não há entrevistas comparáveis suficientes."}
-        {vm.metodologiaIncompativel ? " · Metodologia incompatível com a base atual em parte dos relatórios." : ""}
-      </p>
-
-      <BrandPositioningInsightV2 insight={vm.insight} indicadores={vm.indicadores} />
     </div>
   );
 }
