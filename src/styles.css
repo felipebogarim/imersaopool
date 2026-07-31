@@ -68,6 +68,17 @@
   /* Série de comparação (média do perfil) — âmbar, contraste com o ciano */
   --chart-compare: oklch(0.72 0.15 62);
 
+  /* Paleta de séries por família de produtos (barras coloridas) */
+  --fam-1: oklch(0.58 0.14 215);
+  --fam-2: oklch(0.66 0.14 165);
+  --fam-3: oklch(0.72 0.15 62);
+  --fam-4: oklch(0.60 0.16 295);
+  --fam-5: oklch(0.64 0.16 25);
+  --fam-6: oklch(0.62 0.13 135);
+  --fam-7: oklch(0.60 0.14 255);
+  --fam-8: oklch(0.68 0.14 100);
+
+
   --secondary: oklch(0.88 0.015 235);
   --secondary-foreground: oklch(0.24 0.03 245);
 
@@ -121,6 +132,16 @@
   --primary-foreground: oklch(0.15 0.03 245);
 
   --chart-compare: oklch(0.78 0.15 62);
+
+  --fam-1: oklch(0.82 0.16 215);
+  --fam-2: oklch(0.80 0.14 165);
+  --fam-3: oklch(0.82 0.15 62);
+  --fam-4: oklch(0.76 0.16 295);
+  --fam-5: oklch(0.76 0.16 25);
+  --fam-6: oklch(0.80 0.13 135);
+  --fam-7: oklch(0.76 0.14 255);
+  --fam-8: oklch(0.82 0.14 100);
+
 
   --secondary: oklch(0.26 0.03 245);
   --secondary-foreground: oklch(0.98 0.005 240);
