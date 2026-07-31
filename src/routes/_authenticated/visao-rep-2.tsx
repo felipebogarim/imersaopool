@@ -403,7 +403,8 @@ function VisaoRep2Page() {
   // ---- Tela de leitura de um relatório salvo ----
   if (visao && selected) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto w-full max-w-[1400px] space-y-6 px-4 py-6 sm:px-8 lg:px-10">
+
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => setSelectedId("")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
