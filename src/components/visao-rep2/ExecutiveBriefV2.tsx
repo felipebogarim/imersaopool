@@ -373,10 +373,10 @@ export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
     });
 
   return (
-    <section className="space-y-4" aria-labelledby="vr2-agenda">
-      <h3 id="vr2-agenda" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Agenda executiva
-      </h3>
+    <BlocoExpansivel
+      titulo="Agenda executiva"
+      descricao="Decisões e validações que dependem de responsáveis definidos."
+    >
       <div className="grid gap-4 lg:grid-cols-2">
         <AgendaCard
           titulo="Decisões requeridas"
@@ -390,8 +390,9 @@ export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
         />
       </div>
       <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
-    </section>
+    </BlocoExpansivel>
   );
+
 }
 
 
