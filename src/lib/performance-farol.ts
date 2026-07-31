@@ -110,36 +110,67 @@ export function statusFromPercent(p: number | null | undefined): FarolStatus | n
 }
 
 /**
- * Mapeia uma cor hex (ex.: "FF6EE7B7" ou "6EE7B7") para o status mais próximo.
- * Usa distância euclidiana em RGB contra centros pré-definidos de cada faixa.
- * Retorna null para cores muito claras ("branco puro" — célula sem preenchimento).
+ * Paleta aceita na IMPORTAÇÃO (correspondência exata, sem aproximação).
+ * Inclui a paleta canônica do sistema e a paleta original das planilhas.
  */
-export function statusFromHex(hex: string | null | undefined): FarolStatus | null {
+export const IMPORT_FAROL_HEX: Record<string, FarolStatus> = {
+  // Paleta canônica (gerada pelo sistema)
+  E5E5E5: "sem_compra",
+  FCA5A5: "abaixo_meta",
+  FDBA74: "pode_melhorar",
+  FDE68A: "proximo",
+  BEF264: "otimo",
+  "6EE7B7": "excelente",
+
+  // Paleta original das planilhas
+  E8A0A0: "abaixo_meta",
+  F4D7BE: "pode_melhorar",
+  F3EFD9: "proximo",
+  DFF0D0: "otimo",
+  "9FC7E8": "excelente",
+};
+
+/** Normaliza uma cor para RRGGBB em caixa alta. Retorna null se inválida. */
+export function normalizeHex(input: string | null | undefined): string | null {
+  if (!input) return null;
+  let hex = String(input).replace(/^#/, "").trim().toUpperCase();
+  if (hex.length === 8) hex = hex.slice(2);
+  if (!/^[0-9A-F]{6}$/.test(hex)) return null;
+  return hex;
+}
+
+/**
+ * Mapeia uma cor para o status do farol usando SOMENTE correspondência exata.
+ * Cor desconhecida retorna null (nunca "sem_compra").
+ */
+export function statusFromHex(input: string | null | undefined): FarolStatus | null {
+  const hex = normalizeHex(input);
   if (!hex) return null;
-  const clean = hex.replace(/^#/, "").padStart(6, "0");
-  const h = clean.length === 8 ? clean.slice(2) : clean.slice(-6);
-  // Correspondência exata com a paleta canônica (planilhas geradas pelo sistema)
-  const exact = (Object.keys(FAROL_HEX) as FarolStatus[]).find(
-    (s) => FAROL_HEX[s].toUpperCase() === h.toUpperCase(),
-  );
+  return IMPORT_FAROL_HEX[hex] ?? null;
+}
+
+/**
+ * Aproximação por distância euclidiana — uso EXCLUSIVAMENTE visual/heurístico.
+ * NUNCA deve participar da validação de upload.
+ */
+export function statusFromHexAproximado(hex: string | null | undefined): FarolStatus | null {
+  const h = normalizeHex(hex);
+  if (!h) return null;
+  const exact = IMPORT_FAROL_HEX[h];
   if (exact) return exact;
 
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
-  if ([r, g, b].some((x) => Number.isNaN(x))) return null;
-
-  // branco puro / quase branco → sem cor de farol
   if (r > 240 && g > 240 && b > 240) return null;
 
-  // centros (aproximados) das cores comuns em planilhas de meta
   const centers: { s: FarolStatus; c: [number, number, number] }[] = [
-    { s: "sem_compra", c: [200, 200, 200] }, // cinza
-    { s: "abaixo_meta", c: [220, 60, 60] }, // vermelho
-    { s: "pode_melhorar", c: [240, 150, 60] }, // laranja
-    { s: "proximo", c: [245, 220, 90] }, // amarelo
-    { s: "otimo", c: [140, 200, 90] }, // verde claro/lima
-    { s: "excelente", c: [40, 140, 90] }, // verde escuro
+    { s: "sem_compra", c: [200, 200, 200] },
+    { s: "abaixo_meta", c: [220, 60, 60] },
+    { s: "pode_melhorar", c: [240, 150, 60] },
+    { s: "proximo", c: [245, 220, 90] },
+    { s: "otimo", c: [140, 200, 90] },
+    { s: "excelente", c: [40, 140, 90] },
   ];
   let best: FarolStatus = "sem_compra";
   let bestD = Infinity;
@@ -152,6 +183,7 @@ export function statusFromHex(hex: string | null | undefined): FarolStatus | nul
   }
   return best;
 }
+
 
 export function catBadge(c: string | null | undefined): string {
   const k = (c ?? "").toLowerCase();
