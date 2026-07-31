@@ -133,7 +133,6 @@ const norm = (s: string) =>
     .trim()
     .toUpperCase();
 
-const tokens = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter((t: string) => t.length > 2);
 
 
 function VisaoRep2Page() {
