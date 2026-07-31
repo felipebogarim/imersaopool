@@ -130,6 +130,7 @@ function VisaoRep2Page() {
   const [draft, setDraft] = useState<VisaoRep2 | null>(null);
   const [draftFile, setDraftFile] = useState<string | null>(null);
   const [draftHash, setDraftHash] = useState<string | null>(null);
+  const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const gerar = useServerFn(gerarVisaoRep2);
@@ -250,14 +251,11 @@ function VisaoRep2Page() {
       return data.id as string;
     },
     onSuccess: () => {
-      toast.success("Relatório salvo. Ele está na lista de relatórios salvos.");
-      setDraft(null);
-      setDraftFile(null);
-      setDraftHash(null);
+      toast.success("Relatório salvo. Use “Voltar para a lista” para ver os salvos.");
+      setDraftSalvo(true);
       setRepId("");
       qc.invalidateQueries({ queryKey: ["vr2-reports"] });
       setSelectedId("");
-      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar."),
   });
@@ -310,6 +308,16 @@ function VisaoRep2Page() {
     setDraftFile(null);
     setDraftHash(null);
     await salvar.mutateAsync(normalizeVisaoRep2(v));
+  }
+
+  /** Fecha a prévia e volta para a tela inicial com a lista de relatórios salvos. */
+  function voltarParaLista() {
+    setDraft(null);
+    setDraftFile(null);
+    setDraftHash(null);
+    setDraftSalvo(false);
+    setSelectedId("");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   /** Salva pedindo confirmação quando o representante já tem relatório salvo. */
@@ -505,8 +513,13 @@ function VisaoRep2Page() {
       {draft && validacao ? (
         <Card className="mt-4 border-primary/40" title="Prévia antes de salvar">
           <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={voltarParaLista}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
             <Badge variant="secondary">Modo de origem: {MODE_LABEL[draft.metadata.creation_mode]}</Badge>
             {draftFile ? <Badge variant="outline">{draftFile}</Badge> : null}
+            {draftSalvo ? <Badge className="bg-emerald-600 text-white">Salvo na lista</Badge> : null}
           </div>
           {draft.metadata.creation_mode === "imported_ready" ? (
             <p className="mb-3 rounded-md border bg-muted/40 p-3 text-sm">
@@ -588,7 +601,11 @@ function VisaoRep2Page() {
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Salvar e voltar para a lista
+              {draftSalvo ? "Salvar novamente" : "Salvar"}
+            </Button>
+            <Button variant="outline" onClick={voltarParaLista}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a lista
             </Button>
             <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
               <FileText className="mr-2 h-4 w-4" />
@@ -598,10 +615,9 @@ function VisaoRep2Page() {
               <FileDown className="mr-2 h-4 w-4" />
               Exportar relatório estruturado
             </Button>
-            <Button variant="ghost" onClick={() => { setDraft(null); setDraftFile(null); setDraftHash(null); }}>
+            <Button variant="ghost" onClick={voltarParaLista}>
               Cancelar
             </Button>
-
           </div>
         </Card>
       ) : null}
