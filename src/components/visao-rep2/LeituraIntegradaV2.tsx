@@ -79,6 +79,36 @@ function SignalCard({
   total: number;
   onSelect: () => void;
 }) {
+  const detalhe = (
+    <div className="w-[206px] space-y-2">
+      <div
+        className={cn(
+          "break-words text-sm font-semibold leading-snug",
+          active ? "text-foreground" : "text-foreground/90",
+        )}
+      >
+        {signal.title}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {signal.confidence ? (
+          <Badge variant={active ? "default" : "outline"} className="text-[10px]">
+            {CONFIDENCE_LABEL[signal.confidence]}
+          </Badge>
+        ) : null}
+        {signal.evidence ? (
+          <Badge variant="secondary" className="text-[10px]">
+            {EVIDENCE_LABEL[signal.evidence]}
+          </Badge>
+        ) : null}
+      </div>
+      <div className={cn("text-[11px]", active ? "text-foreground/70" : "text-muted-foreground/80")}>
+        {signal.perspectives.length} perspectiva{signal.perspectives.length === 1 ? "" : "s"} relacionada
+        {signal.perspectives.length === 1 ? "" : "s"}
+      </div>
+    </div>
+  );
+
   return (
     <button
       type="button"
@@ -87,11 +117,11 @@ function SignalCard({
       onClick={onSelect}
       aria-label={`Sinal ${signal.index} de ${total}: ${signal.title}`}
       className={cn(
-        "group relative flex shrink-0 snap-start flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all duration-300",
+        "group relative flex shrink-0 snap-start flex-col gap-2 rounded-xl border-2 p-3 text-left",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "w-[230px] flex-1 border-primary bg-primary/10 shadow-md"
-          : "w-14 border-transparent bg-muted/40 hover:w-[230px] hover:flex-1 hover:bg-muted/70 hover:shadow-sm focus-visible:w-[230px]",
+          : "w-14 border-transparent bg-muted/40 hover:bg-muted/70",
       )}
     >
       <div className="flex items-center gap-2">
@@ -106,42 +136,27 @@ function SignalCard({
         </span>
       </div>
 
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-300",
-          active
-            ? "max-h-[400px] opacity-100"
-            : "max-h-0 opacity-0 group-hover:max-h-[400px] group-hover:opacity-100 group-focus-visible:max-h-[400px] group-focus-visible:opacity-100",
-        )}
-      >
-        <div className="w-[206px] space-y-2">
-          <div
-            className={cn(
-              "break-words text-sm font-semibold leading-snug",
-              active ? "text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {signal.title}
+      {active ? (
+        detalhe
+      ) : (
+        // Overlay: cresce por cima dos vizinhos, sem deslocar o layout (evita flicker no hover).
+        <div
+          className={cn(
+            "pointer-events-none invisible absolute left-0 top-0 z-30 w-[230px] rounded-xl border-2 border-transparent bg-muted p-3 opacity-0 shadow-lg",
+            "group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100",
+          )}
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <span
+              aria-hidden
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted-foreground/15 text-[11px] font-bold tabular-nums text-muted-foreground"
+            >
+              {signal.index}
+            </span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            {signal.confidence ? (
-              <Badge variant={active ? "default" : "outline"} className="text-[10px]">
-                {CONFIDENCE_LABEL[signal.confidence]}
-              </Badge>
-            ) : null}
-            {signal.evidence ? (
-              <Badge variant="secondary" className="text-[10px]">
-                {EVIDENCE_LABEL[signal.evidence]}
-              </Badge>
-            ) : null}
-          </div>
-          <div className={cn("text-[11px]", active ? "text-foreground/70" : "text-muted-foreground/70")}>
-            {signal.perspectives.length} perspectiva{signal.perspectives.length === 1 ? "" : "s"} relacionada
-            {signal.perspectives.length === 1 ? "" : "s"}
-          </div>
+          {detalhe}
         </div>
-      </div>
+      )}
 
       {active ? (
         <span
@@ -152,6 +167,7 @@ function SignalCard({
     </button>
   );
 }
+
 
 
 
