@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
+
 
 /* ------------------------------------------------------------------ */
 /* Cabeçalho do relatório                                              */
