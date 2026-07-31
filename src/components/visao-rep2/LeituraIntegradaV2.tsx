@@ -87,11 +87,11 @@ function SignalCard({
       onClick={onSelect}
       aria-label={`Sinal ${signal.index} de ${total}: ${signal.title}`}
       className={cn(
-        "group relative flex min-w-[230px] flex-1 shrink-0 snap-start flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all",
+        "group relative flex shrink-0 snap-start flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all duration-300",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-primary bg-primary/10 shadow-md"
-          : "border-transparent bg-muted/40 opacity-70 hover:opacity-100 hover:bg-muted/70",
+          ? "w-[230px] flex-1 border-primary bg-primary/10 shadow-md"
+          : "w-14 border-transparent bg-muted/40 hover:w-[230px] hover:flex-1 hover:bg-muted/70 hover:shadow-sm focus-visible:w-[230px]",
       )}
     >
       <div className="flex items-center gap-2">
@@ -104,41 +104,45 @@ function SignalCard({
         >
           {signal.index}
         </span>
-        <span
-          className={cn(
-            "text-[10px] font-semibold uppercase tracking-[0.14em]",
-            active ? "text-primary" : "text-muted-foreground/70",
-          )}
-        >
-          {active ? "Selecionado" : "Ver este sinal"}
-        </span>
       </div>
 
       <div
         className={cn(
-          "break-words text-sm font-semibold leading-snug",
-          active ? "text-foreground" : "text-muted-foreground",
+          "overflow-hidden transition-all duration-300",
+          active
+            ? "max-h-[400px] opacity-100"
+            : "max-h-0 opacity-0 group-hover:max-h-[400px] group-hover:opacity-100 group-focus-visible:max-h-[400px] group-focus-visible:opacity-100",
         )}
       >
-        {signal.title}
+        <div className="w-[206px] space-y-2">
+          <div
+            className={cn(
+              "break-words text-sm font-semibold leading-snug",
+              active ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {signal.title}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {signal.confidence ? (
+              <Badge variant={active ? "default" : "outline"} className="text-[10px]">
+                {CONFIDENCE_LABEL[signal.confidence]}
+              </Badge>
+            ) : null}
+            {signal.evidence ? (
+              <Badge variant="secondary" className="text-[10px]">
+                {EVIDENCE_LABEL[signal.evidence]}
+              </Badge>
+            ) : null}
+          </div>
+          <div className={cn("text-[11px]", active ? "text-foreground/70" : "text-muted-foreground/70")}>
+            {signal.perspectives.length} perspectiva{signal.perspectives.length === 1 ? "" : "s"} relacionada
+            {signal.perspectives.length === 1 ? "" : "s"}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-auto flex flex-wrap items-center gap-1.5">
-        {signal.confidence ? (
-          <Badge variant={active ? "default" : "outline"} className="text-[10px]">
-            {CONFIDENCE_LABEL[signal.confidence]}
-          </Badge>
-        ) : null}
-        {signal.evidence ? (
-          <Badge variant="secondary" className="text-[10px]">
-            {EVIDENCE_LABEL[signal.evidence]}
-          </Badge>
-        ) : null}
-      </div>
-      <div className={cn("text-[11px]", active ? "text-foreground/70" : "text-muted-foreground/70")}>
-        {signal.perspectives.length} perspectiva{signal.perspectives.length === 1 ? "" : "s"} relacionada
-        {signal.perspectives.length === 1 ? "" : "s"}
-      </div>
       {active ? (
         <span
           aria-hidden
@@ -148,6 +152,7 @@ function SignalCard({
     </button>
   );
 }
+
 
 
 // ---------------------------------------------------------------- painel 1
