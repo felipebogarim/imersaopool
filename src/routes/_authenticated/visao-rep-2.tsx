@@ -29,6 +29,8 @@ import {
   type VisaoRep2,
 } from "@/lib/visao-rep2-schema";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
+
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
