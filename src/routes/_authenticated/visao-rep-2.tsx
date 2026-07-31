@@ -165,6 +165,26 @@ function VisaoRep2Page() {
   const selected = useMemo(() => reports.find(r => r.id === selectedId) ?? null, [reports, selectedId]);
   const visao = useMemo(() => (selected ? normalizeVisaoRep2(selected.data) : null), [selected]);
 
+  /**
+   * Base comparativa da teia: apenas relatórios salvos, um por representante
+   * (o mais recente), excluindo o relatório e o representante atualmente abertos.
+   */
+  const comparaveis = useMemo(() => {
+    const vistos = new Set<string>();
+    const atualKey = (selected?.representative_id ?? norm(selected?.representative_name ?? "")) || "";
+    return reports
+      .filter(r => r.id !== selected?.id)
+      .filter(r => {
+        const key = r.representative_id ?? norm(r.representative_name ?? "");
+        if (!key || key === atualKey || vistos.has(key)) return false;
+        vistos.add(key);
+        return true;
+      })
+      .map(r => normalizeVisaoRep2(r.data));
+  }, [reports, selected]);
+
+
+
   // ---- Performance vinculada ----
   const { data: uploads = [] } = useQuery({
     queryKey: ["vr2-uploads"],
