@@ -536,6 +536,20 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     // Schema 3.0: o bloco executivo é escrito no formato próprio, sem duplicar
     // os campos espelhados internamente (tese central / sinais prioritários).
     L.push("## Síntese presidencial", "", S(v.executive_brief.presidential_synthesis), "");
+    if (v.brand_positioning) {
+      L.push("## Teia comparativa de posicionamento", "");
+      L.push(`- scoring_version: ${S(v.brand_positioning.scoring_version)}`, "");
+      for (const d of BRAND_DIMENSIONS) {
+        const dim = v.brand_positioning.dimensions[d.key];
+        L.push(`### ${d.label}`, "");
+        L.push(`- score: ${dim.score ?? ""}`);
+        L.push(`- confianca: ${S(dim.confidence)}`);
+        L.push(`- leitura: ${S(dim.reading)}`);
+        L.push(`- perspectivas_relacionadas: ${dim.perspective_ids.join("; ")}`);
+        L.push(`- evidencias_relacionadas: ${dim.evidence_count ?? ""}`, "");
+      }
+    }
+
     L.push("## Temas estratégicos", "");
     v.executive_brief.themes.forEach((t, i) => {
       L.push(`### Tema ${i + 1} — ${S(t.title)}`, "");
