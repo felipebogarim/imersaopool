@@ -133,7 +133,7 @@ export const IMPORT_FAROL_HEX: Record<string, FarolStatus> = {
 /** Normaliza uma cor para RRGGBB em caixa alta. Retorna null se inválida. */
 export function normalizeHex(input: string | null | undefined): string | null {
   if (!input) return null;
-  let hex = String(input).replace(/^#/, "").trim().toUpperCase();
+  let hex = String(input).trim().replace(/^#/, "").trim().toUpperCase();
   if (hex.length === 8) hex = hex.slice(2);
   if (!/^[0-9A-F]{6}$/.test(hex)) return null;
   return hex;
