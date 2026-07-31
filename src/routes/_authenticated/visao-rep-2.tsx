@@ -513,8 +513,13 @@ function VisaoRep2Page() {
       {draft && validacao ? (
         <Card className="mt-4 border-primary/40" title="Prévia antes de salvar">
           <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={voltarParaLista}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
             <Badge variant="secondary">Modo de origem: {MODE_LABEL[draft.metadata.creation_mode]}</Badge>
             {draftFile ? <Badge variant="outline">{draftFile}</Badge> : null}
+            {draftSalvo ? <Badge className="bg-emerald-600 text-white">Salvo na lista</Badge> : null}
           </div>
           {draft.metadata.creation_mode === "imported_ready" ? (
             <p className="mb-3 rounded-md border bg-muted/40 p-3 text-sm">
