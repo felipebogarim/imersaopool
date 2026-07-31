@@ -71,32 +71,61 @@ function Bloco({ label, value, strong }: { label: string; value: string | null; 
 function SignalCard({
   signal,
   active,
+  total,
   onSelect,
 }: {
   signal: LeituraSignal;
   active: boolean;
+  total: number;
   onSelect: () => void;
 }) {
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onSelect}
-      aria-pressed={active}
-      aria-label={`Sinal ${signal.index}: ${signal.title}`}
+      aria-label={`Sinal ${signal.index} de ${total}: ${signal.title}`}
       className={cn(
-        "relative min-w-[240px] flex-1 shrink-0 snap-start rounded-xl border p-3 text-left transition-colors",
+        "group relative flex min-w-[230px] flex-1 shrink-0 snap-start flex-col gap-2 rounded-xl border-2 p-3 text-left transition-all",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        active ? "border-primary bg-primary/5 shadow-sm" : "hover:bg-muted/40",
+        active
+          ? "border-primary bg-primary/10 shadow-md"
+          : "border-transparent bg-muted/40 opacity-70 hover:opacity-100 hover:bg-muted/70",
       )}
     >
-      {active ? <span className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary" aria-hidden /> : null}
-      <div className="text-[11px] font-semibold tabular-nums text-muted-foreground">
-        {String(signal.index).padStart(2, "0")}
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums transition-colors",
+            active ? "bg-primary text-primary-foreground" : "bg-muted-foreground/15 text-muted-foreground",
+          )}
+        >
+          {signal.index}
+        </span>
+        <span
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-[0.14em]",
+            active ? "text-primary" : "text-muted-foreground/70",
+          )}
+        >
+          {active ? "Selecionado" : "Ver este sinal"}
+        </span>
       </div>
-      <div className="mt-0.5 break-words text-sm font-semibold leading-snug">{signal.title}</div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+      <div
+        className={cn(
+          "break-words text-sm font-semibold leading-snug",
+          active ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {signal.title}
+      </div>
+
+      <div className="mt-auto flex flex-wrap items-center gap-1.5">
         {signal.confidence ? (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant={active ? "default" : "outline"} className="text-[10px]">
             {CONFIDENCE_LABEL[signal.confidence]}
           </Badge>
         ) : null}
@@ -106,13 +135,20 @@ function SignalCard({
           </Badge>
         ) : null}
       </div>
-      <div className="mt-1.5 text-[11px] text-muted-foreground">
+      <div className={cn("text-[11px]", active ? "text-foreground/70" : "text-muted-foreground/70")}>
         {signal.perspectives.length} perspectiva{signal.perspectives.length === 1 ? "" : "s"} relacionada
         {signal.perspectives.length === 1 ? "" : "s"}
       </div>
+      {active ? (
+        <span
+          aria-hidden
+          className="absolute -bottom-[9px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-primary bg-primary/10"
+        />
+      ) : null}
     </button>
   );
 }
+
 
 // ---------------------------------------------------------------- painel 1
 
@@ -372,14 +408,33 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       titulo="Leitura integrada"
       descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
+        <nav aria-label="Sinais estratégicos" className="rounded-xl border bg-muted/25 p-3 sm:p-4">
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Menu de sinais · escolha um para atualizar o painel abaixo
+            </p>
+            <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+              {sel + 1} de {leitura.signals.length}
+            </span>
+          </div>
+          <div
+            role="tablist"
+            aria-label="Sinais estratégicos"
+            className="-mx-1 flex snap-x items-stretch gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible"
+          >
+            {leitura.signals.map((s, i) => (
+              <SignalCard
+                key={s.id}
+                signal={s}
+                active={i === sel}
+                total={leitura.signals.length}
+                onSelect={() => setSel(i)}
+              />
+            ))}
+          </div>
+        </nav>
 
-
-      <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible">
-        {leitura.signals.map((s, i) => (
-          <SignalCard key={s.id} signal={s} active={i === sel} onSelect={() => setSel(i)} />
-        ))}
-      </div>
 
       {leitura.semVinculos ? (
         <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
