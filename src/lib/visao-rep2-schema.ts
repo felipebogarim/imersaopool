@@ -619,6 +619,8 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
       final_synthesis: asText(ev.final_synthesis) ?? null,
     },
     executive_brief: normalizeExecutiveBrief(o.executive_brief),
+    brand_positioning: normalizeBrandPositioning(o.brand_positioning),
+
 
     representative_context: {
       represented_brands: asTextList(ctx.represented_brands),
