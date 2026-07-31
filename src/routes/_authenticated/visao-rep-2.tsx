@@ -188,12 +188,29 @@ function VisaoRep2Page() {
 
 
   // ---- Ações ----
+  /** Um relatório por representante: localiza o(s) salvo(s) do mesmo rep. */
+  function existentesDoRep(v: VisaoRep2) {
+    const id = v.metadata.representative_id;
+    const nome = (v.metadata.representative_name ?? "").trim().toLowerCase();
+    return reports.filter(r =>
+      id ? r.representative_id === id : !!nome && r.representative_name.trim().toLowerCase() === nome,
+    );
+  }
+
   const salvar = useMutation({
     mutationFn: async (v: VisaoRep2) => {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id ?? null;
       const now = new Date().toISOString();
       const imported = v.metadata.creation_mode === "imported_ready";
+
+      // Substitui o relatório anterior do mesmo representante (um por rep).
+      const dupIds = existentesDoRep(v).map(r => r.id);
+      if (dupIds.length) {
+        const { error: delErr } = await supabase.from("visao_rep_reports").delete().in("id", dupIds);
+        if (delErr) throw delErr;
+      }
+
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       const payload: VisaoRep2 = {
@@ -287,7 +304,7 @@ function VisaoRep2Page() {
     await limparTodos.mutateAsync();
   }
 
-  /** Gera e salva de uma vez: o relatório do representante fica fixo na página. */
+  /** Gera e salva de uma vez: um relatório por representante. */
   async function gerarESalvar(repIdAlvo: string) {
     const v = await gerar({ data: { representativeId: repIdAlvo } });
     setDraftFile(null);
@@ -295,17 +312,31 @@ function VisaoRep2Page() {
     await salvar.mutateAsync(normalizeVisaoRep2(v));
   }
 
+  /** Salva pedindo confirmação quando o representante já tem relatório salvo. */
+  async function salvarUnico(v: VisaoRep2) {
+    const dup = existentesDoRep(v);
+    if (dup.length) {
+      const ok = window.confirm(
+        `Já existe um relatório salvo para ${dup[0].representative_name}. Deseja substituir o relatório atual por este?`,
+      );
+      if (!ok) return;
+    }
+    await salvar.mutateAsync(v);
+  }
+
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
-    const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
+    const existente = reports.find(r => r.representative_id === repId);
     if (existente) {
-      toast.info("Este representante já tem um relatório salvo. Abra-o na lista ou use “Regerar com IA” para substituí-lo.");
-      return;
+      const ok = window.confirm(
+        `${existente.representative_name} já tem um relatório salvo. Deseja substituí-lo por uma nova geração?`,
+      );
+      if (!ok) return;
     }
     setBusy(true);
     try {
       await gerarESalvar(repId);
-      toast.success("Relatório gerado e salvo na lista.");
+      toast.success(existente ? "Relatório substituído e salvo na lista." : "Relatório gerado e salvo na lista.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
@@ -553,7 +584,7 @@ function VisaoRep2Page() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
-              onClick={() => salvar.mutate(draft)}
+              onClick={() => void salvarUnico(draft)}
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
