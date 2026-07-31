@@ -92,13 +92,28 @@ export function GerarTarefaDialog({
           <div>
             <Label>Lista de destino</Label>
             <Select value={listId} onValueChange={setListId}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingListas ? "Carregando listas…" : "Selecione"} />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
                 {listas.map((l: any) => (
                   <SelectItem key={l.id} value={l.id}>{l.boardTitle} · {l.name}</SelectItem>
                 ))}
+                {!loadingListas && listas.length === 0 && (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">Nenhuma lista disponível</div>
+                )}
               </SelectContent>
             </Select>
+            {erroListas && (
+              <p className="mt-1 text-xs text-destructive">
+                Não foi possível carregar as listas: {(erroListas as any)?.message ?? "erro desconhecido"}
+              </p>
+            )}
+            {!loadingListas && !erroListas && listas.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nenhum quadro/lista ativo encontrado. Crie um quadro em Gestão de Tarefas.
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
