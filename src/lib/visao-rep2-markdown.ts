@@ -4,15 +4,20 @@
 // reescrito, corrigido ou completado.
 
 import {
+  BRAND_DIMENSIONS,
+  BRAND_POSITIONING_VERSION,
   CLASSIFICATION_LABEL,
   PERSPECTIVE_TITLES,
   VISAO_REP_SCHEMA_VERSION,
+  emptyBrandDimension,
   emptyPerspective,
   emptyVisaoRep2,
   emptyExecutiveTheme,
   isExecutiveBriefV1,
+  type BrandDimensionKey,
   type ExecutiveTheme,
   type ConfidenceLevel,
+
 
   type ConsensusPoint,
   type Divergence,
