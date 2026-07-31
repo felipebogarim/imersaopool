@@ -28,21 +28,25 @@ export function GerarTarefaDialog({
     }
   }, [tarefa]);
 
-  const { data: listas = [] } = useQuery({
+  const { data: listas = [], isLoading: loadingListas, error: erroListas } = useQuery({
     queryKey: ["kanban-listas-sintese"],
     enabled: !!tarefa,
     queryFn: async () => {
-      const { data: boards } = await supabase
+      const { data: boards, error: eb } = await supabase
         .from("kanban_boards")
-        .select("id, name")
+        .select("id, name, archived_at")
+        .is("archived_at", null)
         .order("created_at", { ascending: true });
+      if (eb) throw eb;
       const ids = (boards ?? []).map(b => b.id);
       if (!ids.length) return [];
-      const { data: lists } = await supabase
+      const { data: lists, error: el } = await supabase
         .from("kanban_lists")
-        .select("id, name, board_id, position")
+        .select("id, name, board_id, position, archived_at")
         .in("board_id", ids)
+        .is("archived_at", null)
         .order("position", { ascending: true });
+      if (el) throw el;
       return (lists ?? []).map(l => ({
         ...l,
         boardTitle: boards?.find(b => b.id === l.board_id)?.name ?? "Quadro",
