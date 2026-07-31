@@ -38,7 +38,53 @@ export type ComparisonItem = {
   supporting?: number | null;
   comparable?: number | null;
   note?: string | null;
+  /** Rótulo/cor derivados de `classificacao_comparativa` do próprio sinal. */
+  labelOverride?: string | null;
+  toneOverride?: string | null;
 };
+
+/** "confirma_o_grupo_com_leitura_regional" → "Confirma o grupo com leitura regional". */
+export function formatComparisonClassification(raw: string): string {
+  const t = raw.replace(/_/g, " ").trim().toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Cor por família de classificação; o rótulo continua legível sem a cor. */
+export function toneForClassification(raw: string | null | undefined): string {
+  const v = (raw ?? "").toLowerCase();
+  if (v.startsWith("confirma_o_grupo")) return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
+  if (v.startsWith("convergencia_parcial")) return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+  if (v.startsWith("leitura_exclusiva") || v.startsWith("leitura_regional"))
+    return "bg-sky-500/15 text-sky-700 dark:text-sky-300";
+  if (v.startsWith("divergencia")) return "bg-orange-500/15 text-orange-700 dark:text-orange-300";
+  return "bg-muted text-muted-foreground";
+}
+
+/** Comparação declarada dentro do próprio sinal (relatórios novos). */
+function comparisonFromSignal(s: PrioritySignal, id: string): ComparisonItem | null {
+  if (!has(s.group_comparison ?? "")) return null;
+  const cls = has(s.comparison_classification ?? "") ? (s.comparison_classification as string) : null;
+  const kind: ComparisonKind = !cls
+    ? "consenso"
+    : cls.toLowerCase().startsWith("divergencia")
+      ? "divergencia"
+      : cls.toLowerCase().startsWith("leitura")
+        ? "exclusiva"
+        : cls.toLowerCase().startsWith("sem_comparacao")
+          ? "nao_abordado"
+          : "consenso";
+  return {
+    kind,
+    signal_id: id,
+    summary: (s.group_comparison as string).trim(),
+    details: [],
+    sources: [],
+    supporting: null,
+    comparable: s.comparable_sources ?? null,
+    labelOverride: cls ? formatComparisonClassification(cls) : null,
+    toneOverride: cls ? toneForClassification(cls) : null,
+  };
+}
 
 export type EntityGroup = { label: string; items: string[] };
 
@@ -209,7 +255,10 @@ export function buildLeituraIntegrada(v: VisaoRep2): LeituraIntegrada {
       confidence: s.confidence_level,
       evidence: s.evidence_status,
       perspectives: relacionadas.map(evidenceOf),
-      comparisons: todasComparacoes.filter(c => has(c.signal_id) && clean(c.signal_id) === id),
+      comparisons: [
+        ...(comparisonFromSignal(s, id) ? [comparisonFromSignal(s, id) as ComparisonItem] : []),
+        ...todasComparacoes.filter(c => has(c.signal_id) && clean(c.signal_id) === id),
+      ],
     };
   });
 

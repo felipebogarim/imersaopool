@@ -60,6 +60,10 @@ export type PrioritySignal = {
   signal_id?: string | null;
   validation_note?: string | null;
   related_perspectives?: number[];
+  /** Comparação com o grupo enviada dentro do próprio sinal (relatórios novos). */
+  comparison_classification?: string | null;
+  comparable_sources?: number | null;
+  group_comparison?: string | null;
 };
 
 
@@ -610,6 +614,15 @@ export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
                 signal_id: asText((s as any)?.signal_id),
                 validation_note: asText((s as any)?.validation_note ?? (s as any)?.validacao),
                 related_perspectives: asNumList((s as any)?.related_perspectives),
+                comparison_classification: asText(
+                  (s as any)?.comparison_classification ?? (s as any)?.classificacao_comparativa,
+                ),
+                comparable_sources: (() => {
+                  const raw = (s as any)?.comparable_sources ?? (s as any)?.fontes_comparaveis;
+                  const n = typeof raw === "string" ? Number(raw.replace(/[^\d.-]/g, "")) : Number(raw);
+                  return Number.isFinite(n) ? n : null;
+                })(),
+                group_comparison: asText((s as any)?.group_comparison ?? (s as any)?.comparacao_grupo),
               },
         )
         .slice(0, MAX_SIGNALS),
