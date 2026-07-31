@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ChevronDown, ListPlus } from "lucide-react";
+import { ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,46 +7,13 @@ import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
+import { BlocoExpansivel } from "./BlocoExpansivel";
 import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
 import type { PerfResumo } from "@/lib/visao-rep";
 import { fmtPct } from "@/lib/visao-rep";
 
-/* ------------------------------------------------------------------ */
-/* Bloco expansível padrão (seta)                                      */
-/* ------------------------------------------------------------------ */
+export { BlocoExpansivel };
 
-export function BlocoExpansivel({
-  titulo,
-  descricao,
-  children,
-  defaultOpen = true,
-}: {
-  titulo: string;
-  descricao?: string;
-  children: ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <section className="rounded-xl border bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 text-left sm:p-6"
-      >
-        <span className="min-w-0">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {titulo}
-          </span>
-          {descricao ? <span className="mt-1 block text-sm text-muted-foreground">{descricao}</span> : null}
-        </span>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden />
-      </button>
-      {open ? <div className="border-t p-5 sm:p-6">{children}</div> : null}
-    </section>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Cabeçalho do relatório                                              */
@@ -160,19 +127,18 @@ export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
 
 export function SintesePresidencialV2({ texto }: { texto: string }) {
   return (
-    <section className="rounded-xl border bg-muted/30 p-5 sm:p-8" aria-labelledby="vr2-sintese">
-      <h3 id="vr2-sintese" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Síntese presidencial
-      </h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Leitura geral da entrevista e dos principais impactos para o negócio.
-      </p>
-      <div className="mt-5 border-l-2 border-primary pl-5">
+    <BlocoExpansivel
+      titulo="Síntese presidencial"
+      descricao="Leitura geral da entrevista e dos principais impactos para o negócio."
+      className="bg-muted/30"
+    >
+      <div className="border-l-2 border-primary pl-5">
         <p className="max-w-[68ch] text-base leading-8">{texto}</p>
       </div>
-    </section>
+    </BlocoExpansivel>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Temas estratégicos                                                  */
@@ -407,10 +373,10 @@ export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
     });
 
   return (
-    <section className="space-y-4" aria-labelledby="vr2-agenda">
-      <h3 id="vr2-agenda" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Agenda executiva
-      </h3>
+    <BlocoExpansivel
+      titulo="Agenda executiva"
+      descricao="Decisões e validações que dependem de responsáveis definidos."
+    >
       <div className="grid gap-4 lg:grid-cols-2">
         <AgendaCard
           titulo="Decisões requeridas"
@@ -424,8 +390,9 @@ export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
         />
       </div>
       <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
-    </section>
+    </BlocoExpansivel>
   );
+
 }
 
 

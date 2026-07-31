@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefing-fabio";
 import { PERSPECTIVAS_META, type AgendaRef, type PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
+import { BlocoExpansivel } from "./BlocoExpansivel";
+
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
@@ -17,14 +19,11 @@ const has = (v: unknown): v is string => typeof v === "string" && v.trim().lengt
 export function ConclusoesCentraisV2({ conclusoes }: { conclusoes: BriefConclusao[] }) {
   if (!conclusoes.length) return null;
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6" aria-labelledby="vr2-conclusoes">
-      <h3 id="vr2-conclusoes" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Conclusões centrais
-      </h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Os principais efeitos comerciais que atravessam diferentes perspectivas da entrevista.
-      </p>
-      <ol className="mt-5 grid gap-4 sm:grid-cols-2">
+    <BlocoExpansivel
+      titulo="Conclusões centrais"
+      descricao="Os principais efeitos comerciais que atravessam diferentes perspectivas da entrevista."
+    >
+      <ol className="grid gap-4 sm:grid-cols-2">
         {conclusoes.map((c, i) => (
           <li key={c.titulo} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-l-2 border-border pl-3">
             <span className="tabular-nums text-sm text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
@@ -35,9 +34,10 @@ export function ConclusoesCentraisV2({ conclusoes }: { conclusoes: BriefConclusa
           </li>
         ))}
       </ol>
-    </section>
+    </BlocoExpansivel>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Painel de apoio                                                     */
@@ -209,15 +209,12 @@ export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: Persp
   if (!p) return null;
 
   return (
-    <section className="space-y-5" aria-labelledby="vr2-perspectivas">
-      <div>
-        <h3 id="vr2-perspectivas" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Perspectivas da entrevista
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo.
-        </p>
-      </div>
+    <BlocoExpansivel
+      titulo="Perspectivas da entrevista"
+      descricao="Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."
+    >
+      <div className="space-y-5">
+
 
       <div
         role="tablist"
@@ -271,7 +268,9 @@ export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: Persp
           <p className="text-sm text-muted-foreground">Esta perspectiva ainda não possui conteúdo registrado.</p>
         )}
       </div>
-    </section>
+      </div>
+    </BlocoExpansivel>
+
   );
 }
 

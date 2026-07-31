@@ -2,32 +2,25 @@
 // Apenas percentuais e faróis: nenhum valor monetário é exibido.
 
 import { fmtPct, type PerfResumo } from "@/lib/visao-rep";
+import { BlocoExpansivel } from "./BlocoExpansivel";
 
 export function PerformanceFamiliasV2({ perf }: { perf: PerfResumo | null }) {
   if (!perf || !perf.familias.length) return null;
   const max = Math.max(100, ...perf.familias.map(f => f.pct ?? 0));
 
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6" aria-labelledby="vr2-familias">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h3
-            id="vr2-familias"
-            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-          >
-            Performance por família de produtos
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Leitura relativa da carteira do representante no período ativo.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-1.5 text-xs text-muted-foreground">
+    <BlocoExpansivel
+      titulo="Performance por família de produtos"
+      descricao="Leitura relativa da carteira do representante no período ativo."
+      acessorio={
+        <span className="hidden flex-wrap gap-1.5 text-xs text-muted-foreground sm:flex">
           <span className="rounded-md border px-2 py-0.5">{perf.periodoLabel}</span>
           <span className="rounded-md border px-2 py-0.5">Geral {fmtPct(perf.geralPct)}</span>
-        </div>
-      </div>
+        </span>
+      }
+    >
+      <ul className="space-y-2.5">
 
-      <ul className="mt-5 space-y-2.5">
         {perf.familias.map(f => {
           const pct = Math.max(0, Math.min(max, f.pct ?? 0));
           return (
@@ -51,6 +44,6 @@ export function PerformanceFamiliasV2({ perf }: { perf: PerfResumo | null }) {
           Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
         </p>
       ) : null}
-    </section>
+    </BlocoExpansivel>
   );
 }

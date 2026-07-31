@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { BlocoExpansivel } from "./BlocoExpansivel";
+
 import { CONFIDENCE_LABEL, EVIDENCE_LABEL, type VisaoRep2 } from "@/lib/visao-rep2-schema";
 import {
   COMPARISON_LABEL,
@@ -366,14 +368,12 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
   }
 
   return (
-    <section className="space-y-4">
-      <header>
-        <h2 className="text-sm font-semibold tracking-tight">Leitura integrada</h2>
-        <p className="text-sm text-muted-foreground">
-          Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o
-          grupo.
-        </p>
-      </header>
+    <BlocoExpansivel
+      titulo="Leitura integrada"
+      descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
+    >
+      <div className="space-y-4">
+
 
       <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible">
         {leitura.signals.map((s, i) => (
@@ -435,6 +435,7 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       {has(leitura.methodologyNote ?? "") ? (
         <p className="text-xs text-muted-foreground">{leitura.methodologyNote}</p>
       ) : null}
-    </section>
+      </div>
+    </BlocoExpansivel>
   );
 }
