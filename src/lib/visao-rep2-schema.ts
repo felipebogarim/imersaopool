@@ -60,6 +60,10 @@ export type PrioritySignal = {
   signal_id?: string | null;
   validation_note?: string | null;
   related_perspectives?: number[];
+  /** Comparação com o grupo enviada dentro do próprio sinal (relatórios novos). */
+  comparison_classification?: string | null;
+  comparable_sources?: number | null;
+  group_comparison?: string | null;
 };
 
 
