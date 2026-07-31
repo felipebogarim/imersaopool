@@ -182,14 +182,12 @@ function VisaoRep2Page() {
     if (selected?.representative_id) return selected.representative_id;
     const alvo = norm(selected?.representative_name ?? "");
     if (!alvo) return null;
-    const tokens = alvo.split(/[^A-Z0-9]+/).filter(t => t.length > 2);
-    if (!tokens.length) return null;
+    const alvoTokens = tokens(alvo);
+    if (!alvoTokens.length) return null;
     const exato = reps.find(r => norm(r.nome) === alvo);
     if (exato) return exato.id;
-    const parcial = reps.find(r => {
-      const rt = norm(r.nome).split(/[^A-Z0-9]+/).filter(t => t.length > 2);
-      return rt.some(t => tokens.includes(t));
-    });
+    const parcial = reps.find(r => tokens(r.nome).some((t: string) => alvoTokens.includes(t)));
+
     return parcial?.id ?? null;
   }, [selected, reps]);
 
