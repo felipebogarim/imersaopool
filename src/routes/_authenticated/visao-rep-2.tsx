@@ -544,31 +544,32 @@ function VisaoRep2Page() {
 
       {/* Lista */}
       <Card className="mt-4" title="Relatórios salvos">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Cada representante fica salvo aqui. Abrir um relatório não substitui nenhum outro — para trocar o conteúdo de um
+          representante use “Regerar com IA”.
+        </p>
         {!reports.length ? (
           <EmptyState title="Nenhuma Visão Rep 2 ainda" description="Gere com IA ou importe um relatório pronto para começar." />
         ) : (
           <div className="space-y-2">
             {reports.map(r => (
-              <div
-                key={r.id}
-                className={cn(
-                  "flex flex-wrap items-center gap-2 rounded-lg border p-3",
-                  selectedId === r.id && "border-primary/60 bg-muted/30",
-                )}
-              >
-                <button className="flex-1 text-left" onClick={() => setSelectedId(selectedId === r.id ? "" : r.id)}>
+              <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">{r.representative_name}</div>
                   <div className="text-xs text-muted-foreground">
                     {r.region ? `${r.region} · ` : ""}
                     {new Date(r.created_at).toLocaleDateString("pt-BR")}
                     {r.source_file_name ? ` · ${r.source_file_name}` : ""}
                   </div>
-                </button>
+                </div>
                 <Badge variant={r.creation_mode === "imported_ready" ? "outline" : "secondary"}>{MODE_LABEL[r.creation_mode]}</Badge>
+                <Button size="sm" onClick={() => { setSelectedId(r.id); window.scrollTo({ top: 0 }); }}>
+                  Abrir relatório
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), selectedId === r.id ? perf : null)}
+                  onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(r.data), null)}
                   title="Exportar PDF visual"
                 >
                   <FileText className="h-4 w-4" />
@@ -587,7 +588,6 @@ function VisaoRep2Page() {
                   </Button>
                 ) : null}
                 <Button size="sm" variant="ghost" onClick={() => excluir.mutate(r.id)} title="Excluir">
-
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -595,6 +595,7 @@ function VisaoRep2Page() {
           </div>
         )}
       </Card>
+
 
     </div>
 
