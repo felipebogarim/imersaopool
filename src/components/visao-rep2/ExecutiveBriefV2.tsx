@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
+import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 
 /* ------------------------------------------------------------------ */
 /* Cabeçalho do relatório                                              */
