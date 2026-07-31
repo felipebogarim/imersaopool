@@ -408,14 +408,33 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       titulo="Leitura integrada"
       descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
+        <nav aria-label="Sinais estratégicos" className="rounded-xl border bg-muted/25 p-3 sm:p-4">
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Menu de sinais · escolha um para atualizar o painel abaixo
+            </p>
+            <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+              {sel + 1} de {leitura.signals.length}
+            </span>
+          </div>
+          <div
+            role="tablist"
+            aria-label="Sinais estratégicos"
+            className="-mx-1 flex snap-x items-stretch gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible"
+          >
+            {leitura.signals.map((s, i) => (
+              <SignalCard
+                key={s.id}
+                signal={s}
+                active={i === sel}
+                total={leitura.signals.length}
+                onSelect={() => setSel(i)}
+              />
+            ))}
+          </div>
+        </nav>
 
-
-      <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible">
-        {leitura.signals.map((s, i) => (
-          <SignalCard key={s.id} signal={s} active={i === sel} onSelect={() => setSel(i)} />
-        ))}
-      </div>
 
       {leitura.semVinculos ? (
         <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
