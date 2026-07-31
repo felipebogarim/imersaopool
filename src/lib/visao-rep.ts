@@ -18,6 +18,36 @@ export function normNome(s: string | null | undefined): string {
     .trim();
 }
 
+/** Tokens significativos de um nome (sem acentos, minúsculo, >2 caracteres). */
+export function nomeTokens(s: string | null | undefined): string[] {
+  return normNome(s).split(" ").filter(t => t.length > 2);
+}
+
+/**
+ * Casamento canônico representante ↔ nome livre de relatório.
+ * Regra única usada em toda a Visão Rep: exato → prefixo/contido → token em comum.
+ */
+export function matchRepresentativeId(
+  nome: string | null | undefined,
+  reps: { id: string; nome: string }[],
+): string | null {
+  const alvo = normNome(nome);
+  if (!alvo) return null;
+  const exato = reps.find(r => normNome(r.nome) === alvo);
+  if (exato) return exato.id;
+
+  const contido = reps.find(r => {
+    const n = normNome(r.nome);
+    return !!n && (alvo.startsWith(`${n} `) || alvo === n || alvo.includes(` ${n} `) || alvo.endsWith(` ${n}`));
+  });
+  if (contido) return contido.id;
+
+  const alvoTokens = nomeTokens(alvo);
+  if (!alvoTokens.length) return null;
+  const parcial = reps.find(r => nomeTokens(r.nome).some(t => alvoTokens.includes(t)));
+  return parcial?.id ?? null;
+}
+
 export type FonteLite = {
   id: string;
   tipo: string;

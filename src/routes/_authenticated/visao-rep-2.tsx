@@ -36,7 +36,7 @@ import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { briefingPadrao } from "@/lib/visao-rep2-briefing";
 
-import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
+import { buildPerfResumo, fmtPct, matchRepresentativeId, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
@@ -133,7 +133,6 @@ const norm = (s: string) =>
     .trim()
     .toUpperCase();
 
-const tokens = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter((t: string) => t.length > 2);
 
 
 function VisaoRep2Page() {
@@ -199,19 +198,12 @@ function VisaoRep2Page() {
           .order("created_at", { ascending: false })
       ).data ?? []) as unknown as UploadLite[],
   });
-  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome. */
-  const repVinculadoId = useMemo(() => {
-    if (selected?.representative_id) return selected.representative_id;
-    const alvo = norm(selected?.representative_name ?? "");
-    if (!alvo) return null;
-    const alvoTokens = tokens(alvo);
-    if (!alvoTokens.length) return null;
-    const exato = reps.find(r => norm(r.nome) === alvo);
-    if (exato) return exato.id;
-    const parcial = reps.find(r => tokens(r.nome).some((t: string) => alvoTokens.includes(t)));
+  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome (regra canônica). */
+  const repVinculadoId = useMemo(
+    () => selected?.representative_id ?? matchRepresentativeId(selected?.representative_name, reps),
+    [selected, reps],
+  );
 
-    return parcial?.id ?? null;
-  }, [selected, reps]);
 
   const upload = useMemo(
     () => uploads.find(u => u.representative_id === repVinculadoId) ?? null,
@@ -262,9 +254,18 @@ function VisaoRep2Page() {
 
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
+      // Padroniza o vínculo: relatórios importados sem id são casados pelo nome.
+      const repIdFinal = v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
       const payload: VisaoRep2 = {
         ...v,
-        metadata: { ...v.metadata, created_by: uid, created_at: now, updated_at: now, source_file_name: draftFile },
+        metadata: {
+          ...v.metadata,
+          representative_id: repIdFinal,
+          created_by: uid,
+          created_at: now,
+          updated_at: now,
+          source_file_name: draftFile,
+        },
         source_control: {
           ...v.source_control,
           creation_mode: v.metadata.creation_mode,
@@ -279,7 +280,7 @@ function VisaoRep2Page() {
       const { data, error } = await supabase
         .from("visao_rep_reports")
         .insert({
-          representative_id: v.metadata.representative_id,
+          representative_id: repIdFinal,
           representative_name: v.metadata.representative_name ?? "Sem representante",
           region: v.metadata.region,
           creation_mode: v.metadata.creation_mode,
@@ -749,7 +750,7 @@ function VisaoRep2View({
         perspectivas={perspectivas}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
-        teia={visao.brand_positioning ? <BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} /> : null}
+        teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
       />
 
 
