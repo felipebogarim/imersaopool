@@ -44,6 +44,6 @@ export function PerformanceFamiliasV2({ perf }: { perf: PerfResumo | null }) {
           Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
         </p>
       ) : null}
-    </section>
+    </BlocoExpansivel>
   );
 }
