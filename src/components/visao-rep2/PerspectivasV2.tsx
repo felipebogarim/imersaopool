@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefing-fabio";
 import { PERSPECTIVAS_META, type AgendaRef, type PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
+import { BlocoExpansivel } from "./BlocoExpansivel";
+
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
