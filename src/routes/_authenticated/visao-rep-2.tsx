@@ -188,12 +188,29 @@ function VisaoRep2Page() {
 
 
   // ---- Ações ----
+  /** Um relatório por representante: localiza o(s) salvo(s) do mesmo rep. */
+  function existentesDoRep(v: VisaoRep2) {
+    const id = v.metadata.representative_id;
+    const nome = (v.metadata.representative_name ?? "").trim().toLowerCase();
+    return reports.filter(r =>
+      id ? r.representative_id === id : !!nome && r.representative_name.trim().toLowerCase() === nome,
+    );
+  }
+
   const salvar = useMutation({
     mutationFn: async (v: VisaoRep2) => {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id ?? null;
       const now = new Date().toISOString();
       const imported = v.metadata.creation_mode === "imported_ready";
+
+      // Substitui o relatório anterior do mesmo representante (um por rep).
+      const dupIds = existentesDoRep(v).map(r => r.id);
+      if (dupIds.length) {
+        const { error: delErr } = await supabase.from("visao_rep_reports").delete().in("id", dupIds);
+        if (delErr) throw delErr;
+      }
+
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       const payload: VisaoRep2 = {
