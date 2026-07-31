@@ -410,6 +410,7 @@ export function ExecutiveBriefV2({
   perspectivas: perspectivasProp,
   perf = null,
   leitura,
+  teia,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -421,6 +422,8 @@ export function ExecutiveBriefV2({
   perf?: PerfResumo | null;
   /** Bloco "Leitura integrada" do relatório. */
   leitura?: ReactNode;
+  /** Teia comparativa exibida ao lado da síntese estratégica. */
+  teia?: ReactNode;
 }) {
   const perspectivas =
     perspectivasProp ??
@@ -442,7 +445,8 @@ export function ExecutiveBriefV2({
         atingimento={perf ? fmtPct(perf.geralPct) : null}
         periodo={perf?.periodoLabel ?? null}
       />
-      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} /> : null}
+      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
+
       <PerformanceFamiliasV2 perf={perf} />
       {leitura ?? null}
       <ContextPortfolioV2 brief={brief} />
