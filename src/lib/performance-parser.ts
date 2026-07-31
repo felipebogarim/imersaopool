@@ -95,7 +95,7 @@ export function cellFill(cell: any): CellFill {
     return { hasStyle: true, raw: null, hex: null };
   }
 
-  let hex = rawRgb.replace(/^#/, "").trim().toUpperCase();
+  let hex = rawRgb.trim().replace(/^#/, "").trim().toUpperCase();
   if (hex.length === 8) hex = hex.slice(2);
   if (!/^[0-9A-F]{6}$/.test(hex)) return { hasStyle: true, raw: rawRgb, hex: null };
   // 000000 / 00000000 = "sem preenchimento" em muitos exports
