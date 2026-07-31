@@ -29,6 +29,20 @@ export type ParsedRow = {
   total_pct_status: FarolStatus | null;
 };
 
+export type CellStats = {
+  celulas_avaliadas: number;
+  celulas_total_pct: number;
+  celulas_familias: number;
+  estilos_carregados: number;
+  estilos_ausentes: number;
+  cores_extraidas: number;
+  cores_ausentes: number;
+  cores_desconhecidas: number;
+  divergencias_texto_cor: number;
+  cores_distintas: string[];
+  por_status: Partial<Record<FarolStatus, number>>;
+};
+
 export type ResumoPct = { __total__: number | null; [familia: string]: number | null };
 
 export type ParsedSheet = {
