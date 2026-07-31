@@ -639,7 +639,7 @@ function VisaoRep2Page() {
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {draftSalvo ? "Salvar novamente" : "Salvar"}
             </Button>
-            <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
+            <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), perf)}>
               <FileText className="mr-2 h-4 w-4" />
               Exportar PDF
             </Button>
