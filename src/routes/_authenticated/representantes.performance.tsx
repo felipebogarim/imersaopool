@@ -1275,51 +1275,7 @@ function PerformancePage() {
                       );
                     })}
                     {(() => {
-                      const participacao = (currentUpload as any)?.participacao as
-                        | { __total__: number | null; [k: string]: number | null }
-                        | null;
-                      const atingimento = (currentUpload as any)?.atingimento as
-                        | { __total__: number | null; [k: string]: number | null }
-                        | null;
-                      const fmtPct = (n: number | null | undefined) => {
-                        if (n == null || Number.isNaN(n)) return "—";
-                        const v = Math.abs(n) <= 1.5 ? n * 100 : n;
-                        return `${v.toFixed(1).replace(".", ",")}%`;
-                      };
-                      return (
-                        <>
-                          {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
-                          <tr className="border-t-2 border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
-                            <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
-                              Participação estimada na venda
-                            </td>
-                            <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
-                            <td className="px-3 py-2.5 text-center tabular-nums">
-                              {fmtPct(participacao?.__total__ ?? null)}
-                            </td>
-                            {visibleFams.map((f) => (
-                              <td key={f} className="px-3 py-2.5 text-center tabular-nums">
-                                {fmtPct(participacao?.[f] ?? null)}
-                              </td>
-                            ))}
-                          </tr>
-                          {/* ATINGIMENTO ESTIMADO DA META */}
-                          <tr className="border-t border-border bg-amber-50 dark:bg-amber-950/30 font-medium">
-                            <td className="px-3 py-2.5 sticky left-0 bg-amber-100/90 dark:bg-amber-950/60 z-10 text-xs uppercase tracking-wider">
-                              Atingimento estimado da meta
-                            </td>
-                            <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
-                            <td className="px-3 py-2.5 text-center tabular-nums">
-                              {fmtPct(atingimento?.__total__ ?? null)}
-                            </td>
-                            {visibleFams.map((f) => (
-                              <td key={f} className="px-3 py-2.5 text-center tabular-nums">
-                                {fmtPct(atingimento?.[f] ?? null)}
-                              </td>
-                            ))}
-                          </tr>
-                        </>
-                      );
+                      return null;
                     })()}
                   </>
                 )}
