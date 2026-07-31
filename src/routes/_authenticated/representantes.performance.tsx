@@ -500,7 +500,7 @@ function PerformancePage() {
       if (data?.upload_id) setUploadId(data.upload_id);
     } catch (e: any) {
       console.error(e);
-      audit.status = audit.divergencias_texto_cor || audit.matriz_status === "invalida" ? "rejeitada" : "erro";
+      audit.status = audit.conflitos_total || audit.matriz_status === "invalida" ? "rejeitada" : "erro";
       audit.mensagem = String(e?.message ?? e);
       await logAudit();
       toast.error(audit.mensagem || "Erro ao importar planilha.");
