@@ -712,9 +712,12 @@ function VisaoRep2Page() {
 function VisaoRep2View({
   visao,
   perf,
+  comparaveis = [],
 }: {
   visao: VisaoRep2;
   perf: ReturnType<typeof buildPerfResumo> | null;
+  /** Relatórios usados na média da teia comparativa. */
+  comparaveis?: VisaoRep2[];
 }) {
   const [filtroLinha, setFiltroLinha] = useState<LineClassification | "todas">("todas");
   const ev = visao.executive_view;
@@ -744,7 +747,9 @@ function VisaoRep2View({
         perspectivas={perspectivas}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
+        teia={visao.brand_positioning ? <BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} /> : null}
       />
+
 
 
 
