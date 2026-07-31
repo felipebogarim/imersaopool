@@ -17,12 +17,24 @@ export function ConfidentialityModal() {
       const { data: s } = await supabase.auth.getSession();
       const session = s.session;
       if (!session?.user) return;
-      // Aviso exibido apenas no primeiro login do usuário neste dispositivo.
+      // Aviso exibido apenas uma vez por usuário (persistido no banco + cache local).
       const key = `${SESSION_KEY}:${session.user.id}`;
       if (localStorage.getItem(key)) return;
+      // Se o usuário já registrou ciência antes (em qualquer dispositivo), não exibir novamente.
+      const { data: prev } = await supabase
+        .from("terms_acceptances")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("acceptance_type", "login_confidentiality_acknowledgement")
+        .limit(1);
+      if (prev && prev.length > 0) {
+        localStorage.setItem(key, "1");
+        return;
+      }
       setOpen(true);
     }
     check();
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN") {
         setChecked(false);
