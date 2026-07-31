@@ -133,7 +133,7 @@ export function BrandPositioningRadarV2({
             />
             <PolarRadiusAxis
               domain={[0, 100]}
-              ticks={[{ value: 20 }, { value: 40 }, { value: 60 }, { value: 80 }, { value: 100 }]}
+              tickFormatter={(v: number) => (v === 0 ? "" : String(v))}
               tick={{ fill: "var(--muted-foreground)", fontSize: 9 }}
               axisLine={false}
               tickCount={6}
