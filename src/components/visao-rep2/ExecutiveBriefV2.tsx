@@ -73,7 +73,9 @@ export function BriefHeaderV2({
           </p>
           {periodo ? <span className="text-sm font-semibold tabular-nums">{periodo}</span> : null}
         </div>
-        <p className="mt-2 text-3xl font-semibold tabular-nums">{atingimento ?? "—"}</p>
+        <div className="mt-1">
+          <GaugeAtingimento valor={atingimentoPct ?? null} label="Atingimento ponderado geral" />
+        </div>
       </div>
     </header>
   );
