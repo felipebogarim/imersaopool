@@ -255,7 +255,10 @@ export function buildLeituraIntegrada(v: VisaoRep2): LeituraIntegrada {
       confidence: s.confidence_level,
       evidence: s.evidence_status,
       perspectives: relacionadas.map(evidenceOf),
-      comparisons: todasComparacoes.filter(c => has(c.signal_id) && clean(c.signal_id) === id),
+      comparisons: [
+        ...(comparisonFromSignal(s, id) ? [comparisonFromSignal(s, id) as ComparisonItem] : []),
+        ...todasComparacoes.filter(c => has(c.signal_id) && clean(c.signal_id) === id),
+      ],
     };
   });
 
