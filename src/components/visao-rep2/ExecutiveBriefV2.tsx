@@ -1,12 +1,52 @@
-import { useState } from "react";
-import { ListPlus } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
+import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
+import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
+import type { PerfResumo } from "@/lib/visao-rep";
+import { fmtPct } from "@/lib/visao-rep";
 
+/* ------------------------------------------------------------------ */
+/* Bloco expansível padrão (seta)                                      */
+/* ------------------------------------------------------------------ */
+
+export function BlocoExpansivel({
+  titulo,
+  descricao,
+  children,
+  defaultOpen = true,
+}: {
+  titulo: string;
+  descricao?: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="rounded-xl border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-5 text-left sm:p-6"
+      >
+        <span className="min-w-0">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {titulo}
+          </span>
+          {descricao ? <span className="mt-1 block text-sm text-muted-foreground">{descricao}</span> : null}
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open ? <div className="border-t p-5 sm:p-6">{children}</div> : null}
+    </section>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Cabeçalho do relatório                                              */
@@ -17,11 +57,15 @@ export function BriefHeaderV2({
   regiao,
   dataEntrevista,
   dataRelatorio,
+  marcas = [],
+  atingimento,
 }: {
   nome: string;
   regiao?: string | null;
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
+  marcas?: string[];
+  atingimento?: string | null;
 }) {
   const meta = [
     regiao ? { k: "Região", v: regiao } : null,
@@ -46,10 +90,28 @@ export function BriefHeaderV2({
             ))}
           </dl>
         ) : null}
+        {marcas.length ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Representa também:</span>
+            {marcas.map(m => (
+              <Badge key={m} variant="secondary" className="font-normal">
+                {m}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
       </div>
-      <Badge variant="outline" className="shrink-0 border-primary/40 text-primary">
-        Versão em validação
-      </Badge>
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        {atingimento ? (
+          <div className="rounded-lg border bg-muted/30 px-3 py-2 text-right">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Atingimento geral</p>
+            <p className="text-lg font-semibold tabular-nums">{atingimento}</p>
+          </div>
+        ) : null}
+        <Badge variant="outline" className="border-primary/40 text-primary">
+          Versão em validação
+        </Badge>
+      </div>
     </header>
   );
 }
@@ -59,42 +121,38 @@ export function BriefHeaderV2({
 /* ------------------------------------------------------------------ */
 
 export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
+  if (!brief.clientes.length && !brief.contexto.regiaoModelo) return null;
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6" aria-labelledby="vr2-contexto">
-      <h3 id="vr2-contexto" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        Contexto e carteira estratégica
-      </h3>
-
-      <div className="mt-5 grid gap-8 lg:grid-cols-2 lg:gap-10">
-        <div className="min-w-0 space-y-5">
-          <div className="space-y-2">
+    <BlocoExpansivel
+      titulo="Clientes estratégicos, na visão do representante"
+      descricao="Contexto de atuação e contas citadas como prioritárias na entrevista."
+    >
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
+        {brief.contexto.regiaoModelo ? (
+          <div className="min-w-0 space-y-2">
             <h4 className="text-sm font-semibold">Contexto do representante</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {brief.contexto.marcas.map(m => (
-                <Badge key={m} variant="secondary" className="font-normal">
-                  {m}
-                </Badge>
-              ))}
-            </div>
             <p className="max-w-prose text-sm leading-7 text-muted-foreground">{brief.contexto.regiaoModelo}</p>
           </div>
-        </div>
+        ) : null}
 
-        <div className="min-w-0 space-y-3">
-          <h4 className="text-sm font-semibold">Clientes estratégicos</h4>
-          <ul className="space-y-3">
-            {brief.clientes.slice(0, 5).map(c => (
-              <li key={c.nome} className="min-w-0 border-l-2 border-border pl-3">
-                <p className="text-sm font-semibold">{c.nome}</p>
-                <p className="text-sm leading-6 text-muted-foreground">{c.motivo}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {brief.clientes.length ? (
+          <div className="min-w-0 space-y-3">
+            <h4 className="text-sm font-semibold">Clientes estratégicos</h4>
+            <ul className="space-y-3">
+              {brief.clientes.slice(0, 6).map(c => (
+                <li key={c.nome} className="min-w-0 border-l-2 border-border pl-3">
+                  <p className="text-sm font-semibold">{c.nome}</p>
+                  <p className="text-sm leading-6 text-muted-foreground">{c.motivo}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
-    </section>
+    </BlocoExpansivel>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Síntese presidencial                                                */
