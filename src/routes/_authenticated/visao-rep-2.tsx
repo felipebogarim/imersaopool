@@ -750,7 +750,7 @@ function VisaoRep2View({
         perspectivas={perspectivas}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
-        teia={visao.brand_positioning ? <BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} /> : null}
+        teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
       />
 
 
