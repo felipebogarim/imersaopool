@@ -198,11 +198,15 @@ function VisaoRep2Page() {
           .order("created_at", { ascending: false })
       ).data ?? []) as unknown as UploadLite[],
   });
-  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome (regra canônica). */
-  const repVinculadoId = useMemo(
-    () => selected?.representative_id ?? matchRepresentativeId(selected?.representative_name, reps),
-    [selected, reps],
-  );
+  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome (regra canônica).
+   *  Vale também para o rascunho importado, para o atingimento aparecer já na prévia. */
+  const repVinculadoId = useMemo(() => {
+    const alvo = draft?.metadata ?? selected ?? null;
+    const id = (alvo as any)?.representative_id as string | null | undefined;
+    const nome = ((alvo as any)?.representative_name ?? null) as string | null;
+    return id ?? matchRepresentativeId(nome, reps);
+  }, [draft, selected, reps]);
+
 
 
   const upload = useMemo(
@@ -624,7 +628,7 @@ function VisaoRep2Page() {
 
 
           <Collapse title="Prévia do conteúdo" defaultOpen>
-            <VisaoRep2View visao={draft} perf={null} />
+            <VisaoRep2View visao={draft} perf={perf} />
           </Collapse>
 
           <div className="flex flex-wrap gap-2">
@@ -635,7 +639,7 @@ function VisaoRep2Page() {
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {draftSalvo ? "Salvar novamente" : "Salvar"}
             </Button>
-            <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
+            <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), perf)}>
               <FileText className="mr-2 h-4 w-4" />
               Exportar PDF
             </Button>

@@ -38,8 +38,13 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
   const redIn = pointOf(RED_MARK, R - STROKE / 2);
 
   return (
-    <div className="flex flex-col items-center">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[260px]" role="img" aria-label={label ?? "Atingimento"}>
+    <div className="flex items-center gap-4">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-[86px] w-[150px] shrink-0"
+        role="img"
+        aria-label={label ?? "Atingimento"}
+      >
         <path d={arcPath(MIN, MAX)} fill="none" strokeWidth={STROKE} strokeLinecap="round" className="stroke-muted-foreground/25" />
         <path
           d={arcPath(GREEN_FROM, MAX)}
@@ -70,9 +75,13 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
           {MAX}%
         </text>
       </svg>
-      <p className="-mt-1 text-3xl font-semibold tabular-nums">
-        {v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`}
-      </p>
+      <div className="min-w-0">
+        <p className="text-3xl font-semibold leading-none tabular-nums">
+          {v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`}
+        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground">meta 100%</p>
+      </div>
     </div>
   );
 }
+

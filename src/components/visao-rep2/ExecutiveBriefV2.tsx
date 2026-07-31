@@ -36,28 +36,28 @@ export function BriefHeaderV2({
   periodo?: string | null;
 }) {
   return (
-    <header className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
-      <div className="min-w-0 rounded-xl border bg-card p-5">
+    <header className="grid gap-4 lg:grid-cols-3">
+      <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Briefing executivo · Visão Rep 2
         </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{nome}</h2>
+        <h2 className="mt-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-2xl">{nome}</h2>
         {regiao ? (
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
             <span className="font-medium text-foreground/70">Região: </span>
             {regiao}
           </p>
         ) : null}
       </div>
 
-      <div className="min-w-0 rounded-xl border bg-card p-5">
+      <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Representa também:
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {marcas.length ? (
             marcas.map(m => (
-              <Badge key={m} variant="secondary" className="px-3 py-1 text-sm font-normal">
+              <Badge key={m} variant="secondary" className="px-2.5 py-0.5 text-xs font-normal">
                 {m}
               </Badge>
             ))
@@ -67,12 +67,12 @@ export function BriefHeaderV2({
         </div>
       </div>
 
-      <div className="min-w-0 rounded-xl border bg-muted/30 p-5">
+      <div className="min-w-0 rounded-xl border bg-muted/30 p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Atingimento ponderado geral
           </p>
-          {periodo ? <span className="text-sm font-semibold tabular-nums">{periodo}</span> : null}
+          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : null}
         </div>
         <div className="mt-1">
           <GaugeAtingimento valor={atingimentoPct ?? null} label="Atingimento ponderado geral" />
@@ -81,6 +81,7 @@ export function BriefHeaderV2({
     </header>
   );
 }
+
 
 
 /* ------------------------------------------------------------------ */
