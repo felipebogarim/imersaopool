@@ -559,6 +559,32 @@ function normalizeExecutiveBrief(raw: unknown): ExecutiveBrief | null {
   return { presidential_synthesis: synthesis, themes };
 }
 
+/** Normaliza a teia comparativa. Retorna null quando o relatório não possui a seção. */
+export function normalizeBrandPositioning(raw: unknown): BrandPositioning | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, any>;
+  const dimsRaw = (o.dimensions ?? o.dimensoes ?? {}) as Record<string, any>;
+  const dimensions = {} as Record<BrandDimensionKey, BrandDimension>;
+  let algum = false;
+  for (const d of BRAND_DIMENSIONS) {
+    const r = (dimsRaw?.[d.key] ?? {}) as Record<string, any>;
+    const score = asNum(r.score);
+    const dim: BrandDimension = {
+      score: score == null ? null : Math.max(0, Math.min(100, score)),
+      confidence: asText(r.confidence ?? r.confianca),
+      reading: asText(r.reading ?? r.leitura),
+      perspective_ids: asTextList(r.perspective_ids ?? r.perspectivas_relacionadas),
+      evidence_count: asNum(r.evidence_count ?? r.evidencias_relacionadas),
+    };
+    if (dim.score != null || dim.reading) algum = true;
+    dimensions[d.key] = dim;
+  }
+  if (!algum) return null;
+  return { scoring_version: asText(o.scoring_version) ?? BRAND_POSITIONING_VERSION, dimensions };
+}
+
+
+
 
 /** Normaliza um objeto vindo do banco ou da IA (inclusive registros antigos/parciais). */
 export function normalizeVisaoRep2(raw: unknown): VisaoRep2 {
