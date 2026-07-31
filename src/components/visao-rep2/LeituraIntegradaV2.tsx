@@ -433,6 +433,7 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       {has(leitura.methodologyNote ?? "") ? (
         <p className="text-xs text-muted-foreground">{leitura.methodologyNote}</p>
       ) : null}
-    </section>
+      </div>
+    </BlocoExpansivel>
   );
 }
