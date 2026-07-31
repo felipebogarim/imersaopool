@@ -354,13 +354,20 @@ export function ExecutiveBriefV2({
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
 }) {
+  const perspectivas = briefPerspectivasToVM(brief.perspectivas, {
+    decisoes: brief.decisoes.map(d => d.texto),
+    validacoes: brief.validacoes.map(v => v.texto),
+  });
+
   return (
     <div className="space-y-6">
       <BriefHeaderV2 nome={nome} regiao={regiao} dataEntrevista={dataEntrevista} dataRelatorio={dataRelatorio} />
       <ContextPortfolioV2 brief={brief} />
       <SintesePresidencialV2 texto={brief.sintese} />
-      <TemasEstrategicosV2 temas={brief.temas} />
+      <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
+      <PerspectivasEntrevistaV2 perspectivas={perspectivas} />
       <AgendaExecutivaV2 brief={brief} />
     </div>
   );
 }
+
