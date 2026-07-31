@@ -130,6 +130,7 @@ function VisaoRep2Page() {
   const [draft, setDraft] = useState<VisaoRep2 | null>(null);
   const [draftFile, setDraftFile] = useState<string | null>(null);
   const [draftHash, setDraftHash] = useState<string | null>(null);
+  const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const gerar = useServerFn(gerarVisaoRep2);
