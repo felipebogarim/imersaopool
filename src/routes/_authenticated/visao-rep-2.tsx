@@ -732,6 +732,7 @@ function VisaoRep2View({
         </Card>
       ) : null}
 
+      <PerspectivasEntrevistaV2 perspectivas={buildPerspectivasVM(visao)} />
       {briefV1 ? null : <LeituraIntegradaV2 visao={visao} />}
         </>
       )}
