@@ -341,7 +341,7 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
 
 
 // ---------- Formato antigo (mantido para compatibilidade) ----------
-function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
+function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
   const familias: string[] = [];
   const famCols: number[] = [];
@@ -421,6 +421,7 @@ function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number):
     ignoradas,
     linhas_lidas,
     conflitos: [],
+    stats: emptyStats(),
     parser_version: PARSER_VERSION,
   };
 }
