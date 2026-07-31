@@ -51,14 +51,46 @@ export type ParsedSheet = {
   parser_version: string;
 };
 
-function cellHex(cell: any): string | null {
-  const fg = cell?.s?.fill?.fgColor?.rgb ?? cell?.s?.fill?.bgColor?.rgb ?? null;
-  if (!fg) return null;
-  const s = String(fg).replace(/^#/, "").toUpperCase();
-  // 00000000 = "sem preenchimento" em muitos exports
-  if (/^0{6,8}$/.test(s)) return null;
-  return s;
+export type CellFill = {
+  /** true quando a célula possui objeto de estilo. */
+  hasStyle: boolean;
+  /** Valor bruto encontrado (rgb, "theme:N", "indexed:N") ou null. */
+  raw: string | null;
+  /** Cor normalizada RRGGBB ou null. */
+  hex: string | null;
+};
+
+/**
+ * Extrai a cor de preenchimento aceitando o formato ACHATADO do xlsx-js-style
+ * (cell.s.fgColor.rgb) e o formato aninhado (cell.s.fill.fgColor.rgb).
+ * bgColor.indexed nunca é usado como cor de farol.
+ */
+export function cellFill(cell: any): CellFill {
+  const style = cell?.s;
+  if (!style) return { hasStyle: false, raw: null, hex: null };
+
+  const fg = style?.fgColor ?? style?.fill?.fgColor ?? null;
+  const rawRgb = fg?.rgb ?? null;
+
+  if (rawRgb == null || typeof rawRgb !== "string") {
+    // Cores de tema/indexadas não são "cor ausente": registram-se como brutas.
+    if (fg && fg.theme != null) return { hasStyle: true, raw: `theme:${fg.theme}`, hex: null };
+    if (fg && fg.indexed != null) return { hasStyle: true, raw: `indexed:${fg.indexed}`, hex: null };
+    return { hasStyle: true, raw: null, hex: null };
+  }
+
+  let hex = rawRgb.replace(/^#/, "").trim().toUpperCase();
+  if (hex.length === 8) hex = hex.slice(2);
+  if (!/^[0-9A-F]{6}$/.test(hex)) return { hasStyle: true, raw: rawRgb, hex: null };
+  // 000000 / 00000000 = "sem preenchimento" em muitos exports
+  if (hex === "000000") return { hasStyle: true, raw: null, hex: null };
+  return { hasStyle: true, raw: rawRgb, hex };
 }
+
+export function cellHex(cell: any): string | null {
+  return cellFill(cell).hex;
+}
+
 
 function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "antigo" } | null {
   for (let r = 0; r < Math.min(grid.length, 25); r++) {
