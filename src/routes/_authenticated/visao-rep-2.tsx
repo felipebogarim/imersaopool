@@ -36,7 +36,7 @@ import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { briefingPadrao } from "@/lib/visao-rep2-briefing";
 
-import { buildPerfResumo, fmtPct, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
+import { buildPerfResumo, fmtPct, matchRepresentativeId, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
