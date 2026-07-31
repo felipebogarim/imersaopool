@@ -184,7 +184,7 @@ function toPct(v: any): number | null {
 
 type BaseSheet = Omit<ParsedSheet, "matriz" | "matriz_erros">;
 
-function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
+function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
   const hdr = grid[headerRow] ?? [];
   // colunas: 0 Razão, 1 Categoria, 2 Total Meta, 3 Total %, 4.. famílias
   const familias: string[] = [];
@@ -202,6 +202,20 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
   let atingimento: ResumoPct | null = null;
   const ignoradas: IgnoredRow[] = [];
   const conflitos: CellConflict[] = [];
+  const stats: CellStats = {
+    celulas_avaliadas: 0,
+    celulas_total_pct: 0,
+    celulas_familias: 0,
+    estilos_carregados: 0,
+    estilos_ausentes: 0,
+    cores_extraidas: 0,
+    cores_ausentes: 0,
+    cores_desconhecidas: 0,
+    divergencias_texto_cor: 0,
+    cores_distintas: [],
+    por_status: {},
+  };
+  const distintas = new Set<string>();
   let linhas_lidas = 0;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
@@ -241,7 +255,32 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
       continue;
     }
     const total_meta = typeof row[2]?.v === "number" ? (row[2].v as number) : null;
-    const total_pct_status = statusFromFaixa(row[3]?.v);
+
+    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
+      stats.celulas_avaliadas++;
+      if (cell?.hasStyle) stats.estilos_carregados++;
+      else stats.estilos_ausentes++;
+      if (cell?.c) {
+        stats.cores_extraidas++;
+        distintas.add(cell.c);
+      }
+      const res = resolveCellStatus(cell?.v, cell?.c, {
+        hasStyle: Boolean(cell?.hasStyle),
+        rawColor: cell?.raw ?? null,
+      });
+      if (res.ok) {
+        if (res.status) stats.por_status[res.status] = (stats.por_status[res.status] ?? 0) + 1;
+        return res.status;
+      }
+      if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+      else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
+      else if (res.conflito.motivo === "divergencia_texto_cor") stats.divergencias_texto_cor++;
+      conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia });
+      return null;
+    };
+
+    stats.celulas_total_pct++;
+    const total_pct_status = avaliar(row[3], "TOTAL %");
 
     const metas: Record<string, number> = {};
     const metas_status: Record<string, FarolStatus> = {};
@@ -249,12 +288,9 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     familias.forEach((f, i) => {
       const cell = row[famCols[i]];
       if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
-      const res = resolveCellStatus(cell?.v, cell?.c);
-      if (res.ok) {
-        if (res.status) metas_status[f] = res.status;
-      } else {
-        conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia: f });
-      }
+      stats.celulas_familias++;
+      const status = avaliar(cell, f);
+      if (status) metas_status[f] = status;
       if (cell?.c) metas_cores[f] = cell.c;
     });
 
@@ -270,6 +306,8 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     });
   }
 
+  stats.cores_distintas = Array.from(distintas).sort();
+
   return {
     familias,
     categoriaMetas: {},
@@ -280,9 +318,11 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     ignoradas,
     linhas_lidas,
     conflitos,
+    stats,
     parser_version: PARSER_VERSION,
   };
 }
+
 
 // ---------- Formato antigo (mantido para compatibilidade) ----------
 function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
