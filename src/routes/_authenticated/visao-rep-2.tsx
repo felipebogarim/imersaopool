@@ -502,21 +502,13 @@ function VisaoRep2Page() {
 
       {/* Prévia da importação/geração */}
       {draft && validacao ? (
-        <Card className="mt-4 border-primary/40" title="Prévia antes de salvar">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="mt-4 space-y-4">
+          <div className="flex justify-end">
             <Button variant="secondary" size="sm" onClick={voltarParaLista}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
-            <Badge variant="secondary">Modo de origem: {MODE_LABEL[draft.metadata.creation_mode]}</Badge>
-            {draftFile ? <Badge variant="outline">{draftFile}</Badge> : null}
-            {draftSalvo ? <Badge className="bg-emerald-600 text-white">Salvo na lista</Badge> : null}
           </div>
-          {draft.metadata.creation_mode === "imported_ready" ? (
-            <p className="mb-3 rounded-md border bg-muted/40 p-3 text-sm">
-              O conteúdo será importado exatamente como enviado. Nenhuma interpretação adicional será realizada.
-            </p>
-          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
@@ -560,7 +552,7 @@ function VisaoRep2Page() {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div>
             {validacao.missingRequired.length ? (
               <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
                 <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
@@ -579,24 +571,17 @@ function VisaoRep2Page() {
             )}
           </div>
 
+          <Collapse title="Prévia do conteúdo" defaultOpen>
+            <VisaoRep2View visao={draft} perf={null} />
+          </Collapse>
 
-          <div className="mt-4">
-            <Collapse title="Prévia do conteúdo" defaultOpen>
-              <VisaoRep2View visao={draft} perf={null} />
-            </Collapse>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => void salvarUnico(draft)}
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {draftSalvo ? "Salvar novamente" : "Salvar"}
-            </Button>
-            <Button variant="outline" onClick={voltarParaLista}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para a lista
             </Button>
             <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
               <FileText className="mr-2 h-4 w-4" />
@@ -610,7 +595,7 @@ function VisaoRep2Page() {
               Cancelar
             </Button>
           </div>
-        </Card>
+        </div>
       ) : null}
 
       {/* Lista */}
