@@ -181,24 +181,8 @@ function VisaoRep2Page() {
   });
   const perf = useMemo(() => buildPerfResumo({ upload, rows: perfRows, todosUploads: uploads }), [upload, perfRows, uploads]);
 
-  // Ao voltar à página, reabre o mesmo relatório salvo (último aberto ou o mais recente).
-  useEffect(() => {
-    if (selectedId || !reports.length) return;
-    const lembrado = typeof window !== "undefined" ? window.localStorage.getItem(LAST_KEY) : null;
-    setSelectedId(reports.find(r => r.id === lembrado)?.id ?? reports[0].id);
-  }, [reports, selectedId]);
+  // A tela inicial sempre mostra a lista; o relatório só abre por ação explícita.
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (selectedId) window.localStorage.setItem(LAST_KEY, selectedId);
-  }, [selectedId]);
-
-  // Selecionar um representante já abre o relatório salvo dele, sem gerar de novo.
-  useEffect(() => {
-    if (!repId) return;
-    const doRep = reports.find(r => r.representative_id === repId);
-    if (doRep) setSelectedId(doRep.id);
-  }, [repId, reports]);
 
 
 
