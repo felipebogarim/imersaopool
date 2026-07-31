@@ -1,0 +1,78 @@
+// Gauge semicircular de atingimento ponderado (apenas percentual).
+// Escala fixa 50%–120%: zona verde a partir de 100%, marca vermelha em 70%.
+
+const MIN = 50;
+const MAX = 120;
+const GREEN_FROM = 100;
+const RED_MARK = 70;
+
+const W = 260;
+const H = 150;
+const CX = W / 2;
+const CY = 118;
+const R = 92;
+const STROKE = 22;
+
+const angleOf = (v: number) => {
+  const t = Math.min(1, Math.max(0, (v - MIN) / (MAX - MIN)));
+  return Math.PI - t * Math.PI; // rad, 180° -> 0°
+};
+
+const pointOf = (v: number, r = R) => {
+  const a = angleOf(v);
+  return { x: CX + r * Math.cos(a), y: CY - r * Math.sin(a) };
+};
+
+const arcPath = (from: number, to: number) => {
+  const p1 = pointOf(from);
+  const p2 = pointOf(to);
+  const large = angleOf(from) - angleOf(to) > Math.PI ? 1 : 0;
+  return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${large} 1 ${p2.x} ${p2.y}`;
+};
+
+export function GaugeAtingimento({ valor, label }: { valor: number | null | undefined; label?: string }) {
+  const v = valor == null || Number.isNaN(valor) ? null : valor;
+  const clamped = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
+  const needle = pointOf(clamped, R - STROKE / 2 - 4);
+  const red = pointOf(RED_MARK, R + STROKE / 2);
+  const redIn = pointOf(RED_MARK, R - STROKE / 2);
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[260px]" role="img" aria-label={label ?? "Atingimento"}>
+        <path d={arcPath(MIN, MAX)} fill="none" strokeWidth={STROKE} strokeLinecap="round" className="stroke-muted-foreground/25" />
+        <path
+          d={arcPath(GREEN_FROM, MAX)}
+          fill="none"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          stroke="oklch(0.78 0.19 140)"
+        />
+        <line x1={redIn.x} y1={redIn.y} x2={red.x} y2={red.y} strokeWidth={2} stroke="oklch(0.65 0.2 25)" />
+        {v != null ? (
+          <>
+            <line
+              x1={CX}
+              y1={CY}
+              x2={needle.x}
+              y2={needle.y}
+              strokeWidth={6}
+              strokeLinecap="round"
+              className="stroke-foreground"
+            />
+            <circle cx={CX} cy={CY} r={9} className="fill-foreground" />
+          </>
+        ) : null}
+        <text x={pointOf(MIN).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+          {MIN}%
+        </text>
+        <text x={pointOf(MAX).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+          {MAX}%
+        </text>
+      </svg>
+      <p className="-mt-1 text-3xl font-semibold tabular-nums">
+        {v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`}
+      </p>
+    </div>
+  );
+}

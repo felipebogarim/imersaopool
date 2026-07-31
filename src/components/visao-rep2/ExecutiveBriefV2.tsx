@@ -8,9 +8,10 @@ import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fa
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
 import { BlocoExpansivel } from "./BlocoExpansivel";
+import { GaugeAtingimento } from "./GaugeAtingimento";
 import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
 import type { PerfResumo } from "@/lib/visao-rep";
-import { fmtPct } from "@/lib/visao-rep";
+
 
 export { BlocoExpansivel };
 
@@ -23,7 +24,7 @@ export function BriefHeaderV2({
   nome,
   regiao,
   marcas = [],
-  atingimento,
+  atingimentoPct,
   periodo,
 }: {
   nome: string;
@@ -31,7 +32,7 @@ export function BriefHeaderV2({
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
   marcas?: string[];
-  atingimento?: string | null;
+  atingimentoPct?: number | null;
   periodo?: string | null;
 }) {
   return (
@@ -73,7 +74,9 @@ export function BriefHeaderV2({
           </p>
           {periodo ? <span className="text-sm font-semibold tabular-nums">{periodo}</span> : null}
         </div>
-        <p className="mt-2 text-3xl font-semibold tabular-nums">{atingimento ?? "—"}</p>
+        <div className="mt-1">
+          <GaugeAtingimento valor={atingimentoPct ?? null} label="Atingimento ponderado geral" />
+        </div>
       </div>
     </header>
   );
@@ -442,7 +445,7 @@ export function ExecutiveBriefV2({
         dataEntrevista={dataEntrevista}
         dataRelatorio={dataRelatorio}
         marcas={brief.contexto.marcas}
-        atingimento={perf ? fmtPct(perf.geralPct) : null}
+        atingimentoPct={perf?.geralPct ?? null}
         periodo={perf?.periodoLabel ?? null}
       />
       {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
