@@ -14,7 +14,7 @@ import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
-import { conflictMessage } from "@/lib/performance-cell-status";
+import { conflictMessage, CONFLICT_LABEL } from "@/lib/performance-cell-status";
 
 /** SHA-256 do arquivo, usado para identificar reimportações do mesmo arquivo. */
 async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
