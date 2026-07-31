@@ -175,16 +175,20 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
 
   const bs = blocks(md);
   const secOf = (re: RegExp) => bs.find(b => b.level === 2 && re.test(norm(b.title)));
+  /** Igual a secOf, mas aceita a seção em qualquer nível de título (##, ###, #). */
+  const secAny = (re: RegExp) => bs.find(b => b.level >= 1 && re.test(norm(b.title)));
   const childrenOf = (sec: Block | undefined): Block[] => {
     if (!sec) return [];
     const i = bs.indexOf(sec);
+    const limite = Math.max(2, sec.level);
     const out: Block[] = [];
     for (let j = i + 1; j < bs.length; j++) {
-      if (bs[j].level <= 2) break;
+      if (bs[j].level <= limite) break;
       out.push(bs[j]);
     }
     return out;
   };
+
 
   // Metadados
   const meta = kv(secOf(/^metadados?$/)?.lines ?? []);
