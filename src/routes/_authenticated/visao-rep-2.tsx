@@ -557,7 +557,7 @@ function VisaoRep2Page() {
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirmar importação
+              Salvar e voltar para a lista
             </Button>
             <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
               <FileText className="mr-2 h-4 w-4" />
