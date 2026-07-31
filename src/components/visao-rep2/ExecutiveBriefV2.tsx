@@ -436,6 +436,7 @@ export function ExecutiveBriefV2({
         dataRelatorio={dataRelatorio}
         marcas={brief.contexto.marcas}
         atingimento={perf ? fmtPct(perf.geralPct) : null}
+        periodo={perf?.periodoLabel ?? null}
       />
       {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} /> : null}
       <PerformanceFamiliasV2 perf={perf} />
