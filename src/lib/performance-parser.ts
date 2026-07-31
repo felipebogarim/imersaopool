@@ -129,19 +129,30 @@ function readMatriz(wb: XLSXStyle.WorkBook): MatrizParseResult | null {
   return parseMatrizFinanceiraGrid(grid as unknown[][]);
 }
 
+export type GridCell = { v: any; c: string | null; raw: string | null; hasStyle: boolean };
+
+export function findPerformanceSheetName(names: string[]): string | undefined {
+  return names.find((n) => normSheet(n) === "PERFORMANCE");
+}
+
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const performanceSheetName = findPerformanceSheetName(wb.SheetNames);
+  if (!performanceSheetName) {
+    throw new Error('A aba obrigatória "Performance" não foi encontrada no arquivo.');
+  }
+  const ws = wb.Sheets[performanceSheetName];
   if (!ws) throw new Error("Planilha vazia.");
   const range = XLSXStyle.utils.decode_range(ws["!ref"] || "A1");
 
-  const grid: { v: any; c: string | null }[][] = [];
+  const grid: GridCell[][] = [];
   for (let r = range.s.r; r <= range.e.r; r++) {
-    const row: { v: any; c: string | null }[] = [];
+    const row: GridCell[] = [];
     for (let c = range.s.c; c <= range.e.c; c++) {
       const addr = XLSXStyle.utils.encode_cell({ r, c });
       const cell = ws[addr];
-      row.push({ v: cell ? cell.v : null, c: cellHex(cell) });
+      const fill = cellFill(cell);
+      row.push({ v: cell ? cell.v : null, c: fill.hex, raw: fill.raw, hasStyle: fill.hasStyle });
     }
     grid.push(row);
   }
@@ -157,6 +168,7 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
 
   return { ...base, matriz, matriz_erros };
 }
+
 
 // ---------- Novo formato (planilha ajustada) ----------
 function toPct(v: any): number | null {
