@@ -310,6 +310,16 @@ function VisaoRep2Page() {
     await salvar.mutateAsync(normalizeVisaoRep2(v));
   }
 
+  /** Fecha a prévia e volta para a tela inicial com a lista de relatórios salvos. */
+  function voltarParaLista() {
+    setDraft(null);
+    setDraftFile(null);
+    setDraftHash(null);
+    setDraftSalvo(false);
+    setSelectedId("");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   /** Salva pedindo confirmação quando o representante já tem relatório salvo. */
   async function salvarUnico(v: VisaoRep2) {
     const dup = existentesDoRep(v);
