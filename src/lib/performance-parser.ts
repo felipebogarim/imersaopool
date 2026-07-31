@@ -340,6 +340,22 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
 }
 
 
+export function emptyStats(): CellStats {
+  return {
+    celulas_avaliadas: 0,
+    celulas_total_pct: 0,
+    celulas_familias: 0,
+    estilos_carregados: 0,
+    estilos_ausentes: 0,
+    cores_extraidas: 0,
+    cores_ausentes: 0,
+    cores_desconhecidas: 0,
+    divergencias_texto_cor: 0,
+    cores_distintas: [],
+    por_status: {},
+  };
+}
+
 // ---------- Formato antigo (mantido para compatibilidade) ----------
 function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
