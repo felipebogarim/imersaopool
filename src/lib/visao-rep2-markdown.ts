@@ -617,7 +617,10 @@ export function toVisaoRepMarkdown(v: VisaoRep2): string {
     L.push(`- citacao: ${S(s.source_quote)}`);
     L.push(`- signal_id: ${S(s.signal_id)}`);
     L.push(`- validacao: ${S(s.validation_note)}`);
-    L.push(`- perspectivas_relacionadas: ${(s.related_perspectives ?? []).join(", ")}`, "");
+    L.push(`- perspectivas_relacionadas: ${(s.related_perspectives ?? []).join(", ")}`);
+    L.push(`- classificacao_comparativa: ${S(s.comparison_classification)}`);
+    L.push(`- fontes_comparaveis: ${s.comparable_sources ?? ""}`);
+    L.push(`- comparacao_grupo: ${S(s.group_comparison)}`, "");
   });
   L.push("**Decisões requeridas**", "");
   v.executive_view.decisions_required.forEach(d => L.push(`- ${d}`));
