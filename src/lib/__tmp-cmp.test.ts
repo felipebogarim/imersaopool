@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { parseVisaoRep2Markdown } from "@/lib/visao-rep2-markdown";
+import { parseVisaoRepMarkdown } from "@/lib/visao-rep2-markdown";
 import { buildLeituraIntegrada } from "@/lib/visao-rep2-leitura";
 const md = `# Visão Rep 2
 ## 00 — Visão executiva
@@ -17,7 +17,7 @@ const md = `# Visão Rep 2
 - comparacao_grupo: Texto de comparação utilizado para validar o parser.
 `;
 it("parses", () => {
-  const r: any = parseVisaoRep2Markdown(md);
+  const r: any = parseVisaoRepMarkdown(md);
   const v = r.visao ?? r.value ?? r;
   const s = v.executive_view.priority_signals[0];
   console.log(s);
