@@ -693,95 +693,34 @@ function VisaoRep2View({
 }) {
   const [filtroLinha, setFiltroLinha] = useState<LineClassification | "todas">("todas");
   const ev = visao.executive_view;
-  const ctx = visao.representative_context;
   const cv = visao.comparative_view;
 
   const linhas = visao.product_line_views.filter(l => filtroLinha === "todas" || l.classification === filtroLinha);
 
-  const clientesPrincipais = visao.strategic_clients.slice(0, 5);
-  const temContexto = ctx.represented_brands.length > 0 || has(ctx.region_summary) || has(ctx.service_model);
-  const brief = briefingParaRepresentante(visao.metadata.representative_name);
+  // Modelo padrão único: todo relatório é exibido no mesmo briefing executivo.
+  const brief = briefingPadrao(visao);
   const briefV1 = isExecutiveBriefV1(visao);
-
+  const perspectivas = useMemo(() => {
+    const doRelatorio = buildPerspectivasVM(visao);
+    if (doRelatorio.some(p => p.temConteudo)) return doRelatorio;
+    return undefined;
+  }, [visao]);
 
   return (
     <div className="space-y-4">
-      {brief ? (
-        <ExecutiveBriefV2
-          brief={brief}
-          nome={visao.metadata.representative_name ?? "Representante"}
-          regiao={visao.metadata.region}
-          dataEntrevista={visao.metadata.interview_date}
-          dataRelatorio={
-            visao.metadata.updated_at ? new Date(visao.metadata.updated_at).toLocaleDateString("pt-BR") : null
-          }
-        />
-      ) : (
-        <>
-      {/* Contexto e carteira estratégica */}
-      {temContexto || clientesPrincipais.length ? (
+      <ExecutiveBriefV2
+        brief={brief}
+        nome={visao.metadata.representative_name ?? "Representante"}
+        regiao={visao.metadata.region}
+        dataEntrevista={visao.metadata.interview_date}
+        dataRelatorio={
+          visao.metadata.updated_at ? new Date(visao.metadata.updated_at).toLocaleDateString("pt-BR") : null
+        }
+        perspectivas={perspectivas}
+        perf={perf}
+        leitura={<LeituraIntegradaV2 visao={visao} />}
+      />
 
-        <Card title="Contexto e carteira estratégica">
-          <div className="space-y-4">
-            {temContexto ? (
-              <div className="space-y-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Contexto do representante
-                </div>
-                {ctx.represented_brands.length ? (
-                  <div>
-                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Marcas que representa além da Newline
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ctx.represented_brands.map(m => (
-                        <Badge key={m} variant="outline">
-                          {m}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-                {has(ctx.region_summary) || has(ctx.service_model) ? (
-                  <div>
-                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Região e modelo de atendimento
-                    </div>
-                    <p className="whitespace-pre-line break-words text-sm">
-                      {[ctx.region_summary, ctx.service_model].filter(has).join("\n")}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {clientesPrincipais.length ? (
-              <div className="space-y-2">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Clientes estratégicos
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {clientesPrincipais.map((c, i) => (
-                    <div key={i} className="rounded-lg border p-3">
-                      <div className="break-words text-sm font-semibold">{c.client_name ?? `Cliente ${i + 1}`}</div>
-                      {has(c.strategic_reason) ? (
-                        <p className="mt-1 whitespace-pre-line break-words text-sm text-muted-foreground">
-                          {c.strategic_reason}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </Card>
-      ) : null}
-
-      <PerspectivasEntrevistaV2 perspectivas={buildPerspectivasVM(visao)} />
-      {briefV1 ? null : <LeituraIntegradaV2 visao={visao} />}
-        </>
-      )}
 
 
       {/* Performance */}
