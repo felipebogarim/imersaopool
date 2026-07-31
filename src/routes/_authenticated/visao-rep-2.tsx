@@ -604,8 +604,6 @@ function VisaoRep2Page() {
               Cancelar
             </Button>
           </div>
-
-          </div>
         </Card>
       ) : null}
 
