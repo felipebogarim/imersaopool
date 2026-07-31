@@ -87,7 +87,19 @@ export function BrandPositioningRadarV2({
       <p className="text-sm text-muted-foreground">Não foi possível carregar a comparação neste momento.</p>
     );
   }
-  if (vm.status === "sem_dados") return null;
+  if (vm.status === "sem_dados") {
+    return (
+      <div className="rounded-lg border border-dashed p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Teia comparativa de posicionamento
+        </p>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Este relatório foi importado sem a seção de posicionamento de marca (6 dimensões). Regere com IA ou inclua a
+          seção no arquivo para exibir a teia.
+        </p>
+      </div>
+    );
+  }
   if (vm.status === "incompleto") {
     return (
       <div className="rounded-lg border border-dashed p-4">
