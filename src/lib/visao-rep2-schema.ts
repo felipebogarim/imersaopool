@@ -731,6 +731,13 @@ export function validateVisaoRep2(v: VisaoRep2): ValidationReport {
     else recognized.push(`Visão executiva › ${v.executive_view.priority_signals.length} sinal(is) prioritário(s)`);
   }
 
+  // Teia comparativa: sempre opcional. Relatórios antigos seguem válidos.
+  if (v.brand_positioning) {
+    const preenchidas = BRAND_DIMENSIONS.filter(d => v.brand_positioning?.dimensions[d.key]?.score != null).length;
+    recognized.push(`Teia comparativa de posicionamento › ${preenchidas}/${BRAND_DIMENSIONS.length} dimensões`);
+  }
+
+
   const comPersp = v.perspectives.filter(p => nonEmpty(p.executive_finding) || nonEmpty(p.full_reading));
   if (!comPersp.length) {
     // No briefing executivo as perspectivas podem viver dentro dos temas;
