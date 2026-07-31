@@ -45,19 +45,9 @@ export function buildBriefingFromVisao(visao: VisaoRep2): BriefingExecutivo {
 }
 
 /**
- * Modelo padrão único: usa o briefing curado quando existe para o representante
- * e, caso contrário, deriva o mesmo formato a partir do relatório salvo.
+ * Modelo padrão único: SEMPRE derivado exclusivamente do relatório selecionado.
+ * Nunca usa briefing curado, cache ou conteúdo de outro representante.
  */
 export function briefingPadrao(visao: VisaoRep2): BriefingExecutivo {
-  const curado = briefingParaRepresentante(visao.metadata.representative_name);
-  if (!curado) return buildBriefingFromVisao(visao);
-  const derivado = buildBriefingFromVisao(visao);
-  return {
-    ...curado,
-    // Campos ausentes no curado caem para o conteúdo do relatório.
-    sintese: curado.sintese || derivado.sintese,
-    clientes: curado.clientes.length ? curado.clientes : derivado.clientes,
-    decisoes: curado.decisoes.length ? curado.decisoes : derivado.decisoes,
-    validacoes: curado.validacoes.length ? curado.validacoes : derivado.validacoes,
-  };
+  return buildBriefingFromVisao(visao);
 }
