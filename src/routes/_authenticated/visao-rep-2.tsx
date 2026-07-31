@@ -586,7 +586,11 @@ function VisaoRep2Page() {
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Salvar e voltar para a lista
+              {draftSalvo ? "Salvar novamente" : "Salvar"}
+            </Button>
+            <Button variant="outline" onClick={voltarParaLista}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a lista
             </Button>
             <Button variant="secondary" onClick={() => exportVisaoRep2Pdf(normalizeVisaoRep2(draft), null)}>
               <FileText className="mr-2 h-4 w-4" />
@@ -596,9 +600,10 @@ function VisaoRep2Page() {
               <FileDown className="mr-2 h-4 w-4" />
               Exportar relatório estruturado
             </Button>
-            <Button variant="ghost" onClick={() => { setDraft(null); setDraftFile(null); setDraftHash(null); }}>
+            <Button variant="ghost" onClick={voltarParaLista}>
               Cancelar
             </Button>
+          </div>
 
           </div>
         </Card>
