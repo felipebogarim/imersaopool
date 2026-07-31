@@ -268,7 +268,9 @@ export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: Persp
           <p className="text-sm text-muted-foreground">Esta perspectiva ainda não possui conteúdo registrado.</p>
         )}
       </div>
-    </section>
+      </div>
+    </BlocoExpansivel>
+
   );
 }
 
