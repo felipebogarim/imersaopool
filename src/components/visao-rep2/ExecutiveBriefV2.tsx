@@ -439,27 +439,49 @@ export function ExecutiveBriefV2({
   regiao,
   dataEntrevista,
   dataRelatorio,
+  perspectivas: perspectivasProp,
+  perf = null,
+  leitura,
 }: {
   brief: BriefingExecutivo;
   nome: string;
   regiao?: string | null;
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
+  /** Perspectivas já montadas a partir do relatório; se ausente, usa as do briefing curado. */
+  perspectivas?: PerspectivaVM[];
+  perf?: PerfResumo | null;
+  /** Bloco "Leitura integrada" do relatório. */
+  leitura?: ReactNode;
 }) {
-  const perspectivas = briefPerspectivasToVM(brief.perspectivas, {
-    decisoes: brief.decisoes.map(d => d.texto),
-    validacoes: brief.validacoes.map(v => v.texto),
-  });
+  const perspectivas =
+    perspectivasProp ??
+    briefPerspectivasToVM(brief.perspectivas, {
+      decisoes: brief.decisoes.map(d => d.texto),
+      validacoes: brief.validacoes.map(v => v.texto),
+    });
+
+  const temPerspectivas = perspectivas.some(p => p.temConteudo);
 
   return (
     <div className="space-y-6">
-      <BriefHeaderV2 nome={nome} regiao={regiao} dataEntrevista={dataEntrevista} dataRelatorio={dataRelatorio} />
+      <BriefHeaderV2
+        nome={nome}
+        regiao={regiao}
+        dataEntrevista={dataEntrevista}
+        dataRelatorio={dataRelatorio}
+        marcas={brief.contexto.marcas}
+        atingimento={perf ? fmtPct(perf.geralPct) : null}
+      />
+      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} /> : null}
+      <PerformanceFamiliasV2 perf={perf} />
+      {leitura ?? null}
       <ContextPortfolioV2 brief={brief} />
-      <SintesePresidencialV2 texto={brief.sintese} />
+      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
-      <PerspectivasEntrevistaV2 perspectivas={perspectivas} />
-      <AgendaExecutivaV2 brief={brief} />
+      {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
     </div>
   );
 }
+
 
