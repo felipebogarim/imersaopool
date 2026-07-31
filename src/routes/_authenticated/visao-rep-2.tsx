@@ -250,14 +250,11 @@ function VisaoRep2Page() {
       return data.id as string;
     },
     onSuccess: () => {
-      toast.success("Relatório salvo. Ele está na lista de relatórios salvos.");
-      setDraft(null);
-      setDraftFile(null);
-      setDraftHash(null);
+      toast.success("Relatório salvo. Use “Voltar para a lista” para ver os salvos.");
+      setDraftSalvo(true);
       setRepId("");
       qc.invalidateQueries({ queryKey: ["vr2-reports"] });
       setSelectedId("");
-      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível salvar."),
   });
