@@ -260,24 +260,36 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
 
 
   // Teia comparativa de posicionamento (opcional, brand_positioning_v1).
-  const teiaSec = secOf(/teia_comparativa/);
+  // Aceita a seção em qualquer nível de título, com blocos por dimensão
+  // (### Qualidade) ou com pares diretos ("- qualidade: 72").
+  const teiaSec = secAny(/teia_comparativa|posicionamento_de_marca|brand_positioning/);
   if (teiaSec) {
     const cabec = kv(teiaSec.lines);
     const dims = {} as Record<BrandDimensionKey, ReturnType<typeof emptyBrandDimension>>;
     let algum = false;
     const filhos = childrenOf(teiaSec);
+    const numOf = (s: string | null) => {
+      const m = /-?\d+([.,]\d+)?/.exec(s ?? "");
+      return m ? Number(m[0].replace(",", ".")) : null;
+    };
     for (const d of BRAND_DIMENSIONS) {
-      const bloco = filhos.find(b => norm(b.title) === norm(d.label));
+      const alvos = [norm(d.label), norm(d.longLabel), d.key];
+      const bloco = filhos.find(b => {
+        const t = norm(b.title).replace(/^\d+[_-]*/, "");
+        return alvos.some(a => t === a || t.includes(a) || a.includes(t));
+      });
       const f = bloco ? kv(bloco.lines) : {};
-      const raw = nz(f.score);
-      const n = raw == null ? null : Number(raw.replace(",", "."));
+      const inline = alvos.map(a => cabec[a]).find(x => x != null);
+      const raw = nz(f.score) ?? nz(f.pontuacao) ?? nz(f.nota) ?? nz(f.valor) ?? nz(inline);
+      const n = numOf(raw);
       const dim = emptyBrandDimension();
       dim.score = n != null && Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null;
-      dim.confidence = nz(f.confianca);
-      dim.reading = nz(f.leitura);
-      dim.perspective_ids = list(f.perspectivas_relacionadas);
-      const ev2 = nz(f.evidencias_relacionadas);
-      dim.evidence_count = ev2 != null && Number.isFinite(Number(ev2)) ? Number(ev2) : null;
+      dim.confidence = nz(f.confianca) ?? nz(f.nivel_confianca);
+      dim.reading = nz(f.leitura) ?? nz(f.leitura_estrategica) ?? nz(f.justificativa);
+      dim.perspective_ids = list(f.perspectivas_relacionadas ?? f.perspectivas);
+      const ev2 = nz(f.evidencias_relacionadas) ?? nz(f.evidencias);
+      const evn = numOf(ev2);
+      dim.evidence_count = evn != null && Number.isFinite(evn) ? evn : null;
       if (dim.score != null || dim.reading) algum = true;
       dims[d.key] = dim;
     }
@@ -288,6 +300,7 @@ export function parseVisaoRepMarkdown(input: string): VisaoRep2 {
       };
     }
   }
+
 
 
   // 00 — Visão executiva
