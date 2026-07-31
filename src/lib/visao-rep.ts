@@ -36,16 +36,26 @@ export function matchRepresentativeId(
   const exato = reps.find(r => normNome(r.nome) === alvo);
   if (exato) return exato.id;
 
+  const alvoTokens = nomeTokens(alvo);
+
+  // Melhor sobreposição de tokens vence sobre "nome contido": evita casar
+  // "Fernando Salton / Fabio Vergani" com um representante chamado só "Fábio".
+  let melhor: { id: string; hits: number } | null = null;
+  for (const r of reps) {
+    const hits = nomeTokens(r.nome).filter(t => alvoTokens.includes(t)).length;
+    if (hits > 0 && (!melhor || hits > melhor.hits)) melhor = { id: r.id, hits };
+  }
+  if (melhor && melhor.hits > 1) return melhor.id;
+
   const contido = reps.find(r => {
     const n = normNome(r.nome);
     return !!n && (alvo.startsWith(`${n} `) || alvo === n || alvo.includes(` ${n} `) || alvo.endsWith(` ${n}`));
   });
   if (contido) return contido.id;
 
-  const alvoTokens = nomeTokens(alvo);
-  if (!alvoTokens.length) return null;
-  const parcial = reps.find(r => nomeTokens(r.nome).some(t => alvoTokens.includes(t)));
-  return parcial?.id ?? null;
+  return melhor?.id ?? null;
+
+
 }
 
 export type FonteLite = {
