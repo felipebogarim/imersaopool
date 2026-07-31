@@ -596,30 +596,8 @@ function VisaoRep2Page() {
         )}
       </Card>
 
-      {/* Detalhe */}
-      {visao && selected ? (
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">Modo de origem: {MODE_LABEL[selected.creation_mode]}</Badge>
-            <Badge variant="outline">{selected.schema_version}</Badge>
-            {selected.content_hash ? (
-              <Badge variant="outline" className="font-mono text-[10px]">
-                hash {selected.content_hash.slice(0, 12)}
-              </Badge>
-            ) : null}
-            <Button size="sm" onClick={() => exportVisaoRep2Pdf(visao, perf)}>
-              <FileText className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => exportar(visao, selected.representative_name)}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Exportar relatório estruturado
-            </Button>
-          </div>
-          <VisaoRep2View visao={visao} perf={perf} />
-        </div>
-      ) : null}
     </div>
+
   );
 }
 
