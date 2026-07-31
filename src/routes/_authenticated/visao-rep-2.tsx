@@ -198,19 +198,12 @@ function VisaoRep2Page() {
           .order("created_at", { ascending: false })
       ).data ?? []) as unknown as UploadLite[],
   });
-  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome. */
-  const repVinculadoId = useMemo(() => {
-    if (selected?.representative_id) return selected.representative_id;
-    const alvo = norm(selected?.representative_name ?? "");
-    if (!alvo) return null;
-    const alvoTokens = tokens(alvo);
-    if (!alvoTokens.length) return null;
-    const exato = reps.find(r => norm(r.nome) === alvo);
-    if (exato) return exato.id;
-    const parcial = reps.find(r => tokens(r.nome).some((t: string) => alvoTokens.includes(t)));
+  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome (regra canônica). */
+  const repVinculadoId = useMemo(
+    () => selected?.representative_id ?? matchRepresentativeId(selected?.representative_name, reps),
+    [selected, reps],
+  );
 
-    return parcial?.id ?? null;
-  }, [selected, reps]);
 
   const upload = useMemo(
     () => uploads.find(u => u.representative_id === repVinculadoId) ?? null,
