@@ -5,7 +5,6 @@
  */
 
 import type { BriefingExecutivo } from "@/components/visao-rep2/briefing-fabio";
-import { briefingParaRepresentante } from "@/components/visao-rep2/briefing-fabio";
 import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 
 const txt = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
