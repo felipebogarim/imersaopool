@@ -48,6 +48,7 @@ import {
   FileUp,
   Link2,
   Loader2,
+  RefreshCw,
   Shield,
   Sparkles,
   Trash2,
@@ -144,6 +145,26 @@ function VisaoRep2Page() {
   const [draftHash, setDraftHash] = useState<string | null>(null);
   const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [atualizandoComparativos, setAtualizandoComparativos] = useState(false);
+
+  /** Recarrega todos os relatórios salvos para recalcular a base comparativa da teia. */
+  async function onAtualizarComparativos() {
+    setAtualizandoComparativos(true);
+    try {
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ["vr2-reports"] }),
+        qc.refetchQueries({ queryKey: ["vr2-uploads"] }),
+      ]);
+
+      toast.success("Comparativos atualizados a partir de todos os relatórios salvos.");
+    } catch (e: any) {
+      console.error("[visao-rep-2] falha ao atualizar comparativos", e);
+      toast.error("Não foi possível atualizar os comparativos.");
+    } finally {
+      setAtualizandoComparativos(false);
+    }
+  }
+
 
   const gerar = useServerFn(gerarVisaoRep2);
 
@@ -537,6 +558,22 @@ function VisaoRep2Page() {
           <FileUp className="mr-2 h-4 w-4" />
           Enviar relatório pronto
         </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={atualizandoComparativos}
+          onClick={() => void onAtualizarComparativos()}
+          title="Recarrega todos os relatórios salvos e recalcula a média das demais na teia comparativa"
+        >
+          {atualizandoComparativos ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Atualizar comparativos
+        </Button>
+
 
         <Button
           variant="ghost"
