@@ -628,7 +628,7 @@ function VisaoRep2Page() {
 
 
           <Collapse title="Prévia do conteúdo" defaultOpen>
-            <VisaoRep2View visao={draft} perf={null} />
+            <VisaoRep2View visao={draft} perf={perf} />
           </Collapse>
 
           <div className="flex flex-wrap gap-2">
