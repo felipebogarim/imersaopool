@@ -486,10 +486,14 @@ function PerformancePage() {
       await logAudit();
 
       const ign = parsed.ignoradas?.length ?? 0;
-      toast.success(
-        `Planilha importada: ${parsed.rows.length} clientes.` +
+      toast.success("Arquivo validado com sucesso.", {
+        description:
+          `${parsed.rows.length} clientes encontrados. ${parsed.familias.length} famílias reconhecidas. ` +
+          `${parsed.stats?.celulas_avaliadas ?? 0} células de desempenho validadas. ` +
+          `Matriz Financeira ${parsed.matriz ? (parsed.matriz_erros.length ? "inválida" : "válida") : "ausente"}. ` +
+          `Nenhuma divergência entre texto e cor.` +
           (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),
-      );
+      });
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
       qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
