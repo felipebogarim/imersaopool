@@ -209,15 +209,12 @@ export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: Persp
   if (!p) return null;
 
   return (
-    <section className="space-y-5" aria-labelledby="vr2-perspectivas">
-      <div>
-        <h3 id="vr2-perspectivas" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Perspectivas da entrevista
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo.
-        </p>
-      </div>
+    <BlocoExpansivel
+      titulo="Perspectivas da entrevista"
+      descricao="Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."
+    >
+      <div className="space-y-5">
+
 
       <div
         role="tablist"
