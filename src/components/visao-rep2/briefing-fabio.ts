@@ -434,8 +434,12 @@ export const BRIEFING_FABIO: BriefingExecutivo = {
   ],
 };
 
-/** O protótipo executivo só é aplicado ao relatório de Fabio Bristotti. */
-export function briefingParaRepresentante(nome: string | null | undefined): BriefingExecutivo | null {
-  const n = (nome ?? "").toLowerCase();
-  return n.includes("fabio") || n.includes("fábio") ? BRIEFING_FABIO : null;
+/**
+ * DESATIVADO: o briefing curado nunca deve ser aplicado a nenhum relatório.
+ * Aplicá-lo por nome misturava conteúdos entre representantes distintos
+ * (ex.: "Fabio Bristotti" x "Fernando Salton / Fabio Vergani").
+ * Todo relatório é derivado exclusivamente do seu próprio registro.
+ */
+export function briefingParaRepresentante(_nome: string | null | undefined): BriefingExecutivo | null {
+  return null;
 }
