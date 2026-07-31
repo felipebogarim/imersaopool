@@ -145,6 +145,26 @@ function VisaoRep2Page() {
   const [draftHash, setDraftHash] = useState<string | null>(null);
   const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [atualizandoComparativos, setAtualizandoComparativos] = useState(false);
+
+  /** Recarrega todos os relatórios salvos para recalcular a base comparativa da teia. */
+  async function onAtualizarComparativos() {
+    setAtualizandoComparativos(true);
+    try {
+      const [{ data }] = await Promise.all([
+        qc.refetchQueries({ queryKey: ["vr2-reports"] }).then(() => ({ data: null })),
+        qc.refetchQueries({ queryKey: ["vr2-uploads"] }),
+      ]);
+      void data;
+      toast.success("Comparativos atualizados a partir de todos os relatórios salvos.");
+    } catch (e: any) {
+      console.error("[visao-rep-2] falha ao atualizar comparativos", e);
+      toast.error("Não foi possível atualizar os comparativos.");
+    } finally {
+      setAtualizandoComparativos(false);
+    }
+  }
+
 
   const gerar = useServerFn(gerarVisaoRep2);
 
