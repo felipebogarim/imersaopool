@@ -322,12 +322,16 @@ function ComparisonBlock({ item }: { item: ComparisonItem }) {
   return (
     <div className="rounded-lg border p-3">
       <div className="mb-1 flex flex-wrap items-center gap-1.5">
-        <span className={cn("rounded-full px-2 py-0.5 text-[11px]", COMPARISON_TONE[item.kind])}>
-          {COMPARISON_LABEL[item.kind]}
+        <span className={cn("rounded-full px-2 py-0.5 text-[11px]", item.toneOverride ?? COMPARISON_TONE[item.kind])}>
+          {item.labelOverride ?? COMPARISON_LABEL[item.kind]}
         </span>
         {item.supporting != null && item.comparable != null ? (
           <span className="text-[11px] text-muted-foreground">
             {item.supporting} de {item.comparable} fontes comparáveis sustentam
+          </span>
+        ) : item.comparable != null ? (
+          <span className="text-[11px] text-muted-foreground">
+            Base comparável: {item.comparable} entrevista{item.comparable === 1 ? "" : "s"}
           </span>
         ) : null}
       </div>
