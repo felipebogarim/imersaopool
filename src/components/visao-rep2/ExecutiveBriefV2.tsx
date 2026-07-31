@@ -11,7 +11,7 @@ import { BlocoExpansivel } from "./BlocoExpansivel";
 import { GaugeAtingimento } from "./GaugeAtingimento";
 import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
 import type { PerfResumo } from "@/lib/visao-rep";
-import { fmtPct } from "@/lib/visao-rep";
+
 
 export { BlocoExpansivel };
 
