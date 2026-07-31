@@ -123,6 +123,17 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
 
 const LAST_KEY = "vr2:last-report-id";
 
+/** Normaliza nomes para comparação (sem acentos, maiúsculo). */
+const norm = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+
+const tokens = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter((t: string) => t.length > 2);
+
+
 function VisaoRep2Page() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string>("");
@@ -166,10 +177,25 @@ function VisaoRep2Page() {
           .order("created_at", { ascending: false })
       ).data ?? []) as unknown as UploadLite[],
   });
+  /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome. */
+  const repVinculadoId = useMemo(() => {
+    if (selected?.representative_id) return selected.representative_id;
+    const alvo = norm(selected?.representative_name ?? "");
+    if (!alvo) return null;
+    const alvoTokens = tokens(alvo);
+    if (!alvoTokens.length) return null;
+    const exato = reps.find(r => norm(r.nome) === alvo);
+    if (exato) return exato.id;
+    const parcial = reps.find(r => tokens(r.nome).some((t: string) => alvoTokens.includes(t)));
+
+    return parcial?.id ?? null;
+  }, [selected, reps]);
+
   const upload = useMemo(
-    () => uploads.find(u => u.representative_id === selected?.representative_id) ?? null,
-    [uploads, selected],
+    () => uploads.find(u => u.representative_id === repVinculadoId) ?? null,
+    [uploads, repVinculadoId],
   );
+
   const { data: perfRows = [] } = useQuery({
     queryKey: ["vr2-rows", upload?.id],
     enabled: !!upload?.id,
