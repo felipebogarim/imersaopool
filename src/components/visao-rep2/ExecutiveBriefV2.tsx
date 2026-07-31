@@ -22,10 +22,9 @@ export { BlocoExpansivel };
 export function BriefHeaderV2({
   nome,
   regiao,
-  dataEntrevista,
-  dataRelatorio,
   marcas = [],
   atingimento,
+  periodo,
 }: {
   nome: string;
   regiao?: string | null;
@@ -33,55 +32,53 @@ export function BriefHeaderV2({
   dataRelatorio?: string | null;
   marcas?: string[];
   atingimento?: string | null;
+  periodo?: string | null;
 }) {
-  const meta = [
-    regiao ? { k: "Região", v: regiao } : null,
-    dataEntrevista ? { k: "Entrevista", v: dataEntrevista } : null,
-    dataRelatorio ? { k: "Relatório", v: dataRelatorio } : null,
-  ].filter(Boolean) as { k: string; v: string }[];
-
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-xl border bg-card p-5 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:p-6">
-      <div className="min-w-0 space-y-2">
+    <header className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.9fr)]">
+      <div className="min-w-0 rounded-xl border bg-card p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Briefing executivo · Visão Rep 2
         </p>
-        <h2 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{nome}</h2>
-        {meta.length ? (
-          <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-            {meta.map(m => (
-              <div key={m.k} className="flex min-w-0 gap-1.5">
-                <dt className="shrink-0">{m.k}:</dt>
-                <dd className="min-w-0 break-words text-foreground/80">{m.v}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-        {marcas.length ? (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Representa também:</span>
-            {marcas.map(m => (
-              <Badge key={m} variant="secondary" className="font-normal">
-                {m}
-              </Badge>
-            ))}
-          </div>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{nome}</h2>
+        {regiao ? (
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            <span className="font-medium text-foreground/70">Região: </span>
+            {regiao}
+          </p>
         ) : null}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        {atingimento ? (
-          <div className="rounded-lg border bg-muted/30 px-3 py-2 text-right">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Atingimento geral</p>
-            <p className="text-lg font-semibold tabular-nums">{atingimento}</p>
-          </div>
-        ) : null}
-        <Badge variant="outline" className="border-primary/40 text-primary">
-          Versão em validação
-        </Badge>
+
+      <div className="min-w-0 rounded-xl border bg-card p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Representa também:
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {marcas.length ? (
+            marcas.map(m => (
+              <Badge key={m} variant="secondary" className="px-3 py-1 text-sm font-normal">
+                {m}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-sm text-muted-foreground">Não informado</span>
+          )}
+        </div>
+      </div>
+
+      <div className="min-w-0 rounded-xl border bg-muted/30 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Atingimento ponderado geral
+          </p>
+          {periodo ? <span className="text-sm font-semibold tabular-nums">{periodo}</span> : null}
+        </div>
+        <p className="mt-2 text-3xl font-semibold tabular-nums">{atingimento ?? "—"}</p>
       </div>
     </header>
   );
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Contexto e carteira estratégica                                     */
