@@ -123,6 +123,17 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
 
 const LAST_KEY = "vr2:last-report-id";
 
+/** Normaliza nomes para comparação (sem acentos, maiúsculo). */
+const norm = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+
+const tokens = (s: string) => norm(s).split(/[^A-Z0-9]+/).filter((t: string) => t.length > 2);
+
+
 function VisaoRep2Page() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string>("");
