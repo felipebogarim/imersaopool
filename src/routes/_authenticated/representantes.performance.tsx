@@ -14,7 +14,7 @@ import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
-import { conflictMessage } from "@/lib/performance-cell-status";
+import { conflictMessage, CONFLICT_LABEL } from "@/lib/performance-cell-status";
 
 /** SHA-256 do arquivo, usado para identificar reimportações do mesmo arquivo. */
 async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
@@ -417,7 +417,16 @@ function PerformancePage() {
         new Set(parsed.rows.map((r) => r.categoria).filter(Boolean) as string[]),
       );
       audit.matriz_erros = parsed.matriz_erros ?? [];
-      audit.divergencias_texto_cor = parsed.conflitos?.length ?? 0;
+      audit.celulas_avaliadas = parsed.stats?.celulas_avaliadas ?? 0;
+      audit.estilos_carregados = parsed.stats?.estilos_carregados ?? 0;
+      audit.estilos_ausentes = parsed.stats?.estilos_ausentes ?? 0;
+      audit.cores_extraidas = parsed.stats?.cores_extraidas ?? 0;
+      audit.cores_ausentes = parsed.stats?.cores_ausentes ?? 0;
+      audit.cores_desconhecidas = parsed.stats?.cores_desconhecidas ?? 0;
+      audit.cores_distintas = parsed.stats?.cores_distintas ?? [];
+      audit.celulas_por_status = parsed.stats?.por_status ?? {};
+      audit.divergencias_texto_cor = parsed.stats?.divergencias_texto_cor ?? 0;
+      audit.conflitos_total = parsed.conflitos?.length ?? 0;
       audit.divergencias = (parsed.conflitos ?? []).slice(0, 50);
       audit.matriz_status = !parsed.matriz
         ? "ausente"
@@ -425,11 +434,18 @@ function PerformancePage() {
           ? "invalida"
           : "valida";
 
-      // 1) Divergência entre faixa textual e cor interrompe a importação.
+      // 1) Qualquer conflito de cor/texto interrompe a importação.
       if (parsed.conflitos?.length) {
+        const porMotivo = parsed.conflitos.reduce<Record<string, number>>((acc, c) => {
+          acc[c.motivo] = (acc[c.motivo] ?? 0) + 1;
+          return acc;
+        }, {});
+        const resumo = Object.entries(porMotivo)
+          .map(([m, n]) => `${n} ${CONFLICT_LABEL[m as keyof typeof CONFLICT_LABEL] ?? m}`)
+          .join(" · ");
         const head = parsed.conflitos.slice(0, 3).map(conflictMessage).join("\n");
         throw new Error(
-          `${head}${parsed.conflitos.length > 3 ? `\n(+${parsed.conflitos.length - 3} divergência(s))` : ""}`,
+          `Importação interrompida.\n${resumo}\n\n${head}${parsed.conflitos.length > 3 ? `\n(+${parsed.conflitos.length - 3} ocorrência(s))` : ""}`,
         );
       }
       // 2) Matriz financeira presente porém inválida também interrompe.
@@ -470,17 +486,21 @@ function PerformancePage() {
       await logAudit();
 
       const ign = parsed.ignoradas?.length ?? 0;
-      toast.success(
-        `Planilha importada: ${parsed.rows.length} clientes.` +
+      toast.success("Arquivo validado com sucesso.", {
+        description:
+          `${parsed.rows.length} clientes encontrados. ${parsed.familias.length} famílias reconhecidas. ` +
+          `${parsed.stats?.celulas_avaliadas ?? 0} células de desempenho validadas. ` +
+          `Matriz Financeira ${parsed.matriz ? (parsed.matriz_erros.length ? "inválida" : "válida") : "ausente"}. ` +
+          `Nenhuma divergência entre texto e cor.` +
           (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),
-      );
+      });
       setDlgOpen(false);
       qc.invalidateQueries({ queryKey: ["perf-uploads", repId] });
       qc.invalidateQueries({ queryKey: ["perf-all-versions", repId] });
       if (data?.upload_id) setUploadId(data.upload_id);
     } catch (e: any) {
       console.error(e);
-      audit.status = audit.divergencias_texto_cor || audit.matriz_status === "invalida" ? "rejeitada" : "erro";
+      audit.status = audit.conflitos_total || audit.matriz_status === "invalida" ? "rejeitada" : "erro";
       audit.mensagem = String(e?.message ?? e);
       await logAudit();
       toast.error(audit.mensagem || "Erro ao importar planilha.");

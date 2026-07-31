@@ -14,7 +14,7 @@ describe("resolveCellStatus", () => {
     const res = resolveCellStatus("90-100", hex("abaixo_meta"));
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.conflito.motivo).toBe("divergencia");
+      expect(res.conflito.motivo).toBe("divergencia_texto_cor");
       expect(res.conflito.status_texto).toBe("otimo");
       expect(res.conflito.status_cor).toBe("abaixo_meta");
       const msg = conflictMessage({ ...res.conflito, linha: 12, razao_social: "X LTDA", familia: "PERFIL" });
@@ -32,8 +32,9 @@ describe("resolveCellStatus", () => {
   it("bloqueia faixa positiva sem cor", () => {
     const res = resolveCellStatus("70-89", null);
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.conflito.motivo).toBe("cor_ausente");
+    if (!res.ok) expect(res.conflito.motivo).toBe("estilo_ausente");
   });
+
 
   it("usa a cor quando não há faixa textual (arquivo legado)", () => {
     expect(resolveCellStatus(null, hex("proximo"))).toEqual({ ok: true, status: "proximo" });

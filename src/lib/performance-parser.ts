@@ -29,6 +29,20 @@ export type ParsedRow = {
   total_pct_status: FarolStatus | null;
 };
 
+export type CellStats = {
+  celulas_avaliadas: number;
+  celulas_total_pct: number;
+  celulas_familias: number;
+  estilos_carregados: number;
+  estilos_ausentes: number;
+  cores_extraidas: number;
+  cores_ausentes: number;
+  cores_desconhecidas: number;
+  divergencias_texto_cor: number;
+  cores_distintas: string[];
+  por_status: Partial<Record<FarolStatus, number>>;
+};
+
 export type ResumoPct = { __total__: number | null; [familia: string]: number | null };
 
 export type ParsedSheet = {
@@ -46,19 +60,53 @@ export type ParsedSheet = {
   matriz: MatrizParseResult | null;
   /** Erros de validação da matriz financeira (sem valores brutos). */
   matriz_erros: string[];
-  /** Divergências entre faixa textual e cor (bloqueiam a importação). */
+  /** Conflitos de validação (bloqueiam a importação). */
   conflitos: CellConflict[];
+  /** Contagens de validação de células/cores. */
+  stats: CellStats;
   parser_version: string;
 };
 
-function cellHex(cell: any): string | null {
-  const fg = cell?.s?.fill?.fgColor?.rgb ?? cell?.s?.fill?.bgColor?.rgb ?? null;
-  if (!fg) return null;
-  const s = String(fg).replace(/^#/, "").toUpperCase();
-  // 00000000 = "sem preenchimento" em muitos exports
-  if (/^0{6,8}$/.test(s)) return null;
-  return s;
+export type CellFill = {
+  /** true quando a célula possui objeto de estilo. */
+  hasStyle: boolean;
+  /** Valor bruto encontrado (rgb, "theme:N", "indexed:N") ou null. */
+  raw: string | null;
+  /** Cor normalizada RRGGBB ou null. */
+  hex: string | null;
+};
+
+/**
+ * Extrai a cor de preenchimento aceitando o formato ACHATADO do xlsx-js-style
+ * (cell.s.fgColor.rgb) e o formato aninhado (cell.s.fill.fgColor.rgb).
+ * bgColor.indexed nunca é usado como cor de farol.
+ */
+export function cellFill(cell: any): CellFill {
+  const style = cell?.s;
+  if (!style) return { hasStyle: false, raw: null, hex: null };
+
+  const fg = style?.fgColor ?? style?.fill?.fgColor ?? null;
+  const rawRgb = fg?.rgb ?? null;
+
+  if (rawRgb == null || typeof rawRgb !== "string") {
+    // Cores de tema/indexadas não são "cor ausente": registram-se como brutas.
+    if (fg && fg.theme != null) return { hasStyle: true, raw: `theme:${fg.theme}`, hex: null };
+    if (fg && fg.indexed != null) return { hasStyle: true, raw: `indexed:${fg.indexed}`, hex: null };
+    return { hasStyle: true, raw: null, hex: null };
+  }
+
+  let hex = rawRgb.trim().replace(/^#/, "").trim().toUpperCase();
+  if (hex.length === 8) hex = hex.slice(2);
+  if (!/^[0-9A-F]{6}$/.test(hex)) return { hasStyle: true, raw: rawRgb, hex: null };
+  // 000000 / 00000000 = "sem preenchimento" em muitos exports
+  if (hex === "000000") return { hasStyle: true, raw: null, hex: null };
+  return { hasStyle: true, raw: rawRgb, hex };
 }
+
+export function cellHex(cell: any): string | null {
+  return cellFill(cell).hex;
+}
+
 
 function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "antigo" } | null {
   for (let r = 0; r < Math.min(grid.length, 25); r++) {
@@ -97,19 +145,30 @@ function readMatriz(wb: XLSXStyle.WorkBook): MatrizParseResult | null {
   return parseMatrizFinanceiraGrid(grid as unknown[][]);
 }
 
+export type GridCell = { v: any; c: string | null; raw: string | null; hasStyle: boolean };
+
+export function findPerformanceSheetName(names: string[]): string | undefined {
+  return names.find((n) => normSheet(n) === "PERFORMANCE");
+}
+
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const performanceSheetName = findPerformanceSheetName(wb.SheetNames);
+  if (!performanceSheetName) {
+    throw new Error('A aba obrigatória "Performance" não foi encontrada no arquivo.');
+  }
+  const ws = wb.Sheets[performanceSheetName];
   if (!ws) throw new Error("Planilha vazia.");
   const range = XLSXStyle.utils.decode_range(ws["!ref"] || "A1");
 
-  const grid: { v: any; c: string | null }[][] = [];
+  const grid: GridCell[][] = [];
   for (let r = range.s.r; r <= range.e.r; r++) {
-    const row: { v: any; c: string | null }[] = [];
+    const row: GridCell[] = [];
     for (let c = range.s.c; c <= range.e.c; c++) {
       const addr = XLSXStyle.utils.encode_cell({ r, c });
       const cell = ws[addr];
-      row.push({ v: cell ? cell.v : null, c: cellHex(cell) });
+      const fill = cellFill(cell);
+      row.push({ v: cell ? cell.v : null, c: fill.hex, raw: fill.raw, hasStyle: fill.hasStyle });
     }
     grid.push(row);
   }
@@ -126,6 +185,7 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   return { ...base, matriz, matriz_erros };
 }
 
+
 // ---------- Novo formato (planilha ajustada) ----------
 function toPct(v: any): number | null {
   if (v == null || v === "") return null;
@@ -140,7 +200,7 @@ function toPct(v: any): number | null {
 
 type BaseSheet = Omit<ParsedSheet, "matriz" | "matriz_erros">;
 
-function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
+function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
   const hdr = grid[headerRow] ?? [];
   // colunas: 0 Razão, 1 Categoria, 2 Total Meta, 3 Total %, 4.. famílias
   const familias: string[] = [];
@@ -158,6 +218,20 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
   let atingimento: ResumoPct | null = null;
   const ignoradas: IgnoredRow[] = [];
   const conflitos: CellConflict[] = [];
+  const stats: CellStats = {
+    celulas_avaliadas: 0,
+    celulas_total_pct: 0,
+    celulas_familias: 0,
+    estilos_carregados: 0,
+    estilos_ausentes: 0,
+    cores_extraidas: 0,
+    cores_ausentes: 0,
+    cores_desconhecidas: 0,
+    divergencias_texto_cor: 0,
+    cores_distintas: [],
+    por_status: {},
+  };
+  const distintas = new Set<string>();
   let linhas_lidas = 0;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
@@ -197,7 +271,32 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
       continue;
     }
     const total_meta = typeof row[2]?.v === "number" ? (row[2].v as number) : null;
-    const total_pct_status = statusFromFaixa(row[3]?.v);
+
+    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
+      stats.celulas_avaliadas++;
+      if (cell?.hasStyle) stats.estilos_carregados++;
+      else stats.estilos_ausentes++;
+      if (cell?.c) {
+        stats.cores_extraidas++;
+        distintas.add(cell.c);
+      }
+      const res = resolveCellStatus(cell?.v, cell?.c, {
+        hasStyle: Boolean(cell?.hasStyle),
+        rawColor: cell?.raw ?? null,
+      });
+      if (res.ok) {
+        if (res.status) stats.por_status[res.status] = (stats.por_status[res.status] ?? 0) + 1;
+        return res.status;
+      }
+      if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+      else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
+      else if (res.conflito.motivo === "divergencia_texto_cor") stats.divergencias_texto_cor++;
+      conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia });
+      return null;
+    };
+
+    stats.celulas_total_pct++;
+    const total_pct_status = avaliar(row[3], "TOTAL %");
 
     const metas: Record<string, number> = {};
     const metas_status: Record<string, FarolStatus> = {};
@@ -205,12 +304,9 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     familias.forEach((f, i) => {
       const cell = row[famCols[i]];
       if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
-      const res = resolveCellStatus(cell?.v, cell?.c);
-      if (res.ok) {
-        if (res.status) metas_status[f] = res.status;
-      } else {
-        conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia: f });
-      }
+      stats.celulas_familias++;
+      const status = avaliar(cell, f);
+      if (status) metas_status[f] = status;
       if (cell?.c) metas_cores[f] = cell.c;
     });
 
@@ -226,6 +322,8 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     });
   }
 
+  stats.cores_distintas = Array.from(distintas).sort();
+
   return {
     familias,
     categoriaMetas: {},
@@ -236,12 +334,30 @@ function parseNovo(grid: { v: any; c: string | null }[][], headerRow: number): B
     ignoradas,
     linhas_lidas,
     conflitos,
+    stats,
     parser_version: PARSER_VERSION,
   };
 }
 
+
+export function emptyStats(): CellStats {
+  return {
+    celulas_avaliadas: 0,
+    celulas_total_pct: 0,
+    celulas_familias: 0,
+    estilos_carregados: 0,
+    estilos_ausentes: 0,
+    cores_extraidas: 0,
+    cores_ausentes: 0,
+    cores_desconhecidas: 0,
+    divergencias_texto_cor: 0,
+    cores_distintas: [],
+    por_status: {},
+  };
+}
+
 // ---------- Formato antigo (mantido para compatibilidade) ----------
-function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number): BaseSheet {
+function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
   const familias: string[] = [];
   const famCols: number[] = [];
@@ -321,6 +437,7 @@ function parseAntigo(grid: { v: any; c: string | null }[][], headerRow: number):
     ignoradas,
     linhas_lidas,
     conflitos: [],
+    stats: emptyStats(),
     parser_version: PARSER_VERSION,
   };
 }
