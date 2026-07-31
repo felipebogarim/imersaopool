@@ -584,7 +584,7 @@ function VisaoRep2Page() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
-              onClick={() => salvar.mutate(draft)}
+              onClick={() => void salvarUnico(draft)}
               disabled={salvar.isPending || validacao.missingRequired.length > 0}
             >
               {salvar.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
