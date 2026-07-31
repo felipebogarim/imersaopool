@@ -298,14 +298,13 @@ function VisaoRep2Page() {
     if (!repId) return toast.error("Selecione um representante.");
     const existente = reports.find(r => r.representative_id === repId && r.creation_mode === "ai_generated");
     if (existente) {
-      setSelectedId(existente.id);
-      toast.info("Este representante já tem uma Visão Rep salva. Use “Regerar com IA” para substituí-la.");
+      toast.info("Este representante já tem um relatório salvo. Abra-o na lista ou use “Regerar com IA” para substituí-lo.");
       return;
     }
     setBusy(true);
     try {
       await gerarESalvar(repId);
-      toast.success("Visão Rep gerada e salva. Ela ficará fixa nesta página.");
+      toast.success("Relatório gerado e salvo na lista.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na geração.");
     } finally {
