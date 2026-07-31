@@ -510,66 +510,69 @@ function VisaoRep2Page() {
             </Button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1">
-              <Label className="text-xs">Representante</Label>
-              <Input
-                value={draft.metadata.representative_name ?? ""}
-                onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, representative_name: e.target.value } })}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Região</Label>
-              <Input
-                value={draft.metadata.region ?? ""}
-                onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, region: e.target.value } })}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Data da entrevista</Label>
-              <Input
-                value={draft.metadata.interview_date ?? ""}
-                onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, interview_date: e.target.value } })}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Vincular ao cadastro</Label>
-              <Select
-                value={draft.metadata.representative_id ?? ""}
-                onValueChange={v => setDraft({ ...draft, metadata: { ...draft.metadata, representative_id: v } })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Representante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reps.map((r: any) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            {validacao.missingRequired.length ? (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
-                <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
-                  <AlertTriangle className="h-4 w-4" /> Corrija antes de importar
+          <Collapse title="Dados do relatório" defaultOpen>
+            <div className="space-y-5 p-1 sm:p-2">
+              <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Representante</Label>
+                  <Input
+                    value={draft.metadata.representative_name ?? ""}
+                    onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, representative_name: e.target.value } })}
+                  />
                 </div>
-                <ul className="space-y-1 text-destructive">
-                  {validacao.missingRequired.map(r => (
-                    <li key={r}>• Informe “{r}” no relatório e envie o arquivo novamente.</li>
-                  ))}
-                </ul>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Região</Label>
+                  <Input
+                    value={draft.metadata.region ?? ""}
+                    onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, region: e.target.value } })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Data da entrevista</Label>
+                  <Input
+                    value={draft.metadata.interview_date ?? ""}
+                    onChange={e => setDraft({ ...draft, metadata: { ...draft.metadata, interview_date: e.target.value } })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Vincular ao cadastro</Label>
+                  <Select
+                    value={draft.metadata.representative_id ?? ""}
+                    onValueChange={v => setDraft({ ...draft, metadata: { ...draft.metadata, representative_id: v } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Representante" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reps.map((r: any) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            ) : (
-              <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
-                Arquivo validado e pronto para importação.
-              </p>
-            )}
-          </div>
+
+              {validacao.missingRequired.length ? (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-sm">
+                  <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
+                    <AlertTriangle className="h-4 w-4" /> Corrija antes de importar
+                  </div>
+                  <ul className="space-y-1 text-destructive">
+                    {validacao.missingRequired.map(r => (
+                      <li key={r}>• Informe “{r}” no relatório e envie o arquivo novamente.</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+                  Arquivo validado e pronto para importação.
+                </p>
+              )}
+            </div>
+          </Collapse>
+
 
           <Collapse title="Prévia do conteúdo" defaultOpen>
             <VisaoRep2View visao={draft} perf={null} />
