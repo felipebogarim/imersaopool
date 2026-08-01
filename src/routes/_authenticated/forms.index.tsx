@@ -37,6 +37,35 @@ type FormRow = {
   created_at: string;
 };
 
+function norm(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function pick(schema: FormSchema | undefined, answers: Record<string, unknown>, keys: string[]) {
+  const fields = schema?.fields ?? [];
+  for (const f of fields) {
+    const hay = norm(`${f.id} ${f.label}`);
+    if (keys.some(k => hay.includes(k))) {
+      const v = answers[f.id];
+      if (Array.isArray(v)) return v.join(", ");
+      if (v !== null && v !== undefined && String(v).trim() !== "") return String(v);
+    }
+  }
+  for (const [k, v] of Object.entries(answers)) {
+    if (keys.some(kk => norm(k).includes(kk)) && v !== null && v !== undefined && String(v).trim() !== "") {
+      return Array.isArray(v) ? v.join(", ") : String(v);
+    }
+  }
+  return "";
+}
+
+function extractRespondent(schema: FormSchema | undefined, answers: Record<string, unknown>) {
+  return {
+    nome: pick(schema, answers, ["nome", "name", "respondente"]),
+    cargo: pick(schema, answers, ["cargo", "funcao", "role", "posicao"]),
+  };
+}
+
 function FormsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -62,18 +91,31 @@ function FormsPage() {
     },
   });
 
-  const { data: counts } = useQuery({
-    queryKey: ["forms-response-counts", (forms ?? []).map(f => f.id).join(",")],
+  const { data: summary } = useQuery({
+    queryKey: ["forms-response-summary", (forms ?? []).map(f => f.id).join(",")],
     enabled: !!forms && forms.length > 0,
     queryFn: async () => {
       const ids = (forms ?? []).map(f => f.id);
       const { data, error } = await supabase
         .from("form_responses")
-        .select("form_id")
-        .in("form_id", ids);
+        .select("form_id, answers, submitted_at")
+        .in("form_id", ids)
+        .order("submitted_at", { ascending: false });
       if (error) throw error;
-      const map: Record<string, number> = {};
-      for (const r of data ?? []) map[(r as any).form_id] = (map[(r as any).form_id] ?? 0) + 1;
+      const map: Record<string, { count: number; nome: string; cargo: string }> = {};
+      for (const r of (data ?? []) as any[]) {
+        const cur = map[r.form_id] ?? { count: 0, nome: "", cargo: "" };
+        cur.count += 1;
+        if (!cur.nome && !cur.cargo) {
+          const who = extractRespondent(
+            (forms ?? []).find(f => f.id === r.form_id)?.schema,
+            r.answers ?? {},
+          );
+          cur.nome = who.nome;
+          cur.cargo = who.cargo;
+        }
+        map[r.form_id] = cur;
+      }
       return map;
     },
   });
@@ -211,6 +253,8 @@ function FormsPage() {
                     <TableHead>Slug</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Respostas</TableHead>
+                    <TableHead>Respondente</TableHead>
+                    <TableHead>Cargo</TableHead>
                     <TableHead>Criado</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
@@ -225,7 +269,9 @@ function FormsPage() {
                           ? <Badge variant="default">Ativo</Badge>
                           : <Badge variant="secondary">Pausado</Badge>}
                       </TableCell>
-                      <TableCell>{counts?.[f.id] ?? 0}</TableCell>
+                      <TableCell>{summary?.[f.id]?.count ?? 0}</TableCell>
+                      <TableCell className="text-sm">{summary?.[f.id]?.nome || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-sm">{summary?.[f.id]?.cargo || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -293,7 +339,7 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
     if (error) { toast.error(error.message); return; }
     toast.success("Resposta excluída");
     qc.invalidateQueries({ queryKey: ["form-responses", form?.id] });
-    qc.invalidateQueries({ queryKey: ["forms-response-counts"] });
+    qc.invalidateQueries({ queryKey: ["forms-response-summary"] });
   }
 
   function exportCsv() {
