@@ -505,7 +505,7 @@ function VisaoRep2Page() {
             </Button>
           </div>
         </div>
-        <VisaoRep2View visao={visao} perf={perf} comparaveis={comparaveis} />
+        <VisaoRep2View visao={visao} perf={perf} comparaveis={comparaveis} biRepId={repVinculadoId} />
       </div>
     );
   }
