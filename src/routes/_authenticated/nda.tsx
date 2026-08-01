@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/nda")({
 
 function NdaPage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const [uid, setUid] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -28,15 +29,21 @@ function NdaPage() {
   async function accept() {
     if (!accepted || !uid) return;
     setSaving(true);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .update({ nda_accepted_at: new Date().toISOString(), nda_version: NDA_VERSION })
-      .eq("id", uid);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Termo aceito");
+      .eq("id", uid)
+      .select("nda_accepted_at")
+      .maybeSingle();
+    if (error || !data?.nda_accepted_at) {
+      setSaving(false);
+      return toast.error(error?.message ?? "Não foi possível confirmar o aceite. Tente novamente.");
+    }
     clearAuthGateCache();
-    navigate({ to: "/empresas" });
+    await router.invalidate();
+    toast.success("Termo aceito");
+    await navigate({ to: "/empresas", replace: true });
+    setSaving(false);
   }
 
   return (

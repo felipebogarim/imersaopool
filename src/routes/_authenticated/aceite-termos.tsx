@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/aceite-termos")({
 
 function AceitePage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,9 +37,10 @@ function AceitePage() {
         _user_agent: navigator.userAgent.slice(0, 500),
       });
       if (error) throw error;
-      toast.success("Aceite registrado.");
       clearAuthGateCache();
-      navigate({ to: "/dashboard" });
+      await router.invalidate();
+      toast.success("Aceite registrado.");
+      await navigate({ to: "/dashboard", replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível registrar seu aceite. Verifique sua conexão e tente novamente.");
     } finally {
