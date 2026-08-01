@@ -180,3 +180,36 @@ export const createUserWithPassword = createServerFn({ method: "POST" })
 
     return { ok: true, user_id: uid };
   });
+
+const firstAccessSchema = z.object({
+  user_id: z.string().uuid(),
+  redirect_to: z.string().url(),
+});
+
+/** Gera um link de primeiro acesso (magic link) para usuário que ainda não logou. */
+export const generateFirstAccessLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => firstAccessSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+    if (uErr) throw new Error(uErr.message);
+    const email = u?.user?.email;
+    if (!email) throw new Error("Usuário sem e-mail cadastrado");
+    if (u.user?.last_sign_in_at) throw new Error("Este usuário já realizou o primeiro acesso");
+
+    const { data: link, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: data.redirect_to },
+    });
+    if (error) throw new Error(error.message);
+
+    return {
+      email,
+      link: link?.properties?.action_link ?? null,
+      expires_hint: "O link expira conforme a política de segurança (padrão: 1 hora).",
+    };
+  });
