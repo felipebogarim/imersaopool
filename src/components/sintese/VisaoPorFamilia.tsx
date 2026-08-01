@@ -18,10 +18,21 @@ const TONE_BG: Record<Tone, string> = {
   competidor: "var(--mapa-competidor)",
 };
 
-export function VisaoPorFamilia() {
+const norm = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+export function VisaoPorFamilia({
+  repNome,
+  mostrarUpload = true,
+  abertoPadrao = true,
+}: {
+  repNome?: string | null;
+  mostrarUpload?: boolean;
+  abertoPadrao?: boolean;
+} = {}) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [aberto, setAberto] = useState(true);
+  const [aberto, setAberto] = useState(abertoPadrao);
   const [visao, setVisao] = useState<string>("consolidado");
   const [busy, setBusy] = useState(false);
 
