@@ -292,10 +292,31 @@ function UsuariosPage() {
 
 function FirstAccessDialog({
   info, onOpenChange,
-}: { info: { email: string; link: string } | null; onOpenChange: (o: boolean) => void }) {
+}: { info: { email: string; link: string; userId: string } | null; onOpenChange: (o: boolean) => void }) {
   const link = info?.link ?? "";
   const email = info?.email ?? "";
-  const corpo = `Olá,\n\nSeu acesso ao painel foi criado. Use o link abaixo para entrar pela primeira vez, informando a senha temporária que enviamos:\n\n${link}\n\nLogo após entrar, você definirá a sua própria senha.`;
+  const [sending, setSending] = useState(false);
+  const [tempPassword, setTempPassword] = useState("");
+
+  async function enviar() {
+    if (!info) return;
+    setSending(true);
+    try {
+      await sendFirstAccessEmail({
+        data: {
+          user_id: info.userId,
+          origin: window.location.origin,
+          temp_password: tempPassword || undefined,
+        },
+      });
+      toast.success(`Convite enviado para ${email}`);
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao enviar o e-mail");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <Dialog open={!!info} onOpenChange={onOpenChange}>
@@ -309,6 +330,15 @@ function FirstAccessDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">{link}</div>
+          <div className="space-y-1.5">
+            <Label htmlFor="temp-pass">Senha temporária (opcional, incluída no e-mail)</Label>
+            <Input
+              id="temp-pass"
+              value={tempPassword}
+              onChange={(e) => setTempPassword(e.target.value)}
+              placeholder="Deixe em branco para não enviar a senha"
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -316,12 +346,8 @@ function FirstAccessDialog({
             >
               Copiar link
             </Button>
-            <Button
-              onClick={() => {
-                window.location.href = `mailto:${email}?subject=${encodeURIComponent("Seu acesso ao painel")}&body=${encodeURIComponent(corpo)}`;
-              }}
-            >
-              <Send className="h-4 w-4 mr-2" /> Enviar por e-mail
+            <Button onClick={enviar} disabled={sending}>
+              <Send className="h-4 w-4 mr-2" /> {sending ? "Enviando..." : "Enviar por e-mail"}
             </Button>
           </div>
         </div>
@@ -332,6 +358,7 @@ function FirstAccessDialog({
     </Dialog>
   );
 }
+
 
 function CreateUserDialog({
   open, onOpenChange, onDone,
