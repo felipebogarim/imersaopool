@@ -760,11 +760,14 @@ function VisaoRep2View({
   visao,
   perf,
   comparaveis = [],
+  biRepId = null,
 }: {
   visao: VisaoRep2;
   perf: ReturnType<typeof buildPerfResumo> | null;
   /** Relatórios usados na média da teia comparativa. */
   comparaveis?: VisaoRep2[];
+  /** Representante vinculado, usado para abrir o BI em nova janela. */
+  biRepId?: string | null;
 }) {
   const [filtroLinha, setFiltroLinha] = useState<LineClassification | "todas">("todas");
   const ev = visao.executive_view;
