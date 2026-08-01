@@ -228,3 +228,25 @@
 @utility text-cyan {
   color: var(--pf-cyan);
 }
+
+/* ---- Visão por família: paleta oficial da planilha de entrevistas ---- */
+:root {
+  --mapa-positivo: oklch(0.95 0.033 155);
+  --mapa-negativo: oklch(0.94 0.028 25);
+  --mapa-concorrente: oklch(0.95 0.035 75);
+  --mapa-preco: oklch(0.97 0.055 100);
+  --mapa-competidor: oklch(0.95 0.02 245);
+  --mapa-cabecalho: oklch(0.88 0.008 235);
+  --mapa-titulo: oklch(0.25 0.03 245);
+  --mapa-texto: oklch(0.22 0.02 245);
+}
+.dark {
+  --mapa-positivo: oklch(0.30 0.045 155);
+  --mapa-negativo: oklch(0.30 0.045 25);
+  --mapa-concorrente: oklch(0.31 0.05 75);
+  --mapa-preco: oklch(0.32 0.05 100);
+  --mapa-competidor: oklch(0.29 0.04 245);
+  --mapa-cabecalho: oklch(0.26 0.03 245);
+  --mapa-titulo: oklch(0.22 0.03 245);
+  --mapa-texto: oklch(0.93 0.01 245);
+}
