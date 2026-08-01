@@ -67,6 +67,7 @@ function AuthPage() {
 
   async function signIn() {
     setLoading(true);
+    clearAuthGateCache();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
