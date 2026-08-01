@@ -20,13 +20,28 @@ export function useNavAccess(): NavAccess {
       const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       const roles = (roleRows ?? []).map((r: any) => r.role as string);
       if (roles.includes("admin")) return { isAdmin: true, keys: ALL_NAV_KEYS };
-      if (roles.length === 0) return { isAdmin: false, keys: [] as string[] };
-      const { data: perms } = await supabase
-        .from("role_permissions")
-        .select("role, nav_key, allowed")
-        .in("role", roles as any);
-      const keys = (perms ?? []).filter((p: any) => p.allowed).map((p: any) => p.nav_key as string);
-      return { isAdmin: false, keys: Array.from(new Set(keys)) };
+
+      // base: permissões do(s) perfil(is)
+      const base = new Set<string>();
+      if (roles.length) {
+        const { data: perms } = await supabase
+          .from("role_permissions")
+          .select("role, nav_key, allowed")
+          .in("role", roles as any);
+        for (const p of (perms ?? []) as any[]) if (p.allowed) base.add(p.nav_key as string);
+      }
+
+      // override individual do usuário (libera ou bloqueia por pessoa)
+      const { data: userPerms } = await supabase
+        .from("user_nav_permissions")
+        .select("nav_key, allowed")
+        .eq("user_id", uid);
+      for (const p of (userPerms ?? []) as any[]) {
+        if (p.allowed) base.add(p.nav_key as string);
+        else base.delete(p.nav_key as string);
+      }
+
+      return { isAdmin: false, keys: Array.from(base) };
     },
   });
 
