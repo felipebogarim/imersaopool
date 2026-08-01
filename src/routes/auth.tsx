@@ -66,23 +66,40 @@ function AuthPage() {
   }, [navigate, primeiro]);
 
   async function signIn() {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      toast.error("Informe o e-mail e a senha para entrar.");
+      return;
+    }
+
     setLoading(true);
     clearAuthGateCache();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      // Registra tentativa suspeita/falha para o monitor de intrusão
-      try {
-        await supabase.rpc("log_auth_failure", {
-          _email: email,
-          _reason: error.message,
-          _metadata: { user_agent: navigator.userAgent } as any,
-        });
-      } catch { /* silencioso */ }
-      return toast.error(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (error) {
+        // Registra tentativa suspeita/falha para o monitor de intrusão
+        try {
+          await supabase.rpc("log_auth_failure", {
+            _email: normalizedEmail,
+            _reason: error.message,
+            _metadata: { user_agent: navigator.userAgent } as any,
+          });
+        } catch { /* silencioso */ }
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("Bem-vindo!");
+      await navigate({ to: "/dashboard", replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível entrar. Tente novamente.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
-    toast.success("Bem-vindo!");
-    navigate({ to: "/dashboard" });
   }
 
   async function signUp() {
@@ -148,7 +165,7 @@ function AuthPage() {
                   você definirá a sua própria senha.
                 </div>
               )}
-              <div><Label>E-mail</Label><Input type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></div>
+              <div><Label>E-mail</Label><Input type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} disabled={loading || preparingFirstAccess} /></div>
               <div>
                 <Label>{primeiro ? "Senha temporária" : "Senha"}</Label>
                 <Input
@@ -158,6 +175,7 @@ function AuthPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") signIn(); }}
+                  disabled={loading || preparingFirstAccess}
                 />
               </div>
               <Button onClick={signIn} disabled={loading || preparingFirstAccess} className="w-full">

@@ -138,11 +138,16 @@ function RootComponent() {
   }, [isDark]);
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+
+      // Não consulte a autenticação nem reexecute guards dentro do callback.
+      // O cliente de auth ainda mantém um lock nesse momento e a revalidação
+      // imediata pode bloquear a resolução do próprio login.
+      window.setTimeout(() => {
         clearAuthGateCache();
-        router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-      }
+        void router.invalidate();
+        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+      }, 0);
     });
     return () => sub.subscription.unsubscribe();
   }, [router, queryClient]);
