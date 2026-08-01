@@ -1045,7 +1045,11 @@ function PerformancePage() {
 
         {/* BI — indicadores de performance (recolhido por padrão) */}
         {repId && (
-          <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
+          <BISection
+            repId={repId}
+            repName={reps.find((r: any) => r.id === repId)?.nome ?? ""}
+            defaultOpen={!!search.bi && repId === search.rep}
+          />
         )}
 
 
