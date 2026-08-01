@@ -62,18 +62,31 @@ function FormsPage() {
     },
   });
 
-  const { data: counts } = useQuery({
-    queryKey: ["forms-response-counts", (forms ?? []).map(f => f.id).join(",")],
+  const { data: summary } = useQuery({
+    queryKey: ["forms-response-summary", (forms ?? []).map(f => f.id).join(",")],
     enabled: !!forms && forms.length > 0,
     queryFn: async () => {
       const ids = (forms ?? []).map(f => f.id);
       const { data, error } = await supabase
         .from("form_responses")
-        .select("form_id")
-        .in("form_id", ids);
+        .select("form_id, answers, submitted_at")
+        .in("form_id", ids)
+        .order("submitted_at", { ascending: false });
       if (error) throw error;
-      const map: Record<string, number> = {};
-      for (const r of data ?? []) map[(r as any).form_id] = (map[(r as any).form_id] ?? 0) + 1;
+      const map: Record<string, { count: number; nome: string; cargo: string }> = {};
+      for (const r of (data ?? []) as any[]) {
+        const cur = map[r.form_id] ?? { count: 0, nome: "", cargo: "" };
+        cur.count += 1;
+        if (!cur.nome && !cur.cargo) {
+          const who = extractRespondent(
+            (forms ?? []).find(f => f.id === r.form_id)?.schema,
+            r.answers ?? {},
+          );
+          cur.nome = who.nome;
+          cur.cargo = who.cargo;
+        }
+        map[r.form_id] = cur;
+      }
       return map;
     },
   });
