@@ -12,11 +12,13 @@ export type AuthGateData = {
 const TTL_MS = 60_000;
 
 let cache: { userId: string; at: number; data: AuthGateData } | null = null;
-let inflight: Promise<AuthGateData> | null = null;
+const inflight = new Map<string, Promise<AuthGateData>>();
+let generation = 0;
 
 export function clearAuthGateCache() {
   cache = null;
-  inflight = null;
+  inflight.clear();
+  generation += 1;
 }
 
 async function load(userId: string): Promise<AuthGateData> {
@@ -62,14 +64,20 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
   if (cache && cache.userId === userId && Date.now() - cache.at < TTL_MS) {
     return cache.data;
   }
-  if (inflight) return inflight;
-  inflight = load(userId)
+  const existing = inflight.get(userId);
+  if (existing) return existing;
+
+  const requestGeneration = generation;
+  const request = load(userId)
     .then((data) => {
-      cache = { userId, at: Date.now(), data };
+      if (generation === requestGeneration) {
+        cache = { userId: data.userId, at: Date.now(), data };
+      }
       return data;
     })
     .finally(() => {
-      inflight = null;
+      if (inflight.get(userId) === request) inflight.delete(userId);
     });
-  return inflight;
+  inflight.set(userId, request);
+  return request;
 }

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { clearAuthGateCache } from "@/lib/auth-gate";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -37,15 +38,36 @@ function AuthPage() {
   const [email, setEmail] = useState(emailConvite ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [preparingFirstAccess, setPreparingFirstAccess] = useState(primeiro);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    let active = true;
+
+    async function prepareAuth() {
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
+
+      if (primeiro) {
+        // Um convite pode ser aberto no navegador de quem o enviou. Nesse caso,
+        // encerra apenas a sessão local para nunca reutilizar o usuário anterior.
+        if (data.session) {
+          await supabase.auth.signOut({ scope: "local" });
+          clearAuthGateCache();
+        }
+        if (active) setPreparingFirstAccess(false);
+        return;
+      }
+
       if (data.session) navigate({ to: "/dashboard" });
-    });
-  }, [navigate]);
+    }
+
+    prepareAuth();
+    return () => { active = false; };
+  }, [navigate, primeiro]);
 
   async function signIn() {
     setLoading(true);
+    clearAuthGateCache();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
@@ -138,8 +160,8 @@ function AuthPage() {
                   onKeyDown={e => { if (e.key === "Enter") signIn(); }}
                 />
               </div>
-              <Button onClick={signIn} disabled={loading} className="w-full">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Entrar
+              <Button onClick={signIn} disabled={loading || preparingFirstAccess} className="w-full">
+                {(loading || preparingFirstAccess) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Entrar
               </Button>
             </TabsContent>
             <TabsContent value="signup" className="space-y-3 mt-4">
