@@ -370,6 +370,8 @@ function SinteseTipos() {
               </div>
             </>
           )}
+
+          <VisaoPorFamilia />
         </div>
 
         <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
