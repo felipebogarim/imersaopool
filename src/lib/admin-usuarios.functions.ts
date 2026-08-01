@@ -183,10 +183,14 @@ export const createUserWithPassword = createServerFn({ method: "POST" })
 
 const firstAccessSchema = z.object({
   user_id: z.string().uuid(),
-  redirect_to: z.string().url(),
+  /** Origem da aplicação, ex.: https://poolflux.app */
+  origin: z.string().url(),
 });
 
-/** Gera um link de primeiro acesso (magic link) para usuário que ainda não logou. */
+/**
+ * Gera o link de primeiro acesso: leva direto à tela de login já com o e-mail
+ * preenchido, onde o usuário digita a senha temporária. Não expira.
+ */
 export const generateFirstAccessLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) => firstAccessSchema.parse(raw))
@@ -198,18 +202,14 @@ export const generateFirstAccessLink = createServerFn({ method: "POST" })
     if (uErr) throw new Error(uErr.message);
     const email = u?.user?.email;
     if (!email) throw new Error("Usuário sem e-mail cadastrado");
-    if (u.user?.last_sign_in_at) throw new Error("Este usuário já realizou o primeiro acesso");
 
-    const { data: link, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo: data.redirect_to },
-    });
-    if (error) throw new Error(error.message);
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/auth?e=${encodeURIComponent(email)}&primeiro=1`;
 
     return {
       email,
-      link: link?.properties?.action_link ?? null,
-      expires_hint: "O link expira conforme a política de segurança (padrão: 1 hora).",
+      link,
+      expires_hint: "O link não expira — o acesso é validado pela senha temporária.",
     };
   });
+

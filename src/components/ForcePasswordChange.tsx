@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { KeyRound, Loader2, ShieldAlert } from "lucide-react";
+import { Check, KeyRound, Loader2, ShieldAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -32,8 +32,17 @@ export function ForcePasswordChange() {
 
   if (!required) return null;
 
+  const regras = [
+    { ok: senha.length >= 8, label: "Mínimo de 8 caracteres" },
+    { ok: /[A-Za-z]/.test(senha), label: "Pelo menos uma letra" },
+    { ok: /[0-9]/.test(senha), label: "Pelo menos um número" },
+    { ok: /[^A-Za-z0-9]/.test(senha), label: "Pelo menos um símbolo (!@#$…)" },
+  ];
+  const forte = regras.every(r => r.ok);
+  const confere = confirma.length > 0 && senha === confirma;
+
   async function submit() {
-    if (senha.length < 8) return toast.error("A nova senha deve ter ao menos 8 caracteres");
+    if (!forte) return toast.error("A senha deve ter 8+ caracteres, com letras, números e símbolos");
     if (senha !== confirma) return toast.error("As senhas não conferem");
     setSaving(true);
     try {
@@ -80,8 +89,15 @@ export function ForcePasswordChange() {
               autoComplete="new-password"
               value={senha}
               onChange={e => setSenha(e.target.value)}
-              placeholder="Mínimo de 8 caracteres"
+              placeholder="Letras, números e símbolos"
             />
+            <ul className="space-y-1 pt-1">
+              {regras.map(r => (
+                <li key={r.label} className={`flex items-center gap-1.5 text-xs ${r.ok ? "text-primary" : "text-muted-foreground"}`}>
+                  {r.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />} {r.label}
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="space-y-1.5">
             <Label>Confirmar nova senha</Label>
@@ -92,12 +108,15 @@ export function ForcePasswordChange() {
               onChange={e => setConfirma(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") submit(); }}
             />
+            {confirma.length > 0 && !confere && (
+              <p className="text-xs text-destructive">As senhas não conferem.</p>
+            )}
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 pt-1">
           <Button variant="ghost" size="sm" onClick={sair} className="text-muted-foreground">Sair</Button>
-          <Button onClick={submit} disabled={saving}>
+          <Button onClick={submit} disabled={saving || !forte || !confere}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
             Salvar nova senha
           </Button>

@@ -142,7 +142,7 @@ function UsuariosPage() {
     setBusy(true);
     try {
       const res: any = await generateFirstAccessLink({
-        data: { user_id: r.id, redirect_to: window.location.origin + "/" },
+        data: { user_id: r.id, origin: window.location.origin },
       });
       if (!res?.link) throw new Error("Não foi possível gerar o link");
       setLinkInfo({ email: res.email, link: res.link });
@@ -295,7 +295,7 @@ function FirstAccessDialog({
 }: { info: { email: string; link: string } | null; onOpenChange: (o: boolean) => void }) {
   const link = info?.link ?? "";
   const email = info?.email ?? "";
-  const corpo = `Olá,\n\nSeu acesso ao painel foi criado. Use o link abaixo para entrar pela primeira vez (no primeiro acesso você definirá a sua própria senha):\n\n${link}\n\nO link é pessoal e tem validade limitada.`;
+  const corpo = `Olá,\n\nSeu acesso ao painel foi criado. Use o link abaixo para entrar pela primeira vez, informando a senha temporária que enviamos:\n\n${link}\n\nLogo após entrar, você definirá a sua própria senha.`;
 
   return (
     <Dialog open={!!info} onOpenChange={onOpenChange}>
@@ -304,7 +304,7 @@ function FirstAccessDialog({
           <DialogTitle>Convite de primeiro acesso</DialogTitle>
           <DialogDescription>
             Link pessoal para <strong>{email}</strong> entrar pela primeira vez. Ao acessar, ele será obrigado a
-            definir a própria senha. O link tem validade limitada (padrão: 1 hora).
+            definir a própria senha. O link abre a tela de login com o e-mail já preenchido — ele só precisa digitar a senha temporária.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

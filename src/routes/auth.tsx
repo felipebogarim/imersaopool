@@ -12,6 +12,10 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    e: typeof search["e"] === "string" ? (search["e"] as string) : undefined,
+    primeiro: search["primeiro"] === "1" || search["primeiro"] === 1 || search["primeiro"] === true,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — PoolFlux" },
@@ -28,8 +32,9 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { e: emailConvite, primeiro } = Route.useSearch();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailConvite ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
 
@@ -115,8 +120,24 @@ function AuthPage() {
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
             <TabsContent value="signin" className="space-y-3 mt-4">
-              <div><Label>E-mail</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
-              <div><Label>Senha</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} /></div>
+              {primeiro && (
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+                  <strong>Primeiro acesso.</strong> Informe a senha temporária que você recebeu. Logo após entrar,
+                  você definirá a sua própria senha.
+                </div>
+              )}
+              <div><Label>E-mail</Label><Input type="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} /></div>
+              <div>
+                <Label>{primeiro ? "Senha temporária" : "Senha"}</Label>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  autoFocus={primeiro}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") signIn(); }}
+                />
+              </div>
               <Button onClick={signIn} disabled={loading} className="w-full">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Entrar
               </Button>
