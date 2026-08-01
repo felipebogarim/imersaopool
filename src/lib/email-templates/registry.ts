@@ -17,4 +17,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "mfa-deadline-warning": mfaDeadlineWarning,
   "mfa-factor-removed": mfaFactorRemoved,
   "lgpd-purge-executed": lgpdPurgeExecuted,
+  "primeiro-acesso": primeiroAcesso,
 };
