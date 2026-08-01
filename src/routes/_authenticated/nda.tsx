@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BrandLogo } from "@/components/Brand";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { clearAuthGateCache } from "@/lib/auth-gate";
 
 export const NDA_VERSION = "1.0";
 
@@ -34,6 +35,7 @@ function NdaPage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Termo aceito");
+    clearAuthGateCache();
     navigate({ to: "/empresas" });
   }
 
