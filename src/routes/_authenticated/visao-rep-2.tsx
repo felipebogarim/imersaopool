@@ -707,6 +707,9 @@ function VisaoRep2Page() {
           <div className="space-y-2">
             {reports.map(r => (
               <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                <Button size="sm" onClick={() => { setSelectedId(r.id); window.scrollTo({ top: 0 }); }}>
+                  Abrir Visão
+                </Button>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">{r.representative_name}</div>
                   <div className="text-xs text-muted-foreground">
@@ -716,9 +719,7 @@ function VisaoRep2Page() {
                   </div>
                 </div>
                 <Badge variant={r.creation_mode === "imported_ready" ? "outline" : "secondary"}>{MODE_LABEL[r.creation_mode]}</Badge>
-                <Button size="sm" onClick={() => { setSelectedId(r.id); window.scrollTo({ top: 0 }); }}>
-                  Abrir relatório
-                </Button>
+
                 <Button
                   size="sm"
                   variant="ghost"
