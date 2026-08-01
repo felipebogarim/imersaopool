@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2,
+  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2, UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit,
+  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword,
 } from "@/lib/admin-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
@@ -80,6 +80,7 @@ function UsuariosPage() {
   const navigate = useNavigate();
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [auditRow, setAuditRow] = useState<Row | null>(null);
   const [localRow, setLocalRow] = useState<Row | null>(null);
@@ -157,9 +158,14 @@ function UsuariosPage() {
         title="Aprovação de Usuários"
         subtitle="Gerencie solicitações de acesso ao painel"
         actions={
-          <Button className="bg-primary hover:bg-primary/90" onClick={() => setInviteOpen(true)}>
-            <Send className="h-4 w-4 mr-2" /> Enviar convite
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setCreateOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" /> Criar usuário
+            </Button>
+            <Button className="bg-primary hover:bg-primary/90" onClick={() => setInviteOpen(true)}>
+              <Send className="h-4 w-4 mr-2" /> Enviar convite
+            </Button>
+          </>
         }
       />
 
@@ -238,6 +244,11 @@ function UsuariosPage() {
         </div>
       </div>
 
+      <CreateUserDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+      />
       <InviteDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
@@ -251,6 +262,96 @@ function UsuariosPage() {
       <AuditDialog row={auditRow} onOpenChange={(o) => !o && setAuditRow(null)} />
       <LocalizacaoDialog row={localRow} onOpenChange={(o) => !o && setLocalRow(null)} />
     </div>
+  );
+}
+
+function CreateUserDialog({
+  open, onOpenChange, onDone,
+}: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [senha, setSenha] = useState("");
+  const [role, setRole] = useState<string>("admin");
+  const [forcar, setForcar] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!email.trim()) return toast.error("Informe o e-mail");
+    if (senha.length < 8) return toast.error("A senha temporária deve ter ao menos 8 caracteres");
+    setSaving(true);
+    try {
+      await createUserWithPassword({
+        data: {
+          email: email.trim(),
+          password: senha,
+          full_name: nome.trim(),
+          cargo: cargo.trim(),
+          role: role as any,
+          must_change_password: forcar,
+        },
+      });
+      toast.success("Usuário criado");
+      setEmail(""); setNome(""); setCargo(""); setSenha("");
+      onOpenChange(false);
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao criar usuário");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Criar usuário</DialogTitle>
+          <DialogDescription>
+            Crie a conta com uma senha temporária. No primeiro acesso o usuário será obrigado a definir a própria senha.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="nome@empresa.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input value={nome} onChange={e => setNome(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Setor / cargo</Label>
+              <Input value={cargo} onChange={e => setCargo(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Perfil</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Senha temporária</Label>
+            <Input value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo de 8 caracteres" />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" checked={forcar} onChange={e => setForcar(e.target.checked)} />
+            Exigir troca de senha no primeiro acesso
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Criar usuário
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

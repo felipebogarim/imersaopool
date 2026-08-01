@@ -9,6 +9,7 @@ import newlineLogo from "@/assets/newline-logo.png.asset.json";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
+import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
@@ -306,6 +307,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <AdminMfaBanner />
         {blocked ? <AccessDenied /> : children}
       </main>
+      <ForcePasswordChange />
       <ConfidentialityModal />
       <SensitiveAdminGate />
       <Watermark />
