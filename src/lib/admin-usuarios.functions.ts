@@ -134,3 +134,49 @@ export const getUserAudit = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+const createSchema = z.object({
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(8, "Senha deve ter ao menos 8 caracteres"),
+  full_name: z.string().trim().optional().default(""),
+  cargo: z.string().trim().optional().default(""),
+  role: roleEnum.default("agente"),
+  must_change_password: z.boolean().default(true),
+});
+
+export const createUserWithPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => createSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: data.full_name || null,
+        cargo: data.cargo || null,
+        must_change_password: data.must_change_password,
+      },
+    });
+    if (error) throw new Error(error.message);
+    const uid = created?.user?.id;
+    if (!uid) throw new Error("Falha ao criar usuário");
+
+    await supabaseAdmin.from("profiles").upsert(
+      {
+        id: uid,
+        email: data.email,
+        full_name: data.full_name || null,
+        cargo: data.cargo || null,
+        status: "ativo",
+      },
+      { onConflict: "id" },
+    );
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
+    await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: data.role });
+
+    return { ok: true, user_id: uid };
+  });
