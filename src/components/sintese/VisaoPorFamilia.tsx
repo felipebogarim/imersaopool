@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,21 @@ const TONE_BG: Record<Tone, string> = {
   competidor: "var(--mapa-competidor)",
 };
 
-export function VisaoPorFamilia() {
+const norm = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+export function VisaoPorFamilia({
+  repNome,
+  mostrarUpload = true,
+  abertoPadrao = true,
+}: {
+  repNome?: string | null;
+  mostrarUpload?: boolean;
+  abertoPadrao?: boolean;
+} = {}) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [aberto, setAberto] = useState(true);
+  const [aberto, setAberto] = useState(abertoPadrao);
   const [visao, setVisao] = useState<string>("consolidado");
   const [busy, setBusy] = useState(false);
 
@@ -41,6 +52,19 @@ export function VisaoPorFamilia() {
   });
 
   const payload = versao?.payload as unknown as MapaFamiliaPayload | undefined;
+
+  useEffect(() => {
+    if (!payload || !repNome) return;
+    const alvo = norm(repNome);
+    const tokens = alvo.split(" ").filter(t => t.length > 2);
+    const achado =
+      payload.representantes.find(r => norm(r.nome) === alvo) ??
+      payload.representantes.find(r => {
+        const n = norm(r.nome);
+        return tokens.length ? tokens.every(t => n.includes(t)) : false;
+      });
+    if (achado) setVisao(achado.nome);
+  }, [payload, repNome]);
 
   const rep = useMemo(
     () => payload?.representantes.find(r => r.nome === visao) ?? null,
@@ -106,9 +130,11 @@ export function VisaoPorFamilia() {
               </SelectContent>
             </Select>
           )}
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-1" /> Carregar planilha
-          </Button>
+          {mostrarUpload && (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-1" /> Carregar planilha
+            </Button>
+          )}
         </div>
       </div>
 
