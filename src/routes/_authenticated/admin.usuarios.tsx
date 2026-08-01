@@ -252,8 +252,8 @@ function UsuariosPage() {
                         <ActionIcon icon={MessageSquare} label="Mensagem" onClick={() => message(r)} />
                         <ActionIcon
                           icon={Lock}
-                          label="Acessos"
-                          onClick={() => navigate({ to: "/admin/permissoes" })}
+                          label="Acessos deste usuário"
+                          onClick={() => navigate({ to: "/admin/permissoes", search: { user: r.id } })}
                         />
                         <ActionIcon icon={MapPin} label="Localização" onClick={() => setLocalRow(r)} />
                         <ActionIcon icon={FileText} label="Auditoria" onClick={() => setAuditRow(r)} />
