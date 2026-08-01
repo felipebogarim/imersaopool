@@ -339,7 +339,7 @@ function ResponsesDialog({ form, onClose }: { form: FormRow | null; onClose: () 
     if (error) { toast.error(error.message); return; }
     toast.success("Resposta excluída");
     qc.invalidateQueries({ queryKey: ["form-responses", form?.id] });
-    qc.invalidateQueries({ queryKey: ["forms-response-counts"] });
+    qc.invalidateQueries({ queryKey: ["forms-response-summary"] });
   }
 
   function exportCsv() {
