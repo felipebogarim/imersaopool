@@ -210,33 +210,59 @@ function SinteseTipos() {
         />
 
         <div className="p-4 sm:p-8 space-y-5">
-          <div className="flex flex-wrap items-center gap-2">
-
-            {FONTE_TIPOS.map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => toggleTipo(t)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs transition",
-                  tipos.includes(t) ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted",
+          <div className="surface rounded-xl p-3 sm:p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Universo de fontes
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {tipos.length > 1 ? (
+                  <><ArrowRightLeft className="inline h-3 w-3 mr-1" />cruzamento entre universos</>
+                ) : (
+                  "universo isolado"
                 )}
-              >
-                {TIPO_LABEL[t]}
-              </button>
-            ))}
-            <span className="text-xs text-muted-foreground ml-1">
-              {tipos.length > 1 ? <><ArrowRightLeft className="inline h-3 w-3 mr-1" />cruzamento entre universos</> : "universo isolado"}
-            </span>
-            <div className="ml-auto w-48">
-              <Select value={regiao} onValueChange={setRegiao}>
-                <SelectTrigger><SelectValue placeholder="Região" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as regiões</SelectItem>
-                  {regioes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              </span>
+              <div className="ml-auto w-48">
+                <Select value={regiao} onValueChange={setRegiao}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Região" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as regiões</SelectItem>
+                    {regioes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" aria-label="Tipos de fonte">
+              {FONTE_TIPOS.map(t => {
+                const ativo = tipos.includes(t);
+                const total = fontes.filter((f: any) => f.tipo === t).length;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() => toggleTipo(t)}
+                    className={cn(
+                      "group flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition",
+                      ativo
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-background hover:border-primary/50 hover:bg-muted",
+                    )}
+                  >
+                    <span className="text-sm font-semibold leading-tight">{TIPO_LABEL[t]}</span>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                        ativo ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {total}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
           {tiposVazios.length > 0 && (
