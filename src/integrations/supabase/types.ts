@@ -4250,6 +4250,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_nav_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          nav_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          nav_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          nav_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
