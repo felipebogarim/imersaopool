@@ -16,6 +16,7 @@ import { importarAnaliseSintese } from "@/lib/sintese-import.functions";
 import { extractFileText } from "@/lib/sintese-file-text";
 import { exportSintesePdf } from "@/lib/sintese-pdf";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
+import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
 import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2, FileDown, Upload, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -209,7 +210,10 @@ function SinteseTipos() {
         />
 
         <div className="p-4 sm:p-8 space-y-5">
+          <VisaoPorFamilia />
+
           <div className="flex flex-wrap items-center gap-2">
+
             {FONTE_TIPOS.map(t => (
               <button
                 key={t}
