@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,51 +12,53 @@ import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
+import { NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
+import { useNavAccess } from "@/hooks/useNavAccess";
 
-const NAV = [
-  { to: "/dashboard", label: "BI", icon: BarChart3 },
-] as const;
-
-const INPUTS = [
-  { to: "/imersoes", label: "Imersões em Campo", icon: FileSearch },
-  { to: "/fontes", label: "Fontes de Insight", icon: Lightbulb },
-  { to: "/entrevistas", label: "Entrevistas", icon: MessageSquare },
-  { to: "/forms", label: "Forms", icon: FileText },
-] as const;
-
-
-const ANALISES = [
-  { to: "/sintese/tipos", label: "Síntese por tipo", icon: LineChart },
-  { to: "/visao-rep", label: "Visão Rep", icon: Users },
-  { to: "/visao-rep-2", label: "Visão Rep", icon: Users },
-  { to: "/perspectivas", label: "Perspectivas", icon: Lightbulb },
-  { to: "/compilacoes", label: "Compilações IA", icon: Sparkles },
-] as const;
-
-
-const PRICE = [
-  { to: "/price/competidores", label: "Competidores", icon: Users },
-  { to: "/price/tabelas", label: "Tabelas", icon: FileText },
-  { to: "/price/comparativos", label: "Comparativos", icon: BarChart3 },
-] as const;
-
-
-const REPS = [
-  { to: "/representantes", label: "Atuais Reps", icon: Users },
-  { to: "/representantes/performance", label: "Performance", icon: TrendingUp },
-] as const;
-
-const CLIENTES = [
-  { to: "/clientes", label: "Clientes", icon: Briefcase },
-  { to: "/projecao", label: "Projeção de Categorias / Benefícios", icon: TrendingUp },
-  { to: "/novo-corp", label: "Novo Corp", icon: Building2 },
-] as const;
-
-const BASES = [
-  { to: "/produtos", label: "Produtos", icon: Package },
-  { to: "/familias", label: "Famílias", icon: Package },
-  { to: "/roteiros", label: "Roteiros", icon: BookOpen },
-] as const;
+const ICONS: Record<string, typeof BarChart3> = {
+  bi: BarChart3,
+  inputs: Inbox,
+  "inputs.imersoes": FileSearch,
+  "inputs.fontes": Lightbulb,
+  "inputs.entrevistas": MessageSquare,
+  "inputs.forms": FileText,
+  analises: LineChart,
+  "analises.sintese-tipos": LineChart,
+  "analises.visao-rep": Users,
+  "analises.visao-rep-2": Users,
+  "analises.perspectivas": Lightbulb,
+  "analises.compilacoes": Sparkles,
+  price: Tag,
+  "price.competidores": Users,
+  "price.tabelas": FileText,
+  "price.comparativos": BarChart3,
+  representantes: Users,
+  "representantes.lista": Users,
+  "representantes.performance": TrendingUp,
+  clientes: Briefcase,
+  "clientes.lista": Briefcase,
+  "clientes.projecao": TrendingUp,
+  "clientes.novo-corp": Building2,
+  bases: Database,
+  "bases.produtos": Package,
+  "bases.familias": Package,
+  "bases.roteiros": BookOpen,
+  ferramentas: Wrench,
+  "ferramentas.gerador-performance": Sparkles,
+  "ferramentas.tarefas": ListChecks,
+  admin: Shield,
+  "admin.usuarios": UserCog,
+  "admin.agentes": UserCog,
+  "admin.permissoes": ShieldCheck,
+  "admin.conformidade": FileText,
+  "admin.mfa": KeyRound,
+  "admin.mfa-politica": Shield,
+  "admin.mfa-recuperacao": KeyRound,
+  "admin.auditoria-seguranca": Shield,
+  "admin.lgpd": ShieldCheck,
+  "admin.criterios-seguranca": ShieldCheck,
+  "admin.backup": HardDriveDownload,
+};
 
 // Label span: hidden when sidebar is collapsed on desktop; shown on hover or when mobile drawer is open.
 const LBL = "hidden group-hover/sidebar:inline group-data-[mobile-open=true]/sidebar:inline whitespace-nowrap";
@@ -81,20 +83,76 @@ function NavItem({ to, label, Icon, active }: { to: string; label: string; Icon:
   );
 }
 
+function NavGroupBlock({
+  group,
+  pathname,
+  visibleChildren,
+}: {
+  group: NavGroup;
+  pathname: string;
+  visibleChildren: NavGroup["children"];
+}) {
+  const Icon = ICONS[group.key] ?? Database;
+  const [open, setOpen] = useState(() => visibleChildren.some(c => pathname === c.to || pathname.startsWith(c.to + "/")));
+  return (
+    <div className="pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        title={group.label}
+        className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className={cn("flex-1 text-left", LBL)}>{group.label}</span>
+        {open ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
+      </button>
+      {open && (
+        <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
+          {visibleChildren.map(item => (
+            <NavItem
+              key={item.key}
+              to={item.to}
+              label={item.label}
+              Icon={ICONS[item.key] ?? Database}
+              active={pathname === item.to || (item.to !== "/representantes" && item.to !== "/clientes" && pathname.startsWith(item.to + "/"))}
+            />
+          ))}
+          {group.key === "ferramentas" && (
+            <button
+              type="button"
+              onClick={() => toast.info("Tabela de Preços", { description: "Área em construção." })}
+              title="Tabela de Preços"
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition text-left"
+            >
+              <Tag className="h-4 w-4 shrink-0" />
+              <span className={LBL}>Tabela de Preços</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccessDenied() {
+  return (
+    <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <Lock className="h-10 w-10 text-muted-foreground" />
+      <h2 className="text-xl font-semibold">Acesso não liberado</h2>
+      <p className="max-w-md text-sm text-muted-foreground">
+        Seu perfil não tem permissão para esta seção. Solicite liberação ao administrador em
+        <strong> Admin → Permissões</strong>.
+      </p>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
-  const [basesOpen, setBasesOpen] = useState(() => BASES.some(b => pathname.startsWith(b.to)));
-  const [inputsOpen, setInputsOpen] = useState(() => INPUTS.some(b => pathname.startsWith(b.to)));
-  const [analisesOpen, setAnalisesOpen] = useState(() => ANALISES.some(b => pathname.startsWith(b.to)));
-  const [repsOpen, setRepsOpen] = useState(() => REPS.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
-  const [clientesOpen, setClientesOpen] = useState(() => CLIENTES.some(b => pathname === b.to || pathname.startsWith(b.to + "/")));
-  const [ferramentasOpen, setFerramentasOpen] = useState(() => pathname.startsWith("/admin/gerador-performance") || pathname.startsWith("/tarefas"));
-  const [priceOpen, setPriceOpen] = useState(() => pathname.startsWith("/price"));
-
-  const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin") || pathname.startsWith("/agentes"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const access = useNavAccess();
   // Close mobile drawer on route change
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -120,13 +178,27 @@ export function AppShell({ children }: { children: ReactNode }) {
     },
   });
 
-
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
+
+  const required = navKeyForPath(pathname);
+  const blocked =
+    !access.loading &&
+    !access.isAdmin &&
+    !!required &&
+    (!access.can(required.groupKey) || (required.itemKey ? !access.can(required.itemKey) : false));
+
+  const visibleGroups = NAV_TREE.map(g => {
+    if (g.adminOnly && !workspace?.isAdmin) return null;
+    if (!access.can(g.key)) return null;
+    const children = g.children.filter(c => access.can(c.key));
+    if (g.children.length > 0 && children.length === 0) return null;
+    return { group: g, children };
+  }).filter(Boolean) as { group: NavGroup; children: NavGroup["children"] }[];
 
   return (
     <div className="min-h-screen flex">
@@ -169,204 +241,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           ) : (
             <>
-              {NAV.map(item => (
-                <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-              ))}
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setInputsOpen(o => !o)}
-                  title="Inputs"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Inbox className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Inputs</span>
-                  {inputsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {inputsOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {INPUTS.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setAnalisesOpen(o => !o)}
-                  title="Análises"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <LineChart className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Análises</span>
-                  {analisesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {analisesOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {ANALISES.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPriceOpen(o => !o)}
-                  title="Price"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Tag className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Price</span>
-                  {priceOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {priceOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {PRICE.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setRepsOpen(o => !o)}
-                  title="Representantes"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Users className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Representantes</span>
-                  {repsOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {repsOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {REPS.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || (item.to !== "/representantes" && pathname.startsWith(item.to + "/"))} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setClientesOpen(o => !o)}
-                  title="Clientes"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Briefcase className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Clientes</span>
-                  {clientesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {clientesOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {CLIENTES.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setBasesOpen(o => !o)}
-                  title="Bases"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Database className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Bases</span>
-                  {basesOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {basesOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    {BASES.map(item => (
-                      <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setFerramentasOpen(o => !o)}
-                  title="Ferramentas"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                >
-                  <Wrench className="h-4 w-4 shrink-0" />
-                  <span className={cn("flex-1 text-left", LBL)}>Ferramentas</span>
-                  {ferramentasOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                </button>
-                {ferramentasOpen && (
-                  <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                    <NavItem
-                      to="/admin/gerador-performance"
-                      label="Gerador de Performance"
-                      Icon={Sparkles}
-                      active={pathname === "/admin/gerador-performance"}
-                    />
-                    <NavItem
-                      to="/tarefas"
-                      label="Gestão de Tarefas"
-                      Icon={ListChecks}
-                      active={pathname.startsWith("/tarefas")}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => toast.info("Tabela de Preços", { description: "Área em construção." })}
-                      title="Tabela de Preços"
-                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition text-left"
-                    >
-                      <Tag className="h-4 w-4 shrink-0" />
-                      <span className={LBL}>Tabela de Preços</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {workspace?.isAdmin && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setAdminOpen(o => !o)}
-                    title="Admin"
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
-                  >
-                    <Shield className="h-4 w-4 shrink-0" />
-                    <span className={cn("flex-1 text-left", LBL)}>Admin</span>
-                    {adminOpen ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
-                  </button>
-                  {adminOpen && (
-                    <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-                      {[
-                        { to: "/admin/usuarios", label: "Usuários", icon: UserCog },
-                        { to: "/agentes", label: "Agentes", icon: UserCog },
-                        { to: "/admin/permissoes", label: "Permissões", icon: ShieldCheck },
-                        { to: "/admin/conformidade", label: "Conformidade e Aceites", icon: FileText },
-                        { to: "/admin/mfa", label: "Meu MFA", icon: KeyRound },
-                        { to: "/admin/mfa-politica", label: "Política de MFA", icon: Shield },
-                        { to: "/admin/mfa-recuperacao", label: "Recuperação de MFA", icon: KeyRound },
-                        { to: "/admin/auditoria-seguranca", label: "Auditoria de Segurança", icon: Shield },
-                        { to: "/admin/lgpd", label: "LGPD e Expurgo", icon: ShieldCheck },
-                        { to: "/admin/criterios-seguranca", label: "Critérios de Segurança", icon: ShieldCheck },
-                        { to: "/admin/backup", label: "Backup", icon: HardDriveDownload },
-
-                      ].map(item => (
-                        <NavItem key={item.to} to={item.to} label={item.label} Icon={item.icon} active={pathname === item.to || pathname.startsWith(item.to + "/")} />
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {visibleGroups.map(({ group, children }) =>
+                group.children.length === 0 && group.to ? (
+                  <NavItem
+                    key={group.key}
+                    to={group.to}
+                    label={group.label}
+                    Icon={ICONS[group.key] ?? Database}
+                    active={pathname === group.to || pathname.startsWith(group.to + "/")}
+                  />
+                ) : (
+                  <NavGroupBlock key={group.key} group={group} pathname={pathname} visibleChildren={children} />
+                )
               )}
             </>
           )}
@@ -418,7 +304,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <AdminMfaBanner />
-        {children}
+        {blocked ? <AccessDenied /> : children}
       </main>
       <ConfidentialityModal />
       <SensitiveAdminGate />
@@ -438,4 +324,3 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
     </div>
   );
 }
-
