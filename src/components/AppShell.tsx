@@ -152,6 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: s => s.location.pathname });
+  const isAccessGatePage = pathname === "/nda" || pathname === "/aceite-termos";
   const [mobileOpen, setMobileOpen] = useState(false);
   const access = useNavAccess();
   // Close mobile drawer on route change
@@ -304,12 +305,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
           </div>
         </div>
-        <AdminMfaBanner />
+        {!isAccessGatePage && <AdminMfaBanner />}
         {blocked ? <AccessDenied /> : children}
       </main>
-      <ForcePasswordChange />
-      <ConfidentialityModal />
-      <SensitiveAdminGate />
+      {!isAccessGatePage && <ForcePasswordChange />}
+      {!isAccessGatePage && <ConfidentialityModal />}
+      {!isAccessGatePage && <SensitiveAdminGate />}
       <Watermark />
     </div>
   );
