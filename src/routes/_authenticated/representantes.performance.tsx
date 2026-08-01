@@ -78,7 +78,8 @@ type Row = {
 function PerformancePage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [repId, setRepId] = useState<string>("");
+  const search = Route.useSearch();
+  const [repId, setRepId] = useState<string>(search.rep ?? "");
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
