@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
 import { ShieldCheck, ChevronDown, ChevronRight, Save, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -130,8 +130,8 @@ function PermissoesPage() {
               {NAV_TREE.map(g => {
                 const expanded = !!open[g.key];
                 return (
-                  <>
-                    <tr key={g.key} className="border-b border-border hover:bg-muted/30">
+                  <Fragment key={g.key}>
+                    <tr className="border-b border-border hover:bg-muted/30">
                       <td className="px-6 py-3 font-medium">
                         <button
                           type="button"
@@ -173,7 +173,7 @@ function PermissoesPage() {
                           ))}
                         </tr>
                       ))}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
