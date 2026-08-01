@@ -53,6 +53,7 @@ import {
   Shield,
   Sparkles,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-rep-2")({
