@@ -240,7 +240,9 @@ function FormsPage() {
                           ? <Badge variant="default">Ativo</Badge>
                           : <Badge variant="secondary">Pausado</Badge>}
                       </TableCell>
-                      <TableCell>{counts?.[f.id] ?? 0}</TableCell>
+                      <TableCell>{summary?.[f.id]?.count ?? 0}</TableCell>
+                      <TableCell className="text-sm">{summary?.[f.id]?.nome || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-sm">{summary?.[f.id]?.cargo || <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <DropdownMenu>
