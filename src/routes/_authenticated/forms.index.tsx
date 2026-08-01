@@ -289,6 +289,10 @@ function FormsPage() {
                             <DropdownMenuItem onClick={() => navigate({ to: "/forms/$id", params: { id: f.id } })}>
                               <Pencil className="h-4 w-4 mr-2" /> Editar
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setRespondingFor(f)}>
+                              <ListChecks className="h-4 w-4 mr-2" /> Ver respostas
+                            </DropdownMenuItem>
+
                             <DropdownMenuItem onClick={() => toggleActive(f)}>
                               {f.is_active ? <><Pause className="h-4 w-4 mr-2" /> Pausar</> : <><Play className="h-4 w-4 mr-2" /> Ativar</>}
                             </DropdownMenuItem>
