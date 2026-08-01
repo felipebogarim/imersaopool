@@ -130,9 +130,11 @@ export function VisaoPorFamilia({
               </SelectContent>
             </Select>
           )}
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-1" /> Carregar planilha
-          </Button>
+          {mostrarUpload && (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-1" /> Carregar planilha
+            </Button>
+          )}
         </div>
       </div>
 
