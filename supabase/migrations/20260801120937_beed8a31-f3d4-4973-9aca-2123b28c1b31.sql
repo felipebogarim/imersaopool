@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.mapa_familia_versoes TO sandbox_exec;
