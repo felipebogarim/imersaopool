@@ -213,3 +213,38 @@ export const generateFirstAccessLink = createServerFn({ method: "POST" })
     };
   });
 
+const sendFirstAccessSchema = z.object({
+  user_id: z.string().uuid(),
+  origin: z.string().url(),
+  temp_password: z.string().trim().optional(),
+});
+
+/** Envia o convite de primeiro acesso por e-mail (infra de e-mails do app). */
+export const sendFirstAccessEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => sendFirstAccessSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { sendTransactionalEmail } = await import("@/lib/email/send.server");
+
+    const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+    if (uErr) throw new Error(uErr.message);
+    const email = u?.user?.email;
+    if (!email) throw new Error("Usuário sem e-mail cadastrado");
+    const name = (u?.user?.user_metadata as any)?.full_name ?? null;
+
+    const base = data.origin.replace(/\/+$/, "");
+    const link = `${base}/auth?e=${encodeURIComponent(email)}&primeiro=1`;
+
+    await sendTransactionalEmail({
+      templateName: "primeiro-acesso",
+      recipientEmail: email,
+      idempotencyKey: `primeiro-acesso:${data.user_id}:${Date.now()}`,
+      templateData: { name, link, tempPassword: data.temp_password || undefined },
+    });
+
+    return { ok: true, email };
+  });
+
+

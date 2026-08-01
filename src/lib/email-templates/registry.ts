@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { template as mfaDeadlineWarning } from "./mfa-deadline-warning";
 import { template as mfaFactorRemoved } from "./mfa-factor-removed";
 import { template as lgpdPurgeExecuted } from "./lgpd-purge-executed";
+import { template as primeiroAcesso } from "./primeiro-acesso";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -16,4 +17,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "mfa-deadline-warning": mfaDeadlineWarning,
   "mfa-factor-removed": mfaFactorRemoved,
   "lgpd-purge-executed": lgpdPurgeExecuted,
+  "primeiro-acesso": primeiroAcesso,
 };
