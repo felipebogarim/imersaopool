@@ -210,7 +210,10 @@ function SinteseTipos() {
         />
 
         <div className="p-4 sm:p-8 space-y-5">
+          <VisaoPorFamilia />
+
           <div className="flex flex-wrap items-center gap-2">
+
             {FONTE_TIPOS.map(t => (
               <button
                 key={t}
