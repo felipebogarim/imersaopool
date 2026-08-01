@@ -45,6 +45,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
   head: () => ({ meta: [{ title: "Performance — Representantes" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    rep: typeof search.rep === "string" ? search.rep : undefined,
+    bi: search.bi === "1" || search.bi === true ? true : undefined,
+  }),
   component: PerformancePage,
 });
 
@@ -74,7 +78,8 @@ type Row = {
 function PerformancePage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [repId, setRepId] = useState<string>("");
+  const search = Route.useSearch();
+  const [repId, setRepId] = useState<string>(search.rep ?? "");
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
@@ -1040,7 +1045,11 @@ function PerformancePage() {
 
         {/* BI — indicadores de performance (recolhido por padrão) */}
         {repId && (
-          <BISection repId={repId} repName={reps.find((r: any) => r.id === repId)?.nome ?? ""} />
+          <BISection
+            repId={repId}
+            repName={reps.find((r: any) => r.id === repId)?.nome ?? ""}
+            defaultOpen={!!search.bi && repId === search.rep}
+          />
         )}
 
 

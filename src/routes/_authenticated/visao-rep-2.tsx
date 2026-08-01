@@ -53,6 +53,7 @@ import {
   Shield,
   Sparkles,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-rep-2")({
@@ -505,7 +506,7 @@ function VisaoRep2Page() {
             </Button>
           </div>
         </div>
-        <VisaoRep2View visao={visao} perf={perf} comparaveis={comparaveis} />
+        <VisaoRep2View visao={visao} perf={perf} comparaveis={comparaveis} biRepId={repVinculadoId} />
       </div>
     );
   }
@@ -760,11 +761,14 @@ function VisaoRep2View({
   visao,
   perf,
   comparaveis = [],
+  biRepId = null,
 }: {
   visao: VisaoRep2;
   perf: ReturnType<typeof buildPerfResumo> | null;
   /** Relatórios usados na média da teia comparativa. */
   comparaveis?: VisaoRep2[];
+  /** Representante vinculado, usado para abrir o BI em nova janela. */
+  biRepId?: string | null;
 }) {
   const [filtroLinha, setFiltroLinha] = useState<LineClassification | "todas">("todas");
   const ev = visao.executive_view;
@@ -783,6 +787,24 @@ function VisaoRep2View({
 
   return (
     <div className="space-y-4">
+      {biRepId ? (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              window.open(
+                `/representantes/performance?rep=${encodeURIComponent(biRepId)}&bi=1`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            BI do rep
+          </Button>
+        </div>
+      ) : null}
       <ExecutiveBriefV2
         brief={brief}
         nome={visao.metadata.representative_name ?? "Representante"}
