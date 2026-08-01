@@ -786,6 +786,24 @@ function VisaoRep2View({
 
   return (
     <div className="space-y-4">
+      {biRepId ? (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              window.open(
+                `/representantes/performance?rep=${encodeURIComponent(biRepId)}&bi=1`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            BI do rep
+          </Button>
+        </div>
+      ) : null}
       <ExecutiveBriefV2
         brief={brief}
         nome={visao.metadata.representative_name ?? "Representante"}
