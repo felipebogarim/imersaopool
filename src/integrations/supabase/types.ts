@@ -2458,6 +2458,36 @@ export type Database = {
           },
         ]
       }
+      mapa_familia_versoes: {
+        Row: {
+          arquivo: string | null
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          payload: Json
+          versao: number
+        }
+        Insert: {
+          arquivo?: string | null
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload: Json
+          versao?: number
+        }
+        Update: {
+          arquivo?: string | null
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json
+          versao?: number
+        }
+        Relationships: []
+      }
       own_products: {
         Row: {
           categoria: string | null
