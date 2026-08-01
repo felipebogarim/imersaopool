@@ -1,5 +1,5 @@
 /**
- * Converte qualquer relatório Visão Rep 2 (importado ou gerado) no mesmo
+ * Converte qualquer relatório Visão Rep (importado ou gerado) no mesmo
  * modelo de briefing executivo usado na tela. É o que garante que todos os
  * representantes sejam exibidos com a estrutura e a ordem padrão.
  */

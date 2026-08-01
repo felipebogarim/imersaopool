@@ -1,4 +1,4 @@
-// Modelo canônico da Visão Rep 2.
+// Modelo canônico da Visão Rep.
 // Os dois modos de criação (Gerar com IA e Importar relatório pronto) produzem
 // exatamente este objeto. Nada aqui inventa conteúdo: campos ausentes ficam
 // nulos ou vazios e a interface simplesmente os oculta.
@@ -56,7 +56,7 @@ export type PrioritySignal = {
   evidence_status: EvidenceStatus | null;
   source_chapter: string | null;
   source_quote: string | null;
-  /** Vínculos opcionais (Leitura integrada da Visão Rep 2). Relatórios antigos não possuem. */
+  /** Vínculos opcionais (Leitura integrada da Visão Rep). Relatórios antigos não possuem. */
   signal_id?: string | null;
   validation_note?: string | null;
   related_perspectives?: number[];

@@ -1,4 +1,4 @@
-// Teia comparativa de posicionamento — exclusiva da Visão Rep 2.
+// Teia comparativa de posicionamento — exclusiva da Visão Rep.
 // Índices analíticos derivados das entrevistas (nunca pesquisa de mercado,
 // nunca dados de performance). A Visão Rep original não usa este componente.
 

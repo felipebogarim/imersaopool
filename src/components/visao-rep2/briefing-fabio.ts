@@ -1,5 +1,5 @@
 /**
- * Protótipo estático do briefing executivo da Visão Rep 2 (Fabio Bristotti).
+ * Protótipo estático do briefing executivo da Visão Rep (Fabio Bristotti).
  * Conteúdo curado manualmente para validação visual — não vem do parser nem do banco.
  * Nenhum outro módulo do produto depende deste arquivo.
  */

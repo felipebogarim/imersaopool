@@ -1,4 +1,4 @@
-// Leitura integrada — exclusiva da Visão Rep 2.
+// Leitura integrada — exclusiva da Visão Rep.
 // Três camadas sincronizadas por sinal executivo: significado, evidência e comparação.
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 

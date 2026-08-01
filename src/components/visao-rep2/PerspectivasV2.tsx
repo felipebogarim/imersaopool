@@ -1,4 +1,4 @@
-// Perspectivas da entrevista — navegação principal exclusiva da Visão Rep 2.
+// Perspectivas da entrevista — navegação principal exclusiva da Visão Rep.
 // Preserva o modelo visual aprovado nos Temas estratégicos (narrativa 8 col + apoio 4 col).
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 
