@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2, UserPlus,
+  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2, UserPlus, LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword,
+  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword, generateFirstAccessLink,
 } from "@/lib/admin-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
@@ -81,6 +81,7 @@ function UsuariosPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string } | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [auditRow, setAuditRow] = useState<Row | null>(null);
   const [localRow, setLocalRow] = useState<Row | null>(null);
@@ -132,6 +133,21 @@ function UsuariosPage() {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao remover usuário");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function firstAccess(r: Row) {
+    setBusy(true);
+    try {
+      const res: any = await generateFirstAccessLink({
+        data: { user_id: r.id, redirect_to: window.location.origin + "/" },
+      });
+      if (!res?.link) throw new Error("Não foi possível gerar o link");
+      setLinkInfo({ email: res.email, link: res.link });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar link de primeiro acesso");
     } finally {
       setBusy(false);
     }
@@ -224,6 +240,14 @@ function UsuariosPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <ActionIcon icon={Key} label="Resetar Senha" onClick={() => resetPassword(r.email)} />
+                        {!r.last_sign_in_at && (
+                          <ActionIcon
+                            icon={LinkIcon}
+                            label="Enviar convite de primeiro acesso"
+                            disabled={busy}
+                            onClick={() => firstAccess(r)}
+                          />
+                        )}
                         <ActionIcon icon={UserCog} label="Editar Perfil" onClick={() => setEditRow(r)} />
                         <ActionIcon icon={MessageSquare} label="Mensagem" onClick={() => message(r)} />
                         <ActionIcon
@@ -259,9 +283,53 @@ function UsuariosPage() {
         onOpenChange={(o) => !o && setEditRow(null)}
         onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
       />
+      <FirstAccessDialog info={linkInfo} onOpenChange={(o) => !o && setLinkInfo(null)} />
       <AuditDialog row={auditRow} onOpenChange={(o) => !o && setAuditRow(null)} />
       <LocalizacaoDialog row={localRow} onOpenChange={(o) => !o && setLocalRow(null)} />
     </div>
+  );
+}
+
+function FirstAccessDialog({
+  info, onOpenChange,
+}: { info: { email: string; link: string } | null; onOpenChange: (o: boolean) => void }) {
+  const link = info?.link ?? "";
+  const email = info?.email ?? "";
+  const corpo = `Olá,\n\nSeu acesso ao painel foi criado. Use o link abaixo para entrar pela primeira vez (no primeiro acesso você definirá a sua própria senha):\n\n${link}\n\nO link é pessoal e tem validade limitada.`;
+
+  return (
+    <Dialog open={!!info} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Convite de primeiro acesso</DialogTitle>
+          <DialogDescription>
+            Link pessoal para <strong>{email}</strong> entrar pela primeira vez. Ao acessar, ele será obrigado a
+            definir a própria senha. O link tem validade limitada (padrão: 1 hora).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">{link}</div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
+            >
+              Copiar link
+            </Button>
+            <Button
+              onClick={() => {
+                window.location.href = `mailto:${email}?subject=${encodeURIComponent("Seu acesso ao painel")}&body=${encodeURIComponent(corpo)}`;
+              }}
+            >
+              <Send className="h-4 w-4 mr-2" /> Enviar por e-mail
+            </Button>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
