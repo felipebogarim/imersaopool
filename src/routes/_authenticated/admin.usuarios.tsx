@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword, generateFirstAccessLink,
+  sendFirstAccessEmail,
 } from "@/lib/admin-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
