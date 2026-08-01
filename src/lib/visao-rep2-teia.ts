@@ -1,5 +1,5 @@
 /**
- * Teia comparativa de posicionamento (brand_positioning_v1) — Visão Rep 2.
+ * Teia comparativa de posicionamento (brand_positioning_v1) — Visão Rep.
  *
  * Índices analíticos derivados das entrevistas. Nada aqui é pesquisa de mercado
  * nem dado de performance: apenas os scores enviados/gerados no relatório.

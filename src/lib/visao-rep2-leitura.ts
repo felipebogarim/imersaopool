@@ -1,4 +1,4 @@
-// Modelo de leitura integrada da Visão Rep 2 (exclusivo da V2).
+// Modelo de leitura integrada da Visão Rep (exclusivo da V2).
 // Fonte única de verdade por sinal executivo: a conclusão vive no sinal,
 // as evidências vivem nas perspectivas e a comparação vive no paralelo.
 // Nada é inventado: quando o relatório não traz vínculos, eles ficam vazios.

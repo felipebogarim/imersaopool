@@ -1,5 +1,5 @@
 /**
- * Modelo de leitura das oito Perspectivas da entrevista — exclusivo da Visão Rep 2.
+ * Modelo de leitura das oito Perspectivas da entrevista — exclusivo da Visão Rep.
  * Não altera parser, schema nem banco: apenas reorganiza o conteúdo já importado
  * para a navegação principal da página.
  */

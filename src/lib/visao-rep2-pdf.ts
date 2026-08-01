@@ -1,4 +1,4 @@
-// Exporta a Visão Rep 2 em PDF com o mesmo padrão visual da página do sistema:
+// Exporta a Visão Rep em PDF com o mesmo padrão visual da página do sistema:
 // fundo azul-claro, cartões arredondados, faixas de seção escuras, badges e
 // barras de performance — espelhando os blocos da tela.
 import jsPDF from "jspdf";
@@ -182,7 +182,7 @@ export function exportVisaoRep2Pdf(visao: VisaoRep2, perf: PerfResumo | null) {
   doc.text("POOLFLUX · ANÁLISES", M + 18, y + 22);
   doc.setFontSize(19);
   doc.setTextColor(...C.white);
-  doc.text("Visão Rep 2 — leitura executiva", M + 18, y + 45);
+  doc.text("Visão Rep — leitura executiva", M + 18, y + 45);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(196, 214, 224);
@@ -504,7 +504,7 @@ export function exportVisaoRep2Pdf(visao: VisaoRep2, perf: PerfResumo | null) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...C.mutedFg);
-    doc.text(`PoolFlux · Visão Rep 2 · ${repNome} · confidencial`, M, H - 20);
+    doc.text(`PoolFlux · Visão Rep · ${repNome} · confidencial`, M, H - 20);
     doc.text(`Página ${i} de ${total}`, PW - M, H - 20, { align: "right" });
   }
 

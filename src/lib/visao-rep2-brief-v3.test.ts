@@ -93,7 +93,7 @@ Tese central do relatório antigo.
 - achado_executivo: Achado antigo.
 `;
 
-describe("Visão Rep 2 — schema 3.0 / executive_brief_v1", () => {
+describe("Visão Rep — schema 3.0 / executive_brief_v1", () => {
   const v = normalizeVisaoRep2(parseVisaoRepMarkdown(BRIEF_V3));
 
   it("reconhece o schema 3.0 e o view_model", () => {
@@ -141,7 +141,7 @@ describe("Visão Rep 2 — schema 3.0 / executive_brief_v1", () => {
   });
 });
 
-describe("Visão Rep 2 — relatórios anteriores ao 3.0", () => {
+describe("Visão Rep — relatórios anteriores ao 3.0", () => {
   const v = normalizeVisaoRep2(parseVisaoRepMarkdown(LEGACY_V2));
 
   it("mantém a validação antiga", () => {

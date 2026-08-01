@@ -1,4 +1,4 @@
-// Parser e serializador do formato Markdown canônico da Visão Rep 2.
+// Parser e serializador do formato Markdown canônico da Visão Rep.
 // REGRA DE FIDELIDADE: o parser apenas reconhece campos, valida a estrutura,
 // remove delimitadores externos e armazena os valores. Nada é resumido,
 // reescrito, corrigido ou completado.

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Bloco padrão da Visão Rep 2: cabeçalho clicável com seta de expandir/contrair. */
+/** Bloco padrão da Visão Rep: cabeçalho clicável com seta de expandir/contrair. */
 export function BlocoExpansivel({
   titulo,
   descricao,

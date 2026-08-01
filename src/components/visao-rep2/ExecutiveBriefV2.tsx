@@ -39,7 +39,7 @@ export function BriefHeaderV2({
     <header className="grid gap-4 lg:grid-cols-3">
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Briefing executivo · Visão Rep 2
+          Briefing executivo · Visão Rep
         </p>
         <h2 className="mt-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-2xl">{nome}</h2>
         {regiao ? (
@@ -374,7 +374,7 @@ export function AgendaExecutivaV2({ brief }: { brief: BriefingExecutivo }) {
   const gerar = (origem: string, it: { texto: string; status: string }) =>
     setTarefa({
       title: it.texto,
-      description: `Origem: Visão Rep 2 · Agenda executiva · ${origem}\nStatus: ${it.status}\n\n${it.texto}`,
+      description: `Origem: Visão Rep · Agenda executiva · ${origem}\nStatus: ${it.status}\n\n${it.texto}`,
     });
 
   return (

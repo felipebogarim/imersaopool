@@ -10,7 +10,7 @@ import {
 
 /**
  * Modo "Gerar com IA": lê as fontes já processadas do representante e devolve
- * o objeto canônico da Visão Rep 2. Nada é gravado aqui — o usuário revisa a
+ * o objeto canônico da Visão Rep. Nada é gravado aqui — o usuário revisa a
  * prévia antes de confirmar.
  */
 export const gerarVisaoRep2 = createServerFn({ method: "POST" })
@@ -50,7 +50,7 @@ export const gerarVisaoRep2 = createServerFn({ method: "POST" })
       .join("\n\n");
     if (material.trim().length < 40) throw new Error("A entrevista deste representante ainda não tem conteúdo processado.");
 
-    const prompt = `Você organiza o material JÁ EXISTENTE de uma entrevista com representante comercial no modelo canônico "Visão Rep 2".
+    const prompt = `Você organiza o material JÁ EXISTENTE de uma entrevista com representante comercial no modelo canônico "Visão Rep".
 
 Regras invioláveis:
 - Use SOMENTE o material fornecido. Não invente achados, clientes, marcas, linhas, citações ou números.
