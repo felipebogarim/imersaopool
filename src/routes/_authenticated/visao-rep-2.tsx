@@ -799,45 +799,11 @@ function VisaoRep2View({
 
 
 
-      {/* Performance */}
-      <Card title="Conexão com a Performance">
-        {perf ? (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Badge variant="secondary">{perf.periodoLabel}</Badge>
-              <Badge variant="outline">Resultado geral {fmtPct(perf.geralPct)}</Badge>
-              <Badge variant="outline">{perf.clientes} clientes</Badge>
-            </div>
-            {perf.familias.length ? (
-              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-                {perf.familias.map(f => (
-                  <div key={f.familia} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
-                    <span>{f.familia}</span>
-                    <span className="text-muted-foreground">{fmtPct(f.pct)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {perf.criticas.length ? (
-              <p className="text-xs text-muted-foreground">
-                Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Ainda não há uma Performance ativa para este representante. Após a integração, será possível validar os sinais da entrevista por cliente, família e faixa de atendimento.
-            </p>
-            <Button asChild size="sm" variant="secondary">
-              <a href="/representantes/performance">
-                <Link2 className="mr-2 h-4 w-4" />
-                Vincular Performance
-              </a>
-            </Button>
-          </div>
-        )}
-      </Card>
+      {/* Visão por família */}
+      <VisaoPorFamilia
+        repNome={visao.metadata.representative_name}
+        mostrarUpload={false}
+      />
 
       {/* Áreas de aprofundamento */}
       <div className="space-y-3 pt-2">
