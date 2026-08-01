@@ -224,6 +224,8 @@ function FormsPage() {
                     <TableHead>Slug</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Respostas</TableHead>
+                    <TableHead>Respondente</TableHead>
+                    <TableHead>Cargo</TableHead>
                     <TableHead>Criado</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
