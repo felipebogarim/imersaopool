@@ -120,7 +120,48 @@ function FormsPage() {
     },
   });
 
+  async function exportExcel(f: FormRow, modo: "geral" | "completo") {
+    const { data, error } = await supabase
+      .from("form_responses")
+      .select("answers, submitted_at")
+      .eq("form_id", f.id)
+      .order("submitted_at", { ascending: false });
+    if (error) return toast.error("Falha ao buscar respostas");
+    const rows = (data ?? []) as { answers: Record<string, unknown>; submitted_at: string }[];
+    if (!rows.length) return toast.error("Este formulário ainda não tem respostas");
+
+    const fields = f.schema?.fields ?? [];
+    const sheet = rows.map(r => {
+      const answers = r.answers ?? {};
+      const who = extractRespondent(f.schema, answers);
+      const base: Record<string, string> = {
+        Formulário: f.title,
+        Respondente: who.nome,
+        Cargo: who.cargo,
+        "Enviado em": new Date(r.submitted_at).toLocaleString("pt-BR"),
+      };
+      if (modo === "geral") return base;
+      for (const fld of fields) {
+        const v = answers[fld.id];
+        base[fld.label || fld.id] = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
+      }
+      for (const [k, v] of Object.entries(answers)) {
+        if (fields.some(fl => fl.id === k)) continue;
+        base[k] = Array.isArray(v) ? v.join(", ") : v == null ? "" : String(v);
+      }
+      return base;
+    });
+
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.json_to_sheet(sheet);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, modo === "geral" ? "Geral" : "Respostas");
+    XLSX.writeFile(wb, `${f.slug}-${modo === "geral" ? "geral" : "respostas"}.xlsx`);
+    toast.success("Excel exportado");
+  }
+
   const suggestedSlug = useMemo(() => slug || slugify(title), [slug, title]);
+
 
   async function handleGenerate() {
     if (!title.trim()) return toast.error("Informe o título");
@@ -292,9 +333,18 @@ function FormsPage() {
                             <DropdownMenuItem onClick={() => setRespondingFor(f)}>
                               <ListChecks className="h-4 w-4 mr-2" /> Ver respostas
                             </DropdownMenuItem>
+
                             <DropdownMenuItem onClick={() => toggleActive(f)}>
                               {f.is_active ? <><Pause className="h-4 w-4 mr-2" /> Pausar</> : <><Play className="h-4 w-4 mr-2" /> Ativar</>}
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => exportExcel(f, "geral")}>
+                              <Download className="h-4 w-4 mr-2" /> Exportar Excel (geral)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportExcel(f, "completo")}>
+                              <Download className="h-4 w-4 mr-2" /> Exportar Excel (todos os resultados)
+                            </DropdownMenuItem>
+
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => removeForm(f)}>
                               <Trash2 className="h-4 w-4 mr-2" /> Excluir
