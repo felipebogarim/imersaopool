@@ -53,6 +53,19 @@ export function VisaoPorFamilia({
 
   const payload = versao?.payload as unknown as MapaFamiliaPayload | undefined;
 
+  useEffect(() => {
+    if (!payload || !repNome) return;
+    const alvo = norm(repNome);
+    const tokens = alvo.split(" ").filter(t => t.length > 2);
+    const achado =
+      payload.representantes.find(r => norm(r.nome) === alvo) ??
+      payload.representantes.find(r => {
+        const n = norm(r.nome);
+        return tokens.length ? tokens.every(t => n.includes(t)) : false;
+      });
+    if (achado) setVisao(achado.nome);
+  }, [payload, repNome]);
+
   const rep = useMemo(
     () => payload?.representantes.find(r => r.nome === visao) ?? null,
     [payload, visao],
