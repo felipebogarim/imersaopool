@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ function formatCountdown(deadlineISO: string): { text: string; expired: boolean 
 
 export function AdminMfaBanner() {
   const { data } = useAdminMfaStatus();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { dismissed, dismiss } = useBannerDismiss();
   const [, setTick] = useState(0);
 
@@ -31,6 +32,11 @@ export function AdminMfaBanner() {
     const id = setInterval(() => setTick((n) => n + 1), 30_000);
     return () => clearInterval(id);
   }, [data?.deadline]);
+
+  // Em telas de bloqueio (aceites, empresa, própria config de MFA) o botão levaria
+  // o usuário de volta para a mesma tela — não faz sentido exibir o aviso ali.
+  const GATE_PATHS = ["/nda", "/aceite-termos", "/termos-de-uso", "/empresas", "/admin/mfa"];
+  if (GATE_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return null;
 
   if (!data?.is_admin) return null;
   if (data.has_verified_factor) return null;
