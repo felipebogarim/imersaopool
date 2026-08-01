@@ -145,7 +145,7 @@ function UsuariosPage() {
         data: { user_id: r.id, origin: window.location.origin },
       });
       if (!res?.link) throw new Error("Não foi possível gerar o link");
-      setLinkInfo({ email: res.email, link: res.link });
+      setLinkInfo({ email: res.email, link: res.link, userId: r.id });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar link de primeiro acesso");
     } finally {
