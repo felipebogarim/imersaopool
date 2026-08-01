@@ -1,16 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit,
+} from "@/lib/admin-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: UsuariosPage,
@@ -21,10 +33,32 @@ type Row = {
   full_name: string | null;
   email: string | null;
   cargo: string | null;
+  phone: string | null;
+  regiao: string | null;
   status: string;
   created_at: string;
   role: string | null;
+  last_sign_in_at: string | null;
 };
+
+type AuditRow = {
+  id: string;
+  tipo: string;
+  acao: string | null;
+  recurso: string | null;
+  resultado: string | null;
+  nivel_risco: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  ocorrido_em: string;
+};
+
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Gestão" },
+  { value: "gestor", label: "Diretoria" },
+  { value: "agente", label: "Liderança" },
+  { value: "comercial", label: "Comercial" },
+];
 
 function fmt(d: string | null) {
   if (!d) return "—";
@@ -32,21 +66,31 @@ function fmt(d: string | null) {
   return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
+function fmtDateTime(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("pt-BR");
+}
+
 function roleLabel(r: string | null) {
-  if (r === "admin") return "Gestão";
-  if (r === "gestor") return "Diretoria";
-  if (r === "agente") return "Liderança";
-  return "—";
+  return ROLE_OPTIONS.find(o => o.value === r)?.label ?? "—";
 }
 
 function UsuariosPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [editRow, setEditRow] = useState<Row | null>(null);
+  const [auditRow, setAuditRow] = useState<Row | null>(null);
+  const [localRow, setLocalRow] = useState<Row | null>(null);
+  const [busy, setBusy] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, cargo, status, created_at")
+        .select("id, full_name, email, cargo, phone, regiao, status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const ids = (profiles ?? []).map(p => p.id);
@@ -54,7 +98,18 @@ function UsuariosPage() {
         ? await supabase.from("user_roles").select("user_id, role").in("user_id", ids)
         : { data: [] as { user_id: string; role: string }[] };
       const byUser = new Map<string, string>((roles ?? []).map(r => [r.user_id, r.role]));
-      return (profiles ?? []).map<Row>(p => ({ ...p, role: byUser.get(p.id) ?? null }));
+
+      let lastSign = new Map<string, string | null>();
+      const { data: adminList } = await supabase.rpc("admin_list_users");
+      if (Array.isArray(adminList)) {
+        lastSign = new Map(adminList.map((u: any) => [u.id, u.last_sign_in_at ?? null]));
+      }
+
+      return (profiles ?? []).map<Row>(p => ({
+        ...p,
+        role: byUser.get(p.id) ?? null,
+        last_sign_in_at: lastSign.get(p.id) ?? null,
+      }));
     },
   });
 
@@ -67,12 +122,23 @@ function UsuariosPage() {
     toast.success("E-mail de redefinição enviado");
   }
 
-  async function removeUser(id: string) {
-    if (!confirm("Remover este usuário do sistema?")) return;
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Usuário removido");
-    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  async function removeUser(r: Row) {
+    if (!confirm(`Remover definitivamente ${r.full_name ?? r.email}? Esta ação exclui a conta de acesso.`)) return;
+    setBusy(true);
+    try {
+      await deleteUserAccount({ data: { user_id: r.id } });
+      toast.success("Usuário removido");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao remover usuário");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function message(r: Row) {
+    if (!r.email) return toast.error("Usuário sem e-mail");
+    window.location.href = `mailto:${r.email}?subject=${encodeURIComponent("Contato — Painel")}`;
   }
 
   return (
@@ -91,7 +157,7 @@ function UsuariosPage() {
         title="Aprovação de Usuários"
         subtitle="Gerencie solicitações de acesso ao painel"
         actions={
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => setInviteOpen(true)}>
             <Send className="h-4 w-4 mr-2" /> Enviar convite
           </Button>
         }
@@ -148,16 +214,20 @@ function UsuariosPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{fmt(r.created_at)}</td>
-                    <td className="px-6 py-4 text-muted-foreground">—</td>
+                    <td className="px-6 py-4 text-muted-foreground">{fmt(r.last_sign_in_at)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
                         <ActionIcon icon={Key} label="Resetar Senha" onClick={() => resetPassword(r.email)} />
-                        <ActionIcon icon={UserCog} label="Editar Perfil" />
-                        <ActionIcon icon={MessageSquare} label="Mensagem" />
-                        <ActionIcon icon={Lock} label="Acessos" />
-                        <ActionIcon icon={MapPin} label="Localização" />
-                        <ActionIcon icon={FileText} label="Auditoria" />
-                        <ActionIcon icon={Trash2} label="Remover" danger onClick={() => removeUser(r.id)} />
+                        <ActionIcon icon={UserCog} label="Editar Perfil" onClick={() => setEditRow(r)} />
+                        <ActionIcon icon={MessageSquare} label="Mensagem" onClick={() => message(r)} />
+                        <ActionIcon
+                          icon={Lock}
+                          label="Acessos"
+                          onClick={() => navigate({ to: "/admin/permissoes" })}
+                        />
+                        <ActionIcon icon={MapPin} label="Localização" onClick={() => setLocalRow(r)} />
+                        <ActionIcon icon={FileText} label="Auditoria" onClick={() => setAuditRow(r)} />
+                        <ActionIcon icon={Trash2} label="Remover" danger disabled={busy} onClick={() => removeUser(r)} />
                       </div>
                     </td>
                   </tr>
@@ -167,13 +237,277 @@ function UsuariosPage() {
           </div>
         </div>
       </div>
+
+      <InviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+      />
+      <EditDialog
+        row={editRow}
+        onOpenChange={(o) => !o && setEditRow(null)}
+        onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+      />
+      <AuditDialog row={auditRow} onOpenChange={(o) => !o && setAuditRow(null)} />
+      <LocalizacaoDialog row={localRow} onOpenChange={(o) => !o && setLocalRow(null)} />
     </div>
   );
 }
 
+function InviteDialog({
+  open, onOpenChange, onDone,
+}: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [role, setRole] = useState<string>("agente");
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (!email.trim()) return toast.error("Informe o e-mail");
+    setSaving(true);
+    try {
+      await inviteUser({
+        data: {
+          email: email.trim(),
+          full_name: nome.trim(),
+          cargo: cargo.trim(),
+          role: role as any,
+          redirect_to: window.location.origin + "/auth",
+        },
+      });
+      toast.success("Convite enviado");
+      setEmail(""); setNome(""); setCargo("");
+      onOpenChange(false);
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao enviar convite");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Enviar convite</DialogTitle>
+          <DialogDescription>O usuário receberá um e-mail para definir a senha e acessar o painel.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="nome@empresa.com" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input value={nome} onChange={e => setNome(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Setor / cargo</Label>
+            <Input value={cargo} onChange={e => setCargo(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Perfil</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Enviar convite
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditDialog({
+  row, onOpenChange, onDone,
+}: { row: Row | null; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ full_name: "", cargo: "", phone: "", regiao: "", status: "pendente", role: "none" });
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+
+  if (row && loadedId !== row.id) {
+    setLoadedId(row.id);
+    setForm({
+      full_name: row.full_name ?? "",
+      cargo: row.cargo ?? "",
+      phone: row.phone ?? "",
+      regiao: row.regiao ?? "",
+      status: row.status ?? "pendente",
+      role: row.role ?? "none",
+    });
+  }
+
+  async function save() {
+    if (!row) return;
+    setSaving(true);
+    try {
+      await updateUserProfile({
+        data: {
+          user_id: row.id,
+          full_name: form.full_name,
+          cargo: form.cargo,
+          phone: form.phone,
+          regiao: form.regiao,
+          status: form.status as any,
+          role: form.role === "none" ? null : (form.role as any),
+        },
+      });
+      toast.success("Perfil atualizado");
+      onOpenChange(false);
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!row} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar perfil</DialogTitle>
+          <DialogDescription>{row?.email ?? ""}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label>Nome</Label>
+            <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Setor / cargo</Label>
+              <Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Região</Label>
+              <Input value={form.regiao} onChange={e => setForm({ ...form, regiao: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Telefone</Label>
+              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Perfil de acesso</Label>
+            <Select value={form.role} onValueChange={v => setForm({ ...form, role: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem perfil</SelectItem>
+                {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function useAudit(row: Row | null) {
+  return useQuery({
+    queryKey: ["admin-user-audit", row?.id],
+    enabled: !!row,
+    queryFn: async () => (await getUserAudit({ data: { user_id: row!.id, limit: 50 } })) as AuditRow[],
+  });
+}
+
+function AuditDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
+  const { data, isLoading } = useAudit(row);
+  return (
+    <Dialog open={!!row} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Auditoria — {row?.full_name ?? row?.email}</DialogTitle>
+          <DialogDescription>Últimos 50 eventos de segurança registrados para este usuário.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-border">
+          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
+          {!isLoading && (data?.length ?? 0) === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum evento registrado</div>
+          )}
+          {(data ?? []).map(e => (
+            <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">{e.acao ?? e.tipo}</span>
+                <span className="text-xs text-muted-foreground">{fmtDateTime(e.ocorrido_em)}</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {[e.recurso, e.resultado, e.nivel_risco, e.ip].filter(Boolean).join(" · ") || "—"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LocalizacaoDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
+  const { data, isLoading } = useAudit(row);
+  const acessos = (data ?? []).filter(e => e.ip).slice(0, 20);
+  return (
+    <Dialog open={!!row} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Localização e dispositivos — {row?.full_name ?? row?.email}</DialogTitle>
+          <DialogDescription>
+            Região cadastrada: <strong>{row?.regiao ?? "não informada"}</strong>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border">
+          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
+          {!isLoading && acessos.length === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum acesso com IP registrado</div>
+          )}
+          {acessos.map(e => (
+            <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">{e.ip}</span>
+                <span className="text-xs text-muted-foreground">{fmtDateTime(e.ocorrido_em)}</span>
+              </div>
+              <div className="text-xs text-muted-foreground truncate">{e.user_agent ?? "—"}</div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ActionIcon({
-  icon: Icon, label, onClick, danger,
-}: { icon: any; label: string; onClick?: () => void; danger?: boolean }) {
+  icon: Icon, label, onClick, danger, disabled,
+}: { icon: any; label: string; onClick?: () => void; danger?: boolean; disabled?: boolean }) {
   return (
     <TooltipProvider delayDuration={100}>
       <Tooltip>
@@ -181,8 +515,9 @@ function ActionIcon({
           <button
             type="button"
             onClick={onClick}
+            disabled={disabled}
             className={cn(
-              "h-8 w-8 rounded-md flex items-center justify-center transition",
+              "h-8 w-8 rounded-md flex items-center justify-center transition disabled:opacity-40",
               danger
                 ? "text-red-500 hover:bg-red-50"
                 : "text-foreground/70 hover:bg-primary hover:text-primary-foreground"
