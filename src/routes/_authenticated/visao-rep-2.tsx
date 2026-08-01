@@ -59,13 +59,13 @@ import {
 export const Route = createFileRoute("/_authenticated/visao-rep-2")({
   head: () => ({
     meta: [
-      { title: "Visão Rep 2 — PoolFlux" },
+      { title: "Visão Rep — PoolFlux" },
       {
         name: "description",
         content:
-          "Visão Rep 2: leitura executiva do representante em modelo canônico, gerada por IA ou importada a partir de um relatório final pronto.",
+          "Visão Rep: leitura executiva do representante em modelo canônico, gerada por IA ou importada a partir de um relatório final pronto.",
       },
-      { property: "og:title", content: "Visão Rep 2 — PoolFlux" },
+      { property: "og:title", content: "Visão Rep — PoolFlux" },
       { property: "og:description", content: "Relatórios executivos por representante: geração por IA ou importação fiel do relatório pronto." },
     ],
   }),
@@ -361,7 +361,7 @@ function VisaoRep2Page() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Todos os dados de Visão Rep 2 foram limpos.");
+      toast.success("Todos os dados de Visão Rep foram limpos.");
       setSelectedId("");
       setDraft(null);
       setDraftFile(null);
@@ -374,7 +374,7 @@ function VisaoRep2Page() {
 
   async function onLimparTudo() {
     if (!reports.length) return toast.info("Não há relatórios salvos para limpar.");
-    if (!window.confirm("Tem certeza que deseja limpar TODOS os relatórios de Visão Rep 2? Esta ação não pode ser desfeita.")) return;
+    if (!window.confirm("Tem certeza que deseja limpar TODOS os relatórios de Visão Rep? Esta ação não pode ser desfeita.")) return;
     await limparTodos.mutateAsync();
   }
 
@@ -516,7 +516,7 @@ function VisaoRep2Page() {
   return (
     <div>
       <PageHeader
-        title="Visão Rep 2"
+        title="Visão Rep"
         subtitle="Leitura executiva do representante em modelo canônico: gere com IA ou importe o relatório final pronto."
       />
 
@@ -702,7 +702,7 @@ function VisaoRep2Page() {
           representante use “Regerar com IA”.
         </p>
         {!reports.length ? (
-          <EmptyState title="Nenhuma Visão Rep 2 ainda" description="Gere com IA ou importe um relatório pronto para começar." />
+          <EmptyState title="Nenhuma Visão Rep ainda" description="Gere com IA ou importe um relatório pronto para começar." />
         ) : (
           <div className="space-y-2">
             {reports.map(r => (
