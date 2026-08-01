@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { clearAuthGateCache } from "@/lib/auth-gate";
 
 export const Route = createFileRoute("/_authenticated/aceite-termos")({
   head: () => ({ meta: [{ title: "Aceite dos Termos" }, { name: "robots", content: "noindex" }] }),
@@ -36,6 +37,7 @@ function AceitePage() {
       });
       if (error) throw error;
       toast.success("Aceite registrado.");
+      clearAuthGateCache();
       navigate({ to: "/dashboard" });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível registrar seu aceite. Verifique sua conexão e tente novamente.");
