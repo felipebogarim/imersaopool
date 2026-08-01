@@ -289,12 +289,17 @@ function FormsPage() {
                             <DropdownMenuItem onClick={() => navigate({ to: "/forms/$id", params: { id: f.id } })}>
                               <Pencil className="h-4 w-4 mr-2" /> Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setRespondingFor(f)}>
-                              <ListChecks className="h-4 w-4 mr-2" /> Ver respostas
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => toggleActive(f)}>
                               {f.is_active ? <><Pause className="h-4 w-4 mr-2" /> Pausar</> : <><Play className="h-4 w-4 mr-2" /> Ativar</>}
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => exportExcel(f, "geral")}>
+                              <Download className="h-4 w-4 mr-2" /> Exportar Excel (geral)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportExcel(f, "completo")}>
+                              <Download className="h-4 w-4 mr-2" /> Exportar Excel (todos os resultados)
+                            </DropdownMenuItem>
+
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => removeForm(f)}>
                               <Trash2 className="h-4 w-4 mr-2" /> Excluir
