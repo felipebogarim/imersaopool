@@ -107,9 +107,9 @@ function shareAiWhats(repName: string, question: string, answer: string) {
 }
 
 
-export function BISection({ repId, repName }: { repId: string; repName: string }) {
+export function BISection({ repId, repName, defaultOpen = false }: { repId: string; repName: string; defaultOpen?: boolean }) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [busy, setBusy] = useState(false);
   const [metric, setMetric] = useState<Metric>("participation");
   const [aiQuestion, setAiQuestion] = useState("");
