@@ -37,6 +37,35 @@ type FormRow = {
   created_at: string;
 };
 
+function norm(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function pick(schema: FormSchema | undefined, answers: Record<string, unknown>, keys: string[]) {
+  const fields = schema?.fields ?? [];
+  for (const f of fields) {
+    const hay = norm(`${f.id} ${f.label}`);
+    if (keys.some(k => hay.includes(k))) {
+      const v = answers[f.id];
+      if (Array.isArray(v)) return v.join(", ");
+      if (v !== null && v !== undefined && String(v).trim() !== "") return String(v);
+    }
+  }
+  for (const [k, v] of Object.entries(answers)) {
+    if (keys.some(kk => norm(k).includes(kk)) && v !== null && v !== undefined && String(v).trim() !== "") {
+      return Array.isArray(v) ? v.join(", ") : String(v);
+    }
+  }
+  return "";
+}
+
+function extractRespondent(schema: FormSchema | undefined, answers: Record<string, unknown>) {
+  return {
+    nome: pick(schema, answers, ["nome", "name", "respondente"]),
+    cargo: pick(schema, answers, ["cargo", "funcao", "role", "posicao"]),
+  };
+}
+
 function FormsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
