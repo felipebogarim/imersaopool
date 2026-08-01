@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { ArrowRight, BarChart3, Brain, Users } from "lucide-react";
 import { BrandLogo } from "@/components/Brand";
 
@@ -32,6 +33,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    // Links de acesso expirados voltam para "/" com erro no hash: leva para o login
+    if (typeof window !== "undefined" && /error_code=|error=access_denied/.test(window.location.hash)) {
+      window.history.replaceState(null, "", "/");
+      navigate({ to: "/auth", search: { e: undefined, primeiro: false } });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border/40 backdrop-blur-md sticky top-0 z-50">
