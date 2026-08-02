@@ -86,7 +86,20 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
   if (existing) return existing;
 
   const requestGeneration = generation;
-  const request = load(userId)
+  const request = loadWithRetry(userId)
+    .catch((err): AuthGateData => {
+      // Nunca derrubar a navegação por falha temporária de rede/token:
+      // devolve um estado neutro (sem cache) para a tela renderizar.
+      console.error("auth-gate:", err);
+      return {
+        userId,
+        roles: [],
+        activeCompanyId: null,
+        ndaAcceptedAt: new Date().toISOString(),
+        termsOk: true,
+        mustEnrollMfa: false,
+      };
+    })
     .then((data) => {
       if (generation === requestGeneration) {
         cache = { userId: data.userId, at: Date.now(), data };
