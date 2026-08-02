@@ -42,13 +42,13 @@ export function useNavAccess(): NavAccess {
         else base.delete(p.nav_key as string);
       }
 
-      // As funções administrativas são inerentes ao papel e não podem ser
-      // retiradas por uma preferência individual de navegação.
+      // Salvaguarda mínima: o admin nunca perde o acesso à própria tela de
+      // Acessos, para não se trancar fora do sistema.
       if (isAdmin) {
-        for (const key of ALL_NAV_KEYS.filter(key => key === "admin" || key.startsWith("admin."))) {
-          base.add(key);
-        }
+        base.add("admin");
+        base.add("admin.permissoes");
       }
+
 
       return { isAdmin, keys: Array.from(base) };
     },
