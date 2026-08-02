@@ -7,6 +7,7 @@ export type AuthGateData = {
   ndaAcceptedAt: string | null;
   termsOk: boolean;
   mustEnrollMfa: boolean;
+  degraded?: boolean;
 };
 
 const TTL_MS = 60_000;
@@ -19,6 +20,16 @@ export function clearAuthGateCache() {
   cache = null;
   inflight.clear();
   generation += 1;
+}
+
+async function loadWithRetry(userId: string): Promise<AuthGateData> {
+  try {
+    return await load(userId);
+  } catch {
+    // Logo após o login o token pode ainda não estar propagado: tenta de novo.
+    await new Promise((r) => setTimeout(r, 600));
+    return load(userId);
+  }
 }
 
 async function load(userId: string): Promise<AuthGateData> {
@@ -76,12 +87,26 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
   if (existing) return existing;
 
   const requestGeneration = generation;
-  const request = load(userId)
+  const request = loadWithRetry(userId)
     .then((data) => {
       if (generation === requestGeneration) {
         cache = { userId: data.userId, at: Date.now(), data };
       }
       return data;
+    })
+    .catch((err): AuthGateData => {
+      // Nunca derrubar a navegação por falha temporária de rede/token:
+      // devolve um estado neutro (não cacheado) para a tela renderizar.
+      console.error("auth-gate:", err);
+      return {
+        userId,
+        roles: [],
+        activeCompanyId: null,
+        ndaAcceptedAt: new Date().toISOString(),
+        termsOk: true,
+        mustEnrollMfa: false,
+        degraded: true,
+      };
     })
     .finally(() => {
       if (inflight.get(userId) === request) inflight.delete(userId);
