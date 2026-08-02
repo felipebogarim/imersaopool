@@ -140,9 +140,14 @@ function RootComponent() {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
 
+      // O fluxo de login já navega explicitamente para o dashboard. Invalidar
+      // o router ao mesmo tempo que essa navegação inicia dois beforeLoad em
+      // paralelo e pode deixar ambos aguardando o mesmo gate indefinidamente.
+      clearAuthGateCache();
+      if (event === "SIGNED_IN") return;
+
       // Não consulte a autenticação nem reexecute guards dentro do callback.
-      // O cliente de auth ainda mantém um lock nesse momento e a revalidação
-      // imediata pode bloquear a resolução do próprio login.
+      // O cliente de auth ainda mantém um lock nesse momento.
       window.setTimeout(() => {
         clearAuthGateCache();
         void router.invalidate();

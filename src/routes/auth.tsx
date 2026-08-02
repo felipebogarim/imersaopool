@@ -93,7 +93,13 @@ function AuthPage() {
       }
 
       toast.success("Bem-vindo!");
-      await navigate({ to: "/dashboard", replace: true });
+      setLoading(false);
+      void navigate({ to: "/dashboard", replace: true }).catch((navigationError) => {
+        const message = navigationError instanceof Error
+          ? navigationError.message
+          : "Não foi possível abrir o painel.";
+        toast.error(message);
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Não foi possível entrar. Tente novamente.";
       toast.error(message);
