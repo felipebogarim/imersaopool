@@ -200,6 +200,21 @@ function AcessoUsuario({ userId }: { userId: string }) {
                 <ArrowLeft className="h-4 w-4" /> Matriz por perfil
               </Link>
             </Button>
+            {presets.length > 0 && (
+              <Select onValueChange={aplicarPadrao}>
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue placeholder="Aplicar padrão salvo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presets.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button variant="outline" onClick={salvarPadrao} disabled={saving || isLoading}>
+              <BookmarkPlus className="h-4 w-4" /> Salvar padrão
+            </Button>
             <Button variant="outline" onClick={restaurar} disabled={saving || isLoading}>
               <RotateCcw className="h-4 w-4" /> Restaurar padrão
             </Button>
