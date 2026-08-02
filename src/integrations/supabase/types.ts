@@ -407,6 +407,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bloco_notes: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          bloco_key: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          bloco_key: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          bloco_key?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       capitulos: {
         Row: {
           campos_matriz: Json
