@@ -82,7 +82,7 @@ function UsuariosPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string } | null>(null);
+  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [auditRow, setAuditRow] = useState<Row | null>(null);
   const [localRow, setLocalRow] = useState<Row | null>(null);
