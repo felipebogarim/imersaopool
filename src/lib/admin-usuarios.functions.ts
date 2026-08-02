@@ -73,6 +73,7 @@ export const inviteUser = createServerFn({ method: "POST" })
 
 const updateSchema = z.object({
   user_id: z.string().uuid(),
+  email: z.string().trim().email("E-mail inválido").optional(),
   full_name: z.string().trim().nullable().optional(),
   cargo: z.string().trim().nullable().optional(),
   phone: z.string().trim().nullable().optional(),
@@ -88,6 +89,19 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    if (data.email) {
+      const email = data.email.toLowerCase();
+      const { data: current } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+      if (current?.user?.email?.toLowerCase() !== email) {
+        const { error: emailErr } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+          email,
+          email_confirm: true,
+        });
+        if (emailErr) throw new Error(emailErr.message);
+        await supabaseAdmin.from("profiles").update({ email } as never).eq("id", data.user_id);
+      }
+    }
+
     const patch: Record<string, any> = {};
     for (const k of ["full_name", "cargo", "phone", "regiao", "status"] as const) {
       if (data[k] !== undefined) patch[k] = data[k] === "" ? null : data[k];
@@ -96,6 +110,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       const { error } = await supabaseAdmin.from("profiles").update(patch as never).eq("id", data.user_id);
       if (error) throw new Error(error.message);
     }
+
 
     if (data.role !== undefined) {
       const { error: delErr } = await supabaseAdmin

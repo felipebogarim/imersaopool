@@ -568,12 +568,13 @@ function EditDialog({
   row, onOpenChange, onDone,
 }: { row: Row | null; onOpenChange: (o: boolean) => void; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ full_name: "", cargo: "", phone: "", regiao: "", status: "pendente", role: "none" });
+  const [form, setForm] = useState({ email: "", full_name: "", cargo: "", phone: "", regiao: "", status: "pendente", role: "none" });
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
   if (row && loadedId !== row.id) {
     setLoadedId(row.id);
     setForm({
+      email: row.email ?? "",
       full_name: row.full_name ?? "",
       cargo: row.cargo ?? "",
       phone: row.phone ?? "",
@@ -590,6 +591,7 @@ function EditDialog({
       await updateUserProfile({
         data: {
           user_id: row.id,
+          email: form.email.trim(),
           full_name: form.full_name,
           cargo: form.cargo,
           phone: form.phone,
@@ -617,9 +619,15 @@ function EditDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
+            <Label>E-mail de acesso</Label>
+            <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            <p className="text-xs text-muted-foreground">Corrigir o e-mail altera o login do usuário.</p>
+          </div>
+          <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Setor / cargo</Label>
