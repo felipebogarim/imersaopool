@@ -105,6 +105,7 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
         ndaAcceptedAt: new Date().toISOString(),
         termsOk: true,
         mustEnrollMfa: false,
+        degraded: true,
       };
     })
     .finally(() => {
