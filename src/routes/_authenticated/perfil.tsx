@@ -108,6 +108,12 @@ function PerfilPage() {
     }
   }
 
+  async function sair() {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  }
+
+
   return (
     <div>
       <div className="border-b border-border px-4 sm:px-8 py-6">
