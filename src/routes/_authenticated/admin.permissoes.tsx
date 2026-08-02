@@ -97,6 +97,9 @@ function AcessoUsuario({ userId }: { userId: string }) {
     const m: Record<string, boolean> = Object.fromEntries(ALL_NAV_KEYS.map(k => [k, false]));
     for (const k of data.base) m[k] = true;
     for (const o of data.overrides) m[o.nav_key] = !!o.allowed;
+    if (data.roles.includes("admin")) {
+      for (const key of ALL_NAV_KEYS.filter(key => key === "admin" || key.startsWith("admin."))) m[key] = true;
+    }
     setMap(m);
   }, [data]);
 
@@ -157,7 +160,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
         title="Áreas e seções liberadas"
         subtitle={
           isAdminUser
-            ? "Este usuário tem perfil Gestão (administrador) e sempre terá acesso total."
+            ? "Marque ou desmarque as áreas operacionais. As funções administrativas permanecem liberadas para o Gestor Master."
             : "Marque ou desmarque para criar exceções individuais em relação ao perfil."
         }
         actions={
@@ -170,7 +173,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
             <Button variant="outline" onClick={restaurar} disabled={saving || isLoading}>
               <RotateCcw className="h-4 w-4" /> Restaurar padrão
             </Button>
-            <Button onClick={save} disabled={saving || isLoading || isAdminUser}>
+            <Button onClick={save} disabled={saving || isLoading}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar acessos
             </Button>
@@ -213,7 +216,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
                       </td>
                       <td className="px-6 py-3 text-center">
                         <Checkbox
-                          disabled={isAdminUser}
+                          disabled={isAdminUser && g.adminOnly}
                           checked={!!map[g.key]}
                           onCheckedChange={v => setMap(m => propagate(m, g.key, !!v))}
                         />
@@ -225,7 +228,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
                           <td className="px-6 py-2.5 pl-14 text-muted-foreground">{c.label}</td>
                           <td className="px-6 py-2.5 text-center">
                             <Checkbox
-                              disabled={isAdminUser}
+                              disabled={isAdminUser && g.adminOnly}
                               checked={!!map[c.key]}
                               onCheckedChange={v => setMap(m => propagate(m, c.key, !!v))}
                             />

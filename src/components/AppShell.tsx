@@ -254,7 +254,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const required = navKeyForPath(pathname);
   const blocked =
     !access.loading &&
-    !access.isAdmin &&
     !!required &&
     (!access.can(required.groupKey) || (required.itemKey ? !access.can(required.itemKey) : false));
 
