@@ -82,7 +82,7 @@ function UsuariosPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string } | null>(null);
+  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [auditRow, setAuditRow] = useState<Row | null>(null);
   const [localRow, setLocalRow] = useState<Row | null>(null);
@@ -146,7 +146,7 @@ function UsuariosPage() {
         data: { user_id: r.id, origin: window.location.origin },
       });
       if (!res?.link) throw new Error("Não foi possível gerar o link");
-      setLinkInfo({ email: res.email, link: res.link, userId: r.id });
+      setLinkInfo({ email: res.email, link: res.link, userId: r.id, name: res.name ?? r.full_name, phone: res.phone ?? r.phone });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar link de primeiro acesso");
     } finally {
@@ -278,6 +278,7 @@ function UsuariosPage() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+        onInvited={(info) => setLinkInfo(info)}
       />
       <EditDialog
         row={editRow}
@@ -293,23 +294,25 @@ function UsuariosPage() {
 
 function FirstAccessDialog({
   info, onOpenChange,
-}: { info: { email: string; link: string; userId: string } | null; onOpenChange: (o: boolean) => void }) {
+}: {
+  info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null;
+  onOpenChange: (o: boolean) => void;
+}) {
   const link = info?.link ?? "";
   const email = info?.email ?? "";
   const [sending, setSending] = useState(false);
-  const [tempPassword, setTempPassword] = useState("");
+  const [fone, setFone] = useState("");
 
-  async function enviar() {
+  const primeiroNome = (info?.name ?? "").trim().split(/\s+/)[0] ?? "";
+  const texto =
+    `Olá${primeiroNome ? ` ${primeiroNome}` : ""}! Seu acesso ao painel PoolFlux foi criado. ` +
+    `Clique no link abaixo para cadastrar a sua senha e entrar:\n${link}\n\nO convite é pessoal e vale por 14 dias.`;
+
+  async function enviarEmail() {
     if (!info) return;
     setSending(true);
     try {
-      await sendFirstAccessEmail({
-        data: {
-          user_id: info.userId,
-          origin: window.location.origin,
-          temp_password: tempPassword || undefined,
-        },
-      });
+      await sendFirstAccessEmail({ data: { user_id: info.userId, origin: window.location.origin } });
       toast.success(`Convite enviado para ${email}`);
       onOpenChange(false);
     } catch (e: any) {
@@ -319,38 +322,57 @@ function FirstAccessDialog({
     }
   }
 
+  function enviarWhats() {
+    const num = (fone || info?.phone || "").replace(/\D/g, "");
+    if (num.length < 10) return toast.error("Informe o WhatsApp com DDD (ex.: 5511999999999)");
+    const numero = num.startsWith("55") ? num : `55${num}`;
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+    onOpenChange(false);
+  }
+
   return (
     <Dialog open={!!info} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Convite de primeiro acesso</DialogTitle>
           <DialogDescription>
-            Link pessoal para <strong>{email}</strong> entrar pela primeira vez. Ao acessar, ele será obrigado a
-            definir a própria senha. O link abre a tela de login com o e-mail já preenchido — ele só precisa digitar a senha temporária.
+            Convite pessoal para <strong>{email}</strong>. Não há senha temporária: ao clicar no link, a primeira
+            ação é cadastrar a própria senha (letras, números e símbolos).
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">{link}</div>
-          <div className="space-y-1.5">
-            <Label htmlFor="temp-pass">Senha temporária (opcional, incluída no e-mail)</Label>
-            <Input
-              id="temp-pass"
-              value={tempPassword}
-              onChange={(e) => setTempPassword(e.target.value)}
-              placeholder="Deixe em branco para não enviar a senha"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
-            >
-              Copiar link
-            </Button>
-            <Button onClick={enviar} disabled={sending}>
+
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">Enviar por e-mail</p>
+            <p className="text-xs text-muted-foreground">Mensagem formatada enviada para {email}.</p>
+            <Button onClick={enviarEmail} disabled={sending}>
               <Send className="h-4 w-4 mr-2" /> {sending ? "Enviando..." : "Enviar por e-mail"}
             </Button>
           </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">Enviar por WhatsApp</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="fone-whats">Número com DDD</Label>
+              <Input
+                id="fone-whats"
+                value={fone || info?.phone || ""}
+                onChange={(e) => setFone(e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <Button variant="outline" onClick={enviarWhats}>
+              <MessageSquare className="h-4 w-4 mr-2" /> Abrir WhatsApp com a mensagem
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
+          >
+            Copiar link
+          </Button>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
@@ -359,6 +381,7 @@ function FirstAccessDialog({
     </Dialog>
   );
 }
+
 
 
 function CreateUserDialog({
@@ -452,11 +475,17 @@ function CreateUserDialog({
 }
 
 function InviteDialog({
-  open, onOpenChange, onDone,
-}: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  open, onOpenChange, onDone, onInvited,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onDone: () => void;
+  onInvited: (info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null }) => void;
+}) {
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
+  const [fone, setFone] = useState("");
   const [role, setRole] = useState<string>("agente");
   const [saving, setSaving] = useState(false);
 
@@ -464,21 +493,23 @@ function InviteDialog({
     if (!email.trim()) return toast.error("Informe o e-mail");
     setSaving(true);
     try {
-      await inviteUser({
+      const res: any = await inviteUser({
         data: {
           email: email.trim(),
           full_name: nome.trim(),
           cargo: cargo.trim(),
+          phone: fone.trim(),
           role: role as any,
-          redirect_to: window.location.origin + "/auth",
+          origin: window.location.origin,
         },
       });
-      toast.success("Convite enviado");
-      setEmail(""); setNome(""); setCargo("");
+      toast.success("Convite gerado — escolha como enviar");
+      setEmail(""); setNome(""); setCargo(""); setFone("");
       onOpenChange(false);
       onDone();
+      onInvited({ email: res.email, link: res.link, userId: res.user_id, name: res.name, phone: res.phone });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao enviar convite");
+      toast.error(e?.message ?? "Falha ao gerar convite");
     } finally {
       setSaving(false);
     }
@@ -489,7 +520,10 @@ function InviteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Enviar convite</DialogTitle>
-          <DialogDescription>O usuário receberá um e-mail para definir a senha e acessar o painel.</DialogDescription>
+          <DialogDescription>
+            A conta é criada sem senha. Depois você escolhe enviar o convite por e-mail ou WhatsApp — o usuário
+            cadastra a própria senha ao abrir o link.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -499,6 +533,10 @@ function InviteDialog({
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={nome} onChange={e => setNome(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>WhatsApp (opcional)</Label>
+            <Input value={fone} onChange={e => setFone(e.target.value)} placeholder="(11) 99999-9999" />
           </div>
           <div className="space-y-1.5">
             <Label>Setor / cargo</Label>
@@ -514,6 +552,7 @@ function InviteDialog({
             </Select>
           </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={saving}>
