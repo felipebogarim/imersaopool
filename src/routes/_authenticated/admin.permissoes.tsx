@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
-import { ShieldCheck, ChevronDown, ChevronRight, Save, Loader2, ArrowLeft, RotateCcw, UserCog } from "lucide-react";
+import { ShieldCheck, ChevronDown, ChevronRight, Save, Loader2, ArrowLeft, RotateCcw, UserCog, BookmarkPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
