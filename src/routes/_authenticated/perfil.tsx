@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, KeyRound, UserCog } from "lucide-react";
+import { Loader2, Save, KeyRound, UserCog, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
@@ -108,6 +108,12 @@ function PerfilPage() {
     }
   }
 
+  async function sair() {
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
+  }
+
+
   return (
     <div>
       <div className="border-b border-border px-4 sm:px-8 py-6">
@@ -186,7 +192,22 @@ function PerfilPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sessão</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Encerre sua sessão neste dispositivo.
+            </p>
+            <Button variant="destructive" onClick={sair}>
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
     </div>
   );
 }
