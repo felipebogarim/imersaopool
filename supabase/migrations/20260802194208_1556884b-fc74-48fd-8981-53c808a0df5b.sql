@@ -1,0 +1,2 @@
+ALTER TABLE public.session_notes DROP CONSTRAINT session_notes_entity_type_check;
+ALTER TABLE public.session_notes ADD CONSTRAINT session_notes_entity_type_check CHECK (entity_type = ANY (ARRAY['interview'::text, 'immersion'::text, 'bloco'::text]));
