@@ -97,6 +97,9 @@ function AcessoUsuario({ userId }: { userId: string }) {
     const m: Record<string, boolean> = Object.fromEntries(ALL_NAV_KEYS.map(k => [k, false]));
     for (const k of data.base) m[k] = true;
     for (const o of data.overrides) m[o.nav_key] = !!o.allowed;
+    if (data.roles.includes("admin")) {
+      for (const key of ALL_NAV_KEYS.filter(key => key === "admin" || key.startsWith("admin."))) m[key] = true;
+    }
     setMap(m);
   }, [data]);
 
