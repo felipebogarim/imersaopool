@@ -87,9 +87,15 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
 
   const requestGeneration = generation;
   const request = loadWithRetry(userId)
+    .then((data) => {
+      if (generation === requestGeneration) {
+        cache = { userId: data.userId, at: Date.now(), data };
+      }
+      return data;
+    })
     .catch((err): AuthGateData => {
       // Nunca derrubar a navegação por falha temporária de rede/token:
-      // devolve um estado neutro (sem cache) para a tela renderizar.
+      // devolve um estado neutro (não cacheado) para a tela renderizar.
       console.error("auth-gate:", err);
       return {
         userId,
@@ -99,12 +105,6 @@ export async function getAuthGate(userId: string): Promise<AuthGateData> {
         termsOk: true,
         mustEnrollMfa: false,
       };
-    })
-    .then((data) => {
-      if (generation === requestGeneration) {
-        cache = { userId: data.userId, at: Date.now(), data };
-      }
-      return data;
     })
     .finally(() => {
       if (inflight.get(userId) === request) inflight.delete(userId);
