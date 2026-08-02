@@ -17,10 +17,15 @@ const inviteSchema = z.object({
   email: z.string().email("E-mail inválido"),
   full_name: z.string().trim().optional().default(""),
   cargo: z.string().trim().optional().default(""),
+  phone: z.string().trim().optional().default(""),
   role: roleEnum.optional(),
-  redirect_to: z.string().url().optional(),
+  origin: z.string().url(),
 });
 
+/**
+ * Cria a conta (sem senha) e devolve o link de convite para o usuário
+ * cadastrar a própria senha. O envio (e-mail ou WhatsApp) é escolhido na UI.
+ */
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) => inviteSchema.parse(raw))
@@ -28,37 +33,43 @@ export const inviteUser = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-      data.email,
-      {
-        redirectTo: data.redirect_to,
-        data: { full_name: data.full_name || null, cargo: data.cargo || null },
-      },
-    );
-    if (error) throw new Error(error.message);
-
-    const uid = invited?.user?.id;
-    if (uid) {
-      await supabaseAdmin
-        .from("profiles")
-        .upsert(
-          {
-            id: uid,
-            email: data.email,
-            full_name: data.full_name || null,
-            cargo: data.cargo || null,
-            status: "pendente",
-          },
-          { onConflict: "id" },
-        );
-      if (data.role) {
-        await supabaseAdmin
-          .from("user_roles")
-          .upsert({ user_id: uid, role: data.role }, { onConflict: "user_id,role" });
-      }
+    let uid: string | null = null;
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name || null, cargo: data.cargo || null },
+    });
+    if (error) {
+      if (!/already|registered|exists/i.test(error.message)) throw new Error(error.message);
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      uid = list?.users?.find(u => u.email?.toLowerCase() === data.email.toLowerCase())?.id ?? null;
+      if (!uid) throw new Error(error.message);
+    } else {
+      uid = created?.user?.id ?? null;
     }
-    return { ok: true, user_id: uid ?? null };
+    if (!uid) throw new Error("Falha ao criar usuário");
+
+    await supabaseAdmin.from("profiles").upsert(
+      {
+        id: uid,
+        email: data.email,
+        full_name: data.full_name || null,
+        cargo: data.cargo || null,
+        phone: data.phone || null,
+        status: "pendente",
+      },
+      { onConflict: "id" },
+    );
+    if (data.role) {
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: uid, role: data.role }, { onConflict: "user_id,role" });
+    }
+
+    const { email, name, link, phone } = await issueFirstAccessLink(uid, data.origin);
+    return { ok: true, user_id: uid, email, name, link, phone: phone ?? data.phone ?? null };
   });
+
 
 const updateSchema = z.object({
   user_id: z.string().uuid(),
