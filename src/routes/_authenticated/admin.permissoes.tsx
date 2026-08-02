@@ -63,6 +63,44 @@ function AcessoUsuario({ userId }: { userId: string }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
+  const { data: presets = [] } = useQuery({
+    queryKey: ["permission-presets"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("permission_presets").select("id, name, nav_keys").order("name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string; nav_keys: string[] }[];
+    },
+  });
+
+  async function salvarPadrao() {
+    const nome = window.prompt("Nome do padrão de acesso (ex.: Gestor comercial):")?.trim();
+    if (!nome) return;
+    setSaving(true);
+    try {
+      const keys = ALL_NAV_KEYS.filter(k => !!map[k]);
+      const existente = presets.find(p => p.name.toLowerCase() === nome.toLowerCase());
+      const { error } = existente
+        ? await (supabase as any).from("permission_presets").update({ nav_keys: keys }).eq("id", existente.id)
+        : await (supabase as any).from("permission_presets").insert({ name: nome, nav_keys: keys });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["permission-presets"] });
+      toast.success("Padrão salvo", { description: `Agora você pode aplicar “${nome}” a outros usuários.` });
+    } catch (e: any) {
+      toast.error("Não foi possível salvar o padrão", { description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function aplicarPadrao(presetId: string) {
+    const preset = presets.find(p => p.id === presetId);
+    if (!preset) return;
+    const keys = new Set(preset.nav_keys ?? []);
+    setMap(Object.fromEntries(ALL_NAV_KEYS.map(k => [k, keys.has(k)])));
+    toast.info(`Padrão “${preset.name}” aplicado`, { description: "Clique em Salvar acessos para confirmar." });
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: ["user-permissions", userId],
     queryFn: async () => {
