@@ -293,23 +293,25 @@ function UsuariosPage() {
 
 function FirstAccessDialog({
   info, onOpenChange,
-}: { info: { email: string; link: string; userId: string } | null; onOpenChange: (o: boolean) => void }) {
+}: {
+  info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null;
+  onOpenChange: (o: boolean) => void;
+}) {
   const link = info?.link ?? "";
   const email = info?.email ?? "";
   const [sending, setSending] = useState(false);
-  const [tempPassword, setTempPassword] = useState("");
+  const [fone, setFone] = useState("");
 
-  async function enviar() {
+  const primeiroNome = (info?.name ?? "").trim().split(/\s+/)[0] ?? "";
+  const texto =
+    `Olá${primeiroNome ? ` ${primeiroNome}` : ""}! Seu acesso ao painel PoolFlux foi criado. ` +
+    `Clique no link abaixo para cadastrar a sua senha e entrar:\n${link}\n\nO convite é pessoal e vale por 14 dias.`;
+
+  async function enviarEmail() {
     if (!info) return;
     setSending(true);
     try {
-      await sendFirstAccessEmail({
-        data: {
-          user_id: info.userId,
-          origin: window.location.origin,
-          temp_password: tempPassword || undefined,
-        },
-      });
+      await sendFirstAccessEmail({ data: { user_id: info.userId, origin: window.location.origin } });
       toast.success(`Convite enviado para ${email}`);
       onOpenChange(false);
     } catch (e: any) {
@@ -319,38 +321,57 @@ function FirstAccessDialog({
     }
   }
 
+  function enviarWhats() {
+    const num = (fone || info?.phone || "").replace(/\D/g, "");
+    if (num.length < 10) return toast.error("Informe o WhatsApp com DDD (ex.: 5511999999999)");
+    const numero = num.startsWith("55") ? num : `55${num}`;
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
+    onOpenChange(false);
+  }
+
   return (
     <Dialog open={!!info} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Convite de primeiro acesso</DialogTitle>
           <DialogDescription>
-            Link pessoal para <strong>{email}</strong> entrar pela primeira vez. Ao acessar, ele será obrigado a
-            definir a própria senha. O link abre a tela de login com o e-mail já preenchido — ele só precisa digitar a senha temporária.
+            Convite pessoal para <strong>{email}</strong>. Não há senha temporária: ao clicar no link, a primeira
+            ação é cadastrar a própria senha (letras, números e símbolos).
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">{link}</div>
-          <div className="space-y-1.5">
-            <Label htmlFor="temp-pass">Senha temporária (opcional, incluída no e-mail)</Label>
-            <Input
-              id="temp-pass"
-              value={tempPassword}
-              onChange={(e) => setTempPassword(e.target.value)}
-              placeholder="Deixe em branco para não enviar a senha"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
-            >
-              Copiar link
-            </Button>
-            <Button onClick={enviar} disabled={sending}>
+
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">Enviar por e-mail</p>
+            <p className="text-xs text-muted-foreground">Mensagem formatada enviada para {email}.</p>
+            <Button onClick={enviarEmail} disabled={sending}>
               <Send className="h-4 w-4 mr-2" /> {sending ? "Enviando..." : "Enviar por e-mail"}
             </Button>
           </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">Enviar por WhatsApp</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="fone-whats">Número com DDD</Label>
+              <Input
+                id="fone-whats"
+                value={fone || info?.phone || ""}
+                onChange={(e) => setFone(e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <Button variant="outline" onClick={enviarWhats}>
+              <MessageSquare className="h-4 w-4 mr-2" /> Abrir WhatsApp com a mensagem
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
+          >
+            Copiar link
+          </Button>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
@@ -359,6 +380,7 @@ function FirstAccessDialog({
     </Dialog>
   );
 }
+
 
 
 function CreateUserDialog({
