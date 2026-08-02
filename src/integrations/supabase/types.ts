@@ -2810,6 +2810,33 @@ export type Database = {
           },
         ]
       }
+      permission_presets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          nav_keys: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          nav_keys?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          nav_keys?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       perspectivas: {
         Row: {
           aprovada_em: string | null
