@@ -47,9 +47,6 @@ const main = { backgroundColor: "#ffffff", fontFamily: "Inter, Arial, sans-serif
 const container = { padding: "32px 28px", maxWidth: "560px" };
 const h1 = { color: "#0a1730", fontSize: "22px", fontWeight: 700, margin: "0 0 16px" };
 const text = { color: "#334155", fontSize: "15px", lineHeight: "22px", margin: "0 0 12px" };
-const box = { background: "#e2e8f0", padding: "12px 16px", borderRadius: "8px", margin: "16px 0" };
-const boxLabel = { color: "#0f172a", fontSize: "12px", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase" as const };
-const boxText = { color: "#0f172a", fontSize: "16px", margin: 0, fontFamily: "monospace" };
 const button = {
   backgroundColor: "#0e7490",
   color: "#ffffff",
