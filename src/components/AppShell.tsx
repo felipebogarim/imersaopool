@@ -156,6 +156,55 @@ function AccessDenied() {
   );
 }
 
+function initials(name?: string | null) {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "")).toUpperCase();
+}
+
+function UserMenu({
+  name,
+  email,
+  trigger,
+  align,
+  onSignOut,
+}: {
+  name: string;
+  email: string | null;
+  trigger: ReactNode;
+  align: "start" | "end";
+  onSignOut: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align={align} side="top" className="w-60">
+        <DropdownMenuLabel className="leading-tight">
+          <span className="block truncate">{name}</span>
+          {email && <span className="block text-xs font-normal text-muted-foreground truncate">{email}</span>}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/perfil">
+            <User className="h-4 w-4" /> Editar perfil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/perfil" hash="senha">
+            <KeyRound className="h-4 w-4" /> Atualizar senha
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => onSignOut()} className="text-destructive focus:text-destructive">
+          <LogOut className="h-4 w-4" /> Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
