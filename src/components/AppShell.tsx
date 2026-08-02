@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock, User } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,14 @@ import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
 import { NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
 import { useNavAccess } from "@/hooks/useNavAccess";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ICONS: Record<string, typeof BarChart3> = {
   bi: BarChart3,
@@ -148,6 +156,55 @@ function AccessDenied() {
   );
 }
 
+function initials(name?: string | null) {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "")).toUpperCase();
+}
+
+function UserMenu({
+  name,
+  email,
+  trigger,
+  align,
+  onSignOut,
+}: {
+  name: string;
+  email: string | null;
+  trigger: ReactNode;
+  align: "start" | "end";
+  onSignOut: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align={align} side="top" className="w-60">
+        <DropdownMenuLabel className="leading-tight">
+          <span className="block truncate">{name}</span>
+          {email && <span className="block text-xs font-normal text-muted-foreground truncate">{email}</span>}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/perfil">
+            <User className="h-4 w-4" /> Editar perfil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/perfil" hash="senha">
+            <KeyRound className="h-4 w-4" /> Atualizar senha
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => onSignOut()} className="text-destructive focus:text-destructive">
+          <LogOut className="h-4 w-4" /> Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -165,7 +222,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       const uid = u.user?.id;
       if (!uid) return null;
       const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("active_company_id").eq("id", uid).maybeSingle(),
+        supabase.from("profiles").select("active_company_id, full_name, email").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
       const roleList = (roles ?? []).map((r: any) => r.role);
@@ -176,7 +233,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
         companyName = c?.nome ?? null;
       }
-      return { isAdmin, isComercialOnly, companyName };
+      const email = u.user?.email ?? profile?.email ?? null;
+      return {
+        isAdmin,
+        isComercialOnly,
+        companyName,
+        userName: profile?.full_name ?? email ?? "Minha conta",
+        userEmail: email,
+      };
     },
   });
 
@@ -279,10 +343,27 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className={cn("ml-2", LBL)}>Termos de Uso</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start px-2 text-muted-foreground" title="Sair">
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span className={cn("ml-2", LBL)}>Sair</span>
-          </Button>
+          <UserMenu
+            name={workspace?.userName ?? "Minha conta"}
+            email={workspace?.userEmail ?? null}
+            onSignOut={signOut}
+            align="start"
+            trigger={
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent/50 transition text-left"
+                title="Minha conta"
+              >
+                <span className="h-7 w-7 shrink-0 rounded-full bg-primary/15 text-primary inline-flex items-center justify-center text-xs font-semibold">
+                  {initials(workspace?.userName)}
+                </span>
+                <span className={cn("min-w-0", LBL)}>
+                  <span className="block text-sm font-medium truncate">{workspace?.userName ?? "Minha conta"}</span>
+                  <span className="block text-[11px] text-muted-foreground truncate">{workspace?.userEmail ?? ""}</span>
+                </span>
+              </button>
+            }
+          />
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden relative">
@@ -303,6 +384,23 @@ export function AppShell({ children }: { children: ReactNode }) {
               <BrandMark className="h-6 shrink-0" />
             )}
             <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
+          </div>
+          <div className="ml-auto">
+            <UserMenu
+              name={workspace?.userName ?? "Minha conta"}
+              email={workspace?.userEmail ?? null}
+              onSignOut={signOut}
+              align="end"
+              trigger={
+                <button
+                  type="button"
+                  aria-label="Minha conta"
+                  className="h-8 w-8 rounded-full bg-primary/15 text-primary inline-flex items-center justify-center text-xs font-semibold"
+                >
+                  {initials(workspace?.userName)}
+                </button>
+              }
+            />
           </div>
         </div>
         {!isAccessGatePage && <AdminMfaBanner />}
