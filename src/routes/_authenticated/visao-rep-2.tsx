@@ -815,6 +815,7 @@ function VisaoRep2View({
           visao.metadata.updated_at ? new Date(visao.metadata.updated_at).toLocaleDateString("pt-BR") : null
         }
         perspectivas={perspectivas}
+        contexto={visao.metadata.representative_id ?? visao.metadata.representative_name ?? undefined}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
         teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}

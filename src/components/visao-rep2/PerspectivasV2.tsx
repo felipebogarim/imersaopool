@@ -2,12 +2,13 @@
 // Preserva o modelo visual aprovado nos Temas estratégicos (narrativa 8 col + apoio 4 col).
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefing-fabio";
 import { PERSPECTIVAS_META, type AgendaRef, type PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
 import { BlocoExpansivel } from "./BlocoExpansivel";
+import { AcoesSecao } from "./AcoesSecao";
 
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
@@ -73,11 +74,13 @@ function EntidadesV2({ e }: { e: BriefEntidades }) {
   );
 }
 
-function PainelApoio({ p }: { p: PerspectivaVM }) {
+function PainelApoio({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
   return (
     <aside className="space-y-6 rounded-xl border bg-muted/20 p-5" aria-label="Apoio à leitura da perspectiva">
       <div className="space-y-2">
-        <p className="text-sm font-semibold">Evidência principal</p>
+        <TituloSecao titulo="Evidência principal" descricao={p.evidencia ?? ""} ctx={ctx}>
+          Evidência principal
+        </TituloSecao>
         {has(p.evidencia) ? (
           <figure className="space-y-1">
             <blockquote className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
@@ -95,7 +98,9 @@ function PainelApoio({ p }: { p: PerspectivaVM }) {
       <EntidadesV2 e={p.entidades} />
 
       <div className="space-y-2">
-        <p className="text-sm font-semibold">Comparação com o grupo</p>
+        <TituloSecao titulo="Comparação com o grupo" descricao={p.comparacao ?? ""} ctx={ctx}>
+          Comparação com o grupo
+        </TituloSecao>
         <p className="text-sm leading-6 text-muted-foreground">
           {has(p.comparacao) ? p.comparacao : "Não há comparação suficiente com o grupo."}
         </p>
@@ -110,7 +115,9 @@ function PainelApoio({ p }: { p: PerspectivaVM }) {
 
       {p.conclusoes.length ? (
         <div className="space-y-2">
-          <p className="text-sm font-semibold">Conclusões centrais relacionadas</p>
+          <TituloSecao titulo="Conclusões centrais relacionadas" descricao={p.conclusoes.join(" · ")} ctx={ctx}>
+            Conclusões centrais relacionadas
+          </TituloSecao>
           <div className="flex flex-wrap gap-1.5">
             {p.conclusoes.map(c => (
               <span key={c} className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
@@ -146,7 +153,30 @@ function AgendaRefBloco({ label, prefixo, ref: r }: { label: string; prefixo: st
   );
 }
 
-function Narrativa({ p }: { p: PerspectivaVM }) {
+type SecaoCtx = { contexto?: string; escopo: string };
+
+function TituloSecao({
+  children,
+  titulo,
+  descricao,
+  ctx,
+  className = "text-sm font-semibold",
+}: {
+  children: ReactNode;
+  titulo: string;
+  descricao?: string;
+  ctx: SecaoCtx;
+  className?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <p className={className}>{children}</p>
+      <AcoesSecao titulo={titulo} descricao={descricao} contexto={ctx.contexto} escopo={ctx.escopo} />
+    </div>
+  );
+}
+
+function Narrativa({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
   return (
     <div className="min-w-0 space-y-6 lg:col-span-8">
       <div className="space-y-3">
@@ -161,9 +191,14 @@ function Narrativa({ p }: { p: PerspectivaVM }) {
 
       {p.ondeAparece.length ? (
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <TituloSecao
+            titulo="Onde isso aparece"
+            descricao={p.ondeAparece.join(" · ")}
+            ctx={ctx}
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+          >
             Onde isso aparece
-          </p>
+          </TituloSecao>
           <ul className="space-y-2">
             {p.ondeAparece.map((o, i) => (
               <li key={i} className="flex gap-3 text-sm leading-6">
@@ -177,9 +212,14 @@ function Narrativa({ p }: { p: PerspectivaVM }) {
 
       {has(p.representa) ? (
         <div className="rounded-lg border-l-2 border-primary bg-muted/30 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <TituloSecao
+            titulo="O que isso representa"
+            descricao={p.representa ?? ""}
+            ctx={ctx}
+            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+          >
             O que isso representa
-          </p>
+          </TituloSecao>
           <p className="mt-1.5 max-w-[68ch] text-sm leading-7">{p.representa}</p>
         </div>
       ) : null}
@@ -202,7 +242,13 @@ function Narrativa({ p }: { p: PerspectivaVM }) {
 /* Navegação das oito perspectivas                                     */
 /* ------------------------------------------------------------------ */
 
-export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: PerspectivaVM[] }) {
+export function PerspectivasEntrevistaV2({
+  perspectivas,
+  contexto,
+}: {
+  perspectivas: PerspectivaVM[];
+  contexto?: string;
+}) {
   const primeira = perspectivas.find(p => p.temConteudo) ?? perspectivas[0];
   const [ativo, setAtivo] = useState<number>(primeira?.numero ?? 1);
   const p = perspectivas.find(x => x.numero === ativo) ?? primeira;
@@ -259,9 +305,9 @@ export function PerspectivasEntrevistaV2({ perspectivas }: { perspectivas: Persp
       <div id="vr2-perspectiva-panel" role="tabpanel" className="rounded-xl border bg-card p-5 sm:p-6">
         {p.temConteudo ? (
           <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
-            <Narrativa p={p} />
+            <Narrativa p={p} ctx={{ contexto, escopo: `p${String(p.numero).padStart(2, "0")}` }} />
             <div className="min-w-0 lg:col-span-4">
-              <PainelApoio p={p} />
+              <PainelApoio p={p} ctx={{ contexto, escopo: `p${String(p.numero).padStart(2, "0")}` }} />
             </div>
           </div>
         ) : (
