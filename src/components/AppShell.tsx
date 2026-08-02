@@ -336,6 +336,23 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
             <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
           </div>
+          <div className="ml-auto">
+            <UserMenu
+              name={workspace?.userName ?? "Minha conta"}
+              email={workspace?.userEmail ?? null}
+              onSignOut={signOut}
+              align="end"
+              trigger={
+                <button
+                  type="button"
+                  aria-label="Minha conta"
+                  className="h-8 w-8 rounded-full bg-primary/15 text-primary inline-flex items-center justify-center text-xs font-semibold"
+                >
+                  {initials(workspace?.userName)}
+                </button>
+              }
+            />
+          </div>
         </div>
         {!isAccessGatePage && <AdminMfaBanner />}
         {blocked ? <AccessDenied /> : children}
