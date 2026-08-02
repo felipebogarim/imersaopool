@@ -415,6 +415,7 @@ export function ExecutiveBriefV2({
   perf = null,
   leitura,
   teia,
+  contexto,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -428,6 +429,8 @@ export function ExecutiveBriefV2({
   leitura?: ReactNode;
   /** Teia comparativa exibida ao lado da síntese estratégica. */
   teia?: ReactNode;
+  /** Identificador do representante, usado para separar notas por contexto. */
+  contexto?: string;
 }) {
   const perspectivas =
     perspectivasProp ??
@@ -454,7 +457,7 @@ export function ExecutiveBriefV2({
       <PerformanceFamiliasV2 perf={perf} />
       {leitura ?? null}
       <ContextPortfolioV2 brief={brief} />
-      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} /> : null}
+      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
     </div>

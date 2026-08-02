@@ -2,7 +2,7 @@
 // Preserva o modelo visual aprovado nos Temas estratégicos (narrativa 8 col + apoio 4 col).
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefing-fabio";
@@ -162,7 +162,7 @@ function TituloSecao({
   ctx,
   className = "text-sm font-semibold",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   titulo: string;
   descricao?: string;
   ctx: SecaoCtx;
