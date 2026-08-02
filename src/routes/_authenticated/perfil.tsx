@@ -186,7 +186,22 @@ function PerfilPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sessão</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Encerre sua sessão neste dispositivo.
+            </p>
+            <Button variant="destructive" onClick={sair}>
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
     </div>
   );
 }
