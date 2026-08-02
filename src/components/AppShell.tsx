@@ -274,7 +274,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     : null;
   useEffect(() => {
     if (blocked && firstAllowedTo && firstAllowedTo !== pathname) {
-      navigate({ to: firstAllowedTo, replace: true });
+      navigate({ to: firstAllowedTo as any, replace: true });
     }
   }, [blocked, firstAllowedTo, pathname, navigate]);
 
