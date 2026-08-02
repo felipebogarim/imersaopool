@@ -98,8 +98,10 @@ function AcessoUsuario({ userId }: { userId: string }) {
     for (const k of data.base) m[k] = true;
     for (const o of data.overrides) m[o.nav_key] = !!o.allowed;
     if (data.roles.includes("admin")) {
-      for (const key of ALL_NAV_KEYS.filter(key => key === "admin" || key.startsWith("admin."))) m[key] = true;
+      m["admin"] = true;
+      m["admin.permissoes"] = true;
     }
+
     setMap(m);
   }, [data]);
 
@@ -216,7 +218,8 @@ function AcessoUsuario({ userId }: { userId: string }) {
                       </td>
                       <td className="px-6 py-3 text-center">
                         <Checkbox
-                          disabled={isAdminUser && g.adminOnly}
+                          disabled={isAdminUser && g.key === "admin.permissoes"}
+
                           checked={!!map[g.key]}
                           onCheckedChange={v => setMap(m => propagate(m, g.key, !!v))}
                         />
@@ -228,7 +231,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
                           <td className="px-6 py-2.5 pl-14 text-muted-foreground">{c.label}</td>
                           <td className="px-6 py-2.5 text-center">
                             <Checkbox
-                              disabled={isAdminUser && g.adminOnly}
+                              disabled={isAdminUser && c.key === "admin.permissoes"}
                               checked={!!map[c.key]}
                               onCheckedChange={v => setMap(m => propagate(m, c.key, !!v))}
                             />
