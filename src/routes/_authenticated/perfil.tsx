@@ -164,7 +164,7 @@ function PerfilPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="senha" className="scroll-mt-24">
           <CardHeader>
             <CardTitle>Atualizar senha</CardTitle>
           </CardHeader>
