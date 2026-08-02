@@ -187,36 +187,54 @@ const firstAccessSchema = z.object({
   origin: z.string().url(),
 });
 
+async function issueFirstAccessLink(user_id: string, origin: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(user_id);
+  if (uErr) throw new Error(uErr.message);
+  const email = u?.user?.email;
+  if (!email) throw new Error("Usuário sem e-mail cadastrado");
+  const name = ((u?.user?.user_metadata as any)?.full_name as string | null) ?? null;
+
+  const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const { error: insErr } = await supabaseAdmin
+    .from("first_access_tokens")
+    .insert({ user_id, token } as never);
+  if (insErr) throw new Error(insErr.message);
+
+  const { data: prof } = await supabaseAdmin
+    .from("profiles")
+    .select("phone")
+    .eq("id", user_id)
+    .maybeSingle();
+
+  const base = origin.replace(/\/+$/, "");
+  const link = `${base}/definir-senha?t=${token}`;
+  return { supabaseAdmin, email, name, link, phone: (prof as any)?.phone ?? null };
+}
+
 /**
- * Gera o link de primeiro acesso: leva direto à tela de login já com o e-mail
- * preenchido, onde o usuário digita a senha temporária. Não expira.
+ * Gera o convite de primeiro acesso: link pessoal onde o usuário cadastra
+ * a própria senha. Não há senha temporária.
  */
 export const generateFirstAccessLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw) => firstAccessSchema.parse(raw))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
-    if (uErr) throw new Error(uErr.message);
-    const email = u?.user?.email;
-    if (!email) throw new Error("Usuário sem e-mail cadastrado");
-
-    const base = data.origin.replace(/\/+$/, "");
-    const link = `${base}/auth?e=${encodeURIComponent(email)}&primeiro=1`;
-
+    const { email, name, link, phone } = await issueFirstAccessLink(data.user_id, data.origin);
     return {
       email,
+      name,
+      phone,
       link,
-      expires_hint: "O link não expira — o acesso é validado pela senha temporária.",
+      expires_hint: "O convite é pessoal e vale por 14 dias.",
     };
   });
 
 const sendFirstAccessSchema = z.object({
   user_id: z.string().uuid(),
   origin: z.string().url(),
-  temp_password: z.string().trim().optional(),
 });
 
 /** Envia o convite de primeiro acesso por e-mail (infra de e-mails do app). */
@@ -225,26 +243,18 @@ export const sendFirstAccessEmail = createServerFn({ method: "POST" })
   .inputValidator((raw) => sendFirstAccessSchema.parse(raw))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendTransactionalEmail } = await import("@/lib/email/send.server");
-
-    const { data: u, error: uErr } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
-    if (uErr) throw new Error(uErr.message);
-    const email = u?.user?.email;
-    if (!email) throw new Error("Usuário sem e-mail cadastrado");
-    const name = (u?.user?.user_metadata as any)?.full_name ?? null;
-
-    const base = data.origin.replace(/\/+$/, "");
-    const link = `${base}/auth?e=${encodeURIComponent(email)}&primeiro=1`;
+    const { email, name, link } = await issueFirstAccessLink(data.user_id, data.origin);
 
     await sendTransactionalEmail({
       templateName: "primeiro-acesso",
       recipientEmail: email,
       idempotencyKey: `primeiro-acesso:${data.user_id}:${Date.now()}`,
-      templateData: { name, link, tempPassword: data.temp_password || undefined },
+      templateData: { name, link },
     });
 
     return { ok: true, email };
   });
+
 
 
