@@ -268,10 +268,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     return { group: g, children };
   }).filter(Boolean) as { group: NavGroup; children: NavGroup["children"] }[];
 
-  // Sem permissão na rota atual: leva o usuário para a primeira área liberada
-  const firstAllowedTo = visibleGroups.length
-    ? (visibleGroups[0].children[0]?.to ?? visibleGroups[0].group.to ?? null)
-    : null;
+  // Sem permissão na rota atual: prioriza Performance, senão a primeira área liberada
+  const canPerformance = access.can("representantes") && access.can("representantes.performance");
+  const firstAllowedTo = canPerformance
+    ? "/representantes/performance"
+    : visibleGroups.length
+      ? (visibleGroups[0].children[0]?.to ?? visibleGroups[0].group.to ?? null)
+      : null;
   useEffect(() => {
     if (blocked && firstAllowedTo && firstAllowedTo !== pathname) {
       navigate({ to: firstAllowedTo as any, replace: true });
