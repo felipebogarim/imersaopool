@@ -231,7 +231,7 @@ function AcessoUsuario({ userId }: { userId: string }) {
                           <td className="px-6 py-2.5 pl-14 text-muted-foreground">{c.label}</td>
                           <td className="px-6 py-2.5 text-center">
                             <Checkbox
-                              disabled={isAdminUser && g.adminOnly}
+                              disabled={isAdminUser && c.key === "admin.permissoes"}
                               checked={!!map[c.key]}
                               onCheckedChange={v => setMap(m => propagate(m, c.key, !!v))}
                             />
