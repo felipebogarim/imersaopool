@@ -474,11 +474,17 @@ function CreateUserDialog({
 }
 
 function InviteDialog({
-  open, onOpenChange, onDone,
-}: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  open, onOpenChange, onDone, onInvited,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onDone: () => void;
+  onInvited: (info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null }) => void;
+}) {
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
+  const [fone, setFone] = useState("");
   const [role, setRole] = useState<string>("agente");
   const [saving, setSaving] = useState(false);
 
@@ -486,21 +492,23 @@ function InviteDialog({
     if (!email.trim()) return toast.error("Informe o e-mail");
     setSaving(true);
     try {
-      await inviteUser({
+      const res: any = await inviteUser({
         data: {
           email: email.trim(),
           full_name: nome.trim(),
           cargo: cargo.trim(),
+          phone: fone.trim(),
           role: role as any,
-          redirect_to: window.location.origin + "/auth",
+          origin: window.location.origin,
         },
       });
-      toast.success("Convite enviado");
-      setEmail(""); setNome(""); setCargo("");
+      toast.success("Convite gerado — escolha como enviar");
+      setEmail(""); setNome(""); setCargo(""); setFone("");
       onOpenChange(false);
       onDone();
+      onInvited({ email: res.email, link: res.link, userId: res.user_id, name: res.name, phone: res.phone });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao enviar convite");
+      toast.error(e?.message ?? "Falha ao gerar convite");
     } finally {
       setSaving(false);
     }
@@ -511,7 +519,10 @@ function InviteDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Enviar convite</DialogTitle>
-          <DialogDescription>O usuário receberá um e-mail para definir a senha e acessar o painel.</DialogDescription>
+          <DialogDescription>
+            A conta é criada sem senha. Depois você escolhe enviar o convite por e-mail ou WhatsApp — o usuário
+            cadastra a própria senha ao abrir o link.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -521,6 +532,10 @@ function InviteDialog({
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={nome} onChange={e => setNome(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>WhatsApp (opcional)</Label>
+            <Input value={fone} onChange={e => setFone(e.target.value)} placeholder="(11) 99999-9999" />
           </div>
           <div className="space-y-1.5">
             <Label>Setor / cargo</Label>
@@ -536,6 +551,7 @@ function InviteDialog({
             </Select>
           </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={saving}>
