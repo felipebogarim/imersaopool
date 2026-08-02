@@ -7,6 +7,7 @@ export type AuthGateData = {
   ndaAcceptedAt: string | null;
   termsOk: boolean;
   mustEnrollMfa: boolean;
+  degraded?: boolean;
 };
 
 const TTL_MS = 60_000;
