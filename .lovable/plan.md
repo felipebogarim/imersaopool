@@ -1,39 +1,30 @@
-# Corrigir definitivamente o fluxo de primeiro acesso e termos
+# Evitar que versões antigas em cache travem o primeiro acesso
 
-## Diagnóstico confirmado
+## O que ficou confirmado
 
-- O login de `poolbranding@gmail.com` foi concluído com sucesso pelo backend às 22:39 usando a senha cadastrada pelo usuário.
-- A conta está ativa, com os perfis `admin` e `agente`, sem empresa ativa e sem aceite do termo de confidencialidade.
-- A versão 1.1 dos Termos está ativa e exige aceite.
-- Não existe registro de aceite dessa versão para a conta e não houve erro do procedimento de aceite no banco. Portanto, a ação não está chegando ao backend; a quebra ocorre antes, durante a navegação/renderização protegida no navegador.
-- O código atualmente publicado ainda faz transições concorrentes no roteador: após login usa navegação interna; após o aceite limpa o gate, invalida o roteador e navega simultaneamente. Esse é o ponto concreto a eliminar.
+- O fluxo funciona: no celular (sem cache antigo) o login, a criação de senha e os aceites concluíram normalmente.
+- No desktop o navegador continuava servindo uma versão antiga da aplicação, o que causava a tela branca e o loop nos aceites.
+- Ou seja, não há correção pendente na lógica de autenticação; falta uma proteção contra versão desatualizada carregada no navegador do usuário.
 
-## Implementação
+## Implementação proposta
 
-1. **Tornar o pós-login determinístico**
-   - Após autenticação bem-sucedida, confirmar a identidade com `getUser()`.
-   - Encerrar o estado de carregamento e fazer uma única navegação completa do documento para a etapa calculada pelo gate, evitando a transição concorrente do roteador em memória.
+1. **Detecção de versão desatualizada**
+   - Registrar a versão da build no momento da publicação e compará-la com a versão carregada no navegador.
+   - Quando houver divergência, recarregar a aplicação uma única vez, de forma automática e silenciosa, sem loop de recarga.
 
-2. **Corrigir a sequência dos aceites**
-   - No aceite dos Termos, exigir que o procedimento retorne o identificador do registro criado.
-   - Consultar novamente o status e só avançar quando o backend responder `aceito`.
-   - Como esta conta ainda não aceitou o termo de confidencialidade, avançar diretamente para `/nda`; depois do NDA, direcionar para seleção de empresa ou painel conforme o estado real.
-   - Remover a combinação atual de `router.invalidate()` + `navigate()` das páginas de aceite.
+2. **Recuperação amigável nas telas de acesso**
+   - Nas etapas de login, criação de senha e aceites, se a tela falhar ao carregar, exibir uma mensagem curta com um botão "Atualizar aplicação" que força o recarregamento limpo em vez de deixar a tela em branco.
 
-3. **Fortalecer o gate sem liberar acesso indevidamente**
-   - Validar o usuário com `getUser()` em vez de confiar apenas na sessão local.
-   - Remover o estado degradado que hoje libera a rota quando a leitura de termos/perfil falha; mostrar erro recuperável sem contornar etapas obrigatórias.
-   - Manter um único redirecionamento por avaliação do gate.
+3. **Limpeza de estado local no logout e no primeiro acesso**
+   - Ao sair e ao entrar por convite, limpar caches locais da aplicação para que o usuário nunca inicie o fluxo com dados antigos.
 
-4. **Validação objetiva**
-   - Testar login normal, abertura dos Termos, criação do registro de aceite, avanço para NDA e saída do NDA.
-   - Confirmar no banco os registros efetivamente gravados e verificar que não há tela branca, loop ou botão preso.
-   - Não alterar nem redefinir a senha cadastrada pelo usuário.
+4. **Validação**
+   - Simular navegador com versão antiga carregada e confirmar que a aplicação se atualiza sozinha uma vez e segue o fluxo até o painel.
+   - Confirmar que não ocorre recarregamento repetido em nenhuma tela.
 
 ## Arquivos envolvidos
 
+- `src/routes/__root.tsx`
 - `src/routes/auth.tsx`
+- `src/routes/definir-senha.tsx`
 - `src/routes/_authenticated/route.tsx`
-- `src/routes/_authenticated/aceite-termos.tsx`
-- `src/routes/_authenticated/nda.tsx`
-- `src/lib/auth-gate.ts`
