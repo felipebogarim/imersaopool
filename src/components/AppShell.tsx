@@ -173,7 +173,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       const uid = u.user?.id;
       if (!uid) return null;
       const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("active_company_id").eq("id", uid).maybeSingle(),
+        supabase.from("profiles").select("active_company_id, full_name, email").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
       const roleList = (roles ?? []).map((r: any) => r.role);
@@ -184,7 +184,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
         companyName = c?.nome ?? null;
       }
-      return { isAdmin, isComercialOnly, companyName };
+      const email = u.user?.email ?? profile?.email ?? null;
+      return {
+        isAdmin,
+        isComercialOnly,
+        companyName,
+        userName: profile?.full_name ?? email ?? "Minha conta",
+        userEmail: email,
+      };
     },
   });
 
