@@ -22,7 +22,7 @@ export function clearAuthGateCache() {
 }
 
 async function load(userId: string): Promise<AuthGateData> {
-  const [{ data: p }, { data: roles }] = await Promise.all([
+  const [profileResult, rolesResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("active_company_id, nda_accepted_at")
@@ -30,6 +30,12 @@ async function load(userId: string): Promise<AuthGateData> {
       .maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
+
+  if (profileResult.error) throw profileResult.error;
+  if (rolesResult.error) throw rolesResult.error;
+
+  const p = profileResult.data;
+  const roles = rolesResult.data;
 
   const roleList = (roles ?? []).map((r: any) => r.role as string);
   const isComercialOnly =
@@ -43,6 +49,8 @@ async function load(userId: string): Promise<AuthGateData> {
     if (roleList.includes("admin"))
       promises.push(Promise.resolve(supabase.rpc("get_admin_mfa_status")));
     const [termsRes, mfaRes] = await Promise.all(promises);
+    if (termsRes?.error) throw termsRes.error;
+    if (mfaRes?.error) throw mfaRes.error;
     const row: any = Array.isArray(termsRes?.data) ? termsRes.data[0] : termsRes?.data;
 
     termsOk = !row || row.status === "aceito";
