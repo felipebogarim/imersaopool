@@ -278,6 +278,7 @@ function UsuariosPage() {
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+        onInvited={(info) => setLinkInfo(info)}
       />
       <EditDialog
         row={editRow}
