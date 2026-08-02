@@ -259,11 +259,25 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const visibleGroups = NAV_TREE.map(g => {
     if (g.adminOnly && !workspace?.isAdmin) return null;
-    if (!access.can(g.key)) return null;
     const children = g.children.filter(c => access.can(c.key));
-    if (g.children.length > 0 && children.length === 0) return null;
+    if (g.children.length > 0) {
+      if (children.length === 0) return null;
+    } else if (!access.can(g.key)) {
+      return null;
+    }
     return { group: g, children };
   }).filter(Boolean) as { group: NavGroup; children: NavGroup["children"] }[];
+
+  // Sem permissão na rota atual: leva o usuário para a primeira área liberada
+  const firstAllowedTo = visibleGroups.length
+    ? (visibleGroups[0].children[0]?.to ?? visibleGroups[0].group.to ?? null)
+    : null;
+  useEffect(() => {
+    if (blocked && firstAllowedTo && firstAllowedTo !== pathname) {
+      navigate({ to: firstAllowedTo, replace: true });
+    }
+  }, [blocked, firstAllowedTo, pathname, navigate]);
+
 
   return (
     <div className="min-h-screen flex">
