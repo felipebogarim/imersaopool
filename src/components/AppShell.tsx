@@ -294,10 +294,27 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className={cn("ml-2", LBL)}>Termos de Uso</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start px-2 text-muted-foreground" title="Sair">
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span className={cn("ml-2", LBL)}>Sair</span>
-          </Button>
+          <UserMenu
+            name={workspace?.userName ?? "Minha conta"}
+            email={workspace?.userEmail ?? null}
+            onSignOut={signOut}
+            align="start"
+            trigger={
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent/50 transition text-left"
+                title="Minha conta"
+              >
+                <span className="h-7 w-7 shrink-0 rounded-full bg-primary/15 text-primary inline-flex items-center justify-center text-xs font-semibold">
+                  {initials(workspace?.userName)}
+                </span>
+                <span className={cn("min-w-0", LBL)}>
+                  <span className="block text-sm font-medium truncate">{workspace?.userName ?? "Minha conta"}</span>
+                  <span className="block text-[11px] text-muted-foreground truncate">{workspace?.userEmail ?? ""}</span>
+                </span>
+              </button>
+            }
+          />
         </div>
       </aside>
       <main className="flex-1 min-w-0 overflow-x-hidden relative">
