@@ -12,6 +12,9 @@ export const Route = createFileRoute("/_authenticated")({
     if (!user) throw redirect({ to: "/auth" });
 
     const gate = await getAuthGate(user.id);
+    // Estado degradado (falha temporária ao ler perfil/termos): não redireciona,
+    // apenas deixa a rota atual renderizar para o usuário poder tentar de novo.
+    if (gate.degraded) return { user };
     const roleList = gate.roles;
     const isComercialOnly =
       roleList.length > 0 && roleList.every((r: string) => r === "comercial");
@@ -72,6 +75,27 @@ export const Route = createFileRoute("/_authenticated")({
     return { user };
   },
 
+
+  errorComponent: ({ error }: { error: unknown }) => {
+    console.error("_authenticated gate:", error);
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="max-w-md w-full rounded-xl border border-border bg-card p-6 space-y-3 text-center">
+          <h1 className="text-lg font-bold">Não foi possível carregar esta página</h1>
+          <p className="text-sm text-muted-foreground">
+            Houve uma falha temporária ao verificar seu acesso. Recarregue para continuar.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Recarregar
+          </button>
+        </div>
+      </div>
+    );
+  },
 
   component: () => (
     <AppShell>

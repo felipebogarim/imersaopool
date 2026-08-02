@@ -111,6 +111,12 @@ function DefinirSenhaPage() {
         navigate({ to: "/auth" });
         return;
       }
+      // Garante que a sessão já esteja persistida antes de recarregar a app.
+      for (let i = 0; i < 20; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) break;
+        await new Promise((r) => setTimeout(r, 150));
+      }
       toast.success("Senha criada com sucesso");
       window.location.href = "/dashboard";
     } catch (e: any) {
