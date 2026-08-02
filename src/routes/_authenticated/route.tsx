@@ -24,6 +24,27 @@ export const Route = createFileRoute("/_authenticated")({
       return { user };
     }
 
+    // As páginas de aceite são etapas, não destinos permanentes. Se uma etapa
+    // já estiver concluída, avance usando o estado atual do banco. Isso também
+    // recupera automaticamente uma navegação interrompida após clicar em aceitar.
+    if (path === "/aceite-termos" && gate.termsOk) {
+      if (!gate.ndaAcceptedAt) throw redirect({ to: "/nda", replace: true });
+      if (!gate.activeCompanyId) throw redirect({ to: "/empresas", replace: true });
+      if (roleList.includes("admin") && gate.mustEnrollMfa) {
+        throw redirect({ to: "/admin/mfa", replace: true });
+      }
+      throw redirect({ to: "/dashboard", replace: true });
+    }
+
+    if (path === "/nda" && gate.ndaAcceptedAt) {
+      if (!gate.termsOk) throw redirect({ to: "/aceite-termos", replace: true });
+      if (!gate.activeCompanyId) throw redirect({ to: "/empresas", replace: true });
+      if (roleList.includes("admin") && gate.mustEnrollMfa) {
+        throw redirect({ to: "/admin/mfa", replace: true });
+      }
+      throw redirect({ to: "/dashboard", replace: true });
+    }
+
     // Aceite dos Termos de Uso (versão vigente) — bloqueia app até aceitar
     const ALLOWED_WITHOUT_TERMS = new Set(["/aceite-termos", "/termos-de-uso", "/nda"]);
     if (!ALLOWED_WITHOUT_TERMS.has(path) && !gate.termsOk) {

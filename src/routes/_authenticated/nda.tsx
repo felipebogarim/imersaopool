@@ -40,9 +40,9 @@ function NdaPage() {
       return toast.error(error?.message ?? "Não foi possível confirmar o aceite. Tente novamente.");
     }
     clearAuthGateCache();
-    await router.invalidate();
     toast.success("Termo aceito");
-    await navigate({ to: "/empresas", replace: true });
+    await router.invalidate();
+    await navigate({ to: "/dashboard", replace: true });
     setSaving(false);
   }
 
