@@ -42,14 +42,6 @@ export function useNavAccess(): NavAccess {
         else base.delete(p.nav_key as string);
       }
 
-      // Salvaguarda mínima: o admin nunca perde o acesso à própria tela de
-      // Acessos, para não se trancar fora do sistema.
-      if (isAdmin) {
-        base.add("admin");
-        base.add("admin.permissoes");
-      }
-
-
       return { isAdmin, keys: Array.from(base) };
     },
   });
