@@ -21,6 +21,16 @@ export function clearAuthGateCache() {
   generation += 1;
 }
 
+async function loadWithRetry(userId: string): Promise<AuthGateData> {
+  try {
+    return await load(userId);
+  } catch {
+    // Logo após o login o token pode ainda não estar propagado: tenta de novo.
+    await new Promise((r) => setTimeout(r, 600));
+    return load(userId);
+  }
+}
+
 async function load(userId: string): Promise<AuthGateData> {
   const [profileResult, rolesResult] = await Promise.all([
     supabase
