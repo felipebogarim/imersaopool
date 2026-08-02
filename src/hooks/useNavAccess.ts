@@ -19,11 +19,12 @@ export function useNavAccess(): NavAccess {
       if (!uid) return { isAdmin: false, keys: [] as string[] };
       const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", uid);
       const roles = (roleRows ?? []).map((r: any) => r.role as string);
-      if (roles.includes("admin")) return { isAdmin: true, keys: ALL_NAV_KEYS };
-
       // base: permissões do(s) perfil(is)
       const base = new Set<string>();
-      if (roles.length) {
+      const isAdmin = roles.includes("admin");
+      if (isAdmin) {
+        ALL_NAV_KEYS.forEach(key => base.add(key));
+      } else if (roles.length) {
         const { data: perms } = await supabase
           .from("role_permissions")
           .select("role, nav_key, allowed")
@@ -41,7 +42,15 @@ export function useNavAccess(): NavAccess {
         else base.delete(p.nav_key as string);
       }
 
-      return { isAdmin: false, keys: Array.from(base) };
+      // As funções administrativas são inerentes ao papel e não podem ser
+      // retiradas por uma preferência individual de navegação.
+      if (isAdmin) {
+        for (const key of ALL_NAV_KEYS.filter(key => key === "admin" || key.startsWith("admin."))) {
+          base.add(key);
+        }
+      }
+
+      return { isAdmin, keys: Array.from(base) };
     },
   });
 
@@ -51,6 +60,6 @@ export function useNavAccess(): NavAccess {
     isAdmin,
     allowed,
     loading: isLoading,
-    can: (key: string) => isAdmin || allowed.has(key),
+    can: (key: string) => allowed.has(key),
   };
 }
