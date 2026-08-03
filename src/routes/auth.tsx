@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { clearAuthGateCache } from "@/lib/auth-gate";
+import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
