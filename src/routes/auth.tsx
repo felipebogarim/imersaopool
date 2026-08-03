@@ -54,6 +54,7 @@ function AuthPage() {
           await supabase.auth.signOut({ scope: "local" });
           clearAuthGateCache();
         }
+        await purgeAppCaches();
         if (active) setPreparingFirstAccess(false);
         return;
       }
