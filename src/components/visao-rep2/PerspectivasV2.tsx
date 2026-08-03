@@ -183,11 +183,20 @@ function Narrativa({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {String(p.numero).padStart(2, "0")} · {p.descricao}
         </p>
-        <h4 className="text-xl font-semibold tracking-tight sm:text-2xl">{p.tituloConclusivo}</h4>
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="text-xl font-semibold tracking-tight sm:text-2xl">{p.tituloConclusivo}</h4>
+          <AcoesSecao
+            titulo={`${String(p.numero).padStart(2, "0")} · ${p.nome}`}
+            descricao={p.tituloConclusivo}
+            contexto={ctx.contexto}
+            escopo={ctx.escopo}
+          />
+        </div>
         {has(p.contexto) ? (
           <p className="max-w-[68ch] whitespace-pre-line text-base leading-8 text-foreground/90">{p.contexto}</p>
         ) : null}
       </div>
+
 
       {p.ondeAparece.length ? (
         <div className="space-y-2">
