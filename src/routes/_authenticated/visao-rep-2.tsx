@@ -547,6 +547,7 @@ function VisaoRep2Page() {
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={CONSOLIDADO_ID}>CONSOLIDADO (todos os entrevistados)</SelectItem>
             {reps.map((r: any) => (
               <SelectItem key={r.id} value={r.id}>
                 {r.nome}
@@ -554,7 +555,11 @@ function VisaoRep2Page() {
             ))}
           </SelectContent>
         </Select>
-        {repSel?.regiao ? (
+        {repId === CONSOLIDADO_ID ? (
+          <Badge variant="secondary" className="uppercase">
+            Consolidado
+          </Badge>
+        ) : repSel?.regiao ? (
           <Badge variant="secondary" className="uppercase">
             {repSel.regiao}
           </Badge>
