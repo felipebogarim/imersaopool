@@ -72,6 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "app-build", content: APP_BUILD_ID },
       { title: "PoolFlux Imersões Comerciais" },
       { name: "description", content: "Prepare, conduza e analise imersões comerciais com diagnóstico estratégico gerado por IA." },
       { name: "theme-color", content: "#0a1422" },
