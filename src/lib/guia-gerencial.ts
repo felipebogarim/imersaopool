@@ -330,3 +330,15 @@ export function saveProgresso(userId: string, p: GuiaProgresso) {
     /* storage indisponível */
   }
 }
+
+/** Capítulos padrão do roteiro de entrevista (resultado final entregue ao gestor). */
+export const ENTREVISTA_CAPITULOS: { titulo: string; descricao: string }[] = [
+  { titulo: "Percepção de marca e preço", descricao: "Como a marca é vista e o quanto o preço pesa na decisão." },
+  { titulo: "Mix ofertado e esforço de venda", descricao: "Quais linhas são oferecidas e onde está o esforço comercial." },
+  { titulo: "Competição de mercado", descricao: "Concorrentes citados, onde ganham e onde perdem." },
+  { titulo: "Argumento técnico no ponto de venda", descricao: "Argumentos usados e objeções mais frequentes." },
+  { titulo: "Critério de decisão do cliente", descricao: "O que realmente define a escolha do cliente final." },
+  { titulo: "Oportunidades, ameaças e cuidados", descricao: "Sinais de avanço e riscos que exigem atenção." },
+  { titulo: "Governança comercial e autonomia", descricao: "Regras, alçadas e autonomia percebida na operação." },
+  { titulo: "Informações Adicionais", descricao: "Registros livres e observações relevantes do campo." },
+];
