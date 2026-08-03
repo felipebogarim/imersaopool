@@ -934,7 +934,16 @@ function VisaoRep2View({
                       <span className="text-sm font-semibold">{s.title ?? `Sinal ${i + 1}`}</span>
                       {s.confidence_level ? <Badge variant="outline">{CONFIDENCE_LABEL[s.confidence_level]}</Badge> : null}
                       {s.evidence_status ? <Badge variant="secondary">{EVIDENCE_LABEL[s.evidence_status]}</Badge> : null}
+                      <span className="ml-auto">
+                        <AcoesSecao
+                          titulo={s.title ?? `Sinal ${i + 1}`}
+                          descricao={[s.finding, s.business_impact].filter(Boolean).join("\n\n")}
+                          contexto={visao.metadata.representative_id ?? visao.metadata.representative_name ?? undefined}
+                          escopo={`sinal-${i + 1}`}
+                        />
+                      </span>
                     </div>
+
                     <div className="space-y-2">
                       <Field label="Achado" value={s.finding} />
                       <Field label="Impacto comercial" value={s.business_impact} />
