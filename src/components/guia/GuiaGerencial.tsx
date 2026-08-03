@@ -10,17 +10,19 @@ import { GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
-/** cor de acento por etapa — usa a paleta de famílias já definida no design system */
-const ACENTO = ["--fam-1", "--fam-2", "--fam-3", "--fam-4", "--fam-5", "--fam-6", "--fam-7", "--fam-8"];
-
 const bullets = (e: GuiaEtapa) => [e.encontrar[0], e.comoUsar[0]].filter(Boolean) as string[];
 
 export function GuiaGerencial() {
   const [ativo, setAtivo] = useState<number | null>(null);
+  const [dir, setDir] = useState<1 | -1>(1);
   const conteudoRef = useRef<HTMLDivElement | null>(null);
+  const trilhoRef = useRef<HTMLDivElement | null>(null);
 
   const abrir = useCallback((i: number) => {
-    setAtivo(i);
+    setAtivo(prev => {
+      setDir(prev === null || i >= prev ? 1 : -1);
+      return i;
+    });
   }, []);
 
   useEffect(() => {
@@ -33,12 +35,26 @@ export function GuiaGerencial() {
     return () => window.clearTimeout(t);
   }, [ativo]);
 
+  // mantém o card ativo visível no carrossel
+  useEffect(() => {
+    if (ativo === null) return;
+    const trilho = trilhoRef.current;
+    const card = trilho?.querySelector<HTMLElement>(`[data-slide="${ativo}"]`);
+    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [ativo]);
+
+  const deslizar = (delta: number) => {
+    const trilho = trilhoRef.current;
+    if (!trilho) return;
+    trilho.scrollBy({ left: delta * trilho.clientWidth * 0.8, behavior: "smooth" });
+  };
+
   const etapa = ativo !== null ? GUIA_ETAPAS[ativo] : null;
 
   return (
     <div className="pb-20">
       {/* ---------- TOPO ---------- */}
-      <section className="border-b border-border bg-gradient-to-b from-primary/12 via-background to-background">
+      <section className="border-b border-border bg-gradient-to-b from-muted/60 via-background to-background">
         <div className="mx-auto max-w-[1320px] px-4 sm:px-8 pt-12 pb-8 text-center">
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">
             Guia de Uso <span className="text-primary">Gerencial</span>
@@ -48,17 +64,46 @@ export function GuiaGerencial() {
           </p>
         </div>
 
-        {/* ---------- TIMELINE HORIZONTAL ---------- */}
+        {/* ---------- CARROSSEL DE ETAPAS ---------- */}
         <div className="mx-auto max-w-[1320px] px-4 sm:px-8 pb-12">
-          <div className="grid gap-x-5 gap-y-10 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Trilha · 8 etapas</p>
+            <div className="flex gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(-1)} aria-label="Anterior">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(1)} aria-label="Próximo">
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div
+            ref={trilhoRef}
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {GUIA_ETAPAS.map((e, i) => (
-              <TimelineCard
+              <div
                 key={e.id}
-                etapa={e}
-                index={i}
-                ativo={ativo === i}
-                ultimoDaLinha={(i + 1) % 4 === 0}
+                data-slide={i}
+                className="snap-start shrink-0 basis-[82%] sm:basis-[46%] xl:basis-[23.5%]"
+              >
+                <TimelineCard etapa={e} index={i} ativo={ativo === i} onClick={() => abrir(i)} />
+              </div>
+            ))}
+          </div>
+
+          {/* indicadores */}
+          <div className="mt-2 flex justify-center gap-1.5">
+            {GUIA_ETAPAS.map((e, i) => (
+              <button
+                key={e.id}
+                type="button"
+                aria-label={`Ir para etapa ${e.numero}`}
                 onClick={() => abrir(i)}
+                className={`h-1.5 rounded-full transition-all ${
+                  ativo === i ? "w-7 bg-primary" : "w-2.5 bg-border hover:bg-muted-foreground/50"
+                }`}
               />
             ))}
           </div>
@@ -79,19 +124,16 @@ export function GuiaGerencial() {
                       <button
                         type="button"
                         onClick={() => abrir(i)}
-                        style={on ? { borderColor: `var(${ACENTO[i]})` } : undefined}
                         className={`w-full text-left rounded-lg px-3 py-2 text-xs transition border-l-2 ${
                           on
-                            ? "bg-primary/12 border-l-2 font-semibold text-foreground"
+                            ? "bg-primary/10 border-primary font-semibold text-foreground"
                             : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                         }`}
                       >
                         <span
-                          className="mr-2 inline-grid h-5 w-5 place-items-center rounded-md text-[10px] font-bold"
-                          style={{
-                            backgroundColor: on ? `var(${ACENTO[i]})` : "var(--muted)",
-                            color: on ? "var(--background)" : "var(--muted-foreground)",
-                          }}
+                          className={`mr-2 inline-grid h-5 w-5 place-items-center rounded-md text-[10px] font-bold ${
+                            on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          }`}
                         >
                           {e.numero}
                         </span>
@@ -106,13 +148,20 @@ export function GuiaGerencial() {
               </Button>
             </aside>
 
-            <EtapaDetalhe
-              etapa={etapa}
-              index={ativo!}
-              total={GUIA_ETAPAS.length}
-              onPrev={() => abrir(Math.max(0, ativo! - 1))}
-              onNext={() => abrir(Math.min(GUIA_ETAPAS.length - 1, ativo! + 1))}
-            />
+            <div
+              key={ativo}
+              className={`min-w-0 animate-in fade-in duration-300 ${
+                dir === 1 ? "slide-in-from-right-8" : "slide-in-from-left-8"
+              }`}
+            >
+              <EtapaDetalhe
+                etapa={etapa}
+                index={ativo!}
+                total={GUIA_ETAPAS.length}
+                onPrev={() => abrir(Math.max(0, ativo! - 1))}
+                onNext={() => abrir(Math.min(GUIA_ETAPAS.length - 1, ativo! + 1))}
+              />
+            </div>
           </div>
         ) : (
           <div className="mx-auto max-w-[1320px] px-4 sm:px-8 py-10 text-center">
@@ -127,59 +176,52 @@ export function GuiaGerencial() {
 }
 
 function TimelineCard({
-  etapa, index, ativo, ultimoDaLinha, onClick,
-}: { etapa: GuiaEtapa; index: number; ativo: boolean; ultimoDaLinha: boolean; onClick: () => void }) {
+  etapa, index, ativo, onClick,
+}: { etapa: GuiaEtapa; index: number; ativo: boolean; onClick: () => void }) {
   const Icon = ICONES[index];
-  const cor = `var(${ACENTO[index]})`;
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative text-left focus-visible:outline-none"
+      className="group relative w-full h-full text-left focus-visible:outline-none"
       aria-current={ativo ? "step" : undefined}
     >
-      {/* linha conectora */}
-      {!ultimoDaLinha && (
-        <span
-          className="hidden xl:block absolute top-0 left-1/2 right-[-1.25rem] h-px bg-border"
-          aria-hidden
-        />
-      )}
-      {/* nó numerado */}
       <span
-        className="absolute -top-5 left-5 grid h-10 w-10 place-items-center rounded-full text-sm font-bold shadow-md transition-transform group-hover:scale-110"
-        style={{ backgroundColor: cor, color: "var(--background)" }}
+        className={`absolute -top-4 left-5 z-10 grid h-9 w-9 place-items-center rounded-full text-xs font-bold shadow-sm transition-all group-hover:-translate-y-0.5 ${
+          ativo
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground border border-border"
+        }`}
       >
         {etapa.numero}
       </span>
 
       <div
-        className="surface rounded-2xl pt-8 pb-5 px-5 h-full transition-all group-hover:-translate-y-1"
-        style={{
-          borderTop: `3px solid ${cor}`,
-          boxShadow: ativo ? `0 0 0 2px ${cor}` : undefined,
-        }}
+        className={`surface rounded-2xl pt-8 pb-5 px-5 h-full transition-all duration-300 group-hover:-translate-y-1 ${
+          ativo ? "ring-1 ring-primary border-primary/40" : ""
+        }`}
       >
         <div className="flex items-center gap-3">
           <span
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
-            style={{ backgroundColor: `color-mix(in oklab, ${cor} 18%, transparent)`, color: cor }}
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors ${
+              ativo ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground group-hover:text-primary"
+            }`}
           >
             <Icon className="h-[18px] w-[18px]" />
           </span>
-          <h2 className="text-sm font-bold uppercase tracking-wide leading-tight">{etapa.titulo}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide leading-tight">{etapa.titulo}</h2>
         </div>
 
         <ul className="mt-3 space-y-1.5">
           {bullets(etapa).map(b => (
             <li key={b} className="flex gap-2 text-xs text-muted-foreground leading-relaxed">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full" style={{ backgroundColor: cor }} aria-hidden />
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" aria-hidden />
               <span className="line-clamp-2">{b}</span>
             </li>
           ))}
         </ul>
 
-        <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium" style={{ color: cor }}>
+        <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary">
           Abrir etapa <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
@@ -188,12 +230,12 @@ function TimelineCard({
 }
 
 function Bloco({
-  icon: Icon, titulo, cor, children, tone = "card",
-}: { icon: any; titulo: string; cor: string; children: React.ReactNode; tone?: "card" | "inset" }) {
+  icon: Icon, titulo, children, tone = "card",
+}: { icon: any; titulo: string; children: React.ReactNode; tone?: "card" | "inset" }) {
   return (
     <div className={`${tone === "inset" ? "surface-inset" : "surface"} rounded-xl p-5`}>
       <div className="flex items-center gap-2 mb-3">
-        <Icon className="h-4 w-4" style={{ color: cor }} />
+        <Icon className="h-4 w-4 text-primary" />
         <h3 className="text-xs font-semibold uppercase tracking-wider">{titulo}</h3>
       </div>
       {children}
@@ -201,12 +243,12 @@ function Bloco({
   );
 }
 
-function Lista({ items, cor }: { items: string[]; cor: string }) {
+function Lista({ items }: { items: string[] }) {
   return (
     <ul className="space-y-2 text-sm text-muted-foreground">
       {items.map(t => (
         <li key={t} className="flex gap-2">
-          <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: cor }} aria-hidden />
+          <span className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 bg-primary/60" aria-hidden />
           <span>{t}</span>
         </li>
       ))}
@@ -217,29 +259,22 @@ function Lista({ items, cor }: { items: string[]; cor: string }) {
 function EtapaDetalhe({
   etapa, index, total, onPrev, onNext,
 }: { etapa: GuiaEtapa; index: number; total: number; onPrev: () => void; onNext: () => void }) {
-  const cor = `var(${ACENTO[index]})`;
   const Icon = ICONES[index];
   return (
     <section className="space-y-6 min-w-0">
-      <header
-        className="surface rounded-2xl p-6 sm:p-7"
-        style={{ borderLeft: `4px solid ${cor}` }}
-      >
+      <header className="surface rounded-2xl p-6 sm:p-7 border-l-4 border-l-primary">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Etapa {etapa.numero} de {total}
             </p>
             <h2 className="mt-1 flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight">
-              <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
-                style={{ backgroundColor: `color-mix(in oklab, ${cor} 18%, transparent)`, color: cor }}
-              >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
               {etapa.titulo}
             </h2>
-            <p className="mt-3 text-sm font-medium" style={{ color: cor }}>{etapa.frase}</p>
+            <p className="mt-3 text-sm font-medium text-primary">{etapa.frase}</p>
           </div>
           {etapa.to ? (
             <Button asChild className="gap-2">
@@ -260,20 +295,20 @@ function EtapaDetalhe({
       </header>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Bloco icon={LayoutGrid} titulo="O que você encontrará" cor={cor}>
-          <Lista items={etapa.encontrar} cor={cor} />
+        <Bloco icon={LayoutGrid} titulo="O que você encontrará">
+          <Lista items={etapa.encontrar} />
         </Bloco>
-        <Bloco icon={Compass} titulo="Como utilizar" cor={cor}>
-          <Lista items={etapa.comoUsar} cor={cor} />
+        <Bloco icon={Compass} titulo="Como utilizar">
+          <Lista items={etapa.comoUsar} />
         </Bloco>
-        <Bloco icon={Eye} titulo="O que observar" cor={cor}>
-          <Lista items={etapa.observar} cor={cor} />
+        <Bloco icon={Eye} titulo="O que observar">
+          <Lista items={etapa.observar} />
         </Bloco>
         <div className="space-y-4">
-          <Bloco icon={Flag} titulo="Decisão esperada" cor={cor} tone="inset">
+          <Bloco icon={Flag} titulo="Decisão esperada" tone="inset">
             <p className="text-sm text-muted-foreground">{etapa.decisao}</p>
           </Bloco>
-          <Bloco icon={Lightbulb} titulo="Próximo passo" cor={cor} tone="inset">
+          <Bloco icon={Lightbulb} titulo="Próximo passo" tone="inset">
             <p className="text-sm text-muted-foreground">{etapa.proximoPasso}</p>
           </Bloco>
         </div>
