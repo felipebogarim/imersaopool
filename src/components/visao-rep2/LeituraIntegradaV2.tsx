@@ -428,6 +428,13 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
 
   const signal = leitura.signals[sel] ?? leitura.signals[0] ?? null;
 
+  const contexto =
+    visao.metadata.representative_id ?? visao.metadata.representative_name ?? undefined;
+  const acoesCtx = useMemo(
+    () => ({ contexto, escopo: signal ? `sinal-${signal.id}` : "leitura" }),
+    [contexto, signal?.id],
+  );
+
   if (!leitura.signals.length) {
     return (
       <section className="rounded-xl border bg-card p-4 sm:p-5">
@@ -438,9 +445,11 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
   }
 
   return (
+    <LeituraAcoesCtx.Provider value={acoesCtx}>
     <BlocoExpansivel
       titulo="Leitura integrada"
       descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
+      contexto={contexto}
     >
       <div className="space-y-5">
         <nav aria-label="Sinais estratégicos" className="rounded-xl border bg-muted/25 p-3 sm:p-4">
