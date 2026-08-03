@@ -185,7 +185,7 @@ function SinteseTipos() {
           onChange={e => onImportFile(e.target.files?.[0])}
         />
         <PageHeader
-          title="Síntese por tipo"
+          title="Visões Consolidadas"
           subtitle={
             painel
               ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`

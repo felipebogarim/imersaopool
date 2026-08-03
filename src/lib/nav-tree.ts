@@ -35,7 +35,7 @@ export const NAV_TREE: NavGroup[] = [
     key: "analises",
     label: "Análises",
     children: [
-      { key: "analises.sintese-tipos", label: "Síntese por tipo", to: "/sintese/tipos" },
+      { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
       
       { key: "analises.visao-rep-2", label: "Visão Rep ok", to: "/visao-rep-2" },
       { key: "analises.perspectivas", label: "Perspectivas", to: "/perspectivas", match: ["/permissoes"] },
