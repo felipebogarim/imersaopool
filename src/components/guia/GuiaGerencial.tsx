@@ -15,7 +15,6 @@ export function GuiaGerencial() {
   const [ativo, setAtivo] = useState<number | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
   const conteudoRef = useRef<HTMLDivElement | null>(null);
-  const trilhoRef = useRef<HTMLDivElement | null>(null);
 
   const abrir = useCallback((i: number) => {
     setAtivo(prev => {
@@ -34,20 +33,6 @@ export function GuiaGerencial() {
     return () => window.clearTimeout(t);
   }, [ativo]);
 
-  // mantém o card ativo visível no carrossel
-  useEffect(() => {
-    if (ativo === null) return;
-    const trilho = trilhoRef.current;
-    const card = trilho?.querySelector<HTMLElement>(`[data-slide="${ativo}"]`);
-    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }, [ativo]);
-
-  const deslizar = (delta: number) => {
-    const trilho = trilhoRef.current;
-    if (!trilho) return;
-    trilho.scrollBy({ left: delta * trilho.clientWidth * 0.8, behavior: "smooth" });
-  };
-
   const etapa = ativo !== null ? GUIA_ETAPAS[ativo] : null;
 
   return (
@@ -63,51 +48,12 @@ export function GuiaGerencial() {
           </p>
         </div>
 
-        {/* ---------- CARROSSEL DE ETAPAS ---------- */}
+        {/* ---------- TRILHA FLUIDA ---------- */}
         <div className="mx-auto max-w-[1320px] px-4 sm:px-8 pb-12">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Trilha · 8 etapas</p>
-            <div className="flex gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(-1)} aria-label="Anterior">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(1)} aria-label="Próximo">
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div
-            ref={trilhoRef}
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {GUIA_ETAPAS.map((e, i) => (
-              <div
-                key={e.id}
-                data-slide={i}
-                className="snap-start shrink-0 basis-[82%] sm:basis-[46%] xl:basis-[23.5%]"
-              >
-                <TimelineCard etapa={e} index={i} ativo={ativo === i} onClick={() => abrir(i)} />
-              </div>
-            ))}
-          </div>
-
-          {/* indicadores */}
-          <div className="mt-2 flex justify-center gap-1.5">
-            {GUIA_ETAPAS.map((e, i) => (
-              <button
-                key={e.id}
-                type="button"
-                aria-label={`Ir para etapa ${e.numero}`}
-                onClick={() => abrir(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  ativo === i ? "w-7 bg-primary" : "w-2.5 bg-border hover:bg-muted-foreground/50"
-                }`}
-              />
-            ))}
-          </div>
+          <TrilhaFluida ativo={ativo} onSelect={abrir} />
         </div>
       </section>
+
 
       {/* ---------- CONTEÚDO + TIMELINE VERTICAL ---------- */}
       <div ref={conteudoRef} className="scroll-mt-4">
