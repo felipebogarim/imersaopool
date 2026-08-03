@@ -6,7 +6,7 @@ export const ManualBlockSchema = z.object({
   passos: z.array(z.string()).default([]),
   dicas: z.array(z.string()).default([]),
 });
-export type ManualBlock = z.infer<typeof ManualBlockSchema>;
+export type ManualBlock = { titulo: string; texto: string; passos: string[]; dicas: string[] };
 
 export const ManualContentSchema = z.object({
   subtitulo: z.string().default(""),
@@ -16,7 +16,14 @@ export const ManualContentSchema = z.object({
   secoes: z.array(ManualBlockSchema).default([]),
   faq: z.array(z.object({ pergunta: z.string().default(""), resposta: z.string().default("") })).default([]),
 });
-export type ManualContent = z.infer<typeof ManualContentSchema>;
+export type ManualContent = {
+  subtitulo: string;
+  resumo: string;
+  publico_alvo: string;
+  pre_requisitos: string[];
+  secoes: ManualBlock[];
+  faq: { pergunta: string; resposta: string }[];
+};
 
 export function slugifyManual(input: string): string {
   return input

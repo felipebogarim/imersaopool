@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
@@ -128,6 +129,11 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MSlugRoute = MSlugRouteImport.update({
+  id: '/m/$slug',
+  path: '/m/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
@@ -599,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -685,6 +692,7 @@ export interface FileRoutesByTo {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -774,6 +782,7 @@ export interface FileRoutesById {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -863,6 +872,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -949,6 +959,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -1037,6 +1048,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
@@ -1109,6 +1121,7 @@ export interface RootRouteChildren {
   EventoPendenteRoute: typeof EventoPendenteRoute
   EventoSucessoRoute: typeof EventoSucessoRoute
   FSlugRoute: typeof FSlugRoute
+  MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -1176,6 +1189,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m/$slug': {
+      id: '/m/$slug'
+      path: '/m/$slug'
+      fullPath: '/m/$slug'
+      preLoaderRoute: typeof MSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$slug': {
@@ -1923,6 +1943,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventoPendenteRoute: EventoPendenteRoute,
   EventoSucessoRoute: EventoSucessoRoute,
   FSlugRoute: FSlugRoute,
+  MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
