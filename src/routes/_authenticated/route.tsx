@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { getAuthGate } from "@/lib/auth-gate";
+import { hardReload } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
