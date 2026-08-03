@@ -204,6 +204,7 @@ function VisaoRep2Page() {
     const atualKey = (selected?.representative_id ?? norm(selected?.representative_name ?? "")) || "";
     return reports
       .filter(r => r.id !== selected?.id)
+      .filter(r => norm(r.representative_name ?? "") !== CONSOLIDADO_NOME)
       .filter(r => {
         const key = r.representative_id ?? norm(r.representative_name ?? "");
         if (!key || key === atualKey || vistos.has(key)) return false;
