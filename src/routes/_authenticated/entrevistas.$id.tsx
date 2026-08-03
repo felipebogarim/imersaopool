@@ -11,6 +11,7 @@ import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
 import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
+import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
