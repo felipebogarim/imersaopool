@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Save, KeyRound, UserCog, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   ssr: false,
