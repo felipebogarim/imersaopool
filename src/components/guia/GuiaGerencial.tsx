@@ -333,25 +333,30 @@ function EtapaDetalhe({
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Bloco icon={LayoutGrid} titulo="O que você encontrará">
-          <Lista items={etapa.encontrar} />
-        </Bloco>
-        <Bloco icon={Compass} titulo="Como utilizar">
-          <Lista items={etapa.comoUsar} />
-        </Bloco>
-        <Bloco icon={Eye} titulo="O que observar">
-          <Lista items={etapa.observar} />
-        </Bloco>
-        <div className="space-y-4">
-          <Bloco icon={Flag} titulo="Decisão esperada" tone="inset">
-            <p className="text-sm text-muted-foreground">{etapa.decisao}</p>
+      {etapa.id === "entrevistas" ? (
+        <CapitulosInfografico />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Bloco icon={LayoutGrid} titulo="O que você encontrará">
+            <Lista items={etapa.encontrar} />
           </Bloco>
-          <Bloco icon={Lightbulb} titulo="Próximo passo" tone="inset">
-            <p className="text-sm text-muted-foreground">{etapa.proximoPasso}</p>
+          <Bloco icon={Compass} titulo="Como utilizar">
+            <Lista items={etapa.comoUsar} />
           </Bloco>
+          <Bloco icon={Eye} titulo="O que observar">
+            <Lista items={etapa.observar} />
+          </Bloco>
+          <div className="space-y-4">
+            <Bloco icon={Flag} titulo="Decisão esperada" tone="inset">
+              <p className="text-sm text-muted-foreground">{etapa.decisao}</p>
+            </Bloco>
+            <Bloco icon={Lightbulb} titulo="Próximo passo" tone="inset">
+              <p className="text-sm text-muted-foreground">{etapa.proximoPasso}</p>
+            </Bloco>
+          </div>
         </div>
-      </div>
+      )}
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-5">
         <Button variant="outline" onClick={onPrev} disabled={index === 0} className="gap-2">
