@@ -535,5 +535,6 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       ) : null}
       </div>
     </BlocoExpansivel>
+    </LeituraAcoesCtx.Provider>
   );
 }
