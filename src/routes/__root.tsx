@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { clearAuthGateCache } from "@/lib/auth-gate";
+import { APP_BUILD_ID, installStaleBuildRecovery, hardReload } from "@/lib/app-refresh";
 
 
 function NotFoundComponent() {
@@ -57,6 +58,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Tentar novamente
           </button>
+          <button
+            onClick={() => { void hardReload(); }}
+            className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm"
+          >
+            Atualizar aplicação
+          </button>
           <a href="/" className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm">
             Início
           </a>
@@ -71,6 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "app-build", content: APP_BUILD_ID },
       { title: "PoolFlux Imersões Comerciais" },
       { name: "description", content: "Prepare, conduza e analise imersões comerciais com diagnóstico estratégico gerado por IA." },
       { name: "theme-color", content: "#0a1422" },
@@ -136,6 +144,7 @@ function RootComponent() {
     if (isDark) root.classList.add("dark");
     else root.classList.remove("dark");
   }, [isDark]);
+  useEffect(() => installStaleBuildRecovery(), []);
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;

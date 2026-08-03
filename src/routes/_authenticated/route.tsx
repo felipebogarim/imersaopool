@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { getAuthGate } from "@/lib/auth-gate";
+import { hardReload } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -85,13 +86,22 @@ export const Route = createFileRoute("/_authenticated")({
           <p className="text-sm text-muted-foreground">
             Houve uma falha temporária ao verificar seu acesso. Recarregue para continuar.
           </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Recarregar
-          </button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Recarregar
+            </button>
+            <button
+              type="button"
+              onClick={() => { void hardReload(); }}
+              className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm"
+            >
+              Atualizar aplicação
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -15,6 +15,7 @@ import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
 import { NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
 import { useNavAccess } from "@/hooks/useNavAccess";
+import { purgeAppCaches } from "@/lib/app-refresh";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -248,6 +249,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
+    await purgeAppCaches();
     navigate({ to: "/auth", replace: true });
   }
 

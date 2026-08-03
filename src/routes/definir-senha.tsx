@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Check, Eye, EyeOff, KeyRound, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { checkFirstAccessToken, setPasswordFromToken } from "@/lib/first-access.functions";
+import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/definir-senha")({
   validateSearch: z.object({ t: z.string().optional() }),
@@ -118,7 +119,9 @@ function DefinirSenhaPage() {
         await new Promise((r) => setTimeout(r, 150));
       }
       toast.success("Senha criada com sucesso");
-      window.location.href = "/dashboard";
+      // Primeiro acesso: garante que nada de uma versão antiga siga em cache.
+      await purgeAppCaches();
+      window.location.replace("/dashboard");
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar a senha");
     } finally {

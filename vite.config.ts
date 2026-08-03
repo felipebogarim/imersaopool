@@ -11,11 +11,17 @@ import { loadEnv } from "vite";
 const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
+const APP_BUILD_ID =
+  process.env.NODE_ENV === "production" ? String(Date.now()) : "dev";
+
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
   vite: {
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(APP_BUILD_ID),
+    },
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
