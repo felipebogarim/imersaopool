@@ -736,7 +736,12 @@ function VisaoRep2Page() {
                   Abrir Visão
                 </Button>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{r.representative_name}</div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {r.representative_name}
+                    {norm(r.representative_name ?? "") === CONSOLIDADO_NOME ? (
+                      <Badge variant="secondary" className="text-[10px] uppercase">Consolidado</Badge>
+                    ) : null}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {r.region ? `${r.region} · ` : ""}
                     {new Date(r.created_at).toLocaleDateString("pt-BR")}
