@@ -130,6 +130,10 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
 
 const LAST_KEY = "vr2:last-report-id";
 
+/** Opção virtual da lista: visão consolidada de todos os entrevistados. */
+const CONSOLIDADO_ID = "__consolidado__";
+const CONSOLIDADO_NOME = "CONSOLIDADO";
+
 /** Normaliza nomes para comparação (sem acentos, maiúsculo). */
 const norm = (s: string) =>
   s
@@ -200,6 +204,7 @@ function VisaoRep2Page() {
     const atualKey = (selected?.representative_id ?? norm(selected?.representative_name ?? "")) || "";
     return reports
       .filter(r => r.id !== selected?.id)
+      .filter(r => norm(r.representative_name ?? "") !== CONSOLIDADO_NOME)
       .filter(r => {
         const key = r.representative_id ?? norm(r.representative_name ?? "");
         if (!key || key === atualKey || vistos.has(key)) return false;
@@ -284,7 +289,11 @@ function VisaoRep2Page() {
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       // Padroniza o vínculo: relatórios importados sem id são casados pelo nome.
-      const repIdFinal = v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
+      // A visão CONSOLIDADO nunca é vinculada a um representante do cadastro.
+      const ehConsolidado = norm(v.metadata.representative_name ?? "") === CONSOLIDADO_NOME;
+      const repIdFinal = ehConsolidado
+        ? null
+        : v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
       const payload: VisaoRep2 = {
         ...v,
         metadata: {
@@ -412,6 +421,8 @@ function VisaoRep2Page() {
 
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
+    if (repId === CONSOLIDADO_ID)
+      return toast.info("A visão CONSOLIDADO é criada apenas por envio de relatório pronto.");
     const existente = reports.find(r => r.representative_id === repId);
     if (existente) {
       const ok = window.confirm(
@@ -453,9 +464,16 @@ function VisaoRep2Page() {
     try {
       const texto = await extractFileText(file);
       const parsed = parseVisaoRepMarkdown(texto);
-      const rep = reps.find((r: any) => (parsed.metadata.representative_name ?? "").toLowerCase().includes(String(r.nome).toLowerCase()));
-      parsed.metadata.representative_id = rep?.id ?? null;
-      if (!parsed.metadata.region && rep?.regiao) parsed.metadata.region = rep.regiao;
+      if (repId === CONSOLIDADO_ID) {
+        // Visão consolidada: não pertence a nenhum representante do cadastro.
+        parsed.metadata.representative_name = CONSOLIDADO_NOME;
+        parsed.metadata.representative_id = null;
+        parsed.metadata.region = parsed.metadata.region ?? "Todos os entrevistados";
+      } else {
+        const rep = reps.find((r: any) => (parsed.metadata.representative_name ?? "").toLowerCase().includes(String(r.nome).toLowerCase()));
+        parsed.metadata.representative_id = rep?.id ?? null;
+        if (!parsed.metadata.region && rep?.regiao) parsed.metadata.region = rep.regiao;
+      }
       setDraft(normalizeVisaoRep2(parsed));
       setDraftFile(file.name);
       setDraftHash(await contentHash(texto));
@@ -529,6 +547,7 @@ function VisaoRep2Page() {
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value={CONSOLIDADO_ID}>CONSOLIDADO (todos os entrevistados)</SelectItem>
             {reps.map((r: any) => (
               <SelectItem key={r.id} value={r.id}>
                 {r.nome}
@@ -536,13 +555,17 @@ function VisaoRep2Page() {
             ))}
           </SelectContent>
         </Select>
-        {repSel?.regiao ? (
+        {repId === CONSOLIDADO_ID ? (
+          <Badge variant="secondary" className="uppercase">
+            Consolidado
+          </Badge>
+        ) : repSel?.regiao ? (
           <Badge variant="secondary" className="uppercase">
             {repSel.regiao}
           </Badge>
         ) : null}
 
-        <Button onClick={onGerarIA} disabled={busy} size="sm">
+        <Button onClick={onGerarIA} disabled={busy || repId === CONSOLIDADO_ID} size="sm">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
           Gerar Visão Rep
         </Button>
@@ -560,7 +583,7 @@ function VisaoRep2Page() {
         />
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => document.getElementById("vr2-file")?.click()}>
           <FileUp className="mr-2 h-4 w-4" />
-          Enviar relatório pronto
+          {repId === CONSOLIDADO_ID ? "Enviar visão consolidada" : "Enviar relatório pronto"}
         </Button>
 
         <Button
@@ -713,7 +736,12 @@ function VisaoRep2Page() {
                   Abrir Visão
                 </Button>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{r.representative_name}</div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {r.representative_name}
+                    {norm(r.representative_name ?? "") === CONSOLIDADO_NOME ? (
+                      <Badge variant="secondary" className="text-[10px] uppercase">Consolidado</Badge>
+                    ) : null}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {r.region ? `${r.region} · ` : ""}
                     {new Date(r.created_at).toLocaleDateString("pt-BR")}
