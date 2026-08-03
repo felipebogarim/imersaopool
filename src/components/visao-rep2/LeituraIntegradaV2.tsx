@@ -2,12 +2,13 @@
 // Três camadas sincronizadas por sinal executivo: significado, evidência e comparação.
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BlocoExpansivel } from "./BlocoExpansivel";
+import { AcoesSecao } from "./AcoesSecao";
 
 import { CONFIDENCE_LABEL, EVIDENCE_LABEL, type VisaoRep2 } from "@/lib/visao-rep2-schema";
 import {
@@ -21,6 +22,10 @@ import {
 import { ChevronDown, Quote } from "lucide-react";
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+
+/** Contexto das notas/ações dos painéis (representante + sinal selecionado). */
+const LeituraAcoesCtx = createContext<{ contexto?: string; escopo?: string }>({});
+
 
 function PanelShell({
   title,
