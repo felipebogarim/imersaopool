@@ -417,6 +417,8 @@ function VisaoRep2Page() {
 
   async function onGerarIA() {
     if (!repId) return toast.error("Selecione um representante.");
+    if (repId === CONSOLIDADO_ID)
+      return toast.info("A visão CONSOLIDADO é criada apenas por envio de relatório pronto.");
     const existente = reports.find(r => r.representative_id === repId);
     if (existente) {
       const ok = window.confirm(
