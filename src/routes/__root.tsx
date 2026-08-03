@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { clearAuthGateCache } from "@/lib/auth-gate";
+import { APP_BUILD_ID, installStaleBuildRecovery, hardReload } from "@/lib/app-refresh";
 
 
 function NotFoundComponent() {
