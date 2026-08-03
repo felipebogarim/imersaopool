@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Check, Eye, EyeOff, KeyRound, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { checkFirstAccessToken, setPasswordFromToken } from "@/lib/first-access.functions";
+import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/definir-senha")({
   validateSearch: z.object({ t: z.string().optional() }),
