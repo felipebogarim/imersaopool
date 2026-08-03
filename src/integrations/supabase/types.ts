@@ -2518,6 +2518,51 @@ export type Database = {
           },
         ]
       }
+      manuais: {
+        Row: {
+          conteudo: Json
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          pdf_path: string | null
+          prompt: string | null
+          publicado: boolean
+          slug: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          conteudo?: Json
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          pdf_path?: string | null
+          prompt?: string | null
+          publicado?: boolean
+          slug: string
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          conteudo?: Json
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          pdf_path?: string | null
+          prompt?: string | null
+          publicado?: boolean
+          slug?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mapa_familia_versoes: {
         Row: {
           arquivo: string | null

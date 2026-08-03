@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
@@ -43,6 +44,7 @@ import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authenticated/price.index'
+import { Route as AuthenticatedManuaisIndexRouteImport } from './routes/_authenticated/manuais.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
 import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenticated/fontes.index'
@@ -128,6 +130,11 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MSlugRoute = MSlugRouteImport.update({
+  id: '/m/$slug',
+  path: '/m/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
@@ -272,6 +279,12 @@ const AuthenticatedPriceIndexRoute = AuthenticatedPriceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedPriceRoute,
 } as any)
+const AuthenticatedManuaisIndexRoute =
+  AuthenticatedManuaisIndexRouteImport.update({
+    id: '/manuais/',
+    path: '/manuais/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedImersoesIndexRoute =
   AuthenticatedImersoesIndexRouteImport.update({
     id: '/imersoes/',
@@ -599,6 +612,7 @@ export interface FileRoutesByFullPath {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -637,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/fontes/': typeof AuthenticatedFontesIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -685,6 +700,7 @@ export interface FileRoutesByTo {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -723,6 +739,7 @@ export interface FileRoutesByTo {
   '/fontes': typeof AuthenticatedFontesIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
+  '/manuais': typeof AuthenticatedManuaisIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
@@ -774,6 +791,7 @@ export interface FileRoutesById {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -812,6 +830,7 @@ export interface FileRoutesById {
   '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/_authenticated/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -863,6 +882,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -901,6 +921,7 @@ export interface FileRouteTypes {
     | '/fontes/'
     | '/forms/'
     | '/imersoes/'
+    | '/manuais/'
     | '/price/'
     | '/produtos/'
     | '/representantes/'
@@ -949,6 +970,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -987,6 +1009,7 @@ export interface FileRouteTypes {
     | '/fontes'
     | '/forms'
     | '/imersoes'
+    | '/manuais'
     | '/price'
     | '/produtos'
     | '/representantes'
@@ -1037,6 +1060,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/m/$slug'
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
@@ -1075,6 +1099,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fontes/'
     | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
+    | '/_authenticated/manuais/'
     | '/_authenticated/price/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
@@ -1109,6 +1134,7 @@ export interface RootRouteChildren {
   EventoPendenteRoute: typeof EventoPendenteRoute
   EventoSucessoRoute: typeof EventoSucessoRoute
   FSlugRoute: typeof FSlugRoute
+  MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -1176,6 +1202,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m/$slug': {
+      id: '/m/$slug'
+      path: '/m/$slug'
+      fullPath: '/m/$slug'
+      preLoaderRoute: typeof MSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$slug': {
@@ -1366,6 +1399,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/price/'
       preLoaderRoute: typeof AuthenticatedPriceIndexRouteImport
       parentRoute: typeof AuthenticatedPriceRoute
+    }
+    '/_authenticated/manuais/': {
+      id: '/_authenticated/manuais/'
+      path: '/manuais'
+      fullPath: '/manuais/'
+      preLoaderRoute: typeof AuthenticatedManuaisIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/imersoes/': {
       id: '/_authenticated/imersoes/'
@@ -1851,6 +1891,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
+  AuthenticatedManuaisIndexRoute: typeof AuthenticatedManuaisIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
@@ -1896,6 +1937,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
+  AuthenticatedManuaisIndexRoute: AuthenticatedManuaisIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
@@ -1923,6 +1965,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventoPendenteRoute: EventoPendenteRoute,
   EventoSucessoRoute: EventoSucessoRoute,
   FSlugRoute: FSlugRoute,
+  MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
