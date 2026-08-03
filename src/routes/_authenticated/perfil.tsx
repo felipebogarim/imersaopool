@@ -111,6 +111,7 @@ function PerfilPage() {
 
   async function sair() {
     await supabase.auth.signOut();
+    await purgeAppCaches();
     window.location.href = "/auth";
   }
 
