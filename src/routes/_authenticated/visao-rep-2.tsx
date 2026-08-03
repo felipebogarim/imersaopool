@@ -130,6 +130,10 @@ function Collapse({ title, children, defaultOpen = false }: { title: string; chi
 
 const LAST_KEY = "vr2:last-report-id";
 
+/** Opção virtual da lista: visão consolidada de todos os entrevistados. */
+const CONSOLIDADO_ID = "__consolidado__";
+const CONSOLIDADO_NOME = "CONSOLIDADO";
+
 /** Normaliza nomes para comparação (sem acentos, maiúsculo). */
 const norm = (s: string) =>
   s
