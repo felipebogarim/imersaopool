@@ -460,9 +460,16 @@ function VisaoRep2Page() {
     try {
       const texto = await extractFileText(file);
       const parsed = parseVisaoRepMarkdown(texto);
-      const rep = reps.find((r: any) => (parsed.metadata.representative_name ?? "").toLowerCase().includes(String(r.nome).toLowerCase()));
-      parsed.metadata.representative_id = rep?.id ?? null;
-      if (!parsed.metadata.region && rep?.regiao) parsed.metadata.region = rep.regiao;
+      if (repId === CONSOLIDADO_ID) {
+        // Visão consolidada: não pertence a nenhum representante do cadastro.
+        parsed.metadata.representative_name = CONSOLIDADO_NOME;
+        parsed.metadata.representative_id = null;
+        parsed.metadata.region = parsed.metadata.region ?? "Todos os entrevistados";
+      } else {
+        const rep = reps.find((r: any) => (parsed.metadata.representative_name ?? "").toLowerCase().includes(String(r.nome).toLowerCase()));
+        parsed.metadata.representative_id = rep?.id ?? null;
+        if (!parsed.metadata.region && rep?.regiao) parsed.metadata.region = rep.regiao;
+      }
       setDraft(normalizeVisaoRep2(parsed));
       setDraftFile(file.name);
       setDraftHash(await contentHash(texto));
