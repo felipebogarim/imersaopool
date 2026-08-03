@@ -289,7 +289,11 @@ function VisaoRep2Page() {
       // Preserva a versão declarada pelo próprio relatório (ex.: 3.0).
       const schemaVersion = v.metadata.schema_version || VISAO_REP_SCHEMA_VERSION;
       // Padroniza o vínculo: relatórios importados sem id são casados pelo nome.
-      const repIdFinal = v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
+      // A visão CONSOLIDADO nunca é vinculada a um representante do cadastro.
+      const ehConsolidado = norm(v.metadata.representative_name ?? "") === CONSOLIDADO_NOME;
+      const repIdFinal = ehConsolidado
+        ? null
+        : v.metadata.representative_id ?? matchRepresentativeId(v.metadata.representative_name, reps);
       const payload: VisaoRep2 = {
         ...v,
         metadata: {
