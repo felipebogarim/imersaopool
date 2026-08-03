@@ -4,13 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
-  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks, ChevronRight,
+  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
 import { GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
-const bullets = (e: GuiaEtapa) => [e.encontrar[0], e.comoUsar[0]].filter(Boolean) as string[];
 
 export function GuiaGerencial() {
   const [ativo, setAtivo] = useState<number | null>(null);
