@@ -34,6 +34,8 @@ import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositionin
 
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
+import { AcoesSecao } from "@/components/visao-rep2/AcoesSecao";
+
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { briefingPadrao } from "@/lib/visao-rep2-briefing";
 
