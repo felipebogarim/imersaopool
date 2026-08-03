@@ -4,19 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
-  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks, ChevronRight,
+  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
 import { GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
-const bullets = (e: GuiaEtapa) => [e.encontrar[0], e.comoUsar[0]].filter(Boolean) as string[];
 
 export function GuiaGerencial() {
   const [ativo, setAtivo] = useState<number | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
   const conteudoRef = useRef<HTMLDivElement | null>(null);
-  const trilhoRef = useRef<HTMLDivElement | null>(null);
 
   const abrir = useCallback((i: number) => {
     setAtivo(prev => {
@@ -35,20 +33,6 @@ export function GuiaGerencial() {
     return () => window.clearTimeout(t);
   }, [ativo]);
 
-  // mantém o card ativo visível no carrossel
-  useEffect(() => {
-    if (ativo === null) return;
-    const trilho = trilhoRef.current;
-    const card = trilho?.querySelector<HTMLElement>(`[data-slide="${ativo}"]`);
-    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }, [ativo]);
-
-  const deslizar = (delta: number) => {
-    const trilho = trilhoRef.current;
-    if (!trilho) return;
-    trilho.scrollBy({ left: delta * trilho.clientWidth * 0.8, behavior: "smooth" });
-  };
-
   const etapa = ativo !== null ? GUIA_ETAPAS[ativo] : null;
 
   return (
@@ -64,51 +48,12 @@ export function GuiaGerencial() {
           </p>
         </div>
 
-        {/* ---------- CARROSSEL DE ETAPAS ---------- */}
+        {/* ---------- TRILHA FLUIDA ---------- */}
         <div className="mx-auto max-w-[1320px] px-4 sm:px-8 pb-12">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Trilha · 8 etapas</p>
-            <div className="flex gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(-1)} aria-label="Anterior">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => deslizar(1)} aria-label="Próximo">
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div
-            ref={trilhoRef}
-            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 pt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {GUIA_ETAPAS.map((e, i) => (
-              <div
-                key={e.id}
-                data-slide={i}
-                className="snap-start shrink-0 basis-[82%] sm:basis-[46%] xl:basis-[23.5%]"
-              >
-                <TimelineCard etapa={e} index={i} ativo={ativo === i} onClick={() => abrir(i)} />
-              </div>
-            ))}
-          </div>
-
-          {/* indicadores */}
-          <div className="mt-2 flex justify-center gap-1.5">
-            {GUIA_ETAPAS.map((e, i) => (
-              <button
-                key={e.id}
-                type="button"
-                aria-label={`Ir para etapa ${e.numero}`}
-                onClick={() => abrir(i)}
-                className={`h-1.5 rounded-full transition-all ${
-                  ativo === i ? "w-7 bg-primary" : "w-2.5 bg-border hover:bg-muted-foreground/50"
-                }`}
-              />
-            ))}
-          </div>
+          <TrilhaFluida ativo={ativo} onSelect={abrir} />
         </div>
       </section>
+
 
       {/* ---------- CONTEÚDO + TIMELINE VERTICAL ---------- */}
       <div ref={conteudoRef} className="scroll-mt-4">
@@ -175,59 +120,153 @@ export function GuiaGerencial() {
   );
 }
 
-function TimelineCard({
-  etapa, index, ativo, onClick,
-}: { etapa: GuiaEtapa; index: number; ativo: boolean; onClick: () => void }) {
-  const Icon = ICONES[index];
+/* ---------- TRILHA FLUIDA ---------- */
+
+const VB_W = 1000;
+const VB_H = 160;
+const NOS = GUIA_ETAPAS.map((_, i) => ({
+  x: 62.5 + i * (VB_W / GUIA_ETAPAS.length),
+  y: i % 2 === 0 ? 52 : 108,
+}));
+
+const CAMINHO = NOS.reduce((d, p, i) => {
+  if (i === 0) return `M ${p.x} ${p.y}`;
+  const prev = NOS[i - 1];
+  const cx = (prev.x + p.x) / 2;
+  return `${d} C ${cx} ${prev.y}, ${cx} ${p.y}, ${p.x} ${p.y}`;
+}, "");
+
+function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i: number) => void }) {
+  const total = GUIA_ETAPAS.length;
+  const progresso = ativo === null ? 0 : ((ativo + 0.5) / total) * 100;
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group relative w-full h-full text-left focus-visible:outline-none"
-      aria-current={ativo ? "step" : undefined}
-    >
-      <span
-        className={`absolute -top-4 left-5 z-10 grid h-9 w-9 place-items-center rounded-full text-xs font-bold shadow-sm transition-all group-hover:-translate-y-0.5 ${
-          ativo
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground border border-border"
-        }`}
-      >
-        {etapa.numero}
-      </span>
+    <>
+      <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Trilha · {total} etapas</p>
 
-      <div
-        className={`surface rounded-2xl pt-8 pb-5 px-5 h-full transition-all duration-300 group-hover:-translate-y-1 ${
-          ativo ? "ring-1 ring-primary border-primary/40" : ""
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors ${
-              ativo ? "bg-primary/12 text-primary" : "bg-muted text-muted-foreground group-hover:text-primary"
-            }`}
-          >
-            <Icon className="h-[18px] w-[18px]" />
-          </span>
-          <h2 className="text-sm font-semibold uppercase tracking-wide leading-tight">{etapa.titulo}</h2>
-        </div>
+      {/* horizontal — md+ */}
+      <div className="relative hidden h-[320px] w-full md:block">
+        <svg
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <path
+            d={CAMINHO}
+            fill="none"
+            stroke="var(--border)"
+            strokeWidth={2}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={CAMINHO}
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            pathLength={100}
+            strokeDasharray="100"
+            strokeDashoffset={100 - progresso}
+            style={{ transition: "stroke-dashoffset 600ms cubic-bezier(0.22,1,0.36,1)" }}
+          />
+        </svg>
 
-        <ul className="mt-3 space-y-1.5">
-          {bullets(etapa).map(b => (
-            <li key={b} className="flex gap-2 text-xs text-muted-foreground leading-relaxed">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/60" aria-hidden />
-              <span className="line-clamp-2">{b}</span>
-            </li>
-          ))}
-        </ul>
+        {GUIA_ETAPAS.map((e, i) => {
+          const { x, y } = NOS[i];
+          const acima = i % 2 === 0;
+          const on = ativo === i;
+          const Icon = ICONES[i];
+          return (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => onSelect(i)}
+              aria-current={on ? "step" : undefined}
+              className="group absolute -translate-x-1/2 -translate-y-1/2 focus-visible:outline-none"
+              style={{ left: `${(x / VB_W) * 100}%`, top: `${(y / VB_H) * 100}%` }}
+            >
+              <span
+                className={`relative grid h-11 w-11 place-items-center rounded-full border transition-all duration-300 group-hover:scale-110 ${
+                  on
+                    ? "border-primary bg-primary text-primary-foreground shadow-[0_0_0_6px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
+                    : "border-border bg-card text-muted-foreground group-hover:border-primary/60 group-hover:text-primary"
+                }`}
+              >
+                <Icon className="h-[18px] w-[18px]" />
+                <span
+                  className={`absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold ${
+                    on ? "bg-background text-primary" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {e.numero}
+                </span>
+              </span>
 
-        <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary">
-          Abrir etapa <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-        </span>
+              <span
+                className={`absolute left-1/2 w-44 -translate-x-1/2 text-center ${
+                  acima ? "bottom-full mb-4" : "top-full mt-4"
+                }`}
+              >
+                <span
+                  className={`block text-xs font-semibold uppercase tracking-wide transition-colors ${
+                    on ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                  }`}
+                >
+                  {e.titulo}
+                </span>
+                <span className="mt-1 block text-[11px] leading-snug text-muted-foreground/80 line-clamp-2">
+                  {e.resumo}
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
-    </button>
+
+      {/* vertical — mobile */}
+      <ol className="relative md:hidden">
+        <span className="absolute left-[21px] top-3 bottom-3 w-px bg-border" aria-hidden />
+        <span
+          className="absolute left-[21px] top-3 w-px bg-primary transition-all duration-500"
+          style={{ height: ativo === null ? 0 : `calc(${progresso}% - 0.75rem)` }}
+          aria-hidden
+        />
+        {GUIA_ETAPAS.map((e, i) => {
+          const on = ativo === i;
+          const Icon = ICONES[i];
+          return (
+            <li key={e.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(i)}
+                aria-current={on ? "step" : undefined}
+                className="group flex w-full items-start gap-3 py-2 text-left"
+              >
+                <span
+                  className={`relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-full border transition-colors ${
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <span className="min-w-0 pt-1">
+                  <span className={`block text-xs font-semibold uppercase tracking-wide ${on ? "text-foreground" : "text-muted-foreground"}`}>
+                    {e.numero}. {e.titulo}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground/80 line-clamp-2">{e.resumo}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
+
 
 function Bloco({
   icon: Icon, titulo, children, tone = "card",
