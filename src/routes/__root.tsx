@@ -58,6 +58,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Tentar novamente
           </button>
+          <button
+            onClick={() => { void hardReload(); }}
+            className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm"
+          >
+            Atualizar aplicação
+          </button>
           <a href="/" className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm">
             Início
           </a>
