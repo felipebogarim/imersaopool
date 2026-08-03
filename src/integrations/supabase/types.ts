@@ -2986,6 +2986,102 @@ export type Database = {
           },
         ]
       }
+      price_audit_logs: {
+        Row: {
+          action: string
+          change_reason: string | null
+          changed_by: string | null
+          company_id: string
+          created_at: string
+          equivalence_id: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          previous_value: string | null
+          product_id: string | null
+        }
+        Insert: {
+          action: string
+          change_reason?: string | null
+          changed_by?: string | null
+          company_id?: string
+          created_at?: string
+          equivalence_id?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          previous_value?: string | null
+          product_id?: string | null
+        }
+        Update: {
+          action?: string
+          change_reason?: string | null
+          changed_by?: string | null
+          company_id?: string
+          created_at?: string
+          equivalence_id?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          previous_value?: string | null
+          product_id?: string | null
+        }
+        Relationships: []
+      }
+      price_comparison_rules: {
+        Row: {
+          attribute_key: string
+          attribute_name: string
+          categoria: string
+          company_id: string | null
+          created_at: string
+          familia: string
+          id: string
+          is_critical: boolean
+          is_eliminatory: boolean
+          missing_data_penalty: number
+          tipo: string | null
+          tolerance_approximate: number
+          tolerance_direct: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          attribute_key: string
+          attribute_name: string
+          categoria: string
+          company_id?: string | null
+          created_at?: string
+          familia: string
+          id?: string
+          is_critical?: boolean
+          is_eliminatory?: boolean
+          missing_data_penalty?: number
+          tipo?: string | null
+          tolerance_approximate?: number
+          tolerance_direct?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          attribute_key?: string
+          attribute_name?: string
+          categoria?: string
+          company_id?: string | null
+          created_at?: string
+          familia?: string
+          id?: string
+          is_critical?: boolean
+          is_eliminatory?: boolean
+          missing_data_penalty?: number
+          tipo?: string | null
+          tolerance_approximate?: number
+          tolerance_direct?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       price_competitors: {
         Row: {
           categoria: string | null
@@ -3026,6 +3122,539 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_equivalences: {
+        Row: {
+          base_product_id: string
+          calculation_version: string
+          company_id: string
+          compared_product_id: string
+          cost_benefit_score: number | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          equivalence_level: Database["public"]["Enums"]["price_equivalence_level"]
+          id: string
+          incompatibility_reason: string | null
+          is_deleted: boolean
+          last_manual_edit_at: string | null
+          last_manual_edit_by: string | null
+          manually_edited: boolean
+          price_score: number | null
+          status: Database["public"]["Enums"]["price_equivalence_status"]
+          technical_differences_json: Json
+          technical_score: number | null
+          technical_similarities_json: Json
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validation_notes: string | null
+          warnings_json: Json
+        }
+        Insert: {
+          base_product_id: string
+          calculation_version?: string
+          company_id?: string
+          compared_product_id: string
+          cost_benefit_score?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          equivalence_level?: Database["public"]["Enums"]["price_equivalence_level"]
+          id?: string
+          incompatibility_reason?: string | null
+          is_deleted?: boolean
+          last_manual_edit_at?: string | null
+          last_manual_edit_by?: string | null
+          manually_edited?: boolean
+          price_score?: number | null
+          status?: Database["public"]["Enums"]["price_equivalence_status"]
+          technical_differences_json?: Json
+          technical_score?: number | null
+          technical_similarities_json?: Json
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_notes?: string | null
+          warnings_json?: Json
+        }
+        Update: {
+          base_product_id?: string
+          calculation_version?: string
+          company_id?: string
+          compared_product_id?: string
+          cost_benefit_score?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          equivalence_level?: Database["public"]["Enums"]["price_equivalence_level"]
+          id?: string
+          incompatibility_reason?: string | null
+          is_deleted?: boolean
+          last_manual_edit_at?: string | null
+          last_manual_edit_by?: string | null
+          manually_edited?: boolean
+          price_score?: number | null
+          status?: Database["public"]["Enums"]["price_equivalence_status"]
+          technical_differences_json?: Json
+          technical_score?: number | null
+          technical_similarities_json?: Json
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_notes?: string | null
+          warnings_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_equivalences_base_product_id_fkey"
+            columns: ["base_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_equivalences_compared_product_id_fkey"
+            columns: ["compared_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_import_files: {
+        Row: {
+          company_id: string
+          created_at: string
+          document_type: string | null
+          extraction_method: string | null
+          file_name: string
+          file_type: string | null
+          id: string
+          processed_at: string | null
+          processing_status: Database["public"]["Enums"]["price_import_status"]
+          report_json: Json
+          storage_url: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          document_type?: string | null
+          extraction_method?: string | null
+          file_name: string
+          file_type?: string | null
+          id?: string
+          processed_at?: string | null
+          processing_status?: Database["public"]["Enums"]["price_import_status"]
+          report_json?: Json
+          storage_url?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          document_type?: string | null
+          extraction_method?: string | null
+          file_name?: string
+          file_type?: string | null
+          id?: string
+          processed_at?: string | null
+          processing_status?: Database["public"]["Enums"]["price_import_status"]
+          report_json?: Json
+          storage_url?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      price_import_rows: {
+        Row: {
+          company_id: string
+          confidence_level: Database["public"]["Enums"]["price_confidence"]
+          created_at: string
+          field_name: string | null
+          id: string
+          import_file_id: string
+          linked_product_id: string | null
+          normalized_value: string | null
+          original_value: string | null
+          page_number: number | null
+          review_status: Database["public"]["Enums"]["price_review_status"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          row_number: number | null
+          sheet_name: string | null
+        }
+        Insert: {
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          import_file_id: string
+          linked_product_id?: string | null
+          normalized_value?: string | null
+          original_value?: string | null
+          page_number?: number | null
+          review_status?: Database["public"]["Enums"]["price_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_number?: number | null
+          sheet_name?: string | null
+        }
+        Update: {
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          import_file_id?: string
+          linked_product_id?: string | null
+          normalized_value?: string | null
+          original_value?: string | null
+          page_number?: number | null
+          review_status?: Database["public"]["Enums"]["price_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_number?: number | null
+          sheet_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_import_rows_import_file_id_fkey"
+            columns: ["import_file_id"]
+            isOneToOne: false
+            referencedRelation: "price_import_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_import_rows_linked_product_id_fkey"
+            columns: ["linked_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_product_prices: {
+        Row: {
+          company_id: string
+          confidence_level: Database["public"]["Enums"]["price_confidence"]
+          created_at: string
+          currency: string
+          effective_date: string | null
+          expiration_date: string | null
+          id: string
+          price: number | null
+          price_availability: string
+          price_list_name: string | null
+          price_per_1000_lumens: number | null
+          price_per_meter: number | null
+          price_per_watt: number | null
+          price_unit: string | null
+          price_with_tax: number | null
+          price_without_tax: number | null
+          product_id: string
+          region: string | null
+          source_file: string | null
+          source_page: number | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          currency?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          price?: number | null
+          price_availability?: string
+          price_list_name?: string | null
+          price_per_1000_lumens?: number | null
+          price_per_meter?: number | null
+          price_per_watt?: number | null
+          price_unit?: string | null
+          price_with_tax?: number | null
+          price_without_tax?: number | null
+          product_id: string
+          region?: string | null
+          source_file?: string | null
+          source_page?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          currency?: string
+          effective_date?: string | null
+          expiration_date?: string | null
+          id?: string
+          price?: number | null
+          price_availability?: string
+          price_list_name?: string | null
+          price_per_1000_lumens?: number | null
+          price_per_meter?: number | null
+          price_per_watt?: number | null
+          price_unit?: string | null
+          price_with_tax?: number | null
+          price_without_tax?: number | null
+          product_id?: string
+          region?: string | null
+          source_file?: string | null
+          source_page?: number | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_product_specs: {
+        Row: {
+          attribute_key: string
+          attribute_name: string | null
+          company_id: string
+          confidence_level: Database["public"]["Enums"]["price_confidence"]
+          created_at: string
+          extraction_method: string | null
+          id: string
+          manually_reviewed: boolean
+          normalized_unit: string | null
+          normalized_value: string | null
+          original_unit: string | null
+          original_value: string | null
+          product_id: string
+          source_file: string | null
+          source_page: number | null
+          source_type: string | null
+          updated_at: string
+          value_numeric: number | null
+          value_text: string | null
+        }
+        Insert: {
+          attribute_key: string
+          attribute_name?: string | null
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          extraction_method?: string | null
+          id?: string
+          manually_reviewed?: boolean
+          normalized_unit?: string | null
+          normalized_value?: string | null
+          original_unit?: string | null
+          original_value?: string | null
+          product_id: string
+          source_file?: string | null
+          source_page?: number | null
+          source_type?: string | null
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          attribute_key?: string
+          attribute_name?: string | null
+          company_id?: string
+          confidence_level?: Database["public"]["Enums"]["price_confidence"]
+          created_at?: string
+          extraction_method?: string | null
+          id?: string
+          manually_reviewed?: boolean
+          normalized_unit?: string | null
+          normalized_value?: string | null
+          original_unit?: string | null
+          original_value?: string | null
+          product_id?: string
+          source_file?: string | null
+          source_page?: number | null
+          source_type?: string | null
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_product_specs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_products: {
+        Row: {
+          categoria: string
+          company_id: string
+          competitor_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          descricao: string | null
+          familia: string
+          id: string
+          imagem_url: string | null
+          is_base: boolean
+          is_deleted: boolean
+          marca: string
+          nome: string
+          referencia: string | null
+          sku: string | null
+          source_date: string | null
+          source_file: string | null
+          source_page: number | null
+          status: string
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string
+          company_id?: string
+          competitor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          descricao?: string | null
+          familia?: string
+          id?: string
+          imagem_url?: string | null
+          is_base?: boolean
+          is_deleted?: boolean
+          marca: string
+          nome: string
+          referencia?: string | null
+          sku?: string | null
+          source_date?: string | null
+          source_file?: string | null
+          source_page?: number | null
+          status?: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          company_id?: string
+          competitor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          descricao?: string | null
+          familia?: string
+          id?: string
+          imagem_url?: string | null
+          is_base?: boolean
+          is_deleted?: boolean
+          marca?: string
+          nome?: string
+          referencia?: string | null
+          sku?: string | null
+          source_date?: string | null
+          source_file?: string | null
+          source_page?: number | null
+          status?: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_products_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "price_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_shares: {
+        Row: {
+          base_product_id: string | null
+          company_id: string
+          company_name: string | null
+          created_at: string
+          delivery_status: string
+          id: string
+          included_prices: boolean
+          included_products_json: Json
+          message: string | null
+          pdf_file_url: string | null
+          pdf_version: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          share_channel: string
+          shared_at: string
+          shared_by: string | null
+        }
+        Insert: {
+          base_product_id?: string | null
+          company_id?: string
+          company_name?: string | null
+          created_at?: string
+          delivery_status?: string
+          id?: string
+          included_prices?: boolean
+          included_products_json?: Json
+          message?: string | null
+          pdf_file_url?: string | null
+          pdf_version?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          share_channel: string
+          shared_at?: string
+          shared_by?: string | null
+        }
+        Update: {
+          base_product_id?: string | null
+          company_id?: string
+          company_name?: string | null
+          created_at?: string
+          delivery_status?: string
+          id?: string
+          included_prices?: boolean
+          included_products_json?: Json
+          message?: string | null
+          pdf_file_url?: string | null
+          pdf_version?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          share_channel?: string
+          shared_at?: string
+          shared_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_shares_base_product_id_fkey"
+            columns: ["base_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
             referencedColumns: ["id"]
           },
         ]
@@ -4793,6 +5422,33 @@ export type Database = {
         | "aprovada"
         | "descartada"
         | "aguardando_revisao"
+      price_confidence:
+        | "catalogo"
+        | "tabela_precos"
+        | "ficha_tecnica"
+        | "fornecedor"
+        | "excel"
+        | "pdf"
+        | "ocr"
+        | "herdado"
+        | "estimado"
+        | "manual"
+        | "nao_informado"
+        | "pendente"
+      price_equivalence_level:
+        | "direto"
+        | "aproximado"
+        | "alternativo"
+        | "incompativel"
+        | "insuficiente"
+      price_equivalence_status: "em_analise" | "validado" | "incompativel"
+      price_import_status: "pendente" | "processando" | "processado" | "erro"
+      price_review_status:
+        | "pendente"
+        | "aprovado"
+        | "corrigido"
+        | "rejeitado"
+        | "ignorado"
       price_table_categoria: "normal" | "atacado" | "promocional" | "outra"
     }
     CompositeTypes: {
@@ -5045,6 +5701,36 @@ export const Constants = {
         "aprovada",
         "descartada",
         "aguardando_revisao",
+      ],
+      price_confidence: [
+        "catalogo",
+        "tabela_precos",
+        "ficha_tecnica",
+        "fornecedor",
+        "excel",
+        "pdf",
+        "ocr",
+        "herdado",
+        "estimado",
+        "manual",
+        "nao_informado",
+        "pendente",
+      ],
+      price_equivalence_level: [
+        "direto",
+        "aproximado",
+        "alternativo",
+        "incompativel",
+        "insuficiente",
+      ],
+      price_equivalence_status: ["em_analise", "validado", "incompativel"],
+      price_import_status: ["pendente", "processando", "processado", "erro"],
+      price_review_status: [
+        "pendente",
+        "aprovado",
+        "corrigido",
+        "rejeitado",
+        "ignorado",
       ],
       price_table_categoria: ["normal", "atacado", "promocional", "outra"],
     },
