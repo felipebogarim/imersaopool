@@ -565,7 +565,7 @@ function VisaoRep2Page() {
           </Badge>
         ) : null}
 
-        <Button onClick={onGerarIA} disabled={busy} size="sm">
+        <Button onClick={onGerarIA} disabled={busy || repId === CONSOLIDADO_ID} size="sm">
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
           Gerar Visão Rep
         </Button>
@@ -583,7 +583,7 @@ function VisaoRep2Page() {
         />
         <Button variant="secondary" size="sm" disabled={busy} onClick={() => document.getElementById("vr2-file")?.click()}>
           <FileUp className="mr-2 h-4 w-4" />
-          Enviar relatório pronto
+          {repId === CONSOLIDADO_ID ? "Enviar visão consolidada" : "Enviar relatório pronto"}
         </Button>
 
         <Button
