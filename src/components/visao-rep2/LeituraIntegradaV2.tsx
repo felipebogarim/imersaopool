@@ -2,12 +2,13 @@
 // Três camadas sincronizadas por sinal executivo: significado, evidência e comparação.
 // Nenhum componente da Visão Rep original é alterado ou reutilizado aqui.
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BlocoExpansivel } from "./BlocoExpansivel";
+import { AcoesSecao } from "./AcoesSecao";
 
 import { CONFIDENCE_LABEL, EVIDENCE_LABEL, type VisaoRep2 } from "@/lib/visao-rep2-schema";
 import {
@@ -22,6 +23,10 @@ import { ChevronDown, Quote } from "lucide-react";
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
 
+/** Contexto das notas/ações dos painéis (representante + sinal selecionado). */
+const LeituraAcoesCtx = createContext<{ contexto?: string; escopo?: string }>({});
+
+
 function PanelShell({
   title,
   subtitle,
@@ -35,6 +40,7 @@ function PanelShell({
   className?: string;
   emphasis?: boolean;
 }) {
+  const acoes = useContext(LeituraAcoesCtx);
   return (
     <section
       className={cn(
@@ -43,9 +49,12 @@ function PanelShell({
         className,
       )}
     >
-      <header className="mb-3 min-w-0">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">{subtitle}</p>
+      <header className="mb-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground/80">{subtitle}</p>
+        </div>
+        <AcoesSecao titulo={title} descricao={subtitle} contexto={acoes.contexto} escopo={acoes.escopo} />
       </header>
       <div className="min-w-0 space-y-3">{children}</div>
     </section>
@@ -419,6 +428,13 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
 
   const signal = leitura.signals[sel] ?? leitura.signals[0] ?? null;
 
+  const contexto =
+    visao.metadata.representative_id ?? visao.metadata.representative_name ?? undefined;
+  const acoesCtx = useMemo(
+    () => ({ contexto, escopo: signal ? `sinal-${signal.id}` : "leitura" }),
+    [contexto, signal?.id],
+  );
+
   if (!leitura.signals.length) {
     return (
       <section className="rounded-xl border bg-card p-4 sm:p-5">
@@ -429,9 +445,11 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
   }
 
   return (
+    <LeituraAcoesCtx.Provider value={acoesCtx}>
     <BlocoExpansivel
       titulo="Leitura integrada"
       descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
+      contexto={contexto}
     >
       <div className="space-y-5">
         <nav aria-label="Sinais estratégicos" className="rounded-xl border bg-muted/25 p-3 sm:p-4">
@@ -517,5 +535,6 @@ export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
       ) : null}
       </div>
     </BlocoExpansivel>
+    </LeituraAcoesCtx.Provider>
   );
 }
