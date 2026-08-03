@@ -165,7 +165,7 @@ function TimelineCard({
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
             style={{ backgroundColor: `color-mix(in oklab, ${cor} 18%, transparent)`, color: cor }}
           >
-            <Icon className="h-4.5 w-4.5" />
+            <Icon className="h-[18px] w-[18px]" />
           </span>
           <h2 className="text-sm font-bold uppercase tracking-wide leading-tight">{etapa.titulo}</h2>
         </div>
