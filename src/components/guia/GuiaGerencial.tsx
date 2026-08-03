@@ -6,7 +6,7 @@ import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
   LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
-import { GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
+import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
@@ -333,25 +333,30 @@ function EtapaDetalhe({
         </div>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Bloco icon={LayoutGrid} titulo="O que você encontrará">
-          <Lista items={etapa.encontrar} />
-        </Bloco>
-        <Bloco icon={Compass} titulo="Como utilizar">
-          <Lista items={etapa.comoUsar} />
-        </Bloco>
-        <Bloco icon={Eye} titulo="O que observar">
-          <Lista items={etapa.observar} />
-        </Bloco>
-        <div className="space-y-4">
-          <Bloco icon={Flag} titulo="Decisão esperada" tone="inset">
-            <p className="text-sm text-muted-foreground">{etapa.decisao}</p>
+      {etapa.id === "entrevistas" ? (
+        <CapitulosInfografico />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Bloco icon={LayoutGrid} titulo="O que você encontrará">
+            <Lista items={etapa.encontrar} />
           </Bloco>
-          <Bloco icon={Lightbulb} titulo="Próximo passo" tone="inset">
-            <p className="text-sm text-muted-foreground">{etapa.proximoPasso}</p>
+          <Bloco icon={Compass} titulo="Como utilizar">
+            <Lista items={etapa.comoUsar} />
           </Bloco>
+          <Bloco icon={Eye} titulo="O que observar">
+            <Lista items={etapa.observar} />
+          </Bloco>
+          <div className="space-y-4">
+            <Bloco icon={Flag} titulo="Decisão esperada" tone="inset">
+              <p className="text-sm text-muted-foreground">{etapa.decisao}</p>
+            </Bloco>
+            <Bloco icon={Lightbulb} titulo="Próximo passo" tone="inset">
+              <p className="text-sm text-muted-foreground">{etapa.proximoPasso}</p>
+            </Bloco>
+          </div>
         </div>
-      </div>
+      )}
+
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-5">
         <Button variant="outline" onClick={onPrev} disabled={index === 0} className="gap-2">
@@ -361,6 +366,42 @@ function EtapaDetalhe({
           Próxima etapa <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
+    </section>
+  );
+}
+
+function CapitulosInfografico() {
+  return (
+    <section className="surface rounded-2xl p-6 sm:p-7">
+      <header className="mb-6 max-w-3xl">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Resultado final da entrevista</p>
+        <h3 className="mt-1 text-xl font-bold tracking-tight">Os 8 capítulos que você encontrará</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Cada entrevista é entregue organizada nestes capítulos — é este o conteúdo que estará disponível para leitura e análise.
+        </p>
+      </header>
+
+      <ol className="relative grid gap-3 sm:grid-cols-2">
+        {ENTREVISTA_CAPITULOS.map((cap, i) => (
+          <li
+            key={cap.titulo}
+            className="group relative flex gap-4 rounded-xl border border-border bg-card/60 p-4 transition-colors hover:border-primary/40 hover:bg-card"
+          >
+            <div className="flex flex-col items-center">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/12 text-sm font-bold text-primary">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {i < ENTREVISTA_CAPITULOS.length - 1 && (
+                <span className="mt-2 hidden w-px flex-1 bg-border sm:block" aria-hidden />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug">{cap.titulo}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{cap.descricao}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }
