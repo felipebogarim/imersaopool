@@ -69,7 +69,8 @@ function EntrevistaDetail() {
           </div>
         }
       />
-      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        <div className="space-y-6 min-w-0">
         <section className="surface rounded-xl p-6">
           <h2 className="font-semibold mb-3">Ficha</h2>
           <div className="grid md:grid-cols-2 gap-3 text-sm">
@@ -103,7 +104,13 @@ function EntrevistaDetail() {
             <p className="text-sm whitespace-pre-wrap">{data.observacoes}</p>
           </section>
         )}
+        </div>
+
+        <aside className="lg:sticky lg:top-6 space-y-6">
+          <InterviewFinalPdf interviewId={id} />
+        </aside>
       </div>
+
     </div>
   );
 }
