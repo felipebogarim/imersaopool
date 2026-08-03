@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import { ImportarDadosDialog } from "@/components/price/ImportarDadosDialog";
 import {
   CATEGORIAS,
@@ -135,7 +135,7 @@ type LinhaRanking = {
 
 function ComparativosPage() {
   const qc = useQueryClient();
-  const isAdmin = useIsAdmin();
+  const isAdmin = useIsMasterAdmin();
   const podeEditar = !!isAdmin;
 
   const [familia, setFamilia] = useState("Fitas e Fontes");
