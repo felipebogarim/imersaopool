@@ -175,7 +175,7 @@ function ManuaisPage() {
     <div className="space-y-6">
       <PageHeader
         title="Manuais"
-        description="Crie manuais com IA a partir de um pedido em linguagem natural ou envie um PDF já pronto. Cada manual vira uma página compartilhável."
+        subtitle="Crie manuais com IA a partir de um pedido em linguagem natural ou envie um PDF já pronto. Cada manual vira uma página compartilhável."
         actions={
           <div className="flex gap-2">
             <input

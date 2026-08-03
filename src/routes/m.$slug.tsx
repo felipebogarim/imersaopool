@@ -77,7 +77,7 @@ function ManualPublico() {
       .catch(() => setPdfUrl(null));
   }, [m.slug, m.temPdf]);
 
-  const c = m.conteudo;
+  const c: ManualContent = m.conteudo as ManualContent;
 
   return (
     <Shell>
