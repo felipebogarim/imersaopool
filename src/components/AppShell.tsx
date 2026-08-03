@@ -196,6 +196,10 @@ function UserMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => { void hardReload(); }}>
+          <RefreshCw className="h-4 w-4" /> Atualizar aplicação
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => onSignOut()} className="text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" /> Sair
         </DropdownMenuItem>
