@@ -40,6 +40,7 @@ function PanelShell({
   className?: string;
   emphasis?: boolean;
 }) {
+  const acoes = useContext(LeituraAcoesCtx);
   return (
     <section
       className={cn(
@@ -48,9 +49,12 @@ function PanelShell({
         className,
       )}
     >
-      <header className="mb-3 min-w-0">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">{subtitle}</p>
+      <header className="mb-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground/80">{subtitle}</p>
+        </div>
+        <AcoesSecao titulo={title} descricao={subtitle} contexto={acoes.contexto} escopo={acoes.escopo} />
       </header>
       <div className="min-w-0 space-y-3">{children}</div>
     </section>
