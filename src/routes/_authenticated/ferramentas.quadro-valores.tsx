@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER } from "@/lib/performance-farol";
 import { parseQuadroFile, type QuadroDoc } from "@/lib/quadro-valores-parser";
 
-export { MASTER_EMAIL } from "@/lib/nav-tree";
+import { MASTER_EMAIL } from "@/lib/nav-tree";
 
 export const Route = createFileRoute("/_authenticated/ferramentas/quadro-valores")({
   head: () => ({
