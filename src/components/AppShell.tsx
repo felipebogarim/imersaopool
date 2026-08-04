@@ -13,7 +13,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
-import { NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
+import { MASTER_EMAIL, NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
 import { useNavAccess } from "@/hooks/useNavAccess";
 import { purgeAppCaches, hardReload } from "@/lib/app-refresh";
 import {
@@ -257,6 +257,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", replace: true });
   }
 
+  const isMasterUser = (workspace?.userEmail ?? "").toLowerCase() === MASTER_EMAIL;
+
   const required = navKeyForPath(pathname);
   const blocked =
     !access.loading &&
@@ -265,7 +267,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const visibleGroups = NAV_TREE.map(g => {
     if (g.adminOnly && !workspace?.isAdmin) return null;
-    const children = g.children.filter(c => access.can(c.key));
+    const children = g.children.filter(c => access.can(c.key) && (!c.masterOnly || isMasterUser));
     if (g.children.length > 0) {
       if (children.length === 0) return null;
     } else if (!access.can(g.key)) {

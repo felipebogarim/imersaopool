@@ -7,7 +7,10 @@ export type NavLeaf = {
   to: string;
   /** prefixos adicionais de rota que pertencem a este item */
   match?: string[];
+  /** visível apenas para o gestor master */
+  masterOnly?: boolean;
 };
+
 
 export type NavGroup = {
   key: string;
@@ -87,8 +90,15 @@ export const NAV_TREE: NavGroup[] = [
     label: "Ferramentas",
     children: [
       { key: "ferramentas.gerador-performance", label: "Gerador de Performance", to: "/admin/gerador-performance" },
+      {
+        key: "ferramentas.quadro-valores",
+        label: "Quadro de Valores do Cliente",
+        to: "/ferramentas/quadro-valores",
+        masterOnly: true,
+      },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
+
     ],
   },
   {
@@ -150,3 +160,6 @@ export function navKeyForPath(pathname: string): { groupKey: string; itemKey: st
   }
   return best ? { groupKey: best.groupKey, itemKey: best.itemKey } : null;
 }
+
+/** Gestor master: único usuário com acesso a áreas com valores brutos. */
+export const MASTER_EMAIL = "felipe@poolbranding.com.br";
