@@ -450,14 +450,19 @@ function VisaoRepInfografico() {
         </p>
       </header>
 
-      <div className="relative space-y-12">
+      <div className="relative space-y-16">
         {VISAO_REP_GRUPOS.map((grupo) => (
           <div key={grupo.chave}>
-            <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-[11px] uppercase tracking-[0.22em] text-primary/80">{grupo.rotulo}</span>
-              <h4 className="text-lg font-semibold tracking-tight sm:text-xl">{grupo.titulo}</h4>
+            <div className="mb-6 border-t-2 border-primary/25 pt-5">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
+                {grupo.rotulo}
+              </span>
+              <h4 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight sm:text-[2rem]">
+                {grupo.titulo}
+              </h4>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">{grupo.descricao}</p>
             </div>
-            <p className="mb-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">{grupo.descricao}</p>
+
 
             <ol className="relative grid gap-x-10 gap-y-2 sm:grid-cols-2">
               {grupo.itens.map((item, i) => (
