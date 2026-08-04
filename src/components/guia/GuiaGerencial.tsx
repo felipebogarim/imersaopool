@@ -381,65 +381,25 @@ function CapitulosInfografico() {
         </p>
       </header>
 
-      {/* trilha orgânica em andares — sm+ */}
-      <div className="relative hidden sm:block">
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <path
-            d="M 2 12.5 H 52 C 62 12.5, 62 37.5, 52 37.5 H 2 C 12 37.5, 12 62.5, 2 62.5 H 52 C 62 62.5, 62 87.5, 52 87.5 H 2"
-            fill="none"
-            stroke="var(--border)"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-
-        <ol className="relative grid grid-cols-2 gap-x-8 gap-y-6">
-          {ENTREVISTA_CAPITULOS.map((cap, i) => {
-            const linha = Math.floor(i / 2);
-            const inverter = linha % 2 === 1; // serpentina
-            return (
-              <li
-                key={cap.titulo}
-                className="group relative flex items-start gap-4"
-                style={{ order: inverter ? (i % 2 === 0 ? linha * 2 + 2 : linha * 2 + 1) : i + 1 }}
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary ring-[6px] ring-background transition-transform duration-300 group-hover:scale-110">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0 pt-0.5 pr-2">
-                  <p className="text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
-                    {cap.titulo}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{cap.descricao}</p>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-
-      {/* vertical — mobile */}
-      <ol className="relative space-y-3 sm:hidden">
-        <span className="absolute left-[18px] top-4 bottom-4 w-px bg-border" aria-hidden />
+      <ol className="grid gap-x-10 gap-y-0 sm:grid-cols-2">
         {ENTREVISTA_CAPITULOS.map((cap, i) => (
-          <li key={cap.titulo} className="relative flex items-start gap-3">
-            <span className="relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary ring-4 ring-background">
+          <li
+            key={cap.titulo}
+            className="group flex items-start gap-4 border-t border-border/60 py-4 first:border-t-0 sm:[&:nth-child(2)]:border-t-0"
+          >
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border bg-muted/50 text-xs font-bold tabular-nums text-muted-foreground transition-colors group-hover:border-primary/50 group-hover:bg-primary/10 group-hover:text-primary">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <div className="min-w-0 pt-0.5">
-              <p className="text-sm font-semibold leading-snug">{cap.titulo}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+                {cap.titulo}
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{cap.descricao}</p>
             </div>
           </li>
         ))}
       </ol>
+
 
     </section>
   );
