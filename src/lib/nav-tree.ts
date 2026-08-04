@@ -90,8 +90,15 @@ export const NAV_TREE: NavGroup[] = [
     label: "Ferramentas",
     children: [
       { key: "ferramentas.gerador-performance", label: "Gerador de Performance", to: "/admin/gerador-performance" },
+      {
+        key: "ferramentas.quadro-valores",
+        label: "Quadro de Valores do Cliente",
+        to: "/ferramentas/quadro-valores",
+        masterOnly: true,
+      },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
+
     ],
   },
   {
