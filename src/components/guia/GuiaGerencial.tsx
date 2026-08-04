@@ -391,43 +391,36 @@ function CapitulosInfografico() {
         </p>
       </header>
 
-      <ol className="relative">
-        {ENTREVISTA_CAPITULOS.map((cap, i) => {
-          const desloc = Math.min(i, 5) * 22;
-          return (
-            <li
-              key={cap.titulo}
-              className="group relative"
-              style={{ paddingLeft: `var(--ind, 0px)`, ["--ind" as any]: `${desloc}px` }}
-            >
-              <div className="relative flex items-baseline gap-4 py-5 sm:gap-7">
-                {/* numeral fantasma */}
-                <span
-                  aria-hidden
-                  className="select-none text-[2.6rem] font-black leading-none tabular-nums text-transparent transition-all duration-500 sm:text-[3.4rem] [-webkit-text-stroke:1px_color-mix(in_oklab,var(--foreground)_22%,transparent)] group-hover:[-webkit-text-stroke:1px_var(--primary)]"
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+      <ol className="relative grid gap-x-10 gap-y-2 sm:grid-cols-2">
+        {ENTREVISTA_CAPITULOS.map((cap, i) => (
+          <li key={cap.titulo} className="group relative">
+            <div className="relative py-5">
+              {/* numeral fantasma */}
+              <span
+                aria-hidden
+                className="block select-none text-[2.6rem] font-black leading-none tabular-nums text-transparent transition-all duration-500 sm:text-[3.4rem] [-webkit-text-stroke:1px_color-mix(in_oklab,var(--foreground)_22%,transparent)] group-hover:[-webkit-text-stroke:1px_var(--primary)]"
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
 
-                <div className="min-w-0 flex-1 transition-transform duration-500 group-hover:translate-x-1.5">
-                  <p className="text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-lg">
-                    {cap.titulo}
-                  </p>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">{cap.descricao}</p>
-                </div>
+              <div className="mt-2 min-w-0 transition-transform duration-500 group-hover:translate-x-1.5">
+                <p className="text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-lg">
+                  {cap.titulo}
+                </p>
+                <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">{cap.descricao}</p>
               </div>
+            </div>
 
-              {/* fio fluido que desce e desvia com o escalonamento */}
-              {i < ENTREVISTA_CAPITULOS.length - 1 && (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
-                />
-              )}
-            </li>
-          );
-        })}
+            {i < ENTREVISTA_CAPITULOS.length - (ENTREVISTA_CAPITULOS.length % 2 === 0 ? 2 : 1) && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
+              />
+            )}
+          </li>
+        ))}
       </ol>
+
     </section>
   );
 
