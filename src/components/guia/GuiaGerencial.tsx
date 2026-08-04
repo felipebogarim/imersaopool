@@ -372,35 +372,63 @@ function EtapaDetalhe({
 
 function CapitulosInfografico() {
   return (
-    <section className="surface rounded-2xl p-6 sm:p-7">
-      <header className="mb-6 max-w-3xl">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Resultado final da entrevista</p>
-        <h3 className="mt-1 text-xl font-bold tracking-tight">Os 8 capítulos que você encontrará</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-muted/50 via-background to-background p-6 sm:p-10">
+      {/* brilho orgânico de fundo */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl"
+      />
+
+      <header className="relative mb-8 max-w-3xl">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-primary/80">Resultado final da entrevista</p>
+        <h3 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Os 8 capítulos que você encontrará</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Cada entrevista é entregue organizada nestes capítulos — é este o conteúdo que estará disponível para leitura e análise.
         </p>
       </header>
 
-      <ol className="grid gap-x-10 gap-y-0 sm:grid-cols-2">
-        {ENTREVISTA_CAPITULOS.map((cap, i) => (
-          <li
-            key={cap.titulo}
-            className="group flex items-start gap-4 border-t border-border/60 py-4 first:border-t-0 sm:[&:nth-child(2)]:border-t-0"
-          >
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border bg-muted/50 text-xs font-bold tabular-nums text-muted-foreground transition-colors group-hover:border-primary/50 group-hover:bg-primary/10 group-hover:text-primary">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
-                {cap.titulo}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{cap.descricao}</p>
-            </div>
-          </li>
-        ))}
+      <ol className="relative">
+        {ENTREVISTA_CAPITULOS.map((cap, i) => {
+          const desloc = Math.min(i, 5) * 22;
+          return (
+            <li
+              key={cap.titulo}
+              className="group relative"
+              style={{ paddingLeft: `var(--ind, 0px)`, ["--ind" as any]: `${desloc}px` }}
+            >
+              <div className="relative flex items-baseline gap-4 py-5 sm:gap-7">
+                {/* numeral fantasma */}
+                <span
+                  aria-hidden
+                  className="select-none text-[2.6rem] font-black leading-none tabular-nums text-transparent transition-all duration-500 sm:text-[3.4rem] [-webkit-text-stroke:1px_color-mix(in_oklab,var(--foreground)_22%,transparent)] group-hover:[-webkit-text-stroke:1px_var(--primary)]"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+
+                <div className="min-w-0 flex-1 transition-transform duration-500 group-hover:translate-x-1.5">
+                  <p className="text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-lg">
+                    {cap.titulo}
+                  </p>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">{cap.descricao}</p>
+                </div>
+              </div>
+
+              {/* fio fluido que desce e desvia com o escalonamento */}
+              {i < ENTREVISTA_CAPITULOS.length - 1 && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
+                />
+              )}
+            </li>
+          );
+        })}
       </ol>
-
-
     </section>
   );
+
 }
