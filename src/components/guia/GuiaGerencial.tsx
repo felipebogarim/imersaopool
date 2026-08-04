@@ -335,7 +335,10 @@ function EtapaDetalhe({
 
       {etapa.id === "entrevistas" ? (
         <CapitulosInfografico />
+      ) : etapa.id === "visao-rep" ? (
+        <VisaoRepInfografico />
       ) : (
+
         <div className="grid gap-4 md:grid-cols-2">
           <Bloco icon={LayoutGrid} titulo="O que você encontrará">
             <Lista items={etapa.encontrar} />
