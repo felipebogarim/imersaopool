@@ -390,30 +390,32 @@ function CapitulosInfografico() {
           aria-hidden
         >
           <path
-            d="M 25 12.5 H 66 C 80 12.5, 80 37.5, 66 37.5 H 34 C 20 37.5, 20 62.5, 34 62.5 H 66 C 80 62.5, 80 87.5, 66 87.5 H 25"
+            d="M 2 12.5 H 52 C 62 12.5, 62 37.5, 52 37.5 H 2 C 12 37.5, 12 62.5, 2 62.5 H 52 C 62 62.5, 62 87.5, 52 87.5 H 2"
             fill="none"
             stroke="var(--border)"
-            strokeWidth={2}
+            strokeWidth={1.5}
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
         </svg>
 
-        <ol className="relative grid grid-cols-2 gap-x-6 gap-y-5">
+        <ol className="relative grid grid-cols-2 gap-x-8 gap-y-6">
           {ENTREVISTA_CAPITULOS.map((cap, i) => {
             const linha = Math.floor(i / 2);
             const inverter = linha % 2 === 1; // serpentina
             return (
               <li
                 key={cap.titulo}
-                className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card/70 p-4 backdrop-blur-[1px] transition-colors hover:border-primary/40 hover:bg-card`}
+                className="group relative flex items-start gap-4"
                 style={{ order: inverter ? (i % 2 === 0 ? linha * 2 + 2 : linha * 2 + 1) : i + 1 }}
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary ring-4 ring-background">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary ring-[6px] ring-background transition-transform duration-300 group-hover:scale-110">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold leading-snug">{cap.titulo}</p>
+                <div className="min-w-0 pt-0.5 pr-2">
+                  <p className="text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+                    {cap.titulo}
+                  </p>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{cap.descricao}</p>
                 </div>
               </li>
@@ -421,6 +423,7 @@ function CapitulosInfografico() {
           })}
         </ol>
       </div>
+
 
       {/* vertical — mobile */}
       <ol className="relative space-y-3 sm:hidden">
