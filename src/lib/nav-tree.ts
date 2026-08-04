@@ -160,3 +160,6 @@ export function navKeyForPath(pathname: string): { groupKey: string; itemKey: st
   }
   return best ? { groupKey: best.groupKey, itemKey: best.itemKey } : null;
 }
+
+/** Gestor master: único usuário com acesso a áreas com valores brutos. */
+export const MASTER_EMAIL = "felipe@poolbranding.com.br";

@@ -13,7 +13,7 @@ import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
-import { NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
+import { MASTER_EMAIL, NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
 import { useNavAccess } from "@/hooks/useNavAccess";
 import { purgeAppCaches, hardReload } from "@/lib/app-refresh";
 import {
