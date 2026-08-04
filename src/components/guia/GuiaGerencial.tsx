@@ -337,6 +337,8 @@ function EtapaDetalhe({
         <CapitulosInfografico />
       ) : etapa.id === "visao-rep" ? (
         <VisaoRepInfografico />
+      ) : etapa.id === "performance" ? (
+        <PerformanceInfografico />
       ) : (
 
         <div className="grid gap-4 md:grid-cols-2">
