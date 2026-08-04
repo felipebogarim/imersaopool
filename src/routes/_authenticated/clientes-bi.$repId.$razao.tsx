@@ -5,11 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BarChart2 } from "lucide-react";
+import { ArrowLeft, BarChart2, FileDown } from "lucide-react";
 import { ClientBISection } from "@/components/ClientBISection";
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { catBadge } from "@/lib/performance-farol";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { exportClientBIPdf } from "@/lib/client-bi-pdf";
+import type { ClientBIData } from "@/lib/client-bi-parser";
 
 export const Route = createFileRoute("/_authenticated/clientes-bi/$repId/$razao")({
   head: () => ({ meta: [{ title: "BI do cliente — PoolFlux" }] }),
@@ -57,6 +60,46 @@ function ClientBIPage() {
     },
   });
 
+  const { data: biUpload } = useQuery({
+    queryKey: ["client-bi", repId, razaoSocial],
+    enabled: !!repId && !!razaoSocial,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("client_bi_uploads")
+        .select("*")
+        .eq("representative_id", repId)
+        .eq("razao_social", razaoSocial)
+        .eq("kind", "bi")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+
+  const biData: ClientBIData | null = (biUpload?.data as ClientBIData) ?? null;
+
+  function exportarRelatorio() {
+    if (!biData) {
+      toast.error("Sem dados de BI", {
+        description: "Carregue a planilha de BI deste cliente antes de exportar.",
+      });
+      return;
+    }
+    try {
+      exportClientBIPdf({
+        razaoSocial,
+        representante: rep?.nome ?? null,
+        categoria: (rowInfo as any)?.categoria ?? biData.categoria ?? null,
+        data: biData,
+      });
+      toast.success("Relatório visual gerado");
+    } catch (e: any) {
+      toast.error("Falha ao gerar o relatório", { description: e?.message ?? String(e) });
+    }
+  }
+
   const familias = useMemo(
     () => (rowInfo ? Object.keys((rowInfo as any).metas ?? {}) : []),
     [rowInfo],
@@ -69,6 +112,9 @@ function ClientBIPage() {
         title={razaoSocial}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={exportarRelatorio} aria-label="Exportar relatório visual">
+              <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
+            </Button>
             <Button asChild aria-label="Comparar dentro do perfil">
               <Link
                 to="/clientes-bi/comparar/$repId/$razao"
