@@ -7,7 +7,10 @@ export type NavLeaf = {
   to: string;
   /** prefixos adicionais de rota que pertencem a este item */
   match?: string[];
+  /** visível apenas para o gestor master */
+  masterOnly?: boolean;
 };
+
 
 export type NavGroup = {
   key: string;
