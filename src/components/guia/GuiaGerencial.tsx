@@ -6,7 +6,7 @@ import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
   LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
-import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, type GuiaEtapa } from "@/lib/guia-gerencial";
+import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
@@ -335,7 +335,10 @@ function EtapaDetalhe({
 
       {etapa.id === "entrevistas" ? (
         <CapitulosInfografico />
+      ) : etapa.id === "visao-rep" ? (
+        <VisaoRepInfografico />
       ) : (
+
         <div className="grid gap-4 md:grid-cols-2">
           <Bloco icon={LayoutGrid} titulo="O que você encontrará">
             <Lista items={etapa.encontrar} />
@@ -424,4 +427,69 @@ function CapitulosInfografico() {
     </section>
   );
 
+}
+
+function VisaoRepInfografico() {
+  return (
+    <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-muted/50 via-background to-background p-6 sm:p-10">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl"
+      />
+
+      <header className="relative mb-8 max-w-3xl">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-primary/80">Resultado final da Visão REP</p>
+        <h3 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Dois grupos de informação</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          A entrevista chega aqui já organizada: primeiro a leitura executiva com os sinais prioritários, depois as oito
+          perspectivas detalhadas.
+        </p>
+      </header>
+
+      <div className="relative space-y-12">
+        {VISAO_REP_GRUPOS.map((grupo) => (
+          <div key={grupo.chave}>
+            <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-[11px] uppercase tracking-[0.22em] text-primary/80">{grupo.rotulo}</span>
+              <h4 className="text-lg font-semibold tracking-tight sm:text-xl">{grupo.titulo}</h4>
+            </div>
+            <p className="mb-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">{grupo.descricao}</p>
+
+            <ol className="relative grid gap-x-10 gap-y-2 sm:grid-cols-2">
+              {grupo.itens.map((item, i) => (
+                <li key={item.titulo} className="group relative">
+                  <div className="relative py-5">
+                    <span
+                      aria-hidden
+                      className="block select-none text-[2.6rem] font-black leading-none tabular-nums text-transparent transition-all duration-500 sm:text-[3.4rem] [-webkit-text-stroke:1px_color-mix(in_oklab,var(--foreground)_22%,transparent)] group-hover:[-webkit-text-stroke:1px_var(--primary)]"
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+
+                    <div className="mt-2 min-w-0 transition-transform duration-500 group-hover:translate-x-1.5">
+                      <p className="text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary sm:text-lg">
+                        {item.titulo}
+                      </p>
+                      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">{item.descricao}</p>
+                    </div>
+                  </div>
+
+                  {i < grupo.itens.length - (grupo.itens.length % 2 === 0 ? 2 : 1) && (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent"
+                    />
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }

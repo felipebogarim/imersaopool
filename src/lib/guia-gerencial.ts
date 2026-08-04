@@ -342,3 +342,46 @@ export const ENTREVISTA_CAPITULOS: { titulo: string; descricao: string }[] = [
   { titulo: "Governança comercial e autonomia", descricao: "Regras, alçadas e autonomia percebida na operação." },
   { titulo: "Informações Adicionais", descricao: "Registros livres e observações relevantes do campo." },
 ];
+
+/** Grupos de informação entregues na Visão REP (resultado final estruturado). */
+export const VISAO_REP_GRUPOS: {
+  chave: string;
+  rotulo: string;
+  titulo: string;
+  descricao: string;
+  itens: { titulo: string; descricao: string }[];
+}[] = [
+  {
+    chave: "brief",
+    rotulo: "Grupo 1",
+    titulo: "Leitura executiva e sinais prioritários",
+    descricao:
+      "A síntese estratégica do representante e o menu de sinais — cada sinal atualiza o painel de leitura logo abaixo.",
+    itens: [
+      { titulo: "Síntese estratégica", descricao: "O resumo executivo da entrevista em poucas linhas de decisão." },
+      { titulo: "Teia comparativa de posicionamento", descricao: "Como o representante se posiciona frente à média do grupo." },
+      { titulo: "Menu de sinais prioritários", descricao: "Os principais sinais identificados, com grau de confiança." },
+      { titulo: "O que isso significa", descricao: "A leitura gerencial por trás de cada sinal selecionado." },
+      { titulo: "Onde isso apareceu", descricao: "As perspectivas e trechos da entrevista que sustentam o sinal." },
+      { titulo: "Como isso se compara ao grupo", descricao: "O contraste do sinal com os demais representantes." },
+    ],
+  },
+  {
+    chave: "perspectivas",
+    rotulo: "Grupo 2",
+    titulo: "As 8 perspectivas estruturadas",
+    descricao:
+      "O conteúdo da entrevista reorganizado em oito perspectivas, cada uma com contexto, evidência, decisão e validação.",
+    itens: [
+      { titulo: "Marca e preço", descricao: "Percepção de marca e peso do preço na decisão." },
+      { titulo: "Mix", descricao: "Mix ofertado e onde está o esforço de venda." },
+      { titulo: "Concorrência", descricao: "Competição de mercado e onde a marca ganha ou perde." },
+      { titulo: "Argumento", descricao: "Argumento técnico usado no ponto de venda." },
+      { titulo: "Decisão", descricao: "Critério real de decisão do cliente final." },
+      { titulo: "Oportunidades", descricao: "Oportunidades, ameaças e cuidados sinalizados." },
+      { titulo: "Governança", descricao: "Governança comercial e autonomia percebida." },
+      { titulo: "Adicionais", descricao: "Informações complementares registradas na entrevista." },
+    ],
+  },
+];
+
