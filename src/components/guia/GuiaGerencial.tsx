@@ -7,6 +7,8 @@ import {
   LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
+import { cn } from "@/lib/utils";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, type FarolStatus } from "@/lib/performance-farol";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
@@ -337,6 +339,8 @@ function EtapaDetalhe({
         <CapitulosInfografico />
       ) : etapa.id === "visao-rep" ? (
         <VisaoRepInfografico />
+      ) : etapa.id === "performance" ? (
+        <PerformanceInfografico />
       ) : (
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -493,6 +497,125 @@ function VisaoRepInfografico() {
               ))}
             </ol>
           </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Etapa 3 — apresentação da Performance + quadro-exemplo (sem nomes de clientes). */
+const PERF_COLUNAS = [
+  "Atingimento %",
+  "Decor Newline",
+  "Decor Studio",
+  "Sistemas e Módulos",
+  "Pro LED",
+  "Pro Lamp",
+  "Perfil",
+  "Fitas e Fontes",
+];
+
+const PERF_LINHAS: FarolStatus[][] = [
+  ["proximo", "excelente", "excelente", "excelente", "excelente", "abaixo_meta", "abaixo_meta", "abaixo_meta"],
+  ["otimo", "excelente", "proximo", "excelente", "pode_melhorar", "excelente", "excelente", "sem_compra"],
+  ["pode_melhorar", "abaixo_meta", "proximo", "excelente", "sem_compra", "sem_compra", "excelente", "excelente"],
+  ["proximo", "excelente", "otimo", "excelente", "abaixo_meta", "abaixo_meta", "excelente", "abaixo_meta"],
+  ["abaixo_meta", "excelente", "excelente", "abaixo_meta", "abaixo_meta", "abaixo_meta", "sem_compra", "sem_compra"],
+  ["pode_melhorar", "excelente", "excelente", "pode_melhorar", "abaixo_meta", "excelente", "abaixo_meta", "sem_compra"],
+  ["proximo", "excelente", "abaixo_meta", "excelente", "excelente", "abaixo_meta", "proximo", "pode_melhorar"],
+  ["proximo", "proximo", "excelente", "excelente", "excelente", "pode_melhorar", "proximo", "abaixo_meta"],
+];
+
+const PERF_TEXTO: Record<FarolStatus, string> = {
+  sem_compra: "0%",
+  abaixo_meta: "<50",
+  pode_melhorar: "50-69",
+  proximo: "70-89",
+  otimo: "90-100",
+  excelente: ">100",
+};
+
+function PerformanceInfografico() {
+  return (
+    <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-muted/50 via-background to-background p-6 sm:p-10">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+      />
+
+      <header className="relative mb-8 max-w-3xl">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-primary/80">O que é a Performance</p>
+        <h3 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+          Um mapa de calor do atingimento por família
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Cada linha é um cliente da carteira do representante e cada coluna é uma família de produtos. A cor mostra, de
+          forma imediata, onde a meta foi superada, onde há espaço para crescer e onde não houve compra — sem exibir
+          valores monetários. Os filtros no topo permitem recortar por categoria de cliente, por família ou isolar as
+          células sem venda.
+        </p>
+      </header>
+
+      <div className="relative rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+          {["Black", "Gold", "Silver"].map((c) => (
+            <span key={c} className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">
+              {c}
+            </span>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" />
+          {PERF_COLUNAS.slice(1).map((c) => (
+            <span key={c} className="rounded-full border border-border px-2.5 py-1 uppercase text-muted-foreground">
+              {c}
+            </span>
+          ))}
+          <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">0%</span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-separate border-spacing-[2px] text-center text-xs">
+            <thead>
+              <tr>
+                <th className="px-2 py-2 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Cliente
+                </th>
+                {PERF_COLUNAS.map((c) => (
+                  <th key={c} className="px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {PERF_LINHAS.map((linha, i) => (
+                <tr key={i}>
+                  <td className="px-2 py-1.5 text-left">
+                    <span className="inline-block h-2 w-20 rounded-full bg-muted" aria-label="Cliente ocultado" />
+                  </td>
+                  {linha.map((st, j) => (
+                    <td key={j} className={cn("rounded-md px-2 py-1.5 font-medium tabular-nums", FAROL_CELL_CLASS[st])}>
+                      {PERF_TEXTO[st]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          Exemplo ilustrativo — nomes de clientes e valores permanecem ocultos nesta apresentação.
+        </p>
+      </div>
+
+      <div className="relative mt-6 flex flex-wrap gap-2">
+        {FAROL_ORDER.map((st) => (
+          <span
+            key={st}
+            className={cn("rounded-full px-3 py-1 text-[11px] font-medium", FAROL_CELL_CLASS[st])}
+          >
+            {FAROL_LABEL[st]}
+          </span>
         ))}
       </div>
     </section>
