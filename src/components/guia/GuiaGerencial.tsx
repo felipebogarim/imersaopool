@@ -7,6 +7,8 @@ import {
   LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
+import { cn } from "@/lib/utils";
+import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, type FarolStatus } from "@/lib/performance-farol";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
 
