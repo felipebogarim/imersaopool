@@ -406,9 +406,7 @@ function CapitulosInfografico() {
             return (
               <li
                 key={cap.titulo}
-                className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card/70 p-4 backdrop-blur-[1px] transition-colors hover:border-primary/40 hover:bg-card ${
-                  inverter ? (i % 2 === 0 ? "order-2" : "order-1") : ""
-                }`}
+                className={`group relative flex items-start gap-3 rounded-xl border border-border bg-card/70 p-4 backdrop-blur-[1px] transition-colors hover:border-primary/40 hover:bg-card`}
                 style={{ order: inverter ? (i % 2 === 0 ? linha * 2 + 2 : linha * 2 + 1) : i + 1 }}
               >
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/12 text-sm font-bold text-primary ring-4 ring-background">
