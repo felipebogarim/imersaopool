@@ -66,6 +66,7 @@ import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authent
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
 import { Route as AuthenticatedFontesIdRouteImport } from './routes/_authenticated/fontes.$id'
+import { Route as AuthenticatedFerramentasTranscricaoRouteImport } from './routes/_authenticated/ferramentas.transcricao'
 import { Route as AuthenticatedFerramentasQuadroValoresRouteImport } from './routes/_authenticated/ferramentas.quadro-valores'
 import { Route as AuthenticatedEntrevistasNovaRouteImport } from './routes/_authenticated/entrevistas.nova'
 import { Route as AuthenticatedEntrevistasIdRouteImport } from './routes/_authenticated/entrevistas.$id'
@@ -402,6 +403,12 @@ const AuthenticatedFontesIdRoute = AuthenticatedFontesIdRouteImport.update({
   path: '/fontes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFerramentasTranscricaoRoute =
+  AuthenticatedFerramentasTranscricaoRouteImport.update({
+    id: '/ferramentas/transcricao',
+    path: '/ferramentas/transcricao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFerramentasQuadroValoresRoute =
   AuthenticatedFerramentasQuadroValoresRouteImport.update({
     id: '/ferramentas/quadro-valores',
@@ -646,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/ferramentas/quadro-valores': typeof AuthenticatedFerramentasQuadroValoresRoute
+  '/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
@@ -736,6 +744,7 @@ export interface FileRoutesByTo {
   '/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/ferramentas/quadro-valores': typeof AuthenticatedFerramentasQuadroValoresRoute
+  '/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
@@ -829,6 +838,7 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/$id': typeof AuthenticatedEntrevistasIdRouteWithChildren
   '/_authenticated/entrevistas/nova': typeof AuthenticatedEntrevistasNovaRoute
   '/_authenticated/ferramentas/quadro-valores': typeof AuthenticatedFerramentasQuadroValoresRoute
+  '/_authenticated/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/_authenticated/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
@@ -922,6 +932,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id'
     | '/entrevistas/nova'
     | '/ferramentas/quadro-valores'
+    | '/ferramentas/transcricao'
     | '/fontes/$id'
     | '/forms/$id'
     | '/imersoes/$id'
@@ -1012,6 +1023,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id'
     | '/entrevistas/nova'
     | '/ferramentas/quadro-valores'
+    | '/ferramentas/transcricao'
     | '/fontes/$id'
     | '/forms/$id'
     | '/imersoes/$id'
@@ -1104,6 +1116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/$id'
     | '/_authenticated/entrevistas/nova'
     | '/_authenticated/ferramentas/quadro-valores'
+    | '/_authenticated/ferramentas/transcricao'
     | '/_authenticated/fontes/$id'
     | '/_authenticated/forms/$id'
     | '/_authenticated/imersoes/$id'
@@ -1580,6 +1593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFontesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ferramentas/transcricao': {
+      id: '/_authenticated/ferramentas/transcricao'
+      path: '/ferramentas/transcricao'
+      fullPath: '/ferramentas/transcricao'
+      preLoaderRoute: typeof AuthenticatedFerramentasTranscricaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ferramentas/quadro-valores': {
       id: '/_authenticated/ferramentas/quadro-valores'
       path: '/ferramentas/quadro-valores'
@@ -1921,6 +1941,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntrevistasIdRoute: typeof AuthenticatedEntrevistasIdRouteWithChildren
   AuthenticatedEntrevistasNovaRoute: typeof AuthenticatedEntrevistasNovaRoute
   AuthenticatedFerramentasQuadroValoresRoute: typeof AuthenticatedFerramentasQuadroValoresRoute
+  AuthenticatedFerramentasTranscricaoRoute: typeof AuthenticatedFerramentasTranscricaoRoute
   AuthenticatedFontesIdRoute: typeof AuthenticatedFontesIdRoute
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
@@ -1968,6 +1989,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntrevistasNovaRoute: AuthenticatedEntrevistasNovaRoute,
   AuthenticatedFerramentasQuadroValoresRoute:
     AuthenticatedFerramentasQuadroValoresRoute,
+  AuthenticatedFerramentasTranscricaoRoute:
+    AuthenticatedFerramentasTranscricaoRoute,
   AuthenticatedFontesIdRoute: AuthenticatedFontesIdRoute,
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
