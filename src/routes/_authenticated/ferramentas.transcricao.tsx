@@ -1,11 +1,55 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Upload, Copy, Download, FileAudio } from "lucide-react";
+import { Loader2, Upload, Copy, Download, FileAudio, MoreVertical, Save, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
+
+type Transcricao = { id: string; titulo: string; texto: string; created_at: string };
+
+function baixarTxt(titulo: string, texto: string) {
+  const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${titulo.replace(/\.[^.]+$/, "") || "transcricao"}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function baixarPdf(titulo: string, texto: string) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 48;
+  const width = doc.internal.pageSize.getWidth() - margin * 2;
+  const height = doc.internal.pageSize.getHeight();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(doc.splitTextToSize(titulo || "Transcrição", width), margin, margin);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  let y = margin + 28;
+  for (const line of doc.splitTextToSize(texto, width) as string[]) {
+    if (y > height - margin) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.text(line, margin, y);
+    y += 14;
+  }
+  doc.save(`${(titulo || "transcricao").replace(/\.[^.]+$/, "")}.pdf`);
+}
 
 export const Route = createFileRoute("/_authenticated/ferramentas/transcricao")({
   head: () => ({
