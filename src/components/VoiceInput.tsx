@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Mic, Square, Loader2, Image as ImageIcon, Video, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { transcribeAudio } from "@/lib/transcribe.functions";
 import { extractFromMedia } from "@/lib/extract-media.functions";
-import { normalizeAudioToWav } from "@/lib/audio-wav";
+import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
+
 
 type Common = {
   value: string;
