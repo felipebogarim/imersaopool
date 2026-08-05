@@ -117,23 +117,40 @@ export function ChapterCapture({
     }
   }
 
+  function refreshAll() {
+    qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
+    qc.invalidateQueries({ queryKey: ["interview-sumario", sessaoId] });
+    qc.invalidateQueries({ queryKey: ["interview", sessaoId] });
+  }
+
   async function handleFinal(file: File) {
     if (file.size > MAX_BYTES) return toast.error(`Arquivo maior que ${MAX_MB}MB`);
     setUploadingFinal(true);
     try {
       const base64 = await blobToBase64(file);
-      const r = await ingestFinal({ data: { sessaoId, base64, mime: file.type || "application/octet-stream", filename: file.name } });
+      const mime = file.type || "application/octet-stream";
+      // 1ª passagem: validação sem gravar nada.
+      const r: any = await ingestFinal({ data: { sessaoId, base64, mime, filename: file.name, dryRun: true } });
+
+      if (r?.template === "field_store_visit_v1") {
+        setPreview({ file, base64, meta: r.meta ?? {}, preview: r.preview ?? [] });
+        return;
+      }
+
+      // Documento fora do padrão canônico: fluxo antigo (grava direto).
       toast.success(`Relatório final aplicado a ${r.filled} capítulo(s)`);
       if (r.unmatched?.length)
         toast.warning(`${r.unmatched.length} capítulo(s) não reconhecido(s)`, { description: r.unmatched.slice(0, 3).join(" · ") });
-      qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
-      qc.invalidateQueries({ queryKey: ["interview-sumario", sessaoId] });
-      qc.invalidateQueries({ queryKey: ["interview", sessaoId] });
+      refreshAll();
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao processar arquivo");
+      const details: string[] = e?.details ?? [];
+      toast.error(e?.message ?? "Falha ao processar arquivo", {
+        description: details.length > 1 ? details.slice(1, 4).join(" · ") : undefined,
+      });
     } finally {
       setUploadingFinal(false);
     }
+
   }
 
   async function runGenerate() {
