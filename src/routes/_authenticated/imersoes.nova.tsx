@@ -31,7 +31,12 @@ function NewImmersion() {
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
-    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia").order("nome_fantasia")).data ?? [],
+    queryFn: async () =>
+      (await supabase
+        .from("clients")
+        .select("id, nome_fantasia, razao_social")
+        .order("nome_fantasia")
+        .range(0, 4999)).data ?? [],
   });
   const { data: reps = [] } = useQuery({
     queryKey: ["reps-select"],
