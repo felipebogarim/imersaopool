@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
+import { normalizeAudioToWav } from "@/lib/audio-wav";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
@@ -57,8 +58,18 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
     if (file.size > MAX_BYTES) return toast.error(`Arquivo maior que ${MAX_MB}MB`);
     setUploadingBruto(true);
     try {
-      const base64 = await blobToBase64(file);
-      const r = await distribute({ data: { sessaoId, base64, mime: file.type || "application/octet-stream", filename: file.name } });
+      const isAudio = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|mp4|webm|ogg|oga|opus|aac|flac)$/i.test(file.name);
+      const uploadFile = isAudio ? await normalizeAudioToWav(file) : file;
+      if (uploadFile.size > MAX_BYTES) return toast.error(`O áudio normalizado ficou maior que ${MAX_MB}MB`);
+      const base64 = await blobToBase64(uploadFile);
+      const r = await distribute({
+        data: {
+          sessaoId,
+          base64,
+          mime: uploadFile.type || "application/octet-stream",
+          filename: uploadFile.name,
+        },
+      });
       toast.success(`IA distribuiu conteúdo em ${r.filled} capítulo(s)`);
       qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
     } catch (e: any) {
