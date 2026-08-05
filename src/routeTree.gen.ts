@@ -23,6 +23,7 @@ import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as ApiTranscribeChunkRouteImport } from './routes/api/transcribe-chunk'
 import { Route as AuthenticatedVisaoRep2RouteImport } from './routes/_authenticated/visao-rep-2'
 import { Route as AuthenticatedVisaoRepRouteImport } from './routes/_authenticated/visao-rep'
 import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
@@ -166,6 +167,11 @@ const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTranscribeChunkRoute = ApiTranscribeChunkRouteImport.update({
+  id: '/api/transcribe-chunk',
+  path: '/api/transcribe-chunk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVisaoRep2Route = AuthenticatedVisaoRep2RouteImport.update({
@@ -613,6 +619,7 @@ export interface FileRoutesByFullPath {
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
+  '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -702,6 +709,7 @@ export interface FileRoutesByTo {
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
+  '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -794,6 +802,7 @@ export interface FileRoutesById {
   '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/_authenticated/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/_authenticated/visao-rep-2': typeof AuthenticatedVisaoRep2Route
+  '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -886,6 +895,7 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/visao-rep'
     | '/visao-rep-2'
+    | '/api/transcribe-chunk'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -975,6 +985,7 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/visao-rep'
     | '/visao-rep-2'
+    | '/api/transcribe-chunk'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1066,6 +1077,7 @@ export interface FileRouteTypes {
     | '/_authenticated/termos-de-uso'
     | '/_authenticated/visao-rep'
     | '/_authenticated/visao-rep-2'
+    | '/api/transcribe-chunk'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1141,6 +1153,7 @@ export interface RootRouteChildren {
   DefinirSenhaRoute: typeof DefinirSenhaRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
   EventoFalhaRoute: typeof EventoFalhaRoute
@@ -1264,6 +1277,13 @@ declare module '@tanstack/react-router' {
       path: '/email/unsubscribe'
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/transcribe-chunk': {
+      id: '/api/transcribe-chunk'
+      path: '/api/transcribe-chunk'
+      fullPath: '/api/transcribe-chunk'
+      preLoaderRoute: typeof ApiTranscribeChunkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/visao-rep-2': {
@@ -1982,6 +2002,7 @@ const rootRouteChildren: RootRouteChildren = {
   DefinirSenhaRoute: DefinirSenhaRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
   EventoFalhaRoute: EventoFalhaRoute,
@@ -2010,3 +2031,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
