@@ -274,6 +274,9 @@ export function ChapterCapture({
           <div className="space-y-2">
             <h3 className="font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Relatório final</h3>
             <p className="text-sm text-muted-foreground">Envie o documento já pronto (.md/.txt/.docx). O texto é copiado verbatim para os campos — a IA não reescreve nem interpreta.</p>
+            <p className="text-xs text-muted-foreground">
+              Modelo canônico de visita a loja (<code>field_store_visit_v1</code>): o arquivo é validado e você confirma antes de gravar.
+            </p>
             <input
               ref={finalRef}
               type="file"
@@ -281,12 +284,69 @@ export function ChapterCapture({
               className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleFinal(f); e.target.value = ""; }}
             />
-            <Button variant="outline" onClick={() => finalRef.current?.click()} disabled={uploadingFinal}>
-              {uploadingFinal ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Aplicando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar final</>}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => finalRef.current?.click()} disabled={uploadingFinal}>
+                {uploadingFinal ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Validando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar final</>}
+              </Button>
+              <Button variant="ghost" onClick={exportCanonical}>
+                <FileDown className="h-4 w-4 mr-1" /> Exportar markdown
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o && !confirming) setPreview(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Arquivo validado</DialogTitle>
+            <DialogDescription>
+              Relatório de visita a loja reconhecido no padrão canônico. Nada foi gravado ainda — confira e confirme.
+            </DialogDescription>
+          </DialogHeader>
+          {preview && (
+            <div className="space-y-4 max-h-[55vh] overflow-y-auto">
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {Object.entries(preview.meta).map(([k, v]) => (
+                      <tr key={k} className="border-b last:border-b-0">
+                        <td className="bg-muted/40 px-3 py-1.5 font-medium w-1/3 capitalize">{k.replace(/_/g, " ")}</td>
+                        <td className="px-3 py-1.5">{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                  Capítulos reconhecidos ({preview.preview.length})
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {preview.preview.map((c) => (
+                    <li key={c.ordem} className="flex items-center justify-between gap-3 border rounded-md px-3 py-1.5">
+                      <span className="truncate">
+                        <span className="text-muted-foreground mr-2">{String(c.ordem).padStart(2, "0")}</span>
+                        {c.titulo}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">{c.chars} caracteres</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Arquivo: {preview.file.name}. O conteúdo será copiado exatamente como está, sem resumo ou reescrita.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)} disabled={confirming}>Cancelar</Button>
+            <Button onClick={confirmImport} disabled={confirming}>
+              {confirming ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importando...</> : "Confirmar importação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-semibold text-lg">Captura por capítulos</h2>
