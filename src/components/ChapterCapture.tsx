@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
-import { normalizeAudioToWav } from "@/lib/audio-wav";
+import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
