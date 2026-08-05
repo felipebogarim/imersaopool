@@ -11,8 +11,10 @@ import { LabelHelp } from "@/components/FieldHelp";
 import { IMMERSION_HELP } from "@/lib/field-help-texts";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 
 const searchSchema = z.object({ client: z.string().optional() });
 
@@ -28,10 +30,16 @@ function NewImmersion() {
   const [form, setForm] = useState<Record<string, any>>({ client_id: preClient });
   const [saving, setSaving] = useState(false);
   const [roteiroManual, setRoteiroManual] = useState(false);
+  const [clientOpen, setClientOpen] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
-    queryFn: async () => (await supabase.from("clients").select("id, nome_fantasia").order("nome_fantasia")).data ?? [],
+    queryFn: async () =>
+      (await supabase
+        .from("clients")
+        .select("id, nome_fantasia, razao_social")
+        .order("nome_fantasia")
+        .range(0, 4999)).data ?? [],
   });
   const { data: reps = [] } = useQuery({
     queryKey: ["reps-select"],
@@ -82,10 +90,42 @@ function NewImmersion() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <LabelHelp label="Cliente" required help={IMMERSION_HELP.cliente} withMediaSuffix={false} />
-              <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
-                <SelectContent>{clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome_fantasia}</SelectItem>)}</SelectContent>
-              </Select>
+              <Popover open={clientOpen} onOpenChange={setClientOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {clients.find((c: any) => c.id === form.client_id)?.nome_fantasia ?? "Selecione um cliente"}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) => (value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0)}
+                  >
+                    <CommandInput placeholder="Pesquisar cliente..." />
+                    <CommandList className="max-h-72">
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {clients.map((c: any) => (
+                          <CommandItem
+                            key={c.id}
+                            value={`${c.nome_fantasia ?? ""} ${c.razao_social ?? ""}`}
+                            onSelect={() => {
+                              setForm(f => ({ ...f, client_id: c.id }));
+                              setClientOpen(false);
+                            }}
+                          >
+                            <Check className={form.client_id === c.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
+                            <span className="truncate">{c.nome_fantasia || c.razao_social}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">{clients.length} clientes disponíveis</p>
             </div>
             <div>
               <LabelHelp label="Representante" help={IMMERSION_HELP.representante} withMediaSuffix={false} />
