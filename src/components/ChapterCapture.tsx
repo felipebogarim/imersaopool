@@ -11,7 +11,8 @@ import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.func
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 
-const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_MB = 50;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((res, rej) => {
