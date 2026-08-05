@@ -227,11 +227,15 @@ function TranscricaoPage() {
               </Button>
             </div>
           </div>
-          <Input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Título da transcrição"
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="titulo-transcricao">Nome do arquivo</Label>
+            <Input
+              id="titulo-transcricao"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Título da transcrição"
+            />
+          </div>
           <Textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
