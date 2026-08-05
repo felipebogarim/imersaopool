@@ -153,6 +153,23 @@ function TranscricaoPage() {
     toast.success("Transcrição excluída.");
   }
 
+  async function salvarRenome() {
+    if (!renomear) return;
+    const titulo = renomear.titulo.trim();
+    if (!titulo) return;
+    setRenomeando(true);
+    const { error } = await supabase.from("transcricoes").update({ titulo }).eq("id", renomear.id);
+    setRenomeando(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setLista((l) => l.map((t) => (t.id === renomear.id ? { ...t, titulo } : t)));
+    setRenomear(null);
+    toast.success("Nome atualizado.");
+  }
+
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
       <header className="space-y-1">
