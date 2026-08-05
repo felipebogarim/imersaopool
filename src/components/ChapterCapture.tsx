@@ -590,6 +590,8 @@ function CapituloBlock({
   }, [existing?.id, existing?.leitura_estrategica, existing?.resposta_texto, existing?.sintese]);
 
   const isIaDraft = existing?.origem === "ia" && existing?.status_revisao === "pendente";
+  const isMarkdown = !!(existing?.sintese as any)?.__markdown__;
+  const [editMd, setEditMd] = useState(false);
   const campos: string[] = Array.isArray(capitulo.campos_matriz) ? capitulo.campos_matriz : [];
 
   async function save() {
