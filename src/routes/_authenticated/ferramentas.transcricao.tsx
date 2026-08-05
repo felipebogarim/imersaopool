@@ -19,6 +19,16 @@ import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
 
 type Transcricao = { id: string; titulo: string; texto: string; created_at: string };
 
+import { Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 function baixarTxt(titulo: string, texto: string) {
   const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -80,6 +90,8 @@ function TranscricaoPage() {
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [lista, setLista] = useState<Transcricao[]>([]);
+  const [renomear, setRenomear] = useState<{ id: string; titulo: string } | null>(null);
+  const [renomeando, setRenomeando] = useState(false);
 
   async function carregarLista() {
     const { data, error } = await supabase
@@ -141,6 +153,23 @@ function TranscricaoPage() {
     toast.success("Transcrição excluída.");
   }
 
+  async function salvarRenome() {
+    if (!renomear) return;
+    const titulo = renomear.titulo.trim();
+    if (!titulo) return;
+    setRenomeando(true);
+    const { error } = await supabase.from("transcricoes").update({ titulo }).eq("id", renomear.id);
+    setRenomeando(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setLista((l) => l.map((t) => (t.id === renomear.id ? { ...t, titulo } : t)));
+    setRenomear(null);
+    toast.success("Nome atualizado.");
+  }
+
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
       <header className="space-y-1">
@@ -198,11 +227,15 @@ function TranscricaoPage() {
               </Button>
             </div>
           </div>
-          <Input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Título da transcrição"
-          />
+          <div className="space-y-1.5">
+            <Label htmlFor="titulo-transcricao">Nome do arquivo</Label>
+            <Input
+              id="titulo-transcricao"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Título da transcrição"
+            />
+          </div>
           <Textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -239,6 +272,12 @@ function TranscricaoPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setRenomear({ id: t.id, titulo: t.titulo })}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" /> Renomear
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => baixarTxt(t.titulo, t.texto)}>
                       <Download className="mr-2 h-4 w-4" /> Exportar .txt
                     </DropdownMenuItem>
@@ -259,6 +298,33 @@ function TranscricaoPage() {
           </ul>
         )}
       </section>
+
+      <Dialog open={!!renomear} onOpenChange={(o) => !o && setRenomear(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear transcrição</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renomear?.titulo ?? ""}
+            onChange={(e) =>
+              setRenomear((r) => (r ? { ...r, titulo: e.target.value } : r))
+            }
+            placeholder="Nome do arquivo"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void salvarRenome();
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenomear(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void salvarRenome()} disabled={renomeando}>
+              {renomeando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
