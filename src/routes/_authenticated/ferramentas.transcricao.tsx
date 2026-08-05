@@ -90,6 +90,8 @@ function TranscricaoPage() {
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [lista, setLista] = useState<Transcricao[]>([]);
+  const [renomear, setRenomear] = useState<{ id: string; titulo: string } | null>(null);
+  const [renomeando, setRenomeando] = useState(false);
 
   async function carregarLista() {
     const { data, error } = await supabase
