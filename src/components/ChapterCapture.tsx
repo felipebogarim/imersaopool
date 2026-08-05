@@ -4,16 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VoiceTextarea } from "@/components/VoiceInput";
-import { Check, Sparkles, Upload, Loader2 } from "lucide-react";
+import { MarkdownView } from "@/components/MarkdownView";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Check, Sparkles, Upload, Loader2, FileDown, Pencil, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
+import { serializeFieldStoreVisit } from "@/lib/field-store-visit";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
+const BUCKET = "imersoes-anexos";
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((res, rej) => {
@@ -24,7 +35,22 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; roteiroId: string }) {
+type PreviewState = {
+  file: File;
+  base64: string;
+  meta: Record<string, string>;
+  preview: Array<{ ordem: number; titulo: string; key: string; chars: number }>;
+};
+
+export function ChapterCapture({
+  sessaoId,
+  roteiroId,
+  immersionId,
+}: {
+  sessaoId: string;
+  roteiroId: string;
+  immersionId?: string;
+}) {
   const qc = useQueryClient();
   const generate = useServerFn(generatePerspectivasForSession);
   const distribute = useServerFn(distributeReportToChapters);
@@ -34,6 +60,9 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   const [uploadingBruto, setUploadingBruto] = useState(false);
   const [uploadingFinal, setUploadingFinal] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
 
   const { data: capitulos = [] } = useQuery({
     queryKey: ["capitulos-of", roteiroId],
@@ -88,23 +117,125 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
     }
   }
 
+  function refreshAll() {
+    qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
+    qc.invalidateQueries({ queryKey: ["interview-sumario", sessaoId] });
+    qc.invalidateQueries({ queryKey: ["interview", sessaoId] });
+  }
+
   async function handleFinal(file: File) {
     if (file.size > MAX_BYTES) return toast.error(`Arquivo maior que ${MAX_MB}MB`);
     setUploadingFinal(true);
     try {
       const base64 = await blobToBase64(file);
-      const r = await ingestFinal({ data: { sessaoId, base64, mime: file.type || "application/octet-stream", filename: file.name } });
+      const mime = file.type || "application/octet-stream";
+      // 1ª passagem: validação sem gravar nada.
+      const r: any = await ingestFinal({ data: { sessaoId, base64, mime, filename: file.name, dryRun: true } });
+
+      if (r?.template === "field_store_visit_v1") {
+        setPreview({ file, base64, meta: r.meta ?? {}, preview: r.preview ?? [] });
+        return;
+      }
+
+      // Documento fora do padrão canônico: fluxo antigo (grava direto).
       toast.success(`Relatório final aplicado a ${r.filled} capítulo(s)`);
       if (r.unmatched?.length)
         toast.warning(`${r.unmatched.length} capítulo(s) não reconhecido(s)`, { description: r.unmatched.slice(0, 3).join(" · ") });
-      qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
-      qc.invalidateQueries({ queryKey: ["interview-sumario", sessaoId] });
-      qc.invalidateQueries({ queryKey: ["interview", sessaoId] });
+      refreshAll();
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao processar arquivo");
+      const details: string[] = e?.details ?? [];
+      toast.error(e?.message ?? "Falha ao processar arquivo", {
+        description: details.length > 1 ? details.slice(1, 4).join(" · ") : undefined,
+      });
     } finally {
       setUploadingFinal(false);
     }
+
+  }
+
+  async function confirmImport() {
+    if (!preview) return;
+    setConfirming(true);
+    try {
+      const { file, base64 } = preview;
+      const r: any = await ingestFinal({
+        data: {
+          sessaoId,
+          base64,
+          mime: file.type || "application/octet-stream",
+          filename: file.name,
+        },
+      });
+      // Arquivo-fonte guardado em bucket privado (rastreabilidade).
+      if (immersionId) {
+        try {
+          const { data: u } = await supabase.auth.getUser();
+          const path = `${immersionId}/relatorio-final/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+          const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
+          if (!up.error) {
+            await supabase.from("attachments").insert({
+              entity_type: "immersion",
+              entity_id: immersionId,
+              storage_path: path,
+              file_name: file.name,
+              mime_type: file.type,
+              size_bytes: file.size,
+              uploaded_by: u.user?.id,
+            } as any);
+          }
+        } catch {
+          /* rastreabilidade é secundária: não bloqueia a importação */
+        }
+      }
+      toast.success(`Relatório final aplicado a ${r.filled} capítulo(s)`);
+      if (r.unmatched?.length)
+        toast.warning(`${r.unmatched.length} capítulo(s) sem correspondência no roteiro`, {
+          description: r.unmatched.slice(0, 3).join(" · "),
+        });
+      setPreview(null);
+      refreshAll();
+      qc.invalidateQueries({ queryKey: ["attachments", immersionId] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao importar");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function exportCanonical() {
+    const { data: interview } = await supabase
+      .from("interviews")
+      .select("respostas")
+      .eq("id", sessaoId)
+      .maybeSingle();
+    const fsv = (interview?.respostas as any)?.__field_store_visit__ ?? null;
+    const meta: Record<string, string> = { ...(fsv?.meta ?? {}) };
+    const chapters = capitulos
+      .map((c: any) => {
+        const r = respostas.find((x: any) => x.capitulo_id === c.id);
+        const md = String(r?.leitura_estrategica ?? "").trim();
+        if (!md) return null;
+        return {
+          ordem: Number(c.ordem ?? 0),
+          key: (r?.sintese as any)?.__chapter_key__ ?? "",
+          titulo: (r?.sintese as any)?.__chapter_titulo__ ?? c.titulo,
+          markdown: md,
+        };
+      })
+      .filter(Boolean) as Array<{ ordem: number; key: string; titulo: string; markdown: string }>;
+
+    if (fsv?.sumario_markdown) {
+      chapters.unshift({ ordem: 0, key: "sumario_executivo", titulo: "Sumário executivo", markdown: fsv.sumario_markdown });
+    }
+    if (!chapters.length) return toast.error("Nenhum capítulo preenchido para exportar");
+
+    const md = serializeFieldStoreVisit({ meta, chapters });
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `relatorio-final-${(meta["cliente"] ?? "imersao").toLowerCase().replace(/[^\w]+/g, "-")}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   async function runGenerate() {
@@ -120,6 +251,7 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
       setGenerating(false);
     }
   }
+
 
   return (
     <div className="space-y-4">
@@ -142,6 +274,9 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
           <div className="space-y-2">
             <h3 className="font-medium flex items-center gap-2"><Upload className="h-4 w-4" /> Relatório final</h3>
             <p className="text-sm text-muted-foreground">Envie o documento já pronto (.md/.txt/.docx). O texto é copiado verbatim para os campos — a IA não reescreve nem interpreta.</p>
+            <p className="text-xs text-muted-foreground">
+              Modelo canônico de visita a loja (<code>field_store_visit_v1</code>): o arquivo é validado e você confirma antes de gravar.
+            </p>
             <input
               ref={finalRef}
               type="file"
@@ -149,12 +284,69 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
               className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleFinal(f); e.target.value = ""; }}
             />
-            <Button variant="outline" onClick={() => finalRef.current?.click()} disabled={uploadingFinal}>
-              {uploadingFinal ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Aplicando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar final</>}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => finalRef.current?.click()} disabled={uploadingFinal}>
+                {uploadingFinal ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Validando...</> : <><Upload className="h-4 w-4 mr-1" /> Enviar final</>}
+              </Button>
+              <Button variant="ghost" onClick={exportCanonical}>
+                <FileDown className="h-4 w-4 mr-1" /> Exportar markdown
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={!!preview} onOpenChange={(o) => { if (!o && !confirming) setPreview(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Arquivo validado</DialogTitle>
+            <DialogDescription>
+              Relatório de visita a loja reconhecido no padrão canônico. Nada foi gravado ainda — confira e confirme.
+            </DialogDescription>
+          </DialogHeader>
+          {preview && (
+            <div className="space-y-4 max-h-[55vh] overflow-y-auto">
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {Object.entries(preview.meta).map(([k, v]) => (
+                      <tr key={k} className="border-b last:border-b-0">
+                        <td className="bg-muted/40 px-3 py-1.5 font-medium w-1/3 capitalize">{k.replace(/_/g, " ")}</td>
+                        <td className="px-3 py-1.5">{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                  Capítulos reconhecidos ({preview.preview.length})
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {preview.preview.map((c) => (
+                    <li key={c.ordem} className="flex items-center justify-between gap-3 border rounded-md px-3 py-1.5">
+                      <span className="truncate">
+                        <span className="text-muted-foreground mr-2">{String(c.ordem).padStart(2, "0")}</span>
+                        {c.titulo}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">{c.chars} caracteres</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Arquivo: {preview.file.name}. O conteúdo será copiado exatamente como está, sem resumo ou reescrita.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreview(null)} disabled={confirming}>Cancelar</Button>
+            <Button onClick={confirmImport} disabled={confirming}>
+              {confirming ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importando...</> : "Confirmar importação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-semibold text-lg">Captura por capítulos</h2>
@@ -398,6 +590,8 @@ function CapituloBlock({
   }, [existing?.id, existing?.leitura_estrategica, existing?.resposta_texto, existing?.sintese]);
 
   const isIaDraft = existing?.origem === "ia" && existing?.status_revisao === "pendente";
+  const isMarkdown = !!(existing?.sintese as any)?.__markdown__;
+  const [editMd, setEditMd] = useState(false);
   const campos: string[] = Array.isArray(capitulo.campos_matriz) ? capitulo.campos_matriz : [];
 
   async function save() {
@@ -471,15 +665,31 @@ function CapituloBlock({
       )}
 
       <div className="mb-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leitura estratégica</p>
-        <VoiceTextarea
-          rows={6}
-          value={leitura}
-          onChange={setLeitura}
-          placeholder="Prosa interpretada (2 a 4 parágrafos). A IA preenche automaticamente ao enviar o relatório; você pode editar."
-          assist
-        />
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {isMarkdown ? "Conteúdo do relatório final" : "Leitura estratégica"}
+          </p>
+          {isMarkdown && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditMd((v) => !v)}>
+              {editMd ? <><Eye className="h-3 w-3 mr-1" /> Ver formatado</> : <><Pencil className="h-3 w-3 mr-1" /> Editar texto</>}
+            </Button>
+          )}
+        </div>
+        {isMarkdown && !editMd ? (
+          <div className="rounded-lg border p-4">
+            <MarkdownView markdown={leitura} />
+          </div>
+        ) : (
+          <VoiceTextarea
+            rows={isMarkdown ? 18 : 6}
+            value={leitura}
+            onChange={setLeitura}
+            placeholder="Prosa interpretada (2 a 4 parágrafos). A IA preenche automaticamente ao enviar o relatório; você pode editar."
+            assist
+          />
+        )}
       </div>
+
 
       <details className="mb-3">
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">

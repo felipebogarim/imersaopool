@@ -324,13 +324,32 @@ function parseFinalReport(md: string): {
 
 export const ingestFinalReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { sessaoId: string; base64: string; mime: string; filename: string }) => d)
+  .inputValidator(
+    (d: { sessaoId: string; base64: string; mime: string; filename: string; dryRun?: boolean }) => d,
+  )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const text = await stripBase64ToText(data.base64, data.mime, data.filename);
     if (!text.trim()) throw new Error("Documento vazio");
 
+    // Modelo canônico de visita a loja: parser determinístico, sem IA.
+    // Só é acionado quando os metadados identificam field_store_visit_v1.
+    const { isFieldStoreVisit, parseFieldStoreVisit } = await import("@/lib/field-store-visit");
+    if (isFieldStoreVisit(text)) {
+      const { ingestStoreVisit } = await import("@/lib/field-store-visit.server");
+      return await ingestStoreVisit({
+        supabase,
+        userId: context.userId,
+        sessaoId: data.sessaoId,
+        filename: data.filename,
+        text,
+        dryRun: !!data.dryRun,
+        parse: parseFieldStoreVisit,
+      });
+    }
+
     const { chapters: parsed, observacoes, sumario } = parseFinalReport(text);
+
     if (!parsed.length)
       throw new Error(
         'Nenhum capítulo reconhecido. Use cabeçalhos "## Capítulo N — Título" no documento.',
