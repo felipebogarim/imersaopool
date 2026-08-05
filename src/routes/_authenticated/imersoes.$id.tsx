@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,12 +6,13 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Copy, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, Copy, FileDown, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ImmersionAttachments } from "@/components/ImmersionAttachments";
 import { AgentInputs } from "@/components/AgentInputs";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
+import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -19,13 +21,33 @@ export const Route = createFileRoute("/_authenticated/imersoes/$id")({
 
 function ImmersionDetail() {
   const { id } = Route.useParams();
+  const [exportOpen, setExportOpen] = useState(false);
   const { data: imm } = useQuery({
     queryKey: ["immersion", id],
     queryFn: async () => (await supabase
       .from("immersions")
-      .select("*, client:clients(nome_fantasia, grupo, categoria), representative:representatives(nome)")
+      .select("*, client:clients(nome_fantasia, razao_social, grupo, categoria), representative:representatives(nome)")
       .eq("id", id).single()).data,
   });
+
+  // Fallback da categoria: alguns cadastros não têm categoria no cliente,
+  // mas ela existe nos dados de performance (por razão social).
+  const razaoSocial = (imm as any)?.client?.razao_social as string | undefined;
+  const { data: categoriaFallback } = useQuery({
+    queryKey: ["client-categoria-fallback", razaoSocial],
+    enabled: !!razaoSocial && !(imm as any)?.client?.categoria,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rep_performance_rows")
+        .select("categoria")
+        .eq("razao_social", razaoSocial!)
+        .not("categoria", "is", null)
+        .limit(1)
+        .maybeSingle();
+      return data?.categoria ?? null;
+    },
+  });
+
 
   // Ensure an interview record exists for this immersion (session for chapter capture)
   const roteiroId = (imm as any)?.roteiro_id as string | null | undefined;
