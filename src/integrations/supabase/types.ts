@@ -5011,6 +5011,30 @@ export type Database = {
         }
         Relationships: []
       }
+      transcricoes: {
+        Row: {
+          created_at: string
+          id: string
+          texto: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          texto: string
+          titulo: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          texto?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_nav_permissions: {
         Row: {
           allowed: boolean
