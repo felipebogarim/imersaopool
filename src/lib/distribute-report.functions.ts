@@ -1,10 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { detectAudioContainer } from "@/lib/audio-container";
 
 export const distributeReportToChapters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { sessaoId: string; base64: string; mime: string; filename: string }) => d)
+  .inputValidator((d: { sessaoId: string; base64?: string; text?: string; mime: string; filename: string }) => d)
   .handler(async ({ data, context }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
@@ -26,49 +25,28 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!capitulos?.length) throw new Error("Roteiro sem capítulos");
 
-    // 1. Prepara a entrada (texto/áudio→transcrição / PDF direto / DOCX extraído)
+    // 1. Prepara a entrada (texto já transcrito no navegador / PDF direto / DOCX extraído)
     const mime = data.mime || "";
-    const isAudio = mime.startsWith("audio/") || /\.(mp3|wav|m4a|webm|ogg|aac|flac)$/i.test(data.filename);
-    const isPlain = mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(data.filename);
-    const isPdf = mime === "application/pdf" || /\.pdf$/i.test(data.filename);
-    const isDocx = /\.docx$/i.test(data.filename) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    const isDoc = !isDocx && (/\.doc$/i.test(data.filename) || mime === "application/msword");
+    const preText = (data.text ?? "").trim();
+    const isPlain = !preText && (mime.startsWith("text/") || /\.(txt|md|csv)$/i.test(data.filename));
+    const isPdf = !preText && (mime === "application/pdf" || /\.pdf$/i.test(data.filename));
+    const isDocx = !preText && (/\.docx$/i.test(data.filename) || mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    const isDoc = !preText && !isDocx && (/\.doc$/i.test(data.filename) || mime === "application/msword");
     if (isDoc) {
       throw new Error("Formato .doc (Word 97-2003) não suportado. Salve como .docx ou PDF antes de enviar.");
     }
-    if (!isAudio && !isPlain && !isPdf && !isDocx) {
+    if (!preText && !isPlain && !isPdf && !isDocx) {
       throw new Error("Formato não suportado. Envie PDF, DOCX, TXT/MD/CSV ou áudio.");
     }
 
-    let sourceText = "";
-    if (isAudio) {
-      const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
-      // Detecta o container real pelos bytes (mais confiável que mime/extensão)
-      const sig = detectAudioContainer(bin, mime, data.filename);
-      if (!sig) {
-        throw new Error(
-          "Formato de áudio não suportado (provavelmente OGG/Opus, como áudio de WhatsApp). Converta para MP3, WAV, M4A ou WEBM e envie novamente."
-        );
-      }
-      const blob = new Blob([bin.slice().buffer as ArrayBuffer], { type: sig.mime });
-      const form = new FormData();
-      form.append("file", blob, `audio.${sig.ext}`);
-      form.append("model", "openai/gpt-4o-mini-transcribe");
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}` },
-        body: form,
-      });
-      if (!res.ok) throw new Error(`Falha ao transcrever: ${res.status} ${await res.text().catch(() => "")}`);
-      const j = await res.json();
-      sourceText = String(j.text ?? "").trim();
-      if (!sourceText) throw new Error("Não foi possível transcrever o áudio");
-    } else if (isPlain) {
-      sourceText = atob(data.base64).trim();
+    let sourceText = preText;
+    if (isPlain) {
+      sourceText = atob(data.base64 ?? "").trim();
       if (!sourceText) throw new Error("Arquivo de texto vazio");
     } else if (isDocx) {
       const { unzipSync, strFromU8 } = await import("fflate");
-      const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
+      const bin = Uint8Array.from(atob(data.base64 ?? ""), c => c.charCodeAt(0));
+
       let files: Record<string, Uint8Array>;
       try { files = unzipSync(bin, { filter: (f) => f.name === "word/document.xml" }); }
       catch { throw new Error("DOCX inválido ou corrompido"); }

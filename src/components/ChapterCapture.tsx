@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
-import { normalizeAudioToWav } from "@/lib/audio-wav";
+import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
@@ -59,17 +59,26 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
     setUploadingBruto(true);
     try {
       const isAudio = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|mp4|webm|ogg|oga|opus|aac|flac)$/i.test(file.name);
-      const uploadFile = isAudio ? await normalizeAudioToWav(file) : file;
-      if (uploadFile.size > MAX_BYTES) return toast.error(`O áudio normalizado ficou maior que ${MAX_MB}MB`);
-      const base64 = await blobToBase64(uploadFile);
+      if (isAudio) {
+        const text = await transcribeAudioInBrowser(file, (done, total) => {
+          if (total > 1) toast.info(`Transcrevendo áudio: trecho ${done}/${total}`, { id: "transcribe-progress" });
+        });
+        if (!text) throw new Error("Não foi possível transcrever o áudio");
+        const r = await distribute({ data: { sessaoId, text, mime: "text/plain", filename: `${file.name}.txt` } });
+        toast.success(`IA distribuiu conteúdo em ${r.filled} capítulo(s)`);
+        qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
+        return;
+      }
+      const base64 = await blobToBase64(file);
       const r = await distribute({
         data: {
           sessaoId,
           base64,
-          mime: uploadFile.type || "application/octet-stream",
-          filename: uploadFile.name,
+          mime: file.type || "application/octet-stream",
+          filename: file.name,
         },
       });
+
       toast.success(`IA distribuiu conteúdo em ${r.filled} capítulo(s)`);
       qc.invalidateQueries({ queryKey: ["sessao-capitulos", sessaoId] });
     } catch (e: any) {
