@@ -663,15 +663,31 @@ function CapituloBlock({
       )}
 
       <div className="mb-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leitura estratégica</p>
-        <VoiceTextarea
-          rows={6}
-          value={leitura}
-          onChange={setLeitura}
-          placeholder="Prosa interpretada (2 a 4 parágrafos). A IA preenche automaticamente ao enviar o relatório; você pode editar."
-          assist
-        />
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {isMarkdown ? "Conteúdo do relatório final" : "Leitura estratégica"}
+          </p>
+          {isMarkdown && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditMd((v) => !v)}>
+              {editMd ? <><Eye className="h-3 w-3 mr-1" /> Ver formatado</> : <><Pencil className="h-3 w-3 mr-1" /> Editar texto</>}
+            </Button>
+          )}
+        </div>
+        {isMarkdown && !editMd ? (
+          <div className="rounded-lg border p-4">
+            <MarkdownView markdown={leitura} />
+          </div>
+        ) : (
+          <VoiceTextarea
+            rows={isMarkdown ? 18 : 6}
+            value={leitura}
+            onChange={setLeitura}
+            placeholder="Prosa interpretada (2 a 4 parágrafos). A IA preenche automaticamente ao enviar o relatório; você pode editar."
+            assist
+          />
+        )}
       </div>
+
 
       <details className="mb-3">
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
