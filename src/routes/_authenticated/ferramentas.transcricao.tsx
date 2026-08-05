@@ -78,6 +78,21 @@ function TranscricaoPage() {
   const [nome, setNome] = useState("");
   const [progresso, setProgresso] = useState<{ done: number; total: number } | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [lista, setLista] = useState<Transcricao[]>([]);
+
+  async function carregarLista() {
+    const { data, error } = await supabase
+      .from("transcricoes")
+      .select("id, titulo, texto, created_at")
+      .order("created_at", { ascending: false });
+    if (error) return;
+    setLista((data ?? []) as Transcricao[]);
+  }
+
+  useEffect(() => {
+    void carregarLista();
+  }, []);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -101,14 +116,29 @@ function TranscricaoPage() {
     }
   }
 
-  function baixar() {
-    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${nome.replace(/\.[^.]+$/, "") || "transcricao"}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function salvar() {
+    if (!texto.trim()) return;
+    setSalvando(true);
+    const { error } = await supabase
+      .from("transcricoes")
+      .insert({ titulo: nome.replace(/\.[^.]+$/, "") || "Transcrição", texto });
+    setSalvando(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Transcrição salva.");
+    void carregarLista();
+  }
+
+  async function excluir(id: string) {
+    const { error } = await supabase.from("transcricoes").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setLista((l) => l.filter((t) => t.id !== id));
+    toast.success("Transcrição excluída.");
   }
 
   return (
@@ -146,9 +176,9 @@ function TranscricaoPage() {
 
       {texto && (
         <section className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-medium">Transcrição literal</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -159,11 +189,20 @@ function TranscricaoPage() {
               >
                 <Copy className="mr-2 h-4 w-4" /> Copiar
               </Button>
-              <Button variant="outline" size="sm" onClick={baixar}>
+              <Button variant="outline" size="sm" onClick={() => baixarTxt(nome, texto)}>
                 <Download className="mr-2 h-4 w-4" /> Baixar .txt
+              </Button>
+              <Button size="sm" onClick={() => void salvar()} disabled={salvando}>
+                {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Salvar
               </Button>
             </div>
           </div>
+          <Input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Título da transcrição"
+          />
           <Textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -172,6 +211,54 @@ function TranscricaoPage() {
           />
         </section>
       )}
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium">Transcrições salvas</h2>
+        {lista.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma transcrição salva ainda.</p>
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {lista.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-3 p-3">
+                <button
+                  className="min-w-0 flex-1 text-left"
+                  onClick={() => {
+                    setTexto(t.texto);
+                    setNome(t.titulo);
+                  }}
+                >
+                  <span className="block truncate text-sm font-medium">{t.titulo}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(t.created_at).toLocaleString("pt-BR")}
+                  </span>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => baixarTxt(t.titulo, t.texto)}>
+                      <Download className="mr-2 h-4 w-4" /> Exportar .txt
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => baixarPdf(t.titulo, t.texto)}>
+                      <FileText className="mr-2 h-4 w-4" /> Exportar PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => void excluir(t.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
