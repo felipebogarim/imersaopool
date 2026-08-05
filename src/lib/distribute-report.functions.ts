@@ -50,7 +50,7 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
           "Formato de áudio não suportado (provavelmente OGG/Opus, como áudio de WhatsApp). Converta para MP3, WAV, M4A ou WEBM e envie novamente."
         );
       }
-      const blob = new Blob([bin as unknown as ArrayBufferView], { type: sig.mime });
+      const blob = new Blob([bin.slice().buffer as ArrayBuffer], { type: sig.mime });
       const form = new FormData();
       form.append("file", blob, `audio.${sig.ext}`);
       form.append("model", "openai/gpt-4o-mini-transcribe");
