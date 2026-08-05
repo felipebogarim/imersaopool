@@ -1,0 +1,133 @@
+import { useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Loader2, Upload, Copy, Download, FileAudio } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
+
+export const Route = createFileRoute("/_authenticated/ferramentas/transcricao")({
+  head: () => ({
+    meta: [
+      { title: "Transcrição de Áudio — PoolFlux" },
+      {
+        name: "description",
+        content:
+          "Carregue um arquivo de áudio e obtenha a transcrição literal completa, sem edição ou divisão em capítulos.",
+      },
+      { property: "og:title", content: "Transcrição de Áudio — PoolFlux" },
+      {
+        property: "og:description",
+        content: "Transcrição literal e completa de arquivos de áudio dentro do PoolFlux.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: TranscricaoPage,
+});
+
+function TranscricaoPage() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [texto, setTexto] = useState("");
+  const [nome, setNome] = useState("");
+  const [progresso, setProgresso] = useState<{ done: number; total: number } | null>(null);
+  const [carregando, setCarregando] = useState(false);
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setCarregando(true);
+    setTexto("");
+    setNome(file.name);
+    setProgresso(null);
+    try {
+      const t = await transcribeAudioInBrowser(file, (done, total) => setProgresso({ done, total }));
+      if (!t.trim()) {
+        toast.error("Nada foi transcrito neste áudio.");
+        return;
+      }
+      setTexto(t);
+      toast.success("Transcrição concluída.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao transcrever o áudio.");
+    } finally {
+      setCarregando(false);
+      setProgresso(null);
+    }
+  }
+
+  function baixar() {
+    const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${nome.replace(/\.[^.]+$/, "") || "transcricao"}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold">Transcrição</h1>
+        <p className="text-sm text-muted-foreground">
+          Carregue um arquivo de áudio para gerar a transcrição literal completa — texto puro, sem
+          resumo, interpretação ou divisão em capítulos.
+        </p>
+      </header>
+
+      <div className="rounded-lg border border-dashed p-8 text-center">
+        <FileAudio className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="audio/*,.mp3,.wav,.m4a,.webm,.flac,.aac,.mp4"
+          className="hidden"
+          onChange={(e) => {
+            void onFile(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        <Button onClick={() => inputRef.current?.click()} disabled={carregando}>
+          {carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          {carregando ? "Transcrevendo…" : "Carregar áudio"}
+        </Button>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {progresso
+            ? `Trecho ${progresso.done} de ${progresso.total}…`
+            : nome || "MP3, WAV, M4A, WEBM, FLAC ou AAC"}
+        </p>
+      </div>
+
+      {texto && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-medium">Transcrição literal</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void navigator.clipboard.writeText(texto);
+                  toast.success("Texto copiado.");
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" /> Copiar
+              </Button>
+              <Button variant="outline" size="sm" onClick={baixar}>
+                <Download className="mr-2 h-4 w-4" /> Baixar .txt
+              </Button>
+            </div>
+          </div>
+          <Textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={20}
+            className="font-mono text-sm"
+          />
+        </section>
+      )}
+    </div>
+  );
+}

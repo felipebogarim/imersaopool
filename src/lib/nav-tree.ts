@@ -96,6 +96,7 @@ export const NAV_TREE: NavGroup[] = [
         to: "/ferramentas/quadro-valores",
         masterOnly: true,
       },
+      { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
 
