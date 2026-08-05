@@ -272,6 +272,12 @@ function TranscricaoPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => setRenomear({ id: t.id, titulo: t.titulo })}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" /> Renomear
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => baixarTxt(t.titulo, t.texto)}>
                       <Download className="mr-2 h-4 w-4" /> Exportar .txt
                     </DropdownMenuItem>
