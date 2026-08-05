@@ -41,13 +41,12 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
 
     let sourceText = preText;
     if (isPlain) {
-
-    } else if (isPlain) {
-      sourceText = atob(data.base64).trim();
+      sourceText = atob(data.base64 ?? "").trim();
       if (!sourceText) throw new Error("Arquivo de texto vazio");
     } else if (isDocx) {
       const { unzipSync, strFromU8 } = await import("fflate");
-      const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
+      const bin = Uint8Array.from(atob(data.base64 ?? ""), c => c.charCodeAt(0));
+
       let files: Record<string, Uint8Array>;
       try { files = unzipSync(bin, { filter: (f) => f.name === "word/document.xml" }); }
       catch { throw new Error("DOCX inválido ou corrompido"); }
