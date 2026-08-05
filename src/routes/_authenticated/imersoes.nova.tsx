@@ -87,10 +87,42 @@ function NewImmersion() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <LabelHelp label="Cliente" required help={IMMERSION_HELP.cliente} withMediaSuffix={false} />
-              <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
-                <SelectContent>{clients.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.nome_fantasia}</SelectItem>)}</SelectContent>
-              </Select>
+              <Popover open={clientOpen} onOpenChange={setClientOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    <span className="truncate">
+                      {clients.find((c: any) => c.id === form.client_id)?.nome_fantasia ?? "Selecione um cliente"}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) => (value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0)}
+                  >
+                    <CommandInput placeholder="Pesquisar cliente..." />
+                    <CommandList className="max-h-72">
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {clients.map((c: any) => (
+                          <CommandItem
+                            key={c.id}
+                            value={`${c.nome_fantasia ?? ""} ${c.razao_social ?? ""}`}
+                            onSelect={() => {
+                              setForm(f => ({ ...f, client_id: c.id }));
+                              setClientOpen(false);
+                            }}
+                          >
+                            <Check className={form.client_id === c.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
+                            <span className="truncate">{c.nome_fantasia || c.razao_social}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">{clients.length} clientes disponíveis</p>
             </div>
             <div>
               <LabelHelp label="Representante" help={IMMERSION_HELP.representante} withMediaSuffix={false} />
