@@ -36,9 +36,7 @@ function useRecorder(onText: (t: string) => void) {
         if (blob.size < 1024) { setState("idle"); return toast.error("Áudio muito curto"); }
         setState("loading");
         try {
-          const wav = await normalizeAudioToWav(blob);
-          const base64 = await blobToBase64(wav);
-          const { text } = await transcribe({ data: { base64, mime: wav.type, filename: wav.name } });
+          const text = await transcribeAudioInBrowser(blob);
           if (text.trim()) onText(text.trim());
           else toast.error("Nada foi transcrito");
         } catch (e: any) {
@@ -46,6 +44,7 @@ function useRecorder(onText: (t: string) => void) {
         } finally {
           setState("idle");
         }
+
       };
       rec.start();
       recRef.current = rec;
