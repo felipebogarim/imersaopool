@@ -145,8 +145,25 @@ function ImmersionDetail() {
             ) : !sessao ? (
               <div className="surface rounded-xl p-6 text-sm text-muted-foreground">Preparando sessão…</div>
             ) : (
-              <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} />
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setExportOpen(true)}>
+                    <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
+                  </Button>
+                </div>
+                <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} />
+                <ExportInterviewPdfDialog
+                  open={exportOpen}
+                  onOpenChange={setExportOpen}
+                  interviewId={sessao.id}
+                  defaults={{
+                    entrevistado: imm.client?.nome_fantasia ?? "",
+                    modelo: imm.titulo ?? "",
+                  }}
+                />
+              </div>
             )}
+
           </TabsContent>
 
           <TabsContent value="antes" className="mt-4 surface rounded-xl p-6">
