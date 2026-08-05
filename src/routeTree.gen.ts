@@ -26,6 +26,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as ApiTranscribeChunkRouteImport } from './routes/api/transcribe-chunk'
 import { Route as AuthenticatedVisaoRep2RouteImport } from './routes/_authenticated/visao-rep-2'
 import { Route as AuthenticatedVisaoRepRouteImport } from './routes/_authenticated/visao-rep'
+import { Route as AuthenticatedVisaoImersaoRouteImport } from './routes/_authenticated/visao-imersao'
 import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
@@ -185,6 +186,12 @@ const AuthenticatedVisaoRepRoute = AuthenticatedVisaoRepRouteImport.update({
   path: '/visao-rep',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVisaoImersaoRoute =
+  AuthenticatedVisaoImersaoRouteImport.update({
+    id: '/visao-imersao',
+    path: '/visao-imersao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTermosDeUsoRoute =
   AuthenticatedTermosDeUsoRouteImport.update({
     id: '/termos-de-uso',
@@ -624,6 +631,7 @@ export interface FileRoutesByFullPath {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
@@ -715,6 +723,7 @@ export interface FileRoutesByTo {
   '/projecao': typeof AuthenticatedProjecaoRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
@@ -809,6 +818,7 @@ export interface FileRoutesById {
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
+  '/_authenticated/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
   '/_authenticated/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/_authenticated/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
@@ -903,6 +913,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/termos-de-uso'
+    | '/visao-imersao'
     | '/visao-rep'
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
@@ -994,6 +1005,7 @@ export interface FileRouteTypes {
     | '/projecao'
     | '/roteiros'
     | '/termos-de-uso'
+    | '/visao-imersao'
     | '/visao-rep'
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
@@ -1087,6 +1099,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projecao'
     | '/_authenticated/roteiros'
     | '/_authenticated/termos-de-uso'
+    | '/_authenticated/visao-imersao'
     | '/_authenticated/visao-rep'
     | '/_authenticated/visao-rep-2'
     | '/api/transcribe-chunk'
@@ -1311,6 +1324,13 @@ declare module '@tanstack/react-router' {
       path: '/visao-rep'
       fullPath: '/visao-rep'
       preLoaderRoute: typeof AuthenticatedVisaoRepRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/visao-imersao': {
+      id: '/_authenticated/visao-imersao'
+      path: '/visao-imersao'
+      fullPath: '/visao-imersao'
+      preLoaderRoute: typeof AuthenticatedVisaoImersaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/termos-de-uso': {
@@ -1933,6 +1953,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedTermosDeUsoRoute: typeof AuthenticatedTermosDeUsoRoute
+  AuthenticatedVisaoImersaoRoute: typeof AuthenticatedVisaoImersaoRoute
   AuthenticatedVisaoRepRoute: typeof AuthenticatedVisaoRepRoute
   AuthenticatedVisaoRep2Route: typeof AuthenticatedVisaoRep2Route
   AuthenticatedClientesBiBatchRepIdRoute: typeof AuthenticatedClientesBiBatchRepIdRoute
@@ -1979,6 +2000,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedTermosDeUsoRoute: AuthenticatedTermosDeUsoRoute,
+  AuthenticatedVisaoImersaoRoute: AuthenticatedVisaoImersaoRoute,
   AuthenticatedVisaoRepRoute: AuthenticatedVisaoRepRoute,
   AuthenticatedVisaoRep2Route: AuthenticatedVisaoRep2Route,
   AuthenticatedClientesBiBatchRepIdRoute:
