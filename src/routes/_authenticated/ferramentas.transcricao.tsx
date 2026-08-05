@@ -19,6 +19,16 @@ import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
 
 type Transcricao = { id: string; titulo: string; texto: string; created_at: string };
 
+import { Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 function baixarTxt(titulo: string, texto: string) {
   const blob = new Blob([texto], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
