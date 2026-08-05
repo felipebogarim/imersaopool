@@ -151,7 +151,7 @@ function ImmersionDetail() {
                     <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
                   </Button>
                 </div>
-                <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} />
+                <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} immersionId={id} />
                 <ExportInterviewPdfDialog
                   open={exportOpen}
                   onOpenChange={setExportOpen}
