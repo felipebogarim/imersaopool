@@ -17,7 +17,7 @@ type Common = {
 };
 
 function useRecorder(onText: (t: string) => void) {
-  const transcribe = useServerFn(transcribeAudio);
+
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [state, setState] = useState<"idle" | "rec" | "loading">("idle");
