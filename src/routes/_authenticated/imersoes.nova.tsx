@@ -33,13 +33,23 @@ function NewImmersion() {
   const [clientOpen, setClientOpen] = useState(false);
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-select"],
-    queryFn: async () =>
-      (await supabase
-        .from("clients")
-        .select("id, nome_fantasia, razao_social")
-        .order("nome_fantasia")
-        .range(0, 4999)).data ?? [],
+    queryKey: ["clients-select-all"],
+    queryFn: async () => {
+      // a API limita 1000 linhas por requisição — busca em páginas até trazer todos
+      const page = 1000;
+      const all: any[] = [];
+      for (let from = 0; from < 20000; from += page) {
+        const { data, error } = await supabase
+          .from("clients")
+          .select("id, nome_fantasia, razao_social")
+          .order("nome_fantasia")
+          .range(from, from + page - 1);
+        if (error) throw error;
+        all.push(...(data ?? []));
+        if (!data || data.length < page) break;
+      }
+      return all;
+    },
   });
   const { data: reps = [] } = useQuery({
     queryKey: ["reps-select"],
