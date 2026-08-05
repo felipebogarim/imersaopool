@@ -4,16 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VoiceTextarea } from "@/components/VoiceInput";
-import { Check, Sparkles, Upload, Loader2 } from "lucide-react";
+import { MarkdownView } from "@/components/MarkdownView";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Check, Sparkles, Upload, Loader2, FileDown, Pencil, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.functions";
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
+import { serializeFieldStoreVisit } from "@/lib/field-store-visit";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
+const BUCKET = "imersoes-anexos";
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((res, rej) => {
@@ -24,7 +35,22 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; roteiroId: string }) {
+type PreviewState = {
+  file: File;
+  base64: string;
+  meta: Record<string, string>;
+  preview: Array<{ ordem: number; titulo: string; key: string; chars: number }>;
+};
+
+export function ChapterCapture({
+  sessaoId,
+  roteiroId,
+  immersionId,
+}: {
+  sessaoId: string;
+  roteiroId: string;
+  immersionId?: string;
+}) {
   const qc = useQueryClient();
   const generate = useServerFn(generatePerspectivasForSession);
   const distribute = useServerFn(distributeReportToChapters);
@@ -34,6 +60,9 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   const [uploadingBruto, setUploadingBruto] = useState(false);
   const [uploadingFinal, setUploadingFinal] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
 
   const { data: capitulos = [] } = useQuery({
     queryKey: ["capitulos-of", roteiroId],
