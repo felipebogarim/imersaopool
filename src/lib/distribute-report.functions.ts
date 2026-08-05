@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { detectAudioContainer } from "@/lib/audio-container";
 
 export const distributeReportToChapters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -42,9 +43,16 @@ export const distributeReportToChapters = createServerFn({ method: "POST" })
     let sourceText = "";
     if (isAudio) {
       const bin = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
-      const blob = new Blob([bin], { type: mime || "audio/webm" });
+      // Detecta o container real pelos bytes (mais confiável que mime/extensão)
+      const sig = detectAudioContainer(bin, mime, data.filename);
+      if (!sig) {
+        throw new Error(
+          "Formato de áudio não suportado (provavelmente OGG/Opus, como áudio de WhatsApp). Converta para MP3, WAV, M4A ou WEBM e envie novamente."
+        );
+      }
+      const blob = new Blob([bin.slice().buffer as ArrayBuffer], { type: sig.mime });
       const form = new FormData();
-      form.append("file", blob, data.filename);
+      form.append("file", blob, `audio.${sig.ext}`);
       form.append("model", "openai/gpt-4o-mini-transcribe");
       const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
         method: "POST",
