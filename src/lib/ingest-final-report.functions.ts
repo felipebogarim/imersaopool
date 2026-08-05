@@ -336,6 +336,7 @@ export const ingestFinalReport = createServerFn({ method: "POST" })
     // Só é acionado quando os metadados identificam field_store_visit_v1.
     const { isFieldStoreVisit, parseFieldStoreVisit } = await import("@/lib/field-store-visit");
     if (isFieldStoreVisit(text)) {
+      const { ingestStoreVisit } = await import("@/lib/field-store-visit.server");
       return await ingestStoreVisit({
         supabase,
         userId: context.userId,
