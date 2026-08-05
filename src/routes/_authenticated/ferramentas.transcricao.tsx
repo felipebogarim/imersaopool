@@ -298,6 +298,33 @@ function TranscricaoPage() {
           </ul>
         )}
       </section>
+
+      <Dialog open={!!renomear} onOpenChange={(o) => !o && setRenomear(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear transcrição</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renomear?.titulo ?? ""}
+            onChange={(e) =>
+              setRenomear((r) => (r ? { ...r, titulo: e.target.value } : r))
+            }
+            placeholder="Nome do arquivo"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void salvarRenome();
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenomear(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void salvarRenome()} disabled={renomeando}>
+              {renomeando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
