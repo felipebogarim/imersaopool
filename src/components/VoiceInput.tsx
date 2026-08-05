@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { transcribeAudio } from "@/lib/transcribe.functions";
 import { extractFromMedia } from "@/lib/extract-media.functions";
+import { normalizeAudioToWav } from "@/lib/audio-wav";
 
 type Common = {
   value: string;
@@ -35,9 +36,9 @@ function useRecorder(onText: (t: string) => void) {
         if (blob.size < 1024) { setState("idle"); return toast.error("Áudio muito curto"); }
         setState("loading");
         try {
-          const base64 = await blobToBase64(blob);
-          const ext = type.includes("mp4") ? "mp4" : type.includes("mpeg") ? "mp3" : "webm";
-          const { text } = await transcribe({ data: { base64, mime: type.split(";")[0], filename: `audio.${ext}` } });
+          const wav = await normalizeAudioToWav(blob);
+          const base64 = await blobToBase64(wav);
+          const { text } = await transcribe({ data: { base64, mime: wav.type, filename: wav.name } });
           if (text.trim()) onText(text.trim());
           else toast.error("Nada foi transcrito");
         } catch (e: any) {
