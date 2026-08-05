@@ -153,6 +153,91 @@ export function ChapterCapture({
 
   }
 
+  async function confirmImport() {
+    if (!preview) return;
+    setConfirming(true);
+    try {
+      const { file, base64 } = preview;
+      const r: any = await ingestFinal({
+        data: {
+          sessaoId,
+          base64,
+          mime: file.type || "application/octet-stream",
+          filename: file.name,
+        },
+      });
+      // Arquivo-fonte guardado em bucket privado (rastreabilidade).
+      if (immersionId) {
+        try {
+          const { data: u } = await supabase.auth.getUser();
+          const path = `${immersionId}/relatorio-final/${Date.now()}-${file.name.replace(/[^\w.\-]/g, "_")}`;
+          const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
+          if (!up.error) {
+            await supabase.from("attachments").insert({
+              entity_type: "immersion",
+              entity_id: immersionId,
+              storage_path: path,
+              file_name: file.name,
+              mime_type: file.type,
+              size_bytes: file.size,
+              uploaded_by: u.user?.id,
+            } as any);
+          }
+        } catch {
+          /* rastreabilidade é secundária: não bloqueia a importação */
+        }
+      }
+      toast.success(`Relatório final aplicado a ${r.filled} capítulo(s)`);
+      if (r.unmatched?.length)
+        toast.warning(`${r.unmatched.length} capítulo(s) sem correspondência no roteiro`, {
+          description: r.unmatched.slice(0, 3).join(" · "),
+        });
+      setPreview(null);
+      refreshAll();
+      qc.invalidateQueries({ queryKey: ["attachments", immersionId] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao importar");
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function exportCanonical() {
+    const { data: interview } = await supabase
+      .from("interviews")
+      .select("respostas")
+      .eq("id", sessaoId)
+      .maybeSingle();
+    const fsv = (interview?.respostas as any)?.__field_store_visit__ ?? null;
+    const meta: Record<string, string> = { ...(fsv?.meta ?? {}) };
+    const chapters = capitulos
+      .map((c: any) => {
+        const r = respostas.find((x: any) => x.capitulo_id === c.id);
+        const md = String(r?.leitura_estrategica ?? "").trim();
+        if (!md) return null;
+        return {
+          ordem: Number(c.ordem ?? 0),
+          key: (r?.sintese as any)?.__chapter_key__ ?? "",
+          titulo: (r?.sintese as any)?.__chapter_titulo__ ?? c.titulo,
+          markdown: md,
+        };
+      })
+      .filter(Boolean) as Array<{ ordem: number; key: string; titulo: string; markdown: string }>;
+
+    if (fsv?.sumario_markdown) {
+      chapters.unshift({ ordem: 0, key: "sumario_executivo", titulo: "Sumário executivo", markdown: fsv.sumario_markdown });
+    }
+    if (!chapters.length) return toast.error("Nenhum capítulo preenchido para exportar");
+
+    const md = serializeFieldStoreVisit({ meta, chapters });
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `relatorio-final-${(meta["cliente"] ?? "imersao").toLowerCase().replace(/[^\w]+/g, "-")}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
   async function runGenerate() {
     setGenerating(true);
     try {
@@ -166,6 +251,7 @@ export function ChapterCapture({
       setGenerating(false);
     }
   }
+
 
   return (
     <div className="space-y-4">
