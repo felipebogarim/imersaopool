@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { detectAudioContainer } from "@/lib/audio-container";
 
 export const distributeReportToChapters = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
