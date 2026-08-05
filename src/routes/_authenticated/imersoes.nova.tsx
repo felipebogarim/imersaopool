@@ -30,6 +30,7 @@ function NewImmersion() {
   const [form, setForm] = useState<Record<string, any>>({ client_id: preClient });
   const [saving, setSaving] = useState(false);
   const [roteiroManual, setRoteiroManual] = useState(false);
+  const [clientOpen, setClientOpen] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select"],
