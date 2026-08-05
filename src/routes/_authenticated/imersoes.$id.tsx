@@ -103,7 +103,11 @@ function ImmersionDetail() {
       <div className="p-4 sm:p-8 space-y-6">
         <div className="grid md:grid-cols-4 gap-3">
           <Card label="Cliente" value={imm.client?.nome_fantasia} />
-          <Card label="Grupo / Categoria" value={[imm.client?.grupo, imm.client?.categoria].filter(Boolean).join(" / ") || "—"} />
+          <Card
+            label="Grupo / Categoria"
+            value={[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
+          />
+
           <Card label="Representante" value={imm.representative?.nome || "—"} />
           <Card label="Status" value={<Badge>{imm.status.replace(/_/g, " ")}</Badge>} />
         </div>
