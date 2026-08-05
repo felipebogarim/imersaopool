@@ -11,7 +11,8 @@ import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.func
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 
-const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_MB = 50;
+const MAX_BYTES = MAX_MB * 1024 * 1024;
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((res, rej) => {
@@ -53,7 +54,7 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   });
 
   async function handleBruto(file: File) {
-    if (file.size > MAX_BYTES) return toast.error("Arquivo maior que 20MB");
+    if (file.size > MAX_BYTES) return toast.error(`Arquivo maior que ${MAX_MB}MB`);
     setUploadingBruto(true);
     try {
       const base64 = await blobToBase64(file);
@@ -68,7 +69,7 @@ export function ChapterCapture({ sessaoId, roteiroId }: { sessaoId: string; rote
   }
 
   async function handleFinal(file: File) {
-    if (file.size > MAX_BYTES) return toast.error("Arquivo maior que 20MB");
+    if (file.size > MAX_BYTES) return toast.error(`Arquivo maior que ${MAX_MB}MB`);
     setUploadingFinal(true);
     try {
       const base64 = await blobToBase64(file);
