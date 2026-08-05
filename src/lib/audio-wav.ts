@@ -57,3 +57,37 @@ export async function normalizeAudioToWav(input: Blob): Promise<File> {
     await context.close().catch(() => undefined);
   }
 }
+
+/**
+ * Decodifica no navegador e devolve trechos WAV PCM (padrão: 3 minutos cada),
+ * evitando enviar arquivos grandes de uma vez ao servidor.
+ */
+export async function normalizeAudioToWavChunks(input: Blob, chunkSeconds = 180): Promise<Blob[]> {
+  const AudioContextClass = window.AudioContext;
+  const context = new AudioContextClass();
+
+  try {
+    const decoded = await context.decodeAudioData(await input.arrayBuffer());
+    if (!decoded.length || !decoded.duration) throw new Error("empty-audio");
+
+    const frameCount = Math.max(1, Math.ceil(decoded.duration * TARGET_SAMPLE_RATE));
+    const offline = new OfflineAudioContext(1, frameCount, TARGET_SAMPLE_RATE);
+    const source = offline.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offline.destination);
+    source.start();
+    const rendered = await offline.startRendering();
+    const samples = rendered.getChannelData(0);
+
+    const chunkSize = Math.max(1, Math.floor(chunkSeconds * TARGET_SAMPLE_RATE));
+    const chunks: Blob[] = [];
+    for (let start = 0; start < samples.length; start += chunkSize) {
+      chunks.push(encodePcm16Wav(samples.slice(start, start + chunkSize), TARGET_SAMPLE_RATE));
+    }
+    return chunks.length ? chunks : [encodePcm16Wav(samples, TARGET_SAMPLE_RATE)];
+  } catch {
+    throw new Error("Este áudio não pôde ser decodificado. Converta-o para MP3 ou WAV e tente novamente.");
+  } finally {
+    await context.close().catch(() => undefined);
+  }
+}
