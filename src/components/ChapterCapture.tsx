@@ -224,7 +224,8 @@ export function ChapterCapture({
       })
       .filter(Boolean) as Array<{ ordem: number; key: string; titulo: string; markdown: string }>;
 
-    if (fsv?.sumario_markdown) {
+    // No version 1.1, the executive summary is part of Chapter 1, not a separate ordem 0
+    if (fsv?.sumario_markdown && fsv?.schema_version !== "1.1") {
       chapters.unshift({ ordem: 0, key: "sumario_executivo", titulo: "Sumário executivo", markdown: fsv.sumario_markdown });
     }
     if (!chapters.length) return toast.error("Nenhum capítulo preenchido para exportar");
