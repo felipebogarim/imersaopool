@@ -26,12 +26,22 @@ function EntrevistasIndex() {
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["interviews"],
-    queryFn: async () =>
-      (await supabase
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("interviews")
         .select("id, entrevistado_nome, entrevistado_classificacao, empresa_nome, cidade, estado, data_entrevista, created_at")
         .is("immersion_id", null)
-        .order("created_at", { ascending: false })).data ?? [],
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      // Filtro extra de segurança para garantir que títulos que comecem com "Imersão"
+      // ou que tenham perfil 'imersao' não apareçam aqui, caso o immersion_id esteja nulo por erro
+      return (data ?? []).filter((e: any) => 
+        !e.entrevistado_nome?.toLowerCase().startsWith("imersão") && 
+        e.entrevistado_classificacao !== "imersao"
+      );
+    },
   });
 
   function shareText(e: any) {
