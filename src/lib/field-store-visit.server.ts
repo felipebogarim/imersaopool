@@ -22,8 +22,11 @@ export async function ingestStoreVisit(args: {
 }) {
   const { supabase, sessaoId, filename, text, dryRun, parse, userId } = args;
 
-  const { doc, errors } = parse(text);
+  const { doc, errors, detected_version } = parse(text);
   if (!doc) {
+    if (detected_version === "1.1" && text.toLowerCase().includes("capítulo 0")) {
+      errors.push("O arquivo utiliza Capítulo 0, mas informa schema_version 1.1. Revise a estrutura.");
+    }
     const err: any = new Error(errors[0] ?? "Documento fora do padrão esperado.");
     err.details = errors;
     throw err;
@@ -54,8 +57,8 @@ export async function ingestStoreVisit(args: {
     byCodigo.set(norm(c.codigo), c);
   }
 
-  const sumarioCap = doc.chapters.find((c) => c.ordem === 0) ?? null;
-  const conteudo = doc.chapters.filter((c) => c.ordem !== 0);
+  const sumarioCap = null; // No new schema v1.1, sumario_executivo is merged into Cap 1
+  const conteudo = doc.chapters;
 
   const preview = doc.chapters.map((c) => ({
     ordem: c.ordem,
@@ -124,7 +127,7 @@ export async function ingestStoreVisit(args: {
   const nextRespostas: Record<string, any> = {
     ...prevRespostas,
     __field_store_visit__: {
-      schema_version: doc.meta["schema_version"] ?? "1.0",
+      schema_version: doc.meta["schema_version"] ?? "1.1",
       report_template: "field_store_visit_v1",
       tipo_relatorio: "visita_loja",
       meta: doc.meta,
