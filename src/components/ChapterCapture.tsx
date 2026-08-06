@@ -217,6 +217,7 @@ export function ChapterCapture({
         if (!md) return null;
         return {
           ordem: Number(c.ordem ?? 0),
+          codigo: c.codigo || `C${c.ordem}`,
           key: (r?.sintese as any)?.__chapter_key__ ?? "",
           titulo: (r?.sintese as any)?.__chapter_titulo__ ?? c.titulo,
           markdown: md,
