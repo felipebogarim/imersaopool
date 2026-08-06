@@ -13,6 +13,7 @@ import { AgentInputs } from "@/components/AgentInputs";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
+import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -95,24 +96,59 @@ function ImmersionDetail() {
 
   return (
     <div>
+      <ExportInterviewPdfDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        interviewId={sessao?.id || ""}
+        defaults={{
+          entrevistado: imm.client?.nome_fantasia ?? "",
+          modelo: imm.titulo ?? "",
+        }}
+      />
       <PageHeader
         title={imm.titulo}
         subtitle={imm.client?.nome_fantasia}
-        actions={<div className="flex gap-2"><SessionNotes entityType="immersion" entityId={id} /><Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button></div>}
+        actions={
+          <div className="flex gap-2">
+            <SessionNotes entityType="immersion" entityId={id} />
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link>
+            </Button>
+          </div>
+        }
       />
-      <div className="p-4 sm:p-8 space-y-6">
-        <div className="grid md:grid-cols-5 gap-3">
-          <Card label="Perfil / Tipo" value={`${(imm.observacoes as any)?.perfil || '—'} / ${(imm.observacoes as any)?.tipo || '—'}`} />
-          <Card label="Cliente" value={imm.client?.nome_fantasia || (imm.observacoes as any)?.empresa_manual || "—"} />
-          <Card
-            label="Grupo / Categoria"
-            value={[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
-          />
-          <Card label="Representante" value={imm.representative?.nome || "—"} />
-          <Card label="Status" value={<Badge>{imm.status.replace(/_/g, " ")}</Badge>} />
-        </div>
+      <div className="p-4 sm:p-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+        <div className="space-y-6 min-w-0">
+          <section className="surface rounded-xl p-6">
+            <h2 className="font-semibold mb-3">Ficha</h2>
+            <div className="grid md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground">Perfil / Tipo:</span>{" "}
+                {(imm.observacoes as any)?.perfil || '—'} / {(imm.observacoes as any)?.tipo || '—'}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Cliente:</span>{" "}
+                {imm.client?.nome_fantasia || (imm.observacoes as any)?.empresa_manual || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Grupo / Categoria:</span>{" "}
+                {[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Representante:</span>{" "}
+                {imm.representative?.nome || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <Badge variant="outline">{imm.status.replace(/_/g, " ")}</Badge>
+              </div>
+            </div>
+          </section>
 
-        <Tabs defaultValue={roteiroId ? "roteiro" : "visao"}>
+          <Tabs defaultValue={roteiroId ? "roteiro" : "visao"}>
           <TabsList className="flex w-full max-w-5xl flex-wrap h-auto gap-1">
             <TabsTrigger value="visao">Visão geral</TabsTrigger>
             <TabsTrigger value="roteiro">Roteiro</TabsTrigger>
@@ -146,21 +182,7 @@ function ImmersionDetail() {
               <div className="surface rounded-xl p-6 text-sm text-muted-foreground">Preparando sessão…</div>
             ) : (
               <div className="space-y-4">
-                <div className="flex justify-end">
-                  <Button variant="outline" onClick={() => setExportOpen(true)}>
-                    <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
-                  </Button>
-                </div>
                 <ChapterCapture sessaoId={sessao.id} roteiroId={roteiroId} immersionId={id} />
-                <ExportInterviewPdfDialog
-                  open={exportOpen}
-                  onOpenChange={setExportOpen}
-                  interviewId={sessao.id}
-                  defaults={{
-                    entrevistado: imm.client?.nome_fantasia ?? "",
-                    modelo: imm.titulo ?? "",
-                  }}
-                />
               </div>
             )}
 
@@ -212,16 +234,12 @@ function ImmersionDetail() {
             <p className="text-sm text-muted-foreground">Ações, responsáveis, prioridades e prazos. Em breve.</p>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
-  );
-}
+        </div>
 
-function Card({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="surface rounded-xl p-4">
-      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className="text-sm font-medium truncate">{value}</div>
+        <aside className="lg:sticky lg:top-6 space-y-6">
+          <InterviewFinalPdf interviewId={sessao?.id || ""} />
+        </aside>
+      </div>
     </div>
   );
 }
