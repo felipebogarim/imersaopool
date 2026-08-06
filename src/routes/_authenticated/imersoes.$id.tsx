@@ -101,13 +101,13 @@ function ImmersionDetail() {
         actions={<div className="flex gap-2"><SessionNotes entityType="immersion" entityId={id} /><Button variant="ghost" asChild><Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link></Button></div>}
       />
       <div className="p-4 sm:p-8 space-y-6">
-        <div className="grid md:grid-cols-4 gap-3">
-          <Card label="Cliente" value={imm.client?.nome_fantasia} />
+        <div className="grid md:grid-cols-5 gap-3">
+          <Card label="Perfil / Tipo" value={`${(imm.observacoes as any)?.perfil || '—'} / ${(imm.observacoes as any)?.tipo || '—'}`} />
+          <Card label="Cliente" value={imm.client?.nome_fantasia || (imm.observacoes as any)?.empresa_manual || "—"} />
           <Card
             label="Grupo / Categoria"
             value={[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
           />
-
           <Card label="Representante" value={imm.representative?.nome || "—"} />
           <Card label="Status" value={<Badge>{imm.status.replace(/_/g, " ")}</Badge>} />
         </div>
