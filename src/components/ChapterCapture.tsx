@@ -20,7 +20,7 @@ import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.func
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
-import { serializeFieldStoreVisit } from "@/lib/field-store-visit";
+import { serializeFieldStoreVisit, type FieldImmersionChapter } from "@/lib/field-store-visit";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
