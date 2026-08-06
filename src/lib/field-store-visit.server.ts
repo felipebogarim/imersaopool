@@ -57,8 +57,8 @@ export async function ingestStoreVisit(args: {
     byCodigo.set(norm(c.codigo), c);
   }
 
-  const sumarioCap = null; // No new schema v1.1, sumario_executivo is merged into Cap 1
-  const conteudo = doc.chapters;
+  const sumarioCap = doc.chapters.find((c) => c.ordem === 0) ?? null;
+  
 
   const preview = doc.chapters.map((c) => ({
     ordem: c.ordem,
@@ -82,7 +82,8 @@ export async function ingestStoreVisit(args: {
   let filled = 0;
   const unmatched: string[] = [];
 
-  for (const p of conteudo) {
+  for (const p of doc.chapters) {
+    if (p.ordem === 0) continue;
     let cap = byOrdem.get(p.ordem) ?? null;
     if (!cap) cap = byTitulo.get(norm(p.titulo)) ?? byCodigo.get(norm(p.key)) ?? null;
     if (!cap) {
