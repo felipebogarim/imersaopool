@@ -225,8 +225,8 @@ function parseFinalReport(md: string): {
       continue;
     }
 
-    // Só reconhece cabeçalho de capítulo se começar com "Capítulo N" ou "N." / "N —".
-    const chapterHeaderRe = /^\s*#{1,3}\s*(?:cap[ií]tulo\s+(\d+)|(\d+))\s*[—\-–.:)]?\s*(.+?)\s*$/i;
+    // Só reconhece cabeçalho de capítulo se for nível 2 (##) e começar com "Capítulo N" ou "N." / "N —".
+    const chapterHeaderRe = /^\s*##\s*(?:cap[ií]tulo\s+(\d+)|(\d+))\s*[—\-–.:)]?\s*(.+?)\s*$/i;
     const h = line.match(/^\s*#{1,3}\s+/);
     if (h) {
       const m = line.match(chapterHeaderRe);
