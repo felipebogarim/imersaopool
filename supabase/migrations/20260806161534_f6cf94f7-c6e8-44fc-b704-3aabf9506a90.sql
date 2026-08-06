@@ -1,0 +1,1 @@
+update public.profiles set company_id = 'c86498e0-be56-4ed4-a362-6cdfbf72eff7', active_company_id = coalesce(active_company_id, 'c86498e0-be56-4ed4-a362-6cdfbf72eff7') where id = 'c6574eec-d471-42ab-8545-dcba7a7e64e7';
