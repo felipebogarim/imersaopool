@@ -25,7 +25,7 @@ export const FIELD_STORE_VISIT_CHAPTERS_V1: Record<number, { key: string; titulo
   7: { key: "conclusoes_oportunidades_proximos_passos", titulo: "Conclusões, oportunidades e próximos passos" },
 };
 
-const REQUIRED_META = ["report_template", "cliente", "data_visita"] as const;
+const REQUIRED_META = ["report_template", "cliente", "data_visita", "tipo_relatorio"] as const;
 
 export type FieldImmersionMeta = Record<string, string>;
 
