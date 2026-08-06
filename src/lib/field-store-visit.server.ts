@@ -1,6 +1,6 @@
 // Aplicação do modelo canônico field_store_visit_v1 nos capítulos da sessão.
 // Nenhuma IA envolvida: o texto é copiado verbatim.
-import type { parseFieldStoreVisit as ParseFn } from "@/lib/field-store-visit";
+import type { parseFieldStoreVisit as ParseFn, FieldStoreVisitChapter } from "@/lib/field-store-visit";
 
 function norm(s: string) {
   return String(s ?? "")
@@ -57,7 +57,7 @@ export async function ingestStoreVisit(args: {
     byCodigo.set(norm(c.codigo), c);
   }
 
-  const sumarioCap = doc.chapters.find((c) => c.ordem === 0) ?? null;
+  const sumarioCap = (doc.chapters.find((c) => c.ordem === 0) as FieldStoreVisitChapter | undefined) ?? null;
   
 
   const preview = doc.chapters.map((c) => ({
