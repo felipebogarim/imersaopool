@@ -223,7 +223,7 @@ export function ChapterCapture({
           markdown: md,
         };
       })
-      .filter(Boolean) as Array<{ ordem: number; key: string; titulo: string; markdown: string }>;
+      .filter(Boolean) as FieldImmersionChapter[];
 
     // No version 1.1, the executive summary is part of Chapter 1, not a separate ordem 0
     if (fsv?.sumario_markdown && fsv?.schema_version !== "1.1") {
