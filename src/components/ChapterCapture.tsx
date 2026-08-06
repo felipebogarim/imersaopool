@@ -20,7 +20,7 @@ import { generatePerspectivasForSession } from "@/lib/generate-perspectivas.func
 import { distributeReportToChapters } from "@/lib/distribute-report.functions";
 import { ingestFinalReport } from "@/lib/ingest-final-report.functions";
 import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
-import { serializeFieldStoreVisit } from "@/lib/field-store-visit";
+import { serializeFieldStoreVisit, type FieldImmersionChapter } from "@/lib/field-store-visit";
 
 const MAX_MB = 50;
 const MAX_BYTES = MAX_MB * 1024 * 1024;
@@ -217,16 +217,17 @@ export function ChapterCapture({
         if (!md) return null;
         return {
           ordem: Number(c.ordem ?? 0),
+          codigo: c.codigo || `C${c.ordem}`,
           key: (r?.sintese as any)?.__chapter_key__ ?? "",
           titulo: (r?.sintese as any)?.__chapter_titulo__ ?? c.titulo,
           markdown: md,
         };
       })
-      .filter(Boolean) as Array<{ ordem: number; key: string; titulo: string; markdown: string }>;
+      .filter(Boolean) as FieldImmersionChapter[];
 
     // No version 1.1, the executive summary is part of Chapter 1, not a separate ordem 0
     if (fsv?.sumario_markdown && fsv?.schema_version !== "1.1") {
-      chapters.unshift({ ordem: 0, key: "sumario_executivo", titulo: "Sumário executivo", markdown: fsv.sumario_markdown });
+      chapters.unshift({ ordem: 0, codigo: "C0", key: "sumario_executivo", titulo: "Sumário executivo", markdown: fsv.sumario_markdown });
     }
     if (!chapters.length) return toast.error("Nenhum capítulo preenchido para exportar");
 

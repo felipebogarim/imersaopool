@@ -12,10 +12,12 @@ import { MarkdownView } from "@/components/MarkdownView";
 import { BlocoExpansivel } from "@/components/visao-rep2/BlocoExpansivel";
 import { extractFileText } from "@/lib/sintese-file-text";
 import {
-  FIELD_STORE_VISIT_CHAPTERS,
+  FIELD_STORE_VISIT_CHAPTERS_V1,
+  FIELD_IMMERSION_CHAPTERS_V2,
   parseFieldStoreVisit,
   serializeFieldStoreVisit,
-  type FieldStoreVisitDoc,
+  type FieldImmersionDoc,
+  type FieldImmersionChapter,
 } from "@/lib/field-store-visit";
 import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, User, Building2 } from "lucide-react";
 
@@ -62,7 +64,7 @@ function MetaChip({ icon: Icon, label }: { icon: any; label: string }) {
 function VisaoImersaoPage() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [busca, setBusca] = useState("");
-  const [avulso, setAvulso] = useState<{ doc: FieldStoreVisitDoc; arquivo: string } | null>(null);
+  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string } | null>(null);
   const [importando, setImportando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -95,11 +97,13 @@ function VisaoImersaoPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("sessao_capitulos")
-        .select("id, leitura_estrategica, sintese, capitulo:capitulos(ordem, titulo)")
+        .select("id, leitura_estrategica, sintese, capitulo:capitulos(ordem, codigo, titulo)")
         .eq("sessao_id", selected!.id);
       return ((data ?? []) as any[])
         .map(r => ({
           ordem: Number(r.capitulo?.ordem ?? 99),
+          codigo: r.capitulo?.codigo || (r.sintese?.__chapter_codigo__ as string) || `C${r.capitulo?.ordem ?? 99}`,
+          key: (r.sintese?.__chapter_key__ as string) || `capitulo_${r.capitulo?.ordem ?? 99}`,
           titulo: (r.sintese?.__chapter_titulo__ as string) || r.capitulo?.titulo || "Capítulo",
           markdown: String(r.leitura_estrategica ?? "").trim(),
         }))
@@ -110,14 +114,15 @@ function VisaoImersaoPage() {
 
   const fsv = selected?.respostas?.__field_store_visit__ ?? null;
   const meta: Record<string, string> = avulso?.doc.meta ?? fsv?.meta ?? {};
+  
+  // No V2, o sumário executivo pode ser o C0 (se vier de legado) ou o C1?
+  // Na visão imersão, vamos manter o sumário executivo separado se existir.
   const sumario: string = avulso
-    ? (avulso.doc.chapters.find(c => c.ordem === 0)?.markdown ?? "")
+    ? (avulso.doc.chapters.find(c => c.ordem === 0 || c.codigo === "C0")?.markdown ?? "")
     : (fsv?.sumario_markdown ?? "");
 
   const blocos = avulso
-    ? avulso.doc.chapters
-        .filter(c => c.ordem !== 0)
-        .map(c => ({ ordem: c.ordem, titulo: c.titulo, markdown: c.markdown }))
+    ? avulso.doc.chapters.filter(c => c.ordem !== 0 && c.codigo !== "C0")
     : capitulos;
 
   const contexto = avulso ? `vi:avulso` : `vi:${selected?.id ?? "none"}`;
@@ -143,13 +148,14 @@ function VisaoImersaoPage() {
   }
 
   function exportarMarkdown() {
-    const doc: FieldStoreVisitDoc = avulso?.doc ?? {
+    const doc: FieldImmersionDoc = avulso?.doc ?? {
       meta,
       chapters: [
-        ...(sumario ? [{ ordem: 0, key: "sumario_executivo", titulo: FIELD_STORE_VISIT_CHAPTERS[0].titulo, markdown: sumario }] : []),
-        ...blocos.map(b => ({
+        ...(sumario ? [{ ordem: 0, codigo: "C0", key: "sumario_executivo", titulo: "Sumário executivo", markdown: sumario }] : []),
+        ...blocos.map((b: any) => ({
           ordem: b.ordem,
-          key: FIELD_STORE_VISIT_CHAPTERS[b.ordem]?.key ?? `capitulo_${b.ordem}`,
+          codigo: b.codigo,
+          key: b.key,
           titulo: b.titulo,
           markdown: b.markdown,
         })),
@@ -295,7 +301,7 @@ function VisaoImersaoPage() {
               />
             ) : (
               <div className="space-y-4">
-                {blocos.map(b => (
+                {blocos.map((b: any) => (
                   <BlocoExpansivel
                     key={`${b.ordem}-${b.titulo}`}
                     titulo={`${String(b.ordem).padStart(2, "0")} — ${b.titulo}`}

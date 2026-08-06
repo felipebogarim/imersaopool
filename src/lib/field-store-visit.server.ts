@@ -1,6 +1,6 @@
-// Aplicação do modelo canônico field_store_visit_v1 nos capítulos da sessão.
+// Aplicação do modelo canônico field_immersion_v2 nos capítulos da sessão.
 // Nenhuma IA envolvida: o texto é copiado verbatim.
-import type { parseFieldStoreVisit as ParseFn, FieldStoreVisitChapter } from "@/lib/field-store-visit";
+import type { parseFieldStoreVisit as ParseFn, FieldImmersionChapter } from "@/lib/field-store-visit";
 
 function norm(s: string) {
   return String(s ?? "")
@@ -22,11 +22,8 @@ export async function ingestStoreVisit(args: {
 }) {
   const { supabase, sessaoId, filename, text, dryRun, parse, userId } = args;
 
-  const { doc, errors, detected_version } = parse(text);
+  const { doc, errors, detected_version, warnings } = parse(text);
   if (!doc) {
-    if (detected_version === "1.1" && text.toLowerCase().includes("capítulo 0")) {
-      errors.push("O arquivo utiliza Capítulo 0, mas informa schema_version 1.1. Revise a estrutura.");
-    }
     const err: any = new Error(errors[0] ?? "Documento fora do padrão esperado.");
     err.details = errors;
     throw err;
@@ -57,11 +54,9 @@ export async function ingestStoreVisit(args: {
     byCodigo.set(norm(c.codigo), c);
   }
 
-  const sumarioCap = (doc.chapters.find((c) => c.ordem === 0) as FieldStoreVisitChapter | undefined) ?? null;
-  
-
   const preview = doc.chapters.map((c) => ({
     ordem: c.ordem,
+    codigo: c.codigo,
     titulo: c.titulo,
     key: c.key,
     chars: c.markdown.length,
@@ -69,13 +64,14 @@ export async function ingestStoreVisit(args: {
 
   if (dryRun) {
     return {
-      template: "field_store_visit_v1" as const,
+      template: doc.meta["report_template"] || "field_immersion_v2",
       dryRun: true,
       meta: doc.meta,
       preview,
       filled: 0,
       total: capitulos.length,
       unmatched: [] as string[],
+      warnings,
     };
   }
 
@@ -83,11 +79,14 @@ export async function ingestStoreVisit(args: {
   const unmatched: string[] = [];
 
   for (const p of doc.chapters) {
-    if (p.ordem === 0) continue;
-    let cap = byOrdem.get(p.ordem) ?? null;
-    if (!cap) cap = byTitulo.get(norm(p.titulo)) ?? byCodigo.get(norm(p.key)) ?? null;
+    // Mapeamento robusto por código (C1, C2...) primeiro.
+    let cap = byCodigo.get(norm(p.codigo)) ?? null;
+    
+    // Fallback para ordem ou título (legado)
+    if (!cap) cap = byOrdem.get(p.ordem) ?? byTitulo.get(norm(p.titulo)) ?? null;
+    
     if (!cap) {
-      unmatched.push(`${String(p.ordem).padStart(2, "0")} — ${p.titulo}`);
+      unmatched.push(`${p.codigo} — ${p.titulo}`);
       continue;
     }
 
@@ -100,11 +99,12 @@ export async function ingestStoreVisit(args: {
 
     const sintese = {
       ...((existing?.sintese as Record<string, unknown>) ?? {}),
-      __report_template__: "field_store_visit_v1",
+      __report_template__: doc.meta["report_template"],
       __markdown__: true,
       __arquivo__: filename,
       __chapter_key__: p.key,
       __chapter_titulo__: p.titulo,
+      __chapter_codigo__: p.codigo,
     };
 
     const payload: any = {
@@ -128,31 +128,29 @@ export async function ingestStoreVisit(args: {
   const nextRespostas: Record<string, any> = {
     ...prevRespostas,
     __field_store_visit__: {
-      schema_version: doc.meta["schema_version"] ?? "1.1",
-      report_template: "field_store_visit_v1",
-      tipo_relatorio: "visita_loja",
+      schema_version: doc.meta["schema_version"] ?? "2.0",
+      report_template: doc.meta["report_template"] ?? "field_immersion_v2",
+      tipo_relatorio: doc.meta["tipo_relatorio"] || "visita_loja",
       meta: doc.meta,
       arquivo: filename,
       importado_por: userId,
       importado_em: new Date().toISOString(),
-      sumario_markdown: sumarioCap?.markdown ?? "",
     },
   };
-  if (sumarioCap?.markdown) {
-    nextRespostas.__sumario_executivo__ = {
-      ...(prevRespostas.__sumario_executivo__ ?? {}),
-      sintese_geral: sumarioCap.markdown,
-    };
-  }
+  
+  // No V2, o sumário executivo está em C1 ou é extraído de metadados?
+  // Na verdade, o sumário executivo agora deve ser parte do conteúdo de C1 se vier do arquivo.
+  
   await supabase.from("interviews").update({ respostas: nextRespostas }).eq("id", interview.id);
 
   return {
-    template: "field_store_visit_v1" as const,
+    template: doc.meta["report_template"] || "field_immersion_v2",
     dryRun: false,
     meta: doc.meta,
     preview,
     filled,
     total: capitulos.length,
     unmatched,
+    warnings,
   };
 }
