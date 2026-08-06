@@ -13,6 +13,7 @@ import { AgentInputs } from "@/components/AgentInputs";
 import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
+import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
