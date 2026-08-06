@@ -30,6 +30,7 @@ function EntrevistasIndex() {
       (await supabase
         .from("interviews")
         .select("id, entrevistado_nome, entrevistado_classificacao, empresa_nome, cidade, estado, data_entrevista, created_at")
+        .is("immersion_id", null)
         .order("created_at", { ascending: false })).data ?? [],
   });
 
