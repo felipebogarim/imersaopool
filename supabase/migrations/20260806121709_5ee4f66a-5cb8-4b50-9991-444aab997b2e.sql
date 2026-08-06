@@ -1,0 +1,1 @@
+DELETE FROM public.interviews WHERE entrevistado_nome = 'Imersão SP - LLUMINAH - BARUERI';
