@@ -61,17 +61,20 @@ function NewImmersion() {
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-select-all"],
     queryFn: async () => {
-      const page = 1000;
+      const limit = 1000;
       const all: any[] = [];
-      for (let from = 0; from < 20000; from += page) {
+      let from = 0;
+      while (true) {
         const { data, error } = await supabase
           .from("clients")
           .select("id, nome_fantasia, razao_social")
           .order("nome_fantasia")
-          .range(from, from + page - 1);
+          .range(from, from + limit - 1);
         if (error) throw error;
-        all.push(...(data ?? []));
-        if (!data || data.length < page) break;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < limit) break;
+        from += limit;
       }
       return all;
     },
