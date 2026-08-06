@@ -131,8 +131,31 @@ function NewImmersion() {
       })
     } as any).select("id").single();
 
-    setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
+
+    // Criar a sessão de entrevista (interviews) IMEDIATAMENTE para garantir que o immersion_id esteja setado
+    // e evitar que ela apareça na lista geral de entrevistas por delay ou falha no carregamento do detalhe.
+    const { error: interviewError } = await supabase.from("interviews").insert({
+      immersion_id: data.id,
+      roteiro_id: form.roteiro_id,
+      client_id: form.perfil === "cliente" ? (form.client_id || null) : null,
+      entrevistado_nome: finalTitle,
+      entrevistado_classificacao: "imersao",
+      perfil: "imersao",
+      tipo: form.tipo || "presencial",
+      entrevistador_nome: user?.email ?? "—",
+      created_by: user?.id,
+      respostas: {},
+    } as any);
+
+    if (interviewError) {
+      console.error("Erro ao criar sessão de entrevista vinculada:", interviewError);
+      // Não bloqueamos o fluxo principal pois a imersão já foi criada, 
+      // mas registramos para debug. A página de detalhe tentará criar novamente se não existir.
+    }
     toast.success("Imersão criada");
     navigate({ to: "/imersoes/$id", params: { id: data.id } });
   }
