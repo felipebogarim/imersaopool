@@ -3,8 +3,10 @@
 
 const MIN = 0;
 const MAX = 120;
-const GREEN_FROM = 100;
-const RED_MARK = 70;
+const RANGE_RED = 60;
+const RANGE_YELLOW = 80;
+const RANGE_LIGHT_GREEN = 90;
+const RANGE_GREEN = 120;
 
 const W = 260;
 const H = 135;
