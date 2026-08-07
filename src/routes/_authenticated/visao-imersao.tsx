@@ -535,47 +535,53 @@ function VisaoImersaoPage() {
 
               return (
                 <div className="space-y-8">
-                  <ExecutiveBriefV2
-                    brief={{
-                      sintese: visao.executive_brief?.presidential_synthesis || "",
-                      contexto: {
-                        marcas: [],
-                        regiaoModelo: visao.representative_context.additional_context || ""
-                      },
-                      clientes: [],
-                      temas: [],
-                      conclusoes: [],
-                      decisoes: [],
-                      validacoes: [],
-                      perspectivas: []
-                    } as any}
+                  {/* 2. Briefing Executivo (3 cards) */}
+                  <BriefHeaderV2
                     nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
                     regiao={meta["local"] || ""}
+                    marcas={visao.representative_context.represented_brands}
+                    atingimentoPct={perfData?.geralPct ?? visao.performance_connection?.geral_pct ?? null}
+                    periodo={perfData?.periodoLabel ?? null}
                     mode="imersao"
-                    contexto={contexto}
-                    perspectivas={undefined}
-                    visao={visao}
-                    perf={perfData}
                   />
-                  
-                  
-                  <LeituraIntegradaV2 visao={visao} />
-                  
+
+                  {/* 3. Síntese Estratégica + Teia */}
+                  <SintesePresidencialV2 
+                    texto={visao.executive_brief?.presidential_synthesis || ""}
+                    teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />}
+                  />
+
+                  {/* 4. Performance por Família de Produtos */}
                   {perfData && (
                     <PerformanceFamiliasV2 perf={perfData} />
                   )}
+                  
+                  {/* 5. Leitura Integrada (Main Panel) */}
+                  <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
+                  {/* 6. Conclusões Centrais (Optional) */}
+                  {visao.executive_brief?.themes && visao.executive_brief.themes.length > 0 && (
+                     <ConclusoesCentraisV2 
+                       conclusoes={visao.executive_brief.themes.map(t => ({ titulo: t.title, frase: t.conclusion || "" }))} 
+                     />
+                  )}
+
+                  {/* 7. Áreas de Aprofundamento */}
                   <section className="mt-12 space-y-4">
                     <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       Áreas de aprofundamento
                     </h3>
                     <Accordion type="single" collapsible className="w-full space-y-2">
-                      <AccordionItem value="origem" className="rounded-xl border bg-card px-4">
+                      <AccordionItem value="perspectivas" className="rounded-xl border bg-card px-4">
                         <AccordionTrigger className="text-sm font-medium hover:no-underline">
-                          Relatório de origem · visão executiva
+                          Perspectivas da entrevista
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 pb-4">
-                          <MarkdownView markdown={doc.chapters.find(c => c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
+                          <PerspectivasEntrevistaV2 
+                            perspectivas={buildPerspectivasVM(visao)} 
+                            mode="imersao"
+                            contexto={contexto}
+                          />
                         </AccordionContent>
                       </AccordionItem>
 
@@ -590,6 +596,24 @@ function VisaoImersaoPage() {
                               <MarkdownView markdown={cap.markdown} />
                             </div>
                           ))}
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="familia" className="rounded-xl border bg-card px-4">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          Visão por família detalhada
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4 text-sm text-muted-foreground italic text-center">
+                          Detalhamento por família em desenvolvimento para imersões.
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="evidencias" className="rounded-xl border bg-card px-4">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          Evidências e citações
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4 text-sm text-muted-foreground italic text-center">
+                          Extração automática de evidências em desenvolvimento.
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
