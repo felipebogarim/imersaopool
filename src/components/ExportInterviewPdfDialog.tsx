@@ -44,7 +44,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
     titulo: defaults?.titulo ?? DEFAULT_TITULO,
     entrevistado: defaults?.entrevistado ?? "",
-    modelo: defaults?.modelo ?? "",
+    modelo: defaults?.modelo ?? (defaults?.entrevistado?.toLowerCase().includes("imersão") ? "Imersão" : ""),
   });
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [includeInterviewee, setIncludeInterviewee] = useState(false);
@@ -65,7 +65,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
         data: defaults?.data ?? new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
         titulo: defaults?.titulo ?? DEFAULT_TITULO,
         entrevistado: defaults?.entrevistado ?? "",
-        modelo: defaults?.modelo ?? "",
+        modelo: defaults?.modelo ?? (defaults?.entrevistado?.toLowerCase().includes("imersão") ? "Imersão" : ""),
       });
       setIncludeInterviewee(false);
       setTheme("dark");
@@ -199,7 +199,9 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cov-entr">Entrevistado</Label>
+              <Label htmlFor="cov-entr">
+                {fields.modelo?.toLowerCase().includes("imersão") ? "Imersão" : "Entrevistado"}
+              </Label>
               <Input
                 id="cov-entr"
                 value={fields.entrevistado}
@@ -250,13 +252,17 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
                     if (on && !intervName) setIntervName(fields.entrevistado);
                   }}
                 />
-                <span className="text-sm font-medium">Incluir página de apresentação do entrevistado</span>
+                <span className="text-sm font-medium">
+                  Incluir página de apresentação do {fields.modelo?.toLowerCase().includes("imersão") ? "Imersão" : "entrevistado"}
+                </span>
               </label>
 
               {includeInterviewee && (
                 <div className="grid gap-3 pl-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="interv-nome">Nome do entrevistado</Label>
+                    <Label htmlFor="interv-nome">
+                      Nome do {fields.modelo?.toLowerCase().includes("imersão") ? "Imersão" : "entrevistado"}
+                    </Label>
                     <Input
                       id="interv-nome"
                       value={intervName}
