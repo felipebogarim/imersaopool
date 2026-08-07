@@ -57,12 +57,24 @@ function parseMeta(md: string): FieldImmersionMeta {
   const meta: FieldImmersionMeta = {};
   const m = md.match(/^\s*##\s+metadados\s*$/im);
   const block = m ? md.slice(m.index! + m[0].length).split(/^\s*##\s+/m)[0] : md.slice(0, 3000);
-  for (const raw of block.split(/\r?\n/)) {
+  const lines = block.split(/\r?\n/);
+  for (const raw of lines) {
     const line = raw.trim();
-    const kv = line.match(/^[-*]?\s*([a-z_][a-z0-9_]*)\s*:\s*(.*)$/i);
+    // Regex mais flexível para capturar "Chave: Valor" mesmo com espaços ou hífens no início
+    const kv = line.match(/^[-*]?\s*([^:]+)\s*:\s*(.*)$/i);
     if (!kv) continue;
-    const key = kv[1].toLowerCase();
+    
+    let key = kv[1].trim().toLowerCase();
     const value = kv[2].trim();
+    
+    // Mapeamento de termos para chaves canônicas
+    if (key.includes("cliente")) key = "cliente";
+    if (key.includes("local") || key.includes("unidade") || key.includes("cidade")) key = "local";
+    if (key.includes("data")) key = "data_visita";
+    if (key.includes("representante")) key = "representante";
+    if (key.includes("consultor")) key = "consultor";
+    if (key.includes("título") || key.includes("assunto")) key = "titulo";
+    
     if (value) meta[key] = value;
   }
   return meta;
