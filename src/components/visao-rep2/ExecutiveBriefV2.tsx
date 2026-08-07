@@ -420,6 +420,7 @@ export function ExecutiveBriefV2({
   leitura,
   teia,
   contexto,
+  mode = "rep",
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -435,6 +436,7 @@ export function ExecutiveBriefV2({
   teia?: ReactNode;
   /** Identificador do representante, usado para separar notas por contexto. */
   contexto?: string;
+  mode?: "rep" | "imersao";
 }) {
   const perspectivas =
     perspectivasProp ??

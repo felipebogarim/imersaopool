@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { MarkdownView } from "@/components/MarkdownView";
+import { extractFileText } from "@/lib/sintese-file-text";
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
