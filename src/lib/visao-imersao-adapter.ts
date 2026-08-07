@@ -105,11 +105,20 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
 
   visao.representative_context.additional_context = contextParts.join("\n");
 
-  // 1. Síntese Presidencial (C1)
+  // 1. Síntese Presidencial (C1) e Marcas Citadas
   const c1 = doc.chapters.find((c) => c.codigo === "C1");
+  const c1Md = c1?.markdown || "";
+  
+  // Extrai marcas de C1 (procura por "Marcas citadas:", "Marcas:", ou listas)
+  const marcasMatch = c1Md.match(/(?:marcas|marcas citadas|marcas observadas):\s*([^\n]+)/i);
+  const marcas = marcasMatch 
+    ? marcasMatch[1].split(/[,;·]/).map(m => m.trim()).filter(Boolean)
+    : [];
+
+  visao.representative_context.represented_brands = marcas;
   visao.executive_brief = {
     presidential_synthesis: c1
-      ? generateExecutiveSummary(c1.markdown, 700)
+      ? generateExecutiveSummary(c1Md, 700)
       : "Síntese inicial não disponível.",
     themes: [],
   };

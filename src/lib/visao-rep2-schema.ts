@@ -194,6 +194,7 @@ export type PerformanceConnection = {
   upload_id: string | null;
   periodo_label: string | null;
   linked: boolean;
+  geral_pct?: number | null;
 };
 
 export type SourceControl = {

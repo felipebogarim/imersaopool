@@ -459,8 +459,8 @@ export function ExecutiveBriefV2({
         regiao={regiao}
         dataEntrevista={dataEntrevista}
         dataRelatorio={dataRelatorio}
-        marcas={brief.contexto.marcas}
-        atingimentoPct={perf?.geralPct ?? null}
+        marcas={visao?.representative_context.represented_brands || brief.contexto.marcas}
+        atingimentoPct={perf?.geralPct ?? visao?.performance_connection?.geral_pct ?? null}
         periodo={perf?.periodoLabel ?? null}
         mode={mode}
       />
