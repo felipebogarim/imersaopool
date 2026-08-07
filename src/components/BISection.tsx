@@ -349,12 +349,11 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     [familyChart],
   );
 
-  // Top 6 clientes por atingimento ponderado (precisa vir da base de performance)
+  // Top 6 clientes por atingimento ponderado
   const { data: top6Clients = [] } = useQuery({
     queryKey: ["bi-top6-clients", repId],
     enabled: !!repId,
     queryFn: async () => {
-      // Buscamos as linhas da última planilha de performance ativa para este representante
       const { data: upload } = await supabase
         .from("rep_performance_uploads")
         .select("id")
@@ -366,28 +365,18 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
       
       if (!upload) return [];
 
-      const { data: rows } = await supabase
+      const { data: rows } = await (supabase as any)
         .from("rep_performance_rows")
-        .select("razao_social, total_meta, realizado")
+        .select("razao_social, total_pct")
         .eq("upload_id", upload.id);
       
       if (!rows) return [];
 
-      // Calculamos o atingimento de cada cliente
-      // realizado é um JSONB Map<Familia, Valor>
-      const processed = rows.map(r => {
-        const meta = Number(r.total_meta) || 0;
-        const realizadoMap = (r.realizado as Record<string, number>) || {};
-        const realizadoTotal = Object.values(realizadoMap).reduce((acc, val) => acc + (Number(val) || 0), 0);
-        const atingimento = meta > 0 ? (realizadoTotal / meta) * 100 : 0;
-        return {
+      return (rows as any[])
+        .map(r => ({
           name: r.razao_social,
-          atingimento: atingimento
-        };
-      });
-
-      // Ordena do maior para o menor e pega os 6 primeiros
-      return processed
+          atingimento: Number(r.total_pct) || 0
+        }))
         .sort((a, b) => b.atingimento - a.atingimento)
         .slice(0, 6);
     }
@@ -452,6 +441,23 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
             </div>
           ) : (
             <>
+              {/* Atingimento TOP6 Clientes */}
+              {top6Clients.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Atingimento TOP6 Clientes</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {top6Clients.map((client) => (
+                      <div key={client.name} className="rounded-xl border border-border p-4 bg-card">
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground truncate mb-2" title={client.name}>
+                          {client.name}
+                        </div>
+                        <GaugeAtingimento valor={client.atingimento} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Destaques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded-xl border border-border p-4 bg-primary/5">
