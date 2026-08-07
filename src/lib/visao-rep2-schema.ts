@@ -194,7 +194,12 @@ export type PerformanceConnection = {
   upload_id: string | null;
   periodo_label: string | null;
   linked: boolean;
-  geral_pct?: number | null;
+  geral_pct: number | null;
+  comparativo_grupo_pct: number | null;
+  periodo_referencia: string | null;
+  status_atendimento: string | null;
+  oportunidades_identificadas: string[];
+  ameacas_identificadas: string[];
 };
 
 export type SourceControl = {
