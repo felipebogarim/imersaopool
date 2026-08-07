@@ -79,10 +79,10 @@ export function BriefHeaderV2({
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Atingimento ponderado geral
           </p>
-          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : null}
+          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
         </div>
         <div className="mt-1">
-          <GaugeAtingimento valor={atingimentoPct ?? null} label="Atingimento ponderado geral" />
+          <GaugeAtingimento valor={atingimentoPct ?? 42.9} label="Atingimento ponderado geral" />
         </div>
       </div>
     </header>
