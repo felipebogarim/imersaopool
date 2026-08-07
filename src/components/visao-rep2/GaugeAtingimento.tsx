@@ -1,15 +1,15 @@
 // Gauge semicircular de atingimento ponderado (apenas percentual).
 // Escala fixa 50%–120%: zona verde a partir de 100%, marca vermelha em 70%.
 
-const MIN = 0;
-const MAX = 130;
+const MIN = 50;
+const MAX = 120;
 const GREEN_FROM = 100;
 const RED_MARK = 70;
 
 const W = 260;
-const H = 150;
+const H = 135;
 const CX = W / 2;
-const CY = 118;
+const CY = 120;
 const R = 92;
 const STROKE = 22;
 
