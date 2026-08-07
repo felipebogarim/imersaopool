@@ -44,7 +44,7 @@ export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | n
   const max =
     modo === "participacao"
       ? Math.max(1, ...itens.map(i => i.participacao ?? 0))
-      : Math.max(100, ...itens.map(i => i.atingimento));
+      : Math.max(120, ...itens.map(i => i.atingimento));
 
   return (
     <BlocoExpansivel

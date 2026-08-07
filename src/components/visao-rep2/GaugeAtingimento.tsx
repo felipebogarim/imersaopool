@@ -1,8 +1,8 @@
 // Gauge semicircular de atingimento ponderado (apenas percentual).
 // Escala fixa 50%–120%: zona verde a partir de 100%, marca vermelha em 70%.
 
-const MIN = 50;
-const MAX = 120;
+const MIN = 0;
+const MAX = 130;
 const GREEN_FROM = 100;
 const RED_MARK = 70;
 
