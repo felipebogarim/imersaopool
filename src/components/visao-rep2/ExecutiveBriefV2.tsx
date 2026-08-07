@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
+import { MarkdownView } from "@/components/MarkdownView";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
@@ -141,7 +142,7 @@ export function SintesePresidencialV2({ texto, teia }: { texto: string; teia?: R
     >
       <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] lg:gap-10">
         <div className="min-w-0 border-l-2 border-primary pl-5">
-          <p className="max-w-[68ch] text-base leading-8">{texto}</p>
+          <MarkdownView markdown={texto} className="max-w-[68ch] text-base leading-8" />
         </div>
         {teia ? <div className="min-w-0 self-center">{teia}</div> : null}
       </div>
