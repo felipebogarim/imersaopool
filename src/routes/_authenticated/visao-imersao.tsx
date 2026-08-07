@@ -371,8 +371,41 @@ function VisaoImersaoPage() {
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 pb-4">
                           <div className="rounded-lg border bg-muted/30 p-4">
-                            <p className="text-xs text-muted-foreground">
-                              Consulte o Capítulo 3 no Relatório Completo para detalhes por família.
+                            <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                              Leitura estratégica por categoria
+                            </h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse text-left text-xs">
+                                <thead>
+                                  <tr className="border-b bg-muted/50">
+                                    <th className="px-3 py-2 font-semibold">Família</th>
+                                    <th className="px-3 py-2 font-semibold">Situação</th>
+                                    <th className="px-3 py-2 font-semibold">Leitura executiva</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {doc.chapters.find(c => c.codigo === "C3")?.markdown.split('\n')
+                                    .filter(l => l.includes('|') && !l.includes('---') && !l.toLowerCase().includes('família|'))
+                                    .map((row, i) => {
+                                      const cols = row.split('|').filter(c => c.trim().length > 0);
+                                      if (cols.length < 2) return null;
+                                      return (
+                                        <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                                          <td className="px-3 py-2 font-medium">{cols[0].trim()}</td>
+                                          <td className="px-3 py-2">
+                                            <Badge variant="outline" className="text-[10px] font-normal">
+                                              {cols[1].trim()}
+                                            </Badge>
+                                          </td>
+                                          <td className="px-3 py-2 text-muted-foreground">{cols[2]?.trim() || cols[1]?.trim() || "—"}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                </tbody>
+                              </table>
+                            </div>
+                            <p className="mt-3 text-[10px] text-muted-foreground">
+                              Dados extraídos do Capítulo 3 · Oferta e categorias.
                             </p>
                           </div>
                         </AccordionContent>
