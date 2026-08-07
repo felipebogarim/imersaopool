@@ -107,9 +107,10 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // 2. Sinais Estratégicos (Leitura Integrada)
   // Extrai sinais do capítulo de síntese (C7) ou temas recorrentes
   const sinteseCap = doc.chapters.find(c => c.codigo === "C7");
-  if (sinteseCap) {
+  const signals: string[] = [];
+
+  if (sinteseCap && sinteseCap.markdown) {
     const lines = sinteseCap.markdown.split('\n');
-    const signals: string[] = [];
     
     // Busca linhas que parecem ser conclusões (começam com marcador de lista ou número)
     for (const line of lines) {
@@ -130,39 +131,28 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
         .filter(p => p.length > 20 && p.length < 500);
       signals.push(...paragraphs.slice(0, 5));
     }
-
-    // Garantir que temos ao menos um sinal para não quebrar a UI
-    if (signals.length === 0) {
-      signals.push("Síntese executiva disponível nos detalhes do relatório.");
-    }
-
-    visao.executive_view.priority_signals = signals.slice(0, 5).map((c, i) => ({
-      title: c.length > 100 ? c.slice(0, 100).trim() + "..." : c,
-      finding: c,
-      business_impact: "Impacto identificado na imersão.",
-      recommended_action: null,
-      confidence_level: "alto",
-      evidence_status: "relato_individual",
-      source_chapter: "C7",
-      source_quote: null,
-      signal_id: `SIG_${i + 1}`,
-      related_perspectives: [] // Evita tentar vincular perspectivas inexistentes
-    }));
-  } else {
-    // Fallback caso C7 não exista
-    visao.executive_view.priority_signals = [{
-      title: "Análise em processamento",
-      finding: "Os sinais estratégicos desta imersão estão sendo consolidados.",
-      business_impact: null,
-      recommended_action: null,
-      confidence_level: "alto",
-      evidence_status: "relato_individual",
-      source_chapter: "C1",
-      source_quote: null,
-      signal_id: "SIG_1",
-      related_perspectives: []
-    }];
   }
+
+  // Garantir que temos ao menos um sinal válido para não quebrar a UI
+  if (signals.length === 0) {
+    signals.push("Análise estratégica disponível nos detalhes do relatório.");
+  }
+
+  visao.executive_view.priority_signals = signals.slice(0, 5).map((c, i) => ({
+    title: c.length > 100 ? c.slice(0, 100).trim() + "..." : c,
+    finding: c,
+    business_impact: "Impacto identificado na imersão.",
+    recommended_action: null,
+    confidence_level: "alto",
+    evidence_status: "relato_individual",
+    source_chapter: "C7",
+    source_quote: null,
+    signal_id: `SIG_${i + 1}`,
+    related_perspectives: [],
+    validation_note: null,
+    comparison_classification: "não abordado",
+    group_comparison: null
+  }));
 
   // 3. Perspectivas (Tabs) - Exatamente 7
   visao.perspectives = IMMERSION_PERSPECTIVES_META.map(meta => {
