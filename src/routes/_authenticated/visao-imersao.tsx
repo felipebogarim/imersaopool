@@ -535,7 +535,9 @@ function VisaoImersaoPage() {
 
               return (
                 <div className="space-y-8">
-                  {/* 2. Briefing Executivo (3 cards) */}
+                  {/* 1. Cabeçalho da Imersão já renderizado acima via PageHeader e section */}
+                  
+                  {/* 2. Briefing Executivo (3 cards na mesma linha) */}
                   <BriefHeaderV2
                     nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
                     regiao={meta["local"] || ""}
@@ -545,24 +547,27 @@ function VisaoImersaoPage() {
                     mode="imersao"
                   />
 
-                  {/* 3. Síntese Estratégica + Teia */}
+                  {/* 3. Síntese Estratégica + Teia (Layout 60/40) */}
                   <SintesePresidencialV2 
                     texto={visao.executive_brief?.presidential_synthesis || ""}
                     teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />}
                   />
 
-                  {/* 4. Performance por Família de Produtos */}
+                  {/* 4. Performance por Família de Produtos (Imediatamente após Síntese + Teia) */}
                   {perfData && (
                     <PerformanceFamiliasV2 perf={perfData} />
                   )}
                   
-                  {/* 5. Leitura Integrada (Main Panel) */}
+                  {/* 5. Leitura Integrada (Painel Principal de Decisão) */}
                   <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-                  {/* 6. Conclusões Centrais (Optional) */}
+                  {/* 6. Conclusões Centrais (Opcional/Camada 3) */}
                   {visao.executive_brief?.themes && visao.executive_brief.themes.length > 0 && (
                      <ConclusoesCentraisV2 
-                       conclusoes={visao.executive_brief.themes.map(t => ({ titulo: t.title, frase: t.conclusion || "" }))} 
+                       conclusoes={visao.executive_brief.themes.map(t => ({ 
+                         titulo: t.title || "Conclusão", 
+                         frase: t.represents || t.context || "" 
+                       }))} 
                      />
                   )}
 
