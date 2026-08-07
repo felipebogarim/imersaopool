@@ -70,10 +70,31 @@ function VisaoImersao2Page() {
         toast.error(errors[0] ?? "Documento fora do padrão de relatório de imersão.");
         return;
       }
+      
+      const parsedData = adapterImmersionV2ToExecutive(doc);
+      
+      // Persistência
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id).single();
+
+      const { error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
+        client_name: parsedData.metadata.representative_name,
+        visit_date: parsedData.metadata.interview_date,
+        source_filename: file.name,
+        content_markdown: text,
+        structured_data: parsedData as any,
+        company_id: profile?.company_id,
+        created_by: userData.user?.id
+      });
+
+      if (insertError) throw insertError;
+
       setAvulso({ doc, arquivo: file.name });
-      toast.success("Relatório V2 carregado com sucesso.");
+      toast.success("Relatório V2 carregado e salvo com sucesso.");
+      console.log("[V2] Fluxo concluído: arquivo lido, validado, persistido e dashboard renderizado.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao ler o arquivo.");
+      console.error("[V2] Erro no fluxo:", e);
+      toast.error(e?.message ?? "Falha ao processar o relatório.");
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = "";
