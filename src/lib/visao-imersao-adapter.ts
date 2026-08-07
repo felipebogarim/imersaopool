@@ -110,10 +110,34 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   const c1Md = c1?.markdown || "";
   
   // Extrai marcas de C1 (procura por "Marcas citadas:", "Marcas:", ou listas)
-  const marcasMatch = c1Md.match(/(?:marcas|marcas citadas|marcas observadas):\s*([^\n]+)/i);
-  const marcas = marcasMatch 
-    ? marcasMatch[1].split(/[,;·]/).map(m => m.trim()).filter(Boolean)
-    : [];
+  // Tenta capturar uma lista que pode estar em múltiplas linhas ou separada por vírgula
+  const marcasMatch = c1Md.match(/(?:marcas|marcas citadas|marcas observadas|concorrentes):\s*([^\n.]+)/i);
+  let marcas: string[] = [];
+  
+  if (marcasMatch) {
+    marcas = marcasMatch[1]
+      .split(/[,;·•\n]/)
+      .map(m => m.replace(/^[-*•]\s*/, "").trim())
+      .filter(m => m.length > 1 && m.length < 40);
+  }
+  
+  // Fallback: se não achar por label, procura por linhas que começam com bullet logo após mencionar marcas
+  if (marcas.length === 0) {
+    const lines = c1Md.split("\n");
+    const marcasIdx = lines.findIndex(l => /marcas/i.test(l));
+    if (marcasIdx !== -1) {
+      for (let i = marcasIdx + 1; i < lines.length && i < marcasIdx + 6; i++) {
+        const line = lines[i].trim();
+        if (/^[-*•]/.test(line)) {
+          marcas.push(line.replace(/^[-*•]\s*/, "").trim());
+        } else if (line === "") {
+          continue;
+        } else {
+          break;
+        }
+      }
+    }
+  }
 
   visao.representative_context.represented_brands = marcas;
   visao.executive_brief = {
