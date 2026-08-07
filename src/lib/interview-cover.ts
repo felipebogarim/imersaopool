@@ -109,7 +109,7 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", leftX, labelY, { charSpace: 3 });
+  doc.text(f.modelo === "Imersão" ? "IMERSÃO" : "ENTREVISTADO", leftX, labelY, { charSpace: 3 });
 
   const badgeName = (f.entrevistado || "—").toUpperCase();
   doc.setFont("helvetica", "bold");
@@ -251,7 +251,9 @@ export async function drawIntervieweePage(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(255, 255, 255);
-  doc.text("ENTREVISTADO", leftX, firstLineY - fontSize * 1.35, { charSpace: 4 });
+  // A lógica de f.template para Imersão deve ser checada pelo componente chamador, mas aqui garantimos o texto
+  const labelText = f.name?.toLowerCase().includes("imersão") ? "IMERSÃO" : "ENTREVISTADO";
+  doc.text(labelText, leftX, firstLineY - fontSize * 1.35, { charSpace: 4 });
 
   // Nome
   doc.setFont("helvetica", "bold");
@@ -360,7 +362,7 @@ export async function drawCoverDark(doc: jsPDF, f: CoverFields) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(170, 175, 185);
-  doc.text("ENTREVISTADO", margin, blockBaseY - 16, { charSpace: 3 });
+  doc.text(f.modelo === "Imersão" ? "IMERSÃO" : "ENTREVISTADO", margin, blockBaseY - 16, { charSpace: 3 });
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
@@ -459,7 +461,7 @@ export async function drawIntervieweePageDark(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(200, 200, 205);
-  doc.text("ENTREVISTADO", leftX, firstLineY - lineH * 1.9, { charSpace: 3 });
+  doc.text(f.name?.toLowerCase().includes("imersão") ? "IMERSÃO" : "ENTREVISTADO", leftX, firstLineY - lineH * 1.9, { charSpace: 3 });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(fontSize);
