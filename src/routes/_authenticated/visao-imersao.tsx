@@ -84,7 +84,18 @@ function VisaoImersaoPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("interviews")
-        .select("id, immersion_id, respostas, immersion:immersions(id, titulo, data_visita, client:clients(nome_fantasia))")
+        .select(`
+          id, 
+          immersion_id, 
+          respostas, 
+          immersion:immersions(
+            id, 
+            titulo, 
+            data_visita, 
+            client_id,
+            client:clients(id, nome_fantasia, razao_social)
+          )
+        `)
         .not("immersion_id", "is", null)
         .order("created_at", { ascending: false });
       return ((data ?? []) as unknown as SessaoRow[]).filter(s => !!s.respostas?.__field_store_visit__);
@@ -121,6 +132,37 @@ function VisaoImersaoPage() {
         .filter(c => c.markdown.length > 0)
         .sort((a, b) => a.ordem - b.ordem);
     },
+  });
+
+  // Busca dados comerciais do cliente vinculado para o Gauge e Performance
+  const { data: perfData } = useQuery({
+    queryKey: ["vi-perf", selected?.immersion?.client_id],
+    enabled: !!selected?.immersion?.client_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("client_bi")
+        .select("*")
+        .eq("client_id", selected!.immersion!.client_id!)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (!data?.respostas?.__client_bi__) return null;
+      const bi = data.respostas.__client_bi__;
+      
+      return {
+        periodoLabel: "Período Ativo",
+        geralPct: bi.geral,
+        familias: (bi.familias || []).map((f: any) => ({
+          familia: f.familia,
+          pct: f.atingimento
+        })),
+        destaques: [],
+        criticas: [],
+        farol: [],
+        estimado: false
+      } as PerfResumo;
+    }
   });
 
   const fsv = selected?.respostas?.__field_store_visit__ ?? null;
@@ -379,6 +421,7 @@ function VisaoImersaoPage() {
                     contexto={contexto}
                     perspectivas={undefined}
                     visao={visao}
+                    perf={perfData}
                   />
                   
                   <LeituraIntegradaV2 visao={visao} />

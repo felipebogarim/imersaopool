@@ -463,7 +463,12 @@ export function ExecutiveBriefV2({
         periodo={perf?.periodoLabel ?? null}
         mode={mode}
       />
-      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={mode === "rep" ? teia : null} /> : null}
+      {brief.sintese ? (
+        <SintesePresidencialV2 
+          texto={brief.sintese} 
+          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)} 
+        />
+      ) : null}
 
       {mode === "rep" && <PerformanceFamiliasV2 perf={perf} />}
       {leitura ?? null}
