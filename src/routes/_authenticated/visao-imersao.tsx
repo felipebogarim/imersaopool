@@ -18,7 +18,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { extractFileText } from "@/lib/sintese-file-text";
-import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
+import { ExecutiveBriefV2, BriefHeaderV2, SintesePresidencialV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
+import { ConclusoesCentraisV2, PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
+import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
