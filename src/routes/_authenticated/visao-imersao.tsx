@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { MarkdownView } from "@/components/MarkdownView";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { extractFileText } from "@/lib/sintese-file-text";
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
@@ -22,7 +29,7 @@ import {
   type FieldImmersionDoc,
   type FieldImmersionChapter,
 } from "@/lib/field-store-visit";
-import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, User, Building2 } from "lucide-react";
+import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, User, Building2, MoreVertical, Trash2, MessageSquare, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-imersao")({
   head: () => ({
@@ -70,6 +77,7 @@ function VisaoImersaoPage() {
   const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string } | null>(null);
   const [importando, setImportando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const { data: sessoes = [], isLoading } = useQuery({
     queryKey: ["vi-sessoes"],
@@ -174,6 +182,36 @@ function VisaoImersaoPage() {
 
   const aberta = !!selected || !!avulso;
 
+  const handleExcluir = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Tem certeza que deseja excluir esta visão de imersão?")) return;
+
+    const { error } = await supabase.from("interviews").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+      return;
+    }
+
+    toast.success("Visão excluída com sucesso");
+    queryClient.invalidateQueries({ queryKey: ["vi-sessoes"] });
+  };
+
+  const handleCompartilharWhats = (s: SessaoRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const titulo = s.immersion?.titulo || "Imersão";
+    const cliente = s.immersion?.client?.nome_fantasia || "";
+    const texto = `Confira a Visão Imersão de ${titulo}${cliente ? ` - ${cliente}` : ""}: ${window.location.origin}/visao-imersao?id=${s.id}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
+  const handleCompartilharEmail = (s: SessaoRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const titulo = s.immersion?.titulo || "Imersão";
+    const subject = `Visão Imersão: ${titulo}`;
+    const body = `Confira o relatório de visão imersão acessando o link: ${window.location.origin}/visao-imersao?id=${s.id}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   return (
     <div>
       <PageHeader
@@ -232,21 +270,20 @@ function VisaoImersaoPage() {
                 {lista.map(s => {
                   const m = s.respostas?.__field_store_visit__?.meta ?? {};
                   return (
-                    <button
+                    <div
                       key={s.id}
-                      type="button"
                       onClick={() => { setAvulso(null); setSelectedId(s.id); }}
-                      className="rounded-xl border bg-card p-5 text-left transition hover:border-primary/40"
+                      className="group relative flex w-full items-center justify-between rounded-xl border bg-card p-5 text-left transition hover:border-primary/40 cursor-pointer"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-semibold">{m["titulo"] || s.immersion?.titulo || "Imersão"}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {m["cliente"] || s.immersion?.client?.nome_fantasia || "—"}
-                            {m["local"] ? ` • ${m["local"]}` : ""}
-                          </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold">{m["titulo"] || s.immersion?.titulo || "Imersão"}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {m["cliente"] || s.immersion?.client?.nome_fantasia || "—"}
+                          {m["local"] ? ` • ${m["local"]}` : ""}
                         </div>
-                        <div className="flex items-center gap-2">
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col items-end gap-1">
                           {(m["data_visita"] || s.immersion?.data_visita) && (
                             <span className="text-xs text-muted-foreground">
                               {fmtData(m["data_visita"] || s.immersion?.data_visita)}
@@ -254,8 +291,31 @@ function VisaoImersaoPage() {
                           )}
                           <Badge variant="outline">Visita a loja</Badge>
                         </div>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => handleCompartilharWhats(s, e)}>
+                              <MessageSquare className="mr-2 h-4 w-4" /> Compartilhar por Whats
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => handleCompartilharEmail(s, e)}>
+                              <Mail className="mr-2 h-4 w-4" /> Compartilhar por Email
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => handleExcluir(s.id, e)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
