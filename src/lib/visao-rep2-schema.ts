@@ -401,7 +401,17 @@ export function emptyVisaoRep2(partial?: Partial<Metadata>): VisaoRep2 {
       exclusive_readings: [],
       methodology_note: null,
     },
-    performance_connection: { upload_id: null, periodo_label: null, linked: false },
+    performance_connection: {
+      upload_id: null,
+      periodo_label: null,
+      linked: false,
+      geral_pct: null,
+      comparativo_grupo_pct: null,
+      periodo_referencia: null,
+      status_atendimento: null,
+      oportunidades_identificadas: [],
+      ameacas_identificadas: [],
+    },
     source_control: {
       creation_mode: "ai_generated",
       source_file: null,
