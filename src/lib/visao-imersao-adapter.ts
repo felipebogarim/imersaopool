@@ -109,14 +109,13 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   const c1 = doc.chapters.find((c) => c.codigo === "C1");
   const c1Md = c1?.markdown || "";
   
-  // Extrai marcas de C1 (procura por "Marcas citadas:", "Marcas:", ou listas)
-  // Tenta capturar uma lista que pode estar em múltiplas linhas ou separada por vírgula
-  const marcasMatch = c1Md.match(/(?:marcas|marcas citadas|marcas observadas|concorrentes):\s*([^\n.]+)/i);
+  // Extrai marcas de C1 (procura por labels comuns ou bullets)
+  const marcasMatch = c1Md.match(/(?:marcas|marcas citadas|marcas observadas|concorrentes|principais marcas):\s*([^\n.]+)/i);
   let marcas: string[] = [];
   
   if (marcasMatch) {
     marcas = marcasMatch[1]
-      .split(/[,;·•\n]/)
+      .split(/[,;·•\n|]/)
       .map(m => m.replace(/^[-*•]\s*/, "").trim())
       .filter(m => m.length > 1 && m.length < 40);
   }
@@ -124,16 +123,25 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // Fallback: se não achar por label, procura por linhas que começam com bullet logo após mencionar marcas
   if (marcas.length === 0) {
     const lines = c1Md.split("\n");
-    const marcasIdx = lines.findIndex(l => /marcas/i.test(l));
+    const marcasIdx = lines.findIndex(l => /marcas|concorrentes/i.test(l));
     if (marcasIdx !== -1) {
-      for (let i = marcasIdx + 1; i < lines.length && i < marcasIdx + 6; i++) {
+      for (let i = marcasIdx + 1; i < lines.length && i < marcasIdx + 10; i++) {
         const line = lines[i].trim();
-        if (/^[-*•]/.test(line)) {
-          marcas.push(line.replace(/^[-*•]\s*/, "").trim());
+        // Se a linha começar com bullet ou tiver um formato de item de lista
+        if (/^[-*•·]/.test(line) || /^[A-Za-z\s]+:/.test(line)) {
+          const m = line.replace(/^[-*•·]\s*/, "").split(":")[0].trim();
+          if (m.length > 1 && m.length < 40) marcas.push(m);
+        } else if (line === "" && marcas.length > 0) {
+          continue; // Pula linhas vazias no meio da lista
         } else if (line === "") {
           continue;
         } else {
-          break;
+          // Se não tiver bullet mas estiver logo abaixo do título "Marcas", pode ser uma lista simples
+          if (marcas.length < 5 && line.length > 1 && line.length < 40 && !line.includes("#")) {
+            marcas.push(line);
+          } else if (marcas.length > 0) {
+            break;
+          }
         }
       }
     }
