@@ -102,38 +102,55 @@ function VisaoImersao2Page() {
       }
       
       console.log("[V2] Parse OK, criando view-model...");
-      const parsedData = adapterImmersionV2ToExecutive(doc);
+      // Apenas valida se o view-model pode ser criado
+      adapterImmersionV2ToExecutive(doc);
       
-      console.log("[V2] View-model OK, persistindo...");
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
-
-      const { error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: parsedData.metadata.representative_name || "Cliente Não Identificado",
-        visit_date: parsedData.metadata.interview_date || new Date().toISOString().split('T')[0],
-        source_filename: file.name,
-        content_markdown: text,
-        structured_data: parsedData as any,
-        company_id: profile?.company_id,
-        created_by: userData.user?.id
-      });
-
-      if (insertError) {
-        console.error("[V2] Erro na persistência:", insertError);
-        throw insertError;
-      }
-
-      console.log("[V2] Persistência OK, atualizando estado...");
+      console.log("[V2] Validação OK, atualizando estado local...");
       setAvulso({ doc, arquivo: file.name });
       
-      toast.success("Relatório V2 carregado e salvo com sucesso.");
-      console.log("[V2] Fluxo concluído com sucesso.");
+      toast.success("Arquivo carregado com sucesso. Clique em 'Salvar Imersão' para persistir.");
+      console.log("[V2] Fluxo de carregamento local concluído.");
     } catch (e: any) {
       console.error("[V2] Erro fatal no fluxo:", e);
       toast.error(e?.message ?? "Falha ao processar o relatório.");
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleSave() {
+    if (!avulso || !visao) return;
+    
+    setSalvando(true);
+    try {
+      console.log("[V2] Persistindo imersão...");
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
+
+      // Serializa o markdown original para salvar
+      const markdown = serializeFieldStoreVisit(avulso.doc);
+
+      const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
+        client_name: visao.metadata.representative_name || "Cliente Não Identificado",
+        visit_date: visao.metadata.interview_date || new Date().toISOString().split('T')[0],
+        source_filename: avulso.arquivo,
+        content_markdown: markdown,
+        structured_data: visao as any,
+        company_id: profile?.company_id,
+        created_by: userData.user?.id
+      }).select().single();
+
+      if (insertError) throw insertError;
+
+      toast.success("Relatório V2 salvo com sucesso na base de dados.");
+      setAvulso({ ...avulso, id: inserted.id });
+      console.log("[V2] Persistência concluída.");
+    } catch (e: any) {
+      console.error("[V2] Erro na persistência:", e);
+      toast.error("Falha ao salvar a imersão: " + e.message);
+    } finally {
+      setSalvando(false);
     }
   }
 
