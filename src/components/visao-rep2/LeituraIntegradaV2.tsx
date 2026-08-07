@@ -423,7 +423,7 @@ function GroupComparisonPanelV2({
 
 // ---------------------------------------------------------------- seção
 
-export function LeituraIntegradaV2({ visao }: { visao: VisaoRep2 }) {
+export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: VisaoRep2; defaultOpen?: boolean }) {
   const leitura = useMemo(() => buildLeituraIntegrada(visao), [visao]);
   const [sel, setSel] = useState(0);
   const isMobile = useIsMobile();
