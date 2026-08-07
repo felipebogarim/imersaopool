@@ -48,32 +48,45 @@ export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
  * Suporta blocos com ou sem a label de tipo no ```json.
  */
 export function extractImmersion2Json(markdown: string): Immersion2Data | null {
-  // Tenta primeiro com a label explícita 'visao_imersao_2'
-  let match = markdown.match(/```json\s+visao_imersao_2\n([\s\S]+?)\n```/);
+  // Regex mais flexível para capturar qualquer bloco de código JSON ou texto que pareça JSON
+  // Procure por blocos demarcados com ``` ou apenas conteúdo entre chaves { } que contenha o schema
   
-  // Se não encontrar, tenta qualquer bloco JSON que contenha a tag de schema correta
-  if (!match) {
-    const allJsonBlocks = markdown.matchAll(/```json\n([\s\S]+?)\n```/g);
-    for (const b of allJsonBlocks) {
+  // 1. Tentar encontrar blocos de código (Markdown)
+  const codeBlockRegex = /```(?:json)?\s*(?:visao_imersao_2)?\n([\s\S]+?)\n```/g;
+  let matches = Array.from(markdown.matchAll(codeBlockRegex));
+  
+  for (const match of matches) {
+    try {
+      const raw = JSON.parse(match[1]);
+      if (raw && raw.schema === "visao_imersao_2_data_v1") {
+        return Immersion2DataSchema.parse(raw);
+      }
+    } catch (e) {
+      // Se falhou o parse ou o schema não bate, continue tentando outros blocos
+      continue;
+    }
+  }
+
+  // 2. Se não encontrou em blocos demarcados, tentar procurar no texto bruto por algo que pareça o JSON alvo
+  // Procuramos por "{", "schema", "visao_imersao_2_data_v1" e "}"
+  const rawJsonRegex = /\{[\s\S]*?"schema"\s*:\s*"visao_imersao_2_data_v1"[\s\S]*?\}/g;
+  const rawMatches = markdown.match(rawJsonRegex);
+  
+  if (rawMatches) {
+    for (const rawStr of rawMatches) {
       try {
-        const raw = JSON.parse(b[1]);
-        if (raw.schema === "visao_imersao_2_data_v1") {
-          return Immersion2DataSchema.parse(raw);
-        }
-      } catch {
+        // Tentar limpar possíveis resíduos de markdown se o regex pegou demais
+        const cleaned = rawStr.trim();
+        const raw = JSON.parse(cleaned);
+        return Immersion2DataSchema.parse(raw);
+      } catch (e) {
         continue;
       }
     }
-    return null;
   }
 
-  try {
-    const raw = JSON.parse(match[1]);
-    return Immersion2DataSchema.parse(raw);
-  } catch (e) {
-    console.error("[Immersion2Parser] Erro ao processar bloco JSON:", e);
-    return null;
-  }
+  console.error("[Immersion2Parser] Nenhum bloco JSON válido 'visao_imersao_2_data_v1' encontrado.");
+  return null;
 }
 
 /**
