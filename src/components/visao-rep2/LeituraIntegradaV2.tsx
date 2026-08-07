@@ -70,7 +70,9 @@ function Bloco({ label, value, strong }: { label: string; value: string | null; 
   return (
     <div className={cn("rounded-lg border p-3", strong && "border-primary/40 bg-primary/5")}>
       <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
-      <p className={cn("whitespace-pre-wrap break-words text-sm leading-relaxed", strong && "font-medium")}>{value}</p>
+      <div className={cn("whitespace-pre-wrap break-words text-sm leading-relaxed", strong && "font-medium")}>
+        <MarkdownView content={value} />
+      </div>
     </div>
   );
 }

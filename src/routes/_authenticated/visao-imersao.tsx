@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { MarkdownView } from "@/components/MarkdownView";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { extractFileText } from "@/lib/sintese-file-text";
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
@@ -283,7 +284,7 @@ function VisaoImersaoPage() {
             </section>
 
             {(() => {
-              const visao = adapterImmersionToExecutive(avulso?.doc ?? {
+              const doc: FieldImmersionDoc = avulso?.doc ?? {
                 meta,
                 chapters: [
                   ...(sumario ? [{ ordem: 0, codigo: "C0", key: "sumario_executivo", titulo: "Sumário executivo", markdown: sumario }] : []),
@@ -295,9 +296,10 @@ function VisaoImersaoPage() {
                     markdown: b.markdown,
                   })),
                 ],
-              });
+              };
+              
+              const visao = adapterImmersionToExecutive(doc);
 
-              // Para imersões, o briefing é construído a partir do Sumário Executivo (Presidencial)
               const brief = {
                 sintese: visao.executive_brief?.presidential_synthesis || "",
                 contexto: {
@@ -314,8 +316,12 @@ function VisaoImersaoPage() {
                   nome: p.perspective_title,
                   descricao: p.perspective_title,
                   tituloConclusivo: p.executive_finding || p.perspective_title,
-                  contexto: p.full_reading,
-                  temConteudo: !!p.full_reading
+                  contexto: p.evidence, // Texto sumarizado
+                  temConteudo: !!p.full_reading,
+                  evidencia: p.source_quote,
+                  representa: p.business_impact,
+                  decisaoRef: null,
+                  validacaoRef: null,
                 }))
               };
 
@@ -327,8 +333,52 @@ function VisaoImersaoPage() {
                     regiao={meta["local"] || ""}
                     mode="imersao"
                     contexto={contexto}
+                    perspectivas={brief.perspectivas as any}
                   />
                   <LeituraIntegradaV2 visao={visao} />
+
+                  <section className="mt-12 space-y-4">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Áreas de aprofundamento
+                    </h3>
+                    <Accordion type="single" collapsible className="w-full space-y-2">
+                      <AccordionItem value="origem" className="rounded-xl border bg-card px-4">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          Relatório de origem · visão executiva
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4">
+                          <MarkdownView content={doc.chapters.find(c => c.codigo === "C0" || c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="completo" className="rounded-xl border bg-card px-4">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          Relatório completo por capítulos
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-6 pt-4 pb-6">
+                          {doc.chapters.map(cap => (
+                            <div key={cap.codigo} className="space-y-2 border-l-2 border-primary/20 pl-4">
+                              <h4 className="text-sm font-bold">{cap.codigo} · {cap.titulo}</h4>
+                              <MarkdownView content={cap.markdown} />
+                            </div>
+                          ))}
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="familias" className="rounded-xl border bg-card px-4">
+                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
+                          Visão por família detalhada
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pb-4">
+                          <div className="rounded-lg border bg-muted/30 p-4">
+                            <p className="text-xs text-muted-foreground">
+                              Consulte o Capítulo 3 no Relatório Completo para detalhes por família.
+                            </p>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </section>
                 </div>
               );
             })()}

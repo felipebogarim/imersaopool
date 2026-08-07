@@ -83,9 +83,9 @@ function PainelApoio({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
         </TituloSecao>
         {has(p.evidencia) ? (
           <figure className="space-y-1">
-            <blockquote className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
-              “{p.evidencia}”
-            </blockquote>
+            <div className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
+              <MarkdownView content={p.evidencia?.startsWith('“') ? p.evidencia : `“${p.evidencia}”`} />
+            </div>
             <figcaption className="pl-3 text-[11px] uppercase tracking-wide text-muted-foreground/80">
               Fala do representante
             </figcaption>
@@ -193,7 +193,7 @@ function Narrativa({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
           />
         </div>
         {has(p.contexto) ? (
-          <p className="max-w-[68ch] whitespace-pre-line text-base leading-8 text-foreground/90">{p.contexto}</p>
+          <MarkdownView content={has(p.contexto) ? p.contexto : ""} />
         ) : null}
       </div>
 
