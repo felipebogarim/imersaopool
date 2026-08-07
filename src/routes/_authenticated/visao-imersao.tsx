@@ -163,6 +163,8 @@ function VisaoImersaoPage() {
       
       const res = (data as any).respostas;
       const bi = res?.__client_bi__;
+      
+      // Se não houver BI, tenta buscar atingimento direto da tabela se houver campo
       if (!bi) return null;
       
       return {
