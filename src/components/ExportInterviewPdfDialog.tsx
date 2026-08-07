@@ -138,7 +138,7 @@ export function ExportInterviewPdfDialog({ open, onOpenChange, interviewId, defa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Exportar PDF da entrevista</DialogTitle>
+          <DialogTitle>Exportar PDF da {fields.modelo?.toLowerCase().includes("imersão") ? "imersão" : "entrevista"}</DialogTitle>
           <DialogDescription>
             {step === "cover" && "Escolha o modelo de capa."}
             {step === "form" && "Preencha os textos que aparecerão na capa."}
