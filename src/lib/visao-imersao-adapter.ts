@@ -108,13 +108,29 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // Extrai sinais do capítulo de síntese (C7) ou temas recorrentes
   const sinteseCap = doc.chapters.find(c => c.codigo === "C7");
   if (sinteseCap) {
-    const conclusions = sinteseCap.markdown.split('\n')
-      .filter(l => l.startsWith('-') || l.startsWith('*') || /^\d+\./.test(l))
-      .map(l => l.replace(/^[-*\d.]+\s+/, '').trim())
-      .slice(0, 5); // Entre 3 e 5 sinais
+    const lines = sinteseCap.markdown.split('\n');
+    const signals: string[] = [];
+    
+    // Busca linhas que parecem ser conclusões (começam com marcador de lista ou número)
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      
+      if (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed)) {
+        signals.push(trimmed.replace(/^[-*\d.]+\s+/, '').trim());
+      }
+    }
 
-    visao.executive_view.priority_signals = conclusions.map((c, i) => ({
-      title: c.length > 100 ? c.slice(0, 100) + "..." : c,
+    // Se não encontrou marcadores de lista, pega os primeiros parágrafos curtos como sinais
+    if (signals.length === 0) {
+      const paragraphs = sinteseCap.markdown.split('\n\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 20 && p.length < 300);
+      signals.push(...paragraphs.slice(0, 5));
+    }
+
+    visao.executive_view.priority_signals = signals.slice(0, 5).map((c, i) => ({
+      title: c.length > 100 ? c.slice(0, 100).trim() + "..." : c,
       finding: c,
       business_impact: "Impacto identificado na imersão.",
       recommended_action: null,
