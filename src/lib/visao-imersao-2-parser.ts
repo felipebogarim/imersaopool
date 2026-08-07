@@ -45,10 +45,28 @@ export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
 
 /**
  * Localiza e extrai o bloco JSON visao_imersao_2 de um markdown.
+ * Suporta blocos com ou sem a label de tipo no ```json.
  */
 export function extractImmersion2Json(markdown: string): Immersion2Data | null {
-  const match = markdown.match(/```json\s+visao_imersao_2\n([\s\S]+?)\n```/);
-  if (!match) return null;
+  // Tenta primeiro com a label explícita 'visao_imersao_2'
+  let match = markdown.match(/```json\s+visao_imersao_2\n([\s\S]+?)\n```/);
+  
+  // Se não encontrar, tenta qualquer bloco JSON que contenha a tag de schema correta
+  if (!match) {
+    const allJsonBlocks = markdown.matchAll(/```json\n([\s\S]+?)\n```/g);
+    for (const b of allJsonBlocks) {
+      try {
+        const raw = JSON.parse(b[1]);
+        if (raw.schema === "visao_imersao_2_data_v1") {
+          return Immersion2DataSchema.parse(raw);
+        }
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  }
+
   try {
     const raw = JSON.parse(match[1]);
     return Immersion2DataSchema.parse(raw);
