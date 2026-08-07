@@ -346,59 +346,41 @@ function VisaoImersaoPage() {
             {(() => {
               const doc: FieldImmersionDoc = avulso?.doc ?? {
                 meta,
-                chapters: [
-                  ...(sumario ? [{ ordem: 0, codigo: "C0", key: "sumario_executivo", titulo: "Sumário executivo", markdown: sumario }] : []),
-                  ...blocos.map((b: any) => ({
-                    ordem: b.ordem,
-                    codigo: b.codigo,
-                    key: b.key,
-                    titulo: b.titulo,
-                    markdown: b.markdown,
-                  })),
-                ],
+                chapters: blocos.map((b: any) => ({
+                  ordem: b.ordem,
+                  codigo: b.codigo,
+                  key: b.key,
+                  titulo: b.titulo,
+                  markdown: b.markdown,
+                })),
               };
               
               const visao = adapterImmersionToExecutive(doc);
 
-              const brief = {
-                sintese: visao.executive_brief?.presidential_synthesis || "",
-                contexto: {
-                  marcas: [],
-                  regiaoModelo: visao.representative_context.additional_context || ""
-                },
-                clientes: [],
-                temas: [],
-                conclusoes: [],
-                decisoes: [],
-                validacoes: [],
-                perspectivas: (visao.perspectives || []).map(p => ({
-                  numero: p.perspective_number,
-                  nome: p.perspective_title,
-                  descricao: p.perspective_title,
-                  tituloConclusivo: p.executive_finding || p.perspective_title,
-                  contexto: p.evidence || "", 
-                  temConteudo: !!p.full_reading,
-                  evidencia: p.source_quote || "",
-                  representa: p.business_impact || "",
-                  decisaoRef: null,
-                  validacaoRef: null,
-                  entidades: {},
-                  ondeAparece: [],
-                  conclusoes: [],
-                  comparacao: p.comparative_classification || ""
-                }))
-              };
-
               return (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <ExecutiveBriefV2
-                    brief={brief as any}
+                    brief={{
+                      sintese: visao.executive_brief?.presidential_synthesis || "",
+                      contexto: {
+                        marcas: [],
+                        regiaoModelo: visao.representative_context.additional_context || ""
+                      },
+                      clientes: [],
+                      temas: [],
+                      conclusoes: [],
+                      decisoes: [],
+                      validacoes: [],
+                      perspectivas: []
+                    } as any}
                     nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
                     regiao={meta["local"] || ""}
                     mode="imersao"
                     contexto={contexto}
-                    perspectivas={brief.perspectivas as any}
+                    perspectivas={undefined}
+                    visao={visao}
                   />
+                  
                   <LeituraIntegradaV2 visao={visao} />
 
                   <section className="mt-12 space-y-4">
@@ -411,7 +393,7 @@ function VisaoImersaoPage() {
                           Relatório de origem · visão executiva
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 pb-4">
-                          <MarkdownView markdown={doc.chapters.find(c => c.codigo === "C0" || c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
+                          <MarkdownView markdown={doc.chapters.find(c => c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
                         </AccordionContent>
                       </AccordionItem>
 
@@ -426,52 +408,6 @@ function VisaoImersaoPage() {
                               <MarkdownView markdown={cap.markdown} />
                             </div>
                           ))}
-                        </AccordionContent>
-                      </AccordionItem>
-
-                      <AccordionItem value="familias" className="rounded-xl border bg-card px-4">
-                        <AccordionTrigger className="text-sm font-medium hover:no-underline">
-                          Visão por família detalhada
-                        </AccordionTrigger>
-                        <AccordionContent className="pt-2 pb-4">
-                          <div className="rounded-lg border bg-muted/30 p-4">
-                            <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                              Leitura estratégica por categoria
-                            </h4>
-                            <div className="overflow-x-auto">
-                              <table className="w-full border-collapse text-left text-xs">
-                                <thead>
-                                  <tr className="border-b bg-muted/50">
-                                    <th className="px-3 py-2 font-semibold">Família</th>
-                                    <th className="px-3 py-2 font-semibold">Situação</th>
-                                    <th className="px-3 py-2 font-semibold">Leitura executiva</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {doc.chapters.find(c => c.codigo === "C3")?.markdown.split('\n')
-                                    .filter(l => l.includes('|') && !l.includes('---') && !l.toLowerCase().includes('família|'))
-                                    .map((row, i) => {
-                                      const cols = row.split('|').filter(c => c.trim().length > 0);
-                                      if (cols.length < 2) return null;
-                                      return (
-                                        <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
-                                          <td className="px-3 py-2 font-medium">{cols[0].trim()}</td>
-                                          <td className="px-3 py-2">
-                                            <Badge variant="outline" className="text-[10px] font-normal">
-                                              {cols[1].trim()}
-                                            </Badge>
-                                          </td>
-                                          <td className="px-3 py-2 text-muted-foreground">{cols[2]?.trim() || cols[1]?.trim() || "—"}</td>
-                                        </tr>
-                                      );
-                                    })}
-                                </tbody>
-                              </table>
-                            </div>
-                            <p className="mt-3 text-[10px] text-muted-foreground">
-                              Dados extraídos do Capítulo 3 · Oferta e categorias.
-                            </p>
-                          </div>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
