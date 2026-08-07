@@ -20,7 +20,7 @@ const FAM_COLORS = [
   "var(--fam-8)",
 ];
 
-export function PerformanceFamiliasV2({ perf }: { perf: PerfResumo | null }) {
+export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | null; contexto?: string }) {
   const [modo, setModo] = useState<Modo>("participacao");
 
   /**
@@ -44,12 +44,14 @@ export function PerformanceFamiliasV2({ perf }: { perf: PerfResumo | null }) {
   const max =
     modo === "participacao"
       ? Math.max(1, ...itens.map(i => i.participacao ?? 0))
-      : Math.max(100, ...itens.map(i => i.atingimento));
+      : Math.max(120, ...itens.map(i => i.atingimento));
 
   return (
     <BlocoExpansivel
+      defaultOpen={false}
       titulo="Performance por família de produtos"
       descricao="Leitura relativa da carteira do representante no período ativo."
+      contexto={contexto}
       acessorio={
         <span className="hidden flex-wrap gap-1.5 text-xs text-muted-foreground sm:flex">
           <span className="rounded-md border px-2 py-0.5">{perf.periodoLabel}</span>
