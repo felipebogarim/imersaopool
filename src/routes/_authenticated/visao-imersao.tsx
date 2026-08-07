@@ -25,6 +25,7 @@ import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
 import type { PerfResumo } from "@/lib/visao-rep";
+import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   FIELD_STORE_VISIT_CHAPTERS_V1,
   FIELD_IMMERSION_CHAPTERS_V2,
