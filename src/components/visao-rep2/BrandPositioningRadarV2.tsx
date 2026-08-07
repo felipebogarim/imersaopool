@@ -16,8 +16,14 @@ export function BrandPositioningRadarV2({
     const list = referencia ? [referencia] : comparaveis;
     const teia = buildTeiaVM(atual, list);
     
-    // Adaptador de TeiaVM para o formato de visualização esperado no Recharts
-    if (teia.status !== "ok") return { status: teia.status, descricaoAcessivel: "", data: [], baseCount: 0 };
+    if (teia.status !== "ok") {
+      return { 
+        status: teia.status, 
+        descricaoAcessivel: "", 
+        data: [], 
+        baseCount: 0 
+      };
+    }
     
     return {
       status: "ok" as const,
@@ -32,18 +38,10 @@ export function BrandPositioningRadarV2({
     };
   }, [atual, referencia, comparaveis]);
 
-  if (vm.status === "loading") {
-    return (
-      <div className="flex h-[300px] w-full items-center justify-center sm:h-[340px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (vm.status === "error") {
+  if (vm.status === "sem_dados") {
     return (
       <div className="flex h-[300px] w-full items-center justify-center rounded-xl bg-muted/20 text-xs text-muted-foreground sm:h-[340px]">
-        Não foi possível gerar a teia comparativa
+        Teia de posicionamento não disponível (sem dados)
       </div>
     );
   }

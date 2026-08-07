@@ -150,10 +150,11 @@ function VisaoImersaoPage() {
     queryKey: ["vi-perf", selected?.immersion?.client_id],
     enabled: !!selected?.immersion?.client_id,
     queryFn: async () => {
+      const clientId = selected!.immersion!.client_id!;
       const { data, error } = await supabase
-        .from("client_bi")
+        .from("client_bi" as any)
         .select("*")
-        .eq("client_id", selected!.immersion!.client_id!)
+        .eq("client_id", clientId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
