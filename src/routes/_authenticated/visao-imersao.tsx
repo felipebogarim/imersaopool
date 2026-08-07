@@ -535,7 +535,7 @@ function VisaoImersaoPage() {
 
               return (
                 <div className="space-y-8">
-                  {/* 1. Cabeçalho da Imersão já renderizado acima via PageHeader e section */}
+                  {/* 1. Cabeçalho da Imersão (Renderizado acima via PageHeader e section) */}
                   
                   {/* 2. Briefing Executivo (3 cards na mesma linha) */}
                   <BriefHeaderV2
@@ -553,7 +553,7 @@ function VisaoImersaoPage() {
                     teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />}
                   />
 
-                  {/* 4. Performance por Família de Produtos (Imediatamente após Síntese + Teia) */}
+                  {/* 4. Performance por Família de Produtos */}
                   {perfData && (
                     <PerformanceFamiliasV2 perf={perfData} />
                   )}
@@ -561,7 +561,7 @@ function VisaoImersaoPage() {
                   {/* 5. Leitura Integrada (Painel Principal de Decisão) */}
                   <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-                  {/* 6. Conclusões Centrais (Opcional/Camada 3) */}
+                  {/* 6. Conclusões Centrais (Camada Executiva) */}
                   {visao.executive_brief?.themes && visao.executive_brief.themes.length > 0 && (
                      <ConclusoesCentraisV2 
                        conclusoes={visao.executive_brief.themes.map(t => ({ 
@@ -631,4 +631,5 @@ function VisaoImersaoPage() {
       </div>
     </div>
   );
+}
 }
