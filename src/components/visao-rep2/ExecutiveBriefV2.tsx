@@ -8,6 +8,7 @@ import { MarkdownView } from "@/components/MarkdownView";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
+import { BrandPositioningRadarV2 } from "./BrandPositioningRadarV2";
 import { BlocoExpansivel } from "./BlocoExpansivel";
 import { GaugeAtingimento } from "./GaugeAtingimento";
 import { type PerspectivaVM, buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";

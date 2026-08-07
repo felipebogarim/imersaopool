@@ -21,6 +21,7 @@ import { extractFileText } from "@/lib/sintese-file-text";
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
+import type { PerfResumo } from "@/lib/visao-rep";
 import { 
   FIELD_STORE_VISIT_CHAPTERS_V1,
   FIELD_IMMERSION_CHAPTERS_V2,
@@ -54,7 +55,17 @@ type SessaoRow = {
   id: string;
   immersion_id: string | null;
   respostas: any;
-  immersion: { id: string; titulo: string | null; data_visita: string | null; client: { nome_fantasia: string | null } | null } | null;
+  immersion: { 
+    id: string; 
+    titulo: string | null; 
+    data_visita: string | null; 
+    client_id: string | null;
+    client: { 
+      id: string;
+      nome_fantasia: string | null;
+      razao_social: string | null;
+    } | null;
+  } | null;
 };
 
 const fmtData = (v?: string | null) => {
@@ -147,8 +158,9 @@ function VisaoImersaoPage() {
         .limit(1)
         .maybeSingle();
       
-      if (!data?.respostas?.__client_bi__) return null;
-      const bi = data.respostas.__client_bi__;
+      const res = data?.respostas as any;
+      if (!res?.__client_bi__) return null;
+      const bi = res.__client_bi__;
       
       return {
         periodoLabel: "Período Ativo",
