@@ -151,7 +151,7 @@ function VisaoImersaoPage() {
     queryFn: async () => {
       const clientId = selected!.immersion!.client_id!;
       const { data, error } = await supabase
-        .from("client_bi" as any)
+        .from("client_bi")
         .select("*")
         .eq("client_id", clientId)
         .order("created_at", { ascending: false })
@@ -161,12 +161,12 @@ function VisaoImersaoPage() {
       if (error || !data) return null;
       
       const res = (data as any).respostas;
-      if (!res?.__client_bi__) return null;
-      const bi = res.__client_bi__;
+      const bi = res?.__client_bi__;
+      if (!bi) return null;
       
       return {
-        periodoLabel: "Período Ativo",
         geralPct: bi.geral,
+        periodoLabel: bi.periodo || "Período Ativo",
         familias: (bi.familias || []).map((f: any) => ({
           familia: f.familia,
           pct: f.atingimento
