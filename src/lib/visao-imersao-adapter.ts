@@ -25,8 +25,8 @@ export const IMMERSION_PERSPECTIVES_META = [
 function extractEvidence(markdown: string): string | null {
   if (!markdown) return null;
   
-  // 1. Procura citações entre aspas (mínimo 20 caracteres)
-  const quoteMatch = markdown.match(/[“"']([^"“”']{20,})["”']/);
+  // 1. Procura citações entre aspas (mínimo 15 caracteres)
+  const quoteMatch = markdown.match(/[“"']([^"“”']{15,})["”']/);
   if (quoteMatch) return quoteMatch[1].trim();
 
   // 2. Procura blockquotes (>)
