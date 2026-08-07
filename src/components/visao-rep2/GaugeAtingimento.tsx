@@ -33,7 +33,11 @@ const arcPath = (from: number, to: number) => {
 export function GaugeAtingimento({ valor, label }: { valor: number | null | undefined; label?: string }) {
   const v = valor == null || Number.isNaN(valor) ? null : valor;
   const clamped = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
-  const needle = pointOf(clamped, R - STROKE / 2 - 4);
+  
+  // Se o valor real for maior que o máximo visual (MAX), 
+  // o ponteiro fica no limite, mas o texto exibe o valor real.
+  const visualValue = v != null && v > MAX ? MAX : clamped;
+  const needle = pointOf(visualValue, R - STROKE / 2 - 4);
   const red = pointOf(RED_MARK, R + STROKE / 2);
   const redIn = pointOf(RED_MARK, R - STROKE / 2);
 
