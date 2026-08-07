@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,9 @@ import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM }
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
 import { BlocoExpansivel } from "./BlocoExpansivel";
 import { GaugeAtingimento } from "./GaugeAtingimento";
-import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
+import { type PerspectivaVM, buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import type { PerfResumo } from "@/lib/visao-rep";
+import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 
 
 export { BlocoExpansivel };
@@ -448,7 +449,7 @@ export function ExecutiveBriefV2({
     });
   }, [perspectivasProp, visao, brief]);
 
-  const temPerspectivas = perspectivas.some(p => p.temConteudo);
+  const temPerspectivas = perspectivas.some((p: PerspectivaVM) => p.temConteudo);
 
   return (
     <div className="space-y-6">
