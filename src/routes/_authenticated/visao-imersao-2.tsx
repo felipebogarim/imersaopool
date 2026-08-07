@@ -75,11 +75,11 @@ function VisaoImersao2Page() {
       
       // Persistência
       const { data: userData } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id).single();
+      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
 
       const { error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: parsedData.metadata.representative_name,
-        visit_date: parsedData.metadata.interview_date,
+        client_name: parsedData.metadata.representative_name || "Cliente Não Identificado",
+        visit_date: parsedData.metadata.interview_date || new Date().toISOString().split('T')[0],
         source_filename: file.name,
         content_markdown: text,
         structured_data: parsedData as any,
