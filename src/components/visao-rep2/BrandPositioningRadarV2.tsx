@@ -1,16 +1,36 @@
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 import { useMemo } from "react";
-import { buildRadarViewModel } from "@/lib/visao-rep2-teia";
+import { buildTeiaVM } from "@/lib/visao-rep2-teia";
 
 export function BrandPositioningRadarV2({ 
   atual, 
-  referencia 
+  referencia,
+  comparaveis = []
 }: { 
   atual: VisaoRep2; 
   referencia?: VisaoRep2;
+  comparaveis?: VisaoRep2[];
 }) {
-  const vm = useMemo(() => buildRadarViewModel(atual, referencia), [atual, referencia]);
+  const vm = useMemo(() => {
+    const list = referencia ? [referencia] : comparaveis;
+    const teia = buildTeiaVM(atual, list);
+    
+    // Adaptador de TeiaVM para o formato de visualização esperado no Recharts
+    if (teia.status !== "ok") return { status: teia.status, descricaoAcessivel: "", data: [], baseCount: 0 };
+    
+    return {
+      status: "ok" as const,
+      data: teia.pontos.map(p => ({
+        subject: p.label,
+        value: p.atual,
+        media: p.media,
+        fullMark: 100
+      })),
+      baseCount: teia.baseCount,
+      descricaoAcessivel: teia.descricaoAcessivel
+    };
+  }, [atual, referencia, comparaveis]);
 
   if (vm.status === "loading") {
     return (

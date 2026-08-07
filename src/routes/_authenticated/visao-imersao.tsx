@@ -160,7 +160,7 @@ function VisaoImersaoPage() {
       
       if (error || !data) return null;
       
-      const res = data.respostas as any;
+      const res = (data as any).respostas;
       if (!res?.__client_bi__) return null;
       const bi = res.__client_bi__;
       
@@ -180,7 +180,7 @@ function VisaoImersaoPage() {
         posicao: 0,
         totalReps: 0,
         clientes: 0
-      } as unknown as PerfResumo;
+      } as any;
     }
   });
 
