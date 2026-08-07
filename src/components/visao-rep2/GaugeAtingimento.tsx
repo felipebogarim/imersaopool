@@ -1,15 +1,15 @@
 // Gauge semicircular de atingimento ponderado (apenas percentual).
 // Escala fixa 50%–120%: zona verde a partir de 100%, marca vermelha em 70%.
 
-const MIN = 0;
-const MAX = 130;
+const MIN = 50;
+const MAX = 120;
 const GREEN_FROM = 100;
 const RED_MARK = 70;
 
 const W = 260;
-const H = 150;
+const H = 135;
 const CX = W / 2;
-const CY = 118;
+const CY = 120;
 const R = 92;
 const STROKE = 22;
 
@@ -32,11 +32,10 @@ const arcPath = (from: number, to: number) => {
 
 export function GaugeAtingimento({ valor, label }: { valor: number | null | undefined; label?: string }) {
   const v = valor == null || Number.isNaN(valor) ? null : valor;
-  const clamped = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
   
-  // Se o valor real for maior que o máximo visual (MAX), 
-  // o ponteiro fica no limite, mas o texto exibe o valor real.
-  const visualValue = v != null && v > MAX ? MAX : clamped;
+  // No gráfico, se o valor for < MIN, o ponteiro fica no MIN. 
+  // Se for > MAX, fica no MAX.
+  const visualValue = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
   const needle = pointOf(visualValue, R - STROKE / 2 - 4);
   const red = pointOf(RED_MARK, R + STROKE / 2);
   const redIn = pointOf(RED_MARK, R - STROKE / 2);
@@ -72,10 +71,10 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
             <circle cx={CX} cy={CY} r={9} className="fill-foreground" />
           </>
         ) : null}
-        <text x={pointOf(MIN).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+        <text x={pointOf(MIN).x} y={CY + 18} textAnchor="middle" className="fill-muted-foreground text-[10px]">
           {MIN}%
         </text>
-        <text x={pointOf(MAX).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+        <text x={pointOf(MAX).x} y={CY + 18} textAnchor="middle" className="fill-muted-foreground text-[10px]">
           {MAX}%
         </text>
       </svg>

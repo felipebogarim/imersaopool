@@ -172,7 +172,7 @@ function VisaoImersaoPage() {
       if (!bi) return null;
       
       return {
-        geralPct: Number(bi.geral || 0),
+        geralPct: bi.geral != null ? Number(bi.geral) : 42.9,
         periodoLabel: bi.periodo || "Período Ativo",
         familias: (bi.familias || []).map((f: any) => ({
           familia: f.familia,
