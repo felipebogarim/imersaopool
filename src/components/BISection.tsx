@@ -349,6 +349,50 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     [familyChart],
   );
 
+  // Top 6 clientes por atingimento ponderado (precisa vir da base de performance)
+  const { data: top6Clients = [] } = useQuery({
+    queryKey: ["bi-top6-clients", repId],
+    enabled: !!repId,
+    queryFn: async () => {
+      // Buscamos as linhas da última planilha de performance ativa para este representante
+      const { data: upload } = await supabase
+        .from("rep_performance_uploads")
+        .select("id")
+        .eq("representative_id", repId)
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (!upload) return [];
+
+      const { data: rows } = await supabase
+        .from("rep_performance_rows")
+        .select("razao_social, total_meta, realizado")
+        .eq("upload_id", upload.id);
+      
+      if (!rows) return [];
+
+      // Calculamos o atingimento de cada cliente
+      // realizado é um JSONB Map<Familia, Valor>
+      const processed = rows.map(r => {
+        const meta = Number(r.total_meta) || 0;
+        const realizadoMap = (r.realizado as Record<string, number>) || {};
+        const realizadoTotal = Object.values(realizadoMap).reduce((acc, val) => acc + (Number(val) || 0), 0);
+        const atingimento = meta > 0 ? (realizadoTotal / meta) * 100 : 0;
+        return {
+          name: r.razao_social,
+          atingimento: atingimento
+        };
+      });
+
+      // Ordena do maior para o menor e pega os 6 primeiros
+      return processed
+        .sort((a, b) => b.atingimento - a.atingimento)
+        .slice(0, 6);
+    }
+  });
+
 
 
 
