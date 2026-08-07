@@ -258,9 +258,15 @@ function VisaoImersao2Page() {
         subtitle={`Arquivo: ${avulso.arquivo}`}
         actions={
           <div className="flex gap-2">
-             <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
+              <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
+            {!avulso.id && (
+              <Button onClick={handleSave} disabled={salvando}>
+                {salvando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileUp className="mr-1 h-4 w-4" />}
+                Salvar Imersão
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => { setAvulso(null); if (fileRef.current) fileRef.current.value = ""; }}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Sair da Visão
             </Button>
