@@ -179,7 +179,8 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
       comparative_classification: "Base comparável insuficiente",
       full_reading: markdown, 
       structured_fields: {},
-      signal_ids: [] // Garante campo vazio para evitar problemas de mapeamento
+      signal_ids: [],
+      source_chapter: meta.codigo
     };
   });
 
