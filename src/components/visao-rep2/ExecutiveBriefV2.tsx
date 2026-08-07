@@ -26,6 +26,7 @@ export function BriefHeaderV2({
   marcas = [],
   atingimentoPct,
   periodo,
+  mode = "rep",
 }: {
   nome: string;
   regiao?: string | null;
@@ -34,12 +35,15 @@ export function BriefHeaderV2({
   marcas?: string[];
   atingimentoPct?: number | null;
   periodo?: string | null;
+  mode?: "rep" | "imersao";
 }) {
+  const label = mode === "imersao" ? "Visão Imersão" : "Visão Rep";
+
   return (
     <header className="grid gap-4 lg:grid-cols-3">
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Briefing executivo · Visão Rep
+          Briefing executivo · {label}
         </p>
         <h2 className="mt-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-2xl">{nome}</h2>
         {regiao ? (
@@ -52,7 +56,7 @@ export function BriefHeaderV2({
 
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Representa também:
+          {mode === "imersao" ? "Marcas observadas:" : "Representa também:"}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {marcas.length ? (
@@ -88,17 +92,19 @@ export function BriefHeaderV2({
 /* Contexto e carteira estratégica                                     */
 /* ------------------------------------------------------------------ */
 
-export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
+export function ContextPortfolioV2({ brief, mode = "rep" }: { brief: BriefingExecutivo; mode?: "rep" | "imersao" }) {
   if (!brief.clientes.length && !brief.contexto.regiaoModelo) return null;
+  const titulo = mode === "imersao" ? "Contexto da imersão" : "Clientes estratégicos, na visão do representante";
+  const descricao = mode === "imersao" ? "Informações sobre o consultor e o local da visita." : "Contexto de atuação e contas citadas como prioritárias na entrevista.";
   return (
     <BlocoExpansivel
-      titulo="Clientes estratégicos, na visão do representante"
-      descricao="Contexto de atuação e contas citadas como prioritárias na entrevista."
+      titulo={titulo}
+      descricao={descricao}
     >
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
         {brief.contexto.regiaoModelo ? (
           <div className="min-w-0 space-y-2">
-            <h4 className="text-sm font-semibold">Contexto do representante</h4>
+            <h4 className="text-sm font-semibold">{mode === "imersao" ? "Informações gerais" : "Contexto do representante"}</h4>
             <p className="max-w-prose text-sm leading-7 text-muted-foreground">{brief.contexto.regiaoModelo}</p>
           </div>
         ) : null}
@@ -416,6 +422,7 @@ export function ExecutiveBriefV2({
   leitura,
   teia,
   contexto,
+  mode = "rep",
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -431,6 +438,7 @@ export function ExecutiveBriefV2({
   teia?: ReactNode;
   /** Identificador do representante, usado para separar notas por contexto. */
   contexto?: string;
+  mode?: "rep" | "imersao";
 }) {
   const perspectivas =
     perspectivasProp ??
@@ -451,13 +459,14 @@ export function ExecutiveBriefV2({
         marcas={brief.contexto.marcas}
         atingimentoPct={perf?.geralPct ?? null}
         periodo={perf?.periodoLabel ?? null}
+        mode={mode}
       />
       {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
 
       <PerformanceFamiliasV2 perf={perf} />
       {leitura ?? null}
-      <ContextPortfolioV2 brief={brief} />
-      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} /> : null}
+      <ContextPortfolioV2 brief={brief} mode={mode} />
+      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
     </div>
