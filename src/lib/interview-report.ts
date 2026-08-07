@@ -1471,7 +1471,11 @@ export async function exportInterviewPdf(
     }
   }
 
-  if (interview.observacoes) {
+  // Só exibe Observações se houver conteúdo e se NÃO for um "Relatório Final" 
+  // que preenche os capítulos determinísticos (evitando duplicidade).
+  const isFinalReport = (interview?.respostas as any)?.__field_store_visit__?.origem === "final" || (interview?.respostas as any)?.__field_store_visit__?.report_template?.includes("field");
+  
+  if (interview.observacoes && !isFinalReport) {
     addContentPage();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);

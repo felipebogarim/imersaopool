@@ -6,13 +6,13 @@ export const FIELD_IMMERSION_TEMPLATE_V2 = "field_immersion_v2";
 export const FIELD_STORE_VISIT_TEMPLATE_V1 = "field_store_visit_v1";
 
 export const FIELD_IMMERSION_CHAPTERS_V2: Record<string, { ordem: number; slug: string; titulo_padrao: string }> = {
-  C1: { ordem: 1, slug: "contexto_percepcao", titulo_padrao: "Contexto, dinâmica e percepção inicial" },
-  C2: { ordem: 2, slug: "atores_decisao", titulo_padrao: "Atores, influência e processo de decisão" },
-  C3: { ordem: 3, slug: "oferta_categorias", titulo_padrao: "Oferta, categorias e desempenho percebido" },
-  C4: { ordem: 4, slug: "posicionamento_oportunidades", titulo_padrao: "Posicionamento, diferenciação e oportunidades" },
-  C5: { ordem: 5, slug: "relacionamento_ativacao", titulo_padrao: "Relacionamento, capacitação e ativação" },
-  C6: { ordem: 6, slug: "operacao_experiencia", titulo_padrao: "Operação, atendimento e experiência" },
-  C7: { ordem: 7, slug: "sintese_plano_acao", titulo_padrao: "Síntese, prioridades e próximos passos" },
+  C1: { ordem: 1, slug: "contexto_dinamica_percepcao", titulo_padrao: "Contexto, dinâmica e percepção inicial" },
+  C2: { ordem: 2, slug: "atores_influencia_decisao", titulo_padrao: "Atores, influência e processo de decisão" },
+  C3: { ordem: 3, slug: "oferta_categorias_desempenho", titulo_padrao: "Oferta, categorias e desempenho percebido" },
+  C4: { ordem: 4, slug: "posicionamento_diferenciacao_oportunidades", titulo_padrao: "Posicionamento, diferenciação e oportunidades" },
+  C5: { ordem: 5, slug: "relacionamento_capacitacao_ativacao", titulo_padrao: "Relacionamento, capacitação e ativação" },
+  C6: { ordem: 6, slug: "operacao_atendimento_experiencia", titulo_padrao: "Operação, atendimento e experiência" },
+  C7: { ordem: 7, slug: "sintese_prioridades_proximos_passos", titulo_padrao: "Síntese, prioridades e próximos passos" },
 };
 
 export const FIELD_STORE_VISIT_CHAPTERS_V1: Record<number, { key: string; titulo: string }> = {
@@ -136,7 +136,7 @@ export function parseFieldStoreVisit(md: string): {
     
     // Regra central: somente ## (H2) que contenha código válido [CX] ou Capítulo X
     // Ignora ###, ####, etc.
-    const isH2 = /^\s*##\s+/.test(line) && !/^\s*###/.test(line);
+    const isH2 = /^\s*##\s+/.test(line) && !/^\s*##\d+/.test(line) && !/^\s*###/.test(line);
     
     if (isH2) {
       const cm = line.match(CHAPTER_RE_V2);

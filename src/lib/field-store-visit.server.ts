@@ -135,6 +135,7 @@ export async function ingestStoreVisit(args: {
       arquivo: filename,
       importado_por: userId,
       importado_em: new Date().toISOString(),
+      origem: "final",
     },
   };
   
