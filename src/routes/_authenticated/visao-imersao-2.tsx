@@ -46,8 +46,9 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
 });
 
 function VisaoImersao2Page() {
-  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string } | null>(null);
+  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string; id?: string } | null>(null);
   const [importando, setImportando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
