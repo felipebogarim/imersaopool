@@ -36,6 +36,8 @@ const ICONS: Record<string, typeof BarChart3> = {
   "analises.sintese-tipos": LineChart,
   "analises.visao-rep": Users,
   "analises.visao-rep-2": Users,
+  "analises.visao-imersao-2": FileSearch,
+  "analises.visao-imersao": FileSearch,
   "analises.perspectivas": Lightbulb,
   "analises.compilacoes": Sparkles,
   price: Tag,
