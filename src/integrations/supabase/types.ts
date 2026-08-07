@@ -1294,6 +1294,53 @@ export type Database = {
           },
         ]
       }
+      field_immersion_v2_reports: {
+        Row: {
+          client_name: string
+          company_id: string | null
+          content_markdown: string
+          created_at: string
+          created_by: string | null
+          id: string
+          schema_version: string
+          source_filename: string
+          structured_data: Json
+          visit_date: string
+        }
+        Insert: {
+          client_name: string
+          company_id?: string | null
+          content_markdown: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          schema_version?: string
+          source_filename: string
+          structured_data: Json
+          visit_date: string
+        }
+        Update: {
+          client_name?: string
+          company_id?: string | null
+          content_markdown?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          schema_version?: string
+          source_filename?: string
+          structured_data?: Json
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_immersion_v2_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       field_visit_inputs: {
         Row: {
           company_id: string | null

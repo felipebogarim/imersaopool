@@ -21,6 +21,7 @@ import { adapterImmersionV2ToExecutive } from "@/lib/visao-imersao-2-adapter";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   parseFieldStoreVisit, 
+  serializeFieldStoreVisit,
   type FieldImmersionDoc 
 } from "@/lib/field-store-visit";
 import { 
@@ -46,15 +47,41 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
 });
 
 function VisaoImersao2Page() {
-  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string } | null>(null);
+  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string; id?: string } | null>(null);
   const [importando, setImportando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data: latestReport, isLoading: loadingLatest } = useQuery({
+    queryKey: ["latest-vi2-report"],
+    queryFn: async () => {
+      const { data: report } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (!report) return null;
+      
+      const { doc } = parseFieldStoreVisit(report.content_markdown);
+      return { doc, arquivo: report.source_filename };
+    }
+  });
+
+  useMemo(() => {
+    if (latestReport && !avulso) {
+      setAvulso(latestReport as any);
+    }
+  }, [latestReport]);
 
   const visao = useMemo(() => {
     if (!avulso) return null;
     try {
-      return adapterImmersionV2ToExecutive(avulso.doc);
+      const v = adapterImmersionV2ToExecutive(avulso.doc);
+      console.log("[V2] View-model criada para:", v.metadata.representative_name);
+      return v;
     } catch (e: any) {
       console.error("[VisaoImersao2] Erro no adapter:", e);
       return null;
@@ -63,20 +90,68 @@ function VisaoImersao2Page() {
 
   async function onFile(file: File) {
     setImportando(true);
+    console.log("[V2] Iniciando upload:", file.name);
     try {
       const text = await extractFileText(file);
+      console.log("[V2] Texto extraído, iniciando parse...");
+      
       const { doc, errors } = parseFieldStoreVisit(text);
       if (!doc) {
+        console.error("[V2] Falha no parse:", errors);
         toast.error(errors[0] ?? "Documento fora do padrão de relatório de imersão.");
         return;
       }
+      
+      console.log("[V2] Parse OK, criando view-model...");
+      // Apenas valida se o view-model pode ser criado
+      adapterImmersionV2ToExecutive(doc);
+      
+      console.log("[V2] Validação OK, atualizando estado local...");
       setAvulso({ doc, arquivo: file.name });
-      toast.success("Relatório V2 carregado com sucesso.");
+      
+      toast.success("Arquivo carregado com sucesso. Clique em 'Salvar Imersão' para persistir.");
+      console.log("[V2] Fluxo de carregamento local concluído.");
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao ler o arquivo.");
+      console.error("[V2] Erro fatal no fluxo:", e);
+      toast.error(e?.message ?? "Falha ao processar o relatório.");
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleSave() {
+    if (!avulso || !visao) return;
+    
+    setSalvando(true);
+    try {
+      console.log("[V2] Persistindo imersão...");
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
+
+      // Serializa o markdown original para salvar
+      const markdown = serializeFieldStoreVisit(avulso.doc);
+
+      const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
+        client_name: visao.metadata.representative_name || "Cliente Não Identificado",
+        visit_date: visao.metadata.interview_date || new Date().toISOString().split('T')[0],
+        source_filename: avulso.arquivo,
+        content_markdown: markdown,
+        structured_data: visao as any,
+        company_id: profile?.company_id,
+        created_by: userData.user?.id
+      }).select().single();
+
+      if (insertError) throw insertError;
+
+      toast.success("Relatório V2 salvo com sucesso na base de dados.");
+      setAvulso({ ...avulso, id: inserted.id });
+      console.log("[V2] Persistência concluída.");
+    } catch (e: any) {
+      console.error("[V2] Erro na persistência:", e);
+      toast.error("Falha ao salvar a imersão: " + e.message);
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -183,10 +258,16 @@ function VisaoImersao2Page() {
         subtitle={`Arquivo: ${avulso.arquivo}`}
         actions={
           <div className="flex gap-2">
-             <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
+              <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
-            <Button variant="ghost" onClick={() => setAvulso(null)}>
+            {!avulso.id && (
+              <Button onClick={handleSave} disabled={salvando}>
+                {salvando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileUp className="mr-1 h-4 w-4" />}
+                Salvar Imersão
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => { setAvulso(null); if (fileRef.current) fileRef.current.value = ""; }}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Sair da Visão
             </Button>
           </div>
