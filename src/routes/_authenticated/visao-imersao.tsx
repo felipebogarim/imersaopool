@@ -320,13 +320,16 @@ function VisaoImersaoPage() {
               };
 
               return (
-                <ExecutiveBriefV2
-                  brief={brief as any}
-                  nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
-                  regiao={meta["local"] || ""}
-                  mode="imersao"
-                  contexto={contexto}
-                />
+                <div className="space-y-6">
+                  <ExecutiveBriefV2
+                    brief={brief as any}
+                    nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
+                    regiao={meta["local"] || ""}
+                    mode="imersao"
+                    contexto={contexto}
+                  />
+                  <LeituraIntegradaV2 visao={visao} />
+                </div>
               );
             })()}
           </>
