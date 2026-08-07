@@ -15,9 +15,9 @@ import { purgeAppCaches } from "@/lib/app-refresh";
 export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
-    e: typeof search["e"] === "string" ? (search["e"] as string) : undefined,
-    primeiro: search["primeiro"] === "1" || search["primeiro"] === 1 || search["primeiro"] === true,
-  } as { e?: string; primeiro?: boolean }),
+    e: search.e as string | undefined,
+    primeiro: search.primeiro === "1" || search.primeiro === 1 || search.primeiro === true,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — PoolFlux" },

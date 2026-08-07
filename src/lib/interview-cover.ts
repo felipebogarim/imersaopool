@@ -109,7 +109,8 @@ export function drawCover(doc: jsPDF, imgDataUrl: string, f: CoverFields) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text(f.modelo === "Imersão" ? "IMERSÃO" : "ENTREVISTADO", leftX, labelY, { charSpace: 3 });
+  const labelText = f.modelo?.toLowerCase().includes("imersão") ? "IMERSÃO" : "ENTREVISTADO";
+  doc.text(labelText, leftX, labelY, { charSpace: 3 });
 
   const badgeName = (f.entrevistado || "—").toUpperCase();
   doc.setFont("helvetica", "bold");
@@ -362,7 +363,8 @@ export async function drawCoverDark(doc: jsPDF, f: CoverFields) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(170, 175, 185);
-  doc.text(f.modelo === "Imersão" ? "IMERSÃO" : "ENTREVISTADO", margin, blockBaseY - 16, { charSpace: 3 });
+  const labelText = f.modelo?.toLowerCase().includes("imersão") ? "IMERSÃO" : "ENTREVISTADO";
+  doc.text(labelText, margin, blockBaseY - 16, { charSpace: 3 });
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
