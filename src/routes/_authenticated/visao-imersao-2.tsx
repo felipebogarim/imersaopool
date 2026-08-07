@@ -228,7 +228,7 @@ function VisaoImersao2Page() {
         {/* 3. Síntese Estratégica + Teia */}
         <SintesePresidencialV2 
           texto={visao.executive_brief?.presidential_synthesis || ""} 
-          teia={<BrandPositioningRadarV2 visao={visao} comparativos={[]} />} 
+          teia={<BrandPositioningRadarV2 atual={visao} comparativos={[]} />} 
         />
 
         {/* 4. Performance por Família */}
@@ -242,7 +242,10 @@ function VisaoImersao2Page() {
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Áreas de Aprofundamento
           </h3>
-          <PerspectivasEntrevistaV2 visao={visao} />
+          <PerspectivasEntrevistaV2 
+            perspectivas={buildPerspectivasVM(visao)} 
+            mode="imersao"
+          />
           
           {/* Diagnóstico Técnico (Admin Only) */}
           {debugMode && (
