@@ -453,7 +453,7 @@ export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: Visa
       titulo="Leitura integrada"
       descricao="Selecione um sinal estratégico para acompanhar sua síntese, as evidências da entrevista e o paralelo com o grupo."
       contexto={contexto}
-      defaultOpen={false}
+      defaultOpen={defaultOpen}
     >
       <div className="space-y-5">
         <nav aria-label="Sinais estratégicos" className="rounded-xl border bg-muted/25 p-3 sm:p-4">
