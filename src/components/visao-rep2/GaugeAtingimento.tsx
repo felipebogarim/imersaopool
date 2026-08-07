@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 // Gauge semicircular de atingimento ponderado (apenas percentual).
 // Escala fixa 0%–120%: zona verde a partir de 100%, marca vermelha em 70%.
 
