@@ -270,26 +270,44 @@ function VisaoImersaoPage() {
         .eq("id", userData.user.id)
         .single();
 
-      // Criar a imersão
-      const { data: immersion, error: immError } = await supabase
+      if (!profile?.company_id) throw new Error("Empresa do usuário não identificada.");
+
+      // Buscar cliente pelo nome (fantasia ou razão)
+      let clientId: string | undefined;
+      if (avulso.doc.meta["cliente"]) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("id")
+          .or(`nome_fantasia.ilike.%${avulso.doc.meta["cliente"]}%,razao_social.ilike.%${avulso.doc.meta["cliente"]}%`)
+          .limit(1)
+          .maybeSingle();
+        clientId = client?.id;
+      }
+
+      // 1. Criar a imersão
+      const { data: immersion, error: immError } = await (supabase as any)
         .from("immersions")
         .insert({
           titulo: avulso.doc.meta["titulo"] || avulso.arquivo,
           data_visita: avulso.doc.meta["data_visita"] || new Date().toISOString(),
-          company_id: profile?.company_id,
-          status: "completed"
+          company_id: profile.company_id,
+          client_id: clientId || "00000000-0000-0000-0000-000000000000", // placeholder se não achar
+          status: "concluida"
         })
         .select()
         .single();
 
       if (immError) throw immError;
 
-      // Criar a sessão (interview)
-      const { data: session, error: sessError } = await supabase
+      // 2. Criar a sessão (interview)
+      const { data: session, error: sessError } = await (supabase as any)
         .from("interviews")
         .insert({
           immersion_id: immersion.id,
-          company_id: profile?.company_id,
+          company_id: profile.company_id,
+          entrevistado_nome: avulso.doc.meta["cliente"] || "Não identificado",
+          entrevistado_classificacao: "cliente",
+          entrevistador_nome: avulso.doc.meta["consultor"] || "Não identificado",
           respostas: { 
             __field_store_visit__: {
               meta: avulso.doc.meta,
@@ -302,19 +320,14 @@ function VisaoImersaoPage() {
 
       if (sessError) throw sessError;
 
-      // Criar os capítulos
-      // Precisamos dos IDs dos capítulos do roteiro. Como é avulso, vamos usar capítulos genéricos ou criar/vincular.
-      // Simplificando: vamos salvar os capítulos na tabela sessao_capitulos.
-      // Para isso precisamos de IDs de capítulos válidos. Vamos buscar ou criar um roteiro padrão de imersão.
-      
+      // 3. Criar os capítulos
       const chaptersToSave = avulso.doc.chapters.filter(c => c.ordem !== 0 && c.codigo !== "C0");
       
       for (const cap of chaptersToSave) {
-        // Tenta encontrar um capítulo existente com esse código/título ou cria um placeholder
-        // Em um cenário real, o arquivo teria o roteiro_id. 
-        // Aqui vamos apenas salvar a relação.
-        await supabase.from("sessao_capitulos").insert({
+        await (supabase as any).from("sessao_capitulos").insert({
           sessao_id: session.id,
+          company_id: profile.company_id,
+          capitulo_id: "00000000-0000-0000-0000-000000000000", // placeholder
           leitura_estrategica: cap.markdown,
           sintese: {
             __chapter_codigo__: cap.codigo,
