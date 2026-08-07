@@ -228,7 +228,7 @@ function VisaoImersao2Page() {
         {/* 3. Síntese Estratégica + Teia */}
         <SintesePresidencialV2 
           texto={visao.executive_brief?.presidential_synthesis || ""} 
-          teia={<BrandPositioningRadarV2 atual={visao} comparativos={[]} />} 
+          teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />} 
         />
 
         {/* 4. Performance por Família */}
