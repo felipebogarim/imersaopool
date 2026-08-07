@@ -18,6 +18,7 @@ import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositionin
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { adapterImmersionV2ToExecutive } from "@/lib/visao-imersao-2-adapter";
+import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   parseFieldStoreVisit, 
   type FieldImmersionDoc 
