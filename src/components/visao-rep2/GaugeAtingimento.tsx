@@ -40,6 +40,17 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
   const visualValue = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
   const needle = pointOf(visualValue, R - STROKE / 2 - 4);
 
+  // Lógica de cores para o valor atual
+  const getStatusColor = (val: number | null) => {
+    if (val === null) return "stroke-muted-foreground/25";
+    if (val <= 60) return "fill-red-500 stroke-red-500";
+    if (val <= 80) return "fill-amber-400 stroke-amber-400";
+    if (val <= 90) return "fill-lime-400 stroke-lime-400";
+    return "fill-emerald-500 stroke-emerald-500";
+  };
+
+  const needleColor = v === null ? "fill-foreground stroke-foreground" : getStatusColor(v);
+
   return (
     <div className="flex items-center gap-4">
       <svg
@@ -48,35 +59,49 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
         role="img"
         aria-label={label ?? "Atingimento"}
       >
-        <path d={arcPath(MIN, MAX)} fill="none" strokeWidth={STROKE} strokeLinecap="round" className="stroke-muted-foreground/25" />
+        <path d={arcPath(MIN, MAX)} fill="none" strokeWidth={STROKE} strokeLinecap="round" className="stroke-muted-foreground/15" />
+        
+        {/* Trilhas de cor fixas no fundo */}
         <path
           d={arcPath(MIN, RANGE_RED)}
           fill="none"
           strokeWidth={STROKE}
           strokeLinecap="round"
-          stroke="oklch(0.65 0.2 25)" // Vermelho
+          stroke="oklch(0.65 0.2 25 / 0.2)"
         />
         <path
           d={arcPath(RANGE_RED, RANGE_YELLOW)}
           fill="none"
           strokeWidth={STROKE}
           strokeLinecap="round"
-          stroke="oklch(0.85 0.2 90)" // Amarelo
+          stroke="oklch(0.85 0.2 90 / 0.2)"
         />
         <path
           d={arcPath(RANGE_YELLOW, RANGE_LIGHT_GREEN)}
           fill="none"
           strokeWidth={STROKE}
           strokeLinecap="round"
-          stroke="oklch(0.88 0.15 140)" // Verde claro
+          stroke="oklch(0.88 0.15 140 / 0.2)"
         />
         <path
           d={arcPath(RANGE_LIGHT_GREEN, RANGE_GREEN)}
           fill="none"
           strokeWidth={STROKE}
           strokeLinecap="round"
-          stroke="oklch(0.7 0.2 145)" // Verde
+          stroke="oklch(0.7 0.2 145 / 0.2)"
         />
+
+        {/* Arco de progresso colorido até o valor atual */}
+        {v !== null && (
+           <path
+            d={arcPath(MIN, visualValue)}
+            fill="none"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            className={needleColor.split(' ').find(c => c.startsWith('stroke-'))}
+          />
+        )}
+
         {v != null ? (
           <>
             <line
@@ -86,9 +111,9 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
               y2={needle.y}
               strokeWidth={6}
               strokeLinecap="round"
-              className="stroke-foreground"
+              className={needleColor.split(' ').find(c => c.startsWith('stroke-'))}
             />
-            <circle cx={CX} cy={CY} r={9} className="fill-foreground" />
+            <circle cx={CX} cy={CY} r={9} className={needleColor.split(' ').find(c => c.startsWith('fill-'))} />
           </>
         ) : null}
         <text x={pointOf(MIN).x} y={CY + 18} textAnchor="middle" className="fill-muted-foreground text-[10px]">
@@ -99,7 +124,7 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
         </text>
       </svg>
       <div className="min-w-0">
-        <p className="text-3xl font-semibold leading-none tabular-nums">
+        <p className={cn("text-3xl font-semibold leading-none tabular-nums", v !== null && needleColor.split(' ').find(c => c.startsWith('text-')))}>
           {v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`}
         </p>
         <p className="mt-1 text-[11px] text-muted-foreground">meta 100%</p>
