@@ -60,13 +60,7 @@ export function BrandPositioningRadarV2({
         role="img"
         aria-label={vm.descricaoAcessivel}
       >
-        {insuficiente && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
-            <div className="rounded-full border bg-background/90 px-3 py-1 text-[10px] font-medium text-muted-foreground shadow-sm">
-              Base comparável insuficiente
-            </div>
-          </div>
-        )}
+        {/* Removido o overlay de desfoque conforme solicitado na Visão Imersão */}
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={vm.data}>
             <PolarGrid stroke="var(--border)" strokeWidth={1} />
