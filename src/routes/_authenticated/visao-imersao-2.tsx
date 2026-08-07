@@ -21,6 +21,7 @@ import { adapterImmersionV2ToExecutive } from "@/lib/visao-imersao-2-adapter";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   parseFieldStoreVisit, 
+  serializeFieldStoreVisit,
   type FieldImmersionDoc 
 } from "@/lib/field-store-visit";
 import { 
