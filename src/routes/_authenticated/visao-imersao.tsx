@@ -371,17 +371,21 @@ function VisaoImersaoPage() {
                 conclusoes: [],
                 decisoes: [],
                 validacoes: [],
-                perspectivas: visao.perspectives.map(p => ({
+                perspectivas: (visao.perspectives || []).map(p => ({
                   numero: p.perspective_number,
                   nome: p.perspective_title,
                   descricao: p.perspective_title,
                   tituloConclusivo: p.executive_finding || p.perspective_title,
-                  contexto: p.evidence, // Texto sumarizado
+                  contexto: p.evidence || "", 
                   temConteudo: !!p.full_reading,
-                  evidencia: p.source_quote,
-                  representa: p.business_impact,
+                  evidencia: p.source_quote || "",
+                  representa: p.business_impact || "",
                   decisaoRef: null,
                   validacaoRef: null,
+                  entidades: {},
+                  ondeAparece: [],
+                  conclusoes: [],
+                  comparacao: p.comparative_classification || ""
                 }))
               };
 

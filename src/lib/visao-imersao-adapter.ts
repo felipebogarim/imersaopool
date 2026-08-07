@@ -159,7 +159,10 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
     const cap = doc.chapters.find(c => c.codigo === meta.codigo);
     const markdown = cap?.markdown || "";
     
-    const headline = cleanMarkdown(markdown.split('\n')[0]).slice(0, 110);
+    // Headline: Primeira linha do markdown ou placeholder
+    const firstLine = markdown.split('\n')[0] || "";
+    const headline = cleanMarkdown(firstLine).slice(0, 110);
+    
     const summary = generateExecutiveSummary(markdown, 500);
     const evidence = extractEvidence(markdown);
     
@@ -177,7 +180,7 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
       confidence_level: "alto",
       evidence_status: "relato_individual",
       comparative_classification: "Base comparável insuficiente",
-      full_reading: markdown, 
+      full_reading: markdown || "Conteúdo não disponível.", 
       structured_fields: {},
       signal_ids: [],
       source_chapter: meta.codigo
