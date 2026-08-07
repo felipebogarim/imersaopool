@@ -1,100 +1,53 @@
-// Teia comparativa de posicionamento — exclusiva da Visão Rep.
-// Índices analíticos derivados das entrevistas (nunca pesquisa de mercado,
-// nunca dados de performance). A Visão Rep original não usa este componente.
-
-import { useMemo } from "react";
-import {
-  Legend,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
-import { buildTeiaVM, confiancaLabel, fmtDelta, fmtScore, type TeiaPonto } from "@/lib/visao-rep2-teia";
+import { useMemo } from "react";
+import { buildTeiaVM } from "@/lib/visao-rep2-teia";
 
-function BrandPositioningTooltipV2({ active, payload }: { active?: boolean; payload?: any[] }) {
-  const p: TeiaPonto | undefined = payload?.[0]?.payload?.ponto;
-  if (!active || !p) return null;
-  const leitura = p.leitura && p.leitura.length > 240 ? `${p.leitura.slice(0, 237)}…` : p.leitura;
-  return (
-    <div className="max-w-[18rem] rounded-lg border bg-popover p-3 text-xs text-popover-foreground shadow-md">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">{p.longLabel}</p>
-      <p className="mt-1.5">Entrevista atual: <span className="font-semibold tabular-nums">{fmtScore(p.atual)}</span></p>
-      {p.media != null ? (
-        <>
-          <p>Média das demais: <span className="tabular-nums">{fmtScore(p.media)}</span></p>
-          <p>Diferença: <span className="tabular-nums">{fmtDelta(p.delta ?? 0)}</span></p>
-        </>
-      ) : null}
-      <p>Confiança: {confiancaLabel(p.confianca)}</p>
-      {leitura ? <p className="mt-1.5 leading-5 text-muted-foreground">{leitura}</p> : null}
-      {p.perspectivas.length ? (
-        <p className="mt-1.5 text-muted-foreground">Perspectivas: {p.perspectivas.join(", ")}</p>
-      ) : null}
-    </div>
-  );
-}
-
-
-export function BrandPositioningRadarV2({
-  atual,
-  comparaveis = [],
-}: {
-  atual: VisaoRep2;
-  /** Relatórios comparáveis: um por representante, sem o representante atual. */
+export function BrandPositioningRadarV2({ 
+  atual, 
+  referencia,
+  comparaveis = []
+}: { 
+  atual: VisaoRep2; 
+  referencia?: VisaoRep2;
   comparaveis?: VisaoRep2[];
 }) {
   const vm = useMemo(() => {
-    try {
-      return buildTeiaVM(atual, comparaveis);
-    } catch (e) {
-      console.error("[BrandPositioningRadarV2] falha ao montar a teia", e);
-      return null;
+    const list = referencia ? [referencia] : comparaveis;
+    const teia = buildTeiaVM(atual, list);
+    
+    if (teia.status !== "ok") {
+      return { 
+        status: teia.status, 
+        descricaoAcessivel: "", 
+        data: [], 
+        baseCount: 0 
+      };
     }
-  }, [atual, comparaveis]);
+    
+    return {
+      status: "ok" as const,
+      data: teia.pontos.map(p => ({
+        subject: p.label,
+        value: p.atual,
+        media: p.media,
+        fullMark: 100
+      })),
+      baseCount: teia.baseCount,
+      descricaoAcessivel: teia.descricaoAcessivel
+    };
+  }, [atual, referencia, comparaveis]);
 
-  if (!vm) {
-    return (
-      <p className="text-sm text-muted-foreground">Não foi possível carregar a comparação neste momento.</p>
-    );
-  }
   if (vm.status === "sem_dados") {
     return (
-      <div className="rounded-lg border border-dashed p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Teia comparativa de posicionamento
-        </p>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Este relatório foi importado sem a seção de posicionamento de marca (6 dimensões). Regere com IA ou inclua a
-          seção no arquivo para exibir a teia.
-        </p>
-      </div>
-    );
-  }
-  if (vm.status === "incompleto") {
-    return (
-      <div className="rounded-lg border border-dashed p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Teia ainda não disponível
-        </p>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Informação insuficiente em: {vm.ausentes.join(", ")}.
-        </p>
+      <div className="flex h-[300px] w-full items-center justify-center rounded-xl bg-muted/20 text-xs text-muted-foreground sm:h-[340px]">
+        Teia de posicionamento não disponível (sem dados)
       </div>
     );
   }
 
-  const dados = vm.pontos.map(p => ({
-    dimensao: p.label,
-    atual: p.atual,
-    media: p.media,
-    ponto: p,
-  }));
   const temMedia = vm.baseCount >= 1;
+  const insuficiente = !temMedia && vm.status === "ok";
 
   return (
     <div className="flex flex-col items-center justify-center gap-2">
@@ -103,26 +56,33 @@ export function BrandPositioningRadarV2({
       </p>
 
       <div
-        className="h-[300px] w-full sm:h-[340px]"
+        className="relative h-[300px] w-full sm:h-[340px]"
         role="img"
         aria-label={vm.descricaoAcessivel}
       >
+        {insuficiente && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[1px]">
+            <div className="rounded-full border bg-background/90 px-3 py-1 text-[10px] font-medium text-muted-foreground shadow-sm">
+              Base comparável insuficiente
+            </div>
+          </div>
+        )}
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={dados} outerRadius="72%">
-            <PolarGrid stroke="var(--border)" strokeOpacity={0.7} />
+          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={vm.data}>
+            <PolarGrid stroke="var(--border)" strokeWidth={1} />
             <PolarAngleAxis
-              dataKey="dimensao"
-              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+              dataKey="subject"
+              tick={{ fill: "var(--muted-foreground)", fontSize: 10, fontWeight: 500 }}
             />
             <PolarRadiusAxis
+              angle={30}
               domain={[0, 100]}
-              tickFormatter={(v: number) => (v === 0 ? "" : String(v))}
               tick={{ fill: "var(--muted-foreground)", fontSize: 9 }}
               axisLine={false}
               tickCount={6}
               stroke="var(--border)"
             />
-            {temMedia ? (
+            {temMedia && (
               <Radar
                 name="Média das demais"
                 dataKey="media"
@@ -133,26 +93,35 @@ export function BrandPositioningRadarV2({
                 fillOpacity={0.05}
                 dot={{ r: 2.5, fill: "var(--muted-foreground)" }}
               />
-            ) : null}
+            )}
             <Radar
-              name="Entrevista atual"
-              dataKey="atual"
+              name="Representante"
+              dataKey="value"
               stroke="var(--primary)"
-              strokeWidth={2.5}
+              strokeWidth={2}
               fill="var(--primary)"
-              fillOpacity={0.14}
-              dot={{ r: 3, fill: "var(--primary)" }}
+              fillOpacity={0.15}
+              dot={{ r: 4, fill: "var(--primary)", strokeWidth: 2, stroke: "var(--background)" }}
             />
-            <Tooltip content={<BrandPositioningTooltipV2 />} />
-            {temMedia ? (
-              <Legend
-                verticalAlign="bottom"
-                height={24}
-                wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }}
-              />
-            ) : null}
           </RadarChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-3 rounded-full bg-primary" />
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Este relatório
+          </span>
+        </div>
+        {temMedia && (
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-3 rounded-full border border-dashed border-muted-foreground" />
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              Média do grupo
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

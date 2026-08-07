@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +8,12 @@ import { MarkdownView } from "@/components/MarkdownView";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
+import { BrandPositioningRadarV2 } from "./BrandPositioningRadarV2";
 import { BlocoExpansivel } from "./BlocoExpansivel";
 import { GaugeAtingimento } from "./GaugeAtingimento";
-import type { PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
+import { type PerspectivaVM, buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import type { PerfResumo } from "@/lib/visao-rep";
+import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 
 
 export { BlocoExpansivel };
@@ -424,31 +426,31 @@ export function ExecutiveBriefV2({
   teia,
   contexto,
   mode = "rep",
+  visao,
 }: {
   brief: BriefingExecutivo;
   nome: string;
   regiao?: string | null;
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
-  /** Perspectivas já montadas a partir do relatório; se ausente, usa as do briefing curado. */
   perspectivas?: PerspectivaVM[];
   perf?: PerfResumo | null;
-  /** Bloco "Leitura integrada" do relatório. */
   leitura?: ReactNode;
-  /** Teia comparativa exibida ao lado da síntese estratégica. */
   teia?: ReactNode;
-  /** Identificador do representante, usado para separar notas por contexto. */
   contexto?: string;
   mode?: "rep" | "imersao";
+  visao?: VisaoRep2;
 }) {
-  const perspectivas =
-    perspectivasProp ??
-    briefPerspectivasToVM(brief.perspectivas, {
+  const perspectivas = useMemo(() => {
+    if (perspectivasProp) return perspectivasProp;
+    if (visao) return buildPerspectivasVM(visao);
+    return briefPerspectivasToVM(brief.perspectivas, {
       decisoes: brief.decisoes.map(d => d.texto),
       validacoes: brief.validacoes.map(v => v.texto),
     });
+  }, [perspectivasProp, visao, brief]);
 
-  const temPerspectivas = perspectivas.some(p => p.temConteudo);
+  const temPerspectivas = perspectivas.some((p: PerspectivaVM) => p.temConteudo);
 
   return (
     <div className="space-y-6">
@@ -462,11 +464,16 @@ export function ExecutiveBriefV2({
         periodo={perf?.periodoLabel ?? null}
         mode={mode}
       />
-      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
+      {brief.sintese ? (
+        <SintesePresidencialV2 
+          texto={brief.sintese} 
+          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)} 
+        />
+      ) : null}
 
-      <PerformanceFamiliasV2 perf={perf} />
+      {mode === "rep" && <PerformanceFamiliasV2 perf={perf} />}
       {leitura ?? null}
-      <ContextPortfolioV2 brief={brief} mode={mode} />
+      {mode === "rep" && <ContextPortfolioV2 brief={brief} mode={mode} />}
       {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}

@@ -848,7 +848,7 @@ function VisaoRep2View({
         contexto={visao.metadata.representative_id ?? visao.metadata.representative_name ?? undefined}
         perf={perf}
         leitura={<LeituraIntegradaV2 visao={visao} />}
-        teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
+        teia={<BrandPositioningRadarV2 atual={visao} referencia={undefined} comparaveis={comparaveis} />}
       />
 
 
