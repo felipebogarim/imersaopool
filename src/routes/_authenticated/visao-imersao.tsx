@@ -444,6 +444,10 @@ function VisaoImersaoPage() {
                     perf={perfData}
                   />
                   
+                  {perfData && (
+                    <PerformanceFamiliasV2 perf={perfData} contexto={contexto} />
+                  )}
+                  
                   <LeituraIntegradaV2 visao={visao} />
                   
                   {perfData && (
