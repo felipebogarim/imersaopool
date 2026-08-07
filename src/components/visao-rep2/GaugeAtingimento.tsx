@@ -71,10 +71,10 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
             <circle cx={CX} cy={CY} r={9} className="fill-foreground" />
           </>
         ) : null}
-        <text x={pointOf(MIN).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+        <text x={pointOf(MIN).x} y={CY + 18} textAnchor="middle" className="fill-muted-foreground text-[10px]">
           {MIN}%
         </text>
-        <text x={pointOf(MAX).x} y={CY + 22} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+        <text x={pointOf(MAX).x} y={CY + 18} textAnchor="middle" className="fill-muted-foreground text-[10px]">
           {MAX}%
         </text>
       </svg>
