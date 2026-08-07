@@ -156,6 +156,9 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   };
 
   visao.performance_connection = {
+    upload_id: null,
+    periodo_label: "1º Semestre 2026",
+    linked: true,
     geral_pct: 42.9,
     comparativo_grupo_pct: null,
     periodo_referencia: "1º Semestre 2026",
