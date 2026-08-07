@@ -254,9 +254,11 @@ function Narrativa({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
 export function PerspectivasEntrevistaV2({
   perspectivas,
   contexto,
+  mode = "rep",
 }: {
   perspectivas: PerspectivaVM[];
   contexto?: string;
+  mode?: "rep" | "imersao";
 }) {
   const primeira = perspectivas.find(p => p.temConteudo) ?? perspectivas[0];
   const [ativo, setAtivo] = useState<number>(primeira?.numero ?? 1);
@@ -265,8 +267,8 @@ export function PerspectivasEntrevistaV2({
 
   return (
     <BlocoExpansivel
-      titulo="Perspectivas da entrevista"
-      descricao="Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."
+      titulo={mode === "imersao" ? "Capítulos da imersão" : "Perspectivas da entrevista"}
+      descricao={mode === "imersao" ? "Leitura detalhada de cada capítulo do relatório final." : "Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."}
     >
       <div className="space-y-5">
 

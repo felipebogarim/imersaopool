@@ -92,17 +92,19 @@ export function BriefHeaderV2({
 /* Contexto e carteira estratégica                                     */
 /* ------------------------------------------------------------------ */
 
-export function ContextPortfolioV2({ brief }: { brief: BriefingExecutivo }) {
+export function ContextPortfolioV2({ brief, mode = "rep" }: { brief: BriefingExecutivo; mode?: "rep" | "imersao" }) {
   if (!brief.clientes.length && !brief.contexto.regiaoModelo) return null;
+  const titulo = mode === "imersao" ? "Contexto da imersão" : "Clientes estratégicos, na visão do representante";
+  const descricao = mode === "imersao" ? "Informações sobre o consultor e o local da visita." : "Contexto de atuação e contas citadas como prioritárias na entrevista.";
   return (
     <BlocoExpansivel
-      titulo="Clientes estratégicos, na visão do representante"
-      descricao="Contexto de atuação e contas citadas como prioritárias na entrevista."
+      titulo={titulo}
+      descricao={descricao}
     >
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
         {brief.contexto.regiaoModelo ? (
           <div className="min-w-0 space-y-2">
-            <h4 className="text-sm font-semibold">Contexto do representante</h4>
+            <h4 className="text-sm font-semibold">{mode === "imersao" ? "Informações gerais" : "Contexto do representante"}</h4>
             <p className="max-w-prose text-sm leading-7 text-muted-foreground">{brief.contexto.regiaoModelo}</p>
           </div>
         ) : null}
@@ -463,8 +465,8 @@ export function ExecutiveBriefV2({
 
       <PerformanceFamiliasV2 perf={perf} />
       {leitura ?? null}
-      <ContextPortfolioV2 brief={brief} />
-      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} /> : null}
+      <ContextPortfolioV2 brief={brief} mode={mode} />
+      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
     </div>
