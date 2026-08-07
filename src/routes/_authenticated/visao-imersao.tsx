@@ -151,7 +151,7 @@ function VisaoImersaoPage() {
     enabled: !!selected?.immersion?.client_id,
     queryFn: async () => {
       const clientId = selected!.immersion!.client_id!;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("client_bi")
         .select("*")
         .eq("client_id", clientId)

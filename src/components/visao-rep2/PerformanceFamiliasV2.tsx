@@ -48,6 +48,7 @@ export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | n
 
   return (
     <BlocoExpansivel
+      defaultOpen={false}
       titulo="Performance por família de produtos"
       descricao="Leitura relativa da carteira do representante no período ativo."
       contexto={contexto}
