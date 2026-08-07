@@ -179,16 +179,17 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
     return {
       perspective_number: meta.numero,
       perspective_title: meta.nome,
-      executive_finding: headline, // Tese principal
+      executive_finding: headline || "Capítulo disponível para leitura.", 
       business_impact: businessMeaning,
-      recommended_action: null, // DecisionOrAction
-      evidence: summary, // Leitura principal (sumarizada)
-      source_quote: evidence, // Citação real
+      recommended_action: null, 
+      evidence: summary || "Sem evidências sumarizadas.", 
+      source_quote: evidence, 
       confidence_level: "alto",
       evidence_status: "relato_individual",
       comparative_classification: "Base comparável insuficiente",
-      full_reading: markdown, // Conteúdo integral preservado para áreas de aprofundamento
+      full_reading: markdown, 
       structured_fields: {},
+      signal_ids: [] // Garante campo vazio para evitar problemas de mapeamento
     };
   });
 
