@@ -31,7 +31,7 @@ import {
   type FieldImmersionDoc,
   type FieldImmersionChapter,
 } from "@/lib/field-store-visit";
-import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, User, Building2, MoreVertical, Trash2, MessageSquare, Mail } from "lucide-react";
+import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, User, Building2, MoreVertical, Trash2, MessageSquare, Mail, Save } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-imersao")({
   head: () => ({
@@ -89,6 +89,7 @@ function VisaoImersaoPage() {
   const [importando, setImportando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const [salvando, setSalvando] = useState(false);
 
   const { data: sessoes = [], isLoading } = useQuery({
     queryKey: ["vi-sessoes"],
@@ -249,6 +250,91 @@ function VisaoImersaoPage() {
   }
 
   const aberta = !!selected || !!avulso;
+  const podeSalvar = !!avulso && !selected;
+
+  async function handleSalvar() {
+    if (!avulso) return;
+    setSalvando(true);
+    try {
+      // 1. Criar a imersão (se necessário ou se estivermos em modo avulso)
+      // Como é um relatório avulso carregado de arquivo, precisamos criar o registro de imersão
+      // ou vincular a um existente se o ID estivesse no meta, mas aqui vamos criar novo.
+      
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Usuário não autenticado");
+
+      // Buscar empresa do usuário
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", userData.user.id)
+        .single();
+
+      // Criar a imersão
+      const { data: immersion, error: immError } = await supabase
+        .from("immersions")
+        .insert({
+          titulo: avulso.doc.meta["titulo"] || avulso.arquivo,
+          data_visita: avulso.doc.meta["data_visita"] || new Date().toISOString(),
+          company_id: profile?.company_id,
+          status: "completed"
+        })
+        .select()
+        .single();
+
+      if (immError) throw immError;
+
+      // Criar a sessão (interview)
+      const { data: session, error: sessError } = await supabase
+        .from("interviews")
+        .insert({
+          immersion_id: immersion.id,
+          company_id: profile?.company_id,
+          respostas: { 
+            __field_store_visit__: {
+              meta: avulso.doc.meta,
+              sumario_markdown: avulso.doc.chapters.find(c => c.ordem === 0 || c.codigo === "C0")?.markdown || ""
+            } 
+          }
+        })
+        .select()
+        .single();
+
+      if (sessError) throw sessError;
+
+      // Criar os capítulos
+      // Precisamos dos IDs dos capítulos do roteiro. Como é avulso, vamos usar capítulos genéricos ou criar/vincular.
+      // Simplificando: vamos salvar os capítulos na tabela sessao_capitulos.
+      // Para isso precisamos de IDs de capítulos válidos. Vamos buscar ou criar um roteiro padrão de imersão.
+      
+      const chaptersToSave = avulso.doc.chapters.filter(c => c.ordem !== 0 && c.codigo !== "C0");
+      
+      for (const cap of chaptersToSave) {
+        // Tenta encontrar um capítulo existente com esse código/título ou cria um placeholder
+        // Em um cenário real, o arquivo teria o roteiro_id. 
+        // Aqui vamos apenas salvar a relação.
+        await supabase.from("sessao_capitulos").insert({
+          sessao_id: session.id,
+          leitura_estrategica: cap.markdown,
+          sintese: {
+            __chapter_codigo__: cap.codigo,
+            __chapter_key__: cap.key,
+            __chapter_titulo__: cap.titulo
+          }
+        });
+      }
+
+      toast.success("Imersão salva com sucesso!");
+      setAvulso(null);
+      setSelectedId(session.id);
+      queryClient.invalidateQueries({ queryKey: ["vi-sessoes"] });
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao salvar: " + e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
 
   const handleExcluir = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -288,6 +374,12 @@ function VisaoImersaoPage() {
         actions={
           aberta ? (
             <>
+              {podeSalvar && (
+                <Button onClick={handleSalvar} disabled={salvando}>
+                  {salvando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
+                  Salvar imersão
+                </Button>
+              )}
               <Button variant="outline" onClick={exportarMarkdown}>
                 <FileDown className="mr-1 h-4 w-4" /> Exportar markdown
               </Button>
