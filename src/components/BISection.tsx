@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
+import { GaugeAtingimento } from "@/components/visao-rep2/GaugeAtingimento";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
 
 
