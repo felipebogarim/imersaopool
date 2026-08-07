@@ -8,42 +8,63 @@ describe('adapterImmersionToExecutive', () => {
       cliente: "Loja Teste",
       local: "São Paulo",
       data_visita: "2026-08-07",
-      consultor: "Felipe",
+      representante: "Felipe",
     },
     chapters: [
       {
+        ordem: 1,
         codigo: "C1",
-        titulo: "Contexto e percepção",
-        markdown: "# Headline C1\nEste é o resumo do contexto. \"Citação importante\".\n\nMais detalhes operacionais."
+        key: "contexto",
+        titulo: "Contexto",
+        markdown: "# Título\nEsta é a síntese do C1. \"Citação C1\".\n\nSegundo parágrafo."
       },
       {
+        ordem: 7,
         codigo: "C7",
-        titulo: "Síntese e ação",
-        markdown: "- Sinal 1 importante\n- Sinal 2 relevante\n- Sinal 3 fundamental"
+        key: "sintese",
+        titulo: "Síntese",
+        markdown: "- Ponto 1 de sinal\n- Ponto 2 de sinal\n- Ponto 3 de sinal"
       }
     ]
-  } as any;
+  };
 
-  it('deve gerar exatamente 7 perspectivas', () => {
+  it('deve gerar 7 perspectivas na ordem canônica', () => {
     const visao = adapterImmersionToExecutive(mockDoc);
     expect(visao.perspectives).toHaveLength(7);
     expect(visao.perspectives[0].perspective_title).toBe("Contexto e percepção");
+    expect(visao.perspectives[6].perspective_title).toBe("Síntese e ação");
   });
 
-  it('deve extrair evidência corretamente', () => {
+  it('deve usar C1 para a Síntese Presidencial', () => {
     const visao = adapterImmersionToExecutive(mockDoc);
-    expect(visao.perspectives[0].source_quote).toBe("Citação importante");
+    expect(visao.executive_brief?.presidential_synthesis).toContain("Esta é a síntese do C1");
   });
 
-  it('deve gerar entre 3 e 5 sinais a partir do C7', () => {
+  it('deve extrair sinais de C7', () => {
     const visao = adapterImmersionToExecutive(mockDoc);
-    expect(visao.executive_view.priority_signals.length).toBeGreaterThanOrEqual(3);
-    expect(visao.executive_view.priority_signals.length).toBeLessThanOrEqual(5);
-    expect(visao.executive_view.priority_signals[0].finding).toBe("Sinal 1 importante");
+    expect(visao.executive_view.priority_signals).toHaveLength(3);
+    expect(visao.executive_view.priority_signals[0].finding).toBe("Ponto 1 de sinal");
   });
 
-  it('deve sumarizar o texto da perspectiva', () => {
+  it('deve extrair citações via extractEvidence', () => {
     const visao = adapterImmersionToExecutive(mockDoc);
-    expect(visao.perspectives[0].evidence?.length).toBeLessThan(mockDoc.chapters[0].markdown.length);
+    expect(visao.perspectives[0].source_quote).toBe("Citação C1");
+  });
+
+  it('deve limitar headline em 110 caracteres', () => {
+    const longoDoc: FieldImmersionDoc = {
+        ...mockDoc,
+        chapters: [
+            {
+                ordem: 1,
+                codigo: "C1",
+                key: "c1",
+                titulo: "T",
+                markdown: "A".repeat(200) + "."
+            }
+        ]
+    };
+    const visao = adapterImmersionToExecutive(longoDoc);
+    expect(visao.perspectives[0].executive_finding?.length).toBeLessThanOrEqual(110);
   });
 });

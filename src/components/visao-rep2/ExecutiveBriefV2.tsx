@@ -424,29 +424,29 @@ export function ExecutiveBriefV2({
   teia,
   contexto,
   mode = "rep",
+  visao,
 }: {
   brief: BriefingExecutivo;
   nome: string;
   regiao?: string | null;
   dataEntrevista?: string | null;
   dataRelatorio?: string | null;
-  /** Perspectivas já montadas a partir do relatório; se ausente, usa as do briefing curado. */
   perspectivas?: PerspectivaVM[];
   perf?: PerfResumo | null;
-  /** Bloco "Leitura integrada" do relatório. */
   leitura?: ReactNode;
-  /** Teia comparativa exibida ao lado da síntese estratégica. */
   teia?: ReactNode;
-  /** Identificador do representante, usado para separar notas por contexto. */
   contexto?: string;
   mode?: "rep" | "imersao";
+  visao?: VisaoRep2;
 }) {
-  const perspectivas =
-    perspectivasProp ??
-    briefPerspectivasToVM(brief.perspectivas, {
+  const perspectivas = useMemo(() => {
+    if (perspectivasProp) return perspectivasProp;
+    if (visao) return buildPerspectivasVM(visao);
+    return briefPerspectivasToVM(brief.perspectivas, {
       decisoes: brief.decisoes.map(d => d.texto),
       validacoes: brief.validacoes.map(v => v.texto),
     });
+  }, [perspectivasProp, visao, brief]);
 
   const temPerspectivas = perspectivas.some(p => p.temConteudo);
 
@@ -462,11 +462,11 @@ export function ExecutiveBriefV2({
         periodo={perf?.periodoLabel ?? null}
         mode={mode}
       />
-      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
+      {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={mode === "rep" ? teia : null} /> : null}
 
-      <PerformanceFamiliasV2 perf={perf} />
+      {mode === "rep" && <PerformanceFamiliasV2 perf={perf} />}
       {leitura ?? null}
-      <ContextPortfolioV2 brief={brief} mode={mode} />
+      {mode === "rep" && <ContextPortfolioV2 brief={brief} mode={mode} />}
       {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
