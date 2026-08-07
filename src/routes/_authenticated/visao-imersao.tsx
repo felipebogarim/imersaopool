@@ -150,7 +150,7 @@ function VisaoImersaoPage() {
     queryKey: ["vi-perf", selected?.immersion?.client_id],
     enabled: !!selected?.immersion?.client_id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("client_bi")
         .select("*")
         .eq("client_id", selected!.immersion!.client_id!)
@@ -158,7 +158,9 @@ function VisaoImersaoPage() {
         .limit(1)
         .maybeSingle();
       
-      const res = data?.respostas as any;
+      if (error || !data) return null;
+      
+      const res = data.respostas as any;
       if (!res?.__client_bi__) return null;
       const bi = res.__client_bi__;
       
@@ -172,7 +174,12 @@ function VisaoImersaoPage() {
         destaques: [],
         criticas: [],
         farol: [],
-        estimado: false
+        estimado: false,
+        mediaGrupoPct: 0,
+        diffPp: 0,
+        posicao: 0,
+        totalReps: 0,
+        clientes: []
       } as PerfResumo;
     }
   });
