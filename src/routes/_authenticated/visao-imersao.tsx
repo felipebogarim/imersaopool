@@ -35,15 +35,16 @@ import { ArrowLeft, Compass, FileDown, FileUp, Loader2, MapPin, CalendarDays, Us
 export const Route = createFileRoute("/_authenticated/visao-imersao")({
   head: () => ({
     meta: [
-      { title: "Visão Imersão — PoolFlux" },
+      { title: "Visão Imersão | PoolFlux" },
       {
         name: "description",
-        content:
-          "Visão Imersão: leitura visual e executiva dos relatórios finais de imersão em campo, capítulo a capítulo.",
+        content: "Relatórios executivos de imersão em campo com síntese estratégica e teia de posicionamento.",
       },
-      { property: "og:title", content: "Visão Imersão — PoolFlux" },
-      {
-        property: "og:description",
+      { property: "og:title", content: "Visão Imersão | PoolFlux" },
+      { property: "og:description", content: "Relatórios executivos de imersão em campo com síntese estratégica e teia de posicionamento." },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Visão Imersão | PoolFlux" },
+      { name: "twitter:description", content: "Relatórios executivos de imersão em campo com síntese estratégica e teia de posicionamento." },
         content: "Transforme o relatório de visita a loja em uma visão executiva navegável.",
       },
     ],
