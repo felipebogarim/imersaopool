@@ -242,7 +242,7 @@ function VisaoImersao2Page() {
              <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
-            <Button variant="ghost" onClick={() => setAvulso(null)}>
+            <Button variant="ghost" onClick={() => { setAvulso(null); if (fileRef.current) fileRef.current.value = ""; }}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Sair da Visão
             </Button>
           </div>
