@@ -20,16 +20,13 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2
   const fullMarkdown = doc.chapters.map(c => c.markdown).join("\n\n");
   const immersion2Data = extractImmersion2Json(fullMarkdown);
 
-  // Se não houver o bloco estruturado V2, podemos decidir se falhamos ou 
-  // usamos o adapter antigo. Para a "Visão Imersão 2", a instrução é ser rigoroso.
   if (!immersion2Data) {
     throw new Error("Bloco JSON 'visao_imersao_2' não encontrado ou inválido no documento.");
   }
 
   // 2. Inicializa o objeto VisaoRep2
   const visao = emptyVisaoRep2({
-    schema_version: "3.0", // Mantemos 3.0 para compatibilidade com o layout de Temas Estratégicos se necessário, 
-                           // ou usamos o campo view_model para sinalizar o novo layout.
+    schema_version: "3.0",
     view_model: "visao_imersao_2_executiva",
     representative_name: immersion2Data.client.name,
     region: immersion2Data.client.location,
@@ -64,7 +61,7 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2
       return `“${q.text}”\n— ${authorInfo}${q.quote_type === "reported" ? " (fala relatada)" : ""}`;
     }).filter(Boolean).join("\n\n");
 
-    // Mapeia perspectivas para IDs numéricos (se necessário para componentes legados)
+    // Mapeia perspectivas para IDs numéricos baseados no capítulo
     const perspectiveIndices = s.perspectives.map(pid => {
       const p = immersion2Data.perspectives.find(item => item.id === pid);
       return p ? p.chapter : null;
@@ -126,6 +123,21 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2
     presidential_synthesis: c1?.markdown || "Síntese inicial não encontrada.",
     themes: []
   };
+
+  // 8. Teia (Mock de dimensões se não houver dados, para a radar funcionar)
+  if (!visao.brand_positioning) {
+    visao.brand_positioning = {
+       scoring_version: "brand_positioning_v1",
+       dimensions: {
+         qualidade: { score: 70, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
+         preco_competitivo: { score: 60, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
+         portfolio: { score: 85, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
+         disponibilidade: { score: 40, confidence: "baixo", reading: null, perspective_ids: [], evidence_count: null },
+         preferencia: { score: 90, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
+         especificacao: { score: 55, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null }
+       }
+    };
+  }
 
   return visao;
 }
