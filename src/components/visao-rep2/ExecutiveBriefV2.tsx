@@ -26,6 +26,7 @@ export function BriefHeaderV2({
   marcas = [],
   atingimentoPct,
   periodo,
+  mode = "rep",
 }: {
   nome: string;
   regiao?: string | null;
@@ -34,12 +35,15 @@ export function BriefHeaderV2({
   marcas?: string[];
   atingimentoPct?: number | null;
   periodo?: string | null;
+  mode?: "rep" | "imersao";
 }) {
+  const label = mode === "imersao" ? "Visão Imersão" : "Visão Rep";
+
   return (
     <header className="grid gap-4 lg:grid-cols-3">
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Briefing executivo · Visão Rep
+          Briefing executivo · {label}
         </p>
         <h2 className="mt-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-2xl">{nome}</h2>
         {regiao ? (
@@ -52,7 +56,7 @@ export function BriefHeaderV2({
 
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Representa também:
+          {mode === "imersao" ? "Marcas observadas:" : "Representa também:"}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {marcas.length ? (
@@ -451,6 +455,7 @@ export function ExecutiveBriefV2({
         marcas={brief.contexto.marcas}
         atingimentoPct={perf?.geralPct ?? null}
         periodo={perf?.periodoLabel ?? null}
+        mode={mode}
       />
       {brief.sintese ? <SintesePresidencialV2 texto={brief.sintese} teia={teia} /> : null}
 

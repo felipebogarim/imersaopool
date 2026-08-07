@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/EmptyState";
 import { MarkdownView } from "@/components/MarkdownView";
-import { BlocoExpansivel } from "@/components/visao-rep2/BlocoExpansivel";
-import { extractFileText } from "@/lib/sintese-file-text";
-import {
+import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
+import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
+import { 
   FIELD_STORE_VISIT_CHAPTERS_V1,
   FIELD_IMMERSION_CHAPTERS_V2,
   parseFieldStoreVisit,
@@ -280,39 +281,53 @@ function VisaoImersaoPage() {
               </div>
             </section>
 
-            {sumario ? (
-              <BlocoExpansivel
-                titulo="Sumário executivo"
-                descricao="Leitura condensada da visita, verbatim do relatório final"
-                contexto={contexto}
-                defaultOpen
-              >
-                <MarkdownView markdown={sumario} />
-              </BlocoExpansivel>
-            ) : null}
+            {(() => {
+              const visao = adapterImmersionToExecutive(avulso?.doc ?? {
+                meta,
+                chapters: [
+                  ...(sumario ? [{ ordem: 0, codigo: "C0", key: "sumario_executivo", titulo: "Sumário executivo", markdown: sumario }] : []),
+                  ...blocos.map((b: any) => ({
+                    ordem: b.ordem,
+                    codigo: b.codigo,
+                    key: b.key,
+                    titulo: b.titulo,
+                    markdown: b.markdown,
+                  })),
+                ],
+              });
 
-            {loadingCaps && !avulso ? (
-              <p className="text-sm text-muted-foreground">Carregando capítulos...</p>
-            ) : blocos.length === 0 ? (
-              <EmptyState
-                icon={Compass}
-                title="Sem capítulos preenchidos"
-                description="Este relatório ainda não possui conteúdo nos capítulos da imersão."
-              />
-            ) : (
-              <div className="space-y-4">
-                {blocos.map((b: any) => (
-                  <BlocoExpansivel
-                    key={`${b.ordem}-${b.titulo}`}
-                    titulo={`${String(b.ordem).padStart(2, "0")} — ${b.titulo}`}
-                    contexto={contexto}
-                    defaultOpen={false}
-                  >
-                    <MarkdownView markdown={b.markdown} />
-                  </BlocoExpansivel>
-                ))}
-              </div>
-            )}
+              // Para imersões, o briefing é construído a partir do Sumário Executivo (Presidencial)
+              const brief = {
+                sintese: visao.executive_brief?.presidential_synthesis || "",
+                contexto: {
+                  marcas: [],
+                  regiaoModelo: visao.representative_context.additional_context || ""
+                },
+                clientes: [],
+                temas: [],
+                conclusoes: [],
+                decisoes: [],
+                validacoes: [],
+                perspectivas: visao.perspectives.map(p => ({
+                  numero: p.perspective_number,
+                  nome: p.perspective_title,
+                  descricao: p.perspective_title,
+                  tituloConclusivo: p.executive_finding || p.perspective_title,
+                  contexto: p.full_reading,
+                  temConteudo: !!p.full_reading
+                }))
+              };
+
+              return (
+                <ExecutiveBriefV2
+                  brief={brief as any}
+                  nome={meta["cliente"] || selected?.immersion?.client?.nome_fantasia || "Imersão"}
+                  regiao={meta["local"] || ""}
+                  mode="imersao"
+                  contexto={contexto}
+                />
+              );
+            })()}
           </>
         )}
       </div>
