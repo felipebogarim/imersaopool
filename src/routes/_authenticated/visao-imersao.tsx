@@ -20,6 +20,7 @@ import {
 import { extractFileText } from "@/lib/sintese-file-text";
 import { ExecutiveBriefV2 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { adapterImmersionToExecutive } from "@/lib/visao-imersao-adapter";
 import type { PerfResumo } from "@/lib/visao-rep";
 import { 
@@ -444,6 +445,10 @@ function VisaoImersaoPage() {
                   />
                   
                   <LeituraIntegradaV2 visao={visao} />
+                  
+                  {perfData && (
+                    <PerformanceFamiliasV2 perf={perfData} />
+                  )}
 
                   <section className="mt-12 space-y-4">
                     <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
