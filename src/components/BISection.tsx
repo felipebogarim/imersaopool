@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
+import { GaugeAtingimento } from "@/components/visao-rep2/GaugeAtingimento";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
 
 
@@ -348,6 +349,39 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     [familyChart],
   );
 
+  // Top 6 clientes por atingimento ponderado
+  const { data: top6Clients = [] } = useQuery({
+    queryKey: ["bi-top6-clients", repId],
+    enabled: !!repId,
+    queryFn: async () => {
+      const { data: upload } = await supabase
+        .from("rep_performance_uploads")
+        .select("id")
+        .eq("representative_id", repId)
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (!upload) return [];
+
+      const { data: rows } = await (supabase as any)
+        .from("rep_performance_rows")
+        .select("razao_social, total_pct")
+        .eq("upload_id", upload.id);
+      
+      if (!rows) return [];
+
+      return (rows as any[])
+        .map(r => ({
+          name: r.razao_social,
+          atingimento: Number(r.total_pct) || 0
+        }))
+        .sort((a, b) => b.atingimento - a.atingimento)
+        .slice(0, 6);
+    }
+  });
+
 
 
 
@@ -407,6 +441,23 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
             </div>
           ) : (
             <>
+              {/* Atingimento TOP6 Clientes */}
+              {top6Clients.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Atingimento TOP6 Clientes</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {top6Clients.map((client) => (
+                      <div key={client.name} className="rounded-xl border border-border p-4 bg-card">
+                        <div className="text-[11px] uppercase tracking-wider text-muted-foreground truncate mb-2" title={client.name}>
+                          {client.name}
+                        </div>
+                        <GaugeAtingimento valor={client.atingimento} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Destaques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="rounded-xl border border-border p-4 bg-primary/5">
