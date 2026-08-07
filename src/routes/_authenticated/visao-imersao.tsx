@@ -172,13 +172,13 @@ function VisaoImersaoPage() {
       if (!bi) return null;
       
       return {
-        geralPct: bi.geral,
+        geralPct: Number(bi.geral || 0),
         periodoLabel: bi.periodo || "Período Ativo",
         familias: (bi.familias || []).map((f: any) => ({
           familia: f.familia,
-          pct: f.atingimento,
-          vendas: f.vendas,
-          meta: f.meta,
+          pct: Number(f.atingimento || 0),
+          vendas: Number(f.vendas || 0),
+          meta: Number(f.meta || 0),
           status: f.status
         })),
         criticas: (bi.familias || [])
