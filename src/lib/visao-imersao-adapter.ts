@@ -4,7 +4,6 @@ import {
   type VisaoRep2, 
   VISAO_REP_VIEW_MODEL_BRIEF,
   type PrioritySignal,
-  type Perspective
 } from "./visao-rep2-schema";
 
 /**
@@ -23,62 +22,54 @@ export const IMMERSION_PERSPECTIVES_META = [
 
 /**
  * Extrai uma citação literal do markdown.
- * Prioriza IDs [EX: "Citação"] e aspas.
  */
 function extractEvidence(markdown: string): string | null {
   if (!markdown) return null;
-  
-  // 1. Procura citações entre aspas (mínimo 10 caracteres)
   const quoteMatch = markdown.match(/[“"']([^"“”']{10,})["”']/);
   if (quoteMatch) return quoteMatch[1].trim();
-
-  // 2. Procura blockquotes (>)
   const blockMatch = markdown.match(/^>\s*(.+)$/m);
   if (blockMatch) return blockMatch[1].trim();
-
   return null;
 }
 
 function cleanMarkdown(md: string): string {
   return md
-    .replace(/#+\s+/g, '')
-    .replace(/\*\*/g, '')
-    .replace(/\*/g, '')
-    .replace(/>\s+/g, '')
-    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    .replace(/#+\s+/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/>\s+/g, "")
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
     .trim();
 }
 
 /** Síntese Presidencial: Limite estrito de 700 caracteres. */
 function generateExecutiveSummary(markdown: string, limit: number = 700): string {
   const clean = cleanMarkdown(markdown);
-  const paragraphs = clean.split('\n\n').filter(p => p.length > 20);
-  const summary = paragraphs.slice(0, 2).join('\n\n');
+  const paragraphs = clean.split("\n\n").filter((p) => p.length > 20);
+  const summary = paragraphs.slice(0, 2).join("\n\n");
   return summary.length > limit ? summary.slice(0, limit) + "..." : summary;
 }
 
 /**
  * Extrai sinais prioritários a partir do Capítulo C7.
- * Devem ser de 3 a 5 itens.
  */
 function extractSignalsFromC7(markdown: string): PrioritySignal[] {
-  const lines = markdown.split('\n');
+  const lines = markdown.split("\n");
   const signals: string[] = [];
-  
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed)) {
-      const cleanLine = trimmed.replace(/^[-*\d.]+\s+/, '').trim();
+    if (trimmed.startsWith("-") || trimmed.startsWith("*") || /^\d+\./.test(trimmed)) {
+      const cleanLine = trimmed.replace(/^[-*\d.]+\s+/, "").trim();
       if (cleanLine.length > 10) signals.push(cleanLine);
     }
   }
-
-  // Fallback para parágrafos curtos
   if (signals.length < 3) {
-    const paragraphs = markdown.split('\n\n').map(p => cleanMarkdown(p)).filter(p => p.length > 20 && p.length < 300);
+    const paragraphs = markdown
+      .split("\n\n")
+      .map((p) => cleanMarkdown(p))
+      .filter((p) => p.length > 20 && p.length < 300);
     signals.push(...paragraphs);
   }
-
   return signals.slice(0, 5).map((s, i) => ({
     title: s.length > 80 ? s.slice(0, 80).trim() + "..." : s,
     finding: s,
@@ -92,7 +83,7 @@ function extractSignalsFromC7(markdown: string): PrioritySignal[] {
     related_perspectives: [],
     validation_note: null,
     comparison_classification: "não abordado",
-    group_comparison: null
+    group_comparison: null,
   }));
 }
 
@@ -112,25 +103,25 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
     doc.meta["representante"] ? `Representante: ${doc.meta["representante"]}` : null,
   ].filter(Boolean);
 
-  visao.representative_context.additional_context = contextParts.join('\n');
-  
+  visao.representative_context.additional_context = contextParts.join("\n");
+
   // 1. Síntese Presidencial (C1)
-  const c1 = doc.chapters.find(c => c.codigo === "C1");
+  const c1 = doc.chapters.find((c) => c.codigo === "C1");
   visao.executive_brief = {
-    presidential_synthesis: c1 ? generateExecutiveSummary(c1.markdown, 700) : "Síntese inicial não disponível.",
-    themes: []
+    presidential_synthesis: c1
+      ? generateExecutiveSummary(c1.markdown, 700)
+      : "Síntese inicial não disponível.",
+    themes: [],
   };
 
   // 2. Sinais Estratégicos (C7)
-  const c7 = doc.chapters.find(c => c.codigo === "C7");
+  const c7 = doc.chapters.find((c) => c.codigo === "C7");
   visao.executive_view.priority_signals = c7 ? extractSignalsFromC7(c7.markdown) : [];
 
   // 3. Perspectivas (C1-C7)
-  visao.perspectives = IMMERSION_PERSPECTIVES_META.map(meta => {
-    const cap = doc.chapters.find(c => c.codigo === meta.codigo);
+  visao.perspectives = IMMERSION_PERSPECTIVES_META.map((meta) => {
+    const cap = doc.chapters.find((c) => c.codigo === meta.codigo);
     const md = cap?.markdown || "";
-    
-    // Headline: Primeira frase do capítulo (limite 110 chars)
     const firstSentence = cleanMarkdown(md).split(/[.!?]/)[0] || "";
     const headline = firstSentence.slice(0, 110).trim();
 
@@ -148,7 +139,7 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
       full_reading: md || "Capítulo sem conteúdo registrado.",
       structured_fields: {},
       signal_ids: [],
-      source_chapter: meta.codigo
+      source_chapter: meta.codigo,
     };
   });
 
