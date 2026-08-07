@@ -170,10 +170,14 @@ function VisaoImersaoPage() {
         periodoLabel: bi.periodo || "Período Ativo",
         familias: (bi.familias || []).map((f: any) => ({
           familia: f.familia,
-          pct: f.atingimento
+          pct: f.atingimento,
+          vendas: f.vendas,
+          meta: f.meta,
+          status: f.status
         })),
-        destaques: [],
-        criticas: [],
+        criticas: (bi.familias || [])
+          .filter((f: any) => f.status === "Sem compra" || (f.atingimento < 50))
+          .map((f: any) => ({ familia: f.familia })),
         farol: [],
         estimado: false,
         mediaGrupoPct: 0,
