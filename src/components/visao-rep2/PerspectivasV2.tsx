@@ -4,6 +4,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { MarkdownView } from "@/components/MarkdownView";
 import { cn } from "@/lib/utils";
 import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefing-fabio";
 import { PERSPECTIVAS_META, type AgendaRef, type PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
@@ -84,7 +85,7 @@ function PainelApoio({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
         {has(p.evidencia) ? (
           <figure className="space-y-1">
             <div className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
-              <MarkdownView content={p.evidencia?.startsWith('“') ? p.evidencia : `“${p.evidencia}”`} />
+              <MarkdownView markdown={p.evidencia?.startsWith('“') ? p.evidencia : `“${p.evidencia}”`} />
             </div>
             <figcaption className="pl-3 text-[11px] uppercase tracking-wide text-muted-foreground/80">
               Fala do representante
@@ -193,7 +194,7 @@ function Narrativa({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
           />
         </div>
         {has(p.contexto) ? (
-          <MarkdownView content={has(p.contexto) ? p.contexto : ""} />
+          <MarkdownView markdown={has(p.contexto) ? p.contexto : ""} />
         ) : null}
       </div>
 

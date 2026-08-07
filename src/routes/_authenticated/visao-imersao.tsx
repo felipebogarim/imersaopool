@@ -347,7 +347,7 @@ function VisaoImersaoPage() {
                           Relatório de origem · visão executiva
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 pb-4">
-                          <MarkdownView content={doc.chapters.find(c => c.codigo === "C0" || c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
+                          <MarkdownView markdown={doc.chapters.find(c => c.codigo === "C0" || c.codigo === "C1")?.markdown ?? "Sem conteúdo."} />
                         </AccordionContent>
                       </AccordionItem>
 
@@ -359,7 +359,7 @@ function VisaoImersaoPage() {
                           {doc.chapters.map(cap => (
                             <div key={cap.codigo} className="space-y-2 border-l-2 border-primary/20 pl-4">
                               <h4 className="text-sm font-bold">{cap.codigo} · {cap.titulo}</h4>
-                              <MarkdownView content={cap.markdown} />
+                              <MarkdownView markdown={cap.markdown} />
                             </div>
                           ))}
                         </AccordionContent>

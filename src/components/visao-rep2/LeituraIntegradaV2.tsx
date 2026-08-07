@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BlocoExpansivel } from "./BlocoExpansivel";
 import { AcoesSecao } from "./AcoesSecao";
+import { MarkdownView } from "@/components/MarkdownView";
 
 import { CONFIDENCE_LABEL, EVIDENCE_LABEL, type VisaoRep2 } from "@/lib/visao-rep2-schema";
 import {
@@ -71,7 +72,7 @@ function Bloco({ label, value, strong }: { label: string; value: string | null; 
     <div className={cn("rounded-lg border p-3", strong && "border-primary/40 bg-primary/5")}>
       <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn("whitespace-pre-wrap break-words text-sm leading-relaxed", strong && "font-medium")}>
-        <MarkdownView content={value} />
+        <MarkdownView markdown={value ?? ""} />
       </div>
     </div>
   );
