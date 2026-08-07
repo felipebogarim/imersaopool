@@ -133,7 +133,7 @@ export async function exportInterviewPdf(
     .select("*")
     .eq("id", interviewId)
     .maybeSingle();
-  if (!interview) throw new Error("Entrevista não encontrada");
+  if (!interview) throw new Error("Documento não encontrado");
 
   const [capsRes, respRes, notesRes, roteiroRes] = await Promise.all([
     interview.roteiro_id
