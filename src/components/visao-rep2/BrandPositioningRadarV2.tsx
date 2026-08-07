@@ -116,7 +116,11 @@ export function BrandPositioningRadarV2({
             </span>
           </div>
         )}
-      </div>
+      {insuficiente && (
+        <p className="mt-1 text-[10px] text-muted-foreground italic">
+          Base comparável ainda insuficiente. A Teia apresenta somente a leitura desta imersão.
+        </p>
+      )}
     </div>
   );
 }
