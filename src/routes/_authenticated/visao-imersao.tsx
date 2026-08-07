@@ -45,8 +45,6 @@ export const Route = createFileRoute("/_authenticated/visao-imersao")({
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Visão Imersão | PoolFlux" },
       { name: "twitter:description", content: "Relatórios executivos de imersão em campo com síntese estratégica e teia de posicionamento." },
-        content: "Transforme o relatório de visita a loja em uma visão executiva navegável.",
-      },
     ],
   }),
   component: VisaoImersaoPage,
