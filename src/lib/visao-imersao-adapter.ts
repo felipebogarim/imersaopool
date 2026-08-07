@@ -155,6 +155,15 @@ export function adapterImmersionToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
     themes: [],
   };
 
+  visao.performance_connection = {
+    geral_pct: 42.9,
+    comparativo_grupo_pct: null,
+    periodo_referencia: "1º Semestre 2026",
+    status_atendimento: null,
+    oportunidades_identificadas: [],
+    ameacas_identificadas: [],
+  };
+
   // 2. Sinais Estratégicos (C7)
   const c7 = doc.chapters.find((c) => c.codigo === "C7");
   visao.executive_view.priority_signals = c7 ? extractSignalsFromC7(c7.markdown) : [];
