@@ -50,13 +50,33 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
       >
         <path d={arcPath(MIN, MAX)} fill="none" strokeWidth={STROKE} strokeLinecap="round" className="stroke-muted-foreground/25" />
         <path
-          d={arcPath(GREEN_FROM, MAX)}
+          d={arcPath(MIN, RANGE_RED)}
           fill="none"
           strokeWidth={STROKE}
           strokeLinecap="round"
-          stroke="oklch(0.78 0.19 140)"
+          stroke="oklch(0.65 0.2 25)" // Vermelho
         />
-        <line x1={redIn.x} y1={redIn.y} x2={red.x} y2={red.y} strokeWidth={2} stroke="oklch(0.65 0.2 25)" />
+        <path
+          d={arcPath(RANGE_RED, RANGE_YELLOW)}
+          fill="none"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          stroke="oklch(0.85 0.2 90)" // Amarelo
+        />
+        <path
+          d={arcPath(RANGE_YELLOW, RANGE_LIGHT_GREEN)}
+          fill="none"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          stroke="oklch(0.88 0.15 140)" // Verde claro
+        />
+        <path
+          d={arcPath(RANGE_LIGHT_GREEN, RANGE_GREEN)}
+          fill="none"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          stroke="oklch(0.7 0.2 145)" // Verde
+        />
         {v != null ? (
           <>
             <line
