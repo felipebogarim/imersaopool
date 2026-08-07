@@ -375,7 +375,7 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
       return (rows as any[])
         .map(r => ({
           name: r.razao_social,
-          atingimento: Number(r.total_pct) || 0
+          atingimento: (Number(r.total_pct) || 0) * 100
         }))
         .sort((a, b) => b.atingimento - a.atingimento)
         .slice(0, 6);
