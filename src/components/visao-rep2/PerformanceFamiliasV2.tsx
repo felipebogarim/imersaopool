@@ -90,13 +90,24 @@ export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | n
         {itens.map(i => {
           const v = valorDe(i);
           const pct = Math.max(0, Math.min(max, v ?? 0));
+          
+          // Lógica de cores baseada em atingimento (quando em modo atingimento)
+          // ou mantém cor da família (quando em modo participação)
+          let barColor = i.cor;
+          if (modo === "atingimento" && v !== null) {
+            if (v <= 60) barColor = "oklch(0.65 0.2 25)";
+            else if (v <= 80) barColor = "oklch(0.85 0.2 90)";
+            else if (v <= 90) barColor = "oklch(0.88 0.15 140)";
+            else barColor = "oklch(0.7 0.2 145)";
+          }
+
           return (
             <li key={i.familia} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] items-center gap-3">
               <span className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{i.familia}</span>
               <span className="h-2 min-w-0 rounded-full bg-muted">
                 <span
                   className="block h-2 rounded-full transition-[width] duration-300"
-                  style={{ width: `${(pct / max) * 100}%`, backgroundColor: i.cor }}
+                  style={{ width: `${(pct / max) * 100}%`, backgroundColor: barColor }}
                   aria-hidden
                 />
               </span>
