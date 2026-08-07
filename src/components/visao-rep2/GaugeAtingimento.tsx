@@ -39,8 +39,6 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
   // Se for > MAX, fica no MAX.
   const visualValue = v == null ? MIN : Math.min(MAX, Math.max(MIN, v));
   const needle = pointOf(visualValue, R - STROKE / 2 - 4);
-  const red = pointOf(RED_MARK, R + STROKE / 2);
-  const redIn = pointOf(RED_MARK, R - STROKE / 2);
 
   return (
     <div className="flex items-center gap-4">
