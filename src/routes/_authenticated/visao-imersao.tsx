@@ -179,8 +179,8 @@ function VisaoImersaoPage() {
         diffPp: 0,
         posicao: 0,
         totalReps: 0,
-        clientes: []
-      } as PerfResumo;
+        clientes: 0
+      } as unknown as PerfResumo;
     }
   });
 
