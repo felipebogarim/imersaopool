@@ -97,19 +97,26 @@ function VisaoImersao2Page() {
       
       const { doc, errors } = parseFieldStoreVisit(text);
       if (!doc) {
-        console.error("[V2] Falha no parse:", errors);
+        console.error("[V2] Falha no parse do documento:", errors);
         toast.error(errors[0] ?? "Documento fora do padrão de relatório de imersão.");
         return;
       }
       
-      console.log("[V2] Parse OK, criando view-model...");
-      // Apenas valida se o view-model pode ser criado
-      adapterImmersionV2ToExecutive(doc);
+      console.log("[V2] Parse do documento editorial OK, adaptando para executivo...");
       
-      console.log("[V2] Validação OK, atualizando estado local...");
+      let visaoModel;
+      try {
+        visaoModel = adapterImmersionV2ToExecutive(doc);
+      } catch (e: any) {
+        console.error("[V2] Erro na adaptação/extração do JSON estruturado:", e);
+        toast.error(e.message || "Falha ao extrair dados estruturados 'visao_imersao_2'.");
+        return;
+      }
+      
+      console.log("[V2] Validação e adaptação OK, atualizando estado local...");
       setAvulso({ doc, arquivo: file.name });
       
-      toast.success("Arquivo carregado com sucesso. Clique em 'Salvar Imersão' para persistir.");
+      toast.success("Relatório V2 carregado com sucesso. Clique em 'Salvar Imersão' para persistir.");
       console.log("[V2] Fluxo de carregamento local concluído.");
     } catch (e: any) {
       console.error("[V2] Erro fatal no fluxo:", e);
