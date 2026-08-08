@@ -116,6 +116,7 @@ export function parseFieldStoreVisit(md: string): {
   const chapters: FieldImmersionChapter[] = [];
   let cur: { ordem: number; codigo: string; titulo: string; buf: string[] } | null = null;
   let inMeta = false;
+  let metaRawBuf: string[] = [];
 
   const flush = () => {
     if (!cur) return;
