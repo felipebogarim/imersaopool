@@ -50,7 +50,7 @@ export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
 export function extractImmersion2Json(markdown: string): Immersion2Data | null {
   // 1. Tentar encontrar blocos de código (Markdown) com o delimitador específico 'visao_imersao_2'
   // ou simplesmente blocos json.
-  const codeBlockRegex = /```(?:json|visao_imersao_2)?\s*([\s\S]+?)\s*```/g;
+  const codeBlockRegex = /```(?:json|visao_imersao_2)?\s*([\s\S]+?)\s*```/gi;
   let matches = Array.from(markdown.matchAll(codeBlockRegex));
   
   for (const match of matches) {
