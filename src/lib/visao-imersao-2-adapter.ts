@@ -17,12 +17,16 @@ import {
  */
 export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // 1. Tenta extrair o bloco JSON estruturado (Fonte Canônica)
+  // Concatenamos o markdown editorial e passamos para o parser robusto
   const fullMarkdown = doc.chapters.map(c => c.markdown).join("\n\n");
   const immersion2Data = extractImmersion2Json(fullMarkdown);
 
   if (!immersion2Data) {
+    console.error("[V2 Adapter] Falha ao localizar bloco 'visao_imersao_2_data_v1' no markdown.");
     throw new Error("Bloco JSON 'visao_imersao_2' não encontrado ou inválido no documento.");
   }
+
+  console.log("[V2 Adapter] Dados estruturados extraídos com sucesso para:", immersion2Data.client.name);
 
   // 2. Inicializa o objeto VisaoRep2
   const visao = emptyVisaoRep2({
