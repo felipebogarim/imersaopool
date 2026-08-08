@@ -19,9 +19,14 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2
   // 1. Tenta extrair o bloco JSON estruturado (Fonte Canônica)
   // O JSON pode estar nos metadados ou em qualquer capítulo.
   // Criamos um super-texto contendo metadados e todos os capítulos para o parser.
-  const metaText = Object.entries(doc.meta).map(([k, v]) => `${k}: ${v}`).join("\n");
+  const metaRawContent = doc.meta["__raw_content__"] || "";
+  const metaText = Object.entries(doc.meta)
+    .filter(([k]) => k !== "__raw_content__")
+    .map(([k, v]) => `${k}: ${v}`).join("\n");
   const chaptersText = doc.chapters.map(c => `## ${c.titulo}\n${c.markdown}`).join("\n\n");
-  const searchableContent = `${metaText}\n\n${chaptersText}`;
+  
+  // O searchableContent prioriza o metaRawContent onde o JSON canônico costuma residir
+  const searchableContent = `${metaRawContent}\n\n${metaText}\n\n${chaptersText}`;
   
   const immersion2Data = extractImmersion2Json(searchableContent);
 

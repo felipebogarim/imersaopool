@@ -183,10 +183,19 @@ export function parseFieldStoreVisit(md: string): {
     if (cur) {
       cur.buf.push(line);
     } else if (inMeta) {
+      metaRawBuf.push(line);
       continue;
     }
   }
   flush();
+
+  // Preservamos o conteúdo bruto dos metadados no objeto meta se houver blocos de código
+  if (metaRawBuf.length > 0) {
+    const metaRaw = metaRawBuf.join("\n");
+    if (metaRaw.includes("```")) {
+      meta["__raw_content__"] = metaRaw;
+    }
+  }
 
   const foundCodes = new Set(chapters.map((c) => c.codigo));
   
