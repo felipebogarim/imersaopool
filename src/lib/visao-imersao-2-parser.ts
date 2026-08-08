@@ -48,16 +48,19 @@ export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
  * Suporta blocos com ou sem a label de tipo no ```json.
  */
 export function extractImmersion2Json(markdown: string): Immersion2Data | null {
-  // Regex mais flexível para capturar qualquer bloco de código JSON ou texto que pareça JSON
-  // Procure por blocos demarcados com ``` ou apenas conteúdo entre chaves { } que contenha o schema
-  
-  // 1. Tentar encontrar blocos de código (Markdown)
-  const codeBlockRegex = /```(?:json)?\s*(?:visao_imersao_2)?\n([\s\S]+?)\n```/g;
+  // 1. Tentar encontrar blocos de código (Markdown) com o delimitador específico 'visao_imersao_2'
+  // ou simplesmente blocos json.
+  const codeBlockRegex = /```(?:json|visao_imersao_2)?\s*([\s\S]+?)\s*```/g;
   let matches = Array.from(markdown.matchAll(codeBlockRegex));
   
   for (const match of matches) {
     try {
-      const raw = JSON.parse(match[1]);
+      // Limpeza agressiva para lidar com o formato específico:
+      // ```visao_imersao_2
+      // { ... }
+      // ```
+      const rawText = match[1].trim();
+      const raw = JSON.parse(rawText);
       if (raw && raw.schema === "visao_imersao_2_data_v1") {
         return Immersion2DataSchema.parse(raw);
       }
@@ -67,15 +70,14 @@ export function extractImmersion2Json(markdown: string): Immersion2Data | null {
     }
   }
 
-  // 2. Se não encontrou em blocos demarcados, tentar procurar no texto bruto por algo que pareça o JSON alvo
-  // Procuramos por "{", "schema", "visao_imersao_2_data_v1" e "}"
+  // 2. Fallback: procurar por qualquer coisa que pareça um JSON e tenha o schema alvo
+  // (Lida com o caso onde o usuário colou o JSON sem cercas de markdown ou com cercas quebradas)
   const rawJsonRegex = /\{[\s\S]*?"schema"\s*:\s*"visao_imersao_2_data_v1"[\s\S]*?\}/g;
   const rawMatches = markdown.match(rawJsonRegex);
   
   if (rawMatches) {
     for (const rawStr of rawMatches) {
       try {
-        // Tentar limpar possíveis resíduos de markdown se o regex pegou demais
         const cleaned = rawStr.trim();
         const raw = JSON.parse(cleaned);
         return Immersion2DataSchema.parse(raw);
