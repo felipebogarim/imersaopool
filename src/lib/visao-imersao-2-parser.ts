@@ -50,7 +50,8 @@ export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
 export function extractImmersion2Json(markdown: string): Immersion2Data | null {
   // 1. Tentar encontrar blocos de código (Markdown) com o delimitador específico 'visao_imersao_2'
   // ou simplesmente blocos json.
-  const codeBlockRegex = /```(?:json|visao_imersao_2)?\s*([\s\S]+?)\s*```/gi;
+  // Regex mais agressiva para blocos de código com qualquer label ou sem label
+  const codeBlockRegex = /```[\w-]*\s*([\s\S]+?)\s*```/gi;
   let matches = Array.from(markdown.matchAll(codeBlockRegex));
   
   for (const match of matches) {
@@ -63,6 +64,9 @@ export function extractImmersion2Json(markdown: string): Immersion2Data | null {
       
       // Sanitização profunda: remove comentários de linha única ou bloco se existirem
       rawText = rawText.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      
+      // Remove qualquer caractere invisível ou BOM no início do texto
+      rawText = rawText.replace(/^\uFEFF/, "");
       
       const raw = JSON.parse(rawText);
       if (raw && (raw.schema === "visao_imersao_2_data_v1" || raw.visao_imersao_2_data_v1)) {
