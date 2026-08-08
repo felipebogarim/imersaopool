@@ -18,7 +18,8 @@ import {
 export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // 1. Tenta extrair o bloco JSON estruturado (Fonte Canônica)
   // Concatenamos o markdown editorial e passamos para o parser robusto
-  const fullMarkdown = doc.chapters.map(c => c.markdown).join("\n\n");
+  const editorialMarkdown = doc.chapters.map(c => c.markdown).join("\n\n");
+  const fullMarkdown = `## Metadados\n\n${Object.entries(doc.meta).map(([k, v]) => `- ${k}: ${v}`).join("\n")}\n\n${editorialMarkdown}`;
   const immersion2Data = extractImmersion2Json(fullMarkdown);
 
   if (!immersion2Data) {
