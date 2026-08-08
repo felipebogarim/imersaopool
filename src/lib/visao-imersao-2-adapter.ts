@@ -17,13 +17,22 @@ import {
  */
 export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
   // 1. Tenta extrair o bloco JSON estruturado (Fonte Canônica)
-  // Concatenamos o markdown editorial e passamos para o parser robusto
-  const fullMarkdown = doc.chapters.map(c => c.markdown).join("\n\n");
-  const immersion2Data = extractImmersion2Json(fullMarkdown);
+  // O JSON pode estar nos metadados ou em qualquer capítulo.
+  // Criamos um super-texto contendo metadados e todos os capítulos para o parser.
+  const metaRawContent = doc.meta["__raw_content__"] || "";
+  const metaText = Object.entries(doc.meta)
+    .filter(([k]) => k !== "__raw_content__")
+    .map(([k, v]) => `${k}: ${v}`).join("\n");
+  const chaptersText = doc.chapters.map(c => `## ${c.titulo}\n${c.markdown}`).join("\n\n");
+  
+  // O searchableContent prioriza o metaRawContent onde o JSON canônico costuma residir
+  const searchableContent = `${metaRawContent}\n\n${metaText}\n\n${chaptersText}`;
+  
+  const immersion2Data = extractImmersion2Json(searchableContent);
 
   if (!immersion2Data) {
-    console.error("[V2 Adapter] Falha ao localizar bloco 'visao_imersao_2_data_v1' no markdown.");
-    throw new Error("Bloco JSON 'visao_imersao_2' não encontrado ou inválido no documento.");
+    console.error("[V2 Adapter] Falha ao localizar bloco 'visao_imersao_2_data_v1'. Conteúdo verificado:", searchableContent.slice(0, 500) + "...");
+    throw new Error("Bloco JSON 'visao_imersao_2' não encontrado ou inválido no documento. Verifique se o JSON está dentro de ```json visao_imersao_2.");
   }
 
   console.log("[V2 Adapter] Dados estruturados extraídos com sucesso para:", immersion2Data.client.name);
