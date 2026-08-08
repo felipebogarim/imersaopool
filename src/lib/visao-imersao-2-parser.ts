@@ -62,20 +62,24 @@ export function extractImmersion2Json(markdown: string): Immersion2Data | null {
       // ```
       let rawText = match[1].trim();
       
-      // Sanitização profunda: remove comentários de linha única ou bloco se existirem
+      // Sanitização profunda: remove comentários e lida com carácteres especiais
       rawText = rawText.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
-      
-      // Remove qualquer caractere invisível ou BOM no início do texto
       rawText = rawText.replace(/^\uFEFF/, "");
       
+      // Tenta localizar o JSON dentro do bloco se houver texto extra
+      const firstBrace = rawText.indexOf('{');
+      const lastBrace = rawText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        rawText = rawText.substring(firstBrace, lastBrace + 1);
+      }
+
       const raw = JSON.parse(rawText);
       if (raw && (raw.schema === "visao_imersao_2_data_v1" || raw.visao_imersao_2_data_v1)) {
-        // Lida com o caso onde o objeto pode estar aninhado sob a chave do schema
         const data = raw.schema === "visao_imersao_2_data_v1" ? raw : raw.visao_imersao_2_data_v1;
         return Immersion2DataSchema.parse(data);
       }
     } catch (e) {
-      // Se falhou o parse ou o schema não bate, continue tentando outros blocos
+      console.warn("[Immersion2Parser] Erro ao parsear bloco JSON estruturado:", e);
       continue;
     }
   }
