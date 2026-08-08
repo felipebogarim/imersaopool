@@ -59,10 +59,16 @@ export function extractImmersion2Json(markdown: string): Immersion2Data | null {
       // ```visao_imersao_2
       // { ... }
       // ```
-      const rawText = match[1].trim();
+      let rawText = match[1].trim();
+      
+      // Sanitização profunda: remove comentários de linha única ou bloco se existirem
+      rawText = rawText.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      
       const raw = JSON.parse(rawText);
-      if (raw && raw.schema === "visao_imersao_2_data_v1") {
-        return Immersion2DataSchema.parse(raw);
+      if (raw && (raw.schema === "visao_imersao_2_data_v1" || raw.visao_imersao_2_data_v1)) {
+        // Lida com o caso onde o objeto pode estar aninhado sob a chave do schema
+        const data = raw.schema === "visao_imersao_2_data_v1" ? raw : raw.visao_imersao_2_data_v1;
+        return Immersion2DataSchema.parse(data);
       }
     } catch (e) {
       // Se falhou o parse ou o schema não bate, continue tentando outros blocos
