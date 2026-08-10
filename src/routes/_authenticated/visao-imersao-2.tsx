@@ -30,9 +30,22 @@ import {
   ArrowLeft, 
   Compass,
   Save,
-  AlertCircle
+  AlertCircle,
+  MoreVertical,
+  Mail,
+  MessageCircle,
+  Pencil,
+  Trash2
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +84,35 @@ function VisaoImersao2Page() {
 
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
+  const [excluir, setExcluir] = useState<any | null>(null);
+
+  function resumoRelatorio(r: any) {
+    const dt = r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+    return `Visão Imersão 2 · ${r.client_name} · ${dt}\n${window.location.origin}/visao-imersao-2`;
+  }
+
+  function compartilharEmail(r: any) {
+    const subject = `Visão Imersão 2 · ${r.client_name}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(resumoRelatorio(r))}`;
+  }
+
+  function compartilharWhats(r: any) {
+    window.open(`https://wa.me/?text=${encodeURIComponent(resumoRelatorio(r))}`, "_blank");
+  }
+
+  async function excluirRelatorio(id: string) {
+    const { error } = await supabase.from("field_immersion_v2_reports").delete().eq("id", id);
+    if (error) {
+      toast.error("Não foi possível excluir o relatório.");
+      return;
+    }
+    setExcluir(null);
+    await queryClient.invalidateQueries({ queryKey: ["vi2-reports"] });
+    await refetchReports();
+    toast.success("Relatório excluído.");
+  }
+
+
 
 
   const { data: reports = [], refetch: refetchReports } = useQuery({
@@ -284,8 +326,30 @@ function VisaoImersao2Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={Boolean(excluir)} onOpenChange={(o) => { if (!o) setExcluir(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir?.client_name} · esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluir?.id) void excluirRelatorio(excluir.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
+
 
 
   if (!avulso || !visao) {
@@ -322,9 +386,37 @@ function VisaoImersao2Page() {
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Mais ações">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => compartilharEmail(r)}>
+                            <Mail className="mr-2 h-4 w-4" /> Compartilhar por e-mail
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => compartilharWhats(r)}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Compartilhar por WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => abrirRelatorio(r)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setExcluir(r)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </li>
                 ))}
+
               </ul>
             </div>
           )}
