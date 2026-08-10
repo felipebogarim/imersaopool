@@ -47,10 +47,11 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
 });
 
 function VisaoImersao2Page() {
-  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string; id?: string } | null>(null);
+  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string; id?: string; data?: Immersion2Data | null; markdown?: string } | null>(null);
   const [importando, setImportando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [preview, setPreview] = useState<{ doc: FieldImmersionDoc; arquivo: string; data: Immersion2Data; markdown: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: latestReport, isLoading: loadingLatest } = useQuery({
@@ -66,7 +67,9 @@ function VisaoImersao2Page() {
       if (!report) return null;
       
       const { doc } = parseFieldStoreVisit(report.content_markdown);
-      return { doc, arquivo: report.source_filename };
+      // Prioridade V2: o bloco canônico é lido do markdown bruto persistido.
+      const data = detectVisaoImersao2(report.content_markdown);
+      return { doc, arquivo: report.source_filename, data, markdown: report.content_markdown };
     }
   });
 
@@ -79,7 +82,7 @@ function VisaoImersao2Page() {
   const visao = useMemo(() => {
     if (!avulso) return null;
     try {
-      const v = adapterImmersionV2ToExecutive(avulso.doc);
+      const v = adapterImmersionV2ToExecutive(avulso.doc, avulso.data ?? null);
       console.log("[V2] View-model criada para:", v.metadata.representative_name);
       return v;
     } catch (e: any) {
@@ -90,34 +93,30 @@ function VisaoImersao2Page() {
 
   async function onFile(file: File) {
     setImportando(true);
-    console.log("[V2] Iniciando upload:", file.name);
     try {
       const text = await extractFileText(file);
-      console.log("[V2] Texto extraído, iniciando parse...");
-      
+
+      // 1) PRIORIDADE ABSOLUTA: bloco estruturado visao_imersao_2_data_v1.
+      const data = detectVisaoImersao2(text);
+
+      // 2) Relatório editorial legado: usado só para "Relatório completo por capítulos".
       const { doc, errors } = parseFieldStoreVisit(text);
-      if (!doc) {
-        console.error("[V2] Falha no parse do documento:", errors);
-        toast.error(errors[0] ?? "Documento fora do padrão de relatório de imersão.");
+
+      if (!data) {
+        toast.error(
+          doc
+            ? "Bloco 'visao_imersao_2' não encontrado. Este arquivo é um relatório editorial legado (field_store_visit_v1)."
+            : (errors[0] ?? "Documento fora do padrão de relatório de imersão."),
+        );
         return;
       }
-      
-      console.log("[V2] Parse do documento editorial OK, adaptando para executivo...");
-      
-      let visaoModel;
-      try {
-        visaoModel = adapterImmersionV2ToExecutive(doc);
-      } catch (e: any) {
-        console.error("[V2] Erro na adaptação/extração do JSON estruturado:", e);
-        toast.error(e.message || "Falha ao extrair dados estruturados 'visao_imersao_2'.");
-        return;
-      }
-      
-      console.log("[V2] Validação e adaptação OK, atualizando estado local...");
-      setAvulso({ doc, arquivo: file.name });
-      
-      toast.success("Relatório V2 carregado com sucesso. Clique em 'Salvar Imersão' para persistir.");
-      console.log("[V2] Fluxo de carregamento local concluído.");
+
+      setPreview({
+        doc: doc ?? { meta: {}, chapters: [] },
+        arquivo: file.name,
+        data,
+        markdown: text,
+      });
     } catch (e: any) {
       console.error("[V2] Erro fatal no fluxo:", e);
       toast.error(e?.message ?? "Falha ao processar o relatório.");
@@ -126,6 +125,20 @@ function VisaoImersao2Page() {
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
+  function confirmarImportacao() {
+    if (!preview) return;
+    try {
+      adapterImmersionV2ToExecutive(preview.doc, preview.data);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao montar a visão executiva.");
+      return;
+    }
+    setAvulso({ doc: preview.doc, arquivo: preview.arquivo, data: preview.data, markdown: preview.markdown });
+    setPreview(null);
+    toast.success("Relatório Visão Imersão 2 carregado. Clique em 'Salvar Imersão' para persistir.");
+  }
+
 
   async function handleSave() {
     if (!avulso || !visao) return;
