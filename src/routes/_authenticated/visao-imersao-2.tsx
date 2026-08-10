@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type PerfResumo } from "@/lib/visao-rep";
+import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
