@@ -29,7 +29,6 @@ import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
   Compass, 
-  Loader2, 
   AlertCircle
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -101,6 +100,7 @@ function VisaoImersao2Page() {
 
   async function confirmarImportacao() {
     if (!preview) return;
+    setSalvando(true);
     try {
       buildVisaoImersao2ViewModel(preview.data, preview.chapters);
       const { data: userData } = await supabase.auth.getUser();

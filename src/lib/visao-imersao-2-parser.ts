@@ -118,7 +118,7 @@ export function validateSignalV2(signal: Immersion2Data["signals"][0], data: Imm
 
   // Regras de proibição no título
   const title = signal.title || "";
-  const invalidPrefixes = ["Impacto comercial", "Evidências principais", "Conclusão", "Confiança"];
+  const invalidPrefixes = ["Impacto comercial", "Evidências principais", "Conclusão"];
   if (invalidPrefixes.some(p => title.startsWith(p))) {
     errors.push(`Título começa com label proibida: ${title}`);
   }
