@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/EmptyState";
 import { 
   ExecutiveBriefV2, 
@@ -16,19 +15,20 @@ import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
-import { type Immersion2Data } from "@/lib/visao-imersao-2-parser";
+import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
 import {
-  parseVisaoImersao2File,
   extractEditorialChapters,
   buildVisaoImersao2ViewModel,
-  type V2Chapter,
 } from "@/lib/visao-imersao-2-import";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  VisaoImersao2Importer,
+  type VisaoImersao2Import,
+} from "@/components/visao-imersao-2/VisaoImersao2Importer";
+import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
   Compass, 
-  FileUp, 
   Loader2, 
   AlertCircle
 } from "lucide-react";
@@ -42,47 +42,50 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
         name: "description",
         content: "Nova arquitetura de relatórios executivos baseada em dados canônicos.",
       },
+      { property: "og:title", content: "Visão Imersão 2 | PoolFlux" },
+      { property: "og:description", content: "Relatórios executivos de imersão baseados em dados canônicos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: VisaoImersao2Page,
 });
 
 function VisaoImersao2Page() {
-  type V2Loaded = { data: Immersion2Data; chapters: V2Chapter[]; arquivo: string; markdown: string; id?: string };
-  const [avulso, setAvulso] = useState<V2Loaded | null>(null);
-  const [importando, setImportando] = useState(false);
+  const queryClient = useQueryClient();
+  const [avulso, setAvulso] = useState<VisaoImersao2Import | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [preview, setPreview] = useState<V2Loaded | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<VisaoImersao2Import | null>(null);
 
   const { data: latestReport } = useQuery({
     queryKey: ["latest-vi2-report"],
     queryFn: async () => {
       const { data: report } = await supabase
         .from("field_immersion_v2_reports")
-        .select("*")
+        .select("id, source_filename, content_markdown, structured_data")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!report) return null;
       try {
-        const data = parseVisaoImersao2File(report.content_markdown);
+        const stored = report.structured_data as Record<string, unknown> | null;
+        const data = Immersion2DataSchema.parse(stored?.data ?? stored);
         return {
           data,
           chapters: extractEditorialChapters(report.content_markdown),
           arquivo: report.source_filename,
           markdown: report.content_markdown,
           id: report.id,
-        } as V2Loaded;
+        } as VisaoImersao2Import;
       } catch {
         return null;
       }
     },
   });
 
-  useMemo(() => {
+  useEffect(() => {
     if (latestReport && !avulso) setAvulso(latestReport);
   }, [latestReport]);
 
@@ -96,68 +99,38 @@ function VisaoImersao2Page() {
     }
   }, [avulso]);
 
-  async function onFile(file: File) {
-    setImportando(true);
-    try {
-      const text = await file.text();
-      const data = parseVisaoImersao2File(text);
-      setPreview({
-        data,
-        chapters: extractEditorialChapters(text),
-        arquivo: file.name,
-        markdown: text,
-      });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Arquivo incompatível com Visão Imersão 2.");
-    } finally {
-      setImportando(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  function confirmarImportacao() {
+  async function confirmarImportacao() {
     if (!preview) return;
     try {
       buildVisaoImersao2ViewModel(preview.data, preview.chapters);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao montar a visão executiva.");
-      return;
-    }
-    setAvulso(preview);
-    setPreview(null);
-    toast.success("Relatório Visão Imersão 2 carregado. Clique em 'Salvar Imersão' para persistir.");
-  }
-
-  async function handleSave() {
-    if (!avulso || !visao) return;
-    
-    setSalvando(true);
-    try {
-      console.log("[V2] Persistindo imersão...");
       const { data: userData } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
-
-      // Persiste o markdown bruto (preserva o bloco canônico visao_imersao_2)
-      const markdown = avulso.markdown;
+      const userId = userData.user?.id;
+      if (!userId) throw new Error("Sessão inválida.");
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", userId)
+        .single();
+      if (profileError || !profile?.company_id) throw new Error("Empresa ativa não encontrada.");
 
       const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: avulso.data.client.name,
-        visit_date: visao.metadata.interview_date || new Date().toISOString().split('T')[0],
-        source_filename: avulso.arquivo,
-        content_markdown: markdown,
-        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: avulso.data } as any,
+        client_name: preview.data.client.name,
+        visit_date: preview.data.client.visit_date,
+        source_filename: preview.arquivo,
+        content_markdown: preview.markdown,
+        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: preview.data } as any,
         company_id: profile?.company_id,
-        created_by: userData.user?.id
-      }).select().single();
+        created_by: userId,
+      }).select("id").single();
 
       if (insertError) throw insertError;
-
-      toast.success("Relatório V2 salvo com sucesso na base de dados.");
-      setAvulso({ ...avulso, id: inserted.id });
-      console.log("[V2] Persistência concluída.");
-    } catch (e: any) {
-      console.error("[V2] Erro na persistência:", e);
-      toast.error("Falha ao salvar a imersão: " + e.message);
+      const persisted = { ...preview, id: inserted.id };
+      setAvulso(persisted);
+      setPreview(null);
+      queryClient.setQueryData(["latest-vi2-report"], persisted);
+      toast.success("Relatório Visão Imersão 2 importado e persistido.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao persistir a Visão Imersão 2.");
     } finally {
       setSalvando(false);
     }
@@ -224,42 +197,12 @@ function VisaoImersao2Page() {
   }, [commercialData]);
 
   const previewDialog = (
-    <Dialog open={!!preview} onOpenChange={o => { if (!o) setPreview(null); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Validação do relatório</DialogTitle>
-        </DialogHeader>
-        {preview && (
-          <div className="space-y-2 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge>Padrão: Visão Imersão 2</Badge>
-              <Badge variant="outline">Schema: visao_imersao_2_data_v1</Badge>
-            </div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-              <dt className="text-muted-foreground">Cliente</dt><dd>{preview.data.client.name}</dd>
-              <dt className="text-muted-foreground">Data</dt><dd>{preview.data.client.visit_date}</dd>
-              <dt className="text-muted-foreground">Local</dt><dd>{preview.data.client.location}</dd>
-              <dt className="text-muted-foreground">Representante</dt><dd>{preview.data.client.representative ?? "—"}</dd>
-              <dt className="text-muted-foreground">Consultor</dt><dd>{preview.data.client.consultant ?? "—"}</dd>
-              <dt className="text-muted-foreground">Sinais estratégicos</dt><dd>{preview.data.signals.length}</dd>
-              <dt className="text-muted-foreground">Perspectivas</dt><dd>{preview.data.perspectives.length}</dd>
-              <dt className="text-muted-foreground">Citações</dt><dd>{preview.data.quotes.length}</dd>
-              <dt className="text-muted-foreground">Marcas observadas</dt><dd>{preview.data.brands_observed.length}</dd>
-              <dt className="text-muted-foreground">Famílias analisadas</dt><dd>{preview.data.families_analyzed.length}</dd>
-            </dl>
-            {preview.chapters.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {preview.chapters.length} capítulos editoriais detectados — usados apenas para aprofundamento, não para a visão executiva.
-              </p>
-            )}
-          </div>
-        )}
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setPreview(null)}>Cancelar</Button>
-          <Button onClick={confirmarImportacao}>Confirmar importação</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <VisaoImersao2ImportPreview
+      value={preview}
+      saving={salvando}
+      onCancel={() => setPreview(null)}
+      onConfirm={() => void confirmarImportacao()}
+    />
   );
 
   if (!avulso || !visao) {
@@ -269,18 +212,8 @@ function VisaoImersao2Page() {
           title="Visão Imersão 2" 
           subtitle="Nova arquitetura de diagnóstico comercial (Experimental)" 
           actions={
-            <Button onClick={() => fileRef.current?.click()} disabled={importando}>
-              {importando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileUp className="mr-1 h-4 w-4" />}
-              Carregar relatório Visão Imersão 2
-            </Button>
+            <VisaoImersao2Importer onValidated={setPreview} />
           }
-        />
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".md,.markdown"
-          className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) void onFile(f); }}
         />
         <div className="p-8">
           <EmptyState
@@ -288,9 +221,7 @@ function VisaoImersao2Page() {
             title="Nenhum relatório carregado"
             description="Carregue o arquivo MD canônico para visualizar a nova estrutura de dados."
             action={
-              <Button onClick={() => fileRef.current?.click()}>
-                <FileUp className="mr-1 h-4 w-4" /> Selecionar Arquivo
-              </Button>
+              <VisaoImersao2Importer onValidated={setPreview} label="Selecionar arquivo" />
             }
           />
         </div>
@@ -307,16 +238,11 @@ function VisaoImersao2Page() {
         subtitle={`Arquivo: ${avulso.arquivo}`}
         actions={
           <div className="flex gap-2">
+            <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
               <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
-            {!avulso.id && (
-              <Button onClick={handleSave} disabled={salvando}>
-                {salvando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileUp className="mr-1 h-4 w-4" />}
-                Salvar Imersão
-              </Button>
-            )}
-            <Button variant="ghost" onClick={() => { setAvulso(null); if (fileRef.current) fileRef.current.value = ""; }}>
+            <Button variant="ghost" onClick={() => setAvulso(null)}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Sair da Visão
             </Button>
           </div>
