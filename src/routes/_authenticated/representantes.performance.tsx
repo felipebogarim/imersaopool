@@ -45,7 +45,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
   head: () => ({ meta: [{ title: "Performance — Representantes" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { rep?: string; bi?: boolean } => ({
     rep: typeof search.rep === "string" ? search.rep : undefined,
     bi: search.bi === "1" || search.bi === true ? true : undefined,
   }),
