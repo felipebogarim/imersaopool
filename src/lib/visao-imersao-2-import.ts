@@ -76,7 +76,12 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
 
   visao.representative_context.represented_brands = data.brands_observed;
 
-  const validSignals = data.signals.filter((s) => validateSignalV2(s, data).isValid);
+  const signalValidations = data.signals.map((signal) => ({ signal, validation: validateSignalV2(signal, data) }));
+  const invalidSignal = signalValidations.find(({ validation }) => !validation.isValid);
+  if (invalidSignal) {
+    throw new Error(`Sinal ${invalidSignal.signal.id} inválido: ${invalidSignal.validation.errors.join(" ")}`);
+  }
+  const validSignals = signalValidations.map(({ signal }) => signal);
 
   visao.executive_view.priority_signals = validSignals.map((s) => {
     const evidenceText = s.evidence_quotes
@@ -113,18 +118,32 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
 
   visao.perspectives = data.perspectives.map((p) => {
     const chapter = chapters.find((c) => c.codigo === `C${p.chapter}`);
+    const relatedQuoteIds = new Set(
+      validSignals
+        .filter((signal) => signal.perspectives.includes(p.id))
+        .flatMap((signal) => signal.evidence_quotes),
+    );
+    const relatedQuotes = data.quotes
+      .filter((quote) => relatedQuoteIds.has(quote.id))
+      .map((quote) => {
+        const author = quote.reported_by
+          ? `${quote.original_author} · fala relatada por ${quote.reported_by}`
+          : `${quote.original_author}${quote.original_author_role ? ` (${quote.original_author_role})` : ""}`;
+        return `“${quote.text}” — ${author}`;
+      });
+    const relatedSignals = validSignals.filter((signal) => signal.perspectives.includes(p.id));
     return {
       perspective_number: p.chapter,
       perspective_title: p.title,
-      executive_finding: null,
-      business_impact: null,
+      executive_finding: relatedSignals.map((signal) => signal.conclusion).join("\n\n") || null,
+      business_impact: relatedSignals.map((signal) => signal.business_impact).join("\n\n") || null,
       recommended_action: null,
-      evidence: chapter?.markdown || "Aprofundamento editorial não disponível neste arquivo.",
-      source_quote: null,
+      evidence: relatedQuotes.join("\n\n") || chapter?.markdown || null,
+      source_quote: relatedQuotes.join("\n\n") || null,
       confidence_level: "alto",
       evidence_status: "relato_individual",
       comparative_classification: "Base comparável insuficiente",
-      full_reading: chapter?.markdown || "",
+      full_reading: chapter?.markdown || null,
       structured_fields: {},
       signal_ids: validSignals.filter((s) => s.perspectives.includes(p.id)).map((s) => s.id),
       source_chapter: `C${p.chapter}`,
