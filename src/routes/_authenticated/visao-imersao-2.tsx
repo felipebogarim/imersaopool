@@ -33,6 +33,17 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
   head: () => ({
@@ -59,6 +70,8 @@ function VisaoImersao2Page() {
   const [preview, setPreview] = useState<VisaoImersao2Import | null>(null);
 
   const [dirty, setDirty] = useState(false);
+  const [duplicata, setDuplicata] = useState<any | null>(null);
+
 
   const { data: reports = [], refetch: refetchReports } = useQuery({
     queryKey: ["vi2-reports"],
@@ -111,7 +124,7 @@ function VisaoImersao2Page() {
     }
   }
 
-  async function salvarRelatorio() {
+  async function salvarRelatorio(opts?: { replaceId?: string }) {
     if (!avulso) return;
     setSalvando(true);
     try {
@@ -135,11 +148,27 @@ function VisaoImersao2Page() {
         created_by: userId,
       };
 
-      if (avulso.id) {
+      const targetId = avulso.id ?? opts?.replaceId;
+
+      if (!targetId) {
+        // Regra: apenas um relatório por cliente na mesma data.
+        const duplicado = (reports as any[]).find(
+          (r) =>
+            String(r.client_name ?? "").trim().toLowerCase() ===
+              payload.client_name.trim().toLowerCase() && r.visit_date === payload.visit_date,
+        );
+        if (duplicado) {
+          setDuplicata(duplicado);
+          setSalvando(false);
+          return;
+        }
+      }
+
+      if (targetId) {
         const { error } = await supabase
           .from("field_immersion_v2_reports")
           .update(payload as any)
-          .eq("id", avulso.id);
+          .eq("id", targetId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("field_immersion_v2_reports").insert(payload as any);
@@ -150,6 +179,7 @@ function VisaoImersao2Page() {
       await refetchReports();
       setDirty(false);
       setAvulso(null);
+      setDuplicata(null);
       toast.success("Relatório salvo. Disponível na lista de Visão Imersão 2.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao salvar a Visão Imersão 2.");
@@ -157,6 +187,7 @@ function VisaoImersao2Page() {
       setSalvando(false);
     }
   }
+
 
   // Busca dados comerciais reais do cliente resolvido
   const clientName = visao?.metadata?.representative_name;
@@ -219,13 +250,43 @@ function VisaoImersao2Page() {
   }, [commercialData]);
 
   const previewDialog = (
-    <VisaoImersao2ImportPreview
-      value={preview}
-      saving={salvando}
-      onCancel={() => setPreview(null)}
-      onConfirm={() => void confirmarImportacao()}
-    />
+    <>
+      <VisaoImersao2ImportPreview
+        value={preview}
+        saving={salvando}
+        onCancel={() => setPreview(null)}
+        onConfirm={() => void confirmarImportacao()}
+      />
+      <AlertDialog open={Boolean(duplicata)} onOpenChange={(o) => { if (!o) setDuplicata(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Já existe um relatório deste cliente nesta data</AlertDialogTitle>
+            <AlertDialogDescription>
+              {duplicata?.client_name} ·{" "}
+              {duplicata?.visit_date
+                ? new Date(`${duplicata.visit_date}T00:00:00`).toLocaleDateString("pt-BR")
+                : "—"}
+              . Deseja substituir o relatório anterior por esta versão?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={salvando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={salvando}
+              onClick={(e) => {
+                e.preventDefault();
+                const id = duplicata?.id;
+                if (id) void salvarRelatorio({ replaceId: id });
+              }}
+            >
+              {salvando ? "Substituindo…" : "Substituir anterior"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
+
 
   if (!avulso || !visao) {
     return (
