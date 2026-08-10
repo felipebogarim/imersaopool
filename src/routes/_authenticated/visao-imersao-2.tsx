@@ -101,11 +101,20 @@ function VisaoImersao2Page() {
   }
 
   async function excluirRelatorio(id: string) {
-    const { error } = await supabase.from("field_immersion_v2_reports").delete().eq("id", id);
+    const { data, error } = await supabase
+      .from("field_immersion_v2_reports")
+      .delete()
+      .eq("id", id)
+      .select("id");
     if (error) {
       toast.error("Não foi possível excluir o relatório.");
       return;
     }
+    if (!data || data.length === 0) {
+      toast.error("Você não tem permissão para excluir este relatório.");
+      return;
+    }
+
     setExcluir(null);
     await queryClient.invalidateQueries({ queryKey: ["vi2-reports"] });
     await refetchReports();
