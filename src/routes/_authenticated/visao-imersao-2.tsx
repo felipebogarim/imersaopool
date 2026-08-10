@@ -278,18 +278,23 @@ function VisaoImersao2Page() {
       {previewDialog}
       <PageHeader 
         title={`Visão Imersão 2 · ${visao.metadata.representative_name}`} 
-        subtitle={`Arquivo: ${avulso.arquivo}`}
+        subtitle={`Arquivo: ${avulso.arquivo}${dirty ? " · alterações não salvas" : ""}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void salvarRelatorio()} disabled={salvando}>
+              <Save className="mr-1 h-4 w-4" />
+              {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
+            </Button>
             <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
               <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
-            <Button variant="ghost" onClick={() => setAvulso(null)}>
-              <ArrowLeft className="mr-1 h-4 w-4" /> Sair da Visão
+            <Button variant="ghost" onClick={() => { setAvulso(null); setDirty(false); }}>
+              <ArrowLeft className="mr-1 h-4 w-4" /> Voltar à lista
             </Button>
           </div>
         }
+
       />
 
       <div className="space-y-8 p-4 sm:p-8">
