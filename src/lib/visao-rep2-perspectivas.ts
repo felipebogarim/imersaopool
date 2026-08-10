@@ -155,6 +155,11 @@ export function buildPerspectivaVM(
 export function buildPerspectivasVM(visao: VisaoRep2): PerspectivaVM[] {
   const decisoes = visao.executive_view.decisions_required ?? [];
   const validacoes = visao.executive_view.validation_required ?? [];
+  
+  // Regra Visão Imersão 2: Em modo imersão, filtramos capítulos vazios?
+  // Na verdade, buildPerspectivasVM é usado pela ExecutiveBriefV2 para renderizar os cards.
+  // Mantenho a lógica original, o componente é que deve decidir se oculta.
+  
   return PERSPECTIVAS_META.map(meta =>
     buildPerspectivaVM(
       meta,
@@ -163,6 +168,7 @@ export function buildPerspectivasVM(visao: VisaoRep2): PerspectivaVM[] {
     ),
   );
 }
+
 
 /** Capitaliza rótulos de confiança vindos de fontes diversas. */
 export function confiancaLabel(v: string | null | undefined) {

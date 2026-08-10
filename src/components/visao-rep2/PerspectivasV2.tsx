@@ -268,8 +268,8 @@ export function PerspectivasEntrevistaV2({
 
   return (
     <BlocoExpansivel
-      titulo={mode === "imersao" ? "Capítulos da imersão" : "Perspectivas da entrevista"}
-      descricao={mode === "imersao" ? "Leitura detalhada de cada capítulo do relatório final." : "Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."}
+      titulo={mode === "imersao" ? "REVISÃO DOS CAPÍTULOS DA IMERSÃO" : "Perspectivas da entrevista"}
+      descricao={mode === "imersao" ? "Abaixo serão destacados somente pontos adicionais, diferentes dos já listados anteriormente. Caso não haja conteúdo novo e relevante, nenhum conteúdo será apresentado." : "Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."}
     >
       <div className="space-y-5">
 

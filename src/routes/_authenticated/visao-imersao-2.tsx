@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { type PerfResumo } from "@/lib/visao-rep";
+
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -291,14 +293,24 @@ function VisaoImersao2Page() {
     }
   });
 
-  const perf = useMemo(() => {
+  const perf = useMemo((): PerfResumo | null => {
     if (!commercialData) return null;
     return {
       geralPct: commercialData.geralPct ?? 42.9,
       periodoLabel: commercialData.periodoLabel ?? "1º Semestre 2026",
-      familias: commercialData.familias ?? []
+      familias: commercialData.familias ?? [],
+      mediaGrupoPct: 0,
+      diffPp: 0,
+      posicao: 0,
+      totalReps: 0,
+      clientes: 1,
+      destaques: [],
+      criticas: [],
+      farol: [],
+      estimado: false,
     };
   }, [commercialData]);
+
 
   const previewDialog = (
     <>
@@ -463,14 +475,40 @@ function VisaoImersao2Page() {
       <div className="space-y-8 p-4 sm:p-8">
         {/* 1. Cabeçalho e 2. Briefing Executivo */}
         <div className="space-y-6">
-          <BriefHeaderV2
+          <ExecutiveBriefV2
+            brief={{
+              contexto: {
+                marcas: visao.representative_context.represented_brands,
+                regiaoModelo: visao.representative_context.additional_context || "",
+              },
+              clientes: visao.strategic_clients.map(c => ({
+                nome: c.client_name || "",
+                motivo: c.strategic_reason || "",
+              })),
+              sintese: visao.executive_brief?.presidential_synthesis || "",
+              temas: [],
+              conclusoes: [],
+              perspectivas: [],
+              decisoes: visao.executive_view.decisions_required.map(d => ({
+                texto: d,
+                status: "A decidir",
+              })),
+              validacoes: visao.executive_view.validation_required.map(v => ({
+                texto: v,
+                status: "A validar",
+              })),
+            }}
             nome={visao.metadata.representative_name || ""}
-            regiao={visao.metadata.region}
-            marcas={visao.representative_context.represented_brands}
-            atingimentoPct={perf?.geralPct}
-            periodo={perf?.periodoLabel}
+            regiao={visao.metadata.region || ""}
+            perf={perf}
+            visao={visao}
             mode="imersao"
           />
+
+
+
+
+
           
           {commercialData && commercialData.clientsFound > 1 && (
             <Alert variant="destructive">

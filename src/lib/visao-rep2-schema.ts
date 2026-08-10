@@ -139,6 +139,8 @@ export type Perspective = {
   comparative_classification: string | null;
   full_reading: string | null;
   structured_fields: Record<string, string | string[]>;
+  source_chapter?: string | null;
+
   /** Vínculo opcional com os sinais executivos (Leitura integrada). */
   signal_ids?: string[];
 };
@@ -277,6 +279,25 @@ export function emptyBrandDimension(): BrandDimension {
   return { score: null, confidence: null, reading: null, perspective_ids: [], evidence_count: null };
 }
 
+export type ChapterReviewItem = {
+  headline: string;
+  executive_reading: string;
+  implication: string;
+  quote_ids?: string[];
+  entities?: {
+    produtos?: string[];
+    concorrentes?: string[];
+    clientes?: string[];
+    ferramentas?: string[];
+  };
+};
+
+export type ChapterReview = {
+  chapter: number;
+  title: string;
+  items: ChapterReviewItem[];
+};
+
 export type VisaoRep2 = {
   metadata: Metadata;
   executive_view: ExecutiveView;
@@ -292,6 +313,14 @@ export type VisaoRep2 = {
   comparative_view: ComparativeView;
   performance_connection: PerformanceConnection;
   source_control: SourceControl;
+  
+  /** 
+   * Revisão inteligente dos capítulos (Visão Imersão 2). 
+   * Contém apenas pontos complementares e específicos.
+   */
+  chapter_review?: ChapterReview[];
+  chapter_review_policy?: string;
+
   /** Campos herdados da Visão Rep original (percentuais de alinhamento etc.). */
   legacy?: Record<string, string | number | boolean | null>;
 };
@@ -354,6 +383,8 @@ export function emptyPerspective(i: number): Perspective {
     comparative_classification: null,
     full_reading: null,
     structured_fields: {},
+    source_chapter: null,
+
   };
 }
 

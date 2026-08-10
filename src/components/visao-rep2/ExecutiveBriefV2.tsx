@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { ListPlus } from "lucide-react";
+import { ListPlus, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -135,22 +135,126 @@ export function ContextPortfolioV2({ brief, mode = "rep" }: { brief: BriefingExe
 /* Síntese estratégica                                                 */
 /* ------------------------------------------------------------------ */
 
-export function SintesePresidencialV2({ texto, teia }: { texto: string; teia?: ReactNode }) {
+export function SintesePresidencialV2({ 
+  texto, 
+  teia, 
+  visao, 
+  contexto 
+}: { 
+  texto: string; 
+  teia?: ReactNode; 
+  visao?: VisaoRep2;
+  contexto?: string;
+}) {
+  const chaptersCount = visao?.chapter_review?.length ?? 0;
+  const chaptersWithItems = visao?.chapter_review?.filter(c => c.items.length > 0).length ?? 0;
+
   return (
-    <BlocoExpansivel
-      titulo="Síntese estratégica"
-      descricao="Leitura geral da entrevista e dos principais impactos para o negócio."
-      className="bg-muted/30"
-    >
-      <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] lg:gap-10">
-        <div className="min-w-0 border-l-2 border-primary pl-5">
-          <MarkdownView markdown={texto} className="max-w-[68ch] text-base leading-8" />
+    <div className="space-y-8">
+      <BlocoExpansivel
+        titulo="Síntese estratégica"
+        descricao="Leitura geral da entrevista e dos principais impactos para o negócio."
+        className="bg-muted/30"
+      >
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] lg:gap-10">
+          <div className="min-w-0 border-l-2 border-primary pl-5">
+            <MarkdownView markdown={texto} className="max-w-[68ch] text-base leading-8" />
+          </div>
+          {teia ? <div className="min-w-0 self-center">{teia}</div> : null}
         </div>
-        {teia ? <div className="min-w-0 self-center">{teia}</div> : null}
-      </div>
-    </BlocoExpansivel>
+      </BlocoExpansivel>
+
+      {visao?.chapter_review && (
+        <BlocoExpansivel
+          titulo="Revisão dos capítulos da imersão"
+          descricao="Abaixo serão destacados somente pontos adicionais, diferentes dos já listados anteriormente. Caso não haja conteúdo novo e relevante, nenhum conteúdo será apresentado."
+          contexto={contexto}
+          acessorio={
+            <span className="text-xs text-muted-foreground">
+              {chaptersCount} capítulos revisados · {chaptersWithItems} com pontos adicionais
+            </span>
+          }
+        >
+          <div className="space-y-10">
+            {visao.chapter_review
+              .filter(c => c.items.length > 0)
+              .map(chapter => (
+                <div key={chapter.chapter} className="space-y-4">
+                  <header className="flex items-center gap-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[11px] font-bold tabular-nums">
+                      {chapter.chapter}
+                    </span>
+                    <h4 className="text-sm font-bold uppercase tracking-wider">{chapter.title}</h4>
+                  </header>
+
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    {chapter.items.map((item, idx) => (
+                      <div key={idx} className="space-y-4 rounded-xl border bg-card p-5">
+                        <h5 className="text-base font-semibold tracking-tight">{item.headline}</h5>
+
+                        <div className="space-y-3">
+                          <div>
+                            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Leitura executiva
+                            </div>
+                            <p className="text-sm leading-relaxed">{item.executive_reading}</p>
+                          </div>
+
+                          <div>
+                            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Por que importa
+                            </div>
+                            <p className="text-sm leading-relaxed">{item.implication}</p>
+                          </div>
+
+                          {item.entities && (
+                            <div className="space-y-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Entidades citadas
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {[
+                                  ...(item.entities.produtos || []),
+                                  ...(item.entities.concorrentes || []),
+                                  ...(item.entities.clientes || []),
+                                  ...(item.entities.ferramentas || []),
+                                ].map(entity => (
+                                  <Badge key={entity} variant="outline" className="text-[10px]">
+                                    {entity}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {item.quote_ids && item.quote_ids.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Evidência
+                              </div>
+                              {item.quote_ids.map(qid => (
+                                <figure key={qid} className="rounded-lg border-l-2 border-primary/50 bg-muted/40 p-3">
+                                  <Quote className="mb-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                                  <blockquote className="break-words text-sm italic leading-relaxed">
+                                    Citação {qid}
+                                  </blockquote>
+                                </figure>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </BlocoExpansivel>
+      )}
+    </div>
   );
 }
+
 
 
 
@@ -465,11 +569,15 @@ export function ExecutiveBriefV2({
         mode={mode}
       />
       {brief.sintese ? (
-        <SintesePresidencialV2 
-          texto={brief.sintese} 
-          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)} 
+        <SintesePresidencialV2
+          texto={brief.sintese}
+          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)}
+          visao={visao}
+          contexto={contexto}
         />
       ) : null}
+
+
 
       <PerformanceFamiliasV2 perf={perf} contexto={contexto} />
       {leitura ?? null}
