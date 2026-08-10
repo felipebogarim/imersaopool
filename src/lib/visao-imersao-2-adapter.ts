@@ -15,10 +15,9 @@ import {
  * Adaptador para transformar os dados extraídos (JSON canônico V2) 
  * no modelo de visualização VisaoRep2.
  */
-export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2 {
-  // 1. Tenta extrair o bloco JSON estruturado (Fonte Canônica)
-  // O JSON pode estar nos metadados ou em qualquer capítulo.
-  // Criamos um super-texto contendo metadados e todos os capítulos para o parser.
+export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc, preExtracted?: Immersion2Data | null): VisaoRep2 {
+  // 1. Fonte canônica: bloco estruturado visao_imersao_2_data_v1.
+  // Quando já detectado na rota (prioridade sobre field_store_visit_v1), reutiliza.
   const metaRawContent = doc.meta["__raw_content__"] || "";
   const metaText = Object.entries(doc.meta)
     .filter(([k]) => k !== "__raw_content__")
@@ -28,7 +27,7 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc): VisaoRep2
   // O searchableContent prioriza o metaRawContent onde o JSON canônico costuma residir
   const searchableContent = `${metaRawContent}\n\n${metaText}\n\n${chaptersText}`;
   
-  const immersion2Data = extractImmersion2Json(searchableContent);
+  const immersion2Data = preExtracted ?? extractImmersion2Json(searchableContent);
 
   if (!immersion2Data) {
     console.error("[V2 Adapter] Falha ao localizar bloco 'visao_imersao_2_data_v1'. Conteúdo verificado:", searchableContent.slice(0, 500) + "...");

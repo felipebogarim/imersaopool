@@ -14,7 +14,7 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/evento/checkout")({
   ssr: false,
-  validateSearch: (search) => searchSchema.parse(search),
+  validateSearch: (search): { pacote?: string } => searchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Garanta sua vaga — PoolFlux" },

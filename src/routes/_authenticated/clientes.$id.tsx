@@ -152,7 +152,7 @@ function ClientDetail() {
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <ListChecks className="h-3.5 w-3.5" /> Ações em aberto {isGroup && <Badge variant="outline" className="text-[10px]">grupo</Badge>}
               </h3>
-              <Button size="sm" variant="ghost" asChild><Link to="/planos">Ver kanban</Link></Button>
+              <Button size="sm" variant="ghost" asChild><Link to="/tarefas">Ver kanban</Link></Button>
             </div>
             {acoes.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma ação em aberto vinculada.</p>
