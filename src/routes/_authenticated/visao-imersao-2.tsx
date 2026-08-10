@@ -59,6 +59,8 @@ function VisaoImersao2Page() {
   const [preview, setPreview] = useState<VisaoImersao2Import | null>(null);
 
   const [dirty, setDirty] = useState(false);
+  const [duplicata, setDuplicata] = useState<any | null>(null);
+
 
   const { data: reports = [], refetch: refetchReports } = useQuery({
     queryKey: ["vi2-reports"],
