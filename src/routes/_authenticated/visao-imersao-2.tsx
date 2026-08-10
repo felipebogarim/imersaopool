@@ -236,20 +236,42 @@ function VisaoImersao2Page() {
             <VisaoImersao2Importer onValidated={setPreview} />
           }
         />
-        <div className="p-8">
-          <EmptyState
-            icon={Compass}
-            title="Nenhum relatório carregado"
-            description="Carregue o arquivo MD canônico para visualizar a nova estrutura de dados."
-            action={
-              <VisaoImersao2Importer onValidated={setPreview} label="Selecionar arquivo" />
-            }
-          />
+        <div className="p-4 sm:p-8">
+          {reports.length === 0 ? (
+            <EmptyState
+              icon={Compass}
+              title="Nenhum relatório salvo"
+              description="Carregue o arquivo MD canônico para visualizar a nova estrutura de dados."
+              action={
+                <VisaoImersao2Importer onValidated={setPreview} label="Selecionar arquivo" />
+              }
+            />
+          ) : (
+            <div className="space-y-3">
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Relatórios salvos
+              </h2>
+              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                {reports.map((r: any) => (
+                  <li key={r.id} className="flex items-center justify-between gap-4 bg-card p-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{r.client_name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         {previewDialog}
       </div>
     );
   }
+
 
   return (
     <div className="pb-20">
