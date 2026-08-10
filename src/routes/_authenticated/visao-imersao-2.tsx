@@ -71,6 +71,35 @@ function VisaoImersao2Page() {
 
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
+  const [excluir, setExcluir] = useState<any | null>(null);
+
+  function resumoRelatorio(r: any) {
+    const dt = r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—";
+    return `Visão Imersão 2 · ${r.client_name} · ${dt}\n${window.location.origin}/visao-imersao-2`;
+  }
+
+  function compartilharEmail(r: any) {
+    const subject = `Visão Imersão 2 · ${r.client_name}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(resumoRelatorio(r))}`;
+  }
+
+  function compartilharWhats(r: any) {
+    window.open(`https://wa.me/?text=${encodeURIComponent(resumoRelatorio(r))}`, "_blank");
+  }
+
+  async function excluirRelatorio(id: string) {
+    const { error } = await supabase.from("field_immersion_v2_reports").delete().eq("id", id);
+    if (error) {
+      toast.error("Não foi possível excluir o relatório.");
+      return;
+    }
+    setExcluir(null);
+    await queryClient.invalidateQueries({ queryKey: ["vi2-reports"] });
+    await refetchReports();
+    toast.success("Relatório excluído.");
+  }
+
+
 
 
   const { data: reports = [], refetch: refetchReports } = useQuery({
