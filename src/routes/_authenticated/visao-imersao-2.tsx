@@ -326,8 +326,30 @@ function VisaoImersao2Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog open={Boolean(excluir)} onOpenChange={(o) => { if (!o) setExcluir(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir?.client_name} · esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (excluir?.id) void excluirRelatorio(excluir.id);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
+
 
 
   if (!avulso || !visao) {
