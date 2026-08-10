@@ -507,6 +507,34 @@ export function exportVisaoRep2Pdf(
     }
   }
 
+  // ---------- Revisão dos capítulos ----------
+  if (visao.chapter_review?.length) {
+    secao("Revisão dos capítulos");
+    if (has(visao.chapter_review_policy)) {
+      text(visao.chapter_review_policy!, 8.5, "italic", C.mutedFg);
+      y += 4;
+    }
+    for (const cap of visao.chapter_review) {
+      for (const item of cap.items ?? []) {
+        const ent = [
+          ...(item.entities?.produtos ?? []),
+          ...(item.entities?.concorrentes ?? []),
+          ...(item.entities?.clientes ?? []),
+          ...(item.entities?.ferramentas ?? []),
+        ];
+        blocoCard(
+          `C${cap.chapter} · ${cap.title} — ${item.headline}`,
+          [
+            ...campo("Leitura executiva", item.executive_reading),
+            ...campo("Implicação", item.implication),
+            ...(ent.length ? campo("Entidades citadas", ent.join(", ")) : []),
+          ],
+          C.primary,
+        );
+      }
+    }
+  }
+
   // ---------- Rodapé ----------
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
@@ -517,7 +545,7 @@ export function exportVisaoRep2Pdf(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...C.mutedFg);
-    doc.text(`PoolFlux · Visão Rep · ${repNome} · confidencial`, M, H - 20);
+    doc.text(`PoolFlux · ${opts.rodape ?? "Visão Rep"} · ${repNome} · confidencial`, M, H - 20);
     doc.text(`Página ${i} de ${total}`, PW - M, H - 20, { align: "right" });
   }
 
@@ -527,5 +555,5 @@ export function exportVisaoRep2Pdf(
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  doc.save(`visao-rep-2-${slug || "relatorio"}.pdf`);
+  doc.save(`${opts.arquivoPrefixo ?? "visao-rep-2"}-${slug || "relatorio"}.pdf`);
 }
