@@ -195,7 +195,7 @@ export function exportVisaoRep2Pdf(
   doc.text("POOLFLUX · ANÁLISES", M + 18, y + 22);
   doc.setFontSize(19);
   doc.setTextColor(...C.white);
-  doc.text("Visão Rep — leitura executiva", M + 18, y + 45);
+  doc.text(opts.titulo ?? "Visão Rep — leitura executiva", M + 18, y + 45);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(196, 214, 224);
