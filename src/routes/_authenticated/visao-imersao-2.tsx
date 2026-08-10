@@ -57,36 +57,35 @@ function VisaoImersao2Page() {
   const [debugMode, setDebugMode] = useState(false);
   const [preview, setPreview] = useState<VisaoImersao2Import | null>(null);
 
-  const { data: latestReport } = useQuery({
-    queryKey: ["latest-vi2-report"],
-    queryFn: async () => {
-      const { data: report } = await supabase
-        .from("field_immersion_v2_reports")
-        .select("id, source_filename, content_markdown, structured_data")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const [dirty, setDirty] = useState(false);
 
-      if (!report) return null;
-      try {
-        const stored = report.structured_data as Record<string, unknown> | null;
-        const data = Immersion2DataSchema.parse(stored?.data ?? stored);
-        return {
-          data,
-          chapters: extractEditorialChapters(report.content_markdown),
-          arquivo: report.source_filename,
-          markdown: report.content_markdown,
-          id: report.id,
-        } as VisaoImersao2Import;
-      } catch {
-        return null;
-      }
+  const { data: reports = [], refetch: refetchReports } = useQuery({
+    queryKey: ["vi2-reports"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("id, client_name, visit_date, source_filename, content_markdown, structured_data, created_at")
+        .order("created_at", { ascending: false });
+      return data ?? [];
     },
   });
 
-  useEffect(() => {
-    if (latestReport && !avulso) setAvulso(latestReport);
-  }, [latestReport]);
+  function abrirRelatorio(report: any) {
+    try {
+      const stored = report.structured_data as Record<string, unknown> | null;
+      const data = Immersion2DataSchema.parse((stored as any)?.data ?? stored);
+      setAvulso({
+        data,
+        chapters: extractEditorialChapters(report.content_markdown),
+        arquivo: report.source_filename,
+        markdown: report.content_markdown,
+        id: report.id,
+      });
+      setDirty(false);
+    } catch {
+      toast.error("Relatório salvo não é compatível com o schema V2.");
+    }
+  }
 
   const visao = useMemo(() => {
     if (!avulso) return null;
@@ -98,11 +97,23 @@ function VisaoImersao2Page() {
     }
   }, [avulso]);
 
-  async function confirmarImportacao() {
+  function confirmarImportacao() {
     if (!preview) return;
-    setSalvando(true);
     try {
       buildVisaoImersao2ViewModel(preview.data, preview.chapters);
+      setAvulso(preview);
+      setDirty(true);
+      setPreview(null);
+      toast.success("Relatório carregado. Clique em Salvar para publicar na lista.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao montar a Visão Imersão 2.");
+    }
+  }
+
+  async function salvarRelatorio() {
+    if (!avulso) return;
+    setSalvando(true);
+    try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) throw new Error("Sessão inválida.");
@@ -113,24 +124,34 @@ function VisaoImersao2Page() {
         .single();
       if (profileError || !profile?.company_id) throw new Error("Empresa ativa não encontrada.");
 
-      const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: preview.data.client.name,
-        visit_date: preview.data.client.visit_date,
-        source_filename: preview.arquivo,
-        content_markdown: preview.markdown,
-        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: preview.data } as any,
-        company_id: profile?.company_id,
+      const payload = {
+        client_name: avulso.data.client.name,
+        visit_date: avulso.data.client.visit_date,
+        source_filename: avulso.arquivo,
+        content_markdown: avulso.markdown,
+        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: avulso.data } as any,
+        company_id: profile.company_id,
         created_by: userId,
-      }).select("id").single();
+      };
 
-      if (insertError) throw insertError;
-      const persisted = { ...preview, id: inserted.id };
-      setAvulso(persisted);
-      setPreview(null);
-      queryClient.setQueryData(["latest-vi2-report"], persisted);
-      toast.success("Relatório Visão Imersão 2 importado e persistido.");
+      if (avulso.id) {
+        const { error } = await supabase
+          .from("field_immersion_v2_reports")
+          .update(payload as any)
+          .eq("id", avulso.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("field_immersion_v2_reports").insert(payload as any);
+        if (error) throw error;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["vi2-reports"] });
+      await refetchReports();
+      setDirty(false);
+      setAvulso(null);
+      toast.success("Relatório salvo. Disponível na lista de Visão Imersão 2.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao persistir a Visão Imersão 2.");
+      toast.error(error instanceof Error ? error.message : "Falha ao salvar a Visão Imersão 2.");
     } finally {
       setSalvando(false);
     }
