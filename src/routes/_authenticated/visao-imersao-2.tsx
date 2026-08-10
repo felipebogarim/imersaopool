@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/EmptyState";
-import { extractFileText } from "@/lib/sintese-file-text";
 import { 
   ExecutiveBriefV2, 
   BriefHeaderV2, 
@@ -17,15 +16,15 @@ import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
-import { adapterImmersionV2ToExecutive } from "@/lib/visao-imersao-2-adapter";
-import { detectVisaoImersao2, type Immersion2Data } from "@/lib/visao-imersao-2-parser";
+import { type Immersion2Data } from "@/lib/visao-imersao-2-parser";
+import {
+  parseVisaoImersao2File,
+  extractEditorialChapters,
+  buildVisaoImersao2ViewModel,
+  type V2Chapter,
+} from "@/lib/visao-imersao-2-import";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
-import { 
-  parseFieldStoreVisit, 
-  serializeFieldStoreVisit,
-  type FieldImmersionDoc 
-} from "@/lib/field-store-visit";
 import { 
   ArrowLeft, 
   Compass, 
@@ -49,14 +48,15 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
 });
 
 function VisaoImersao2Page() {
-  const [avulso, setAvulso] = useState<{ doc: FieldImmersionDoc; arquivo: string; id?: string; data?: Immersion2Data | null; markdown?: string } | null>(null);
+  type V2Loaded = { data: Immersion2Data; chapters: V2Chapter[]; arquivo: string; markdown: string; id?: string };
+  const [avulso, setAvulso] = useState<V2Loaded | null>(null);
   const [importando, setImportando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [preview, setPreview] = useState<{ doc: FieldImmersionDoc; arquivo: string; data: Immersion2Data; markdown: string } | null>(null);
+  const [preview, setPreview] = useState<V2Loaded | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: latestReport, isLoading: loadingLatest } = useQuery({
+  const { data: latestReport } = useQuery({
     queryKey: ["latest-vi2-report"],
     queryFn: async () => {
       const { data: report } = await supabase
@@ -65,30 +65,33 @@ function VisaoImersao2Page() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       if (!report) return null;
-      
-      const { doc } = parseFieldStoreVisit(report.content_markdown);
-      // Prioridade V2: o bloco canônico é lido do markdown bruto persistido.
-      const data = detectVisaoImersao2(report.content_markdown);
-      return { doc, arquivo: report.source_filename, data, markdown: report.content_markdown };
-    }
+      try {
+        const data = parseVisaoImersao2File(report.content_markdown);
+        return {
+          data,
+          chapters: extractEditorialChapters(report.content_markdown),
+          arquivo: report.source_filename,
+          markdown: report.content_markdown,
+          id: report.id,
+        } as V2Loaded;
+      } catch {
+        return null;
+      }
+    },
   });
 
   useMemo(() => {
-    if (latestReport && !avulso) {
-      setAvulso(latestReport as any);
-    }
+    if (latestReport && !avulso) setAvulso(latestReport);
   }, [latestReport]);
 
   const visao = useMemo(() => {
     if (!avulso) return null;
     try {
-      const v = adapterImmersionV2ToExecutive(avulso.doc, avulso.data ?? null);
-      console.log("[V2] View-model criada para:", v.metadata.representative_name);
-      return v;
+      return buildVisaoImersao2ViewModel(avulso.data, avulso.chapters);
     } catch (e: any) {
-      console.error("[VisaoImersao2] Erro no adapter:", e);
+      console.error("[VisaoImersao2] Erro ao montar view-model:", e);
       return null;
     }
   }, [avulso]);
@@ -96,32 +99,16 @@ function VisaoImersao2Page() {
   async function onFile(file: File) {
     setImportando(true);
     try {
-      const text = await extractFileText(file);
-
-      // 1) PRIORIDADE ABSOLUTA: bloco estruturado visao_imersao_2_data_v1.
-      const data = detectVisaoImersao2(text);
-
-      // 2) Relatório editorial legado: usado só para "Relatório completo por capítulos".
-      const { doc, errors } = parseFieldStoreVisit(text);
-
-      if (!data) {
-        toast.error(
-          doc
-            ? "Bloco 'visao_imersao_2' não encontrado. Este arquivo é um relatório editorial legado (field_store_visit_v1)."
-            : (errors[0] ?? "Documento fora do padrão de relatório de imersão."),
-        );
-        return;
-      }
-
+      const text = await file.text();
+      const data = parseVisaoImersao2File(text);
       setPreview({
-        doc: doc ?? { meta: {}, chapters: [] },
-        arquivo: file.name,
         data,
+        chapters: extractEditorialChapters(text),
+        arquivo: file.name,
         markdown: text,
       });
     } catch (e: any) {
-      console.error("[V2] Erro fatal no fluxo:", e);
-      toast.error(e?.message ?? "Falha ao processar o relatório.");
+      toast.error(e?.message ?? "Arquivo incompatível com Visão Imersão 2.");
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -131,16 +118,15 @@ function VisaoImersao2Page() {
   function confirmarImportacao() {
     if (!preview) return;
     try {
-      adapterImmersionV2ToExecutive(preview.doc, preview.data);
+      buildVisaoImersao2ViewModel(preview.data, preview.chapters);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao montar a visão executiva.");
       return;
     }
-    setAvulso({ doc: preview.doc, arquivo: preview.arquivo, data: preview.data, markdown: preview.markdown });
+    setAvulso(preview);
     setPreview(null);
     toast.success("Relatório Visão Imersão 2 carregado. Clique em 'Salvar Imersão' para persistir.");
   }
-
 
   async function handleSave() {
     if (!avulso || !visao) return;
@@ -152,14 +138,14 @@ function VisaoImersao2Page() {
       const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
 
       // Persiste o markdown bruto (preserva o bloco canônico visao_imersao_2)
-      const markdown = avulso.markdown ?? serializeFieldStoreVisit(avulso.doc);
+      const markdown = avulso.markdown;
 
       const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: avulso.data?.client.name || visao.metadata.representative_name || "Cliente Não Identificado",
+        client_name: avulso.data.client.name,
         visit_date: visao.metadata.interview_date || new Date().toISOString().split('T')[0],
         source_filename: avulso.arquivo,
         content_markdown: markdown,
-        structured_data: { schema: "visao_imersao_2_data_v1", data: avulso.data, view_model: visao } as any,
+        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: avulso.data } as any,
         company_id: profile?.company_id,
         created_by: userData.user?.id
       }).select().single();
@@ -261,9 +247,9 @@ function VisaoImersao2Page() {
               <dt className="text-muted-foreground">Marcas observadas</dt><dd>{preview.data.brands_observed.length}</dd>
               <dt className="text-muted-foreground">Famílias analisadas</dt><dd>{preview.data.families_analyzed.length}</dd>
             </dl>
-            {preview.doc.chapters.length > 0 && (
+            {preview.chapters.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                Relatório editorial legado detectado ({preview.doc.chapters.length} capítulos) — será mantido apenas para “Relatório completo por capítulos”.
+                {preview.chapters.length} capítulos editoriais detectados — usados apenas para aprofundamento, não para a visão executiva.
               </p>
             )}
           </div>
@@ -285,7 +271,7 @@ function VisaoImersao2Page() {
           actions={
             <Button onClick={() => fileRef.current?.click()} disabled={importando}>
               {importando ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileUp className="mr-1 h-4 w-4" />}
-              Carregar Relatório V2
+              Carregar relatório Visão Imersão 2
             </Button>
           }
         />
