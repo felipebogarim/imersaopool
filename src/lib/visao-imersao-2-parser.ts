@@ -155,3 +155,28 @@ export function validateSignalV2(signal: Immersion2Data["signals"][0], data: Imm
     errors
   };
 }
+
+/**
+ * Detecção com PRIORIDADE do padrão Visão Imersão 2 sobre o legado
+ * field_store_visit_v1. Ordem: (1) bloco fenced ```visao_imersao_2,
+ * (2) qualquer bloco/trecho contendo o schema canônico.
+ */
+export function detectVisaoImersao2(rawText: string): Immersion2Data | null {
+  const fenced = /```[ \t]*(?:json[ \t]+)?visao_imersao_2[^\n]*\n([\s\S]*?)```/gi;
+  for (const m of Array.from(rawText.matchAll(fenced))) {
+    try {
+      let body = m[1].replace(/^\uFEFF/, "").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+      const a = body.indexOf("{");
+      const b = body.lastIndexOf("}");
+      if (a === -1 || b === -1) continue;
+      const raw = JSON.parse(body.slice(a, b + 1));
+      const data = raw?.schema === "visao_imersao_2_data_v1" ? raw : raw?.visao_imersao_2_data_v1;
+      if (!data) continue;
+      if (data.block && data.block !== "visao_imersao_2") continue;
+      return Immersion2DataSchema.parse(data);
+    } catch {
+      continue;
+    }
+  }
+  return extractImmersion2Json(rawText);
+}
