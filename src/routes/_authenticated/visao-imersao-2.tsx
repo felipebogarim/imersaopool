@@ -487,26 +487,28 @@ function VisaoImersao2Page() {
               })),
             }}
             nome={visao.metadata.representative_name || ""}
-            regiao={visao.metadata.region}
+            regiao={visao.metadata.region || ""}
             perf={
               perf
                 ? {
-                    ...perf,
+                    geralPct: perf.geralPct,
+                    periodoLabel: perf.periodoLabel,
+                    familias: perf.familias,
                     mediaGrupoPct: 0,
                     diffPp: 0,
                     posicao: 0,
                     totalReps: 0,
-                    atingimentoMeta: 0,
-                    participacaoEstimada: 0,
-                    statusFarol: "ok",
                     rankingCrescimento: 0,
                     criticas: [],
+                    statusFarol: "ok",
+                    participacaoEstimada: 0,
                   }
                 : null
             }
             visao={visao}
             mode="imersao"
           />
+
 
 
           
