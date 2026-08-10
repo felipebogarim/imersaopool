@@ -291,14 +291,24 @@ function VisaoImersao2Page() {
     }
   });
 
-  const perf = useMemo(() => {
+  const perf = useMemo((): PerfResumo | null => {
     if (!commercialData) return null;
     return {
       geralPct: commercialData.geralPct ?? 42.9,
       periodoLabel: commercialData.periodoLabel ?? "1º Semestre 2026",
-      familias: commercialData.familias ?? []
+      familias: commercialData.familias ?? [],
+      mediaGrupoPct: 0,
+      diffPp: 0,
+      posicao: 0,
+      totalReps: 0,
+      clientes: 1,
+      destaques: [],
+      criticas: [],
+      farol: [],
+      estimado: false,
     };
   }, [commercialData]);
+
 
   const previewDialog = (
     <>
@@ -488,29 +498,11 @@ function VisaoImersao2Page() {
             }}
             nome={visao.metadata.representative_name || ""}
             regiao={visao.metadata.region || ""}
-            perf={
-              perf
-                ? {
-                    geralPct: perf.geralPct,
-                    periodoLabel: perf.periodoLabel,
-                    familias: perf.familias,
-                    mediaGrupoPct: 0,
-                    diffPp: 0,
-                    posicao: 0,
-                    totalReps: 0,
-                    statusFarol: "ok",
-                    participacaoEstimada: 0,
-                    clientes: perf.clientes || 0,
-                    destaques: perf.destaques || [],
-                    criticas: perf.criticas || [],
-                    farol: perf.farol || [],
-                    estimado: perf.estimado || false,
-                  }
-                : null
-            }
+            perf={perf}
             visao={visao}
             mode="imersao"
           />
+
 
 
 
