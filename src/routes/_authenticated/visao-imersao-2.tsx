@@ -308,12 +308,14 @@ function VisaoImersao2Page() {
             }
           />
         </div>
+        {previewDialog}
       </div>
     );
   }
 
   return (
     <div className="pb-20">
+      {previewDialog}
       <PageHeader 
         title={`Visão Imersão 2 · ${visao.metadata.representative_name}`} 
         subtitle={`Arquivo: ${avulso.arquivo}`}
