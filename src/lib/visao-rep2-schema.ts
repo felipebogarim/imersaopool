@@ -383,6 +383,8 @@ export function emptyPerspective(i: number): Perspective {
     comparative_classification: null,
     full_reading: null,
     structured_fields: {},
+    source_chapter: null,
+
   };
 }
 
