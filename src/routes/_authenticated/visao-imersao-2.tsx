@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type PerfResumo } from "@/lib/visao-rep";
+import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoIm
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
+  FileDown,
   Compass,
   Save,
   AlertCircle,
@@ -311,6 +313,20 @@ function VisaoImersao2Page() {
     };
   }, [commercialData]);
 
+  function exportarPdf() {
+    if (!visao) return;
+    try {
+      exportVisaoRep2Pdf(visao, perf, {
+        titulo: "Visão Imersão 2 — relatório executivo",
+        rodape: "Visão Imersão 2",
+        arquivoPrefixo: "visao-imersao-2",
+      });
+      toast.success("Relatório em PDF gerado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao gerar o PDF.");
+    }
+  }
+
 
   const previewDialog = (
     <>
@@ -461,6 +477,9 @@ function VisaoImersao2Page() {
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
             </Button>
             <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
+            <Button variant="outline" onClick={exportarPdf}>
+              <FileDown className="mr-1 h-4 w-4" /> Exportar relatório
+            </Button>
               <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
