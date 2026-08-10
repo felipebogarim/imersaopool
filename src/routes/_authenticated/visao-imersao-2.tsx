@@ -30,9 +30,22 @@ import {
   ArrowLeft, 
   Compass,
   Save,
-  AlertCircle
+  AlertCircle,
+  MoreVertical,
+  Mail,
+  MessageCircle,
+  Pencil,
+  Trash2
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import {
   AlertDialog,
   AlertDialogAction,
