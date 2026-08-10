@@ -322,9 +322,37 @@ function VisaoImersao2Page() {
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="Mais ações">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => compartilharEmail(r)}>
+                            <Mail className="mr-2 h-4 w-4" /> Compartilhar por e-mail
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => compartilharWhats(r)}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Compartilhar por WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => abrirRelatorio(r)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setExcluir(r)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </li>
                 ))}
+
               </ul>
             </div>
           )}
