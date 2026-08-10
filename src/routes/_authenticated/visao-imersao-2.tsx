@@ -465,20 +465,49 @@ function VisaoImersao2Page() {
         <div className="space-y-6">
           <ExecutiveBriefV2
             brief={{
-              sintese: visao.executive_brief?.presidential_synthesis || null,
-              contexto: { marcas: visao.representative_context.represented_brands, regiaoModelo: visao.representative_context.additional_context },
-              clientes: visao.strategic_clients.map(c => ({ nome: c.client_name || "", motivo: c.strategic_reason || "" })),
-              perspectivas: [], // Resolvido via visao
+              contexto: {
+                marcas: visao.representative_context.represented_brands,
+                regiaoModelo: visao.representative_context.additional_context || "",
+              },
+              clientes: visao.strategic_clients.map(c => ({
+                nome: c.client_name || "",
+                motivo: c.strategic_reason || "",
+              })),
+              sintese: visao.executive_brief?.presidential_synthesis || "",
+              temas: [],
               conclusoes: [],
-              decisoes: visao.executive_view.decisions_required.map(d => ({ texto: d, status: "Pendente" })),
-              validacoes: visao.executive_view.validation_required.map(v => ({ texto: v, status: "Pendente" })),
+              perspectivas: [],
+              decisoes: visao.executive_view.decisions_required.map(d => ({
+                texto: d,
+                status: "A decidir",
+              })),
+              validacoes: visao.executive_view.validation_required.map(v => ({
+                texto: v,
+                status: "A validar",
+              })),
             }}
             nome={visao.metadata.representative_name || ""}
             regiao={visao.metadata.region}
-            perf={perf}
+            perf={
+              perf
+                ? {
+                    ...perf,
+                    mediaGrupoPct: 0,
+                    diffPp: 0,
+                    posicao: 0,
+                    totalReps: 0,
+                    atingimentoMeta: 0,
+                    participacaoEstimada: 0,
+                    statusFarol: "ok",
+                    rankingCrescimento: 0,
+                    criticas: [],
+                  }
+                : null
+            }
             visao={visao}
             mode="imersao"
           />
+
 
           
           {commercialData && commercialData.clientsFound > 1 && (
