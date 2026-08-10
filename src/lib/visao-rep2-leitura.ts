@@ -91,12 +91,14 @@ export type EntityGroup = { label: string; items: string[] };
 export type PerspectiveEvidence = {
   perspective: Perspective;
   finding: string | null;
+  addedDetail?: string | null;
   entities: EntityGroup[];
   examples: string[];
   evidence: string | null;
   quotes: string[];
   fullReading: string | null;
 };
+
 
 export type LeituraSignal = {
   id: string;
@@ -109,7 +111,9 @@ export type LeituraSignal = {
   confidence: ConfidenceLevel | null;
   evidence: EvidenceStatus | null;
   perspectives: PerspectiveEvidence[];
+  appearances?: any[];
   comparisons: ComparisonItem[];
+
 };
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
@@ -240,10 +244,46 @@ export function buildLeituraIntegrada(v: VisaoRep2): LeituraIntegrada {
 
   const signals: LeituraSignal[] = sinaisBrutos.map((s, i) => {
     const id = signalIdFor(s, i);
-    const explicitas = new Set(s.related_perspectives ?? []);
-    const relacionadas = v.perspectives.filter(
-      p => explicitas.has(p.perspective_number) || (p.signal_ids ?? []).some(x => clean(x) === id),
-    );
+    
+    // Suporte para Visão Imersão 2 com appearances
+    const v2Signal = s as PrioritySignal & { appearances?: any[] };
+    let perspectives: PerspectiveEvidence[] = [];
+
+    if (v2Signal.appearances && v2Signal.appearances.length > 0) {
+      // Regra V2: Usar appearances como fonte primária
+      perspectives = v2Signal.appearances.map(a => {
+        const p = v.perspectives.find(item => item.source_chapter === a.perspective_id) || 
+                  v.perspectives[parseInt(a.perspective_id.replace('C', '')) - 1] || 
+                  emptyPerspective(0);
+        
+        // Citações específicas do appearance
+        const quotes = (a.quote_ids || []).map((qid: string) => {
+          // No V2_JSON, quotes estão no metadata/legacy ou precisam ser resolvidas
+          // Se não encontrarmos a citação literal, mantemos o ID para o front resolver
+          return qid;
+        });
+
+        return {
+          perspective: p,
+          finding: a.label, // Título do filtro
+          addedDetail: a.specific_finding + (a.added_detail ? `\n\n${a.added_detail}` : ''),
+          entities: [], // V2 resolve entities via chapter_review ou signal.entities
+          examples: [],
+          evidence: null,
+          quotes,
+          fullReading: p.full_reading
+        };
+      }).filter(p => p.perspective.perspective_number !== 7); // Regra 5: P7 não deve ser filtro
+    } else {
+      // Fallback V1/Legado
+      const explicitas = new Set(s.related_perspectives ?? []);
+      const relacionadas = v.perspectives.filter(
+        p => (explicitas.has(p.perspective_number) || (p.signal_ids ?? []).some(x => clean(x) === id))
+             && p.perspective_number !== 7
+      );
+      perspectives = relacionadas.map(evidenceOf);
+    }
+
     return {
       id,
       index: i + 1,
@@ -254,13 +294,14 @@ export function buildLeituraIntegrada(v: VisaoRep2): LeituraIntegrada {
       validation: s.validation_note ?? null,
       confidence: s.confidence_level,
       evidence: s.evidence_status,
-      perspectives: relacionadas.map(evidenceOf),
+      perspectives,
       comparisons: [
         ...(comparisonFromSignal(s, id) ? [comparisonFromSignal(s, id) as ComparisonItem] : []),
         ...todasComparacoes.filter(c => has(c.signal_id) && clean(c.signal_id) === id),
       ],
     };
   });
+
 
   const semVinculos =
     signals.length > 0 && signals.every(s => s.perspectives.length === 0 && s.comparisons.length === 0);
