@@ -18,6 +18,8 @@ import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositionin
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { adapterImmersionV2ToExecutive } from "@/lib/visao-imersao-2-adapter";
+import { detectVisaoImersao2, type Immersion2Data } from "@/lib/visao-imersao-2-parser";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   parseFieldStoreVisit, 
