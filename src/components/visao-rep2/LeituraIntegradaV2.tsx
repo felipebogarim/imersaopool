@@ -260,10 +260,11 @@ function PerspectiveDetail({ ev, signal }: { ev: PerspectiveEvidence; signal: Le
               </blockquote>
               <figcaption className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider">
                 Fala do representante
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+
       ) : null}
 
       {has(ev.fullReading) ? (
