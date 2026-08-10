@@ -312,6 +312,20 @@ function VisaoImersao2Page() {
     };
   }, [commercialData]);
 
+  function exportarPdf() {
+    if (!visao) return;
+    try {
+      exportVisaoRep2Pdf(visao, perf, {
+        titulo: "Visão Imersão 2 — relatório executivo",
+        rodape: "Visão Imersão 2",
+        arquivoPrefixo: "visao-imersao-2",
+      });
+      toast.success("Relatório em PDF gerado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao gerar o PDF.");
+    }
+  }
+
 
   const previewDialog = (
     <>
