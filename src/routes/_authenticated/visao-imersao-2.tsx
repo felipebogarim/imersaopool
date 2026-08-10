@@ -30,6 +30,7 @@ import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoIm
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
+  FileDown,
   Compass,
   Save,
   AlertCircle,
