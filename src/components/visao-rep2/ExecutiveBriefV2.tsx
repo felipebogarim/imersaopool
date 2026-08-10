@@ -59,7 +59,7 @@ export function BriefHeaderV2({
 
       <div className="min-w-0 rounded-xl border bg-card p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {mode === "imersao" ? "Marcas observadas:" : "Representa também:"}
+          {mode === "imersao" ? "Marcas observadas e citadas:" : "Representa também:"}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {marcas.length ? (
