@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { type FieldImmersionDoc } from "./field-store-visit";
 
 /**
  * Schema oficial para o bloco estruturado visao_imersao_2 no Markdown.
