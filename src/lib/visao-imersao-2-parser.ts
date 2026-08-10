@@ -15,30 +15,72 @@ export const Immersion2DataSchema = z.object({
   }),
   brands_observed: z.array(z.string()),
   families_analyzed: z.array(z.string()),
-  perspectives: z.array(z.object({
-    id: z.string(),
-    chapter: z.number(),
-    title: z.string(),
-  })),
-  quotes: z.array(z.object({
-    id: z.string(),
-    text: z.string(),
-    original_author: z.string(),
-    original_author_role: z.string().optional(),
-    reported_by: z.string().nullable().optional(),
-    quote_type: z.enum(["direct", "reported"]),
-    chapter: z.number(),
-    theme: z.string().optional(),
-  })),
-  signals: z.array(z.object({
-    id: z.string(),
-    title: z.string(),
-    conclusion: z.string(),
-    business_impact: z.string(),
-    confidence: z.enum(["high", "medium", "low"]),
-    perspectives: z.array(z.string()),
-    evidence_quotes: z.array(z.string()),
-  })),
+  perspectives: z.array(
+    z.object({
+      id: z.string(),
+      chapter: z.number(),
+      title: z.string(),
+    }),
+  ),
+  quotes: z.array(
+    z.object({
+      id: z.string(),
+      text: z.string(),
+      original_author: z.string(),
+      original_author_role: z.string().optional(),
+      reported_by: z.string().nullable().optional(),
+      quote_type: z.enum(["direct", "reported"]),
+      chapter: z.number(),
+      theme: z.string().optional(),
+    }),
+  ),
+  signals: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      conclusion: z.string(),
+      business_impact: z.string(),
+      confidence: z.enum(["high", "medium", "low"]),
+      perspectives: z.array(z.string()),
+      evidence_quotes: z.array(z.string()),
+      appearances: z
+        .array(
+          z.object({
+            perspective_id: z.string(),
+            label: z.string(),
+            specific_finding: z.string(),
+            added_detail: z.string().optional(),
+            quote_ids: z.array(z.string()).optional(),
+          }),
+        )
+        .optional(),
+    }),
+  ),
+  chapter_review: z
+    .array(
+      z.object({
+        chapter: z.number(),
+        title: z.string(),
+        items: z.array(
+          z.object({
+            headline: z.string(),
+            executive_reading: z.string(),
+            implication: z.string(),
+            quote_ids: z.array(z.string()).optional(),
+            entities: z
+              .object({
+                produtos: z.array(z.string()).optional(),
+                concorrentes: z.array(z.string()).optional(),
+                clientes: z.array(z.string()).optional(),
+                ferramentas: z.array(z.string()).optional(),
+              })
+              .optional(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
+  chapter_review_policy: z.string().optional(),
 });
 
 export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
