@@ -498,16 +498,20 @@ function VisaoImersao2Page() {
                     diffPp: 0,
                     posicao: 0,
                     totalReps: 0,
-                    rankingCrescimento: 0,
-                    criticas: [],
                     statusFarol: "ok",
                     participacaoEstimada: 0,
+                    clientes: perf.clientes || 0,
+                    destaques: perf.destaques || [],
+                    criticas: perf.criticas || [],
+                    farol: perf.farol || [],
+                    estimado: perf.estimado || false,
                   }
                 : null
             }
             visao={visao}
             mode="imersao"
           />
+
 
 
 
