@@ -33,7 +33,20 @@ const has = (v: unknown): v is string => typeof v === "string" && v.trim().lengt
 
 type Line = { s: string; size: number; style: Style; color: RGB };
 
-export function exportVisaoRep2Pdf(visao: VisaoRep2, perf: PerfResumo | null) {
+export type VisaoPdfOpts = {
+  /** Título impresso na capa. */
+  titulo?: string;
+  /** Rótulo do rodapé. */
+  rodape?: string;
+  /** Prefixo do nome do arquivo salvo. */
+  arquivoPrefixo?: string;
+};
+
+export function exportVisaoRep2Pdf(
+  visao: VisaoRep2,
+  perf: PerfResumo | null,
+  opts: VisaoPdfOpts = {},
+) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const M = 40;
   const PW = doc.internal.pageSize.getWidth();
