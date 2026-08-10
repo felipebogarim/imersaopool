@@ -252,37 +252,47 @@ export function buildLeituraIntegrada(v: VisaoRep2): LeituraIntegrada {
     let perspectives: PerspectiveEvidence[] = [];
 
     if (v2Signal.appearances && v2Signal.appearances.length > 0) {
-      // Regra V2: Usar appearances como fonte primária
-      perspectives = v2Signal.appearances.map(a => {
-        const p = v.perspectives.find(item => item.source_chapter === a.perspective_id) || 
-                  v.perspectives[parseInt(a.perspective_id.replace('C', '')) - 1] || 
-                  emptyPerspective(0);
-        
-        // Citações específicas do appearance
-        const quotes = (a.quote_ids || []).map((qid: string) => {
-          // No V2_JSON, quotes estão no metadata/legacy ou precisam ser resolvidas
-          // Se não encontrarmos a citação literal, mantemos o ID para o front resolver
-          return qid;
-        });
+      // Regra V2 (Visão Imersão 2): usar appearances como fonte primária.
+      // Taxonomia V2: P1 Contexto e percepção · P2 Atores e decisão · P3 Oferta e categorias ·
+      // P4 Posicionamento · P5 Relacionamento · P6 Operação e experiência · P7 Síntese e ação.
+      // P7 (Síntese e ação) é conclusivo e não entra como filtro em "Onde isso apareceu".
+      const chapterNumberOf = (id: string) => parseInt(String(id).replace(/[^0-9]/g, ""), 10);
+      perspectives = v2Signal.appearances
+        .filter(a => chapterNumberOf(a.perspective_id) !== 7)
+        .map(a => {
+          const num = chapterNumberOf(a.perspective_id);
+          const p = v.perspectives.find(item => item.source_chapter === a.perspective_id) ||
+                    v.perspectives.find(item => item.perspective_number === num) ||
+                    v.perspectives[num - 1] ||
+                    emptyPerspective(0);
 
-        return {
-          perspective: p,
-          finding: a.label, // Título do filtro
-          addedDetail: a.specific_finding + (a.added_detail ? `\n\n${a.added_detail}` : ''),
-          entities: [], // V2 resolve entities via chapter_review ou signal.entities
-          examples: [],
-          evidence: null,
-          quotes,
-          fullReading: p.full_reading
-        };
-      }).filter(p => p.perspective.perspective_number !== 7); // Regra 5: P7 não deve ser filtro
+          // Citações específicas do appearance
+          const quotes = (a.quote_ids || []).map((qid: string) => {
+            // No V2_JSON, quotes estão no metadata/legacy ou precisam ser resolvidas
+            // Se não encontrarmos a citação literal, mantemos o ID para o front resolver
+            return qid;
+          });
+
+          return {
+            perspective: p,
+            finding: a.label, // Título do filtro
+            addedDetail: a.specific_finding + (a.added_detail ? `\n\n${a.added_detail}` : ''),
+            entities: [], // V2 resolve entities via chapter_review ou signal.entities
+            examples: [],
+            evidence: null,
+            quotes,
+            fullReading: p.full_reading
+          };
+        })
+        .filter(p => p.perspective.perspective_number !== 7);
     } else {
-      // Fallback V1/Legado
+      // Fallback V1/Legado (taxonomia Visão Rep)
       const explicitas = new Set(s.related_perspectives ?? []);
       const relacionadas = v.perspectives.filter(
         p => (explicitas.has(p.perspective_number) || (p.signal_ids ?? []).some(x => clean(x) === id))
              && p.perspective_number !== 7
       );
+
       perspectives = relacionadas.map(evidenceOf);
     }
 
