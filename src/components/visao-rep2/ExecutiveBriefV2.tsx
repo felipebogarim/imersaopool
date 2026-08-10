@@ -1,5 +1,5 @@
 import { useState, useMemo, type ReactNode } from "react";
-import { ListPlus } from "lucide-react";
+import { ListPlus, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
