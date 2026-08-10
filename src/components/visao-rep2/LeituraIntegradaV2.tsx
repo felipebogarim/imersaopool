@@ -206,8 +206,13 @@ function ExecutiveSignalPanelV2({ signal, className }: { signal: LeituraSignal; 
 
 // ---------------------------------------------------------------- painel 2
 
-function PerspectiveDetail({ ev }: { ev: PerspectiveEvidence }) {
+function PerspectiveDetail({ ev, signal }: { ev: PerspectiveEvidence; signal: LeituraSignal }) {
   const [open, setOpen] = useState(false);
+  
+  // NOVA LÓGICA V2: Se existir signal.appearances, o ev (PerspectiveEvidence) 
+  // já deve conter o dado mapeado do appearance correspondente a esta perspectiva.
+  // O mapping deve ser feito no buildLeituraIntegrada.
+  
   return (
     <div className="space-y-3">
       <div>
@@ -218,6 +223,10 @@ function PerspectiveDetail({ ev }: { ev: PerspectiveEvidence }) {
       </div>
 
       <Bloco label="Achado específico" value={ev.finding} />
+      
+      {has(ev.addedDetail) && (
+        <Bloco label="Detalhe adicional" value={ev.addedDetail} />
+      )}
 
       {ev.entities.length ? (
         <div className="space-y-2">
@@ -238,31 +247,19 @@ function PerspectiveDetail({ ev }: { ev: PerspectiveEvidence }) {
         </div>
       ) : null}
 
-      {ev.examples.length ? (
-        <div className="space-y-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Exemplos e evidências
-          </div>
-          <div className="grid gap-2">
-            {ev.examples.map((e, i) => (
-              <div key={i} className="rounded-lg border bg-card p-3 text-sm leading-relaxed">
-                {e}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <Bloco label="Evidência" value={ev.evidence} />
-
       {ev.quotes.length ? (
         <div className="space-y-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Evidência
+          </div>
           {ev.quotes.map((q, i) => (
             <figure key={i} className="rounded-lg border-l-2 border-primary/50 bg-muted/40 p-3">
               <Quote className="mb-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-              <blockquote className="break-words text-sm italic leading-relaxed">“{q}”</blockquote>
-              <figcaption className="mt-1 text-[11px] text-muted-foreground">
-                {ev.perspective.perspective_title}
+              <blockquote className="break-words text-sm italic leading-relaxed">
+                <MarkdownView markdown={q.startsWith('“') ? q : `“${q}”`} />
+              </blockquote>
+              <figcaption className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider">
+                Fala do representante
               </figcaption>
             </figure>
           ))}
@@ -281,15 +278,16 @@ function PerspectiveDetail({ ev }: { ev: PerspectiveEvidence }) {
             <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden />
           </button>
           {open ? (
-            <p className="whitespace-pre-wrap break-words border-t px-3 py-3 text-sm leading-relaxed">
-              {ev.fullReading}
-            </p>
+            <div className="whitespace-pre-wrap break-words border-t px-3 py-3 text-sm leading-relaxed">
+              <MarkdownView markdown={ev.fullReading} />
+            </div>
           ) : null}
         </div>
       ) : null}
     </div>
   );
 }
+
 
 function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSignal; className?: string }) {
   const [aba, setAba] = useState(0);
@@ -319,7 +317,7 @@ function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSign
               </button>
             ))}
           </div>
-          {atual ? <PerspectiveDetail ev={atual} /> : null}
+          {atual ? <PerspectiveDetail ev={atual} signal={signal} /> : null}
         </>
       )}
     </PanelShell>

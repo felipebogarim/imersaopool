@@ -64,7 +64,9 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
     representative_name: data.client.name,
     region: data.client.location,
     interview_date: data.client.visit_date,
+    report_date: new Date().toISOString().split('T')[0],
   });
+
 
   visao.representative_context.additional_context = [
     `Cliente: ${data.client.name}`,
@@ -113,8 +115,19 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
       related_perspectives: perspectiveIndices,
       group_comparison: null,
       comparison_classification: "não abordado",
-    } as PrioritySignal;
+      appearances: s.appearances?.map(a => ({
+        perspective_id: a.perspective_id,
+        label: a.label,
+        specific_finding: a.specific_finding,
+        added_detail: a.added_detail,
+        quote_ids: a.quote_ids
+      }))
+    } as PrioritySignal & { appearances?: any[] };
   });
+
+  visao.chapter_review = data.chapter_review;
+  visao.chapter_review_policy = data.chapter_review_policy;
+
 
   visao.perspectives = data.perspectives.map((p) => {
     const chapter = chapters.find((c) => c.codigo === `C${p.chapter}`);
