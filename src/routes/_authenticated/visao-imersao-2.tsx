@@ -151,15 +151,15 @@ function VisaoImersao2Page() {
       const { data: userData } = await supabase.auth.getUser();
       const { data: profile } = await supabase.from("profiles").select("company_id").eq("id", userData.user?.id || "").single();
 
-      // Serializa o markdown original para salvar
-      const markdown = serializeFieldStoreVisit(avulso.doc);
+      // Persiste o markdown bruto (preserva o bloco canônico visao_imersao_2)
+      const markdown = avulso.markdown ?? serializeFieldStoreVisit(avulso.doc);
 
       const { data: inserted, error: insertError } = await supabase.from("field_immersion_v2_reports").insert({
-        client_name: visao.metadata.representative_name || "Cliente Não Identificado",
+        client_name: avulso.data?.client.name || visao.metadata.representative_name || "Cliente Não Identificado",
         visit_date: visao.metadata.interview_date || new Date().toISOString().split('T')[0],
         source_filename: avulso.arquivo,
         content_markdown: markdown,
-        structured_data: visao as any,
+        structured_data: { schema: "visao_imersao_2_data_v1", data: avulso.data, view_model: visao } as any,
         company_id: profile?.company_id,
         created_by: userData.user?.id
       }).select().single();
