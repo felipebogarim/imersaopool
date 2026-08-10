@@ -111,7 +111,7 @@ function VisaoImersao2Page() {
     }
   }
 
-  async function salvarRelatorio() {
+  async function salvarRelatorio(opts?: { replaceId?: string }) {
     if (!avulso) return;
     setSalvando(true);
     try {
@@ -135,11 +135,27 @@ function VisaoImersao2Page() {
         created_by: userId,
       };
 
-      if (avulso.id) {
+      const targetId = avulso.id ?? opts?.replaceId;
+
+      if (!targetId) {
+        // Regra: apenas um relatório por cliente na mesma data.
+        const duplicado = (reports as any[]).find(
+          (r) =>
+            String(r.client_name ?? "").trim().toLowerCase() ===
+              payload.client_name.trim().toLowerCase() && r.visit_date === payload.visit_date,
+        );
+        if (duplicado) {
+          setDuplicata(duplicado);
+          setSalvando(false);
+          return;
+        }
+      }
+
+      if (targetId) {
         const { error } = await supabase
           .from("field_immersion_v2_reports")
           .update(payload as any)
-          .eq("id", avulso.id);
+          .eq("id", targetId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("field_immersion_v2_reports").insert(payload as any);
@@ -150,6 +166,7 @@ function VisaoImersao2Page() {
       await refetchReports();
       setDirty(false);
       setAvulso(null);
+      setDuplicata(null);
       toast.success("Relatório salvo. Disponível na lista de Visão Imersão 2.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao salvar a Visão Imersão 2.");
@@ -157,6 +174,7 @@ function VisaoImersao2Page() {
       setSalvando(false);
     }
   }
+
 
   // Busca dados comerciais reais do cliente resolvido
   const clientName = visao?.metadata?.representative_name;
