@@ -28,7 +28,8 @@ import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoIm
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
-  Compass, 
+  Compass,
+  Save,
   AlertCircle
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
