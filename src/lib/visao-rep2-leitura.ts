@@ -11,6 +11,8 @@ import type {
   PrioritySignal,
   VisaoRep2,
 } from "./visao-rep2-schema";
+import { emptyPerspective } from "./visao-rep2-schema";
+
 
 export type ComparisonKind = "consenso" | "nao_abordado" | "divergencia" | "exclusiva";
 

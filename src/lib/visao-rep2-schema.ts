@@ -139,6 +139,8 @@ export type Perspective = {
   comparative_classification: string | null;
   full_reading: string | null;
   structured_fields: Record<string, string | string[]>;
+  source_chapter?: string | null;
+
   /** Vínculo opcional com os sinais executivos (Leitura integrada). */
   signal_ids?: string[];
 };
