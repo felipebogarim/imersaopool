@@ -42,14 +42,14 @@ export type V2Chapter = { codigo: string; titulo: string; markdown: string };
 export function extractEditorialChapters(text: string): V2Chapter[] {
   const raw = String(text ?? "").replace(/\r\n/g, "\n");
   const out: V2Chapter[] = [];
-  const re = /^##\s+(?:\**\s*)?(C(\d+))\s*[—–:.-]\s*([^\n]+)$/gim;
+  const re = /^##\s+\**\s*(?:C|Cap[ií]tulo)\s*(\d+)\s*\**\s*[—–:.-]?\s*([^\n]*)$/gim;
   const matches = Array.from(raw.matchAll(re));
   matches.forEach((m, i) => {
     const start = (m.index ?? 0) + m[0].length;
     const end = i + 1 < matches.length ? matches[i + 1].index ?? raw.length : raw.length;
     out.push({
-      codigo: m[1].toUpperCase(),
-      titulo: m[3].trim().replace(/\*+/g, ""),
+      codigo: `C${m[1]}`,
+      titulo: m[2].trim().replace(/\*+/g, ""),
       markdown: raw.slice(start, end).trim(),
     });
   });
