@@ -5,6 +5,7 @@ import { type FieldImmersionDoc } from "./field-store-visit";
  * Schema oficial para o bloco estruturado visao_imersao_2 no Markdown.
  */
 export const Immersion2DataSchema = z.object({
+  block: z.string().optional(),
   schema: z.literal("visao_imersao_2_data_v1"),
   client: z.object({
     name: z.string(),
