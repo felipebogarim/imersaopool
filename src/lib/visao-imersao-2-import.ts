@@ -138,7 +138,7 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
       executive_finding: relatedSignals.map((signal) => signal.conclusion).join("\n\n") || null,
       business_impact: relatedSignals.map((signal) => signal.business_impact).join("\n\n") || null,
       recommended_action: null,
-      evidence: relatedQuotes.join("\n\n") || chapter?.markdown || null,
+      evidence: relatedQuotes.join("\n\n") || null,
       source_quote: relatedQuotes.join("\n\n") || null,
       confidence_level: "alto",
       evidence_status: "relato_individual",
@@ -162,9 +162,8 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
     ameacas_identificadas: [],
   };
 
-  const c1 = chapters.find((c) => c.codigo === "C1");
   visao.executive_brief = {
-    presidential_synthesis: c1?.markdown || "",
+    presidential_synthesis: validSignals.map((signal) => signal.conclusion).join("\n\n"),
     themes: [],
   };
 
