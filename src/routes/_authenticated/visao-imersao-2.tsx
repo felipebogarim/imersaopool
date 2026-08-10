@@ -463,14 +463,23 @@ function VisaoImersao2Page() {
       <div className="space-y-8 p-4 sm:p-8">
         {/* 1. Cabeçalho e 2. Briefing Executivo */}
         <div className="space-y-6">
-          <BriefHeaderV2
+          <ExecutiveBriefV2
+            brief={{
+              sintese: visao.executive_brief?.presidential_synthesis || null,
+              contexto: { marcas: visao.representative_context.represented_brands, regiaoModelo: visao.representative_context.additional_context },
+              clientes: visao.strategic_clients.map(c => ({ nome: c.client_name || "", motivo: c.strategic_reason || "" })),
+              perspectivas: [], // Resolvido via visao
+              conclusoes: [],
+              decisoes: visao.executive_view.decisions_required.map(d => ({ texto: d, status: "Pendente" })),
+              validacoes: visao.executive_view.validation_required.map(v => ({ texto: v, status: "Pendente" })),
+            }}
             nome={visao.metadata.representative_name || ""}
             regiao={visao.metadata.region}
-            marcas={visao.representative_context.represented_brands}
-            atingimentoPct={perf?.geralPct}
-            periodo={perf?.periodoLabel}
+            perf={perf}
+            visao={visao}
             mode="imersao"
           />
+
           
           {commercialData && commercialData.clientsFound > 1 && (
             <Alert variant="destructive">

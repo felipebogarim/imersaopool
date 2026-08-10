@@ -569,13 +569,14 @@ export function ExecutiveBriefV2({
         mode={mode}
       />
       {brief.sintese ? (
-        <SintesePresidencialV2 
-          texto={brief.sintese} 
-          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)} 
+        <SintesePresidencialV2
+          texto={brief.sintese}
+          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)}
           visao={visao}
           contexto={contexto}
         />
       ) : null}
+
 
 
       <PerformanceFamiliasV2 perf={perf} contexto={contexto} />
