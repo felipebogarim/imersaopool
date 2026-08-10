@@ -461,6 +461,9 @@ function VisaoImersao2Page() {
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
             </Button>
             <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
+            <Button variant="outline" onClick={exportarPdf}>
+              <FileDown className="mr-1 h-4 w-4" /> Exportar relatório
+            </Button>
               <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
