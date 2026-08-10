@@ -237,6 +237,45 @@ function VisaoImersao2Page() {
     };
   }, [commercialData]);
 
+  const previewDialog = (
+    <Dialog open={!!preview} onOpenChange={o => { if (!o) setPreview(null); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Validação do relatório</DialogTitle>
+        </DialogHeader>
+        {preview && (
+          <div className="space-y-2 text-sm">
+            <div className="flex flex-wrap gap-2">
+              <Badge>Padrão: Visão Imersão 2</Badge>
+              <Badge variant="outline">Schema: visao_imersao_2_data_v1</Badge>
+            </div>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              <dt className="text-muted-foreground">Cliente</dt><dd>{preview.data.client.name}</dd>
+              <dt className="text-muted-foreground">Data</dt><dd>{preview.data.client.visit_date}</dd>
+              <dt className="text-muted-foreground">Local</dt><dd>{preview.data.client.location}</dd>
+              <dt className="text-muted-foreground">Representante</dt><dd>{preview.data.client.representative ?? "—"}</dd>
+              <dt className="text-muted-foreground">Consultor</dt><dd>{preview.data.client.consultant ?? "—"}</dd>
+              <dt className="text-muted-foreground">Sinais estratégicos</dt><dd>{preview.data.signals.length}</dd>
+              <dt className="text-muted-foreground">Perspectivas</dt><dd>{preview.data.perspectives.length}</dd>
+              <dt className="text-muted-foreground">Citações</dt><dd>{preview.data.quotes.length}</dd>
+              <dt className="text-muted-foreground">Marcas observadas</dt><dd>{preview.data.brands_observed.length}</dd>
+              <dt className="text-muted-foreground">Famílias analisadas</dt><dd>{preview.data.families_analyzed.length}</dd>
+            </dl>
+            {preview.doc.chapters.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Relatório editorial legado detectado ({preview.doc.chapters.length} capítulos) — será mantido apenas para “Relatório completo por capítulos”.
+              </p>
+            )}
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setPreview(null)}>Cancelar</Button>
+          <Button onClick={confirmarImportacao}>Confirmar importação</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (!avulso || !visao) {
     return (
       <div>
