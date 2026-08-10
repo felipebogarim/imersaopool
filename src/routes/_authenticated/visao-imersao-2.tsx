@@ -239,13 +239,43 @@ function VisaoImersao2Page() {
   }, [commercialData]);
 
   const previewDialog = (
-    <VisaoImersao2ImportPreview
-      value={preview}
-      saving={salvando}
-      onCancel={() => setPreview(null)}
-      onConfirm={() => void confirmarImportacao()}
-    />
+    <>
+      <VisaoImersao2ImportPreview
+        value={preview}
+        saving={salvando}
+        onCancel={() => setPreview(null)}
+        onConfirm={() => void confirmarImportacao()}
+      />
+      <AlertDialog open={Boolean(duplicata)} onOpenChange={(o) => { if (!o) setDuplicata(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Já existe um relatório deste cliente nesta data</AlertDialogTitle>
+            <AlertDialogDescription>
+              {duplicata?.client_name} ·{" "}
+              {duplicata?.visit_date
+                ? new Date(`${duplicata.visit_date}T00:00:00`).toLocaleDateString("pt-BR")
+                : "—"}
+              . Deseja substituir o relatório anterior por esta versão?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={salvando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={salvando}
+              onClick={(e) => {
+                e.preventDefault();
+                const id = duplicata?.id;
+                if (id) void salvarRelatorio({ replaceId: id });
+              }}
+            >
+              {salvando ? "Substituindo…" : "Substituir anterior"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
+
 
   if (!avulso || !visao) {
     return (
