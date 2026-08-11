@@ -4,6 +4,7 @@
 // V2 -> view-model V2.
 import { Immersion2DataSchema, validateSignalV2, type Immersion2Data } from "./visao-imersao-2-parser";
 import { emptyVisaoRep2, type VisaoRep2, type PrioritySignal } from "./visao-rep2-schema";
+import { buildBrandPositioningFromImmersion2 } from "./visao-imersao-2-teia-scores";
 
 export const V2_INCOMPATIBLE_MESSAGE = "Arquivo incompatível com Visão Imersão 2.";
 
@@ -182,17 +183,7 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
   };
 
   if (!visao.brand_positioning) {
-    visao.brand_positioning = {
-      scoring_version: "brand_positioning_v1",
-      dimensions: {
-        qualidade: { score: 70, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        preco_competitivo: { score: 60, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
-        portfolio: { score: 85, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        disponibilidade: { score: 40, confidence: "baixo", reading: null, perspective_ids: [], evidence_count: null },
-        preferencia: { score: 90, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        especificacao: { score: 55, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
-      },
-    };
+    visao.brand_positioning = buildBrandPositioningFromImmersion2(data);
   }
 
   return visao;

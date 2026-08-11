@@ -1,7 +1,7 @@
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 import { useMemo } from "react";
-import { buildTeiaVM } from "@/lib/visao-rep2-teia";
+import { buildTeiaVM, fmtDelta, fmtScore } from "@/lib/visao-rep2-teia";
 
 export function BrandPositioningRadarV2({ 
   atual, 
@@ -21,7 +21,9 @@ export function BrandPositioningRadarV2({
         status: teia.status, 
         descricaoAcessivel: "", 
         data: [], 
-        baseCount: 0 
+        baseCount: 0,
+        pontos: [] as ReturnType<typeof buildTeiaVM> extends any ? any[] : any[],
+        insight: "",
       };
     }
     
@@ -33,6 +35,8 @@ export function BrandPositioningRadarV2({
         media: p.media,
         fullMark: 100
       })),
+      pontos: teia.pontos,
+      insight: teia.insight,
       baseCount: teia.baseCount,
       descricaoAcessivel: teia.descricaoAcessivel
     };
@@ -117,6 +121,38 @@ export function BrandPositioningRadarV2({
           </div>
         )}
       </div>
+
+      {temMedia && (
+        <div className="mt-4 w-full rounded-xl border border-border/60 bg-muted/20 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Comparativo com a média das demais visões
+          </p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            Base: {vm.baseCount} {vm.baseCount === 1 ? "relatório comparável" : "relatórios comparáveis"}
+          </p>
+
+          <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {(vm.pontos as any[]).map((p) => {
+              const delta = p.delta as number | null;
+              const cor =
+                delta == null ? "text-muted-foreground" : delta >= 5 ? "text-emerald-600" : delta <= -5 ? "text-destructive" : "text-muted-foreground";
+              return (
+                <div key={p.key} className="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-[11px] odd:bg-background/50">
+                  <span className="truncate font-medium">{p.label}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                    {fmtScore(p.atual)} · média {p.media != null ? fmtScore(p.media) : "—"}
+                  </span>
+                  <span className={`shrink-0 tabular-nums font-semibold ${cor}`}>
+                    {delta != null ? fmtDelta(delta) : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {vm.insight && <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{vm.insight}</p>}
+        </div>
+      )}
 
       {insuficiente && (
         <p className="mt-1 text-[10px] text-muted-foreground italic text-center max-w-[280px]">

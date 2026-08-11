@@ -10,6 +10,7 @@ import {
   VISAO_REP_VIEW_MODEL_BRIEF,
   type PrioritySignal
 } from "./visao-rep2-schema";
+import { buildBrandPositioningFromImmersion2 } from "./visao-imersao-2-teia-scores";
 
 /**
  * Adaptador para transformar os dados extraídos (JSON canônico V2) 
@@ -138,17 +139,7 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc, preExtract
 
   // 8. Teia (Mock de dimensões se não houver dados, para a radar funcionar)
   if (!visao.brand_positioning) {
-    visao.brand_positioning = {
-       scoring_version: "brand_positioning_v1",
-       dimensions: {
-         qualidade: { score: 70, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-         preco_competitivo: { score: 60, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
-         portfolio: { score: 85, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-         disponibilidade: { score: 40, confidence: "baixo", reading: null, perspective_ids: [], evidence_count: null },
-         preferencia: { score: 90, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-         especificacao: { score: 55, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null }
-       }
-    };
+    visao.brand_positioning = buildBrandPositioningFromImmersion2(immersion2Data);
   }
 
   return visao;
