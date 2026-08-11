@@ -206,80 +206,135 @@ function ExecutiveSignalPanelV2({ signal, className }: { signal: LeituraSignal; 
 
 // ---------------------------------------------------------------- painel 2
 
-function PerspectiveDetail({ ev, signal }: { ev: PerspectiveEvidence; signal: LeituraSignal }) {
-  const [open, setOpen] = useState(false);
+function QuoteCard({ 
+  quote, 
+  allQuotes 
+}: { 
+  quote: string; 
+  allQuotes: any[] 
+}) {
+  // Tenta localizar o objeto da citação se o input for um ID (V2_JSON)
+  const qObj = allQuotes?.find(q => q.id === quote);
   
-  // NOVA LÓGICA V2: Se existir signal.appearances, o ev (PerspectiveEvidence) 
-  // já deve conter o dado mapeado do appearance correspondente a esta perspectiva.
-  // O mapping deve ser feito no buildLeituraIntegrada.
+  if (qObj) {
+    const isReported = qObj.quote_type === "reported";
+    const authorInfo = qObj.reported_by
+      ? `${qObj.original_author} · fala relatada por ${qObj.reported_by}`
+      : `${qObj.original_author}${qObj.original_author_role ? ` (${qObj.original_author_role})` : ""}`;
+      
+    return (
+      <figure className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+        <Quote className="mb-2 h-4 w-4 text-primary/60" aria-hidden />
+        <blockquote className="break-words text-sm italic leading-relaxed text-foreground/90">
+          <MarkdownView markdown={qObj.text.startsWith('“') ? qObj.text : `“${qObj.text}”`} />
+        </blockquote>
+        <figcaption className="mt-3 flex flex-col gap-1 border-t pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="font-semibold text-foreground/70">{authorInfo}</span>
+          {isReported && <span className="text-[9px] text-primary/70">Fala Relatada</span>}
+        </figcaption>
+      </figure>
+    );
+  }
+
+  // Fallback para strings simples (Legado/V1)
+  return (
+    <figure className="rounded-lg border-l-2 border-primary/50 bg-muted/40 p-3">
+      <Quote className="mb-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+      <blockquote className="break-words text-sm italic leading-relaxed">
+        <MarkdownView markdown={quote.startsWith('“') ? quote : `“${quote}”`} />
+      </blockquote>
+      <figcaption className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider">
+        Fala do representante
+      </figcaption>
+    </figure>
+  );
+}
+
+function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; signal: LeituraSignal; visao: VisaoRep2 }) {
+  const [open, setOpen] = useState(false);
+  const [showAllQuotes, setShowAllQuotes] = useState(false);
+  
+  const allQuotes = (visao as any).source_control?.structured_data?.data?.quotes || 
+                    (visao as any).legacy?.quotes || [];
+                    
+  const visibleQuotes = showAllQuotes ? ev.quotes : ev.quotes.slice(0, 3);
   
   return (
-    <div className="space-y-3">
-      <div>
-        <div className="text-[11px] tabular-nums text-muted-foreground">
+    <div className="space-y-4">
+      <div className="flex items-baseline gap-2">
+        <div className="text-[11px] font-bold tabular-nums text-primary/60">
           {String(ev.perspective.perspective_number).padStart(2, "0")}
         </div>
-        <h4 className="break-words text-sm font-semibold">{ev.perspective.perspective_title}</h4>
+        <h4 className="break-words text-sm font-semibold tracking-tight">{ev.perspective.perspective_title}</h4>
       </div>
 
-      <Bloco label="Achado específico" value={ev.finding} />
-      
-      {has(ev.addedDetail) && (
-        <Bloco label="Detalhe adicional" value={ev.addedDetail} />
-      )}
+      <div className="grid gap-3">
+        <Bloco label="Achado específico" value={ev.finding} />
+        
+        {has(ev.addedDetail) && (
+          <Bloco label="Detalhe adicional" value={ev.addedDetail} />
+        )}
 
-      {ev.entities.length ? (
-        <div className="space-y-2">
-          {ev.entities.map(g => (
-            <div key={g.label}>
-              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {g.label}
+        {ev.entities.length ? (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ev.entities.map(g => (
+              <div key={g.label} className="rounded-lg border bg-muted/10 p-2">
+                <div className="mb-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                  {g.label}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {g.items.map(i => (
+                    <Badge key={i} variant="outline" className="bg-background text-[10px] font-normal">
+                      {i}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {g.items.map(i => (
-                  <Badge key={i} variant="outline" className="max-w-full break-words text-[11px]">
-                    {i}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       {ev.quotes.length ? (
-        <div className="space-y-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Evidência
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+              Evidências ({ev.quotes.length})
+            </div>
           </div>
-          {ev.quotes.map((q, i) => (
-            <figure key={i} className="rounded-lg border-l-2 border-primary/50 bg-muted/40 p-3">
-              <Quote className="mb-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-              <blockquote className="break-words text-sm italic leading-relaxed">
-                <MarkdownView markdown={q.startsWith('“') ? q : `“${q}”`} />
-              </blockquote>
-              <figcaption className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider">
-                Fala do representante
-              </figcaption>
-            </figure>
-          ))}
+          <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-1">
+            {visibleQuotes.map((q, i) => (
+              <QuoteCard key={i} quote={q} allQuotes={allQuotes} />
+            ))}
+          </div>
+          
+          {ev.quotes.length > 3 && !showAllQuotes && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowAllQuotes(true)}
+              className="h-8 w-full text-xs text-muted-foreground hover:text-foreground"
+            >
+              Ver mais evidências (+{ev.quotes.length - 3})
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+          )}
         </div>
       ) : null}
 
-
       {has(ev.fullReading) ? (
-        <div className="rounded-lg border">
+        <div className="overflow-hidden rounded-lg border bg-muted/5">
           <button
             type="button"
             onClick={() => setOpen(o => !o)}
             aria-expanded={open}
-            className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            Ver análise completa da perspectiva
+            ANÁLISE COMPLETA DA PERSPECTIVA
             <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} aria-hidden />
           </button>
           {open ? (
-            <div className="whitespace-pre-wrap break-words border-t px-3 py-3 text-sm leading-relaxed">
+            <div className="border-t bg-background px-4 py-4 text-sm leading-relaxed shadow-inner">
               <MarkdownView markdown={ev.fullReading} />
             </div>
           ) : null}
@@ -290,10 +345,11 @@ function PerspectiveDetail({ ev, signal }: { ev: PerspectiveEvidence; signal: Le
 }
 
 
-function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSignal; className?: string }) {
+function PerspectiveEvidencePanelV2({ signal, visao, className }: { signal: LeituraSignal; visao: VisaoRep2; className?: string }) {
   const [aba, setAba] = useState(0);
   useEffect(() => setAba(0), [signal.id]);
   const atual = signal.perspectives[aba] ?? signal.perspectives[0] ?? null;
+
 
   return (
     <PanelShell title="Onde isso apareceu" subtitle="Produtos, marcas, clientes, casos e falas." className={className}>
@@ -318,7 +374,7 @@ function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSign
               </button>
             ))}
           </div>
-          {atual ? <PerspectiveDetail ev={atual} signal={signal} /> : null}
+          {atual ? <PerspectiveDetail ev={atual} signal={signal} visao={visao} /> : null}
         </>
       )}
     </PanelShell>
@@ -515,7 +571,7 @@ export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: Visa
               ))}
             </div>
             {mobileTab === "sintese" ? <ExecutiveSignalPanelV2 signal={signal} /> : null}
-            {mobileTab === "evidencias" ? <PerspectiveEvidencePanelV2 signal={signal} /> : null}
+            {mobileTab === "evidencias" ? <PerspectiveEvidencePanelV2 signal={signal} visao={visao} /> : null}
             {mobileTab === "grupo" ? (
               <GroupComparisonPanelV2 signal={signal} comparableSourceCount={leitura.comparableSourceCount} />
             ) : null}
@@ -523,7 +579,7 @@ export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: Visa
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-12">
             <ExecutiveSignalPanelV2 signal={signal} className="md:col-span-4 xl:col-span-3" />
-            <PerspectiveEvidencePanelV2 signal={signal} className="md:col-span-8 xl:col-span-6" />
+            <PerspectiveEvidencePanelV2 signal={signal} visao={visao} className="md:col-span-8 xl:col-span-6" />
             <GroupComparisonPanelV2
               signal={signal}
               comparableSourceCount={leitura.comparableSourceCount}
