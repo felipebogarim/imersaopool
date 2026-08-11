@@ -34,7 +34,8 @@ type CardRow = {
   metadata: any;
   kanban_lists: { name: string } | null;
   kanban_card_labels: { kanban_labels: Label | null }[] | null;
-  kanban_card_members: { profiles: Member | null }[] | null;
+  kanban_card_members: { user_id: string }[] | null;
+  members?: Member[];
 };
 
 function fmt(d: string | null | undefined) {
