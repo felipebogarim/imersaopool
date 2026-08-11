@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Board, KCard, KList } from "@/lib/kanban-types";
 import { midPosition } from "@/lib/kanban-types";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
+import { NewCardDialog, type NewCardClient } from "@/components/kanban/NewCardDialog";
 import { CardDetailDialog } from "@/components/kanban/CardDetailDialog";
 import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
 import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDialog";
@@ -240,19 +241,17 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: list.id, data: { type: "list" } });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const [adding, setAdding] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
 
-  async function createCard() {
-    if (!newTitle.trim()) { setAdding(false); return; }
+  async function createCard(title: string, client: NewCardClient) {
     const { data: u } = await supabase.auth.getUser();
     const lastPos = cards[cards.length - 1]?.position ?? 0;
     const { data, error } = await supabase.from("kanban_cards").insert({
-      list_id: list.id, board_id: list.board_id, title: newTitle.trim(),
+      list_id: list.id, board_id: list.board_id, title,
       position: lastPos + 1000, created_by: u.user!.id,
+      metadata: client ? { client_id: client.id, client_name: client.name } : {},
     }).select("id").single();
-    if (error) return toast.error(error.message);
-    setNewTitle(""); setAdding(false);
-    if (data) await logActivity(list.board_id, "card_created", { title: newTitle.trim(), list_id: list.id }, data.id);
+    if (error) { toast.error(error.message); return; }
+    if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null }, data.id);
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
 
@@ -294,29 +293,13 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
           {cards.map((c) => <SortableCard key={c.id} card={c} onClick={() => onOpenCard(c.id)} />)}
         </div>
       </SortableContext>
-      {adding ? (
-        <div className="mt-2 space-y-2">
-          <Input
-            autoFocus
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") createCard(); if (e.key === "Escape") setAdding(false); }}
-            placeholder="Título do card"
-            className="h-8"
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={createCard}>Adicionar</Button>
-            <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="mt-2 flex items-center gap-1 rounded p-1.5 text-xs text-muted-foreground hover:bg-muted"
-        >
-          <Plus className="h-3.5 w-3.5" /> Adicionar card
-        </button>
-      )}
+      <button
+        onClick={() => setAdding(true)}
+        className="mt-2 flex items-center gap-1 rounded p-1.5 text-xs text-muted-foreground hover:bg-muted"
+      >
+        <Plus className="h-3.5 w-3.5" /> Adicionar card
+      </button>
+      <NewCardDialog open={adding} onOpenChange={setAdding} onCreate={createCard} />
     </div>
   );
 }
