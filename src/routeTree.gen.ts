@@ -36,6 +36,7 @@ import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authent
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -47,6 +48,7 @@ import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authenticated/price.index'
+import { Route as AuthenticatedMapaAcoesIndexRouteImport } from './routes/_authenticated/mapa-acoes.index'
 import { Route as AuthenticatedManuaisIndexRouteImport } from './routes/_authenticated/manuais.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
@@ -64,6 +66,10 @@ import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './ro
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price.tabelas'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price.competidores'
 import { Route as AuthenticatedPriceComparativosRouteImport } from './routes/_authenticated/price.comparativos'
+import { Route as AuthenticatedPrecosSimuladorRouteImport } from './routes/_authenticated/precos.simulador'
+import { Route as AuthenticatedPrecosMapaRouteImport } from './routes/_authenticated/precos.mapa'
+import { Route as AuthenticatedPerformanceRepsRouteImport } from './routes/_authenticated/performance.reps'
+import { Route as AuthenticatedPerformanceBiClientesRouteImport } from './routes/_authenticated/performance.bi-clientes'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
@@ -241,6 +247,11 @@ const AuthenticatedNdaRoute = AuthenticatedNdaRouteImport.update({
   path: '/nda',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
   id: '/familias',
   path: '/familias',
@@ -301,6 +312,12 @@ const AuthenticatedPriceIndexRoute = AuthenticatedPriceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedPriceRoute,
 } as any)
+const AuthenticatedMapaAcoesIndexRoute =
+  AuthenticatedMapaAcoesIndexRouteImport.update({
+    id: '/mapa-acoes/',
+    path: '/mapa-acoes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedManuaisIndexRoute =
   AuthenticatedManuaisIndexRouteImport.update({
     id: '/manuais/',
@@ -395,6 +412,29 @@ const AuthenticatedPriceComparativosRoute =
     id: '/comparativos',
     path: '/comparativos',
     getParentRoute: () => AuthenticatedPriceRoute,
+  } as any)
+const AuthenticatedPrecosSimuladorRoute =
+  AuthenticatedPrecosSimuladorRouteImport.update({
+    id: '/precos/simulador',
+    path: '/precos/simulador',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrecosMapaRoute = AuthenticatedPrecosMapaRouteImport.update({
+  id: '/precos/mapa',
+  path: '/precos/mapa',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPerformanceRepsRoute =
+  AuthenticatedPerformanceRepsRouteImport.update({
+    id: '/performance/reps',
+    path: '/performance/reps',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerformanceBiClientesRoute =
+  AuthenticatedPerformanceBiClientesRouteImport.update({
+    id: '/performance/bi-clientes',
+    path: '/performance/bi-clientes',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedImersoesNovaRoute =
   AuthenticatedImersoesNovaRouteImport.update({
@@ -630,6 +670,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -674,6 +715,10 @@ export interface FileRoutesByFullPath {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
+  '/performance/reps': typeof AuthenticatedPerformanceRepsRoute
+  '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
+  '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
@@ -691,6 +736,7 @@ export interface FileRoutesByFullPath {
   '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/manuais/': typeof AuthenticatedManuaisIndexRoute
+  '/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -724,6 +770,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -767,6 +814,10 @@ export interface FileRoutesByTo {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
+  '/performance/reps': typeof AuthenticatedPerformanceRepsRoute
+  '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
+  '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
@@ -784,6 +835,7 @@ export interface FileRoutesByTo {
   '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/manuais': typeof AuthenticatedManuaisIndexRoute
+  '/mapa-acoes': typeof AuthenticatedMapaAcoesIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
@@ -819,6 +871,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -863,6 +916,10 @@ export interface FileRoutesById {
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/_authenticated/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
+  '/_authenticated/performance/reps': typeof AuthenticatedPerformanceRepsRoute
+  '/_authenticated/precos/mapa': typeof AuthenticatedPrecosMapaRoute
+  '/_authenticated/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/_authenticated/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
@@ -880,6 +937,7 @@ export interface FileRoutesById {
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/manuais/': typeof AuthenticatedManuaisIndexRoute
+  '/_authenticated/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
@@ -915,6 +973,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/empresas'
     | '/familias'
+    | '/home'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -959,6 +1018,10 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/performance/bi-clientes'
+    | '/performance/reps'
+    | '/precos/mapa'
+    | '/precos/simulador'
     | '/price/comparativos'
     | '/price/competidores'
     | '/price/tabelas'
@@ -976,6 +1039,7 @@ export interface FileRouteTypes {
     | '/forms/'
     | '/imersoes/'
     | '/manuais/'
+    | '/mapa-acoes/'
     | '/price/'
     | '/produtos/'
     | '/representantes/'
@@ -1009,6 +1073,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/empresas'
     | '/familias'
+    | '/home'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -1052,6 +1117,10 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/performance/bi-clientes'
+    | '/performance/reps'
+    | '/precos/mapa'
+    | '/precos/simulador'
     | '/price/comparativos'
     | '/price/competidores'
     | '/price/tabelas'
@@ -1069,6 +1138,7 @@ export interface FileRouteTypes {
     | '/forms'
     | '/imersoes'
     | '/manuais'
+    | '/mapa-acoes'
     | '/price'
     | '/produtos'
     | '/representantes'
@@ -1103,6 +1173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
     | '/_authenticated/familias'
+    | '/_authenticated/home'
     | '/_authenticated/nda'
     | '/_authenticated/novo-corp'
     | '/_authenticated/perfil'
@@ -1147,6 +1218,10 @@ export interface FileRouteTypes {
     | '/_authenticated/forms/$id'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
+    | '/_authenticated/performance/bi-clientes'
+    | '/_authenticated/performance/reps'
+    | '/_authenticated/precos/mapa'
+    | '/_authenticated/precos/simulador'
     | '/_authenticated/price/comparativos'
     | '/_authenticated/price/competidores'
     | '/_authenticated/price/tabelas'
@@ -1164,6 +1239,7 @@ export interface FileRouteTypes {
     | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/manuais/'
+    | '/_authenticated/mapa-acoes/'
     | '/_authenticated/price/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
@@ -1409,6 +1485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNdaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/familias': {
       id: '/_authenticated/familias'
       path: '/familias'
@@ -1485,6 +1568,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/price/'
       preLoaderRoute: typeof AuthenticatedPriceIndexRouteImport
       parentRoute: typeof AuthenticatedPriceRoute
+    }
+    '/_authenticated/mapa-acoes/': {
+      id: '/_authenticated/mapa-acoes/'
+      path: '/mapa-acoes'
+      fullPath: '/mapa-acoes/'
+      preLoaderRoute: typeof AuthenticatedMapaAcoesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/manuais/': {
       id: '/_authenticated/manuais/'
@@ -1604,6 +1694,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/price/comparativos'
       preLoaderRoute: typeof AuthenticatedPriceComparativosRouteImport
       parentRoute: typeof AuthenticatedPriceRoute
+    }
+    '/_authenticated/precos/simulador': {
+      id: '/_authenticated/precos/simulador'
+      path: '/precos/simulador'
+      fullPath: '/precos/simulador'
+      preLoaderRoute: typeof AuthenticatedPrecosSimuladorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/precos/mapa': {
+      id: '/_authenticated/precos/mapa'
+      path: '/precos/mapa'
+      fullPath: '/precos/mapa'
+      preLoaderRoute: typeof AuthenticatedPrecosMapaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/performance/reps': {
+      id: '/_authenticated/performance/reps'
+      path: '/performance/reps'
+      fullPath: '/performance/reps'
+      preLoaderRoute: typeof AuthenticatedPerformanceRepsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/performance/bi-clientes': {
+      id: '/_authenticated/performance/bi-clientes'
+      path: '/performance/bi-clientes'
+      fullPath: '/performance/bi-clientes'
+      preLoaderRoute: typeof AuthenticatedPerformanceBiClientesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/imersoes/nova': {
       id: '/_authenticated/imersoes/nova'
@@ -1965,6 +2083,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -1988,6 +2107,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
+  AuthenticatedPerformanceBiClientesRoute: typeof AuthenticatedPerformanceBiClientesRoute
+  AuthenticatedPerformanceRepsRoute: typeof AuthenticatedPerformanceRepsRoute
+  AuthenticatedPrecosMapaRoute: typeof AuthenticatedPrecosMapaRoute
+  AuthenticatedPrecosSimuladorRoute: typeof AuthenticatedPrecosSimuladorRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
@@ -1996,6 +2119,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedManuaisIndexRoute: typeof AuthenticatedManuaisIndexRoute
+  AuthenticatedMapaAcoesIndexRoute: typeof AuthenticatedMapaAcoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
@@ -2013,6 +2137,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
@@ -2039,6 +2164,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
+  AuthenticatedPerformanceBiClientesRoute:
+    AuthenticatedPerformanceBiClientesRoute,
+  AuthenticatedPerformanceRepsRoute: AuthenticatedPerformanceRepsRoute,
+  AuthenticatedPrecosMapaRoute: AuthenticatedPrecosMapaRoute,
+  AuthenticatedPrecosSimuladorRoute: AuthenticatedPrecosSimuladorRoute,
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
@@ -2048,6 +2178,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedManuaisIndexRoute: AuthenticatedManuaisIndexRoute,
+  AuthenticatedMapaAcoesIndexRoute: AuthenticatedMapaAcoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
@@ -2098,13 +2229,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
