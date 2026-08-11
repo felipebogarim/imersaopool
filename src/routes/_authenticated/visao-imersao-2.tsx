@@ -11,7 +11,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { 
   ExecutiveBriefV2
 } from "@/components/visao-rep2/ExecutiveBriefV2";
-import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
+
+import { AreasAprofundamento } from "@/components/visao-imersao-2/AreasAprofundamento";
+
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
@@ -684,12 +686,12 @@ function VisaoImersao2Page() {
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
         {/* 7. ÁREAS DE APROFUNDAMENTO */}
-        <PerspectivasEntrevistaV2 
-          perspectivas={buildPerspectivasVM(visao)} 
-          mode="imersao"
+        <AreasAprofundamento
+          perspectivas={buildPerspectivasVM(visao)}
           titulo="ÁREAS DE APROFUNDAMENTO"
           defaultOpen={false}
         />
+
 
         {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
         <AcoesComerciaisCliente
