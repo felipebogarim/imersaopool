@@ -1,8 +1,30 @@
-// Gerador de PDF do RELATÓRIO FINAL DE IMERSÃO EM CAMPO.
-// 100% determinístico: lê apenas o conteúdo já salvo (capítulos reais do relatório
-// importado). Não usa IA, não reescreve, não resume, não cria capítulos.
+// ============================================================================
+// RELATÓRIO FINAL DE IMERSÃO EM CAMPO — PADRÃO CANÔNICO OFICIAL
+// ----------------------------------------------------------------------------
+// 1. Schema canônico ....... field_store_visit_v1 (compatível com field_immersion_v2),
+//    persistido em interviews.respostas.__field_store_visit__.
+// 2. Gerador oficial ....... este arquivo (src/lib/immersion-final-pdf.ts).
+// 3. Regra de roteamento ... se interview.respostas.__field_store_visit__ existir →
+//    SEMPRE este gerador, independentemente de rota, tela, botão ou origem.
+//    É PROIBIDO qualquer fallback para o gerador legado de entrevistas
+//    (src/lib/interview-report.ts), que possui guarda anti-regressão própria.
+// 4. Estrutura esperada .... Capa → Sumário executivo → Mapa executivo + Índice →
+//    capítulos reais do relatório (número, título e conteúdo verbatim) →
+//    capítulo final de síntese/prioridades/próximos passos.
+// 5. Campos opcionais ...... executive_summary e executive_map são lidos verbatim
+//    quando existirem; ausentes, não geram erro (retrocompatibilidade total).
+//    Sem executive_map, os quadrantes são omitidos — nunca inferidos.
+// 6. Determinístico ........ nenhuma IA na exportação: apenas lê, estrutura,
+//    hierarquiza, pagina e renderiza o conteúdo importado.
+// ============================================================================
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
+
+/** Regra permanente de roteamento do relatório final de imersão em campo. */
+export function isFieldImmersionReport(respostas: unknown): boolean {
+  return !!(respostas as any)?.__field_store_visit__;
+}
+
 
 type RGB = [number, number, number];
 
