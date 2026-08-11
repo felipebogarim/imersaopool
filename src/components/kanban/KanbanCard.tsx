@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2 } from "lucide-react";
+import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2, Sparkles } from "lucide-react";
 import type { KCard } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
+import { getSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -37,6 +38,7 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
 
   const now = new Date();
   const overdue = card.due_date && new Date(card.due_date) < now && !card.completed_at;
+  const suggested = getSuggested(card);
 
   return (
     <div
@@ -56,6 +58,11 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         </div>
       )}
       <div className="font-medium leading-snug">{card.title}</div>
+      {suggested.suggested && (
+        <Badge variant="outline" className={cn("mt-1.5 gap-1 text-[10px]", SUGGESTED_COLOR[suggested.status])}>
+          <Sparkles className="h-3 w-3" /> {SUGGESTED_LABEL[suggested.status]}
+        </Badge>
+      )}
       {typeof (card.metadata as any)?.client_name === "string" && (
         <Badge variant="secondary" className="mt-1.5 max-w-full truncate text-[10px]">
           <Building2 className="mr-1 h-3 w-3 shrink-0" />
