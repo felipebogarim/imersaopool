@@ -157,7 +157,7 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
             const st = statusOf(c);
             const dh = dueHint(c);
             const labels = (c.kanban_card_labels ?? []).map((l) => l.kanban_labels).filter(Boolean) as Label[];
-            const members = (c.kanban_card_members ?? []).map((m) => m.profiles).filter(Boolean) as Member[];
+            const members = c.members ?? [];
             const priority = c.priority;
             return (
               <li key={c.id} className="flex items-start gap-3 px-4 py-3">
