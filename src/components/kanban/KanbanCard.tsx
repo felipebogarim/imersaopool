@@ -38,6 +38,7 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
 
   const now = new Date();
   const overdue = card.due_date && new Date(card.due_date) < now && !card.completed_at;
+  const suggested = getSuggested(card);
 
   return (
     <div
