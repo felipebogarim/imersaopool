@@ -10,6 +10,7 @@ import type { BriefConclusao, BriefEntidades, BriefPerspectiva } from "./briefin
 import { PERSPECTIVAS_META, type AgendaRef, type PerspectivaVM } from "@/lib/visao-rep2-perspectivas";
 import { BlocoExpansivel } from "./BlocoExpansivel";
 import { AcoesSecao } from "./AcoesSecao";
+import { separarCitacoes } from "@/lib/visao-imersao-2-citacoes";
 
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
