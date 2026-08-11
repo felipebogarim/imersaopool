@@ -78,25 +78,40 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
     queryKey: ["acoes-cliente", clientId, clientName],
     enabled: Boolean(clientId || clientName),
     queryFn: async () => {
-      const filters: string[] = [];
-      if (clientId) filters.push(`metadata->>client_id.eq.${clientId}`);
-      if (clientName) filters.push(`metadata->>client_name.ilike.%${clientName}%`);
-      if (!filters.length) return [] as CardRow[];
-
-      const { data, error } = await supabase
-        .from("kanban_cards")
-        .select(
-          `id, title, board_id, list_id, created_at, due_date, completed_at, archived_at, priority, metadata,
+      const select = `id, title, board_id, list_id, created_at, due_date, completed_at, archived_at, priority, metadata,
           kanban_lists(name),
           kanban_card_labels(kanban_labels(name, color)),
-          kanban_card_members(profiles(full_name, email))`,
-        )
-        .or(filters.join(","))
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as CardRow[];
+          kanban_card_members(profiles(full_name, email))`;
+
+      const byId = new Map<string, CardRow>();
+
+      if (clientId) {
+        const { data, error } = await supabase
+          .from("kanban_cards")
+          .select(select)
+          .eq("metadata->>client_id", clientId)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        for (const r of (data ?? []) as unknown as CardRow[]) byId.set(r.id, r);
+      }
+
+      const name = (clientName ?? "").trim();
+      if (name) {
+        const { data, error } = await supabase
+          .from("kanban_cards")
+          .select(select)
+          .ilike("metadata->>client_name", `%${name}%`)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        for (const r of (data ?? []) as unknown as CardRow[]) byId.set(r.id, r);
+      }
+
+      return Array.from(byId.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
     },
   });
+
 
   return (
     <section className="surface overflow-hidden rounded-xl" aria-labelledby="vi2-acoes-cliente">
