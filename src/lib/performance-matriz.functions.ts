@@ -16,37 +16,39 @@ export function calculateWeightedAtainment(
   if (!categoria || !familias?.length) return null;
 
   // Matrizes Financeiras Canônicas (Metas de referência por categoria)
-  const MATRIZES: Record<string, Record<string, number>> = {
-    "Gold": {
-      "DECOR NEWLINE": 2500,
-      "DECOR STUDIO": 3000,
-      "SISTEMAS E MÓDULOS": 2500,
-      "PRO LED": 1500,
-      "PRO LAMP": 1500,
-      "PERFIL": 2000,
-      "FITAS E FONTES": 2000,
-    },
-    "Black": {
-      "DECOR NEWLINE": 5000,
-      "DECOR STUDIO": 6000,
-      "SISTEMAS E MÓDULOS": 5000,
-      "PRO LED": 3000,
-      "PRO LAMP": 3000,
-      "PERFIL": 4000,
-      "FITAS E FONTES": 4000,
-    },
-    "Silver": {
-      "DECOR NEWLINE": 1250,
-      "DECOR STUDIO": 1500,
-      "SISTEMAS E MÓDULOS": 1250,
-      "PRO LED": 750,
-      "PRO LAMP": 750,
-      "PERFIL": 1000,
-      "FITAS E FONTES": 1000,
-    }
+  const MATRIZ_GOLD: Record<string, number> = {
+    "DECOR NEWLINE": 2500,
+    "DECOR STUDIO": 3000,
+    "SISTEMAS E MÓDULOS": 2500,
+    "PRO LED": 1500,
+    "PRO LAMP": 1500,
+    "PERFIL": 2000,
+    "FITAS E FONTES": 2000,
   };
 
-  const metas = MATRIZES[categoria] || MATRIZES["Gold"];
+  const MATRIZ_BLACK: Record<string, number> = {
+    "DECOR NEWLINE": 5000,
+    "DECOR STUDIO": 6000,
+    "SISTEMAS E MÓDULOS": 5000,
+    "PRO LED": 3000,
+    "PRO LAMP": 3000,
+    "PERFIL": 4000,
+    "FITAS E FONTES": 4000,
+  };
+
+  const MATRIZ_SILVER: Record<string, number> = {
+    "DECOR NEWLINE": 1250,
+    "DECOR STUDIO": 1500,
+    "SISTEMAS E MÓDULOS": 1250,
+    "PRO LED": 750,
+    "PRO LAMP": 750,
+    "PERFIL": 1000,
+    "FITAS E FONTES": 1000,
+  };
+
+  const cat = (categoria ?? "Gold").toLowerCase();
+  const metas = cat.includes("black") ? MATRIZ_BLACK : cat.includes("silver") ? MATRIZ_SILVER : MATRIZ_GOLD;
+
   
   let totalMeta = 0;
   let totalRealizadoPonderado = 0;
@@ -78,7 +80,7 @@ export const getClientAtainment = createServerFn({ method: "GET" })
       .from("clients")
       .select("categoria, razao_social")
       .eq("id", data.clientId)
-      .single();
+      .maybeSingle();
 
     if (!client) return null;
 

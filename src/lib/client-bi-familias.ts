@@ -161,10 +161,68 @@ export function deriveFamiliasItens(bi: ClientBIData): ClientFamiliasData {
 
 export function buildBI(
   categoria: string | null,
-  geral: number | null,
+  geralLegacy: number | null,
   familiasRaw: FamiliaResultado[],
 ): ClientBIData {
   const familias = familiasRaw.filter((f) => isCanonicalFamily(f.familia));
+  const best = calculateBestFamily(familias);
+  const worst = calculateWorstFamily(familias);
+
+  // Atingimento geral ponderado canônico (Matriz Financeira)
+  // Ref: Memória bi-participacao-familia e instruções do usuário.
+  // Nota: BI de cliente recalcula o valor real com base nas famílias extraídas.
+  const MATRIZ_GOLD: Record<string, number> = {
+    "DECOR NEWLINE": 2500,
+    "DECOR STUDIO": 3000,
+    "SISTEMAS E MÓDULOS": 2500,
+    "PRO LED": 1500,
+    "PRO LAMP": 1500,
+    "PERFIL": 2000,
+    "FITAS E FONTES": 2000,
+  };
+
+  const MATRIZ_BLACK: Record<string, number> = {
+    "DECOR NEWLINE": 5000,
+    "DECOR STUDIO": 6000,
+    "SISTEMAS E MÓDULOS": 5000,
+    "PRO LED": 3000,
+    "PRO LAMP": 3000,
+    "PERFIL": 4000,
+    "FITAS E FONTES": 4000,
+  };
+
+  const MATRIZ_SILVER: Record<string, number> = {
+    "DECOR NEWLINE": 1250,
+    "DECOR STUDIO": 1500,
+    "SISTEMAS E MÓDULOS": 1250,
+    "PRO LED": 750,
+    "PRO LAMP": 750,
+    "PERFIL": 1000,
+    "FITAS E FONTES": 1000,
+  };
+
+  const cat = (categoria ?? "Gold").toLowerCase();
+  const metas = cat.includes("black") ? MATRIZ_BLACK : cat.includes("silver") ? MATRIZ_SILVER : MATRIZ_GOLD;
+  
+  let totalMeta = 0;
+  let totalRealizadoPonderado = 0;
+
+  for (const f of CANONICAL_FAMILIES) {
+    const meta = metas[f] || 0;
+    const item = familias.find(x => normalizeFamilyName(x.familia) === f);
+    const atingimento = item?.atingimento ?? 0;
+
+    totalMeta += meta;
+    totalRealizadoPonderado += meta * (atingimento / 100);
+  }
+
+  const geralCalculado = totalMeta > 0 ? (totalRealizadoPonderado / totalMeta) * 100 : null;
+  const geralFinal = geralCalculado ?? geralLegacy;
+
+  return {
+    geral: geralFinal,
+    categoria,
+    familias,
   const best = calculateBestFamily(familias);
   const worst = calculateWorstFamily(familias);
   return {
