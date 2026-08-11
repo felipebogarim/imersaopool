@@ -551,6 +551,14 @@ function VisaoImersao2Page() {
             </Alert>
           )}
         </div>
+        
+        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
+        <div className="space-y-6">
+          <PerformanceFamiliasV2 
+            perf={perf} 
+            contexto={visao.metadata.representative_name || ""} 
+          />
+        </div>
 
         {/* 3. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />

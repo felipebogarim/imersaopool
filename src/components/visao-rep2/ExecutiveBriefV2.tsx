@@ -499,7 +499,7 @@ export function ExecutiveBriefV2({
 
 
 
-      <PerformanceFamiliasV2 perf={perf} contexto={contexto} />
+      {mode === "rep" && <PerformanceFamiliasV2 perf={perf} contexto={contexto} />}
       {leitura ?? null}
       {mode === "rep" && <ContextPortfolioV2 brief={brief} mode={mode} />}
       {mode === "rep" && temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
