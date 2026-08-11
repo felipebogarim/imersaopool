@@ -27,6 +27,21 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
   let atual: Achado | null = null;
   let modoImplicacao = false;
   let buffer: string[] = [];
+  let lista: string[] = [];
+
+  const flushLista = () => {
+    if (!lista.length || !atual) {
+      lista = [];
+      return;
+    }
+    const bloco = lista.join("\n");
+    lista = [];
+    if (modoImplicacao) {
+      atual.implicacao = atual.implicacao ? `${atual.implicacao} ${bloco}` : bloco;
+    } else {
+      atual.contexto.push(bloco);
+    }
+  };
 
   const flushParagrafo = () => {
     const texto = buffer.join(" ").trim();
@@ -38,6 +53,7 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
       atual.contexto.push(texto);
     }
   };
+
 
   for (const raw of linhas) {
     const linha = raw.trim();
