@@ -222,11 +222,11 @@ function BIClientesPage() {
                           <td 
                             key={col} 
                             className={cn(
-                              "px-3 py-2.5 text-center text-[10px] border-r border-border/50 last:border-r-0 tabular-nums",
-                              hasMeta && status && FAROL_CELL_CLASS[status]
+                              "px-3 py-2.5 text-center text-[10px] border-r border-border/50 last:border-r-0 tabular-nums font-bold",
+                              status && FAROL_CELL_CLASS[status]
                             )}
                           >
-                            {!hasMeta ? "—" : status === "sem_compra" ? "0%" : status ? "•" : "0%"}
+                            {status === "sem_compra" ? "0%" : status ? `${FAROL_MIDPOINT[status]}%` : "0%"}
                           </td>
                         );
                       })}
