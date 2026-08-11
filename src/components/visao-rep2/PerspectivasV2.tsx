@@ -75,22 +75,33 @@ function EntidadesV2({ e }: { e: BriefEntidades }) {
   );
 }
 
-function PainelApoio({ p, ctx }: { p: PerspectivaVM; ctx: SecaoCtx }) {
+function PainelApoio({ p, ctx, mode = "rep" }: { p: PerspectivaVM; ctx: SecaoCtx; mode?: "rep" | "imersao" }) {
+  const citacoes = has(p.evidencia)
+    ? mode === "imersao"
+      ? separarCitacoes(p.evidencia as string)
+      : [p.evidencia as string]
+    : [];
   return (
     <aside className="space-y-6 rounded-xl border bg-muted/20 p-5" aria-label="Apoio à leitura da perspectiva">
       <div className="space-y-2">
         <TituloSecao titulo="Evidência principal" descricao={p.evidencia ?? ""} ctx={ctx}>
           Evidência principal
         </TituloSecao>
-        {has(p.evidencia) ? (
-          <figure className="space-y-1">
-            <div className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
-              <MarkdownView markdown={p.evidencia?.startsWith('“') ? p.evidencia : `“${p.evidencia}”`} />
-            </div>
-            <figcaption className="pl-3 text-[11px] uppercase tracking-wide text-muted-foreground/80">
-              Fala do representante
-            </figcaption>
-          </figure>
+        {citacoes.length ? (
+          <div className="space-y-3">
+            {citacoes.map((c, i) => (
+              <figure key={i} className="space-y-1">
+                <div className="border-l-2 border-primary pl-3 text-sm italic leading-6 text-muted-foreground">
+                  <MarkdownView markdown={c.startsWith('“') ? c : `“${c}”`} />
+                </div>
+                {mode === "imersao" ? null : (
+                  <figcaption className="pl-3 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+                    Fala do representante
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">Esta perspectiva ainda não possui evidência destacada.</p>
         )}
