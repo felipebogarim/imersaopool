@@ -533,14 +533,11 @@ function VisaoImersao2Page() {
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
         {/* 4. Áreas de Aprofundamento */}
-        <div className="space-y-4">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Áreas de Aprofundamento
-          </h3>
-          <PerspectivasEntrevistaV2 
-            perspectivas={buildPerspectivasVM(visao)} 
-            mode="imersao"
-          />
+        <PerspectivasEntrevistaV2 
+          perspectivas={buildPerspectivasVM(visao)} 
+          mode="imersao"
+          titulo="Áreas de Aprofundamento"
+        />
           
           {/* Diagnóstico Técnico (Admin Only) */}
           {debugMode && (
