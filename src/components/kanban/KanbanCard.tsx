@@ -56,6 +56,11 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         </div>
       )}
       <div className="font-medium leading-snug">{card.title}</div>
+      {suggested.suggested && (
+        <Badge variant="outline" className={cn("mt-1.5 gap-1 text-[10px]", SUGGESTED_COLOR[suggested.status])}>
+          <Sparkles className="h-3 w-3" /> {SUGGESTED_LABEL[suggested.status]}
+        </Badge>
+      )}
       {typeof (card.metadata as any)?.client_name === "string" && (
         <Badge variant="secondary" className="mt-1.5 max-w-full truncate text-[10px]">
           <Building2 className="mr-1 h-3 w-3 shrink-0" />
