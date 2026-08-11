@@ -538,31 +538,30 @@ function VisaoImersao2Page() {
           mode="imersao"
           titulo="Áreas de Aprofundamento"
         />
-          
-          {/* Diagnóstico Técnico (Admin Only) */}
-          {debugMode && (
-            <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6">
-              <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
-              <div className="grid gap-6 text-xs md:grid-cols-2">
-                <div className="space-y-2">
-                  <p><strong>Cliente resolvido:</strong> {commercialData?.clientId || "Não vinculado"}</p>
-                  <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
-                  <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
-                  <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
-                </div>
-                <div className="space-y-2">
-                   <p className="font-semibold">Mapeamento de Sinais:</p>
-                   {visao.executive_view.priority_signals.map(s => (
-                     <div key={s.signal_id} className="border-l border-primary/20 pl-2">
-                       <p>{s.signal_id}: {s.title}</p>
-                       <p className="text-muted-foreground">Perspectivas: {s.related_perspectives?.join(", ")}</p>
-                     </div>
-                   ))}
-                </div>
+
+        {/* Diagnóstico Técnico (Admin Only) */}
+        {debugMode && (
+          <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6">
+            <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
+            <div className="grid gap-6 text-xs md:grid-cols-2">
+              <div className="space-y-2">
+                <p><strong>Cliente resolvido:</strong> {commercialData?.clientId || "Não vinculado"}</p>
+                <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
+                <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
+                <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
+              </div>
+              <div className="space-y-2">
+                 <p className="font-semibold">Mapeamento de Sinais:</p>
+                 {visao.executive_view.priority_signals.map(s => (
+                   <div key={s.signal_id} className="border-l border-primary/20 pl-2">
+                     <p>{s.signal_id}: {s.title}</p>
+                     <p className="text-muted-foreground">Perspectivas: {s.related_perspectives?.join(", ")}</p>
+                   </div>
+                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
