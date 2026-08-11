@@ -177,6 +177,79 @@ function ListSelector({ card, lists }: { card: KCard; lists: KList[] }) {
   );
 }
 
+
+// ============ AÇÃO SUGERIDA ============
+function SuggestedActionSection({ card, patch }: { card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
+  const isMaster = useIsMasterAdmin();
+  const s = getSuggested(card);
+
+  async function setState(next: Parameters<typeof withSuggested>[1]) {
+    await patch({ metadata: withSuggested(card, next) as any });
+  }
+
+  async function toggleSuggested() {
+    if (s.suggested) {
+      await setState(null);
+      await logActivity(card.board_id, "card_updated", { field: "suggested_action", value: false }, card.id);
+      toast.success("Marcação de ação sugerida removida");
+      return;
+    }
+    await setState({ suggested: true, status: "pendente" });
+    await logActivity(card.board_id, "card_updated", { field: "suggested_action", value: true }, card.id);
+    toast.success("Card marcado como Ação Sugerida — aguardando aprovação");
+  }
+
+  async function decide(status: "aprovada" | "reprovada") {
+    const { data: u } = await supabase.auth.getUser();
+    const name = (u.user?.user_metadata as any)?.full_name || u.user?.email || "Gestor master";
+    await setState({ suggested: true, status, decided_by_name: name, decided_at: new Date().toISOString() });
+    await logActivity(card.board_id, "card_updated", { field: "suggested_action_status", value: status }, card.id);
+    toast.success(status === "aprovada" ? "Ação aprovada" : "Ação reprovada");
+  }
+
+  return (
+    <div className="space-y-2 border-t pt-4">
+      <label className="text-xs font-medium text-muted-foreground">Ação sugerida</label>
+      <Button
+        variant={s.suggested ? "secondary" : "outline"}
+        size="sm"
+        className="w-full justify-start gap-2"
+        onClick={toggleSuggested}
+      >
+        <Sparkles className="h-4 w-4" />
+        {s.suggested ? "Desmarcar ação sugerida" : "Marcar como Ação Sugerida"}
+      </Button>
+
+      {s.suggested && (
+        <div className="space-y-2 rounded-md border bg-background p-2">
+          <Badge variant="outline" className={cn("text-[10px]", SUGGESTED_COLOR[s.status])}>
+            {SUGGESTED_LABEL[s.status]}
+          </Badge>
+          {s.decided_at && (
+            <p className="text-[11px] text-muted-foreground">
+              por {s.decided_by_name} em {new Date(s.decided_at).toLocaleDateString("pt-BR")}
+            </p>
+          )}
+          {isMaster ? (
+            <div className="flex gap-2">
+              <Button size="sm" className="flex-1 gap-1" onClick={() => decide("aprovada")}>
+                <ThumbsUp className="h-3.5 w-3.5" /> Aprovar
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1 gap-1" onClick={() => decide("reprovada")}>
+                <ThumbsDown className="h-3.5 w-3.5" /> Reprovar
+              </Button>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              A aprovação é feita pelo gestor master.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============ CHECKLISTS ============
 function ChecklistsSection({ cardId, boardId }: { cardId: string; boardId: string }) {
   const qc = useQueryClient();
