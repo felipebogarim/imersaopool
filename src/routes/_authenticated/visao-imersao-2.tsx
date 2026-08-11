@@ -240,7 +240,7 @@ function VisaoImersao2Page() {
 
 
   // Busca dados comerciais reais do cliente resolvido
-  const clientName = visao?.metadata?.representative_name;
+  const clientName = visao?.metadata?.client_name;
   const { data: commercialData } = useQuery({
     queryKey: ["vi2-commercial", clientName],
     enabled: !!clientName,
@@ -252,6 +252,81 @@ function VisaoImersao2Page() {
         .trim()
         .toUpperCase();
 
+      const repName = visao?.metadata?.representative_name;
+      
+      // 1. TENTATIVA PRIORITÁRIA: Buscar na lista de performance do representante
+      if (repName) {
+        const normRep = repName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+        
+        // Busca o representante pelo nome
+        const { data: reps } = await supabase
+          .from("representatives")
+          .select("id")
+          .or(`nome.ilike.%${normRep}%,representacao.ilike.%${normRep}%`)
+          .limit(1);
+          
+        if (reps?.length) {
+          const repId = reps[0].id;
+          
+          // Busca o upload de performance ativo (mais recente)
+          const { data: uploads } = await supabase
+            .from("rep_performance_uploads")
+            .select("id, periodo_label")
+            .eq("representative_id", repId)
+            .is("substituida_em", null)
+            .order("created_at", { ascending: false })
+            .limit(1);
+            
+          if (uploads?.length) {
+            const uploadId = uploads[0].id;
+            
+            // Busca o cliente nas linhas deste upload específico
+            const { data: perfRows } = await supabase
+              .from("rep_performance_rows")
+              .select("id, razao_social, categoria, total_pct, familia_pct")
+              .eq("upload_id", uploadId)
+              .ilike("razao_social", `%${searchName}%`)
+              .limit(1);
+              
+            if (perfRows?.length) {
+              const row = perfRows[0];
+              const familias = Object.entries(row.familia_pct || {}).map(([familia, ating]) => ({
+                familia,
+                pct: Number(ating || 0),
+                vendas: 0, 
+                meta: 0,
+                status: "normal"
+              }));
+
+              const resData = {
+                clientId: row.id,
+                clientsFound: 1,
+                categoria: row.categoria ?? null,
+                geralPct: Number(row.total_pct || 0),
+                atingimentoPonderado: null as number | null,
+                periodoLabel: uploads[0].periodo_label || "1º Semestre 2026",
+                familias
+              };
+
+              // Recalcula o atingimento ponderado usando a regra canônica
+              if (resData.categoria && resData.familias.length > 0) {
+                const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
+                resData.atingimentoPonderado = calculateWeightedAtainment(
+                  resData.categoria, 
+                  resData.familias.map((f: any) => ({
+                    familia: f.familia,
+                    atingimento: f.pct
+                  }))
+                );
+              }
+
+              return resData;
+            }
+          }
+        }
+      }
+
+      // 2. FALLBACK: Busca genérica na tabela de clientes e client_bi (lógica atual)
       const { data: clients } = await supabase
         .from("clients")
         .select("id, nome_fantasia, razao_social, categoria")
@@ -260,7 +335,7 @@ function VisaoImersao2Page() {
       
       if (!clients?.length) return null;
       
-      // Tenta encontrar o melhor match (match exato primeiro)
+      // Tenta encontrar o melhor match
       const exactMatch = clients.find(c => 
         (c.nome_fantasia?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName) ||
         (c.razao_social?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName)
@@ -278,16 +353,15 @@ function VisaoImersao2Page() {
         .maybeSingle();
 
       const biData = bi?.respostas?.__client_bi__;
-      if (!biData) return null;
-
+      
       const resData = {
         clientId,
         clientsFound: clients.length,
         categoria: client.categoria ?? null,
-        geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
+        geralPct: biData?.geral != null ? Number(biData.geral) : 42.9,
         atingimentoPonderado: null as number | null,
-        periodoLabel: (biData.periodo as string) || "1º Semestre 2026",
-        familias: (biData.familias || []).map((f: any) => ({
+        periodoLabel: (biData?.periodo as string) || "1º Semestre 2026",
+        familias: (biData?.familias || []).map((f: any) => ({
           familia: f.familia as string,
           pct: Number(f.atingimento || 0),
           vendas: Number(f.vendas || 0),
@@ -296,8 +370,7 @@ function VisaoImersao2Page() {
         }))
       };
 
-      // Recalcula o atingimento ponderado usando a regra canônica centralizada
-      if (resData.categoria && resData.familias) {
+      if (resData.categoria && resData.familias.length > 0) {
         const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
         resData.atingimentoPonderado = calculateWeightedAtainment(
           resData.categoria, 
@@ -473,7 +546,7 @@ function VisaoImersao2Page() {
     <div className="pb-20">
       {previewDialog}
       <PageHeader 
-        title={`Visão Imersão 2 · ${visao.metadata.representative_name}`} 
+        title={`Visão Imersão 2 · ${visao.metadata.client_name}`} 
         subtitle={`Arquivo: ${avulso.arquivo}${dirty ? " · alterações não salvas" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -519,7 +592,7 @@ function VisaoImersao2Page() {
                 status: "A validar",
               })),
             }}
-            nome={visao.metadata.representative_name || ""}
+            nome={visao.metadata.client_name || ""}
             regiao={visao.metadata.region || ""}
             perf={perf}
             visao={visao}
@@ -557,7 +630,7 @@ function VisaoImersao2Page() {
         <div className="space-y-6">
           <PerformanceFamiliasV2 
             perf={perf} 
-            contexto={visao.metadata.representative_name || ""} 
+            contexto={visao.metadata.client_name || ""} 
           />
         </div>
 

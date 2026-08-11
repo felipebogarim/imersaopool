@@ -72,8 +72,8 @@ export type Metadata = {
   /** Modelo de leitura do relatório (ex.: "executive_brief_v1" no schema 3.0). */
   view_model?: string | null;
   representative_id: string | null;
-
   representative_name: string | null;
+  client_name: string | null;
   region: string | null;
   interview_date: string | null;
   report_date: string | null;
@@ -394,6 +394,7 @@ export function emptyVisaoRep2(partial?: Partial<Metadata>): VisaoRep2 {
       schema_version: VISAO_REP_SCHEMA_VERSION,
       representative_id: null,
       representative_name: null,
+      client_name: null,
       region: null,
       interview_date: null,
       report_date: null,
