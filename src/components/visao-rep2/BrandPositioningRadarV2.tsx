@@ -21,7 +21,9 @@ export function BrandPositioningRadarV2({
         status: teia.status, 
         descricaoAcessivel: "", 
         data: [], 
-        baseCount: 0 
+        baseCount: 0,
+        pontos: [] as ReturnType<typeof buildTeiaVM> extends any ? any[] : any[],
+        insight: "",
       };
     }
     
@@ -33,6 +35,8 @@ export function BrandPositioningRadarV2({
         media: p.media,
         fullMark: 100
       })),
+      pontos: teia.pontos,
+      insight: teia.insight,
       baseCount: teia.baseCount,
       descricaoAcessivel: teia.descricaoAcessivel
     };
