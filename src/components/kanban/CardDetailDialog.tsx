@@ -145,6 +145,7 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
               </div>
               <LabelsPicker cardId={card.id} boardId={card.board_id} />
               <MembersPicker cardId={card.id} boardId={card.board_id} workspaceId={board.workspace_id} />
+              <SuggestedActionSection card={card} patch={patch} />
 
               <div className="space-y-2 border-t pt-4">
                 <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={archive}>
