@@ -182,17 +182,7 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
   };
 
   if (!visao.brand_positioning) {
-    visao.brand_positioning = {
-      scoring_version: "brand_positioning_v1",
-      dimensions: {
-        qualidade: { score: 70, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        preco_competitivo: { score: 60, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
-        portfolio: { score: 85, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        disponibilidade: { score: 40, confidence: "baixo", reading: null, perspective_ids: [], evidence_count: null },
-        preferencia: { score: 90, confidence: "alto", reading: null, perspective_ids: [], evidence_count: null },
-        especificacao: { score: 55, confidence: "medio", reading: null, perspective_ids: [], evidence_count: null },
-      },
-    };
+    visao.brand_positioning = buildBrandPositioningFromImmersion2(data);
   }
 
   return visao;
