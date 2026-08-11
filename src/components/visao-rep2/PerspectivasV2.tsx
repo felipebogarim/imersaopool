@@ -257,11 +257,13 @@ export function PerspectivasEntrevistaV2({
   contexto,
   mode = "rep",
   titulo,
+  defaultOpen,
 }: {
   perspectivas: PerspectivaVM[];
   contexto?: string;
   mode?: "rep" | "imersao";
   titulo?: string;
+  defaultOpen?: boolean;
 }) {
   const primeira = perspectivas.find(p => p.temConteudo) ?? perspectivas[0];
   const [ativo, setAtivo] = useState<number>(primeira?.numero ?? 1);
@@ -272,6 +274,7 @@ export function PerspectivasEntrevistaV2({
 
   return (
     <BlocoExpansivel
+      defaultOpen={defaultOpen !== undefined ? defaultOpen : (mode === "rep")}
       titulo={tituloFinal}
       descricao={mode === "imersao" ? "Abaixo serão destacados somente pontos adicionais, diferentes dos já listados anteriormente. Caso não haja conteúdo novo e relevante, nenhum conteúdo será apresentado." : "Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."}
     >

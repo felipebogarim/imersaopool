@@ -631,14 +631,15 @@ function VisaoImersao2Page() {
           />
         </div>
 
-        {/* 3. LEITURA INTEGRADA */}
+        {/* 6. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-        {/* 4. Áreas de Aprofundamento */}
+        {/* 7. ÁREAS DE APROFUNDAMENTO */}
         <PerspectivasEntrevistaV2 
           perspectivas={buildPerspectivasVM(visao)} 
           mode="imersao"
-          titulo="Áreas de Aprofundamento"
+          titulo="ÁREAS DE APROFUNDAMENTO"
+          defaultOpen={false}
         />
 
         {/* Diagnóstico Técnico (Admin Only) */}
