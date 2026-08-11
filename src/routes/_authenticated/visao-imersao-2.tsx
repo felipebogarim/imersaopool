@@ -13,7 +13,7 @@ import {
 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
-import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
+import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
 import {
   extractEditorialChapters,
@@ -341,6 +341,8 @@ function VisaoImersao2Page() {
                 periodoLabel: uploads[0].periodo_label || "1º Semestre 2026",
                 familias,
                 hasClientBi: biFamilias.length > 0,
+                representativeId: repId,
+                razaoSocial: row.razao_social,
               };
 
               // Recalcula o atingimento ponderado usando a regra canônica
@@ -656,14 +658,26 @@ function VisaoImersao2Page() {
           )}
         </div>
         
-        {/* 5. RESULTADO POR FAMÍLIA — sempre ocupa esta posição e lê o BI do cliente. */}
-        <PerformanceFamiliasV2
-          perf={perf}
-          contexto={visao.metadata.client_name || ""}
-          defaultOpen
-          titulo="RESULTADO POR FAMÍLIA"
-          emptyMessage="O BI deste cliente ainda não possui resultado por família vinculado."
-        />
+        {/* 5. RESULTADO POR FAMÍLIA — o mesmo gráfico e a mesma fonte do BI do cliente. */}
+        {commercialData && "representativeId" in commercialData && commercialData.representativeId ? (
+          <ClientFamiliasChart
+            repId={commercialData.representativeId}
+            razaoSocial={commercialData.razaoSocial}
+            companyId={null}
+            filterFams={[]}
+          />
+        ) : (
+          <section className="surface overflow-hidden rounded-xl" aria-labelledby="vi2-resultado-familia">
+            <div className="border-b border-border px-4 py-3">
+              <h3 id="vi2-resultado-familia" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Resultado por família
+              </h3>
+            </div>
+            <p className="p-4 text-sm text-muted-foreground">
+              O BI deste cliente ainda não possui resultado por família vinculado.
+            </p>
+          </section>
+        )}
 
         {/* 6. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
