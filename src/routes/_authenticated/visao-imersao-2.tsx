@@ -24,6 +24,7 @@ import {
   type VisaoImersao2Import,
 } from "@/components/visao-imersao-2/VisaoImersao2Importer";
 import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
+import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerciaisCliente";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
