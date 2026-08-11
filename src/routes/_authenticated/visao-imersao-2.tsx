@@ -600,11 +600,6 @@ function VisaoImersao2Page() {
             categoria={(commercialData && 'categoria' in commercialData) ? commercialData.categoria : null}
           />
 
-
-
-
-
-          
           {commercialData && commercialData.clientsFound > 1 && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -626,6 +621,13 @@ function VisaoImersao2Page() {
           )}
         </div>
         
+        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
+        <div className="space-y-6">
+          <PerformanceFamiliasV2 
+            perf={perf} 
+            contexto={visao.metadata.client_name || ""} 
+          />
+        </div>
         {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
         <div className="space-y-6">
           <PerformanceFamiliasV2 
