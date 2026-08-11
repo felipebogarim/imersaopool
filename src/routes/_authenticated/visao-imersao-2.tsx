@@ -300,6 +300,7 @@ function VisaoImersao2Page() {
 
               const resData = {
                 clientId: row.id,
+                clientsFound: 1,
                 categoria: row.categoria ?? null,
                 geralPct: Number(row.total_pct || 0),
                 atingimentoPonderado: null as number | null,
