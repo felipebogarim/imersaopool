@@ -328,7 +328,9 @@ function subsections(body: string): { title: string; body: string }[] {
 }
 
 function jsonBlock<T>(md: string, name: string): T | null {
-  const m = md.match(new RegExp("```\\s*" + name + "\\s*\\n([\\s\\S]*?)```", "i"));
+  // Aceita ```name, ```json name, ```name json e variações com espaços.
+  const re = new RegExp("```[ \\t]*(?:json[ \\t]+)?" + name + "(?:[ \\t]+json)?[ \\t]*\\r?\\n([\\s\\S]*?)```", "i");
+  const m = md.match(re);
   if (!m) return null;
   try {
     return JSON.parse(m[1]) as T;
@@ -337,20 +339,31 @@ function jsonBlock<T>(md: string, name: string): T | null {
   }
 }
 
-const strList = (v: unknown): string[] =>
-  Array.isArray(v) ? v.map((x) => String(x ?? "").trim()).filter(Boolean) : [];
+/** Normaliza para lista: aceita array, string única ou parágrafos separados. */
+const strList = (v: unknown): string[] => {
+  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (typeof v === "string") {
+    return v
+      .split(/\n{2,}/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
 
 /** Sumário executivo explícito do relatório (ou null quando ausente). */
 export function parseExecutiveSummary(md: string): ExecutiveSummary | null {
-  const fromJson = jsonBlock<Partial<ExecutiveSummary>>(md, "executive_summary");
+  const fromJson = jsonBlock<Record<string, unknown>>(md, "executive_summary");
   if (fromJson) {
+    const j = fromJson as any;
     const s: ExecutiveSummary = {
-      sintese_geral: strList((fromJson as any).sintese_geral ?? (fromJson as any).general_synthesis),
-      sinais_prioritarios: strList((fromJson as any).sinais_prioritarios ?? (fromJson as any).priority_signals),
-      leitura_executiva: strList((fromJson as any).leitura_executiva ?? (fromJson as any).executive_reading),
+      sintese_geral: strList(j.sintese_geral ?? j.synthesis ?? j.general_synthesis ?? j.sintese),
+      sinais_prioritarios: strList(j.sinais_prioritarios ?? j.priority_signals ?? j.signals),
+      leitura_executiva: strList(j.leitura_executiva ?? j.executive_reading ?? j.reading),
     };
     return s.sintese_geral.length || s.sinais_prioritarios.length || s.leitura_executiva.length ? s : null;
   }
+
 
   const body = sectionBody(md, /sum[áa]rio\s+executivo/i);
   if (!body) return null;
