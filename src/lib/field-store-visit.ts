@@ -258,3 +258,138 @@ export function serializeFieldStoreVisit(doc: FieldImmersionDoc): string {
   
   return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
 }
+
+// ————————————————————————— Blocos editoriais opcionais —————————————————————————
+// Retrocompatíveis: relatórios antigos (sem estas seções) continuam válidos.
+// `executive_summary` e `executive_map` são lidos verbatim do relatório importado;
+// o gerador de PDF nunca cria, resume ou classifica estes conteúdos.
+
+export type ExecutiveSummary = {
+  sintese_geral: string[];
+  sinais_prioritarios: string[];
+  leitura_executiva: string[];
+};
+
+export type ExecutiveMap = {
+  strengths: string[];
+  barriers: string[];
+  opportunities: string[];
+  attention_points: string[];
+};
+
+/** Extrai o corpo de uma seção H2 cujo título casa com `re`. */
+function sectionBody(md: string, re: RegExp): string | null {
+  const lines = String(md ?? "").replace(/\r\n?/g, "\n").split("\n");
+  let buf: string[] | null = null;
+  for (const raw of lines) {
+    const h2 = raw.match(/^\s*##\s+(.*)$/);
+    if (h2 && !/^\s*###/.test(raw)) {
+      if (buf) break;
+      if (re.test(h2[1])) buf = [];
+      continue;
+    }
+    if (buf) buf.push(raw);
+  }
+  return buf ? buf.join("\n").trim() || null : null;
+}
+
+function items(body: string): string[] {
+  return body
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => l.replace(/^[-*•]\s+/, "").replace(/^\d+[.)]\s+/, "").trim())
+    .filter(Boolean);
+}
+
+/** Divide o corpo em subseções por heading (###/####/linha em negrito). */
+function subsections(body: string): { title: string; body: string }[] {
+  const out: { title: string; body: string }[] = [];
+  let cur: { title: string; body: string[] } | null = null;
+  for (const raw of body.split(/\n/)) {
+    const h = raw.match(/^\s*#{3,6}\s+(.*)$/) ?? raw.match(/^\s*\*\*(.+?)\*\*:?\s*$/);
+    if (h) {
+      if (cur) out.push({ title: cur.title, body: cur.body.join("\n").trim() });
+      cur = { title: h[1].trim(), body: [] };
+      continue;
+    }
+    if (cur) cur.body.push(raw);
+  }
+  if (cur) out.push({ title: cur.title, body: cur.body.join("\n").trim() });
+  return out;
+}
+
+function jsonBlock<T>(md: string, name: string): T | null {
+  const m = md.match(new RegExp("```\\s*" + name + "\\s*\\n([\\s\\S]*?)```", "i"));
+  if (!m) return null;
+  try {
+    return JSON.parse(m[1]) as T;
+  } catch {
+    return null;
+  }
+}
+
+const strList = (v: unknown): string[] =>
+  Array.isArray(v) ? v.map((x) => String(x ?? "").trim()).filter(Boolean) : [];
+
+/** Sumário executivo explícito do relatório (ou null quando ausente). */
+export function parseExecutiveSummary(md: string): ExecutiveSummary | null {
+  const fromJson = jsonBlock<Partial<ExecutiveSummary>>(md, "executive_summary");
+  if (fromJson) {
+    const s: ExecutiveSummary = {
+      sintese_geral: strList((fromJson as any).sintese_geral ?? (fromJson as any).general_synthesis),
+      sinais_prioritarios: strList((fromJson as any).sinais_prioritarios ?? (fromJson as any).priority_signals),
+      leitura_executiva: strList((fromJson as any).leitura_executiva ?? (fromJson as any).executive_reading),
+    };
+    return s.sintese_geral.length || s.sinais_prioritarios.length || s.leitura_executiva.length ? s : null;
+  }
+
+  const body = sectionBody(md, /sum[áa]rio\s+executivo/i);
+  if (!body) return null;
+  const out: ExecutiveSummary = { sintese_geral: [], sinais_prioritarios: [], leitura_executiva: [] };
+  const subs = subsections(body);
+  if (!subs.length) {
+    out.sintese_geral = items(body);
+  } else {
+    const intro = body.split(/\n\s*(?:#{3,6}|\*\*)/)[0].trim();
+    if (intro) out.sintese_geral.push(...items(intro));
+    for (const s of subs) {
+      const list = items(s.body);
+      if (/s[íi]ntese/i.test(s.title)) out.sintese_geral.push(...list);
+      else if (/sinais?\s+priorit/i.test(s.title)) out.sinais_prioritarios.push(...list);
+      else if (/leitura\s+executiva/i.test(s.title)) out.leitura_executiva.push(...list);
+    }
+  }
+  return out.sintese_geral.length || out.sinais_prioritarios.length || out.leitura_executiva.length ? out : null;
+}
+
+/** Mapa executivo explícito (nunca inferido a partir de outros trechos). */
+export function parseExecutiveMap(md: string): ExecutiveMap | null {
+  const empty: ExecutiveMap = { strengths: [], barriers: [], opportunities: [], attention_points: [] };
+  const fromJson = jsonBlock<Partial<ExecutiveMap>>(md, "executive_map");
+  let map: ExecutiveMap | null = null;
+
+  if (fromJson) {
+    map = {
+      strengths: strList(fromJson.strengths),
+      barriers: strList(fromJson.barriers),
+      opportunities: strList(fromJson.opportunities),
+      attention_points: strList((fromJson as any).attention_points ?? (fromJson as any).attention),
+    };
+  } else {
+    const body = sectionBody(md, /mapa\s+executivo/i);
+    if (!body) return null;
+    map = { ...empty };
+    for (const s of subsections(body)) {
+      const list = items(s.body);
+      if (/for[çc]as?/i.test(s.title)) map.strengths.push(...list);
+      else if (/barreira/i.test(s.title)) map.barriers.push(...list);
+      else if (/oportunidade/i.test(s.title)) map.opportunities.push(...list);
+      else if (/aten[çc][ãa]o/i.test(s.title)) map.attention_points.push(...list);
+    }
+  }
+
+  const total =
+    map.strengths.length + map.barriers.length + map.opportunities.length + map.attention_points.length;
+  return total ? map : null;
+}
