@@ -14,6 +14,7 @@ import { ChapterCapture } from "@/components/ChapterCapture";
 import { SessionNotes } from "@/components/SessionNotes";
 import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
 import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
+import { isFieldImmersionReport } from "@/lib/immersion-final-pdf";
 
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
@@ -90,7 +91,7 @@ function ImmersionDetail() {
   const repUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${imm.representative_token}` : "";
 
   // Relatório final de imersão importado → gerador de PDF dedicado (determinístico)
-  const isFieldImmersion = !!((sessao as any)?.respostas?.__field_store_visit__);
+  const isFieldImmersion = isFieldImmersionReport((sessao as any)?.respostas);
 
   async function exportPdf() {
     if (!sessao?.id) return;

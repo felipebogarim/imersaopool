@@ -12,6 +12,7 @@ import { SessionNotes } from "@/components/SessionNotes";
 import { CLASSIFICACOES, TIPOS_EMPRESA } from "@/lib/interview-questions";
 import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog";
 import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
+import { isFieldImmersionReport } from "@/lib/immersion-final-pdf";
 
 export const Route = createFileRoute("/_authenticated/entrevistas/$id")({
   head: () => ({ meta: [{ title: "Entrevista — PoolFlux" }] }),
@@ -33,7 +34,7 @@ function EntrevistaDetail() {
   });
 
   // Relatório final de Imersão em Campo → gerador determinístico dedicado (nunca o legado)
-  const isFieldImmersion = !!((data as any)?.respostas?.__field_store_visit__);
+  const isFieldImmersion = isFieldImmersionReport((data as any)?.respostas);
 
   async function handleExport() {
     if (!isFieldImmersion) return setExportOpen(true);
