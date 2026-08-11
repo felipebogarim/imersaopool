@@ -267,17 +267,23 @@ export async function loadImmersionPdfData(interviewId: string): Promise<Immersi
   }
   chapters.sort((a, b) => a.ordem - b.ordem);
 
-  const clienteCadastro =
-    clean((clientRes as any)?.data?.razao_social) ?? clean((clientRes as any)?.data?.nome_fantasia);
+  // Nome do cliente: evita truncamento do cadastro escolhendo a fonte mais completa
+  // (nome_fantasia, razão social ou metadado do próprio relatório).
+  const nomeFantasia = clean((clientRes as any)?.data?.nome_fantasia);
+  const razaoSocial = clean((clientRes as any)?.data?.razao_social);
   const clienteMeta = clean(meta["cliente"]);
+  const candidatos = [nomeFantasia, razaoSocial, clienteMeta, clean(interview.entrevistado_nome)].filter(
+    Boolean,
+  ) as string[];
   const cliente =
-    clienteCadastro && clienteMeta && clienteCadastro.toUpperCase().includes(clienteMeta.toUpperCase())
-      ? clienteCadastro
-      : clienteCadastro ?? clienteMeta ?? clean(interview.entrevistado_nome) ?? "—";
+    candidatos.slice().sort((a, b) => b.length - a.length)[0] ?? "—";
 
   return {
     cliente,
-    dataVisita: formatVisitDate(meta["data_visita"] ?? interview.data_entrevista),
+    dataVisita: formatVisitDate(
+      meta["data_visita"] ?? meta["data_da_visita"] ?? meta["data"] ?? interview.data_entrevista,
+    ),
+
     local: clean(meta["local"]),
     representante: clean(meta["representante"]),
     consultor: clean(meta["consultor"]) ?? clean(meta["responsavel_relatorio"]),
