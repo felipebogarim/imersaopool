@@ -240,7 +240,7 @@ function VisaoImersao2Page() {
 
 
   // Busca dados comerciais reais do cliente resolvido
-  const clientName = visao?.metadata?.representative_name;
+  const clientName = visao?.metadata?.client_name;
   const { data: commercialData } = useQuery({
     queryKey: ["vi2-commercial", clientName],
     enabled: !!clientName,
@@ -473,7 +473,7 @@ function VisaoImersao2Page() {
     <div className="pb-20">
       {previewDialog}
       <PageHeader 
-        title={`Visão Imersão 2 · ${visao.metadata.representative_name}`} 
+        title={`Visão Imersão 2 · ${visao.metadata.client_name}`} 
         subtitle={`Arquivo: ${avulso.arquivo}${dirty ? " · alterações não salvas" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
