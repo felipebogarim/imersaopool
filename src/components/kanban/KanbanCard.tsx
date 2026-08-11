@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2 } from "lucide-react";
+import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2, Sparkles } from "lucide-react";
 import type { KCard } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
+import { getSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
 import { cn } from "@/lib/utils";
 
 interface Props {
