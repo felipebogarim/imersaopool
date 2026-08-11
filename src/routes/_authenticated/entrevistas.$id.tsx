@@ -77,7 +77,7 @@ function EntrevistaDetail() {
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="interview" entityId={id} />
-            <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Button variant="outline" onClick={handleExport}>
               <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
