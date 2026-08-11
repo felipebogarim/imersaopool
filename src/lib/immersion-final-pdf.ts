@@ -550,7 +550,7 @@ export function buildImmersionPdfDoc(data: ImmersionPdfData): jsPDF {
   );
 
   // ————— Página 2 · Sumário executivo —————
-  const sumario = buildSumario(data.chapters);
+  const sumario = buildSumario(data.chapters, data.executiveSummary);
   newPage();
 
   const sectionTitle = (eyebrow: string, title: string) => {
@@ -618,7 +618,7 @@ export function buildImmersionPdfDoc(data: ImmersionPdfData): jsPDF {
   cardList("Leitura executiva", sumario.leituraExecutiva, false);
 
   // ————— Página 3 · Mapa executivo + índice —————
-  const mapa = buildMapaExecutivo(data.chapters);
+  const mapa = buildMapaExecutivo(data.executiveMap);
   if (mapa.length) {
     newPage();
     sectionTitle("Mapa", "Mapa executivo da imersão");
