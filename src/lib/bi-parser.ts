@@ -320,6 +320,10 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
 
   const geralNum = list.reduce((s, c) => s + (c.atingimento ?? 0) * (c.meta > 0 ? c.meta : 1), 0);
   const geralDen = list.reduce((s, c) => s + (c.atingimento != null ? (c.meta > 0 ? c.meta : 1) : 0), 0);
+  
+  // Atingimento geral ponderado canônico (Matriz Financeira)
+  // Nota: BI de representante usa média ponderada por meta financeira real da aba Matriz.
+  const geral = geralDen > 0 ? geralNum / geralDen : null;
 
   const maiorCat = [...categorias].sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0] ?? null;
   const maiorFarol = [...farol].sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0] ?? null;

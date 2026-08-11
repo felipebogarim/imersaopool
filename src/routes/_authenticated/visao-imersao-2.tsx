@@ -277,31 +277,48 @@ function VisaoImersao2Page() {
         .maybeSingle();
 
       const biData = bi?.respostas?.__client_bi__;
-      if (!biData) return { clientId, bi: null, clientsFound: clients.length };
+      if (!biData) return null;
 
-      return {
+      const resData = {
         clientId,
         clientsFound: clients.length,
         categoria: client.categoria ?? null,
         geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
-        periodoLabel: biData.periodo || "1º Semestre 2026",
+        atingimentoPonderado: null as number | null,
+        periodoLabel: (biData.periodo as string) || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
-          familia: f.familia,
+          familia: f.familia as string,
           pct: Number(f.atingimento || 0),
           vendas: Number(f.vendas || 0),
           meta: Number(f.meta || 0),
-          status: f.status
+          status: f.status as string
         }))
       };
+
+      // Recalcula o atingimento ponderado usando a regra canônica centralizada
+      if (resData.categoria && resData.familias) {
+        const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
+        resData.atingimentoPonderado = calculateWeightedAtainment(
+          resData.categoria, 
+          resData.familias.map((f: any) => ({
+            familia: f.familia,
+            atingimento: f.pct
+          }))
+        );
+      }
+
+      return resData;
     }
   });
 
   const perf = useMemo((): PerfResumo | null => {
-    if (!commercialData) return null;
+    if (!commercialData || !('geralPct' in commercialData) || commercialData === null) return null;
+    const valorExibicao = (commercialData as any).atingimentoPonderado ?? (commercialData as any).geralPct;
+    
     return {
-      geralPct: commercialData.geralPct ?? 42.9,
-      periodoLabel: commercialData.periodoLabel ?? "1º Semestre 2026",
-      familias: commercialData.familias ?? [],
+      geralPct: valorExibicao,
+      periodoLabel: commercialData.periodoLabel,
+      familias: commercialData.familias,
       mediaGrupoPct: 0,
       diffPp: 0,
       posicao: 0,
@@ -506,7 +523,7 @@ function VisaoImersao2Page() {
             perf={perf}
             visao={visao}
             mode="imersao"
-            categoria={commercialData?.categoria ?? null}
+            categoria={(commercialData && 'categoria' in commercialData) ? commercialData.categoria : null}
           />
 
 
