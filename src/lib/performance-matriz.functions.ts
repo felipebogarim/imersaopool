@@ -72,8 +72,8 @@ export const getClientAtainment = createServerFn({ method: "GET" })
     periodo: z.string().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
-    // @ts-ignore - bypass property 'supabase' does not exist on type 'never'
-    const sb = context.supabase;
+    // @ts-ignore - TanStack Start passes context with supabase
+    const sb = (context as any)?.supabase;
     if (!sb) throw new Error("Supabase context is not available");
 
     const { data: client } = await sb
