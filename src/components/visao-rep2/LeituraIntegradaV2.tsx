@@ -20,6 +20,7 @@ import {
   type LeituraSignal,
   type PerspectiveEvidence,
 } from "@/lib/visao-rep2-leitura";
+import { autoriaCitacao, separarCitacoes } from "@/lib/visao-imersao-2-citacoes";
 import { ChevronDown, Quote } from "lucide-react";
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
@@ -217,35 +218,29 @@ function QuoteCard({
   const qObj = allQuotes?.find(q => q.id === quote);
   
   if (qObj) {
-    const isReported = qObj.quote_type === "reported";
-    const authorInfo = qObj.reported_by
-      ? `${qObj.original_author} · fala relatada por ${qObj.reported_by}`
-      : `${qObj.original_author}${qObj.original_author_role ? ` (${qObj.original_author_role})` : ""}`;
-      
+    const { autor, relato } = autoriaCitacao(qObj);
+
     return (
       <figure className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
         <Quote className="mb-2 h-4 w-4 text-primary/60" aria-hidden />
         <blockquote className="break-words text-sm italic leading-relaxed text-foreground/90">
-          <MarkdownView markdown={qObj.text.startsWith('“') ? qObj.text : `“${qObj.text}”`} />
+          <MarkdownView markdown={String(qObj.text ?? "").startsWith('“') ? qObj.text : `“${qObj.text}”`} />
         </blockquote>
         <figcaption className="mt-3 flex flex-col gap-1 border-t pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span className="font-semibold text-foreground/70">{authorInfo}</span>
-          {isReported && <span className="text-[9px] text-primary/70">Fala Relatada</span>}
+          <span className="font-semibold text-foreground/70">{autor}</span>
+          {relato ? <span className="text-[9px] text-primary/70">{relato}</span> : null}
         </figcaption>
       </figure>
     );
   }
 
-  // Fallback para strings simples (Legado/V1)
+  // Fallback para strings simples (Legado/V1) — sem autoria presumida.
   return (
     <figure className="rounded-lg border-l-2 border-primary/50 bg-muted/40 p-3">
       <Quote className="mb-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
       <blockquote className="break-words text-sm italic leading-relaxed">
         <MarkdownView markdown={quote.startsWith('“') ? quote : `“${quote}”`} />
       </blockquote>
-      <figcaption className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider">
-        Fala do representante
-      </figcaption>
     </figure>
   );
 }
@@ -256,8 +251,18 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
   
   const allQuotes = (visao as any).source_control?.structured_data?.data?.quotes || 
                     (visao as any).legacy?.quotes || [];
-                    
-  const visibleQuotes = showAllQuotes ? ev.quotes : ev.quotes.slice(0, 3);
+
+  // 1 citação = 1 card: separa textos que trazem duas ou mais citações concatenadas.
+  const quotes = useMemo(
+    () =>
+      (ev.quotes ?? []).flatMap(q =>
+        allQuotes?.some((o: any) => o.id === q) ? [q] : separarCitacoes(String(q ?? "")),
+      ),
+    [ev.quotes, allQuotes],
+  );
+
+  const visibleQuotes = showAllQuotes ? quotes : quotes.slice(0, 3);
+  
   
   return (
     <div className="space-y-4">
@@ -295,11 +300,11 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
         ) : null}
       </div>
 
-      {ev.quotes.length ? (
+      {quotes.length ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-              Evidências ({ev.quotes.length})
+              Evidências ({quotes.length})
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-1">
@@ -308,14 +313,14 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
             ))}
           </div>
           
-          {ev.quotes.length > 3 && !showAllQuotes && (
+          {quotes.length > 3 && !showAllQuotes && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => setShowAllQuotes(true)}
               className="h-8 w-full text-xs text-muted-foreground hover:text-foreground"
             >
-              Ver mais evidências (+{ev.quotes.length - 3})
+              Ver mais evidências (+{quotes.length - 3})
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           )}
