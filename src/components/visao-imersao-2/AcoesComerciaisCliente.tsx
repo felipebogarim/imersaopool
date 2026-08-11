@@ -34,7 +34,8 @@ type CardRow = {
   metadata: any;
   kanban_lists: { name: string } | null;
   kanban_card_labels: { kanban_labels: Label | null }[] | null;
-  kanban_card_members: { profiles: Member | null }[] | null;
+  kanban_card_members: { user_id: string }[] | null;
+  members?: Member[];
 };
 
 function fmt(d: string | null | undefined) {
@@ -78,10 +79,12 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
     queryKey: ["acoes-cliente", clientId, clientName],
     enabled: Boolean(clientId || clientName),
     queryFn: async () => {
+      // kanban_card_members.user_id aponta para auth.users, então o embed de profiles
+      // não é possível via PostgREST — buscamos os responsáveis em uma segunda etapa.
       const select = `id, title, board_id, list_id, created_at, due_date, completed_at, archived_at, priority, metadata,
           kanban_lists(name),
           kanban_card_labels(kanban_labels(name, color)),
-          kanban_card_members(profiles(full_name, email))`;
+          kanban_card_members(user_id)`;
 
       const byId = new Map<string, CardRow>();
 
@@ -106,11 +109,31 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
         for (const r of (data ?? []) as unknown as CardRow[]) byId.set(r.id, r);
       }
 
-      return Array.from(byId.values()).sort(
+      const rows = Array.from(byId.values());
+
+      const userIds = Array.from(
+        new Set(rows.flatMap((r) => (r.kanban_card_members ?? []).map((m) => m.user_id))),
+      ).filter(Boolean);
+
+      if (userIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", userIds);
+        const map = new Map((profs ?? []).map((p: any) => [p.id, p as Member]));
+        for (const r of rows) {
+          r.members = (r.kanban_card_members ?? [])
+            .map((m) => map.get(m.user_id))
+            .filter(Boolean) as Member[];
+        }
+      }
+
+      return rows.sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     },
   });
+
 
 
   return (
@@ -134,7 +157,7 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
             const st = statusOf(c);
             const dh = dueHint(c);
             const labels = (c.kanban_card_labels ?? []).map((l) => l.kanban_labels).filter(Boolean) as Label[];
-            const members = (c.kanban_card_members ?? []).map((m) => m.profiles).filter(Boolean) as Member[];
+            const members = c.members ?? [];
             const priority = c.priority;
             return (
               <li key={c.id} className="flex items-start gap-3 px-4 py-3">
