@@ -254,7 +254,8 @@ function VisaoImersao2Page() {
       const { data: clients } = await supabase
         .from("clients")
         .select("id, nome_fantasia, razao_social, categoria")
-        .or(`nome_fantasia.ilike.%${searchName}%,razao_social.ilike.%${searchName}%`);
+        .or(`nome_fantasia.ilike.%${searchName}%,razao_social.ilike.%${searchName}%`)
+        .limit(10);
       
       if (!clients?.length) return null;
       
