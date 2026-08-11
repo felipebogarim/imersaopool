@@ -504,6 +504,7 @@ function VisaoImersao2Page() {
             perf={perf}
             visao={visao}
             mode="imersao"
+            categoria={commercialData?.categoria ?? null}
           />
 
 
