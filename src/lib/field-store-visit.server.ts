@@ -1,6 +1,7 @@
 // Aplicação do modelo canônico field_immersion_v2 nos capítulos da sessão.
 // Nenhuma IA envolvida: o texto é copiado verbatim.
 import type { parseFieldStoreVisit as ParseFn, FieldImmersionChapter } from "@/lib/field-store-visit";
+import { parseExecutiveMap, parseExecutiveSummary } from "@/lib/field-store-visit";
 
 function norm(s: string) {
   return String(s ?? "")
