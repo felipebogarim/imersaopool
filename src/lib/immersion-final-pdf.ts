@@ -315,6 +315,8 @@ export async function loadImmersionPdfData(interviewId: string): Promise<Immersi
     consultor: clean(meta["consultor"]) ?? clean(meta["responsavel_relatorio"]),
     participantes: clean(meta["participantes"]),
     chapters,
+    executiveSummary: (fsv?.executive_summary ?? null) as ExecutiveSummary | null,
+    executiveMap: (fsv?.executive_map ?? null) as ExecutiveMap | null,
   };
 }
 
@@ -332,8 +334,24 @@ const SECTION_MATCH = {
   proximos: /pr[óo]ximos\s+passos/i,
 };
 
-/** Extrai o sumário executivo do próprio conteúdo salvo (capítulo de síntese). */
-export function buildSumario(chapters: ImmersionChapter[]): SumarioExecutivo {
+/**
+ * Sumário executivo: prioriza o bloco `executive_summary` vindo pronto do
+ * relatório importado. O fallback (leitura do capítulo final) existe apenas para
+ * relatórios antigos, importados antes do bloco estruturado — em nenhum caso o
+ * gerador cria, reinterpreta ou resume conteúdo.
+ */
+export function buildSumario(
+  chapters: ImmersionChapter[],
+  explicit?: ExecutiveSummary | null,
+): SumarioExecutivo {
+  if (explicit) {
+    return {
+      sinteseGeral: explicit.sintese_geral ?? [],
+      sinaisPrioritarios: explicit.sinais_prioritarios ?? [],
+      leituraExecutiva: explicit.leitura_executiva ?? [],
+    };
+  }
+
   const last = chapters[chapters.length - 1];
   const empty = { sinteseGeral: [], sinaisPrioritarios: [], leituraExecutiva: [] };
   if (!last) return empty;
@@ -368,45 +386,33 @@ export function buildSumario(chapters: ImmersionChapter[]): SumarioExecutivo {
 
   return {
     sinteseGeral,
-    sinaisPrioritarios: sinais.slice(0, 8),
-    leituraExecutiva: leitura.slice(0, 8),
+    sinaisPrioritarios: sinais,
+    leituraExecutiva: leitura,
   };
 }
 
-// ————————————————————————— Mapa executivo (organização visual) —————————————————————————
+// ————————————————————————— Mapa executivo —————————————————————————
 
 export type MapaExecutivo = { titulo: string; itens: string[] }[];
 
-const BUCKETS: { titulo: string; re: RegExp }[] = [
-  { titulo: "Forças atuais", re: /\b(melhor|melhora|ganho|for[çc]a|avan[çc]|competitiv|segurança|confian|reconhec)/i },
-  { titulo: "Barreiras", re: /\b(barreira|dificuldade|complexidade|resist|h[áa]bito|obst[áa]cul|desafio|falta)/i },
-  { titulo: "Oportunidades", re: /\b(oportunidade|potencial|espa[çc]o|crescimento|ampliar|explorar|expans)/i },
-  { titulo: "Pontos de atenção", re: /\b(risco|aten[çc][ãa]o|amea[çc]a|cuidado|press[ãa]o|perda|queda|conflito)/i },
-];
-
-/** Organiza visualmente elementos já existentes no relatório (sem criar conteúdo). */
-export function buildMapaExecutivo(chapters: ImmersionChapter[]): MapaExecutivo {
-  const candidates: string[] = [];
-  for (const c of chapters) {
-    for (const b of parseBlocks(c.markdown)) {
-      if (b.type === "ul" || b.type === "ol") candidates.push(...b.items);
-    }
-  }
-  const used = new Set<string>();
-  return BUCKETS.map(({ titulo, re }) => {
-    const itens: string[] = [];
-    for (const raw of candidates) {
-      const item = raw.trim();
-      if (!item || item.length < 12 || item.length > 220) continue;
-      if (used.has(item)) continue;
-      if (!re.test(item)) continue;
-      used.add(item);
-      itens.push(item);
-      if (itens.length === 4) break;
-    }
-    return { titulo, itens };
-  }).filter((b) => b.itens.length > 0);
+/**
+ * Mapa executivo: usa EXCLUSIVAMENTE o bloco `executive_map` estruturado no
+ * relatório. Sem ele, nenhum quadrante é exibido — o gerador nunca classifica
+ * frases nem infere conteúdo a partir dos capítulos.
+ */
+export function buildMapaExecutivo(explicit?: ExecutiveMap | null): MapaExecutivo {
+  if (!explicit) return [];
+  const buckets: [string, string[]][] = [
+    ["Forças atuais", explicit.strengths ?? []],
+    ["Barreiras", explicit.barriers ?? []],
+    ["Oportunidades", explicit.opportunities ?? []],
+    ["Pontos de atenção", explicit.attention_points ?? []],
+  ];
+  return buckets
+    .map(([titulo, itens]) => ({ titulo, itens: itens.map((i) => String(i).trim()).filter(Boolean) }))
+    .filter((b) => b.itens.length > 0);
 }
+
 
 // ————————————————————————— Render —————————————————————————
 
