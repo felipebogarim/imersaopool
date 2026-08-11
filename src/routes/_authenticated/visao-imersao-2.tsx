@@ -621,29 +621,25 @@ function VisaoImersao2Page() {
           )}
         </div>
         
-        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
+        {/* 5. RESULTADO POR FAMÍLIA (Gráfico do BI do cliente) */}
         <div className="space-y-6">
           <PerformanceFamiliasV2 
             perf={perf} 
             contexto={visao.metadata.client_name || ""} 
-          />
-        </div>
-        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
-        <div className="space-y-6">
-          <PerformanceFamiliasV2 
-            perf={perf} 
-            contexto={visao.metadata.client_name || ""} 
+            defaultOpen={true}
+            titulo="RESULTADO POR FAMÍLIA"
           />
         </div>
 
-        {/* 3. LEITURA INTEGRADA */}
+        {/* 6. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-        {/* 4. Áreas de Aprofundamento */}
+        {/* 7. ÁREAS DE APROFUNDAMENTO */}
         <PerspectivasEntrevistaV2 
           perspectivas={buildPerspectivasVM(visao)} 
           mode="imersao"
-          titulo="Áreas de Aprofundamento"
+          titulo="ÁREAS DE APROFUNDAMENTO"
+          defaultOpen={false}
         />
 
         {/* Diagnóstico Técnico (Admin Only) */}

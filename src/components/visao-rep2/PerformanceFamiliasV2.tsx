@@ -20,7 +20,17 @@ const FAM_COLORS = [
   "var(--fam-8)",
 ];
 
-export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | null; contexto?: string }) {
+export function PerformanceFamiliasV2({ 
+  perf, 
+  contexto,
+  defaultOpen = false,
+  titulo: tituloProp
+}: { 
+  perf: PerfResumo | null; 
+  contexto?: string;
+  defaultOpen?: boolean;
+  titulo?: string;
+}) {
   const [modo, setModo] = useState<Modo>("participacao");
 
   /**
@@ -48,8 +58,8 @@ export function PerformanceFamiliasV2({ perf, contexto }: { perf: PerfResumo | n
 
   return (
     <BlocoExpansivel
-      defaultOpen={false}
-      titulo="Performance por família de produtos"
+      defaultOpen={defaultOpen}
+      titulo={tituloProp || "Performance por família de produtos"}
       descricao="Leitura relativa da carteira do representante no período ativo."
       contexto={contexto}
       acessorio={
