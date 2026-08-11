@@ -61,7 +61,8 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
   const visao = emptyVisaoRep2({
     schema_version: "3.0",
     view_model: "visao_imersao_2_executiva",
-    representative_name: data.client.name,
+    representative_name: data.client.representative || null,
+    client_name: data.client.name,
     region: data.client.location,
     interview_date: data.client.visit_date,
     report_date: new Date().toISOString().split('T')[0],
