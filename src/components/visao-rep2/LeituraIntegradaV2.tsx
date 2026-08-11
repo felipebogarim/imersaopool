@@ -20,6 +20,7 @@ import {
   type LeituraSignal,
   type PerspectiveEvidence,
 } from "@/lib/visao-rep2-leitura";
+import { autoriaCitacao, separarCitacoes } from "@/lib/visao-imersao-2-citacoes";
 import { ChevronDown, Quote } from "lucide-react";
 
 const has = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
