@@ -19,6 +19,7 @@
 // ============================================================================
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
+import type { ExecutiveMap, ExecutiveSummary } from "@/lib/field-store-visit";
 
 /** Regra permanente de roteamento do relatório final de imersão em campo. */
 export function isFieldImmersionReport(respostas: unknown): boolean {
