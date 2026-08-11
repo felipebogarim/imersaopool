@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import { MarkdownView } from "@/components/MarkdownView";
+import { catBadge } from "@/lib/performance-farol";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
