@@ -41,18 +41,18 @@ export const NAV_TREE: NavGroup[] = [
     key: "imersoes",
     label: "Imersões",
     children: [
+      { key: "analises.visao-rep-2", label: "Visão Reps", to: "/visao-rep-2" },
+      { key: "analises.visao-imersao-2", label: "Visão Imersões em Campo", to: "/visao-imersao-2" },
       { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
-      { key: "analises.visao-rep-2", label: "Visão Rep", to: "/visao-rep-2" },
-      { key: "analises.visao-imersao-2", label: "Visão Imersão", to: "/visao-imersao-2" },
     ],
   },
   {
     key: "precos",
     label: "Preços",
     children: [
-      { key: "price.comparativos", label: "Comparativos", to: "/price/comparativos" },
       { key: "price.mapa", label: "Mapa de Preços", to: "/precos/mapa" },
-      { key: "price.simulador", label: "Simulador", to: "/precos/simulador" },
+      { key: "price.simulador", label: "Simulador, R$ + Características", to: "/precos/simulador" },
+      { key: "price.comparativos", label: "Comparativos", to: "/price/comparativos" },
     ],
   },
   {

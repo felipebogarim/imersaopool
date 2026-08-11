@@ -1,24 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { 
-  TrendingUp, 
-  FileSearch, 
-  Tag, 
-  LayoutGrid, 
-  Users, 
-  LineChart, 
-  Briefcase, 
-  Wrench,
-  ArrowRight,
-  Package,
-  ListChecks,
-  Sparkles,
-  BookOpen
-} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { TrendingUp, FileSearch, Tag, Map, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "Home — PoolFlux" }] }),
@@ -39,159 +23,142 @@ function HomeComponent() {
   });
 
   return (
-    <div className="min-h-screen pb-12">
+    <div className="min-h-screen bg-[#F8FAFC]">
       <PageHeader
-        title="Painel Executivo"
-        subtitle={`Visão geral estratégica — ${profile?.companyName ?? "Imersão Comercial"}`}
+        title="Home"
+        subtitle={\`Arquitetura Gerencial — \${profile?.companyName ?? "Imersão Comercial"}\`}
       />
 
-      <div className="p-4 sm:p-8 space-y-8 max-w-7xl mx-auto">
-        {/* Seção 1: PERFORMANCE */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-semibold">
-            <TrendingUp className="h-5 w-5" />
-            <h3>Performance Comercial</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/representantes/performance" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Painel Geral de Performance</CardTitle>
-                  <CardDescription>Atingimento de metas e rankings de participação por família.</CardDescription>
-                </CardHeader>
+      <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-16">
+        {/* NÍVEL 1: ÁREAS DE ANÁLISE */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+          {/* PERFORMANCE */}
+          <div className="space-y-8 flex flex-col items-center">
+            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">PERFORMANCE</h2>
+            </div>
+            <div className="flex flex-col items-center space-y-4 w-full">
+              <Link 
+                to="/representantes/performance" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                Performance Reps
               </Link>
-            </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/performance/bi-clientes" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Visão por Família</CardTitle>
-                  <CardDescription>Matriz detalhada de gaps e oportunidades em clientes da carteira.</CardDescription>
-                </CardHeader>
+              <Link 
+                to="/performance/bi-clientes" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                BI Clientes
               </Link>
-            </Card>
+            </div>
           </div>
-        </section>
 
-        {/* Seção 2: IMERSÕES */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-semibold">
-            <FileSearch className="h-5 w-5" />
-            <h3>Ecossistema de Imersões</h3>
+          {/* IMERSÕES */}
+          <div className="space-y-8 flex flex-col items-center">
+            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">IMERSÕES</h2>
+            </div>
+            <div className="flex flex-col items-center space-y-4 w-full">
+              <Link 
+                to="/visao-rep-2" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                Visão Reps
+              </Link>
+              <Link 
+                to="/visao-imersao-2" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1 text-center"
+              >
+                Visão Imersões em Campo
+              </Link>
+              <Link 
+                to="/sintese/tipos" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                Visões Consolidadas
+              </Link>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/sintese/tipos" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Visões Consolidadas</CardTitle>
-                  <CardDescription>Leitura integrada de sinais de mercado.</CardDescription>
-                </CardHeader>
-              </Link>
-            </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/visao-rep-2" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Teia de Posicionamento</CardTitle>
-                  <CardDescription>Radar comparativo de força de marca e serviço.</CardDescription>
-                </CardHeader>
-              </Link>
-            </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/visao-imersao-2" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Visão Imersão</CardTitle>
-                  <CardDescription>Aprofundamento qualitativo de cada visita técnica.</CardDescription>
-                </CardHeader>
-              </Link>
-            </Card>
-          </div>
-        </section>
 
-        {/* Seção 3: ESTRATÉGIA & PRICE */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-semibold">
-            <Tag className="h-5 w-5" />
-            <h3>Estratégia & Price</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer group">
-              <Link to="/price/comparativos" className="block w-full h-full">
-                <CardHeader>
-                  <CardTitle className="text-base">Price Comparativos</CardTitle>
-                  <CardDescription>Score técnico e posicionamento versus concorrência.</CardDescription>
-                </CardHeader>
+          {/* PREÇOS */}
+          <div className="space-y-8 flex flex-col items-center">
+            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">PREÇOS</h2>
+            </div>
+            <div className="flex flex-col items-center space-y-4 w-full">
+              <Link 
+                to="/precos/mapa" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                Mapa de Preços
               </Link>
-            </Card>
-            <Card className="opacity-60 grayscale cursor-not-allowed text-card-foreground">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-base">Mercado & Concorrência</CardTitle>
-                  <Badge variant="secondary" className="text-[10px]">Em breve</Badge>
-                </div>
-                <CardDescription>Mapas de share e monitoramento de competidores.</CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="opacity-60 grayscale cursor-not-allowed text-card-foreground">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-base">Plano de Voo 2026</CardTitle>
-                  <Badge variant="secondary" className="text-[10px]">Em breve</Badge>
-                </div>
-                <CardDescription>Projeção de crescimento e expansão geográfica.</CardDescription>
-              </CardHeader>
-            </Card>
+              <Link 
+                to="/precos/simulador" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1 text-center"
+              >
+                Simulador, R$ + Características
+              </Link>
+              <Link 
+                to="/price/comparativos" 
+                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
+              >
+                Comparativos
+              </Link>
+            </div>
           </div>
-        </section>
 
-        {/* Seção 4: GESTÃO & FERRAMENTAS */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-semibold">
-            <LayoutGrid className="h-5 w-5" />
-            <h3>Central de Ações e Gestão</h3>
+          {/* Conectores Visuais Nível 1 -> 2 (Desktop) */}
+          <div className="hidden md:block absolute top-[100%] left-0 right-0 h-16 pointer-events-none -mt-4">
+             <svg className="w-full h-full" preserveAspectRatio="none">
+                <path d="M 16.6% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+                <path d="M 50% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+                <path d="M 83.3% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+             </svg>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link to="/tarefas" className="flex items-center justify-between p-4 surface rounded-xl border border-border hover:border-primary transition-all">
-              <div className="flex items-center gap-3">
-                <ListChecks className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Gestão de Tarefas</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-            <Link to="/admin/gerador-performance" className="flex items-center justify-between p-4 surface rounded-xl border border-border hover:border-primary transition-all">
-              <div className="flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Gerador Performance</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-            <Link to="/manuais" className="flex items-center justify-between p-4 surface rounded-xl border border-border hover:border-primary transition-all">
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Manuais</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
-            <Link to="/clientes" className="flex items-center justify-between p-4 surface rounded-xl border border-border hover:border-primary transition-all">
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Bases e Cadastros</span>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            </Link>
+        </div>
+
+        {/* NÍVEL 2: CONVERGÊNCIA */}
+        <div className="flex justify-center pt-8">
+          <Link 
+            to="/mapa-acoes"
+            className="w-full md:w-3/5 lg:w-1/2 bg-slate-900 text-white border border-slate-800 rounded-xl p-8 text-center shadow-lg hover:bg-slate-800 transition-all group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="text-[10px] font-bold tracking-[0.3em] text-slate-500 uppercase block mb-2">Decisão</span>
+            <h2 className="text-2xl font-bold tracking-widest flex items-center justify-center gap-3">
+              MAPA DE AÇÕES
+              <ArrowRight className="h-6 w-6 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </h2>
+          </Link>
+        </div>
+
+        {/* NÍVEL 3: DESDOBRAMENTO */}
+        <div className="relative">
+          {/* Conector Nível 2 -> 3 (Desktop) */}
+          <div className="hidden md:block absolute -top-12 left-0 right-0 h-12 pointer-events-none">
+            <svg className="w-full h-full" preserveAspectRatio="none">
+              <path d="M 50% 0 L 50% 50% M 12.5% 50% L 87.5% 50% M 12.5% 50% L 12.5% 100% M 37.5% 50% L 37.5% 100% M 62.5% 50% L 62.5% 100% M 87.5% 50% L 87.5% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
+            </svg>
           </div>
-        </section>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
+            {[
+              { label: "COMERCIAL", icon: TrendingUp },
+              { label: "PRODUTO", icon: Tag },
+              { label: "MARKETING", icon: FileSearch },
+              { label: "GOVERNANÇA", icon: Map }
+            ].map((item) => (
+              <div key={item.label} className="bg-white border border-slate-200 rounded-lg p-8 text-center shadow-sm flex flex-col items-center gap-4 hover:border-slate-300 transition-colors">
+                <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">Ação</span>
+                <h3 className="text-xs font-bold text-slate-800 tracking-[0.15em]">{item.label}</h3>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
-}
-
-function Badge({ children, variant, className }: { children: React.ReactNode, variant?: string, className?: string }) {
-  return (
-    <span className={cn(
-      "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-      variant === "secondary" ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground",
-      className
-    )}>
-      {children}
-    </span>
-  )
 }
