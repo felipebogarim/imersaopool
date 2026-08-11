@@ -617,11 +617,12 @@ export function buildImmersionPdfDoc(data: ImmersionPdfData): jsPDF {
   cardList("Sinais prioritários", sumario.sinaisPrioritarios, true);
   cardList("Leitura executiva", sumario.leituraExecutiva, false);
 
-  // ————— Página 3 · Mapa executivo + índice —————
+  // ————— Página 3 · Mapa executivo (quando estruturado) + índice —————
   const mapa = buildMapaExecutivo(data.executiveMap);
+  newPage();
   if (mapa.length) {
-    newPage();
     sectionTitle("Mapa", "Mapa executivo da imersão");
+
 
     const colGap = 16;
     const colW = (maxW - colGap) / 2;
