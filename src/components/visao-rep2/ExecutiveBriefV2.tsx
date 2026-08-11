@@ -82,11 +82,11 @@ export function BriefHeaderV2({
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Atingimento ponderado geral
           </p>
-          {categoria ? (
-            <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border", catBadge(categoria))}>
+          {categoria && (
+            <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border shrink-0", catBadge(categoria))}>
               {categoria}
             </span>
-          ) : null}
+          )}
         </div>
         <div className="mt-1 flex items-baseline justify-between gap-2">
           <GaugeAtingimento valor={atingimentoPct ?? 42.9} label="Atingimento ponderado geral" />
