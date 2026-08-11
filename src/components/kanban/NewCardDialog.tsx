@@ -27,19 +27,12 @@ export function NewCardDialog({ open, onOpenChange, onCreate }: Props) {
   const [saving, setSaving] = useState(false);
 
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["kanban-clients"],
+    queryKey: ["kanban-clients-all"],
     enabled: open && hasClient,
     staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, nome_fantasia, razao_social")
-        .order("nome_fantasia")
-        .limit(2000);
-      if (error) throw error;
-      return (data ?? []) as { id: string; nome_fantasia: string | null; razao_social: string | null }[];
-    },
+    queryFn: fetchAllKanbanClients,
   });
+
 
   const term = search.trim().toLowerCase();
   const filtered = term
