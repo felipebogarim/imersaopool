@@ -576,6 +576,7 @@ export function ExecutiveBriefV2({
         marcas={visao?.representative_context.represented_brands || brief.contexto.marcas}
         atingimentoPct={perf?.geralPct ?? visao?.performance_connection?.geral_pct ?? null}
         periodo={perf?.periodoLabel ?? null}
+        categoria={categoria}
         mode={mode}
       />
       {brief.sintese ? (
