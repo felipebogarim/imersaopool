@@ -545,6 +545,7 @@ function VisaoImersaoPage() {
                     marcas={visao.representative_context.represented_brands}
                     atingimentoPct={perfData?.geralPct ?? visao.performance_connection?.geral_pct ?? null}
                     periodo={perfData?.periodoLabel ?? null}
+                    categoria={perfData?.categoria ?? null}
                     mode="imersao"
                   />
 
