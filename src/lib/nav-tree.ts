@@ -23,6 +23,7 @@ export type NavGroup = {
 };
 
 export const NAV_TREE: NavGroup[] = [
+  { key: "home", label: "Home", to: "/home", children: [] },
   { key: "bi", label: "Guia de Uso Gerencial", to: "/dashboard", children: [] },
   {
     key: "inputs",

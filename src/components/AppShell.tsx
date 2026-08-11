@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const ICONS: Record<string, typeof BarChart3> = {
+  home: Inbox,
   bi: BarChart3,
   inputs: Inbox,
   "inputs.imersoes": FileSearch,
