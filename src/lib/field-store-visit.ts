@@ -397,10 +397,15 @@ export function parseExecutiveMap(md: string): ExecutiveMap | null {
 
   if (fromJson) {
     map = {
-      strengths: strList(fromJson.strengths),
-      barriers: strList(fromJson.barriers),
-      opportunities: strList(fromJson.opportunities),
-      attention_points: strList((fromJson as any).attention_points ?? (fromJson as any).attention),
+      strengths: strList((fromJson as any).strengths ?? (fromJson as any).forcas),
+      barriers: strList((fromJson as any).barriers ?? (fromJson as any).barreiras),
+      opportunities: strList((fromJson as any).opportunities ?? (fromJson as any).oportunidades),
+      attention_points: strList(
+        (fromJson as any).attention_points ??
+          (fromJson as any).points_of_attention ??
+          (fromJson as any).attention ??
+          (fromJson as any).pontos_de_atencao,
+      ),
     };
   } else {
     const body = sectionBody(md, /mapa\s+executivo/i);
