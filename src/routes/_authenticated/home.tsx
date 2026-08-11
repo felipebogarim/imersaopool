@@ -11,10 +11,14 @@ import {
   Briefcase, 
   Wrench,
   ArrowRight,
-  Package
+  Package,
+  ListChecks,
+  Sparkles,
+  BookOpen
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "Home — PoolFlux" }] }),
@@ -49,16 +53,16 @@ function HomeComponent() {
             <h3>Performance Comercial</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/representantes/performance">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/representantes/performance" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Painel Geral de Performance</CardTitle>
                   <CardDescription>Atingimento de metas e rankings de participação por família.</CardDescription>
                 </CardHeader>
               </Link>
             </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/performance/bi-clientes">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/performance/bi-clientes" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Visão por Família</CardTitle>
                   <CardDescription>Matriz detalhada de gaps e oportunidades em clientes da carteira.</CardDescription>
@@ -75,24 +79,24 @@ function HomeComponent() {
             <h3>Ecossistema de Imersões</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/sintese/tipos">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/sintese/tipos" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Visões Consolidadas</CardTitle>
                   <CardDescription>Leitura integrada de sinais de mercado.</CardDescription>
                 </CardHeader>
               </Link>
             </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/visao-rep-2">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/visao-rep-2" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Teia de Posicionamento</CardTitle>
                   <CardDescription>Radar comparativo de força de marca e serviço.</CardDescription>
                 </CardHeader>
               </Link>
             </Card>
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/visao-imersao-2">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/visao-imersao-2" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Visão Imersão</CardTitle>
                   <CardDescription>Aprofundamento qualitativo de cada visita técnica.</CardDescription>
@@ -109,8 +113,8 @@ function HomeComponent() {
             <h3>Estratégia & Price</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="hover:border-primary transition-colors cursor-pointer" asChild>
-              <Link to="/price/comparativos">
+            <Card className="hover:border-primary transition-colors cursor-pointer group">
+              <Link to="/price/comparativos" className="block w-full h-full">
                 <CardHeader>
                   <CardTitle className="text-base">Price Comparativos</CardTitle>
                   <CardDescription>Score técnico e posicionamento versus concorrência.</CardDescription>

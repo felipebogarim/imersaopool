@@ -15,7 +15,7 @@ function BIClientesPage() {
         subtitle="Análise consolidada por cliente e categoria"
       />
       <div className="p-4 sm:p-8">
-        <BISection />
+        <BISection repId="" repName="Consolidado" />
       </div>
     </div>
   );
