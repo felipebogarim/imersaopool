@@ -373,7 +373,7 @@ function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSign
               </button>
             ))}
           </div>
-          {atual ? <PerspectiveDetail ev={atual} signal={signal} /> : null}
+          {atual ? <PerspectiveDetail ev={atual} signal={signal} visao={visao} /> : null}
         </>
       )}
     </PanelShell>
