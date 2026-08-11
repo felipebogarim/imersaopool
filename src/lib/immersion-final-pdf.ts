@@ -224,6 +224,9 @@ export type ImmersionPdfData = {
   consultor: string | null;
   participantes: string | null;
   chapters: ImmersionChapter[];
+  /** Campos opcionais do schema (retrocompatíveis). */
+  executiveSummary?: ExecutiveSummary | null;
+  executiveMap?: ExecutiveMap | null;
 };
 
 const clean = (s?: string | null) => {
