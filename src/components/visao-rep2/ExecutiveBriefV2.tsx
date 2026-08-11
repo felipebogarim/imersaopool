@@ -449,6 +449,7 @@ export function ExecutiveBriefV2({
   mode = "rep",
   visao,
   categoria,
+  skipHeader = false,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -463,6 +464,7 @@ export function ExecutiveBriefV2({
   mode?: "rep" | "imersao";
   visao?: VisaoRep2;
   categoria?: string | null;
+  skipHeader?: boolean;
 }) {
   const perspectivas = useMemo(() => {
     if (perspectivasProp) return perspectivasProp;
@@ -477,17 +479,19 @@ export function ExecutiveBriefV2({
 
   return (
     <div className="space-y-6">
-      <BriefHeaderV2
-        nome={nome}
-        regiao={regiao}
-        dataEntrevista={dataEntrevista}
-        dataRelatorio={dataRelatorio}
-        marcas={visao?.representative_context.represented_brands || brief.contexto.marcas}
-        atingimentoPct={perf?.geralPct ?? visao?.performance_connection?.geral_pct ?? null}
-        periodo={perf?.periodoLabel ?? null}
-        categoria={categoria}
-        mode={mode}
-      />
+      {!skipHeader && (
+        <BriefHeaderV2
+          nome={nome}
+          regiao={regiao}
+          dataEntrevista={dataEntrevista}
+          dataRelatorio={dataRelatorio}
+          marcas={visao?.representative_context.represented_brands || brief.contexto.marcas}
+          atingimentoPct={perf?.geralPct ?? visao?.performance_connection?.geral_pct ?? null}
+          periodo={perf?.periodoLabel ?? null}
+          categoria={categoria}
+          mode={mode}
+        />
+      )}
       {brief.sintese ? (
         <SintesePresidencialV2
           texto={brief.sintese}
