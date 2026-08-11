@@ -327,6 +327,40 @@ function subsections(body: string): { title: string; body: string }[] {
   return out;
 }
 
+/** Escapa quebras de linha reais dentro de strings JSON (multi-parágrafo). */
+function escapeRawNewlinesInStrings(src: string): string {
+  let out = "";
+  let inStr = false;
+  let esc = false;
+  for (const ch of src) {
+    if (esc) {
+      out += ch;
+      esc = false;
+      continue;
+    }
+    if (ch === "\\") {
+      out += ch;
+      esc = true;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = !inStr;
+      out += ch;
+      continue;
+    }
+    if (inStr && (ch === "\n" || ch === "\r")) {
+      if (ch === "\n") out += "\\n";
+      continue;
+    }
+    if (inStr && ch === "\t") {
+      out += "\\t";
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
 function jsonBlock<T>(md: string, name: string): T | null {
   // Aceita ```name, ```json name, ```name json e variações com espaços.
   const re = new RegExp("```[ \\t]*(?:json[ \\t]+)?" + name + "(?:[ \\t]+json)?[ \\t]*\\r?\\n([\\s\\S]*?)```", "i");
@@ -335,9 +369,15 @@ function jsonBlock<T>(md: string, name: string): T | null {
   try {
     return JSON.parse(m[1]) as T;
   } catch {
-    return null;
+    // Relatórios reais quebram linhas dentro das strings (parágrafos). Recupera.
+    try {
+      return JSON.parse(escapeRawNewlinesInStrings(m[1])) as T;
+    } catch {
+      return null;
+    }
   }
 }
+
 
 /** Normaliza para lista: aceita array, string única ou parágrafos separados. */
 const strList = (v: unknown): string[] => {
