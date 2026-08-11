@@ -20,10 +20,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
+  Sparkles, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
+import { getSuggested, withSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
+import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import { logActivity } from "@/lib/kanban-activity";
 import { cn } from "@/lib/utils";
 
