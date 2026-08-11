@@ -502,7 +502,7 @@ export function ExecutiveBriefV2({
       <PerformanceFamiliasV2 perf={perf} contexto={contexto} />
       {leitura ?? null}
       {mode === "rep" && <ContextPortfolioV2 brief={brief} mode={mode} />}
-      {temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
+      {mode === "rep" && temPerspectivas ? <PerspectivasEntrevistaV2 perspectivas={perspectivas} contexto={contexto} mode={mode} /> : null}
       <ConclusoesCentraisV2 conclusoes={brief.conclusoes} />
       {brief.decisoes.length || brief.validacoes.length ? <AgendaExecutivaV2 brief={brief} /> : null}
     </div>
