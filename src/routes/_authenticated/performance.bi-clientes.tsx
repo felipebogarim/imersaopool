@@ -183,7 +183,8 @@ function BIClientesPage() {
                         {row.total_pct ? `${(Number(row.total_pct) * 100).toFixed(1)}%` : "0%"}
                       </td>
                       {columns.map((col) => {
-                        const status = row.metas_status?.[col] as FarolStatus;
+                        const metasStatus = row.metas_status as Record<string, FarolStatus>;
+                        const status = metasStatus?.[col];
                         const hasMeta = row.familias.some(f => f.toUpperCase().includes(col.toUpperCase()) || col.toUpperCase().includes(f.toUpperCase()));
                         return (
                           <td 
