@@ -539,6 +539,7 @@ export function ExecutiveBriefV2({
   contexto,
   mode = "rep",
   visao,
+  categoria,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -552,6 +553,7 @@ export function ExecutiveBriefV2({
   contexto?: string;
   mode?: "rep" | "imersao";
   visao?: VisaoRep2;
+  categoria?: string | null;
 }) {
   const perspectivas = useMemo(() => {
     if (perspectivasProp) return perspectivasProp;
