@@ -246,7 +246,8 @@ function VisaoImersao2Page() {
     enabled: !!clientName,
     queryFn: async () => {
       // Normalização canônica para busca
-      const searchName = clientName!
+      const rawClientName = clientName!.trim();
+      const searchName = rawClientName
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim()
@@ -256,13 +257,11 @@ function VisaoImersao2Page() {
       
       // 1. TENTATIVA PRIORITÁRIA: Buscar na lista de performance do representante
       if (repName) {
-        const normRep = repName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-        
         // Busca o representante pelo nome
         const { data: reps } = await supabase
           .from("representatives")
           .select("id")
-          .or(`nome.ilike.%${normRep}%,representacao.ilike.%${normRep}%`)
+          .or(`nome.ilike.%${repName.trim()}%,representacao.ilike.%${repName.trim()}%`)
           .limit(1);
           
         if (reps?.length) {
@@ -285,27 +284,63 @@ function VisaoImersao2Page() {
               .from("rep_performance_rows")
               .select("id, razao_social, categoria, total_pct, familia_pct")
               .eq("upload_id", uploadId)
-              .ilike("razao_social", `%${searchName}%`)
-              .limit(1);
+              .limit(2000);
               
             if (perfRows?.length) {
-              const row = perfRows[0];
-              const familias = Object.entries(row.familia_pct || {}).map(([familia, ating]) => ({
-                familia,
-                pct: Number(ating || 0),
-                vendas: 0, 
-                meta: 0,
-                status: "normal"
-              }));
+              const normalizeName = (value: unknown) => String(value ?? "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+              const row = perfRows.find(item => normalizeName(item.razao_social) === searchName)
+                ?? perfRows.find(item => normalizeName(item.razao_social).includes(searchName) || searchName.includes(normalizeName(item.razao_social)));
+
+              if (!row) return null;
+
+              // Fonte canônica do gráfico: o mesmo upload exibido no BI do cliente.
+              const { data: clientBiUpload } = await (supabase as any)
+                .from("client_bi_uploads")
+                .select("data")
+                .eq("representative_id", repId)
+                .eq("razao_social", row.razao_social)
+                .eq("kind", "bi")
+                .is("substituida_em", null)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              const biPayload = clientBiUpload?.data as { geral?: number | null; categoria?: string | null; familias?: Array<{ familia?: string; atingimento?: number | null; farol?: string | null }> } | null;
+              const biFamilias = Array.isArray(biPayload?.familias) ? biPayload.familias : [];
+              const familias = biFamilias.length > 0
+                ? biFamilias.map(item => ({
+                    familia: String(item.familia ?? ""),
+                    pct: Math.abs(Number(item.atingimento ?? 0)) <= 1.5
+                      ? Number(item.atingimento ?? 0) * 100
+                      : Number(item.atingimento ?? 0),
+                    vendas: 0,
+                    meta: 0,
+                    status: item.farol ?? "normal",
+                  }))
+                : Object.entries(row.familia_pct || {}).map(([familia, ating]) => ({
+                    familia,
+                    pct: Math.abs(Number(ating ?? 0)) <= 1.5 ? Number(ating ?? 0) * 100 : Number(ating ?? 0),
+                    vendas: 0,
+                    meta: 0,
+                    status: "normal",
+                  }));
 
               const resData = {
                 clientId: row.id,
                 clientsFound: 1,
-                categoria: row.categoria ?? null,
-                geralPct: Number(row.total_pct || 0),
+                categoria: row.categoria ?? biPayload?.categoria ?? null,
+                geralPct: biPayload?.geral != null
+                  ? (Math.abs(Number(biPayload.geral)) <= 1.5 ? Number(biPayload.geral) * 100 : Number(biPayload.geral))
+                  : (Math.abs(Number(row.total_pct ?? 0)) <= 1.5 ? Number(row.total_pct ?? 0) * 100 : Number(row.total_pct ?? 0)),
                 atingimentoPonderado: null as number | null,
                 periodoLabel: uploads[0].periodo_label || "1º Semestre 2026",
-                familias
+                familias,
+                hasClientBi: biFamilias.length > 0,
               };
 
               // Recalcula o atingimento ponderado usando a regra canônica
@@ -330,7 +365,7 @@ function VisaoImersao2Page() {
       const { data: clients } = await supabase
         .from("clients")
         .select("id, nome_fantasia, razao_social, categoria")
-        .or(`nome_fantasia.ilike.%${searchName}%,razao_social.ilike.%${searchName}%`)
+        .or(`nome_fantasia.ilike.%${rawClientName}%,razao_social.ilike.%${rawClientName}%`)
         .limit(10);
       
       if (!clients?.length) return null;
@@ -358,7 +393,7 @@ function VisaoImersao2Page() {
         clientId,
         clientsFound: clients.length,
         categoria: client.categoria ?? null,
-        geralPct: biData?.geral != null ? Number(biData.geral) : 42.9,
+        geralPct: biData?.geral != null ? Number(biData.geral) : null,
         atingimentoPonderado: null as number | null,
         periodoLabel: (biData?.periodo as string) || "1º Semestre 2026",
         familias: (biData?.familias || []).map((f: any) => ({
@@ -621,15 +656,14 @@ function VisaoImersao2Page() {
           )}
         </div>
         
-        {/* 5. RESULTADO POR FAMÍLIA (Gráfico do BI do cliente) */}
-        <div className="space-y-6">
-          <PerformanceFamiliasV2 
-            perf={perf} 
-            contexto={visao.metadata.client_name || ""} 
-            defaultOpen={true}
-            titulo="RESULTADO POR FAMÍLIA"
-          />
-        </div>
+        {/* 5. RESULTADO POR FAMÍLIA — sempre ocupa esta posição e lê o BI do cliente. */}
+        <PerformanceFamiliasV2
+          perf={perf}
+          contexto={visao.metadata.client_name || ""}
+          defaultOpen
+          titulo="RESULTADO POR FAMÍLIA"
+          emptyMessage="O BI deste cliente ainda não possui resultado por família vinculado."
+        />
 
         {/* 6. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />

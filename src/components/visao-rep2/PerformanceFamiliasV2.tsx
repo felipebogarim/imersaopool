@@ -24,14 +24,17 @@ export function PerformanceFamiliasV2({
   perf, 
   contexto,
   defaultOpen = false,
-  titulo: tituloProp
+  titulo: tituloProp,
+  emptyMessage = "Nenhum resultado por família disponível para este período.",
 }: { 
   perf: PerfResumo | null; 
   contexto?: string;
   defaultOpen?: boolean;
   titulo?: string;
+  emptyMessage?: string;
 }) {
-  const [modo, setModo] = useState<Modo>("participacao");
+  const isResultadoCliente = tituloProp?.toUpperCase() === "RESULTADO POR FAMÍLIA";
+  const [modo, setModo] = useState<Modo>(isResultadoCliente ? "atingimento" : "participacao");
 
   /**
    * Participação estimada (denominador único): índice ponderado da família ÷
@@ -48,8 +51,6 @@ export function PerformanceFamiliasV2({
     }));
   }, [perf]);
 
-  if (!perf || !itens.length) return null;
-
   const valorDe = (i: (typeof itens)[number]) => (modo === "participacao" ? i.participacao : i.atingimento);
   const max =
     modo === "participacao"
@@ -63,12 +64,18 @@ export function PerformanceFamiliasV2({
       descricao="Leitura relativa da carteira do representante no período ativo."
       contexto={contexto}
       acessorio={
-        <span className="hidden flex-wrap gap-1.5 text-xs text-muted-foreground sm:flex">
-          <span className="rounded-md border px-2 py-0.5">{perf.periodoLabel}</span>
-          <span className="rounded-md border px-2 py-0.5">Geral {fmtPct(perf.geralPct)}</span>
-        </span>
+          perf ? (
+            <span className="hidden flex-wrap gap-1.5 text-xs text-muted-foreground sm:flex">
+              <span className="rounded-md border px-2 py-0.5">{perf.periodoLabel}</span>
+              <span className="rounded-md border px-2 py-0.5">Geral {fmtPct(perf.geralPct)}</span>
+            </span>
+          ) : null
       }
     >
+      {!perf || !itens.length ? (
+        <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+      ) : (
+        <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Visualizar</span>
         <div className="inline-flex rounded-full border bg-muted/40 p-0.5" role="group" aria-label="Modo de visualização">
@@ -138,6 +145,8 @@ export function PerformanceFamiliasV2({
           Famílias mais pressionadas: {perf.criticas.map(f => f.familia).join(", ")}.
         </p>
       ) : null}
+        </>
+      )}
     </BlocoExpansivel>
   );
 }
