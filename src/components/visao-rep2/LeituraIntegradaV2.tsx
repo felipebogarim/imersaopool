@@ -345,10 +345,11 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
 }
 
 
-function PerspectiveEvidencePanelV2({ signal, className }: { signal: LeituraSignal; className?: string }) {
+function PerspectiveEvidencePanelV2({ signal, visao, className }: { signal: LeituraSignal; visao: VisaoRep2; className?: string }) {
   const [aba, setAba] = useState(0);
   useEffect(() => setAba(0), [signal.id]);
   const atual = signal.perspectives[aba] ?? signal.perspectives[0] ?? null;
+
 
   return (
     <PanelShell title="Onde isso apareceu" subtitle="Produtos, marcas, clientes, casos e falas." className={className}>
