@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/representantes/performance
     rep: typeof search.rep === "string" ? search.rep : undefined,
     bi: search.bi === "1" || search.bi === true ? true : undefined,
   }),
-  component: PerformancePage,
+  component: PerformancePageContent,
 });
 
 type ViewMode = "meta" | "realizado" | "percentual" | "completo";
@@ -75,7 +75,7 @@ type Row = {
   total_pct_status: FarolStatus | null;
 };
 
-function PerformancePage() {
+export function PerformancePageContent() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const search = Route.useSearch();
