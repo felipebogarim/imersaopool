@@ -30,6 +30,7 @@ export function BriefHeaderV2({
   marcas = [],
   atingimentoPct,
   periodo,
+  categoria,
   mode = "rep",
 }: {
   nome: string;
@@ -39,6 +40,7 @@ export function BriefHeaderV2({
   marcas?: string[];
   atingimentoPct?: number | null;
   periodo?: string | null;
+  categoria?: string | null;
   mode?: "rep" | "imersao";
 }) {
   const label = mode === "imersao" ? "Visão Imersão" : "Visão Rep";
@@ -76,14 +78,19 @@ export function BriefHeaderV2({
       </div>
 
       <div className="min-w-0 rounded-xl border bg-muted/30 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Atingimento ponderado geral
           </p>
-          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
+          {categoria ? (
+            <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border", catBadge(categoria))}>
+              {categoria}
+            </span>
+          ) : null}
         </div>
-        <div className="mt-1">
+        <div className="mt-1 flex items-baseline justify-between gap-2">
           <GaugeAtingimento valor={atingimentoPct ?? 42.9} label="Atingimento ponderado geral" />
+          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
         </div>
       </div>
     </header>
