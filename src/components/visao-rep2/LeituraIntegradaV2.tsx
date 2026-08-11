@@ -571,7 +571,7 @@ export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: Visa
               ))}
             </div>
             {mobileTab === "sintese" ? <ExecutiveSignalPanelV2 signal={signal} /> : null}
-            {mobileTab === "evidencias" ? <PerspectiveEvidencePanelV2 signal={signal} /> : null}
+            {mobileTab === "evidencias" ? <PerspectiveEvidencePanelV2 signal={signal} visao={visao} /> : null}
             {mobileTab === "grupo" ? (
               <GroupComparisonPanelV2 signal={signal} comparableSourceCount={leitura.comparableSourceCount} />
             ) : null}
@@ -579,7 +579,7 @@ export function LeituraIntegradaV2({ visao, defaultOpen = false }: { visao: Visa
         ) : (
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-12">
             <ExecutiveSignalPanelV2 signal={signal} className="md:col-span-4 xl:col-span-3" />
-            <PerspectiveEvidencePanelV2 signal={signal} className="md:col-span-8 xl:col-span-6" />
+            <PerspectiveEvidencePanelV2 signal={signal} visao={visao} className="md:col-span-8 xl:col-span-6" />
             <GroupComparisonPanelV2
               signal={signal}
               comparableSourceCount={leitura.comparableSourceCount}
