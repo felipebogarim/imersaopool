@@ -60,25 +60,33 @@ function parseMeta(md: string): FieldImmersionMeta {
   const lines = block.split(/\r?\n/);
   for (const raw of lines) {
     const line = raw.trim();
-    // Regex mais flexível para capturar "Chave: Valor" mesmo com espaços ou hífens no início
-    const kv = line.match(/^[-*]?\s*([^:]+)\s*:\s*(.*)$/i);
+    if (!line || line.startsWith("```") || line.startsWith("#")) continue;
+    // Somente pares "chave: valor" reais: chave curta, sem pontuação de frase.
+    const kv = line.match(/^[-*]?\s*([A-Za-zÀ-ÿ0-9_ ()/]{2,40}?)\s*:\s*(.*)$/);
     if (!kv) continue;
-    
-    let key = kv[1].trim().toLowerCase();
+
+    const rawKey = kv[1].trim();
+    // Chave de metadado tem no máximo 4 palavras e não termina em pontuação.
+    if (rawKey.split(/\s+/).length > 4) continue;
+    if (/[.,;!?]$/.test(rawKey)) continue;
+
+    let key = rawKey.toLowerCase();
     const value = kv[2].trim();
-    
-    // Mapeamento de termos para chaves canônicas
-    if (key.includes("cliente")) key = "cliente";
-    if (key.includes("local") || key.includes("unidade") || key.includes("cidade")) key = "local";
-    if (key.includes("data")) key = "data_visita";
-    if (key.includes("representante")) key = "representante";
-    if (key.includes("consultor")) key = "consultor";
-    if (key.includes("título") || key.includes("assunto")) key = "titulo";
-    
-    if (value) meta[key] = value;
+
+    // Mapeamento de termos para chaves canônicas (match exato/prefixo, não substring solta)
+    if (/^cliente\b/.test(key)) key = "cliente";
+    else if (/^(local|unidade|cidade)\b/.test(key)) key = "local";
+    else if (/^data\b/.test(key)) key = "data_visita";
+    else if (/^representante\b/.test(key)) key = "representante";
+    else if (/^consultor\b/.test(key)) key = "consultor";
+    else if (/^(t[íi]tulo|assunto)\b/.test(key)) key = "titulo";
+
+    // Primeira ocorrência vence: evita que prosa posterior sobrescreva metadados.
+    if (value && meta[key] === undefined) meta[key] = value;
   }
   return meta;
 }
+
 
 /** 
  * Regex para capturar capítulos.
