@@ -13,6 +13,7 @@ import {
 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
+import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
 import {
   extractEditorialChapters,
@@ -550,6 +551,14 @@ function VisaoImersao2Page() {
               </AlertDescription>
             </Alert>
           )}
+        </div>
+        
+        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
+        <div className="space-y-6">
+          <PerformanceFamiliasV2 
+            perf={perf} 
+            contexto={visao.metadata.representative_name || ""} 
+          />
         </div>
 
         {/* 3. LEITURA INTEGRADA */}
