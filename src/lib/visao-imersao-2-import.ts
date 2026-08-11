@@ -4,6 +4,7 @@
 // V2 -> view-model V2.
 import { Immersion2DataSchema, validateSignalV2, type Immersion2Data } from "./visao-imersao-2-parser";
 import { emptyVisaoRep2, type VisaoRep2, type PrioritySignal } from "./visao-rep2-schema";
+import { buildBrandPositioningFromImmersion2 } from "./visao-imersao-2-teia-scores";
 
 export const V2_INCOMPATIBLE_MESSAGE = "Arquivo incompatível com Visão Imersão 2.";
 
