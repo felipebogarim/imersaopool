@@ -250,7 +250,7 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
       position: lastPos + 1000, created_by: u.user!.id,
       metadata: client ? { client_id: client.id, client_name: client.name } : {},
     }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null }, data.id);
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
