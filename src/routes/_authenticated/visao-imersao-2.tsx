@@ -257,7 +257,7 @@ function VisaoImersao2Page() {
 
       const { data: clients } = await supabase
         .from("clients")
-        .select("id, nome_fantasia, razao_social")
+        .select("id, nome_fantasia, razao_social, categoria")
         .or(`nome_fantasia.ilike.%${searchName}%,razao_social.ilike.%${searchName}%`);
       
       if (!clients?.length) return null;
@@ -280,6 +280,7 @@ function VisaoImersao2Page() {
       return {
         clientId,
         clientsFound: clients.length,
+        categoria: clients[0].categoria ?? null,
         geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
         periodoLabel: biData.periodo || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
@@ -503,6 +504,7 @@ function VisaoImersao2Page() {
             perf={perf}
             visao={visao}
             mode="imersao"
+            categoria={commercialData?.categoria ?? null}
           />
 
 

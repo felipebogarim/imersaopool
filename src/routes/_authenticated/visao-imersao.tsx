@@ -172,6 +172,7 @@ function VisaoImersaoPage() {
       if (!bi) return null;
       
       return {
+        categoria: bi.categoria ?? null,
         geralPct: bi.geral != null ? Number(bi.geral) : 42.9,
         periodoLabel: bi.periodo || "Período Ativo",
         familias: (bi.familias || []).map((f: any) => ({
@@ -544,6 +545,7 @@ function VisaoImersaoPage() {
                     marcas={visao.representative_context.represented_brands}
                     atingimentoPct={perfData?.geralPct ?? visao.performance_connection?.geral_pct ?? null}
                     periodo={perfData?.periodoLabel ?? null}
+                    categoria={perfData?.categoria ?? null}
                     mode="imersao"
                   />
 

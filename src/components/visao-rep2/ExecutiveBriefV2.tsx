@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import { MarkdownView } from "@/components/MarkdownView";
+import { catBadge } from "@/lib/performance-farol";
 import type { BriefEntidades, BriefingExecutivo, BriefTema } from "./briefing-fabio";
 import { ConclusoesCentraisV2, PerspectivasEntrevistaV2, briefPerspectivasToVM } from "./PerspectivasV2";
 import { PerformanceFamiliasV2 } from "./PerformanceFamiliasV2";
@@ -29,6 +30,7 @@ export function BriefHeaderV2({
   marcas = [],
   atingimentoPct,
   periodo,
+  categoria,
   mode = "rep",
 }: {
   nome: string;
@@ -38,6 +40,7 @@ export function BriefHeaderV2({
   marcas?: string[];
   atingimentoPct?: number | null;
   periodo?: string | null;
+  categoria?: string | null;
   mode?: "rep" | "imersao";
 }) {
   const label = mode === "imersao" ? "Visão Imersão" : "Visão Rep";
@@ -75,14 +78,19 @@ export function BriefHeaderV2({
       </div>
 
       <div className="min-w-0 rounded-xl border bg-muted/30 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Atingimento ponderado geral
           </p>
-          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
+          {categoria ? (
+            <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border", catBadge(categoria))}>
+              {categoria}
+            </span>
+          ) : null}
         </div>
-        <div className="mt-1">
+        <div className="mt-1 flex items-baseline justify-between gap-2">
           <GaugeAtingimento valor={atingimentoPct ?? 42.9} label="Atingimento ponderado geral" />
+          {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
         </div>
       </div>
     </header>
@@ -531,6 +539,7 @@ export function ExecutiveBriefV2({
   contexto,
   mode = "rep",
   visao,
+  categoria,
 }: {
   brief: BriefingExecutivo;
   nome: string;
@@ -544,6 +553,7 @@ export function ExecutiveBriefV2({
   contexto?: string;
   mode?: "rep" | "imersao";
   visao?: VisaoRep2;
+  categoria?: string | null;
 }) {
   const perspectivas = useMemo(() => {
     if (perspectivasProp) return perspectivasProp;
@@ -566,6 +576,7 @@ export function ExecutiveBriefV2({
         marcas={visao?.representative_context.represented_brands || brief.contexto.marcas}
         atingimentoPct={perf?.geralPct ?? visao?.performance_connection?.geral_pct ?? null}
         periodo={perf?.periodoLabel ?? null}
+        categoria={categoria}
         mode={mode}
       />
       {brief.sintese ? (
