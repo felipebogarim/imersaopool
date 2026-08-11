@@ -115,6 +115,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "admin.criterios-seguranca", label: "Critérios de Segurança", to: "/admin/criterios-seguranca" },
       { key: "admin.backup", label: "Backup", to: "/admin/backup" },
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
+      { key: "admin.agentes", label: "Agentes", to: "/agentes" },
       { key: "admin.permissoes", label: "Permissões", to: "/admin/permissoes" },
     ],
   },

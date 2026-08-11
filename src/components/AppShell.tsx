@@ -69,6 +69,7 @@ const ICONS: Record<string, typeof BarChart3> = {
   "admin.criterios-seguranca": ShieldCheck,
   "admin.backup": HardDriveDownload,
   "admin.usuarios": UserCog,
+  "admin.agentes": Users,
   "admin.permissoes": ShieldCheck,
 };
 
