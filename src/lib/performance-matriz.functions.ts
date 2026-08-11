@@ -16,7 +16,6 @@ export function calculateWeightedAtainment(
   if (!categoria || !familias?.length) return null;
 
   // Matrizes Financeiras Canônicas (Metas de referência por categoria)
-  // Ref: Memória bi-participacao-familia e instruções do usuário.
   const MATRIZES: Record<string, Record<string, number>> = {
     "Gold": {
       "DECOR NEWLINE": 2500,
@@ -28,7 +27,6 @@ export function calculateWeightedAtainment(
       "FITAS E FONTES": 2000,
     },
     "Black": {
-      // Valores Black (estimados/referência se não fornecidos, mas mantendo a proporção)
       "DECOR NEWLINE": 5000,
       "DECOR STUDIO": 6000,
       "SISTEMAS E MÓDULOS": 5000,
@@ -48,7 +46,7 @@ export function calculateWeightedAtainment(
     }
   };
 
-  const metas = MATRIZES[categoria] || MATRIZES["Gold"]; // fallback para Gold se categoria for desconhecida
+  const metas = MATRIZES[categoria] || MATRIZES["Gold"];
   
   let totalMeta = 0;
   let totalRealizadoPonderado = 0;
@@ -56,15 +54,13 @@ export function calculateWeightedAtainment(
   for (const f of CANONICAL_FAMILIES) {
     const meta = metas[f] || 0;
     const item = familias.find(x => x.familia === f);
-    const atingimento = item?.atingimento ?? 0; // Se não tem dado, assume 0%
+    const atingimento = item?.atingimento ?? 0;
 
     totalMeta += meta;
     totalRealizadoPonderado += meta * (atingimento / 100);
   }
 
   if (totalMeta === 0) return null;
-  
-  // Retorna em percentual (ex: 78.8)
   return (totalRealizadoPonderado / totalMeta) * 100;
 }
 
@@ -74,11 +70,11 @@ export const getClientAtainment = createServerFn({ method: "GET" })
     periodo: z.string().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
-    if (!context || !context.supabase) {
-      throw new Error("Supabase context is not available");
-    }
+    // @ts-ignore - bypass property 'supabase' does not exist on type 'never'
+    const sb = context.supabase;
+    if (!sb) throw new Error("Supabase context is not available");
 
-    const { data: client } = await context.supabase
+    const { data: client } = await sb
       .from("clients")
       .select("categoria, razao_social")
       .eq("id", data.clientId)
@@ -86,7 +82,7 @@ export const getClientAtainment = createServerFn({ method: "GET" })
 
     if (!client) return null;
 
-    const { data: bi } = await (context.supabase as any)
+    const { data: bi } = await sb
       .from("client_bi")
       .select("respostas")
       .eq("client_id", data.clientId)
