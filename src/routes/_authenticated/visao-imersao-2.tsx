@@ -567,7 +567,7 @@ function VisaoImersao2Page() {
       />
 
       <div className="space-y-8 p-4 sm:p-8">
-        {/* 1. Cabeçalho e 2. Briefing Executivo */}
+        {/* 1, 2, 3, 4. Header (Briefing, Marcas, Atingimento) + Síntese */}
         <div className="space-y-6">
           <ExecutiveBriefV2
             brief={{
