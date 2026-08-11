@@ -135,6 +135,15 @@ export async function exportInterviewPdf(
     .maybeSingle();
   if (!interview) throw new Error("Documento não encontrado");
 
+  // Guarda anti-regressão: relatório final de Imersão em Campo (field_store_visit)
+  // NUNCA usa o gerador legado — sempre o gerador determinístico dedicado,
+  // independentemente da tela/rota que iniciou a exportação.
+  if ((interview.respostas as any)?.__field_store_visit__) {
+    const { exportImmersionFinalPdf } = await import("./immersion-final-pdf");
+    return await exportImmersionFinalPdf(interviewId);
+  }
+
+
   const [capsRes, respRes, notesRes, roteiroRes] = await Promise.all([
     interview.roteiro_id
       ? supabase

@@ -32,6 +32,20 @@ function EntrevistaDetail() {
     queryFn: async () => (await supabase.from("interviews").select("*").eq("id", id).maybeSingle()).data,
   });
 
+  // Relatório final de Imersão em Campo → gerador determinístico dedicado (nunca o legado)
+  const isFieldImmersion = !!((data as any)?.respostas?.__field_store_visit__);
+
+  async function handleExport() {
+    if (!isFieldImmersion) return setExportOpen(true);
+    try {
+      const { exportImmersionFinalPdf } = await import("@/lib/immersion-final-pdf");
+      const r = await exportImmersionFinalPdf(id);
+      toast.success(`PDF gerado · ${r.chapters} capítulos · ${r.pages} páginas`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar PDF");
+    }
+  }
+
   async function remove() {
     if (!confirm("Excluir esta entrevista?")) return;
     const { error } = await supabase.from("interviews").delete().eq("id", id);
@@ -39,6 +53,7 @@ function EntrevistaDetail() {
     toast.success("Excluída");
     navigate({ to: "/entrevistas" });
   }
+
 
   if (isLoading) return <div className="p-4 sm:p-8 text-muted-foreground">Carregando...</div>;
   if (!data) return <div className="p-4 sm:p-8">Não encontrada.</div>;
@@ -62,7 +77,7 @@ function EntrevistaDetail() {
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="interview" entityId={id} />
-            <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Button variant="outline" onClick={handleExport}>
               <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
             </Button>
             <Button variant="outline" onClick={() => navigate({ to: "/entrevistas" })}><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button>
