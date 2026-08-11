@@ -83,7 +83,7 @@ export function BriefHeaderV2({
             Atingimento ponderado geral
           </p>
           {categoria && (
-            <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] border shrink-0", catBadge(categoria))}>
+            <span className={cn("inline-flex px-4 py-1 rounded-full text-3xl border shrink-0", catBadge(categoria))}>
               {categoria}
             </span>
           )}
