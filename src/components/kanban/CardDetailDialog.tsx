@@ -183,7 +183,99 @@ function ListSelector({ card, lists }: { card: KCard; lists: KList[] }) {
 }
 
 
+// ============ CLIENTE VINCULADO ============
+function ClientLinkSection({ card, patch }: { card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
+  const meta = (card.metadata ?? {}) as any;
+  const currentId: string | null = typeof meta.client_id === "string" ? meta.client_id : null;
+  const currentName: string | null = typeof meta.client_name === "string" ? meta.client_name : null;
+  const [open, setOpen] = useState(false);
+  const [term, setTerm] = useState("");
+
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ["kanban-clients"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, razao_social, nome_fantasia")
+        .order("razao_social")
+        .limit(1000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const q = term.trim().toLowerCase();
+  const filtered = q
+    ? clients.filter((c: any) =>
+        (c.razao_social ?? "").toLowerCase().includes(q) ||
+        (c.nome_fantasia ?? "").toLowerCase().includes(q))
+    : clients;
+
+  async function link(id: string | null, name: string | null) {
+    const next = { ...meta };
+    if (id) { next.client_id = id; next.client_name = name; }
+    else { delete next.client_id; delete next.client_name; }
+    await patch({ metadata: next as any });
+    setOpen(false);
+    setTerm("");
+  }
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground">Cliente vinculado</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="mt-1 w-full justify-start gap-2 truncate">
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="truncate">{currentName || "Vincular cliente"}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-72 p-0">
+          <div className="border-b p-2">
+            <Input
+              autoFocus
+              placeholder="Pesquisar cliente..."
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {isLoading ? (
+              <p className="p-3 text-sm text-muted-foreground">Carregando clientes...</p>
+            ) : filtered.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">Nenhum cliente encontrado.</p>
+            ) : (
+              filtered.slice(0, 200).map((c: any) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => link(c.id, c.razao_social || c.nome_fantasia || "")}
+                  className={cn(
+                    "block w-full px-3 py-2 text-left text-sm hover:bg-muted",
+                    currentId === c.id && "bg-muted font-medium",
+                  )}
+                >
+                  {c.razao_social || c.nome_fantasia}
+                </button>
+              ))
+            )}
+          </div>
+          {currentId && (
+            <div className="border-t p-2">
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive" onClick={() => link(null, null)}>
+                <X className="h-4 w-4" /> Remover vínculo
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 // ============ AÇÃO SUGERIDA ============
+
 function SuggestedActionSection({ card, patch }: { card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
   const isMaster = useIsMasterAdmin();
   const s = getSuggested(card);
