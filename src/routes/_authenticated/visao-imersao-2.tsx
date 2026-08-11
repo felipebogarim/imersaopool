@@ -592,7 +592,7 @@ function VisaoImersao2Page() {
                 status: "A validar",
               })),
             }}
-            nome={visao.metadata.representative_name || ""}
+            nome={visao.metadata.client_name || ""}
             regiao={visao.metadata.region || ""}
             perf={perf}
             visao={visao}
@@ -630,7 +630,7 @@ function VisaoImersao2Page() {
         <div className="space-y-6">
           <PerformanceFamiliasV2 
             perf={perf} 
-            contexto={visao.metadata.representative_name || ""} 
+            contexto={visao.metadata.client_name || ""} 
           />
         </div>
 
