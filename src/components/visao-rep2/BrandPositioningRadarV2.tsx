@@ -1,7 +1,7 @@
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import type { VisaoRep2 } from "@/lib/visao-rep2-schema";
 import { useMemo } from "react";
-import { buildTeiaVM } from "@/lib/visao-rep2-teia";
+import { buildTeiaVM, fmtDelta, fmtScore } from "@/lib/visao-rep2-teia";
 
 export function BrandPositioningRadarV2({ 
   atual, 
