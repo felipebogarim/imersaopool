@@ -10,6 +10,7 @@ import {
   VISAO_REP_VIEW_MODEL_BRIEF,
   type PrioritySignal
 } from "./visao-rep2-schema";
+import { buildBrandPositioningFromImmersion2 } from "./visao-imersao-2-teia-scores";
 
 /**
  * Adaptador para transformar os dados extraídos (JSON canônico V2) 
