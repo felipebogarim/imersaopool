@@ -72,8 +72,8 @@ export type Metadata = {
   /** Modelo de leitura do relatório (ex.: "executive_brief_v1" no schema 3.0). */
   view_model?: string | null;
   representative_id: string | null;
-
   representative_name: string | null;
+  client_name: string | null;
   region: string | null;
   interview_date: string | null;
   report_date: string | null;
