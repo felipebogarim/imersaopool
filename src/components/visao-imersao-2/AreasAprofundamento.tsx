@@ -27,6 +27,21 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
   let atual: Achado | null = null;
   let modoImplicacao = false;
   let buffer: string[] = [];
+  let lista: string[] = [];
+
+  const flushLista = () => {
+    if (!lista.length || !atual) {
+      lista = [];
+      return;
+    }
+    const bloco = lista.join("\n");
+    lista = [];
+    if (modoImplicacao) {
+      atual.implicacao = atual.implicacao ? `${atual.implicacao} ${bloco}` : bloco;
+    } else {
+      atual.contexto.push(bloco);
+    }
+  };
 
   const flushParagrafo = () => {
     const texto = buffer.join(" ").trim();
@@ -39,12 +54,18 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
     }
   };
 
+
+  const flushBlocos = () => {
+    flushParagrafo();
+    flushLista();
+  };
+
   for (const raw of linhas) {
     const linha = raw.trim();
 
     const h3 = /^#{3,6}\s+(.*)$/.exec(linha);
     if (h3) {
-      flushParagrafo();
+      flushBlocos();
       if (atual) achados.push(atual);
       atual = { titulo: h3[1].replace(/\*+/g, "").trim(), contexto: [], citacoes: [], implicacao: null };
       modoImplicacao = false;
@@ -55,7 +76,7 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
     if (!atual) continue;
 
     if (/^#{1,2}\s+/.test(linha)) {
-      flushParagrafo();
+      flushBlocos();
       achados.push(atual);
       atual = null;
       modoImplicacao = false;
@@ -68,23 +89,39 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
     }
 
     if (IMPLICACAO_RE.test(linha)) {
-      flushParagrafo();
+      flushBlocos();
       modoImplicacao = true;
       continue;
     }
 
     const cit = /^>\s?(.*)$/.exec(linha);
     if (cit) {
-      flushParagrafo();
+      flushBlocos();
       const texto = cit[1].replace(/^[“"']+|[”"']+$/g, "").trim();
       if (texto) atual.citacoes.push(texto);
       continue;
     }
 
-    buffer.push(linha.replace(/^[-*]\s+/, "• "));
+    // Bullets viram lista semântica (um item por linha), nunca parágrafo concatenado.
+    const bullet = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(linha);
+    if (bullet) {
+      flushParagrafo();
+      const item = bullet[1].trim();
+      if (item) lista.push(`- ${item}`);
+      continue;
+    }
+
+    // Continuação de um item de lista pertence ao último item.
+    if (lista.length) {
+      lista[lista.length - 1] = `${lista[lista.length - 1]} ${linha}`;
+      continue;
+    }
+
+    buffer.push(linha);
   }
-  flushParagrafo();
+  flushBlocos();
   if (atual) achados.push(atual);
+
 
   return achados.filter(a => a.titulo && (a.contexto.length || a.citacoes.length || a.implicacao));
 }
@@ -106,7 +143,9 @@ function AchadoCard({ a }: { a: Achado }) {
       {a.implicacao ? (
         <div className="rounded-lg border-l-2 border-primary bg-muted/30 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Implicação</p>
-          <p className="mt-1 max-w-[72ch] text-sm leading-7">{a.implicacao}</p>
+          <div className="mt-1 max-w-[72ch] text-sm leading-7">
+            <MarkdownView markdown={a.implicacao} />
+          </div>
         </div>
       ) : null}
     </article>
