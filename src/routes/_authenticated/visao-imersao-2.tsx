@@ -24,6 +24,7 @@ import {
   type VisaoImersao2Import,
 } from "@/components/visao-imersao-2/VisaoImersao2Importer";
 import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
+import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerciaisCliente";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
   ArrowLeft, 
@@ -689,6 +690,13 @@ function VisaoImersao2Page() {
           titulo="ÁREAS DE APROFUNDAMENTO"
           defaultOpen={false}
         />
+
+        {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
+        <AcoesComerciaisCliente
+          clientId={commercialData?.clientId ?? null}
+          clientName={visao.metadata.client_name ?? null}
+        />
+
 
         {/* Diagnóstico Técnico (Admin Only) */}
         {debugMode && (
