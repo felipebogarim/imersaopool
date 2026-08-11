@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, type FarolStatus } from "@/lib/performance-farol";
@@ -26,7 +26,7 @@ function BIClientesPage() {
     },
   });
 
-  const { data: uploads = [], isLoading } = useQuery({
+  const { data: uploads = [], isLoading: loadingUploads } = useQuery({
     queryKey: ["all-performance-uploads"],
     queryFn: async () => {
       const { data } = await supabase
@@ -90,6 +90,8 @@ function BIClientesPage() {
     "FITAS E FONTES",
   ];
 
+  const isLoading = loadingUploads || loadingRows;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <PageHeader
@@ -135,7 +137,7 @@ function BIClientesPage() {
                 <tr className="bg-muted/50 border-b border-border">
                   <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] w-64 sticky left-0 bg-muted/50 z-10 border-r border-border/50">Cliente</th>
                   <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50">Rep</th>
-                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50">Cat</th>
+                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50 text-center">Cat</th>
                   <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] text-center border-r border-border/50">Ating %</th>
                   {columns.map((col) => (
                     <th key={col} className="px-3 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] text-center min-w-[100px] border-r border-border/50 last:border-r-0">
@@ -145,7 +147,7 @@ function BIClientesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {isLoading || loadingRows ? (
+                {isLoading ? (
                   <tr>
                     <td colSpan={columns.length + 4} className="px-4 py-12 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
@@ -182,7 +184,7 @@ function BIClientesPage() {
                       </td>
                       {columns.map((col) => {
                         const status = row.metas_status?.[col] as FarolStatus;
-                        const hasMeta = row.familias.includes(col);
+                        const hasMeta = row.familias.some(f => f.toUpperCase().includes(col.toUpperCase()) || col.toUpperCase().includes(f.toUpperCase()));
                         return (
                           <td 
                             key={col} 
