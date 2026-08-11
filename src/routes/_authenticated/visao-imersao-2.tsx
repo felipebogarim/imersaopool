@@ -280,6 +280,7 @@ function VisaoImersao2Page() {
       return {
         clientId,
         clientsFound: clients.length,
+        categoria: clients[0].categoria ?? null,
         geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
         periodoLabel: biData.periodo || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
