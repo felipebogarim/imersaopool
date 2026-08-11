@@ -54,6 +54,7 @@ import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicTmpIpelExportRouteImport } from './routes/api/public/tmp-ipel-export'
 import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
 import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
@@ -339,6 +340,11 @@ const AuthenticatedClientesIndexRoute =
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTmpIpelExportRoute = ApiPublicTmpIpelExportRouteImport.update({
+  id: '/api/public/tmp-ipel-export',
+  path: '/api/public/tmp-ipel-export',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicBackupToDriveRoute = ApiPublicBackupToDriveRouteImport.update({
@@ -684,6 +690,7 @@ export interface FileRoutesByFullPath {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/api/public/tmp-ipel-export': typeof ApiPublicTmpIpelExportRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
@@ -777,6 +784,7 @@ export interface FileRoutesByTo {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/api/public/tmp-ipel-export': typeof ApiPublicTmpIpelExportRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
@@ -873,6 +881,7 @@ export interface FileRoutesById {
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
+  '/api/public/tmp-ipel-export': typeof ApiPublicTmpIpelExportRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
@@ -969,6 +978,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/api/public/tmp-ipel-export'
     | '/lovable/email/suppression'
     | '/clientes/'
     | '/entrevistas/'
@@ -1062,6 +1072,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/api/public/tmp-ipel-export'
     | '/lovable/email/suppression'
     | '/clientes'
     | '/entrevistas'
@@ -1157,6 +1168,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
+    | '/api/public/tmp-ipel-export'
     | '/lovable/email/suppression'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
@@ -1206,6 +1218,7 @@ export interface RootRouteChildren {
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
+  ApiPublicTmpIpelExportRoute: typeof ApiPublicTmpIpelExportRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
@@ -1533,6 +1546,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/suppression'
       fullPath: '/lovable/email/suppression'
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tmp-ipel-export': {
+      id: '/api/public/tmp-ipel-export'
+      path: '/api/public/tmp-ipel-export'
+      fullPath: '/api/public/tmp-ipel-export'
+      preLoaderRoute: typeof ApiPublicTmpIpelExportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/backup-to-drive': {
@@ -2083,6 +2103,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
+  ApiPublicTmpIpelExportRoute: ApiPublicTmpIpelExportRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
@@ -2098,13 +2119,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

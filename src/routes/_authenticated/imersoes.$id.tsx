@@ -58,7 +58,7 @@ function ImmersionDetail() {
     queryFn: async () => {
       const { data: existing } = await supabase
         .from("interviews")
-        .select("id, roteiro_id")
+        .select("id, roteiro_id, respostas")
         .eq("immersion_id", id)
         .maybeSingle();
       if (existing) {
@@ -89,6 +89,21 @@ function ImmersionDetail() {
 
   const repUrl = typeof window !== "undefined" ? `${window.location.origin}/r/${imm.representative_token}` : "";
 
+  // Relatório final de imersão importado → gerador de PDF dedicado (determinístico)
+  const isFieldImmersion = !!((sessao as any)?.respostas?.__field_store_visit__);
+
+  async function exportPdf() {
+    if (!sessao?.id) return;
+    if (!isFieldImmersion) return setExportOpen(true);
+    try {
+      const { exportImmersionFinalPdf } = await import("@/lib/immersion-final-pdf");
+      const r = await exportImmersionFinalPdf(sessao.id);
+      toast.success(`PDF gerado · ${r.chapters} capítulos · ${r.pages} páginas`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar PDF");
+    }
+  }
+
   function copyLink() {
     navigator.clipboard.writeText(repUrl);
     toast.success("Link copiado");
@@ -111,9 +126,10 @@ function ImmersionDetail() {
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="immersion" entityId={id} />
-            <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Button variant="outline" onClick={exportPdf}>
               <FileDown className="h-4 w-4 mr-1" /> Exportar PDF
             </Button>
+
             <Button variant="outline" asChild>
               <Link to="/imersoes"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Link>
             </Button>
