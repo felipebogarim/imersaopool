@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { 
   ExecutiveBriefV2
 } from "@/components/visao-rep2/ExecutiveBriefV2";
-import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
+
 import { AreasAprofundamento } from "@/components/visao-imersao-2/AreasAprofundamento";
 
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
