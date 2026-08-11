@@ -55,12 +55,17 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
   };
 
 
+  const flushBlocos = () => {
+    flushParagrafo();
+    flushLista();
+  };
+
   for (const raw of linhas) {
     const linha = raw.trim();
 
     const h3 = /^#{3,6}\s+(.*)$/.exec(linha);
     if (h3) {
-      flushParagrafo();
+      flushBlocos();
       if (atual) achados.push(atual);
       atual = { titulo: h3[1].replace(/\*+/g, "").trim(), contexto: [], citacoes: [], implicacao: null };
       modoImplicacao = false;
@@ -71,7 +76,7 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
     if (!atual) continue;
 
     if (/^#{1,2}\s+/.test(linha)) {
-      flushParagrafo();
+      flushBlocos();
       achados.push(atual);
       atual = null;
       modoImplicacao = false;
@@ -84,23 +89,39 @@ export function extrairAchados(markdown: string | null | undefined): Achado[] {
     }
 
     if (IMPLICACAO_RE.test(linha)) {
-      flushParagrafo();
+      flushBlocos();
       modoImplicacao = true;
       continue;
     }
 
     const cit = /^>\s?(.*)$/.exec(linha);
     if (cit) {
-      flushParagrafo();
+      flushBlocos();
       const texto = cit[1].replace(/^[“"']+|[”"']+$/g, "").trim();
       if (texto) atual.citacoes.push(texto);
       continue;
     }
 
-    buffer.push(linha.replace(/^[-*]\s+/, "• "));
+    // Bullets viram lista semântica (um item por linha), nunca parágrafo concatenado.
+    const bullet = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(linha);
+    if (bullet) {
+      flushParagrafo();
+      const item = bullet[1].trim();
+      if (item) lista.push(`- ${item}`);
+      continue;
+    }
+
+    // Continuação de um item de lista pertence ao último item.
+    if (lista.length) {
+      lista[lista.length - 1] = `${lista[lista.length - 1]} ${linha}`;
+      continue;
+    }
+
+    buffer.push(linha);
   }
-  flushParagrafo();
+  flushBlocos();
   if (atual) achados.push(atual);
+
 
   return achados.filter(a => a.titulo && (a.contexto.length || a.citacoes.length || a.implicacao));
 }
