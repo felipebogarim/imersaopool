@@ -529,19 +529,10 @@ function VisaoImersao2Page() {
           )}
         </div>
 
-        {/* 3. Síntese Estratégica + Teia */}
-        <SintesePresidencialV2 
-          texto={visao.executive_brief?.presidential_synthesis || ""} 
-          teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />} 
-        />
-
-        {/* 4. Performance por Família */}
-        <PerformanceFamiliasV2 perf={perf as any} />
-
-        {/* 5. LEITURA INTEGRADA */}
+        {/* 3. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-        {/* 6. Áreas de Aprofundamento */}
+        {/* 4. Áreas de Aprofundamento */}
         <div className="space-y-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Áreas de Aprofundamento
