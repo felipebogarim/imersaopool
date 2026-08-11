@@ -121,7 +121,7 @@ export function adapterImmersionV2ToExecutive(doc: FieldImmersionDoc, preExtract
     upload_id: null,
     periodo_label: "1º Semestre 2026",
     linked: true,
-    geral_pct: 42.9, // Fallback canônico
+    geral_pct: null, // Removido fallback de 42.9 para evitar poluição visual antes da busca real
     comparativo_grupo_pct: null,
     periodo_referencia: "1º Semestre 2026",
     status_atendimento: null,

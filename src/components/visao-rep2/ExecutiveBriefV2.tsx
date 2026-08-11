@@ -89,7 +89,7 @@ export function BriefHeaderV2({
           )}
         </div>
         <div className="mt-1 flex items-baseline justify-between gap-2">
-          <GaugeAtingimento valor={atingimentoPct ?? 42.9} label="Atingimento ponderado geral" />
+          <GaugeAtingimento valor={atingimentoPct} label="Atingimento ponderado geral" />
           {periodo ? <span className="text-xs font-semibold tabular-nums">{periodo}</span> : <span className="text-xs font-semibold tabular-nums">1º Semestre 2026</span>}
         </div>
       </div>

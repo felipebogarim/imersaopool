@@ -283,7 +283,8 @@ function VisaoImersao2Page() {
         clientId,
         clientsFound: clients.length,
         categoria: client.categoria ?? null,
-        geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
+        geralPct: biData.geral != null ? Number(biData.geral) : 42.9, // fallback legado do BI
+        atingimentoPonderado: null, // Será preenchido abaixo
         periodoLabel: biData.periodo || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
           familia: f.familia,
@@ -293,13 +294,23 @@ function VisaoImersao2Page() {
           status: f.status
         }))
       };
+
+      // Recalcula o atingimento ponderado usando a regra canônica centralizada
+      if (res.categoria && res.familias) {
+        const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
+        res.atingimentoPonderado = calculateWeightedAtainment(res.categoria, res.familias);
+      }
+
+      return res;
     }
   });
 
   const perf = useMemo((): PerfResumo | null => {
     if (!commercialData) return null;
+    const valorExibicao = commercialData.atingimentoPonderado ?? commercialData.geralPct ?? 42.9;
+    
     return {
-      geralPct: commercialData.geralPct ?? 42.9,
+      geralPct: valorExibicao,
       periodoLabel: commercialData.periodoLabel ?? "1º Semestre 2026",
       familias: commercialData.familias ?? [],
       mediaGrupoPct: 0,
