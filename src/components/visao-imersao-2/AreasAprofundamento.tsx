@@ -143,7 +143,9 @@ function AchadoCard({ a }: { a: Achado }) {
       {a.implicacao ? (
         <div className="rounded-lg border-l-2 border-primary bg-muted/30 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Implicação</p>
-          <p className="mt-1 max-w-[72ch] text-sm leading-7">{a.implicacao}</p>
+          <div className="mt-1 max-w-[72ch] text-sm leading-7">
+            <MarkdownView markdown={a.implicacao} />
+          </div>
         </div>
       ) : null}
     </article>
