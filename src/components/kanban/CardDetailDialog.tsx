@@ -45,7 +45,7 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
 
   async function patch(data: Partial<KCard>) {
     const { error } = await supabase.from("kanban_cards").update(data as any).eq("id", card.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["kanban-cards", card.board_id] });
     qc.invalidateQueries({ queryKey: ["kanban-card-meta", card.id] });
   }
