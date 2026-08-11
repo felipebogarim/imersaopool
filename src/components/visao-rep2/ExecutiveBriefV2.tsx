@@ -495,7 +495,7 @@ export function ExecutiveBriefV2({
       {brief.sintese ? (
         <SintesePresidencialV2
           texto={brief.sintese}
-          teia={mode === "rep" ? teia : (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)}
+          teia={teia ?? (visao ? <BrandPositioningRadarV2 atual={visao} /> : null)}
           visao={visao}
           contexto={contexto}
         />
