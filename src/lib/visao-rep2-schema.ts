@@ -394,6 +394,7 @@ export function emptyVisaoRep2(partial?: Partial<Metadata>): VisaoRep2 {
       schema_version: VISAO_REP_SCHEMA_VERSION,
       representative_id: null,
       representative_name: null,
+      client_name: null,
       region: null,
       interview_date: null,
       report_date: null,
