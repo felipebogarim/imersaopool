@@ -56,6 +56,12 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         </div>
       )}
       <div className="font-medium leading-snug">{card.title}</div>
+      {typeof (card.metadata as any)?.client_name === "string" && (
+        <Badge variant="secondary" className="mt-1.5 max-w-full truncate text-[10px]">
+          <Building2 className="mr-1 h-3 w-3 shrink-0" />
+          {(card.metadata as any).client_name}
+        </Badge>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px]", PRIORITY_COLOR[card.priority])}>
           {PRIORITY_LABEL[card.priority]}
