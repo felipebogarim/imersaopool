@@ -126,6 +126,10 @@ export async function ingestStoreVisit(args: {
   }
 
   const prevRespostas = (interview.respostas ?? {}) as Record<string, any>;
+  // Blocos editoriais opcionais lidos verbatim do arquivo (retrocompatíveis).
+  const executiveSummary = parseExecutiveSummary(text);
+  const executiveMap = parseExecutiveMap(text);
+
   const nextRespostas: Record<string, any> = {
     ...prevRespostas,
     __field_store_visit__: {
@@ -137,13 +141,13 @@ export async function ingestStoreVisit(args: {
       importado_por: userId,
       importado_em: new Date().toISOString(),
       origem: "final",
+      ...(executiveSummary ? { executive_summary: executiveSummary } : {}),
+      ...(executiveMap ? { executive_map: executiveMap } : {}),
     },
   };
-  
-  // No V2, o sumário executivo está em C1 ou é extraído de metadados?
-  // Na verdade, o sumário executivo agora deve ser parte do conteúdo de C1 se vier do arquivo.
-  
+
   await supabase.from("interviews").update({ respostas: nextRespostas }).eq("id", interview.id);
+
 
   return {
     template: doc.meta["report_template"] || "field_immersion_v2",
