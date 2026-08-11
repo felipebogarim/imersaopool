@@ -256,19 +256,23 @@ export function PerspectivasEntrevistaV2({
   perspectivas,
   contexto,
   mode = "rep",
+  titulo,
 }: {
   perspectivas: PerspectivaVM[];
   contexto?: string;
   mode?: "rep" | "imersao";
+  titulo?: string;
 }) {
   const primeira = perspectivas.find(p => p.temConteudo) ?? perspectivas[0];
   const [ativo, setAtivo] = useState<number>(primeira?.numero ?? 1);
   const p = perspectivas.find(x => x.numero === ativo) ?? primeira;
   if (!p) return null;
 
+  const tituloFinal = titulo ?? (mode === "imersao" ? "REVISÃO DOS CAPÍTULOS DA IMERSÃO" : "Perspectivas da entrevista");
+
   return (
     <BlocoExpansivel
-      titulo={mode === "imersao" ? "REVISÃO DOS CAPÍTULOS DA IMERSÃO" : "Perspectivas da entrevista"}
+      titulo={tituloFinal}
       descricao={mode === "imersao" ? "Abaixo serão destacados somente pontos adicionais, diferentes dos já listados anteriormente. Caso não haja conteúdo novo e relevante, nenhum conteúdo será apresentado." : "Selecione uma perspectiva para aprofundar a leitura, as evidências e sua relação com o grupo."}
     >
       <div className="space-y-5">

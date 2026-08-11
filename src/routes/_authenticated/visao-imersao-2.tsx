@@ -9,14 +9,10 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
 import { 
-  ExecutiveBriefV2, 
-  BriefHeaderV2, 
-  SintesePresidencialV2 
+  ExecutiveBriefV2
 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
-import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
-import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
 import {
   extractEditorialChapters,
@@ -533,52 +529,39 @@ function VisaoImersao2Page() {
           )}
         </div>
 
-        {/* 3. Síntese Estratégica + Teia */}
-        <SintesePresidencialV2 
-          texto={visao.executive_brief?.presidential_synthesis || ""} 
-          teia={<BrandPositioningRadarV2 atual={visao} comparaveis={[]} />} 
-        />
-
-        {/* 4. Performance por Família */}
-        <PerformanceFamiliasV2 perf={perf as any} />
-
-        {/* 5. LEITURA INTEGRADA */}
+        {/* 3. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
-        {/* 6. Áreas de Aprofundamento */}
-        <div className="space-y-4">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Áreas de Aprofundamento
-          </h3>
-          <PerspectivasEntrevistaV2 
-            perspectivas={buildPerspectivasVM(visao)} 
-            mode="imersao"
-          />
-          
-          {/* Diagnóstico Técnico (Admin Only) */}
-          {debugMode && (
-            <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6">
-              <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
-              <div className="grid gap-6 text-xs md:grid-cols-2">
-                <div className="space-y-2">
-                  <p><strong>Cliente resolvido:</strong> {commercialData?.clientId || "Não vinculado"}</p>
-                  <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
-                  <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
-                  <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
-                </div>
-                <div className="space-y-2">
-                   <p className="font-semibold">Mapeamento de Sinais:</p>
-                   {visao.executive_view.priority_signals.map(s => (
-                     <div key={s.signal_id} className="border-l border-primary/20 pl-2">
-                       <p>{s.signal_id}: {s.title}</p>
-                       <p className="text-muted-foreground">Perspectivas: {s.related_perspectives?.join(", ")}</p>
-                     </div>
-                   ))}
-                </div>
+        {/* 4. Áreas de Aprofundamento */}
+        <PerspectivasEntrevistaV2 
+          perspectivas={buildPerspectivasVM(visao)} 
+          mode="imersao"
+          titulo="Áreas de Aprofundamento"
+        />
+
+        {/* Diagnóstico Técnico (Admin Only) */}
+        {debugMode && (
+          <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6">
+            <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
+            <div className="grid gap-6 text-xs md:grid-cols-2">
+              <div className="space-y-2">
+                <p><strong>Cliente resolvido:</strong> {commercialData?.clientId || "Não vinculado"}</p>
+                <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
+                <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
+                <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
+              </div>
+              <div className="space-y-2">
+                 <p className="font-semibold">Mapeamento de Sinais:</p>
+                 {visao.executive_view.priority_signals.map(s => (
+                   <div key={s.signal_id} className="border-l border-primary/20 pl-2">
+                     <p>{s.signal_id}: {s.title}</p>
+                     <p className="text-muted-foreground">Perspectivas: {s.related_perspectives?.join(", ")}</p>
+                   </div>
+                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
