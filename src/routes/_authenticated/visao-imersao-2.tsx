@@ -259,9 +259,14 @@ function VisaoImersao2Page() {
       
       if (!clients?.length) return null;
       
-      // Se houver múltiplos, por enquanto pegamos o primeiro (a regra pede resolução se ambíguo, 
-      // mas no MVP vamos listar e avisar)
-      const clientId = clients[0].id;
+      // Tenta encontrar o melhor match (match exato primeiro)
+      const exactMatch = clients.find(c => 
+        (c.nome_fantasia?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName) ||
+        (c.razao_social?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName)
+      );
+      
+      const client = exactMatch || clients[0];
+      const clientId = client.id;
 
       const { data: bi } = await (supabase as any)
         .from("client_bi")
@@ -277,7 +282,7 @@ function VisaoImersao2Page() {
       return {
         clientId,
         clientsFound: clients.length,
-        categoria: clients[0].categoria ?? null,
+        categoria: client.categoria ?? null,
         geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
         periodoLabel: biData.periodo || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
