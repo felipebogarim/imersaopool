@@ -292,29 +292,13 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
           {cards.map((c) => <SortableCard key={c.id} card={c} onClick={() => onOpenCard(c.id)} />)}
         </div>
       </SortableContext>
-      {adding ? (
-        <div className="mt-2 space-y-2">
-          <Input
-            autoFocus
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") createCard(); if (e.key === "Escape") setAdding(false); }}
-            placeholder="Título do card"
-            className="h-8"
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={createCard}>Adicionar</Button>
-            <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setAdding(true)}
-          className="mt-2 flex items-center gap-1 rounded p-1.5 text-xs text-muted-foreground hover:bg-muted"
-        >
-          <Plus className="h-3.5 w-3.5" /> Adicionar card
-        </button>
-      )}
+      <button
+        onClick={() => setAdding(true)}
+        className="mt-2 flex items-center gap-1 rounded p-1.5 text-xs text-muted-foreground hover:bg-muted"
+      >
+        <Plus className="h-3.5 w-3.5" /> Adicionar card
+      </button>
+      <NewCardDialog open={adding} onOpenChange={setAdding} onCreate={createCard} />
     </div>
   );
 }
