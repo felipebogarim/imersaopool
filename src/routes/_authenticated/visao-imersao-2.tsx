@@ -9,14 +9,10 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
 import { 
-  ExecutiveBriefV2, 
-  BriefHeaderV2, 
-  SintesePresidencialV2 
+  ExecutiveBriefV2
 } from "@/components/visao-rep2/ExecutiveBriefV2";
 import { PerspectivasEntrevistaV2 } from "@/components/visao-rep2/PerspectivasV2";
-import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { LeituraIntegradaV2 } from "@/components/visao-rep2/LeituraIntegradaV2";
-import { PerformanceFamiliasV2 } from "@/components/visao-rep2/PerformanceFamiliasV2";
 import { Immersion2DataSchema } from "@/lib/visao-imersao-2-parser";
 import {
   extractEditorialChapters,
