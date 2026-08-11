@@ -36,6 +36,7 @@ import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authent
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -239,6 +240,11 @@ const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
 const AuthenticatedNdaRoute = AuthenticatedNdaRouteImport.update({
   id: '/nda',
   path: '/nda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
@@ -630,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -724,6 +731,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -819,6 +827,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -915,6 +924,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/empresas'
     | '/familias'
+    | '/home'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -1009,6 +1019,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/empresas'
     | '/familias'
+    | '/home'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -1103,6 +1114,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
     | '/_authenticated/familias'
+    | '/_authenticated/home'
     | '/_authenticated/nda'
     | '/_authenticated/novo-corp'
     | '/_authenticated/perfil'
@@ -1407,6 +1419,13 @@ declare module '@tanstack/react-router' {
       path: '/nda'
       fullPath: '/nda'
       preLoaderRoute: typeof AuthenticatedNdaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/familias': {
@@ -1965,6 +1984,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -2013,6 +2033,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
