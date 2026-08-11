@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { FAROL_CELL_CLASS, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_MIDPOINT, type FarolStatus } from "@/lib/performance-farol";
 
 export const Route = createFileRoute("/_authenticated/performance/bi-clientes")({
   head: () => ({ meta: [{ title: "BI Clientes Consolidado — PoolFlux" }] }),
@@ -54,7 +54,16 @@ function BIClientesPage() {
 
   const consolidated = useMemo(() => {
     const SUMMARY_PREFIXES = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
-    
+    const CANONICAL_FAMILIES = [
+      "DECOR NEWLINE",
+      "DECOR STUDIO",
+      "SISTEMAS E MÓDULOS",
+      "PRO LED",
+      "PRO LAMP",
+      "PERFIL",
+      "FITAS E FONTES",
+    ];
+
     return allRows
       .filter((r) => {
         const u = String(r.razao_social ?? "").trim().toUpperCase();
@@ -63,11 +72,34 @@ function BIClientesPage() {
       .map((r) => {
         const upload = uploads.find((u) => u.id === r.upload_id);
         const rep = reps.find((rp) => rp.id === upload?.representative_id);
+        
+        // Se total_pct for 0 mas houver metas_status preenchido, calculamos via ponto médio do farol
+        let attainedPct = r.total_pct ? Number(r.total_pct) * 100 : 0;
+        
+        if (attainedPct === 0 && r.metas_status && typeof r.metas_status === 'object') {
+          const ms = r.metas_status as Record<string, FarolStatus>;
+          let totalWeight = 0;
+          let totalPoints = 0;
+          
+          CANONICAL_FAMILIES.forEach(f => {
+            const status = ms[f];
+            if (status && status !== 'sem_compra') {
+              totalPoints += FAROL_MIDPOINT[status];
+              totalWeight += 1;
+            }
+          });
+          
+          if (totalWeight > 0) {
+            attainedPct = totalPoints / totalWeight;
+          }
+        }
+
         return {
           ...r,
           repName: rep?.nome ?? "—",
           repId: upload?.representative_id,
           familias: upload?.familias as string[] ?? [],
+          computedAtainment: attainedPct,
         };
       });
   }, [allRows, uploads, reps]);
@@ -180,7 +212,7 @@ function BIClientesPage() {
                         "px-4 py-2.5 text-center font-bold border-r border-border/50 tabular-nums",
                         row.total_pct_status && FAROL_CELL_CLASS[row.total_pct_status as FarolStatus]
                       )}>
-                        {row.total_pct ? `${(Number(row.total_pct) * 100).toFixed(1)}%` : "0%"}
+                        {row.computedAtainment > 0 ? `${row.computedAtainment.toFixed(1)}%` : "0%"}
                       </td>
                       {columns.map((col) => {
                         const metasStatus = row.metas_status as Record<string, FarolStatus>;
