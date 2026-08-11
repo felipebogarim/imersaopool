@@ -192,18 +192,12 @@ function ClientLinkSection({ card, patch }: { card: KCard; patch: (d: Partial<KC
   const [term, setTerm] = useState("");
 
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["kanban-clients"],
+    queryKey: ["kanban-clients-all"],
     enabled: open,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, razao_social, nome_fantasia")
-        .order("razao_social")
-        .limit(1000);
-      if (error) throw error;
-      return data ?? [];
-    },
+    staleTime: 5 * 60_000,
+    queryFn: fetchAllKanbanClients,
   });
+
 
   const q = term.trim().toLowerCase();
   const filtered = q
