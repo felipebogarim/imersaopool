@@ -661,6 +661,7 @@ function VisaoImersao2Page() {
             regiao={visao.metadata.region || ""}
             perf={perf}
             visao={visao}
+            teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
             mode="imersao"
             categoria={(commercialData && 'categoria' in commercialData) ? commercialData.categoria : null}
           />
