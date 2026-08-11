@@ -338,7 +338,7 @@ export function PerspectivasEntrevistaV2({
           <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
             <Narrativa p={p} ctx={{ contexto, escopo: `p${String(p.numero).padStart(2, "0")}` }} />
             <div className="min-w-0 lg:col-span-4">
-              <PainelApoio p={p} ctx={{ contexto, escopo: `p${String(p.numero).padStart(2, "0")}` }} />
+              <PainelApoio p={p} mode={mode} ctx={{ contexto, escopo: `p${String(p.numero).padStart(2, "0")}` }} />
             </div>
           </div>
         ) : (
