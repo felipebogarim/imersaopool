@@ -300,11 +300,11 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
         ) : null}
       </div>
 
-      {ev.quotes.length ? (
+      {quotes.length ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
-              Evidências ({ev.quotes.length})
+              Evidências ({quotes.length})
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-1">
@@ -313,14 +313,14 @@ function PerspectiveDetail({ ev, signal, visao }: { ev: PerspectiveEvidence; sig
             ))}
           </div>
           
-          {ev.quotes.length > 3 && !showAllQuotes && (
+          {quotes.length > 3 && !showAllQuotes && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => setShowAllQuotes(true)}
               className="h-8 w-full text-xs text-muted-foreground hover:text-foreground"
             >
-              Ver mais evidências (+{ev.quotes.length - 3})
+              Ver mais evidências (+{quotes.length - 3})
               <ChevronDown className="ml-1 h-3 w-3" />
             </Button>
           )}
