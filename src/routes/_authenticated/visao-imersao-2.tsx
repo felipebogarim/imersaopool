@@ -164,6 +164,31 @@ function VisaoImersao2Page() {
     }
   }, [avulso]);
 
+  /** Base comparável da teia: demais relatórios salvos (um por cliente), exceto o aberto. */
+  const comparaveis = useMemo(() => {
+    if (!avulso) return [];
+    const atualNome = (avulso.data.client.name ?? "").trim().toLowerCase();
+    const vistos = new Set<string>();
+    const out: NonNullable<typeof visao>[] = [];
+    for (const r of reports as any[]) {
+      if (r.id === avulso.id) continue;
+      const nome = String(r.client_name ?? "").trim().toLowerCase();
+      if (!nome || nome === atualNome || vistos.has(nome)) continue;
+      try {
+        const stored = r.structured_data as Record<string, unknown> | null;
+        const data = Immersion2DataSchema.parse((stored as any)?.data ?? stored);
+        const vm = buildVisaoImersao2ViewModel(data, extractEditorialChapters(r.content_markdown));
+        if (!vm?.brand_positioning) continue;
+        vistos.add(nome);
+        out.push(vm);
+      } catch {
+        /* relatório incompatível é ignorado na base comparativa */
+      }
+    }
+    return out;
+  }, [reports, avulso]);
+
+
   function confirmarImportacao() {
     if (!preview) return;
     try {
