@@ -165,9 +165,7 @@ export function buildBI(
   familiasRaw: FamiliaResultado[],
 ): ClientBIData {
   const familias = familiasRaw.filter((f) => isCanonicalFamily(f.familia));
-  const best = calculateBestFamily(familias);
-  const worst = calculateWorstFamily(familias);
-
+  
   // Atingimento geral ponderado canônico (Matriz Financeira)
   // Ref: Memória bi-participacao-familia e instruções do usuário.
   // Nota: BI de cliente recalcula o valor real com base nas famílias extraídas.
@@ -219,14 +217,11 @@ export function buildBI(
   const geralCalculado = totalMeta > 0 ? (totalRealizadoPonderado / totalMeta) * 100 : null;
   const geralFinal = geralCalculado ?? geralLegacy;
 
-  return {
-    geral: geralFinal,
-    categoria,
-    familias,
   const best = calculateBestFamily(familias);
   const worst = calculateWorstFamily(familias);
+
   return {
-    geral,
+    geral: geralFinal,
     categoria,
     familias,
     melhor_familia: best
