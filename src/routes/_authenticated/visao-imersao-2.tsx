@@ -621,18 +621,13 @@ function VisaoImersao2Page() {
           )}
         </div>
         
-        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
+        {/* 5. RESULTADO POR FAMÍLIA (Gráfico do BI do cliente) */}
         <div className="space-y-6">
           <PerformanceFamiliasV2 
             perf={perf} 
             contexto={visao.metadata.client_name || ""} 
-          />
-        </div>
-        {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
-        <div className="space-y-6">
-          <PerformanceFamiliasV2 
-            perf={perf} 
-            contexto={visao.metadata.client_name || ""} 
+            defaultOpen={true}
+            titulo="RESULTADO POR FAMÍLIA"
           />
         </div>
 
