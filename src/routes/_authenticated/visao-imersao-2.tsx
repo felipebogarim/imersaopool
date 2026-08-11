@@ -690,6 +690,13 @@ function VisaoImersao2Page() {
           defaultOpen={false}
         />
 
+        {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
+        <AcoesComerciaisCliente
+          clientId={commercialData?.clientId ?? null}
+          clientName={visao.metadata.client_name ?? null}
+        />
+
+
         {/* Diagnóstico Técnico (Admin Only) */}
         {debugMode && (
           <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6">
