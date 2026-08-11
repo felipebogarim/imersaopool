@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Board, KCard, KList } from "@/lib/kanban-types";
 import { midPosition } from "@/lib/kanban-types";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
+import { NewCardDialog, type NewCardClient } from "@/components/kanban/NewCardDialog";
 import { CardDetailDialog } from "@/components/kanban/CardDetailDialog";
 import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
 import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDialog";
