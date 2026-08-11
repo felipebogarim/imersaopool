@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutGrid, Target, Compass, Zap } from "lucide-react";
+import { TrendingUp, Tag, FileSearch, Map as MapIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/mapa-acoes/")({
   head: () => ({ meta: [{ title: "Mapa de Ações — PoolFlux" }] }),
@@ -10,53 +9,45 @@ export const Route = createFileRoute("/_authenticated/mapa-acoes/")({
 
 function MapaAcoesPage() {
   return (
-    <div>
+    <div className="min-h-screen bg-[#F8FAFC]">
       <PageHeader
         title="Mapa de Ações"
-        subtitle="Planejamento estratégico e tático"
+        subtitle="Desdobramento Estratégico em 4 Dimensões"
       />
-      <div className="p-4 sm:p-8 space-y-6">
-        <div className="surface rounded-xl p-12 text-center text-muted-foreground">
-          <p className="mb-4">O Mapa de Ações é uma ferramenta de desdobramento estratégico em 4 dimensões.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center space-x-2">
-                <Target className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm">Matriz de Metas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-left">Definição clara de objetivos financeiros e de volume por canal.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center space-x-2">
-                <Compass className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm">Roteiros e Jornada</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-left">Padronização da abordagem comercial em campo.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center space-x-2">
-                <LayoutGrid className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm">Mapa de Oportunidades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-left">Identificação visual de gaps e white spaces no portfólio.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center space-x-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm">Ações Imediatas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-left">Gestão de prioridades e correções de rumo em tempo real.</p>
-              </CardContent>
-            </Card>
+      
+      <div className="p-4 sm:p-8 max-w-6xl mx-auto">
+        <div className="bg-white border border-slate-200 rounded-xl p-8 md:p-12 text-center shadow-sm">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Arquitetura de Ação</h2>
+            <p className="text-slate-600 leading-relaxed">
+              O Mapa de Ações consolida as diretrizes geradas a partir das análises de Performance, Imersões e Preços, desdobrando-as em quatro dimensões operacionais.
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
+              {[
+                { label: "COMERCIAL", icon: TrendingUp, desc: "Foco em vendas e expansão" },
+                { label: "PRODUTO", icon: Tag, desc: "Mix e competitividade" },
+                { label: "MARKETING", icon: FileSearch, desc: "Posicionamento e branding" },
+                { label: "GOVERNANÇA", icon: MapIcon, desc: "Processos e gestão" }
+              ].map((item) => (
+                <div key={item.label} className="space-y-3">
+                  <div className="h-12 w-12 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                    <item.icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-800 tracking-widest">{item.label}</h3>
+                    <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-tighter">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="pt-12">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Módulo em Estruturação
+              </span>
+            </div>
           </div>
-          <p className="mt-8 text-sm font-medium text-primary">Em desenvolvimento técnico</p>
         </div>
       </div>
     </div>
