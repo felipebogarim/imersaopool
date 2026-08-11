@@ -31,7 +31,7 @@ import {
 } from "@/lib/performance-farol";
 
 // Import functionality from the original file
-import { PerformancePageContent } from "./representantes.performance.tsx";
+import { PerformancePageContent } from "./representantes.performance";
 
 export const Route = createFileRoute("/_authenticated/performance/reps")({
   head: () => ({ meta: [{ title: "Performance Reps — PoolFlux" }] }),
