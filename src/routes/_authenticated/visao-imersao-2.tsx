@@ -312,8 +312,8 @@ function VisaoImersao2Page() {
   });
 
   const perf = useMemo((): PerfResumo | null => {
-    if (!commercialData || !('geralPct' in commercialData)) return null;
-    const valorExibicao = commercialData.atingimentoPonderado ?? commercialData.geralPct;
+    if (!commercialData || !('geralPct' in commercialData) || commercialData === null) return null;
+    const valorExibicao = (commercialData as any).atingimentoPonderado ?? (commercialData as any).geralPct;
     
     return {
       geralPct: valorExibicao,
