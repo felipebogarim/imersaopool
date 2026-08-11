@@ -60,25 +60,33 @@ function parseMeta(md: string): FieldImmersionMeta {
   const lines = block.split(/\r?\n/);
   for (const raw of lines) {
     const line = raw.trim();
-    // Regex mais flexível para capturar "Chave: Valor" mesmo com espaços ou hífens no início
-    const kv = line.match(/^[-*]?\s*([^:]+)\s*:\s*(.*)$/i);
+    if (!line || line.startsWith("```") || line.startsWith("#")) continue;
+    // Somente pares "chave: valor" reais: chave curta, sem pontuação de frase.
+    const kv = line.match(/^[-*]?\s*([A-Za-zÀ-ÿ0-9_ ()/]{2,40}?)\s*:\s*(.*)$/);
     if (!kv) continue;
-    
-    let key = kv[1].trim().toLowerCase();
+
+    const rawKey = kv[1].trim();
+    // Chave de metadado tem no máximo 4 palavras e não termina em pontuação.
+    if (rawKey.split(/\s+/).length > 4) continue;
+    if (/[.,;!?]$/.test(rawKey)) continue;
+
+    let key = rawKey.toLowerCase();
     const value = kv[2].trim();
-    
-    // Mapeamento de termos para chaves canônicas
-    if (key.includes("cliente")) key = "cliente";
-    if (key.includes("local") || key.includes("unidade") || key.includes("cidade")) key = "local";
-    if (key.includes("data")) key = "data_visita";
-    if (key.includes("representante")) key = "representante";
-    if (key.includes("consultor")) key = "consultor";
-    if (key.includes("título") || key.includes("assunto")) key = "titulo";
-    
-    if (value) meta[key] = value;
+
+    // Mapeamento de termos para chaves canônicas (match exato/prefixo, não substring solta)
+    if (/^cliente\b/.test(key)) key = "cliente";
+    else if (/^(local|unidade|cidade)\b/.test(key)) key = "local";
+    else if (/^data\b/.test(key)) key = "data_visita";
+    else if (/^representante\b/.test(key)) key = "representante";
+    else if (/^consultor\b/.test(key)) key = "consultor";
+    else if (/^(t[íi]tulo|assunto)\b/.test(key)) key = "titulo";
+
+    // Primeira ocorrência vence: evita que prosa posterior sobrescreva metadados.
+    if (value && meta[key] === undefined) meta[key] = value;
   }
   return meta;
 }
+
 
 /** 
  * Regex para capturar capítulos.
@@ -320,7 +328,9 @@ function subsections(body: string): { title: string; body: string }[] {
 }
 
 function jsonBlock<T>(md: string, name: string): T | null {
-  const m = md.match(new RegExp("```\\s*" + name + "\\s*\\n([\\s\\S]*?)```", "i"));
+  // Aceita ```name, ```json name, ```name json e variações com espaços.
+  const re = new RegExp("```[ \\t]*(?:json[ \\t]+)?" + name + "(?:[ \\t]+json)?[ \\t]*\\r?\\n([\\s\\S]*?)```", "i");
+  const m = md.match(re);
   if (!m) return null;
   try {
     return JSON.parse(m[1]) as T;
@@ -329,20 +339,31 @@ function jsonBlock<T>(md: string, name: string): T | null {
   }
 }
 
-const strList = (v: unknown): string[] =>
-  Array.isArray(v) ? v.map((x) => String(x ?? "").trim()).filter(Boolean) : [];
+/** Normaliza para lista: aceita array, string única ou parágrafos separados. */
+const strList = (v: unknown): string[] => {
+  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (typeof v === "string") {
+    return v
+      .split(/\n{2,}/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
 
 /** Sumário executivo explícito do relatório (ou null quando ausente). */
 export function parseExecutiveSummary(md: string): ExecutiveSummary | null {
-  const fromJson = jsonBlock<Partial<ExecutiveSummary>>(md, "executive_summary");
+  const fromJson = jsonBlock<Record<string, unknown>>(md, "executive_summary");
   if (fromJson) {
+    const j = fromJson as any;
     const s: ExecutiveSummary = {
-      sintese_geral: strList((fromJson as any).sintese_geral ?? (fromJson as any).general_synthesis),
-      sinais_prioritarios: strList((fromJson as any).sinais_prioritarios ?? (fromJson as any).priority_signals),
-      leitura_executiva: strList((fromJson as any).leitura_executiva ?? (fromJson as any).executive_reading),
+      sintese_geral: strList(j.sintese_geral ?? j.synthesis ?? j.general_synthesis ?? j.sintese),
+      sinais_prioritarios: strList(j.sinais_prioritarios ?? j.priority_signals ?? j.signals),
+      leitura_executiva: strList(j.leitura_executiva ?? j.executive_reading ?? j.reading),
     };
     return s.sintese_geral.length || s.sinais_prioritarios.length || s.leitura_executiva.length ? s : null;
   }
+
 
   const body = sectionBody(md, /sum[áa]rio\s+executivo/i);
   if (!body) return null;
@@ -376,10 +397,15 @@ export function parseExecutiveMap(md: string): ExecutiveMap | null {
 
   if (fromJson) {
     map = {
-      strengths: strList(fromJson.strengths),
-      barriers: strList(fromJson.barriers),
-      opportunities: strList(fromJson.opportunities),
-      attention_points: strList((fromJson as any).attention_points ?? (fromJson as any).attention),
+      strengths: strList((fromJson as any).strengths ?? (fromJson as any).forcas),
+      barriers: strList((fromJson as any).barriers ?? (fromJson as any).barreiras),
+      opportunities: strList((fromJson as any).opportunities ?? (fromJson as any).oportunidades),
+      attention_points: strList(
+        (fromJson as any).attention_points ??
+          (fromJson as any).points_of_attention ??
+          (fromJson as any).attention ??
+          (fromJson as any).pontos_de_atencao,
+      ),
     };
   } else {
     const body = sectionBody(md, /mapa\s+executivo/i);
