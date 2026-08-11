@@ -240,19 +240,17 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: list.id, data: { type: "list" } });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const [adding, setAdding] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
 
-  async function createCard() {
-    if (!newTitle.trim()) { setAdding(false); return; }
+  async function createCard(title: string, client: NewCardClient) {
     const { data: u } = await supabase.auth.getUser();
     const lastPos = cards[cards.length - 1]?.position ?? 0;
     const { data, error } = await supabase.from("kanban_cards").insert({
-      list_id: list.id, board_id: list.board_id, title: newTitle.trim(),
+      list_id: list.id, board_id: list.board_id, title,
       position: lastPos + 1000, created_by: u.user!.id,
+      metadata: client ? { client_id: client.id, client_name: client.name } : {},
     }).select("id").single();
     if (error) return toast.error(error.message);
-    setNewTitle(""); setAdding(false);
-    if (data) await logActivity(list.board_id, "card_created", { title: newTitle.trim(), list_id: list.id }, data.id);
+    if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null }, data.id);
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
 
