@@ -699,7 +699,7 @@ export function buildImmersionPdfDoc(data: ImmersionPdfData): jsPDF {
 
     for (const b of parseBlocks(cap.markdown)) {
       if (b.type === "h3") {
-        need(46);
+        need(96);
         y += 8;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13);
@@ -713,7 +713,7 @@ export function buildImmersionPdfDoc(data: ImmersionPdfData): jsPDF {
         continue;
       }
       if (b.type === "h4") {
-        need(34);
+        need(72);
         y += 6;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
