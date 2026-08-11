@@ -684,12 +684,12 @@ function VisaoImersao2Page() {
         <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
 
         {/* 7. ÁREAS DE APROFUNDAMENTO */}
-        <PerspectivasEntrevistaV2 
-          perspectivas={buildPerspectivasVM(visao)} 
-          mode="imersao"
+        <AreasAprofundamento
+          perspectivas={buildPerspectivasVM(visao)}
           titulo="ÁREAS DE APROFUNDAMENTO"
           defaultOpen={false}
         />
+
 
         {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
         <AcoesComerciaisCliente
