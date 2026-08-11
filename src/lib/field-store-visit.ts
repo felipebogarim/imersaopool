@@ -351,7 +351,12 @@ export function parseExecutiveSummary(md: string): ExecutiveSummary | null {
   if (!subs.length) {
     out.sintese_geral = items(body);
   } else {
-    const intro = body.split(/\n\s*(?:#{3,6}|\*\*)/)[0].trim();
+    const introLines: string[] = [];
+    for (const l of body.split(/\n/)) {
+      if (/^\s*#{3,6}\s+/.test(l) || /^\s*\*\*(.+?)\*\*:?\s*$/.test(l)) break;
+      introLines.push(l);
+    }
+    const intro = introLines.join("\n").trim();
     if (intro) out.sintese_geral.push(...items(intro));
     for (const s of subs) {
       const list = items(s.body);
