@@ -624,8 +624,6 @@ function VisaoImersao2Page() {
               </AlertDescription>
             </Alert>
           )}
-        </div>
-        
         {/* Gráfico de Resultado por Família - Posicionado entre Síntese e Leitura Integrada */}
         <div className="space-y-6">
           <PerformanceFamiliasV2 
