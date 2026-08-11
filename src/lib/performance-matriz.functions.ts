@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { 
   type ClientBIData, 
   CANONICAL_FAMILIES 
@@ -53,7 +52,6 @@ export function calculateWeightedAtainment(
   
   let totalMeta = 0;
   let totalRealizadoPonderado = 0;
-  let countValid = 0;
 
   for (const f of CANONICAL_FAMILIES) {
     const meta = metas[f] || 0;
@@ -62,7 +60,6 @@ export function calculateWeightedAtainment(
 
     totalMeta += meta;
     totalRealizadoPonderado += meta * (atingimento / 100);
-    if (item) countValid++;
   }
 
   if (totalMeta === 0) return null;
@@ -77,6 +74,10 @@ export const getClientAtainment = createServerFn({ method: "GET" })
     periodo: z.string().optional()
   }).parse(data))
   .handler(async ({ data, context }) => {
+    if (!context || !context.supabase) {
+      throw new Error("Supabase context is not available");
+    }
+
     const { data: client } = await context.supabase
       .from("clients")
       .select("categoria, razao_social")
@@ -93,13 +94,13 @@ export const getClientAtainment = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
 
-    const biData = bi?.respostas?.__client_bi__ as ClientBIData | undefined;
-    if (!biData) return null;
+    const biRes = bi?.respostas?.__client_bi__;
+    if (!biRes) return null;
 
     return {
       razao_social: client.razao_social,
       categoria: client.categoria,
-      atingimento_geral: calculateWeightedAtainment(client.categoria, biData.familias),
-      periodo: biData.periodo || data.periodo || "Atual"
+      atingimento_geral: calculateWeightedAtainment(client.categoria, biRes.familias || []),
+      periodo: (biRes as any).periodo || data.periodo || "Atual"
     };
   });

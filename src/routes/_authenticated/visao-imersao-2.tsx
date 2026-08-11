@@ -279,12 +279,12 @@ function VisaoImersao2Page() {
       const biData = bi?.respostas?.__client_bi__;
       if (!biData) return { clientId, bi: null, clientsFound: clients.length };
 
-      return {
+      const resData = {
         clientId,
         clientsFound: clients.length,
         categoria: client.categoria ?? null,
-        geralPct: biData.geral != null ? Number(biData.geral) : 42.9, // fallback legado do BI
-        atingimentoPonderado: null, // Será preenchido abaixo
+        geralPct: biData.geral != null ? Number(biData.geral) : 42.9,
+        atingimentoPonderado: null as number | null,
         periodoLabel: biData.periodo || "1º Semestre 2026",
         familias: (biData.familias || []).map((f: any) => ({
           familia: f.familia,
@@ -296,12 +296,15 @@ function VisaoImersao2Page() {
       };
 
       // Recalcula o atingimento ponderado usando a regra canônica centralizada
-      if (res.categoria && res.familias) {
+      if (resData.categoria && resData.familias) {
         const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
-        res.atingimentoPonderado = calculateWeightedAtainment(res.categoria, res.familias);
+        resData.atingimentoPonderado = calculateWeightedAtainment(resData.categoria, resData.familias.map(f => ({
+          familia: f.familia,
+          atingimento: f.pct
+        })));
       }
 
-      return res;
+      return resData;
     }
   });
 
