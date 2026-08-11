@@ -20,6 +20,8 @@
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import type { ExecutiveMap, ExecutiveSummary } from "@/lib/field-store-visit";
+import { parseExecutiveSummary } from "@/lib/field-store-visit";
+
 
 /** Regra permanente de roteamento do relatório final de imersão em campo. */
 export function isFieldImmersionReport(respostas: unknown): boolean {
@@ -315,7 +317,13 @@ export async function loadImmersionPdfData(interviewId: string): Promise<Immersi
     consultor: clean(meta["consultor"]) ?? clean(meta["responsavel_relatorio"]),
     participantes: clean(meta["participantes"]),
     chapters,
-    executiveSummary: (fsv?.executive_summary ?? null) as ExecutiveSummary | null,
+    // Prioridade absoluta ao bloco estruturado. Relatórios importados antes da
+    // correção do parser guardam o bloco bruto em meta.__raw_content__: relê-lo
+    // aqui evita depender de reimportação (nunca gera conteúdo novo).
+    executiveSummary: ((fsv?.executive_summary ??
+      (meta["__raw_content__"] ? parseExecutiveSummary(String(meta["__raw_content__"])) : null)) ??
+      null) as ExecutiveSummary | null,
+
     executiveMap: (fsv?.executive_map ?? null) as ExecutiveMap | null,
   };
 }
