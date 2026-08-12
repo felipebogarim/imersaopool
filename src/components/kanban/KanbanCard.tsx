@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2, Sparkles } from "lucide-react";
+import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2, Sparkles, UserRound } from "lucide-react";
 import type { KCard } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
@@ -67,6 +67,12 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         <Badge variant="secondary" className="mt-1.5 max-w-full truncate text-[10px]">
           <Building2 className="mr-1 h-3 w-3 shrink-0" />
           {(card.metadata as any).client_name}
+        </Badge>
+      )}
+      {typeof (card.metadata as any)?.rep_name === "string" && (
+        <Badge variant="secondary" className="ml-1 mt-1.5 max-w-full truncate text-[10px]">
+          <UserRound className="mr-1 h-3 w-3 shrink-0" />
+          {(card.metadata as any).rep_name}
         </Badge>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
