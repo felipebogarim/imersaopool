@@ -1,3 +1,4 @@
+import { AcoesAtreladasRep } from "@/components/visao-rep2/AcoesAtreladasRep";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -859,6 +860,13 @@ function VisaoRep2View({
         repNome={visao.metadata.representative_name}
         mostrarUpload={false}
       />
+
+      {/* Ações atreladas ao Rep */}
+      <AcoesAtreladasRep
+        repId={visao.metadata.representative_id ?? null}
+        repName={visao.metadata.representative_name ?? null}
+      />
+
 
       {/* Áreas de aprofundamento */}
       <div className="space-y-3 pt-2">
