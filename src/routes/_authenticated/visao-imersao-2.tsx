@@ -21,6 +21,7 @@ import {
   extractEditorialChapters,
   buildVisaoImersao2ViewModel,
 } from "@/lib/visao-imersao-2-import";
+import { withGroupComparison } from "@/lib/visao-imersao-2-grupo";
 import {
   VisaoImersao2Importer,
   type VisaoImersao2Import,
