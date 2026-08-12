@@ -67,6 +67,8 @@ function MapaPrecosPage() {
   const [tabelaBase, setTabelaBase] = useState<PriceTable>("Black Brasil");
   const [busca, setBusca] = useState("");
   const [adjustments, setAdjustments] = useState<BrandAdjustment[]>([]);
+  const [isSimuladorOpen, setIsSimuladorOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "charts">("table");
   
   const hasMapConfigured = familia === "Perfis";
 
@@ -95,6 +97,20 @@ function MapaPrecosPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <CenárioSimulador 
+        open={isSimuladorOpen}
+        onOpenChange={setIsSimuladorOpen}
+        adjustments={adjustments}
+        onAdjustmentsChange={setAdjustments}
+      />
+
+      {/* Breadcrumb / Nav */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest px-1">
+        <span>Price</span>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-white/60">Mapa de Preços</span>
+      </div>
+
       {/* Header com Seletor de Família */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between surface p-4 rounded-xl border border-white/5">
         <div className="space-y-1">
