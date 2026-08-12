@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { 
@@ -79,16 +79,28 @@ function MapaPrecosPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   
-  // State for imported data
-  const [importedAnchors, setImportedAnchors] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`mapa_precos_anchors_${familia}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [importedCompetitors, setImportedCompetitors] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`mapa_precos_competitors_${familia}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  
+  // Filtros estruturados
+  const [filterBase, setFilterBase] = useState("todos");
+  const [filterConcorrente, setFilterConcorrente] = useState("todos");
+  const [filterMarca, setFilterMarca] = useState("todos");
+  const [filterTecnica, setFilterTecnica] = useState("todos");
+
+  // State for imported data (carregado após hidratação para evitar mismatch SSR)
+  const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
+  const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+      const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+      setImportedAnchors(a ? JSON.parse(a) : []);
+      setImportedCompetitors(c ? JSON.parse(c) : []);
+    } catch {
+      setImportedAnchors([]);
+      setImportedCompetitors([]);
+    }
+  }, [familia]);
+
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
   const activeAnchors = importedAnchors.length > 0 ? importedAnchors : PERFIS_ANCHORS;
@@ -142,6 +154,22 @@ function MapaPrecosPage() {
       });
     }
 
+    if (filterBase !== "todos") {
+      items = items.filter((item) => {
+        const base = activeAnchors.find((a) => a.id === item.base_product_id);
+        return (base?.nome ?? "") === filterBase;
+      });
+    }
+    if (filterConcorrente !== "todos") {
+      items = items.filter((item) => item.nome === filterConcorrente);
+    }
+    if (filterMarca !== "todos") {
+      items = items.filter((item) => item.marca === filterMarca);
+    }
+    if (filterTecnica !== "todos") {
+      items = items.filter((item) => (item.classificacao_tecnica ?? "insuficiente") === filterTecnica);
+    }
+
     if (filterFarol) {
       if (filterFarol === "0%") {
         items = items.filter(item => Math.abs(item.diff_percentual || 0) < 0.1);
@@ -151,7 +179,44 @@ function MapaPrecosPage() {
     }
     
     return items;
-  }, [calculatedItems, busca, filterFarol, activeAnchors]);
+  }, [calculatedItems, busca, filterFarol, activeAnchors, filterBase, filterConcorrente, filterMarca, filterTecnica]);
+
+  const opcoes = useMemo(() => {
+    const bases = new Set<string>();
+    const concorrentes = new Set<string>();
+    const marcas = new Set<string>();
+    const tecnicas = new Set<string>();
+    calculatedItems.forEach((item) => {
+      const base = activeAnchors.find((a) => a.id === item.base_product_id);
+      if (base?.nome) bases.add(base.nome);
+      if (item.nome) concorrentes.add(item.nome);
+      if (item.marca) marcas.add(item.marca);
+      tecnicas.add(item.classificacao_tecnica ?? "insuficiente");
+    });
+    const sorted = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return {
+      bases: sorted(bases),
+      concorrentes: sorted(concorrentes),
+      marcas: sorted(marcas),
+      tecnicas: sorted(tecnicas),
+    };
+  }, [calculatedItems, activeAnchors]);
+
+  const filtrosAtivos =
+    (filterBase !== "todos" ? 1 : 0) +
+    (filterConcorrente !== "todos" ? 1 : 0) +
+    (filterMarca !== "todos" ? 1 : 0) +
+    (filterTecnica !== "todos" ? 1 : 0) +
+    (filterFarol ? 1 : 0);
+
+  const limparFiltros = () => {
+    setFilterBase("todos");
+    setFilterConcorrente("todos");
+    setFilterMarca("todos");
+    setFilterTecnica("todos");
+    setFilterFarol(null);
+    setBusca("");
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -339,7 +404,7 @@ function MapaPrecosPage() {
             size="sm" 
             className={cn(
               "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
-              viewMode === "table" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+              viewMode === "table" ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-white"
             )}
             onClick={() => setViewMode("table")}
           >
@@ -350,7 +415,7 @@ function MapaPrecosPage() {
             size="sm" 
             className={cn(
               "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
-              viewMode === "charts" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+              viewMode === "charts" ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-white"
             )}
             onClick={() => setViewMode("charts")}
           >
@@ -406,7 +471,7 @@ function MapaPrecosPage() {
                   <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">Tabela Newline considerada</span>
                   <div className="flex items-center gap-3">
                     <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
-                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-white">
+                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
@@ -424,11 +489,52 @@ function MapaPrecosPage() {
                 <div className="relative w-full lg:w-80">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Pesquisar marca ou produto..." 
-                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-white"
+                    placeholder="Pesquisar produto, marca, concorrente ou técnica..." 
+                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-foreground placeholder:text-muted-foreground"
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
                   />
+                </div>
+              </div>
+
+              {/* Filtros estruturados */}
+              <div className="flex flex-wrap items-end gap-3 surface rounded-xl border border-white/5 p-3">
+                {[
+                  { label: "Produto chave", value: filterBase, set: setFilterBase, options: opcoes.bases, render: (v: string) => v },
+                  { label: "Concorrente", value: filterConcorrente, set: setFilterConcorrente, options: opcoes.concorrentes, render: (v: string) => v },
+                  { label: "Marca", value: filterMarca, set: setFilterMarca, options: opcoes.marcas, render: (v: string) => v },
+                  {
+                    label: "Técnica",
+                    value: filterTecnica,
+                    set: setFilterTecnica,
+                    options: opcoes.tecnicas,
+                    render: (v: string) => LEVEL_LABEL[v as EquivalenceLevel] ?? v,
+                  },
+                ].map((f) => (
+                  <div key={f.label} className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground block">{f.label}</span>
+                    <Select value={f.value} onValueChange={(v) => f.set(v)}>
+                      <SelectTrigger className="w-[200px] h-9 bg-background/50 border-white/10 font-light text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-foreground max-h-72">
+                        <SelectItem value="todos">Todos</SelectItem>
+                        {f.options.map((o) => (
+                          <SelectItem key={o} value={o}>{f.render(o)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 pb-1">
+                  <span className="text-[11px] text-muted-foreground font-light">
+                    {filteredItems.length} de {calculatedItems.length} comparações
+                  </span>
+                  {filtrosAtivos > 0 && (
+                    <Button variant="ghost" size="sm" className="h-8 text-[11px] text-nl-gold" onClick={limparFiltros}>
+                      Limpar filtros ({filtrosAtivos})
+                    </Button>
+                  )}
                 </div>
               </div>
             </>
@@ -466,40 +572,40 @@ function MapaPrecosPage() {
                     <TableRow 
                       key={item.id} 
                       className={cn(
-                        "border-b border-white/[0.08] hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.03]"
+                        "border-b border-white/15 hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.05]"
                       )}
                     >
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
                           <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
-                        <span className="text-sm font-bold text-white/90">
+                      <TableCell className="py-5 border-r border-white/10">
+                        <span className="text-sm font-semibold text-nl-gold">
                           {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
                           <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <Badge variant="outline" className="font-light text-[10px] border-white/20 text-nl-gold/80 uppercase tracking-wider px-2 py-0">
                           {item.marca}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="text-sm font-light text-nl-gold/90">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex justify-center h-8 items-center">
                           {item.diff_percentual !== null && (
                             <div className={cn(
@@ -511,7 +617,7 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
                           {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
