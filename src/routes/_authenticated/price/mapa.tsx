@@ -293,8 +293,9 @@ function MapaPrecosPage() {
           )}
 
 
-          {/* Matriz de Preços */}
-          <div className="surface rounded-2xl border border-white/5 overflow-hidden">
+          {viewMode === "table" && (
+            <div className="surface rounded-2xl border border-white/5 overflow-hidden">
+
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/5 hover:bg-transparent">
