@@ -48,9 +48,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { PERFIS_ANCHORS, PERFIS_COMPETITORS } from "@/lib/price-mapa/mock-data";
-import { FAMILIAS_MAPA, PriceTable, BrandAdjustment } from "@/lib/price-mapa/types";
+import { FAMILIAS_MAPA, PriceTable, BrandAdjustment, MapaCalculatedItem } from "@/lib/price-mapa/types";
 import { calculateMapaItem } from "@/lib/price-mapa/calculations";
-import { LEVEL_CLASS, LEVEL_LABEL } from "@/lib/price-comparativos-core";
+import { LEVEL_CLASS, LEVEL_LABEL, EquivalenceLevel } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
 import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
@@ -123,9 +123,9 @@ function MapaPrecosPage() {
     
     if (busca.trim()) {
       const t = busca.toLowerCase();
-      items = items.filter(item => {
+      items = items.filter((item: MapaCalculatedItem) => {
         const base = activeAnchors.find(a => a.id === item.base_product_id);
-        const techLabel = item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : "";
+        const techLabel = item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica as EquivalenceLevel] : "";
         
         return (
           item.marca.toLowerCase().includes(t) || 
@@ -170,7 +170,7 @@ function MapaPrecosPage() {
       return;
     }
     const XLSX = await import("xlsx");
-    const rows = filteredItems.map((item: any) => {
+    const rows = filteredItems.map((item: MapaCalculatedItem) => {
       const base = activeAnchors.find((a: any) => a.id === item.base_product_id);
       return {
         "Família": familia,
