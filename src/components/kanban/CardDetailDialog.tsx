@@ -272,6 +272,90 @@ function ClientLinkSection({ card, patch }: { card: KCard; patch: (d: Partial<KC
   );
 }
 
+// ============ REPRESENTANTE VINCULADO ============
+function RepLinkSection({ card, patch }: { card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
+  const meta = (card.metadata ?? {}) as any;
+  const currentId: string | null = typeof meta.rep_id === "string" ? meta.rep_id : null;
+  const currentName: string | null = typeof meta.rep_name === "string" ? meta.rep_name : null;
+  const [open, setOpen] = useState(false);
+  const [term, setTerm] = useState("");
+
+  const { data: reps = [], isLoading } = useQuery({
+    queryKey: ["kanban-reps-all"],
+    enabled: open,
+    staleTime: 5 * 60_000,
+    queryFn: fetchAllKanbanReps,
+  });
+
+  const q = term.trim().toLowerCase();
+  const filtered = q
+    ? reps.filter((r) =>
+        (r.nome ?? "").toLowerCase().includes(q) || (r.regiao ?? "").toLowerCase().includes(q))
+    : reps;
+
+  async function link(id: string | null, name: string | null) {
+    const next = { ...meta };
+    if (id) { next.rep_id = id; next.rep_name = name; }
+    else { delete next.rep_id; delete next.rep_name; }
+    await patch({ metadata: next as any });
+    setOpen(false);
+    setTerm("");
+  }
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground">Representante vinculado</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="mt-1 w-full justify-start gap-2 truncate">
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="truncate">{currentName || "Vincular representante"}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-72 p-0">
+          <div className="border-b p-2">
+            <Input
+              autoFocus
+              placeholder="Pesquisar representante..."
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {isLoading ? (
+              <p className="p-3 text-sm text-muted-foreground">Carregando representantes...</p>
+            ) : filtered.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">Nenhum representante encontrado.</p>
+            ) : (
+              filtered.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => link(r.id, r.nome || "")}
+                  className={cn(
+                    "block w-full px-3 py-2 text-left text-sm hover:bg-muted",
+                    currentId === r.id && "bg-muted font-medium",
+                  )}
+                >
+                  {r.nome}
+                  {r.regiao ? <span className="text-muted-foreground"> · {r.regiao}</span> : null}
+                </button>
+              ))
+            )}
+          </div>
+          {currentId && (
+            <div className="border-t p-2">
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive" onClick={() => link(null, null)}>
+                <X className="h-4 w-4" /> Remover vínculo
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 // ============ AÇÃO SUGERIDA ============
 
 function SuggestedActionSection({ card, patch }: { card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
