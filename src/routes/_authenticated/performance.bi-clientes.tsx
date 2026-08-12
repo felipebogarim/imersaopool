@@ -197,19 +197,19 @@ function BIClientesPage() {
                 ) : (
                   filtered.map((row) => (
                     <tr key={row.id} className="hover:bg-muted/30 transition-colors group">
-                      <td className="px-4 py-2.5 font-medium sticky left-0 bg-background group-hover:bg-muted/30 z-10 border-r border-border/50">
-                        <div className="truncate max-w-[240px]" title={row.razao_social}>{row.razao_social}</div>
+                      <td className="px-3 sm:px-4 py-2.5 font-medium sticky left-0 bg-background group-hover:bg-muted/30 z-10 border-r border-border/50">
+                        <div className="truncate max-w-[150px] sm:max-w-[240px]" title={row.razao_social}>{row.razao_social}</div>
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground border-r border-border/50 whitespace-nowrap">{row.repName}</td>
-                      <td className="px-4 py-2.5 text-center border-r border-border/50">
+                      <td className="px-3 sm:px-4 py-2.5 text-xs text-muted-foreground border-r border-border/50 whitespace-nowrap">{row.repName}</td>
+                      <td className="px-2 sm:px-4 py-2.5 text-center border-r border-border/50">
                         {row.categoria ? (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted/50 whitespace-nowrap">
                             {row.categoria}
                           </span>
                         ) : "—"}
                       </td>
                       <td className={cn(
-                        "px-4 py-2.5 text-center font-bold border-r border-border/50 tabular-nums",
+                        "px-2 sm:px-4 py-2.5 text-center font-bold border-r border-border/50 tabular-nums whitespace-nowrap",
                         row.total_pct_status && FAROL_CELL_CLASS[row.total_pct_status as FarolStatus]
                       )}>
                         {row.computedAtainment > 0 ? `${row.computedAtainment.toFixed(1)}%` : "0%"}
