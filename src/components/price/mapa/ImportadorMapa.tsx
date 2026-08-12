@@ -306,4 +306,3 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
     </Dialog>
   );
 }
-}
