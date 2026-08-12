@@ -80,6 +80,10 @@ function MapaPrecosPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [filterFarol, setFilterFarol] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showDimColumns, setShowDimColumns] = useState(false);
+  const [noteTarget, setNoteTarget] = useState<any | null>(null);
+  const [noteText, setNoteText] = useState("");
 
   
   // Filtros estruturados
@@ -106,31 +110,70 @@ function MapaPrecosPage() {
 
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
-  const activeAnchors = importedAnchors.length > 0 ? importedAnchors : PERFIS_ANCHORS;
-  const activeCompetitors = importedCompetitors.length > 0 ? importedCompetitors : PERFIS_COMPETITORS;
+  const activeAnchors = useMemo(
+    () => enriquecerProdutos(importedAnchors.length > 0 ? importedAnchors : PERFIS_ANCHORS),
+    [importedAnchors]
+  );
+  const activeCompetitors = useMemo(
+    () => enriquecerProdutos(importedCompetitors.length > 0 ? importedCompetitors : PERFIS_COMPETITORS),
+    [importedCompetitors]
+  );
 
   const calculatedItems = useMemo(() => {
     if (!hasMapConfigured) return [];
-    return activeCompetitors.map(comp => {
-      // Find anchor using base_product_id or match by reference/sku if needed
-      const base = activeAnchors.find(a => a.id === comp.base_product_id);
-      return calculateMapaItem(comp, activeAnchors, adjustments);
-    });
+    return activeCompetitors.map(comp => calculateMapaItem(comp, activeAnchors, adjustments));
   }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
 
   const handleImported = (anchors: any[], competitors: any[]) => {
     setImportedAnchors(prev => {
-      // Merge anchors avoiding duplicates by SKU
-      const existingSkus = new Set(prev.map(a => a.sku));
-      const newAnchors = anchors.filter(a => !existingSkus.has(a.sku));
-      return [...prev, ...newAnchors];
+      const map = new Map(prev.map((a) => [a.id, a]));
+      anchors.forEach((a) => {
+        const old = map.get(a.id);
+        map.set(a.id, old ? { ...old, ...a, notas: old.notas || a.notas } : a);
+      });
+      return Array.from(map.values());
     });
     setImportedCompetitors(prev => {
-      // Upsert competitors by unique logical ID
+      // Upsert por ID lógico. Registros já existentes preservam status e notas
+      // (não reverter validações manuais já realizadas).
       const competitorMap = new Map(prev.map(c => [c.id, c]));
-      competitors.forEach(c => competitorMap.set(c.id, c));
+      competitors.forEach(c => {
+        const old = competitorMap.get(c.id);
+        competitorMap.set(c.id, old
+          ? { ...old, ...c, status: old.status ?? c.status, notas: old.notas || c.notas }
+          : c);
+      });
       return Array.from(competitorMap.values());
     });
+  };
+
+  const persist = (anchors: any[], competitors: any[]) => {
+    try {
+      localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(anchors));
+      localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(competitors));
+    } catch {
+      /* noop */
+    }
+  };
+
+  const updateCompetitor = (id: string, patch: Record<string, any>) => {
+    const next = activeCompetitors.map((c) => (c.id === id ? { ...c, ...patch } : c));
+    setImportedCompetitors(next);
+    setImportedAnchors(activeAnchors);
+    persist(activeAnchors, next);
+  };
+
+  const salvarNota = () => {
+    if (!noteTarget) return;
+    updateCompetitor(noteTarget.id, { notas: noteText });
+    toast.success("Nota salva e disponível na exportação Excel.");
+    setNoteTarget(null);
+    setNoteText("");
+  };
+
+  const alterarStatus = (item: any, status: EquivalenceStatus) => {
+    updateCompetitor(item.id, { status });
+    toast.success(`Status alterado para ${STATUS_LABEL[status]}.`);
   };
 
   const filteredItems = useMemo(() => {
