@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllKanbanClients } from "@/lib/kanban-clients";
+import { fetchAllKanbanReps } from "@/lib/kanban-reps";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
