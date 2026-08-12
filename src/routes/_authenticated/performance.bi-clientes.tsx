@@ -217,7 +217,12 @@ function BIClientesPage() {
                       {columns.map((col) => {
                         const metasStatus = row.metas_status as Record<string, FarolStatus>;
                         const status = metasStatus?.[col];
-                        const hasMeta = row.familias.some(f => f.toUpperCase().includes(col.toUpperCase()) || col.toUpperCase().includes(f.toUpperCase()));
+                        
+                        // O campo correto no banco é familia_pct (conforme erro acima e tipos do Supabase)
+                        const familyPct = row.familia_pct && typeof row.familia_pct === 'object' 
+                          ? (row.familia_pct as Record<string, any>)[col] 
+                          : null;
+
                         return (
                           <td 
                             key={col} 
@@ -226,7 +231,13 @@ function BIClientesPage() {
                               status && FAROL_CELL_CLASS[status]
                             )}
                           >
-                            {status === "sem_compra" ? "0%" : status ? `${FAROL_MIDPOINT[status]}%` : "0%"}
+                            {familyPct !== null && familyPct !== undefined 
+                              ? `${(Number(familyPct) * 100).toFixed(1)}%`
+                              : status === "sem_compra" 
+                                ? "0%" 
+                                : status 
+                                  ? `${FAROL_MIDPOINT[status]}%` 
+                                  : "0%"}
                           </td>
                         );
                       })}
