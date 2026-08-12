@@ -5,6 +5,10 @@ export const synthesizeSpeech = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { text: string; voice?: string }) => data)
   .handler(async ({ data }) => {
+    const MAX_CHARS = 5000;
+    if (!data.text?.trim() || data.text.length > MAX_CHARS) {
+      throw new Error("Texto inválido ou acima do limite de 5000 caracteres");
+    }
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
