@@ -163,7 +163,7 @@ function BIClientesPage() {
         </div>
 
         <div className="surface rounded-xl border border-border overflow-hidden shadow-sm">
-          <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+          <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm text-left border-collapse">
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
