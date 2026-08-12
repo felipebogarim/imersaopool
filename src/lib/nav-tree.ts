@@ -51,7 +51,7 @@ export const NAV_TREE: NavGroup[] = [
     label: "Preços",
     children: [
       { key: "price.mapa", label: "Mapa de Preços", to: "/price/mapa" },
-      { key: "price.simulador", label: "Simulador, R$ + Características", to: "/precos/simulador" },
+      { key: "price.simulador", label: "Simulador, R$ + Características", to: "/price/simulador" },
       { key: "price.comparativos", label: "Comparativos", to: "/price/comparativos" },
     ],
   },
