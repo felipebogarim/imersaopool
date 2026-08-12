@@ -80,8 +80,14 @@ function MapaPrecosPage() {
 
   
   // State for imported data
-  const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
-  const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
+  const [importedAnchors, setImportedAnchors] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [importedCompetitors, setImportedCompetitors] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+    return saved ? JSON.parse(saved) : [];
+  });
   
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
@@ -117,16 +123,23 @@ function MapaPrecosPage() {
     
     if (busca.trim()) {
       const t = busca.toLowerCase();
-      items = items.filter(item => 
-        item.marca.toLowerCase().includes(t) || 
-        item.nome.toLowerCase().includes(t) ||
-        item.referencia?.toLowerCase().includes(t)
-      );
+      items = items.filter(item => {
+        const base = activeAnchors.find(a => a.id === item.base_product_id);
+        const techLabel = item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : "";
+        
+        return (
+          item.marca.toLowerCase().includes(t) || 
+          item.nome.toLowerCase().includes(t) ||
+          item.referencia?.toLowerCase().includes(t) ||
+          base?.nome.toLowerCase().includes(t) ||
+          base?.referencia.toLowerCase().includes(t) ||
+          techLabel.toLowerCase().includes(t)
+        );
+      });
     }
 
     if (filterFarol) {
       if (filterFarol === "0%") {
-        // Filtro para quando a diferença é nula (0%)
         items = items.filter(item => Math.abs(item.diff_percentual || 0) < 0.1);
       } else {
         items = items.filter(item => item.farol === filterFarol);
@@ -134,13 +147,15 @@ function MapaPrecosPage() {
     }
     
     return items;
-  }, [calculatedItems, busca, filterFarol]);
+  }, [calculatedItems, busca, filterFarol, activeAnchors]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulação de salvamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(activeAnchors));
+      localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(activeCompetitors));
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
       toast.success("Resultados salvos com sucesso no repositório!");
     } catch (error) {
       toast.error("Erro ao salvar resultados.");
@@ -160,24 +175,34 @@ function MapaPrecosPage() {
       return {
         "Família": familia,
         "Produto Base Newline": base?.nome ?? "",
-        "Código Newline": base?.referencia ?? "",
+        "Código Newline": base?.sku ?? base?.referencia ?? "",
         "Preço Newline (R$)": base?.preco_normalizado ?? null,
+        "Dimensão Newline": base?.dimensoes?.largura ? `${base.dimensoes.largura}x${base.dimensoes.altura || 0}` : "",
+        "Nicho Newline": base?.dimensoes?.nicho ?? "",
         "Marca Concorrente": item.marca,
         "Modelo Concorrente": item.nome,
         "Referência Concorrente": item.referencia ?? "",
-        "Preço Concorrente (R$)": item.preco_simulado ?? item.preco_normalizado ?? null,
+        "Dimensão Concorrente": item.dimensoes?.largura ? `${item.dimensoes.largura}x${item.dimensoes.altura || 0}` : "",
+        "Preço Original (R$)": item.preco_base ?? null,
+        "Preço Normalizado por metro (R$)": item.preco_normalizado ?? null,
+        "Ajuste Simulado (%)": adjustments.find(a => a.brand === item.marca)?.adjustmentPct ?? 0,
+        "Preço Simulado (R$)": item.preco_simulado ?? null,
         "Diferença (R$)": item.diff_absoluta ?? null,
         "Diferença (%)": item.diff_percentual !== null && item.diff_percentual !== undefined
           ? Number(item.diff_percentual.toFixed(1))
           : null,
         "Farol": item.farol,
+        "Classificação Técnica": item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : "Alternativo",
+        "Status": item.status,
+        "Fonte Principal": item.fonte ?? "",
+        "Notas": item.notas ?? "",
       };
     });
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Mapa de Preços");
-    XLSX.writeFile(wb, `mapa-precos-${familia.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Planilha exportada com sucesso.");
+    XLSX.utils.book_append_sheet(wb, ws, "Mapa de Preços Completo");
+    XLSX.writeFile(wb, `mapa-precos-completo-${familia.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Planilha completa exportada com sucesso.");
   };
 
 

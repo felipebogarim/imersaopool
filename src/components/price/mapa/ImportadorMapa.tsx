@@ -59,19 +59,36 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
       const rawRows: RawMapaRow[] = jsonData.map((row: any) => {
+        // Obter os valores de preço Newline para posterior seleção baseada na tabela
+        const precoBrasil = row["Preço Newline Black Brasil"] !== undefined ? Number(String(row["Preço Newline Black Brasil"]).replace(",", ".").replace("R$", "").trim()) : null;
+        const precoSP = row["Preço Newline Black SP"] !== undefined ? Number(String(row["Preço Newline Black SP"]).replace(",", ".").replace("R$", "").trim()) : null;
+        
+        // Determinar o preço Newline com base no que estiver preenchido (o componente pai lidará com a seleção Brasil/SP na exibição se ambos existirem)
+        let basePreco = precoBrasil ?? precoSP;
+        if (basePreco === null) {
+          const fallbackPreco = row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"];
+          if (fallbackPreco !== undefined && fallbackPreco !== "") {
+            basePreco = Number(String(fallbackPreco).replace(",", ".").replace("R$", "").trim());
+          }
+        }
+
+        const concPrecoRaw = row["Preço Concorrente Normalizado por m"] !== undefined ? row["Preço Concorrente Normalizado por m"] :
+                             (row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"]);
+        let concPreco = null;
+        if (concPrecoRaw !== undefined && concPrecoRaw !== "") {
+          concPreco = Number(String(concPrecoRaw).replace(",", ".").replace("R$", "").trim());
+        }
+
         return {
           familia: row["Família"] || row["familia"] || familia,
           base_produto: row["Produto Base Newline"] || row["base_produto"] || row["PRODUTO_BASE"] || row["Produto"],
           base_codigo: String(row["Código Newline"] || row["base_codigo"] || row["CÓDIGO"] || row["SKU_NEWLINE"] || ""),
-          base_preco: row["Preço Newline Black Brasil"] !== undefined ? Number(String(row["Preço Newline Black Brasil"]).replace(",", ".").replace("R$", "").trim()) : 
-                      row["Preço Newline Black SP"] !== undefined ? Number(String(row["Preço Newline Black SP"]).replace(",", ".").replace("R$", "").trim()) : 
-                      (row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"] ? Number(String(row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"]).replace(",", ".").replace("R$", "").trim()) : null),
+          base_preco: basePreco,
           concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"] || row["MARCA"] || row["CONCORRENTE"] || "",
           concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"] || row["MODELO"] || row["ITEM"] || "",
           concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"] || row["CÓDIGO_CONCORRENTE"] || null,
-          concorrente_preco: row["Preço Concorrente Normalizado por m"] !== undefined ? Number(String(row["Preço Concorrente Normalizado por m"]).replace(",", ".").replace("R$", "").trim()) :
-                             (row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"] ? Number(String(row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"]).replace(",", ".").replace("R$", "").trim()) : null),
-          classificacao: row["Classificação"] || row["classificacao"] || row["EQUIVALÊNCIA"] || "",
+          concorrente_preco: concPreco,
+          classificacao: row["Classificação Técnica"] || row["Classificação"] || row["classificacao"] || row["EQUIVALÊNCIA"] || "",
           nicho: row["Nicho"] || row["nicho"],
           largura: row["Largura"] || row["largura"],
           altura: row["Altura"] || row["altura"],
