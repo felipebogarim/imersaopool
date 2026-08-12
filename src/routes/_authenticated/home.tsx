@@ -149,12 +149,16 @@ function HomeComponent() {
               { label: "COMERCIAL", icon: TrendingUp },
               { label: "PRODUTO", icon: Tag },
               { label: "MARKETING", icon: FileSearch },
-              { label: "GOVERNANÇA", icon: Map }
+              { label: "GOVERNANÇA", icon: MapIcon }
             ].map((item) => (
-              <div key={item.label} className="bg-white border border-slate-200 rounded-lg p-8 text-center shadow-sm flex flex-col items-center gap-4 hover:border-slate-300 transition-colors">
+              <Link
+                key={item.label}
+                to="/mapa-acoes"
+                className="bg-white border border-slate-200 rounded-lg p-8 text-center shadow-sm flex flex-col items-center gap-4 hover:border-slate-400 transition-all hover:scale-[1.02]"
+              >
                 <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">Ação</span>
                 <h3 className="text-xs font-bold text-slate-800 tracking-[0.15em]">{item.label}</h3>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
