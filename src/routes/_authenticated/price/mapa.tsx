@@ -48,9 +48,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { PERFIS_ANCHORS, PERFIS_COMPETITORS } from "@/lib/price-mapa/mock-data";
-import { FAMILIAS_MAPA, PriceTable, BrandAdjustment } from "@/lib/price-mapa/types";
+import { FAMILIAS_MAPA, PriceTable, BrandAdjustment, MapaCalculatedItem } from "@/lib/price-mapa/types";
 import { calculateMapaItem } from "@/lib/price-mapa/calculations";
-import { LEVEL_CLASS, LEVEL_LABEL } from "@/lib/price-comparativos-core";
+import { LEVEL_CLASS, LEVEL_LABEL, EquivalenceLevel } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
 import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
@@ -80,8 +80,14 @@ function MapaPrecosPage() {
 
   
   // State for imported data
-  const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
-  const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
+  const [importedAnchors, setImportedAnchors] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [importedCompetitors, setImportedCompetitors] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+    return saved ? JSON.parse(saved) : [];
+  });
   
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
@@ -117,16 +123,23 @@ function MapaPrecosPage() {
     
     if (busca.trim()) {
       const t = busca.toLowerCase();
-      items = items.filter(item => 
-        item.marca.toLowerCase().includes(t) || 
-        item.nome.toLowerCase().includes(t) ||
-        item.referencia?.toLowerCase().includes(t)
-      );
+      items = items.filter((item: MapaCalculatedItem) => {
+        const base = activeAnchors.find(a => a.id === item.base_product_id);
+        const techLabel = item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica as EquivalenceLevel] : "";
+        
+        return (
+          item.marca.toLowerCase().includes(t) || 
+          item.nome.toLowerCase().includes(t) ||
+          item.referencia?.toLowerCase().includes(t) ||
+          base?.nome.toLowerCase().includes(t) ||
+          base?.referencia.toLowerCase().includes(t) ||
+          techLabel.toLowerCase().includes(t)
+        );
+      });
     }
 
     if (filterFarol) {
       if (filterFarol === "0%") {
-        // Filtro para quando a diferença é nula (0%)
         items = items.filter(item => Math.abs(item.diff_percentual || 0) < 0.1);
       } else {
         items = items.filter(item => item.farol === filterFarol);
@@ -134,13 +147,15 @@ function MapaPrecosPage() {
     }
     
     return items;
-  }, [calculatedItems, busca, filterFarol]);
+  }, [calculatedItems, busca, filterFarol, activeAnchors]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulação de salvamento
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(activeAnchors));
+      localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(activeCompetitors));
+      
+      await new Promise(resolve => setTimeout(resolve, 800));
       toast.success("Resultados salvos com sucesso no repositório!");
     } catch (error) {
       toast.error("Erro ao salvar resultados.");
@@ -155,29 +170,39 @@ function MapaPrecosPage() {
       return;
     }
     const XLSX = await import("xlsx");
-    const rows = filteredItems.map((item: any) => {
+    const rows = filteredItems.map((item: MapaCalculatedItem) => {
       const base = activeAnchors.find((a: any) => a.id === item.base_product_id);
       return {
         "Família": familia,
         "Produto Base Newline": base?.nome ?? "",
-        "Código Newline": base?.referencia ?? "",
+        "Código Newline": base?.sku ?? base?.referencia ?? "",
         "Preço Newline (R$)": base?.preco_normalizado ?? null,
+        "Dimensão Newline": base?.dimensoes?.largura ? `${base.dimensoes.largura}x${base.dimensoes.altura || 0}` : "",
+        "Nicho Newline": base?.dimensoes?.nicho ?? "",
         "Marca Concorrente": item.marca,
         "Modelo Concorrente": item.nome,
         "Referência Concorrente": item.referencia ?? "",
-        "Preço Concorrente (R$)": item.preco_simulado ?? item.preco_normalizado ?? null,
+        "Dimensão Concorrente": item.dimensoes?.largura ? `${item.dimensoes.largura}x${item.dimensoes.altura || 0}` : "",
+        "Preço Original (R$)": item.preco_base ?? null,
+        "Preço Normalizado por metro (R$)": item.preco_normalizado ?? null,
+        "Ajuste Simulado (%)": adjustments.find(a => a.brand === item.marca)?.adjustmentPct ?? 0,
+        "Preço Simulado (R$)": item.preco_simulado ?? null,
         "Diferença (R$)": item.diff_absoluta ?? null,
         "Diferença (%)": item.diff_percentual !== null && item.diff_percentual !== undefined
           ? Number(item.diff_percentual.toFixed(1))
           : null,
         "Farol": item.farol,
+        "Classificação Técnica": item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : "Alternativo",
+        "Status": item.status,
+        "Fonte Principal": item.fonte ?? "",
+        "Notas": item.notas ?? "",
       };
     });
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Mapa de Preços");
-    XLSX.writeFile(wb, `mapa-precos-${familia.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Planilha exportada com sucesso.");
+    XLSX.utils.book_append_sheet(wb, ws, "Mapa de Preços Completo");
+    XLSX.writeFile(wb, `mapa-precos-completo-${familia.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Planilha completa exportada com sucesso.");
   };
 
 
@@ -427,9 +452,9 @@ function MapaPrecosPage() {
                   const base = activeAnchors.find(a => a.id === item.base_product_id);
                   const isEven = index % 2 === 0;
                   const farolColors = {
-                    verde: "bg-emerald-500 text-black border-emerald-500/20",
-                    amarelo: "bg-amber-500 text-black border-amber-500/20",
-                    vermelho: "bg-destructive text-white border-destructive/20",
+                    verde: "bg-emerald-500/80 text-black border-emerald-500/20",
+                    amarelo: "bg-amber-500/80 text-black border-amber-500/20",
+                    vermelho: "bg-destructive/80 text-white border-destructive/20",
                     cinza: "bg-muted text-muted-foreground border-transparent"
                   };
 
@@ -437,13 +462,13 @@ function MapaPrecosPage() {
                     <TableRow 
                       key={item.id} 
                       className={cn(
-                        "border-white/5 hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.03]"
+                        "border-b border-white/[0.05] hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.02]"
                       )}
                     >
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-light text-sm">{base?.nome}</span>
+                          <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
                           <span className="text-[10px] text-muted-foreground">{base?.sku}</span>
                         </div>
                       </TableCell>
@@ -454,7 +479,7 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-light text-sm text-white/80">{item.nome}</span>
+                          <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
                           <span className="text-[10px] text-muted-foreground">{item.sku}</span>
                         </div>
                       </TableCell>
@@ -465,7 +490,7 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-light text-white/80">
+                          <span className="text-sm font-light text-nl-gold/90">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
@@ -482,14 +507,9 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className={cn("py-4 text-center font-medium", farolColors[item.farol || "cinza"])}>
-                        <span className="text-xs uppercase tracking-wider">
-                          {item.diff_percentual !== null ? `${item.diff_percentual > 0 ? "+" : ""}${item.diff_percentual.toFixed(1)}%` : "—"}
-                        </span>
-                      </TableCell>
                       <TableCell className="py-4">
-                        <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[item.classificacao_tecnica ?? "insuficiente"])}>
-                          {LEVEL_LABEL[item.classificacao_tecnica ?? "insuficiente"]}
+                        <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
+                          {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-4 text-right pr-6">

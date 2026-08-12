@@ -21,14 +21,25 @@ export interface RawMapaRow {
  * Mapeia a classificação textual da planilha para o enum EquivalenceLevel
  */
 function mapClassificacao(text: string): EquivalenceLevel {
-  const t = (text || "").toLowerCase();
+  const t = (text || "").toLowerCase().trim();
+  
+  // Mapeamento direto conforme exigido
+  if (t === "equivalente direto") return "direto";
+  if (t === "aproximado forte") return "aproximado";
+  if (t === "aproximado") return "aproximado";
+  if (t === "alternativa") return "alternativo";
+  if (t === "alternativa estrutural") return "alternativo";
+  if (t === "incompativel" || t === "incompatível") return "incompativel";
+
+  // Fallbacks se não for correspondência exata mas contiver as palavras-chave
   if (t.includes("direto")) return "direto";
-  if (t.includes("forte") || t.includes("aproximado forte")) return "aproximado"; 
+  if (t.includes("forte")) return "aproximado"; 
   if (t.includes("aproximado")) return "aproximado";
-  if (t.includes("alternativa estrutural")) return "alternativo";
+  if (t.includes("estrutural")) return "alternativo";
   if (t.includes("alternativo") || t.includes("alternativa")) return "alternativo";
   if (t.includes("incompativel") || t.includes("incompatível")) return "incompativel";
-  return "alternativo"; // Default
+  
+  return "alternativo"; // Default se realmente vazio ou irreconhecível
 }
 
 /**
