@@ -165,9 +165,9 @@ function VisaoImersao2Page() {
     }
   }, [avulso]);
 
-  /** Base comparável da teia: demais relatórios salvos (um por cliente), exceto o aberto. */
-  const comparaveis = useMemo(() => {
-    if (!avulso) return [];
+  /** Base comparável: demais relatórios salvos (um por cliente), exceto o aberto. */
+  const outrosRelatorios = useMemo(() => {
+    if (!avulso) return [] as NonNullable<typeof visao>[];
     const atualNome = (avulso.data.client.name ?? "").trim().toLowerCase();
     const vistos = new Set<string>();
     const out: NonNullable<typeof visao>[] = [];
@@ -179,7 +179,7 @@ function VisaoImersao2Page() {
         const stored = r.structured_data as Record<string, unknown> | null;
         const data = Immersion2DataSchema.parse((stored as any)?.data ?? stored);
         const vm = buildVisaoImersao2ViewModel(data, extractEditorialChapters(r.content_markdown));
-        if (!vm?.brand_positioning) continue;
+        if (!vm) continue;
         vistos.add(nome);
         out.push(vm);
       } catch {
@@ -188,6 +188,19 @@ function VisaoImersao2Page() {
     }
     return out;
   }, [reports, avulso]);
+
+  /** Teia exige posicionamento de marcas; o paralelo com o grupo usa toda a base. */
+  const comparaveis = useMemo(
+    () => outrosRelatorios.filter(v => !!v.brand_positioning),
+    [outrosRelatorios],
+  );
+
+  /** Relatório enriquecido com o paralelo calculado contra os demais clientes. */
+  const visaoComGrupo = useMemo(
+    () => (visao ? withGroupComparison(visao, outrosRelatorios) : null),
+    [visao, outrosRelatorios],
+  );
+
 
 
   function confirmarImportacao() {
