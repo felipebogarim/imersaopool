@@ -5,11 +5,11 @@ export interface RawMapaRow {
   familia: string;
   base_produto: string;
   base_codigo: string;
-  base_preco: number;
+  base_preco: number | null;
   concorrente_marca: string;
   concorrente_modelo: string;
   concorrente_codigo?: string;
-  concorrente_preco: number;
+  concorrente_preco: number | null;
   classificacao: string;
   nicho?: number;
   largura?: number;
@@ -23,8 +23,9 @@ export interface RawMapaRow {
 function mapClassificacao(text: string): EquivalenceLevel {
   const t = (text || "").toLowerCase();
   if (t.includes("direto")) return "direto";
-  if (t.includes("forte")) return "aproximado"; // Aproximado forte
+  if (t.includes("forte") || t.includes("aproximado forte")) return "aproximado"; 
   if (t.includes("aproximado")) return "aproximado";
+  if (t.includes("alternativa estrutural")) return "alternativo";
   if (t.includes("alternativo") || t.includes("alternativa")) return "alternativo";
   if (t.includes("incompativel") || t.includes("incompatível")) return "incompativel";
   return "alternativo"; // Default
@@ -39,7 +40,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
 
   rows.forEach((row, index) => {
     // 1. Criar ou obter Produto Âncora (Newline)
-    const anchorId = `anchor-${row.base_codigo}`;
+    const anchorId = `anchor-${row.base_codigo}`.replace(/\s+/g, '-').toLowerCase();
     if (!anchorsMap.has(anchorId)) {
       anchorsMap.set(anchorId, {
         id: anchorId,
@@ -50,16 +51,16 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
         specs: {},
         preco_base: row.base_preco,
         preco_normalizado: row.base_preco,
-        price_availability: "informado",
+        price_availability: row.base_preco !== null ? "informado" : "nao_informado",
         is_base: true,
         status: "validado"
       });
     }
 
     // 2. Criar Concorrente
-    // Importante: Cada linha é uma comparação independente. 
-    // A ID deve ser única para cada comparação.
-    const compId = `comp-${index}-${row.concorrente_marca}-${row.concorrente_modelo}`.replace(/\s+/g, '-').toLowerCase();
+    // Chave lógica: Família + Produto Base Newline + Código Newline + Marca Concorrente + Modelo Concorrente
+    const logicalKey = `${row.familia}-${row.base_produto}-${row.base_codigo}-${row.concorrente_marca}-${row.concorrente_modelo}`.toLowerCase().replace(/\s+/g, '-');
+    const compId = `comp-${logicalKey}`;
     
     // Regra especial: Usina Bob 30865 = R$ 39,60/m
     let precoNormalizado = row.concorrente_preco;
@@ -76,7 +77,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
       specs: {},
       preco_base: row.concorrente_preco,
       preco_normalizado: precoNormalizado,
-      price_availability: "informado",
+      price_availability: precoNormalizado !== null ? "informado" : "nao_informado",
       is_base: false,
       base_product_id: anchorId,
       classificacao_tecnica: mapClassificacao(row.classificacao),

@@ -90,12 +90,26 @@ function MapaPrecosPage() {
 
   const calculatedItems = useMemo(() => {
     if (!hasMapConfigured) return [];
-    return activeCompetitors.map(comp => calculateMapaItem(comp, activeAnchors, adjustments));
+    return activeCompetitors.map(comp => {
+      // Find anchor using base_product_id or match by reference/sku if needed
+      const base = activeAnchors.find(a => a.id === comp.base_product_id);
+      return calculateMapaItem(comp, activeAnchors, adjustments);
+    });
   }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
 
   const handleImported = (anchors: any[], competitors: any[]) => {
-    setImportedAnchors(anchors);
-    setImportedCompetitors(competitors);
+    setImportedAnchors(prev => {
+      // Merge anchors avoiding duplicates by SKU
+      const existingSkus = new Set(prev.map(a => a.sku));
+      const newAnchors = anchors.filter(a => !existingSkus.has(a.sku));
+      return [...prev, ...newAnchors];
+    });
+    setImportedCompetitors(prev => {
+      // Upsert competitors by unique logical ID
+      const competitorMap = new Map(prev.map(c => [c.id, c]));
+      competitors.forEach(c => competitorMap.set(c.id, c));
+      return Array.from(competitorMap.values());
+    });
   };
 
   const filteredItems = useMemo(() => {
@@ -434,11 +448,13 @@ function MapaPrecosPage() {
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-sm font-semibold text-nl-gold brightness-90">{formatBRL(base?.preco_normalizado ?? 0)}</span>
+                        <span className="text-sm font-bold text-white">
+                          {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
+                        </span>
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-light text-sm">{item.nome}</span>
+                          <span className="font-light text-sm text-white/80">{item.nome}</span>
                           <span className="text-[10px] text-muted-foreground">{item.sku}</span>
                         </div>
                       </TableCell>
@@ -449,13 +465,20 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-light">
-                            {formatBRL(item.preco_simulado ?? 0)}
+                          <span className="text-sm font-light text-white/80">
+                            {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
-                          {item.preco_simulado !== item.preco_normalizado && (
-                            <span className="text-[9px] text-muted-foreground line-through">
-                              {formatBRL(item.preco_normalizado ?? 0)}
-                            </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex justify-center h-8 items-center">
+                          {item.diff_percentual !== null && (
+                            <div className={cn(
+                              "w-[60%] h-full flex items-center justify-center rounded-md text-[11px] font-bold shadow-sm",
+                              farolColors[item.farol as keyof typeof farolColors]
+                            )}>
+                              {item.diff_percentual > 0 ? "+" : ""}{item.diff_percentual.toFixed(1)}%
+                            </div>
                           )}
                         </div>
                       </TableCell>
