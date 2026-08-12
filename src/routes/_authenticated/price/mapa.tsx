@@ -98,8 +98,18 @@ function MapaPrecosPage() {
   }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
 
   const handleImported = (anchors: any[], competitors: any[]) => {
-    setImportedAnchors(anchors);
-    setImportedCompetitors(competitors);
+    setImportedAnchors(prev => {
+      // Merge anchors avoiding duplicates by SKU
+      const existingSkus = new Set(prev.map(a => a.sku));
+      const newAnchors = anchors.filter(a => !existingSkus.has(a.sku));
+      return [...prev, ...newAnchors];
+    });
+    setImportedCompetitors(prev => {
+      // Upsert competitors by unique logical ID
+      const competitorMap = new Map(prev.map(c => [c.id, c]));
+      competitors.forEach(c => competitorMap.set(c.id, c));
+      return Array.from(competitorMap.values());
+    });
   };
 
   const filteredItems = useMemo(() => {
