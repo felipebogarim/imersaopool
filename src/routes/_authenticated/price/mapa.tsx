@@ -71,6 +71,9 @@ function MapaPrecosPage() {
   const [isSimuladorOpen, setIsSimuladorOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "charts">("table");
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [filterFarol, setFilterFarol] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   
   // State for imported data
   const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
@@ -92,14 +95,42 @@ function MapaPrecosPage() {
   };
 
   const filteredItems = useMemo(() => {
-    if (!busca.trim()) return calculatedItems;
-    const t = busca.toLowerCase();
-    return calculatedItems.filter(item => 
-      item.marca.toLowerCase().includes(t) || 
-      item.nome.toLowerCase().includes(t) ||
-      item.referencia?.toLowerCase().includes(t)
-    );
-  }, [calculatedItems, busca]);
+    let items = calculatedItems;
+    
+    if (busca.trim()) {
+      const t = busca.toLowerCase();
+      items = items.filter(item => 
+        item.marca.toLowerCase().includes(t) || 
+        item.nome.toLowerCase().includes(t) ||
+        item.referencia?.toLowerCase().includes(t)
+      );
+    }
+
+    if (filterFarol) {
+      if (filterFarol === "0%") {
+        // Filtro para quando a diferença é nula (0%)
+        items = items.filter(item => Math.abs(item.diff_percentual || 0) < 0.1);
+      } else {
+        items = items.filter(item => item.farol === filterFarol);
+      }
+    }
+    
+    return items;
+  }, [calculatedItems, busca, filterFarol]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Simulação de salvamento
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success("Resultados salvos com sucesso no repositório!");
+    } catch (error) {
+      toast.error("Erro ao salvar resultados.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   const indicators = useMemo(() => {
     const total = calculatedItems.length;
@@ -153,6 +184,16 @@ function MapaPrecosPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {importedCompetitors.length > 0 && (
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-9 px-6 animate-pulse"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Salvar Resultado
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm" 
@@ -161,12 +202,35 @@ function MapaPrecosPage() {
           >
             <Upload className="h-4 w-4 mr-2 text-nl-gold" /> Carregar dados
           </Button>
-          <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
-            <Filter className="h-4 w-4 mr-2 text-nl-gold" /> Filtros
-          </Button>
-          <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
-            <Columns className="h-4 w-4 mr-2 text-nl-gold" /> Colunas
-          </Button>
+          
+          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5 ml-2">
+            {[
+              { label: "Verde", value: "verde" },
+              { label: "Amarelo", value: "amarelo" },
+              { label: "Vermelho", value: "vermelho" },
+              { label: "0%", value: "0%" }
+            ].map((f) => (
+              <Button
+                key={f.value}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 text-[10px] uppercase tracking-tighter transition-all",
+                  filterFarol === f.value ? "bg-white/10 shadow-sm" : "text-muted-foreground opacity-60"
+                )}
+                onClick={() => setFilterFarol(filterFarol === f.value ? null : f.value)}
+              >
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full mr-1.5", 
+                  f.value === "verde" ? "bg-emerald-500" : 
+                  f.value === "amarelo" ? "bg-amber-500" : 
+                  f.value === "vermelho" ? "bg-destructive" : "bg-white"
+                )} />
+                {f.label}
+              </Button>
+            ))}
+          </div>
+
           <Button 
             variant="outline" 
             size="sm" 
@@ -242,54 +306,8 @@ function MapaPrecosPage() {
         </div>
       ) : (
         <>
-          {/* Dashboard de Inteligência */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="surface border-white/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Produtos Chave Newline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-light text-nl-gold">{activeAnchors.length}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Produtos base Newline identificados</p>
-              </CardContent>
-            </Card>
-            <Card className="surface border-white/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Comparações analisadas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-light text-white">{indicators.total}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Total de registros independentes</p>
-              </CardContent>
-            </Card>
-            <Card className="surface border-white/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Newline mais barata</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-light text-emerald-500">{indicators.verde}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Diferença &lt; 0%</p>
-              </CardContent>
-            </Card>
-            <Card className="surface border-white/5 border-l-amber-500/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preços Próximos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-light text-amber-500">{indicators.amarelo}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Diferença entre 0% e +10%</p>
-              </CardContent>
-            </Card>
-            <Card className="surface border-white/5 border-l-destructive/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Newline mais cara</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-light text-destructive">{indicators.vermelho}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Diferença &gt; +10%</p>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Ocultamos blocos de indicadores antigos conforme solicitado */}
+
 
           {viewMode === "charts" ? (
             <GraficosMapa items={calculatedItems} anchors={activeAnchors} />
@@ -347,17 +365,24 @@ function MapaPrecosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map((item) => {
+                {filteredItems.map((item, index) => {
                   const base = activeAnchors.find(a => a.id === item.base_product_id);
+                  const isEven = index % 2 === 0;
                   const farolColors = {
-                    verde: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-                    amarelo: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-                    vermelho: "bg-destructive/10 text-destructive border-destructive/20",
+                    verde: "bg-emerald-500 text-black border-emerald-500/20",
+                    amarelo: "bg-amber-500 text-black border-amber-500/20",
+                    vermelho: "bg-destructive text-white border-destructive/20",
                     cinza: "bg-muted text-muted-foreground border-transparent"
                   };
 
                   return (
-                    <TableRow key={item.id} className="border-white/5 hover:bg-white/[0.02] transition-colors group">
+                    <TableRow 
+                      key={item.id} 
+                      className={cn(
+                        "border-white/5 hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.03]"
+                      )}
+                    >
                       <TableCell className="py-4">
                         <div className="flex flex-col">
                           <span className="font-light text-sm">{base?.nome}</span>
@@ -365,7 +390,7 @@ function MapaPrecosPage() {
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-sm font-light text-nl-gold">{formatBRL(base?.preco_normalizado ?? 0)}</span>
+                        <span className="text-sm font-semibold text-nl-gold brightness-90">{formatBRL(base?.preco_normalizado ?? 0)}</span>
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">

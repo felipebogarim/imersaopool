@@ -53,21 +53,24 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const rawRows: RawMapaRow[] = jsonData.map((row: any) => ({
-        familia: row["Família"] || row["familia"] || familia,
-        base_produto: row["Produto Base Newline"] || row["base_produto"],
-        base_codigo: String(row["Código Newline"] || row["base_codigo"]),
-        base_preco: Number(row["Preço Newline"] || row["base_preco"] || 0),
-        concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"],
-        concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"],
-        concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"],
-        concorrente_preco: Number(row["Preço Concorrente"] || row["concorrente_preco"] || 0),
-        classificacao: row["Classificação"] || row["classificacao"] || "",
-        nicho: row["Nicho"] || row["nicho"],
-        largura: row["Largura"] || row["largura"],
-        altura: row["Altura"] || row["altura"],
-        notas: row["Notas"] || row["notas"],
-      }));
+      const rawRows: RawMapaRow[] = jsonData.map((row: any) => {
+        return {
+          familia: row["Família"] || row["familia"] || familia,
+          base_produto: row["Produto Base Newline"] || row["base_produto"] || row["PRODUTO_BASE"] || row["Produto"],
+          base_codigo: String(row["Código Newline"] || row["base_codigo"] || row["CÓDIGO"] || row["SKU_NEWLINE"] || ""),
+          base_preco: Number(row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"] || 0),
+          concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"] || row["MARCA"] || row["CONCORRENTE"],
+          concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"] || row["MODELO"] || row["ITEM"],
+          concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"] || row["CÓDIGO_CONCORRENTE"],
+          concorrente_preco: Number(row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"] || 0),
+          classificacao: row["Classificação"] || row["classificacao"] || row["EQUIVALÊNCIA"] || "",
+          nicho: row["Nicho"] || row["nicho"],
+          largura: row["Largura"] || row["largura"],
+          altura: row["Altura"] || row["altura"],
+          notas: row["Notas"] || row["notas"],
+        };
+      });
+
 
       const { anchors, competitors } = processRawMapaRows(rawRows);
 
