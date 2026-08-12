@@ -23,23 +23,25 @@ describe("backup-download: autorização do chamador", () => {
   });
 
   it("recusa chamada sem chave", async () => {
-    const res = verifyApiKey(req());
+    const res = await verifyApiKey(req());
     expect(res?.status).toBe(401);
   });
 
   it("recusa chave incorreta", async () => {
-    const res = verifyApiKey(req({ apikey: "errada" }));
+    const res = await verifyApiKey(req({ apikey: "errada" }));
     expect(res?.status).toBe(401);
   });
 
   it("recusa quando o servidor não tem chave configurada", async () => {
     delete process.env.SUPABASE_PUBLISHABLE_KEY;
-    const res = verifyApiKey(req({ apikey: "qualquer" }));
+    delete process.env.BACKUP_CRON_SECRET;
+    const res = await verifyApiKey(req({ apikey: "qualquer" }));
     expect(res?.status).toBe(401);
   });
 
   it("aceita a chave correta (header apikey ou x-api-key)", async () => {
-    expect(verifyApiKey(req({ apikey: KEY }))).toBeNull();
-    expect(verifyApiKey(req({ "x-api-key": KEY }))).toBeNull();
+    process.env.BACKUP_CRON_SECRET = KEY;
+    expect(await verifyApiKey(req({ apikey: KEY }))).toBeNull();
+    expect(await verifyApiKey(req({ "x-api-key": KEY }))).toBeNull();
   });
 });
