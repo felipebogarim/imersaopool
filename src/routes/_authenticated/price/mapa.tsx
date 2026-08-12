@@ -417,13 +417,6 @@ function MapaPrecosPage() {
                           </TooltipProvider>
                         </div>
                       </TableCell>
-                              <TooltipContent className="bg-black border-white/10 text-[11px]">
-                                <p>Posicionamento Newline vs {item.marca}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
                       <TableCell className="py-4">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[item.classificacao_tecnica ?? "insuficiente"])}>
                           {LEVEL_LABEL[item.classificacao_tecnica ?? "insuficiente"]}
