@@ -16,6 +16,7 @@ interface ImportadorMapaProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   familia: string;
+  onImported: (anchors: any[], competitors: any[]) => void;
 }
 
 export function ImportadorMapa({ open, onOpenChange, familia }: ImportadorMapaProps) {
