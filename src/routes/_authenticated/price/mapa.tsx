@@ -50,6 +50,7 @@ import { LEVEL_CLASS, LEVEL_LABEL } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
 import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
+import { ImportadorMapa } from "@/components/price/mapa/ImportadorMapa";
 
 
 export const Route = createFileRoute("/_authenticated/price/mapa")({
@@ -69,6 +70,7 @@ function MapaPrecosPage() {
   const [adjustments, setAdjustments] = useState<BrandAdjustment[]>([]);
   const [isSimuladorOpen, setIsSimuladorOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "charts">("table");
+  const [isImportOpen, setIsImportOpen] = useState(false);
   
   const hasMapConfigured = familia === "Perfis";
 
@@ -103,6 +105,11 @@ function MapaPrecosPage() {
         adjustments={adjustments}
         onAdjustmentsChange={setAdjustments}
       />
+      <ImportadorMapa 
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        familia={familia}
+      />
 
       {/* Breadcrumb / Nav */}
       <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest px-1">
@@ -133,7 +140,12 @@ function MapaPrecosPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-white/10 font-light h-9"
+            onClick={() => setIsImportOpen(true)}
+          >
             <Upload className="h-4 w-4 mr-2 text-nl-gold" /> Carregar dados
           </Button>
           <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
@@ -208,7 +220,10 @@ function MapaPrecosPage() {
               Esta família ainda não possui produtos âncora ou concorrentes mapeados para inteligência competitiva.
             </p>
           </div>
-          <Button className="bg-nl-gold text-black hover:bg-nl-gold/90 font-medium px-8">
+          <Button 
+            className="bg-nl-gold text-black hover:bg-nl-gold/90 font-medium px-8"
+            onClick={() => setIsImportOpen(true)}
+          >
             Carregar dados
           </Button>
         </div>
