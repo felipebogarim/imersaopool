@@ -149,6 +149,8 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
                 />
               </div>
               <ClientLinkSection card={card} patch={patch} />
+              <RepLinkSection card={card} patch={patch} />
+
               <LabelsPicker cardId={card.id} boardId={card.board_id} />
               <MembersPicker cardId={card.id} boardId={card.board_id} workspaceId={board.workspace_id} />
               <SuggestedActionSection card={card} patch={patch} />
