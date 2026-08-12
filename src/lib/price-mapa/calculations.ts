@@ -19,7 +19,6 @@ export function calculateMapaItem(
   if (base && base.preco_normalizado !== null && preco_simulado !== null && preco_simulado > 0) {
     diff_absoluta = base.preco_normalizado - preco_simulado;
     // Formula: ((Preço Newline - Preço Concorrente) / Preço Concorrente) * 100
-    // If Newline (46.20) and Comp (107.10), diff is ((46.20 - 107.10) / 107.10) * 100 = -56.8%
     diff_percentual = ((base.preco_normalizado - preco_simulado) / preco_simulado) * 100;
 
     // RULE 14: 
@@ -42,4 +41,28 @@ export function calculateMapaItem(
     diff_percentual,
     farol
   };
+}
+
+export function calculateTechnicalProximity(a: MapaProduct, b: MapaProduct): number {
+  if (!a.dimensoes || !b.dimensoes) return 0;
+  
+  let score = 100;
+  const weights = { nicho: 40, largura: 30, altura: 30 };
+  
+  if (a.dimensoes.nicho !== b.dimensoes.nicho) {
+    const diff = Math.abs((a.dimensoes.nicho || 0) - (b.dimensoes.nicho || 0));
+    score -= Math.min(weights.nicho, diff * 5);
+  }
+  
+  if (a.dimensoes.largura !== b.dimensoes.largura) {
+    const diff = Math.abs((a.dimensoes.largura || 0) - (b.dimensoes.largura || 0));
+    score -= Math.min(weights.largura, diff * 5);
+  }
+  
+  if (a.dimensoes.altura !== b.dimensoes.altura) {
+    const diff = Math.abs((a.dimensoes.altura || 0) - (b.dimensoes.altura || 0));
+    score -= Math.min(weights.altura, diff * 5);
+  }
+  
+  return Math.max(0, Math.round(score));
 }
