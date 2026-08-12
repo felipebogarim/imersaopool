@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export const synthesizeSpeech = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { text: string; voice?: string }) => data)
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
