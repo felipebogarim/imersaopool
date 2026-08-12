@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, FileSearch, Tag, Map, ArrowRight } from "lucide-react";
+import { TrendingUp, FileSearch, Tag, Map as MapIcon, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "Home — PoolFlux" }] }),
