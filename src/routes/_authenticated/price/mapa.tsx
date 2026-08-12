@@ -423,17 +423,6 @@ function MapaPrecosPage() {
                           {item.diff_percentual !== null ? `${item.diff_percentual > 0 ? "+" : ""}${item.diff_percentual.toFixed(1)}%` : "—"}
                         </span>
                       </TableCell>
-                              <TooltipContent className="bg-[#0A0A0A] border-white/10 text-white">
-                                <p className="text-xs">
-                                  {item.farol === "verde" && "Newline mais barata"}
-                                  {item.farol === "amarelo" && "Preços próximos"}
-                                  {item.farol === "vermelho" && "Newline mais cara"}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
                       <TableCell className="py-4">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[item.classificacao_tecnica ?? "insuficiente"])}>
                           {LEVEL_LABEL[item.classificacao_tecnica ?? "insuficiente"]}
