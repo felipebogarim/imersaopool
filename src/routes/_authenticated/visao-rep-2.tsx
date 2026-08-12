@@ -860,6 +860,13 @@ function VisaoRep2View({
         mostrarUpload={false}
       />
 
+      {/* Ações atreladas ao Rep */}
+      <AcoesAtreladasRep
+        repId={visao.metadata.representative_id ?? null}
+        repName={visao.metadata.representative_name ?? null}
+      />
+
+
       {/* Áreas de aprofundamento */}
       <div className="space-y-3 pt-2">
       <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
