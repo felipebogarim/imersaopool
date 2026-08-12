@@ -572,40 +572,40 @@ function MapaPrecosPage() {
                     <TableRow 
                       key={item.id} 
                       className={cn(
-                        "border-b border-white/[0.08] hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.03]"
+                        "border-b border-white/15 hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.05]"
                       )}
                     >
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
                           <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <span className="text-sm font-semibold text-nl-gold">
                           {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
                           <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <Badge variant="outline" className="font-light text-[10px] border-white/20 text-nl-gold/80 uppercase tracking-wider px-2 py-0">
                           {item.marca}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex flex-col">
                           <span className="text-sm font-light text-nl-gold/90">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <div className="flex justify-center h-8 items-center">
                           {item.diff_percentual !== null && (
                             <div className={cn(
@@ -617,7 +617,7 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/[0.05]">
+                      <TableCell className="py-5 border-r border-white/10">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
                           {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
