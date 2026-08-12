@@ -217,7 +217,12 @@ function BIClientesPage() {
                       {columns.map((col) => {
                         const metasStatus = row.metas_status as Record<string, FarolStatus>;
                         const status = metasStatus?.[col];
-                        const hasMeta = row.familias.some(f => f.toUpperCase().includes(col.toUpperCase()) || col.toUpperCase().includes(f.toUpperCase()));
+                        
+                        // Busca o atingimento específico da família se disponível no JSON
+                        const familyPct = row.family_attainment && typeof row.family_attainment === 'object' 
+                          ? (row.family_attainment as Record<string, number>)[col] 
+                          : null;
+
                         return (
                           <td 
                             key={col} 
@@ -226,7 +231,13 @@ function BIClientesPage() {
                               status && FAROL_CELL_CLASS[status]
                             )}
                           >
-                            {status === "sem_compra" ? "0%" : status ? `${FAROL_MIDPOINT[status]}%` : "0%"}
+                            {familyPct !== null && familyPct !== undefined 
+                              ? `${(Number(familyPct) * 100).toFixed(1)}%`
+                              : status === "sem_compra" 
+                                ? "0%" 
+                                : status 
+                                  ? `${FAROL_MIDPOINT[status]}%` 
+                                  : "0%"}
                           </td>
                         );
                       })}
