@@ -21,13 +21,13 @@ export interface RawMapaRow {
  * Mapeia a classificação textual da planilha para o enum EquivalenceLevel
  */
 function mapClassificacao(text: string): EquivalenceLevel {
-  const t = text.toLowerCase();
+  const t = (text || "").toLowerCase();
   if (t.includes("direto")) return "direto";
   if (t.includes("forte")) return "aproximado"; // Aproximado forte
   if (t.includes("aproximado")) return "aproximado";
-  if (t.includes("alternativa")) return "alternativa";
-  if (t.includes("incompatível")) return "incompativel";
-  return "alternativa"; // Default
+  if (t.includes("alternativo") || t.includes("alternativa")) return "alternativo";
+  if (t.includes("incompativel") || t.includes("incompatível")) return "incompativel";
+  return "alternativo"; // Default
 }
 
 /**
@@ -63,7 +63,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
     
     // Regra especial: Usina Bob 30865 = R$ 39,60/m
     let precoNormalizado = row.concorrente_preco;
-    if (row.concorrente_marca.toLowerCase().includes("usina") && row.concorrente_modelo.toLowerCase().includes("bob")) {
+    if (row.concorrente_marca?.toLowerCase().includes("usina") && row.concorrente_modelo?.toLowerCase().includes("bob")) {
       precoNormalizado = 39.60;
     }
 
