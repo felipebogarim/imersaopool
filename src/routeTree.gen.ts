@@ -64,6 +64,7 @@ import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/ba
 import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price/tabelas'
+import { Route as AuthenticatedPriceMapaRouteImport } from './routes/_authenticated/price/mapa'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price/competidores'
 import { Route as AuthenticatedPriceComparativosRouteImport } from './routes/_authenticated/price/comparativos'
 import { Route as AuthenticatedPrecosSimuladorRouteImport } from './routes/_authenticated/precos/simulador'
@@ -401,6 +402,11 @@ const AuthenticatedPriceTabelasRoute =
     path: '/tabelas',
     getParentRoute: () => AuthenticatedPriceRouteRoute,
   } as any)
+const AuthenticatedPriceMapaRoute = AuthenticatedPriceMapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
+  getParentRoute: () => AuthenticatedPriceRouteRoute,
+} as any)
 const AuthenticatedPriceCompetidoresRoute =
   AuthenticatedPriceCompetidoresRouteImport.update({
     id: '/competidores',
@@ -721,6 +727,7 @@ export interface FileRoutesByFullPath {
   '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
+  '/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
@@ -820,6 +827,7 @@ export interface FileRoutesByTo {
   '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
+  '/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
@@ -922,6 +930,7 @@ export interface FileRoutesById {
   '/_authenticated/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/_authenticated/price/comparativos': typeof AuthenticatedPriceComparativosRoute
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
+  '/_authenticated/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
@@ -1024,6 +1033,7 @@ export interface FileRouteTypes {
     | '/precos/simulador'
     | '/price/comparativos'
     | '/price/competidores'
+    | '/price/mapa'
     | '/price/tabelas'
     | '/representantes/performance'
     | '/sintese/tipos'
@@ -1123,6 +1133,7 @@ export interface FileRouteTypes {
     | '/precos/simulador'
     | '/price/comparativos'
     | '/price/competidores'
+    | '/price/mapa'
     | '/price/tabelas'
     | '/representantes/performance'
     | '/sintese/tipos'
@@ -1224,6 +1235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/precos/simulador'
     | '/_authenticated/price/comparativos'
     | '/_authenticated/price/competidores'
+    | '/_authenticated/price/mapa'
     | '/_authenticated/price/tabelas'
     | '/_authenticated/representantes/performance'
     | '/_authenticated/sintese/tipos'
@@ -1681,6 +1693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPriceTabelasRouteImport
       parentRoute: typeof AuthenticatedPriceRouteRoute
     }
+    '/_authenticated/price/mapa': {
+      id: '/_authenticated/price/mapa'
+      path: '/mapa'
+      fullPath: '/price/mapa'
+      preLoaderRoute: typeof AuthenticatedPriceMapaRouteImport
+      parentRoute: typeof AuthenticatedPriceRouteRoute
+    }
     '/_authenticated/price/competidores': {
       id: '/_authenticated/price/competidores'
       path: '/competidores'
@@ -1995,6 +2014,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedPriceRouteRouteChildren {
   AuthenticatedPriceComparativosRoute: typeof AuthenticatedPriceComparativosRoute
   AuthenticatedPriceCompetidoresRoute: typeof AuthenticatedPriceCompetidoresRoute
+  AuthenticatedPriceMapaRoute: typeof AuthenticatedPriceMapaRoute
   AuthenticatedPriceTabelasRoute: typeof AuthenticatedPriceTabelasRoute
   AuthenticatedPriceIndexRoute: typeof AuthenticatedPriceIndexRoute
 }
@@ -2003,6 +2023,7 @@ const AuthenticatedPriceRouteRouteChildren: AuthenticatedPriceRouteRouteChildren
   {
     AuthenticatedPriceComparativosRoute: AuthenticatedPriceComparativosRoute,
     AuthenticatedPriceCompetidoresRoute: AuthenticatedPriceCompetidoresRoute,
+    AuthenticatedPriceMapaRoute: AuthenticatedPriceMapaRoute,
     AuthenticatedPriceTabelasRoute: AuthenticatedPriceTabelasRoute,
     AuthenticatedPriceIndexRoute: AuthenticatedPriceIndexRoute,
   }
@@ -2232,13 +2253,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
