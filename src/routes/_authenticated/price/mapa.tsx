@@ -238,6 +238,14 @@ function MapaPrecosPage() {
           >
             <Upload className="h-4 w-4 mr-2 text-nl-gold" /> Carregar dados
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-white/10 font-light h-9"
+            onClick={handleExportExcel}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-400" /> Exportar Excel
+          </Button>
           
           <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5 ml-2">
             {[
