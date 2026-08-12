@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/backup-download")({
     handlers: {
       POST: async ({ request }) => {
         const { verifyApiKey, getAdmin } = await import("@/lib/backup-shared.server");
-        const unauth = verifyApiKey(request);
+        const unauth = await verifyApiKey(request);
         if (unauth) return unauth;
 
         const { job_id } = (await request.json().catch(() => ({}))) as { job_id?: string };

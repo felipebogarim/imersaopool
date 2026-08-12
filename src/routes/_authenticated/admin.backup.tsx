@@ -225,9 +225,19 @@ function PoolBackupPage() {
 
   async function callEndpoint(path: string, body: unknown) {
     const { data: u } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+
     const res = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+      headers,
       body: JSON.stringify({ ...(body as object), iniciado_por: u.user?.id }),
     });
     if (!res.ok) {
@@ -327,9 +337,18 @@ function PoolBackupPage() {
     if (!job.storage_path) return;
     const toastId = toast.loading("Preparando download…");
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const res = await fetch("/api/public/backup-download", {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+        headers,
         body: JSON.stringify({ job_id: job.id }),
       });
       if (!res.ok) {
@@ -358,9 +377,18 @@ function PoolBackupPage() {
     if (!job.storage_path) return;
     const toastId = toast.loading("Enviando ao Google Drive…");
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const res = await fetch("/api/public/backup-to-drive", {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+        headers,
         body: JSON.stringify({ job_id: job.id }),
       });
       const data = await res.json().catch(() => ({}));

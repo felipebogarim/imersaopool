@@ -7,7 +7,7 @@ export const Route = createFileRoute("/api/public/backup-audit")({
     handlers: {
       POST: async ({ request }) => {
         const { verifyApiKey, getAdmin, logHistorico } = await import("@/lib/backup-shared.server");
-        const unauth = verifyApiKey(request);
+        const unauth = await verifyApiKey(request);
         if (unauth) return unauth;
 
         const admin = getAdmin();
