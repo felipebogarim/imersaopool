@@ -72,12 +72,24 @@ function MapaPrecosPage() {
   const [viewMode, setViewMode] = useState<"table" | "charts">("table");
   const [isImportOpen, setIsImportOpen] = useState(false);
   
-  const hasMapConfigured = familia === "Perfis";
+  // State for imported data
+  const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
+  const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
+  
+  const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
+
+  const activeAnchors = importedAnchors.length > 0 ? importedAnchors : PERFIS_ANCHORS;
+  const activeCompetitors = importedCompetitors.length > 0 ? importedCompetitors : PERFIS_COMPETITORS;
 
   const calculatedItems = useMemo(() => {
-    if (familia !== "Perfis") return [];
-    return PERFIS_COMPETITORS.map(comp => calculateMapaItem(comp, PERFIS_ANCHORS, adjustments));
-  }, [familia, adjustments]);
+    if (!hasMapConfigured) return [];
+    return activeCompetitors.map(comp => calculateMapaItem(comp, activeAnchors, adjustments));
+  }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
+
+  const handleImported = (anchors: any[], competitors: any[]) => {
+    setImportedAnchors(anchors);
+    setImportedCompetitors(competitors);
+  };
 
   const filteredItems = useMemo(() => {
     if (!busca.trim()) return calculatedItems;
@@ -109,6 +121,7 @@ function MapaPrecosPage() {
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
         familia={familia}
+        onImported={handleImported}
       />
 
       {/* Breadcrumb / Nav */}
@@ -134,7 +147,7 @@ function MapaPrecosPage() {
               </SelectContent>
             </Select>
             <Badge variant="outline" className="h-7 border-nl-gold/30 text-nl-gold font-light">
-              {hasMapConfigured ? `${PERFIS_ANCHORS.length} produtos chave` : "Não configurado"}
+              {hasMapConfigured ? `${activeAnchors.length} produtos chave` : "Não configurado"}
             </Badge>
           </div>
         </div>
@@ -233,20 +246,29 @@ function MapaPrecosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="surface border-white/5">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Produtos Chave</CardTitle>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Produtos Chave Newline</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-light text-nl-gold">{PERFIS_ANCHORS.length}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Ancoragem estratégica Newline</p>
+                <div className="text-2xl font-light text-nl-gold">{activeAnchors.length}</div>
+                <p className="text-[10px] text-muted-foreground mt-1">Produtos base Newline identificados</p>
               </CardContent>
             </Card>
             <Card className="surface border-white/5">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mais Barata</CardTitle>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Comparações analisadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-light text-white">{indicators.total}</div>
+                <p className="text-[10px] text-muted-foreground mt-1">Total de registros independentes</p>
+              </CardContent>
+            </Card>
+            <Card className="surface border-white/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Newline mais barata</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-light text-emerald-500">{indicators.verde}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Comparativos favoráveis à Newline</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Diferença &lt; 0%</p>
               </CardContent>
             </Card>
             <Card className="surface border-white/5 border-l-amber-500/20">
@@ -255,22 +277,22 @@ function MapaPrecosPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-light text-amber-500">{indicators.amarelo}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Diferença de até 10% (Pressão)</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Diferença entre 0% e +10%</p>
               </CardContent>
             </Card>
             <Card className="surface border-white/5 border-l-destructive/20">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mais Cara</CardTitle>
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Newline mais cara</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-light text-destructive">{indicators.vermelho}</div>
-                <p className="text-[10px] text-muted-foreground mt-1">Desvantagem competitiva relevante</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Diferença &gt; +10%</p>
               </CardContent>
             </Card>
           </div>
 
           {viewMode === "charts" ? (
-            <GraficosMapa items={calculatedItems} anchors={PERFIS_ANCHORS} />
+            <GraficosMapa items={calculatedItems} anchors={activeAnchors} />
           ) : (
             <>
               {/* Seletor de Tabela e Busca */}
@@ -319,14 +341,14 @@ function MapaPrecosPage() {
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Concorrente</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Marca</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Preço Concorrente</TableHead>
-                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4 text-center">Diferença %</TableHead>
+                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4 text-center">Diferença Newline vs concorrente</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Técnica</TableHead>
                   <TableHead className="text-right py-4 pr-6"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => {
-                  const base = PERFIS_ANCHORS.find(a => a.id === item.base_product_id);
+                  const base = activeAnchors.find(a => a.id === item.base_product_id);
                   const farolColors = {
                     verde: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
                     amarelo: "bg-amber-500/10 text-amber-600 border-amber-500/20",
@@ -384,6 +406,17 @@ function MapaPrecosPage() {
                                   ) : "—"}
                                 </div>
                               </TooltipTrigger>
+                              <TooltipContent className="bg-[#0A0A0A] border-white/10 text-white">
+                                <p className="text-xs">
+                                  {item.farol === "verde" && "Newline mais barata"}
+                                  {item.farol === "amarelo" && "Preços próximos"}
+                                  {item.farol === "vermelho" && "Newline mais cara"}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
                               <TooltipContent className="bg-black border-white/10 text-[11px]">
                                 <p>Posicionamento Newline vs {item.marca}</p>
                               </TooltipContent>
