@@ -676,7 +676,7 @@ function MapaPrecosPage() {
                         </TooltipProvider>
                       </TableCell>
                       <TableCell className="py-5 border-r border-border/60">
-                        <span className="text-sm font-semibold text-nl-gold">
+                        <span className="text-sm font-semibold text-foreground">
                           {base?.preco_normalizado !== null && base?.preco_normalizado !== undefined ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
