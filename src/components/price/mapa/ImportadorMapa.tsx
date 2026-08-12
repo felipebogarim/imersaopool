@@ -107,96 +107,203 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
     }
   };
 
+  const handleConfirmImport = () => {
+    if (previewData) {
+      onImported(previewData.anchors, previewData.competitors);
+      toast.success(`${previewData.competitors.length} comparações da família ${familia} importadas com sucesso!`);
+      setShowSummary(true);
+      setPreviewData(null);
+    }
+  };
+
+  const closeAll = () => {
+    onOpenChange(false);
+    setFile(null);
+    setPreviewData(null);
+    setShowSummary(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0A0A0A] border-white/10 text-white">
+      <DialogContent className={cn(
+        "bg-[#0A0A0A] border-white/10 text-white transition-all",
+        previewData ? "sm:max-w-[900px]" : "sm:max-w-[500px]"
+      )}>
         <DialogHeader>
           <DialogTitle className="text-xl font-light flex items-center gap-2">
             <Upload className="h-5 w-5 text-nl-gold" />
-            Importar Dados: {familia}
+            {showSummary ? "Relatório de Importação" : previewData ? "Prévia dos Dados" : `Importar Dados: ${familia}`}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground font-light pt-2">
-            Carregue uma planilha Excel contendo os produtos âncora e comparativos de mercado para a família selecionada.
+            {showSummary ? "Resumo detalhado do processamento realizado." : 
+             previewData ? "Verifique se os preços e classificações foram identificados corretamente antes de confirmar." : 
+             "Carregue uma planilha Excel contendo os produtos âncora e comparativos de mercado."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-6">
-          {!file ? (
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-white/10 rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-nl-gold/30 hover:bg-white/5 transition-all group"
-            >
-              <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileSpreadsheet className="h-6 w-6 text-muted-foreground group-hover:text-nl-gold" />
+        <div className="py-4">
+          {showSummary ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Linhas lidas</p>
+                  <p className="text-2xl font-light">{summary?.total}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Importadas/Atualizadas</p>
+                  <p className="text-2xl font-light text-emerald-500">{summary?.imported}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Preços Identificados</p>
+                  <p className="text-2xl font-light text-nl-gold">{summary?.pricesIdentified}</p>
+                </div>
+                <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Preços não Identificados</p>
+                  <p className="text-2xl font-light text-destructive">{summary?.pricesMissing}</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm font-medium">Clique para selecionar ou arraste</p>
-                <p className="text-xs text-muted-foreground mt-1">Excel (.xlsx, .xls) até 10MB</p>
-              </div>
+            </div>
+          ) : previewData ? (
+            <div className="max-h-[400px] overflow-auto border border-white/5 rounded-xl">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-white/5 sticky top-0">
+                  <tr>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Produto Base</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Concorrente</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Marca</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-right">Preço Newline</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-right">Preço Concorrente</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-center">Técnica</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.competitors.slice(0, 50).map((comp, idx) => {
+                    const anchor = previewData.anchors.find(a => a.id === comp.base_product_id);
+                    return (
+                      <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
+                        <td className="p-3 font-light">{anchor?.nome}</td>
+                        <td className="p-3 font-light">{comp.nome}</td>
+                        <td className="p-3 font-light">{comp.marca}</td>
+                        <td className={cn("p-3 text-right font-medium", !anchor?.preco_normalizado && "text-destructive italic")}>
+                          {anchor?.preco_normalizado ? `R$ ${anchor.preco_normalizado.toFixed(2)}` : "Não ident."}
+                        </td>
+                        <td className={cn("p-3 text-right font-medium", !comp.preco_normalizado && "text-destructive italic")}>
+                          {comp.preco_normalizado ? `R$ ${comp.preco_normalizado.toFixed(2)}` : "Não ident."}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="outline" className="text-[9px] uppercase font-light">
+                            {comp.classificacao_tecnica || "Alternativo"}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {previewData.competitors.length > 50 && (
+                <div className="p-3 text-center text-[10px] text-muted-foreground bg-white/5 italic">
+                  Mostrando apenas as primeiras 50 de {previewData.competitors.length} comparações.
+                </div>
+              )}
             </div>
           ) : (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-nl-gold/10 flex items-center justify-center">
-                  <FileSpreadsheet className="h-5 w-5 text-nl-gold" />
+            <div className="space-y-6">
+              {!file ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-white/10 rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-nl-gold/30 hover:bg-white/5 transition-all group"
+                >
+                  <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileSpreadsheet className="h-6 w-6 text-muted-foreground group-hover:text-nl-gold" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium">Clique para selecionar ou arraste</p>
+                    <p className="text-xs text-muted-foreground mt-1">Excel (.xlsx, .xls) até 10MB</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</p>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-nl-gold/10 flex items-center justify-center">
+                      <FileSpreadsheet className="h-5 w-5 text-nl-gold" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => setFile(null)}
+                    disabled={isProcessing}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
+              )}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+              />
+
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                <p className="text-[11px] text-amber-200/80 font-light leading-relaxed">
+                  Certifique-se de que a planilha segue o padrão estruturado com as colunas obrigatórias para que os preços e classificações sejam mapeados corretamente.
+                </p>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-muted-foreground hover:text-destructive"
-                onClick={() => setFile(null)}
-                disabled={isProcessing}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".xlsx,.xls"
-            onChange={handleFileChange}
-          />
-        </div>
-
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-          <p className="text-[11px] text-amber-200/80 font-light leading-relaxed">
-            Certifique-se de que a planilha segue o padrão estruturado (Abas: "Ancoragem" e "Concorrentes") para que a IA processe corretamente os dados.
-          </p>
         </div>
 
         <DialogFooter className="mt-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => onOpenChange(false)}
-            disabled={isProcessing}
-            className="text-white hover:bg-white/5"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleUpload}
-            disabled={!file || isProcessing}
-            className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px]"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              "Importar Dados"
-            )}
-          </Button>
+          {showSummary ? (
+            <Button onClick={closeAll} className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px]">
+              Finalizar
+            </Button>
+          ) : previewData ? (
+            <>
+              <Button variant="ghost" onClick={() => setPreviewData(null)} className="text-white hover:bg-white/5">
+                Voltar
+              </Button>
+              <Button onClick={handleConfirmImport} className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px]">
+                Confirmar Importação
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                variant="ghost" 
+                onClick={() => onOpenChange(false)}
+                disabled={isProcessing}
+                className="text-white hover:bg-white/5"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleUpload}
+                disabled={!file || isProcessing}
+                className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px]"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  "Importar Dados"
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
 }
