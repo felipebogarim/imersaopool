@@ -11,7 +11,9 @@ import {
   Columns,
   RefreshCw,
   Info,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +42,15 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 import { PERFIS_ANCHORS, PERFIS_COMPETITORS } from "@/lib/price-mapa/mock-data";
 import { FAMILIAS_MAPA, PriceTable, BrandAdjustment } from "@/lib/price-mapa/types";
 import { calculateMapaItem } from "@/lib/price-mapa/calculations";
 import { LEVEL_CLASS, LEVEL_LABEL } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
+import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
+import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
+
 
 export const Route = createFileRoute("/_authenticated/price/mapa")({
   head: () => ({
