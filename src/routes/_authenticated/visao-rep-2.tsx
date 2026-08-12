@@ -1,3 +1,4 @@
+import { AcoesAtreladasRep } from "@/components/visao-rep2/AcoesAtreladasRep";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
