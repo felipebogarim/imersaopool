@@ -58,11 +58,14 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
           familia: row["Família"] || row["familia"] || familia,
           base_produto: row["Produto Base Newline"] || row["base_produto"] || row["PRODUTO_BASE"] || row["Produto"],
           base_codigo: String(row["Código Newline"] || row["base_codigo"] || row["CÓDIGO"] || row["SKU_NEWLINE"] || ""),
-          base_preco: Number(row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"] || 0),
-          concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"] || row["MARCA"] || row["CONCORRENTE"],
-          concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"] || row["MODELO"] || row["ITEM"],
-          concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"] || row["CÓDIGO_CONCORRENTE"],
-          concorrente_preco: Number(row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"] || 0),
+          base_preco: row["Preço Newline Black Brasil"] !== undefined ? Number(row["Preço Newline Black Brasil"]) : 
+                      row["Preço Newline Black SP"] !== undefined ? Number(row["Preço Newline Black SP"]) : 
+                      (row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"] || null),
+          concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"] || row["MARCA"] || row["CONCORRENTE"] || "",
+          concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"] || row["MODELO"] || row["ITEM"] || "",
+          concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"] || row["CÓDIGO_CONCORRENTE"] || null,
+          concorrente_preco: row["Preço Concorrente Normalizado por m"] !== undefined ? Number(row["Preço Concorrente Normalizado por m"]) :
+                             (row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"] || null),
           classificacao: row["Classificação"] || row["classificacao"] || row["EQUIVALÊNCIA"] || "",
           nicho: row["Nicho"] || row["nicho"],
           largura: row["Largura"] || row["largura"],
