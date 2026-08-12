@@ -154,6 +154,22 @@ function MapaPrecosPage() {
       });
     }
 
+    if (filterBase !== "todos") {
+      items = items.filter((item) => {
+        const base = activeAnchors.find((a) => a.id === item.base_product_id);
+        return (base?.nome ?? "") === filterBase;
+      });
+    }
+    if (filterConcorrente !== "todos") {
+      items = items.filter((item) => item.nome === filterConcorrente);
+    }
+    if (filterMarca !== "todos") {
+      items = items.filter((item) => item.marca === filterMarca);
+    }
+    if (filterTecnica !== "todos") {
+      items = items.filter((item) => (item.classificacao_tecnica ?? "insuficiente") === filterTecnica);
+    }
+
     if (filterFarol) {
       if (filterFarol === "0%") {
         items = items.filter(item => Math.abs(item.diff_percentual || 0) < 0.1);
@@ -163,7 +179,44 @@ function MapaPrecosPage() {
     }
     
     return items;
-  }, [calculatedItems, busca, filterFarol, activeAnchors]);
+  }, [calculatedItems, busca, filterFarol, activeAnchors, filterBase, filterConcorrente, filterMarca, filterTecnica]);
+
+  const opcoes = useMemo(() => {
+    const bases = new Set<string>();
+    const concorrentes = new Set<string>();
+    const marcas = new Set<string>();
+    const tecnicas = new Set<string>();
+    calculatedItems.forEach((item) => {
+      const base = activeAnchors.find((a) => a.id === item.base_product_id);
+      if (base?.nome) bases.add(base.nome);
+      if (item.nome) concorrentes.add(item.nome);
+      if (item.marca) marcas.add(item.marca);
+      tecnicas.add(item.classificacao_tecnica ?? "insuficiente");
+    });
+    const sorted = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return {
+      bases: sorted(bases),
+      concorrentes: sorted(concorrentes),
+      marcas: sorted(marcas),
+      tecnicas: sorted(tecnicas),
+    };
+  }, [calculatedItems, activeAnchors]);
+
+  const filtrosAtivos =
+    (filterBase !== "todos" ? 1 : 0) +
+    (filterConcorrente !== "todos" ? 1 : 0) +
+    (filterMarca !== "todos" ? 1 : 0) +
+    (filterTecnica !== "todos" ? 1 : 0) +
+    (filterFarol ? 1 : 0);
+
+  const limparFiltros = () => {
+    setFilterBase("todos");
+    setFilterConcorrente("todos");
+    setFilterMarca("todos");
+    setFilterTecnica("todos");
+    setFilterFarol(null);
+    setBusca("");
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
