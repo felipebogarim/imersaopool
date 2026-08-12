@@ -452,9 +452,9 @@ function MapaPrecosPage() {
                   const base = activeAnchors.find(a => a.id === item.base_product_id);
                   const isEven = index % 2 === 0;
                   const farolColors = {
-                    verde: "bg-emerald-500 text-black border-emerald-500/20",
-                    amarelo: "bg-amber-500 text-black border-amber-500/20",
-                    vermelho: "bg-destructive text-white border-destructive/20",
+                    verde: "bg-emerald-500/80 text-black border-emerald-500/20",
+                    amarelo: "bg-amber-500/80 text-black border-amber-500/20",
+                    vermelho: "bg-destructive/80 text-white border-destructive/20",
                     cinza: "bg-muted text-muted-foreground border-transparent"
                   };
 
@@ -462,13 +462,13 @@ function MapaPrecosPage() {
                     <TableRow 
                       key={item.id} 
                       className={cn(
-                        "border-white/5 hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.03]"
+                        "border-b border-white/[0.05] hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.02]"
                       )}
                     >
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-light text-sm">{base?.nome}</span>
+                          <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
                           <span className="text-[10px] text-muted-foreground">{base?.sku}</span>
                         </div>
                       </TableCell>
@@ -479,7 +479,7 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="font-light text-sm text-white/80">{item.nome}</span>
+                          <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
                           <span className="text-[10px] text-muted-foreground">{item.sku}</span>
                         </div>
                       </TableCell>
@@ -490,7 +490,7 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-light text-white/80">
+                          <span className="text-sm font-light text-nl-gold/90">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
@@ -507,14 +507,9 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className={cn("py-4 text-center font-medium", farolColors[item.farol || "cinza"])}>
-                        <span className="text-xs uppercase tracking-wider">
-                          {item.diff_percentual !== null ? `${item.diff_percentual > 0 ? "+" : ""}${item.diff_percentual.toFixed(1)}%` : "—"}
-                        </span>
-                      </TableCell>
                       <TableCell className="py-4">
-                        <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[item.classificacao_tecnica ?? "insuficiente"])}>
-                          {LEVEL_LABEL[item.classificacao_tecnica ?? "insuficiente"]}
+                        <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
+                          {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-4 text-right pr-6">
