@@ -7,6 +7,11 @@ export const extractFromMedia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { base64: string; mime: string; filename: string; kind: Kind }) => d)
   .handler(async ({ data }) => {
+    const MAX_BYTES = 20 * 1024 * 1024;
+    const approxBytes = Math.floor((data.base64?.length ?? 0) * 0.75);
+    if (!data.base64 || approxBytes > MAX_BYTES) {
+      throw new Error("Arquivo inválido ou acima do limite de 20 MB");
+    }
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
