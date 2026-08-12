@@ -225,9 +225,19 @@ function PoolBackupPage() {
 
   async function callEndpoint(path: string, body: unknown) {
     const { data: u } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+
     const res = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apikey: PUBLISHABLE_KEY },
+      headers,
       body: JSON.stringify({ ...(body as object), iniciado_por: u.user?.id }),
     });
     if (!res.ok) {
