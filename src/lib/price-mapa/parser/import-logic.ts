@@ -40,7 +40,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
 
   rows.forEach((row, index) => {
     // 1. Criar ou obter Produto Âncora (Newline)
-    const anchorId = `anchor-${row.base_codigo}`;
+    const anchorId = `anchor-${row.base_codigo}`.replace(/\s+/g, '-').toLowerCase();
     if (!anchorsMap.has(anchorId)) {
       anchorsMap.set(anchorId, {
         id: anchorId,
@@ -51,19 +51,19 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
         specs: {},
         preco_base: row.base_preco,
         preco_normalizado: row.base_preco,
-        price_availability: "informado",
+        price_availability: row.base_preco !== null ? "informado" : "nao_informado",
         is_base: true,
         status: "validado"
       });
     }
 
     // 2. Criar Concorrente
-    // Importante: Cada linha é uma comparação independente. 
-    // A ID deve ser única para cada comparação.
-    const compId = `comp-${index}-${row.concorrente_marca}-${row.concorrente_modelo}`.replace(/\s+/g, '-').toLowerCase();
+    // Chave lógica: Família + Produto Base Newline + Código Newline + Marca Concorrente + Modelo Concorrente
+    const logicalKey = `${row.familia}-${row.base_produto}-${row.base_codigo}-${row.concorrente_marca}-${row.concorrente_modelo}`.toLowerCase().replace(/\s+/g, '-');
+    const compId = `comp-${logicalKey}`;
     
     // Regra especial: Usina Bob 30865 = R$ 39,60/m
-    let precoNormalizado = row.concorrente_preco ?? 0;
+    let precoNormalizado = row.concorrente_preco;
     if (row.concorrente_marca?.toLowerCase().includes("usina") && row.concorrente_modelo?.toLowerCase().includes("bob")) {
       precoNormalizado = 39.60;
     }
@@ -77,7 +77,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
       specs: {},
       preco_base: row.concorrente_preco,
       preco_normalizado: precoNormalizado,
-      price_availability: "informado",
+      price_availability: precoNormalizado !== null ? "informado" : "nao_informado",
       is_base: false,
       base_product_id: anchorId,
       classificacao_tecnica: mapClassificacao(row.classificacao),
