@@ -148,33 +148,110 @@ function BIClientesPage() {
       />
       
       <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
-        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 md:items-end bg-card p-3 sm:p-4 rounded-xl border border-border shadow-sm">
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pesquisar Cliente</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Razão Social..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+        <div className="bg-card p-4 rounded-xl border border-border shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 md:items-end">
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pesquisar Cliente</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Razão Social ou palavra-chave..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            
+            <div className="w-full md:w-64 md:shrink-0 space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Representante</label>
+              <Select value={repFilter} onValueChange={setRepFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Representantes</SelectItem>
+                  {reps.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          
-          <div className="w-full md:w-64 md:shrink-0 space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Representante</label>
-            <Select value={repFilter} onValueChange={setRepFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Representantes</SelectItem>
-                {reps.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
+            {["Black", "Gold", "Silver"].map((cat) => (
+              <Badge
+                key={cat}
+                variant={categoryFilter.includes(cat) ? "default" : "outline"}
+                className={cn(
+                  "cursor-pointer px-3 py-1 text-[10px] uppercase font-bold tracking-tight transition-all",
+                  categoryFilter.includes(cat) 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "hover:bg-muted text-muted-foreground"
+                )}
+                onClick={() => {
+                  setCategoryFilter(prev => 
+                    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                  );
+                }}
+              >
+                {cat}
+                {categoryFilter.includes(cat) && <X className="ml-1.5 h-3 w-3 inline-block" />}
+              </Badge>
+            ))}
+
+            <div className="w-px h-6 bg-border mx-1" />
+
+            {columns.map((fam) => (
+              <Badge
+                key={fam}
+                variant={familyFilter.includes(fam) ? "default" : "outline"}
+                className={cn(
+                  "cursor-pointer px-3 py-1 text-[10px] uppercase font-bold tracking-tight transition-all",
+                  familyFilter.includes(fam) 
+                    ? "bg-primary/90 text-primary-foreground shadow-sm" 
+                    : "hover:bg-muted text-muted-foreground"
+                )}
+                onClick={() => {
+                  setFamilyFilter(prev => 
+                    prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]
+                  );
+                }}
+              >
+                {fam}
+                {familyFilter.includes(fam) && <X className="ml-1.5 h-3 w-3 inline-block" />}
+              </Badge>
+            ))}
+
+            <div className="w-px h-6 bg-border mx-1" />
+
+            <Badge
+              variant={zeroFilter ? "destructive" : "outline"}
+              className={cn(
+                "cursor-pointer px-3 py-1 text-[10px] uppercase font-bold tracking-tight transition-all",
+                zeroFilter 
+                  ? "bg-destructive text-destructive-foreground shadow-sm" 
+                  : "hover:bg-destructive/10 text-destructive border-destructive/30"
+              )}
+              onClick={() => setZeroFilter(!zeroFilter)}
+            >
+              0%
+              {zeroFilter && <X className="ml-1.5 h-3 w-3 inline-block" />}
+            </Badge>
+
+            {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter) && (
+              <button 
+                onClick={() => {
+                  setCategoryFilter([]);
+                  setFamilyFilter([]);
+                  setZeroFilter(false);
+                }}
+                className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-auto"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         </div>
 
