@@ -95,8 +95,8 @@ function HomeComponent() {
                   {
                     title: "Preços",
                     links: [
-                      { label: "Mapa Preços", to: "/precos/mapa" },
-                      { label: "Simulador", to: "/precos/simulador" },
+                      { label: "Mapa Preços", to: "/price/mapa" },
+                      { label: "Simulador", to: "/price/simulador" },
                       { label: "Comparativos", to: "/price/comparativos" },
                     ],
                     icon: Settings2,
