@@ -391,44 +391,34 @@ function MapaPrecosPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          )}
 
-          {/* Legendas */}
-          <div className="flex flex-wrap gap-8 py-4 px-2">
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Farol de Preço</span>
-              <div className="flex items-center gap-4 text-[11px] font-light">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Newline mais barata</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                  <span>Até 10% acima</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-destructive" />
-                  <span>{">"}10% acima</span>
+          {viewMode === "table" && (
+            <div className="flex flex-wrap gap-8 py-4 px-2">
+              <div className="space-y-2">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Farol de Preço</span>
+                <div className="flex items-center gap-4 text-[11px] font-light">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span>Newline mais barata</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span>Até 10% acima</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-destructive" />
+                    <span>{">"}10% acima</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
   );
 }
 
-function Label({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <label
-      className={cn(
-        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-        className,
-      )}
-    >
-      {children}
-    </label>
-  );
-}
 
