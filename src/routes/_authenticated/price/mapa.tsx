@@ -126,13 +126,17 @@ function MapaPrecosPage() {
       items = items.filter((item: MapaCalculatedItem) => {
         const base = activeAnchors.find(a => a.id === item.base_product_id);
         const techLabel = item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica as EquivalenceLevel] : "";
+        const skuBase = base?.sku || "";
+        const skuComp = item.sku || item.referencia || "";
         
         return (
           item.marca.toLowerCase().includes(t) || 
           item.nome.toLowerCase().includes(t) ||
           item.referencia?.toLowerCase().includes(t) ||
+          skuComp.toLowerCase().includes(t) ||
           base?.nome.toLowerCase().includes(t) ||
           base?.referencia.toLowerCase().includes(t) ||
+          skuBase.toLowerCase().includes(t) ||
           techLabel.toLowerCase().includes(t)
         );
       });
@@ -462,44 +466,44 @@ function MapaPrecosPage() {
                     <TableRow 
                       key={item.id} 
                       className={cn(
-                        "border-b border-white/[0.05] hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.02]"
+                        "border-b border-white/[0.08] hover:bg-nl-gold/5 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-white/[0.03]"
                       )}
                     >
-                      <TableCell className="py-4">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
-                          <span className="text-[10px] text-muted-foreground">{base?.sku}</span>
+                          <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
-                        <span className="text-sm font-bold text-white">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
+                        <span className="text-sm font-bold text-white/90">
                           {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
                         <div className="flex flex-col">
                           <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
-                          <span className="text-[10px] text-muted-foreground">{item.sku}</span>
+                          <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
-                        <Badge variant="outline" className="font-light text-[10px] border-white/10 uppercase tracking-wider px-2 py-0">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
+                        <Badge variant="outline" className="font-light text-[10px] border-white/20 text-nl-gold/80 uppercase tracking-wider px-2 py-0">
                           {item.marca}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
                         <div className="flex flex-col">
                           <span className="text-sm font-light text-nl-gold/90">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
                         <div className="flex justify-center h-8 items-center">
                           {item.diff_percentual !== null && (
                             <div className={cn(
-                              "w-[60%] h-full flex items-center justify-center rounded-md text-[11px] font-bold shadow-sm",
+                              "w-[65%] h-full flex items-center justify-center rounded-md text-[11px] font-bold shadow-md",
                               farolColors[item.farol as keyof typeof farolColors]
                             )}>
                               {item.diff_percentual > 0 ? "+" : ""}{item.diff_percentual.toFixed(1)}%
@@ -507,13 +511,13 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
+                      <TableCell className="py-5 border-r border-white/[0.05]">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
                           {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-4 text-right pr-6">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TableCell className="py-5 text-right pr-6">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </TableCell>
