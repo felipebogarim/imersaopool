@@ -17,6 +17,9 @@ export const Route = createFileRoute("/_authenticated/performance/bi-clientes")(
 function BIClientesPage() {
   const [search, setSearch] = useState("");
   const [repFilter, setRepFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [familyFilter, setFamilyFilter] = useState<string[]>([]);
+  const [zeroFilter, setZeroFilter] = useState(false);
 
   const { data: reps = [] } = useQuery({
     queryKey: ["all-reps"],
