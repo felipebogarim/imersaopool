@@ -109,11 +109,22 @@ function BIClientesPage() {
 
   const filtered = useMemo(() => {
     return consolidated.filter((r) => {
-      const matchSearch = r.razao_social?.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = !search || r.razao_social?.toLowerCase().includes(search.toLowerCase());
       const matchRep = repFilter === "all" || r.repId === repFilter;
-      return matchSearch && matchRep;
+      
+      const matchCategory = categoryFilter.length === 0 || (r.categoria && categoryFilter.includes(r.categoria));
+      
+      const matchFamily = familyFilter.length === 0 || familyFilter.some(f => {
+        const metasStatus = r.metas_status as Record<string, FarolStatus>;
+        const status = metasStatus?.[f];
+        return status && status !== 'sem_compra';
+      });
+
+      const matchZero = !zeroFilter || r.computedAtainment === 0 || Object.values((r.metas_status as Record<string, FarolStatus>) || {}).includes('sem_compra');
+
+      return matchSearch && matchRep && matchCategory && matchFamily && matchZero;
     });
-  }, [consolidated, search, repFilter]);
+  }, [consolidated, search, repFilter, categoryFilter, familyFilter, zeroFilter]);
 
   const columns = [
     "DECOR NEWLINE",
