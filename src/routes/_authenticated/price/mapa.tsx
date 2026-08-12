@@ -418,22 +418,11 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-4">
-                        <div className="flex justify-center">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <div className={cn(
-                                  "px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5",
-                                  farolColors[item.farol]
-                                )}>
-                                  {item.diff_percentual !== null ? (
-                                    <>
-                                      {item.diff_percentual > 0 ? "+" : ""}{item.diff_percentual.toFixed(1)}%
-                                    </>
-                                  ) : "—"}
-                                </div>
-                              </TooltipTrigger>
+                      <TableCell className={cn("py-4 text-center font-medium", farolColors[item.farol || "cinza"])}>
+                        <span className="text-xs uppercase tracking-wider">
+                          {item.diff_percentual !== null ? `${item.diff_percentual > 0 ? "+" : ""}${item.diff_percentual.toFixed(1)}%` : "—"}
+                        </span>
+                      </TableCell>
                               <TooltipContent className="bg-[#0A0A0A] border-white/10 text-white">
                                 <p className="text-xs">
                                   {item.farol === "verde" && "Newline mais barata"}
