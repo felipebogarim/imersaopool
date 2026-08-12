@@ -163,14 +163,14 @@ function BIClientesPage() {
         </div>
 
         <div className="surface rounded-xl border border-border overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse">
+          <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+            <table className="w-full min-w-[900px] text-sm text-left border-collapse">
               <thead>
                 <tr className="bg-muted/50 border-b border-border">
-                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] w-64 sticky left-0 bg-muted/50 z-10 border-r border-border/50">Cliente</th>
-                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50">Rep</th>
-                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50 text-center">Cat</th>
-                  <th className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] text-center border-r border-border/50">Ating %</th>
+                  <th className="px-3 sm:px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] w-40 sm:w-64 sticky left-0 bg-muted/50 z-10 border-r border-border/50">Cliente</th>
+                  <th className="px-3 sm:px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50">Rep</th>
+                  <th className="px-2 sm:px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] border-r border-border/50 text-center">Cat</th>
+                  <th className="px-2 sm:px-4 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] text-center border-r border-border/50">Ating %</th>
                   {columns.map((col) => (
                     <th key={col} className="px-3 py-3 font-semibold text-muted-foreground uppercase tracking-tighter text-[10px] text-center min-w-[100px] border-r border-border/50 last:border-r-0">
                       {col}
