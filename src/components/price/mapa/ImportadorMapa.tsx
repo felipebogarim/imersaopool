@@ -92,7 +92,11 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
           nicho: row["Nicho"] || row["nicho"],
           largura: row["Largura"] || row["largura"],
           altura: row["Altura"] || row["altura"],
-          notas: row["Notas"] || row["notas"],
+          notas: row["Notas"] || row["notas"] || row["Observações"] || "",
+          dimensao_newline: row["Dimensão Newline"] || row["Dimensao Newline"] || row["dimensao_newline"],
+          nicho_newline: row["Nicho Newline mm"] || row["Nicho Newline"] || row["nicho_newline"] || row["Nicho"],
+          dimensao_concorrente: row["Dimensão Concorrente"] || row["Dimensao Concorrente"] || row["dimensao_concorrente"],
+          fonte: row["Fonte Principal"] || row["Fonte"] || row["fonte"] || row["FONTE"],
         };
       });
 
