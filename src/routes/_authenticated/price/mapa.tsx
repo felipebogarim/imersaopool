@@ -90,7 +90,11 @@ function MapaPrecosPage() {
 
   const calculatedItems = useMemo(() => {
     if (!hasMapConfigured) return [];
-    return activeCompetitors.map(comp => calculateMapaItem(comp, activeAnchors, adjustments));
+    return activeCompetitors.map(comp => {
+      // Find anchor using base_product_id or match by reference/sku if needed
+      const base = activeAnchors.find(a => a.id === comp.base_product_id);
+      return calculateMapaItem(comp, activeAnchors, adjustments);
+    });
   }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
 
   const handleImported = (anchors: any[], competitors: any[]) => {
