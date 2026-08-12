@@ -142,11 +142,60 @@ function MapaPrecosPage() {
           <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
             <Columns className="h-4 w-4 mr-2 text-nl-gold" /> Colunas
           </Button>
-          <Button variant="outline" size="sm" className="border-white/10 font-light h-9 text-nl-gold border-nl-gold/20">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={cn(
+              "border-white/10 font-light h-9 text-nl-gold border-nl-gold/20",
+              isSimuladorOpen && "bg-nl-gold/10"
+            )}
+            onClick={() => setIsSimuladorOpen(true)}
+          >
             <SlidersHorizontal className="h-4 w-4 mr-2" /> Simular preços
           </Button>
         </div>
       </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
+              viewMode === "table" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+            )}
+            onClick={() => setViewMode("table")}
+          >
+            <LayoutGrid className="h-3.5 w-3.5 mr-2" /> Tabela
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
+              viewMode === "charts" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+            )}
+            onClick={() => setViewMode("charts")}
+          >
+            <BarChart3 className="h-3.5 w-3.5 mr-2" /> Gráficos
+          </Button>
+        </div>
+        
+        {adjustments.length > 0 && (
+          <Badge variant="outline" className="border-nl-gold/20 text-nl-gold bg-nl-gold/5 font-light py-1 flex items-center gap-2">
+            <RefreshCw className="h-3 w-3 animate-spin-slow" />
+            Simulação ativa: {adjustments.length} marcas ajustadas
+            <button 
+              className="ml-1 hover:text-white transition-colors"
+              onClick={() => setAdjustments([])}
+            >
+              ×
+            </button>
+          </Badge>
+        )}
+      </div>
+
 
       {!hasMapConfigured ? (
         <div className="flex flex-col items-center justify-center py-20 surface rounded-2xl border border-dashed border-white/10 space-y-4">
