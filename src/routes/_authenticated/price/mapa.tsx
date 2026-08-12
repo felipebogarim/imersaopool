@@ -50,11 +50,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { PERFIS_ANCHORS, PERFIS_COMPETITORS } from "@/lib/price-mapa/mock-data";
 import { FAMILIAS_MAPA, PriceTable, BrandAdjustment, MapaCalculatedItem } from "@/lib/price-mapa/types";
 import { calculateMapaItem } from "@/lib/price-mapa/calculations";
-import { LEVEL_CLASS, LEVEL_LABEL, EquivalenceLevel } from "@/lib/price-comparativos-core";
+import { enriquecerProdutos } from "@/lib/price-mapa/dimensions";
+import { LEVEL_CLASS, LEVEL_LABEL, STATUS_LABEL, EquivalenceLevel, EquivalenceStatus } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
 import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
 import { ImportadorMapa } from "@/components/price/mapa/ImportadorMapa";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 
 export const Route = createFileRoute("/_authenticated/price/mapa")({
