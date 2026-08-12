@@ -489,11 +489,52 @@ function MapaPrecosPage() {
                 <div className="relative w-full lg:w-80">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Pesquisar marca ou produto..." 
-                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-white"
+                    placeholder="Pesquisar produto, marca, concorrente ou técnica..." 
+                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-foreground placeholder:text-muted-foreground"
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
                   />
+                </div>
+              </div>
+
+              {/* Filtros estruturados */}
+              <div className="flex flex-wrap items-end gap-3 surface rounded-xl border border-white/5 p-3">
+                {[
+                  { label: "Produto chave", value: filterBase, set: setFilterBase, options: opcoes.bases, render: (v: string) => v },
+                  { label: "Concorrente", value: filterConcorrente, set: setFilterConcorrente, options: opcoes.concorrentes, render: (v: string) => v },
+                  { label: "Marca", value: filterMarca, set: setFilterMarca, options: opcoes.marcas, render: (v: string) => v },
+                  {
+                    label: "Técnica",
+                    value: filterTecnica,
+                    set: setFilterTecnica,
+                    options: opcoes.tecnicas,
+                    render: (v: string) => LEVEL_LABEL[v as EquivalenceLevel] ?? v,
+                  },
+                ].map((f) => (
+                  <div key={f.label} className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground block">{f.label}</span>
+                    <Select value={f.value} onValueChange={(v) => f.set(v)}>
+                      <SelectTrigger className="w-[200px] h-9 bg-background/50 border-white/10 font-light text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-foreground max-h-72">
+                        <SelectItem value="todos">Todos</SelectItem>
+                        {f.options.map((o) => (
+                          <SelectItem key={o} value={o}>{f.render(o)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 pb-1">
+                  <span className="text-[11px] text-muted-foreground font-light">
+                    {filteredItems.length} de {calculatedItems.length} comparações
+                  </span>
+                  {filtrosAtivos > 0 && (
+                    <Button variant="ghost" size="sm" className="h-8 text-[11px] text-nl-gold" onClick={limparFiltros}>
+                      Limpar filtros ({filtrosAtivos})
+                    </Button>
+                  )}
                 </div>
               </div>
             </>
