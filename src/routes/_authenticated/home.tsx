@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PageHeader } from "@/components/AppShell";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, FileSearch, Tag, Map as MapIcon, ArrowRight } from "lucide-react";
+import { TrendingUp, FileSearch, Tag, Map as MapIcon, ArrowRight, LayoutDashboard, Target, BarChart3, Settings2 } from "lucide-react";
+import backgroundVideoAsset from "@/assets/background-video.mp4.asset.json";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({ meta: [{ title: "Home — PoolFlux" }] }),
@@ -23,146 +23,164 @@ function HomeComponent() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <PageHeader
-        title="Home"
-        subtitle={"Arquitetura Gerencial — " + (profile?.companyName ?? "Imersão Comercial")}
-      />
-
-      <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-16">
-        {/* NÍVEL 1: ÁREAS DE ANÁLISE */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-          {/* PERFORMANCE */}
-          <div className="space-y-8 flex flex-col items-center">
-            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">PERFORMANCE</h2>
-            </div>
-            <div className="flex flex-col items-center space-y-4 w-full">
-              <Link 
-                to="/representantes/performance" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                Performance Reps
-              </Link>
-              <Link 
-                to="/performance/bi-clientes" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                BI Clientes
-              </Link>
-            </div>
-          </div>
-
-          {/* IMERSÕES */}
-          <div className="space-y-8 flex flex-col items-center">
-            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">IMERSÕES</h2>
-            </div>
-            <div className="flex flex-col items-center space-y-4 w-full">
-              <Link 
-                to="/visao-rep-2" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                Visão Reps
-              </Link>
-              <Link 
-                to="/visao-imersao-2" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1 text-center"
-              >
-                Visão Imersões em Campo
-              </Link>
-              <Link 
-                to="/sintese/tipos" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                Visões Consolidadas
-              </Link>
-            </div>
-          </div>
-
-          {/* PREÇOS */}
-          <div className="space-y-8 flex flex-col items-center">
-            <div className="w-full bg-white border border-slate-200 rounded-lg p-6 text-center shadow-sm relative z-10">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase block mb-1">Análise</span>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">PREÇOS</h2>
-            </div>
-            <div className="flex flex-col items-center space-y-4 w-full">
-              <Link 
-                to="/precos/mapa" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                Mapa de Preços
-              </Link>
-              <Link 
-                to="/precos/simulador" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1 text-center"
-              >
-                Simulador, R$ + Características
-              </Link>
-              <Link 
-                to="/price/comparativos" 
-                className="text-sm font-medium text-slate-600 hover:text-primary transition-all hover:translate-x-1"
-              >
-                Comparativos
-              </Link>
-            </div>
-          </div>
-
-          {/* Conectores Visuais Nível 1 -> 2 (Desktop) */}
-          <div className="hidden md:block absolute top-[100%] left-0 right-0 h-16 pointer-events-none -mt-4">
-             <svg className="w-full h-full" preserveAspectRatio="none">
-                <path d="M 16.6% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
-                <path d="M 50% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
-                <path d="M 83.3% 0 L 50% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
-             </svg>
-          </div>
-        </div>
-
-        {/* NÍVEL 2: CONVERGÊNCIA */}
-        <div className="flex justify-center pt-8">
-          <Link 
-            to="/mapa-acoes"
-            className="w-full md:w-3/5 lg:w-1/2 bg-slate-900 text-white border border-slate-800 rounded-xl p-8 text-center shadow-lg hover:bg-slate-800 transition-all group relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="text-[10px] font-bold tracking-[0.3em] text-slate-500 uppercase block mb-2">Decisão</span>
-            <h2 className="text-2xl font-bold tracking-widest flex items-center justify-center gap-3">
-              MAPA DE AÇÕES
-              <ArrowRight className="h-6 w-6 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-            </h2>
-          </Link>
-        </div>
-
-        {/* NÍVEL 3: DESDOBRAMENTO */}
-        <div className="relative">
-          {/* Conector Nível 2 -> 3 (Desktop) */}
-          <div className="hidden md:block absolute -top-12 left-0 right-0 h-12 pointer-events-none">
-            <svg className="w-full h-full" preserveAspectRatio="none">
-              <path d="M 50% 0 L 50% 50% M 12.5% 50% L 87.5% 50% M 12.5% 50% L 12.5% 100% M 37.5% 50% L 37.5% 100% M 62.5% 50% L 62.5% 100% M 87.5% 50% L 87.5% 100%" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeDasharray="4 4" />
-            </svg>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
-            {[
-              { label: "COMERCIAL", icon: TrendingUp },
-              { label: "PRODUTO", icon: Tag },
-              { label: "MARKETING", icon: FileSearch },
-              { label: "GOVERNANÇA", icon: MapIcon }
-            ].map((item) => (
-              <Link
-                key={item.label}
-                to="/mapa-acoes"
-                className="bg-white border border-slate-200 rounded-lg p-8 text-center shadow-sm flex flex-col items-center gap-4 hover:border-slate-400 transition-all hover:scale-[1.02]"
-              >
-                <span className="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">Ação</span>
-                <h3 className="text-xs font-bold text-slate-800 tracking-[0.15em]">{item.label}</h3>
-              </Link>
-            ))}
-          </div>
-        </div>
+    <div className="relative min-h-screen w-full overflow-hidden font-sans text-white">
+      {/* Background Video */}
+      <div className="absolute inset-0 z-0">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="h-full w-full object-cover brightness-[0.4]"
+        >
+          <source src={backgroundVideoAsset.url} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
       </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="p-6 md:p-10 flex justify-between items-start">
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-primary">
+              POOLFLUX
+            </h1>
+            <p className="text-[10px] md:text-xs font-bold tracking-[0.4em] text-white/60 uppercase">
+              {profile?.companyName ?? "Imersão Comercial"}
+            </p>
+          </div>
+          <div className="hidden md:block text-right">
+            <div className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Arquitetura Gerencial</div>
+            <div className="text-sm font-medium text-white/80">Estratégia & Performance</div>
+          </div>
+        </header>
+
+        <main className="flex-grow flex flex-col justify-center px-6 md:px-12 py-12 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Column: Strategic Vision */}
+            <div className="lg:col-span-7 space-y-12">
+              <div className="space-y-4">
+                <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none uppercase">
+                  DIRETRIZ <br />
+                  <span className="text-primary italic">ESTRATÉGICA</span>
+                </h2>
+                <div className="h-1 w-24 bg-primary" />
+              </div>
+
+              {/* NÍVEL 1: ÁREAS DE ANÁLISE (Grid) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  {
+                    title: "PERFORMANCE",
+                    links: [
+                      { label: "Performance Reps", to: "/representantes/performance" },
+                      { label: "BI Clientes", to: "/performance/bi-clientes" }
+                    ],
+                    icon: BarChart3
+                  },
+                  {
+                    title: "IMERSÕES",
+                    links: [
+                      { label: "Visão Reps", to: "/visao-rep-2" },
+                      { label: "Imersões Campo", to: "/visao-imersao-2" },
+                      { label: "Consolidados", to: "/sintese/tipos" }
+                    ],
+                    icon: Target
+                  },
+                  {
+                    title: "PREÇOS",
+                    links: [
+                      { label: "Mapa Preços", to: "/precos/mapa" },
+                      { label: "Simulador", to: "/precos/simulador" },
+                      { label: "Comparativos", to: "/price/comparativos" }
+                    ],
+                    icon: Settings2
+                  }
+                ].map((group) => (
+                  <div key={group.title} className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl hover:bg-white/10 transition-all group">
+                    <div className="flex justify-between items-start mb-4">
+                      <group.icon className="h-5 w-5 text-primary" />
+                      <span className="text-[9px] font-bold tracking-widest text-white/40 uppercase">Análise</span>
+                    </div>
+                    <h3 className="text-sm font-black tracking-wider mb-4">{group.title}</h3>
+                    <div className="flex flex-col gap-2">
+                      {group.links.map((link) => (
+                        <Link 
+                          key={link.label}
+                          to={link.to as any} 
+                          className="text-xs font-bold text-white/60 hover:text-primary transition-colors flex items-center gap-2"
+                        >
+                          <div className="h-1 w-1 rounded-full bg-white/20 group-hover:bg-primary/40" />
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Column: Execution Hub */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              {/* NÍVEL 2: MAPA DE AÇÕES */}
+              <Link 
+                to="/mapa-acoes"
+                className="group relative bg-primary p-8 rounded-3xl overflow-hidden transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="absolute top-0 right-0 p-4">
+                  <ArrowRight className="h-8 w-8 text-black/20 group-hover:text-black/40 transition-colors" />
+                </div>
+                <span className="text-[10px] font-black tracking-[0.3em] text-black/60 uppercase block mb-2">Decisão Central</span>
+                <h2 className="text-4xl font-black text-black tracking-tighter uppercase leading-none">
+                  MAPA DE <br /> AÇÕES
+                </h2>
+                <div className="mt-8 flex items-center gap-2">
+                  <div className="h-1 flex-grow bg-black/10" />
+                  <span className="text-[9px] font-black text-black/40 uppercase tracking-widest">Execução em tempo real</span>
+                </div>
+              </Link>
+
+              {/* NÍVEL 3: DESDOBRAMENTO */}
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "COMERCIAL", icon: TrendingUp },
+                  { label: "PRODUTO", icon: Tag },
+                  { label: "MARKETING", icon: FileSearch },
+                  { label: "GOVERNANÇA", icon: MapIcon }
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    to="/mapa-acoes"
+                    className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex flex-col items-center gap-3 hover:bg-white/10 hover:border-white/20 transition-all text-center"
+                  >
+                    <item.icon className="h-4 w-4 text-white/40" />
+                    <h3 className="text-[10px] font-black tracking-widest text-white uppercase">{item.label}</h3>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="p-8 md:p-12 flex flex-col md:flex-row justify-between items-center gap-6 text-white/40">
+          <div className="flex gap-8 text-[9px] font-bold tracking-[0.3em] uppercase">
+            <span>PoolFlux © 2026</span>
+            <span>Inteligência de Mercado</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="h-px w-12 bg-white/10 hidden md:block" />
+            <span className="text-[10px] italic font-medium">Elevating performance through data-driven store visits</span>
+          </div>
+        </footer>
+      </div>
+
+      {/* Aesthetic Grain Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
     </div>
   );
 }
+
