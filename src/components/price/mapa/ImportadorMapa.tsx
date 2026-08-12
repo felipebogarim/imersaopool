@@ -23,6 +23,9 @@ interface ImportadorMapaProps {
 export function ImportadorMapa({ open, onOpenChange, familia, onImported }: ImportadorMapaProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [previewData, setPreviewData] = useState<{ anchors: any[], competitors: any[] } | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summary, setSummary] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,10 +85,20 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
         return;
       }
 
-      onImported(anchors, competitors);
-      toast.success(`${competitors.length} comparações da família ${familia} importadas com sucesso!`);
-      onOpenChange(false);
-      setFile(null);
+      // Check for zero prices that might be mapping errors
+      const zeroPrices = competitors.filter(c => c.preco_normalizado === 0 && !c.referencia?.toLowerCase().includes("bob"));
+      if (zeroPrices.length > 0) {
+        toast.warning(`${zeroPrices.length} produtos resultaram em preço R$ 0,00. Verifique o mapeamento das colunas.`);
+      }
+
+      setPreviewData({ anchors, competitors });
+      setSummary({
+        total: rawRows.length,
+        imported: competitors.length,
+        pricesIdentified: competitors.filter(c => c.preco_normalizado !== null).length,
+        pricesMissing: competitors.filter(c => c.preco_normalizado === null).length,
+        classificationsIdentified: competitors.filter(c => !!c.classificacao_tecnica).length,
+      });
     } catch (error) {
       console.error("Erro ao processar arquivo:", error);
       toast.error("Falha ao processar o arquivo. Verifique o formato.");
