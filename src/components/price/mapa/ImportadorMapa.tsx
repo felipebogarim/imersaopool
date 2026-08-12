@@ -11,14 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { processRawMapaRows, RawMapaRow } from "@/lib/price-mapa/parser/import-logic";
 
 interface ImportadorMapaProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   familia: string;
+  onImported: (anchors: any[], competitors: any[]) => void;
 }
 
-export function ImportadorMapa({ open, onOpenChange, familia }: ImportadorMapaProps) {
+export function ImportadorMapa({ open, onOpenChange, familia, onImported }: ImportadorMapaProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,13 +44,40 @@ export function ImportadorMapa({ open, onOpenChange, familia }: ImportadorMapaPr
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      // Simulação de processamento - Futuramente integrará com o parser determinístico
-      console.log("Processando arquivo:", file.name, "para família:", familia);
-      console.log("Abas encontradas:", workbook.SheetNames);
+      const sheetName = workbook.SheetNames.find(n => 
+        n.toUpperCase().includes("MAPA_PRECOS") || 
+        n.toUpperCase().includes("MAPA_PRECOS_PERFIS") ||
+        n.toUpperCase().includes("CONCORRENTES")
+      ) || workbook.SheetNames[0];
 
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Mock delay
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      toast.success(`Dados da família ${familia} importados com sucesso!`);
+      const rawRows: RawMapaRow[] = jsonData.map((row: any) => ({
+        familia: row["Família"] || row["familia"] || familia,
+        base_produto: row["Produto Base Newline"] || row["base_produto"],
+        base_codigo: String(row["Código Newline"] || row["base_codigo"]),
+        base_preco: Number(row["Preço Newline"] || row["base_preco"] || 0),
+        concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"],
+        concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"],
+        concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"],
+        concorrente_preco: Number(row["Preço Concorrente"] || row["concorrente_preco"] || 0),
+        classificacao: row["Classificação"] || row["classificacao"] || "",
+        nicho: row["Nicho"] || row["nicho"],
+        largura: row["Largura"] || row["largura"],
+        altura: row["Altura"] || row["altura"],
+        notas: row["Notas"] || row["notas"],
+      }));
+
+      const { anchors, competitors } = processRawMapaRows(rawRows);
+
+      if (competitors.length === 0) {
+        toast.error("Nenhum registro válido encontrado na planilha.");
+        return;
+      }
+
+      onImported(anchors, competitors);
+      toast.success(`${competitors.length} comparações da família ${familia} importadas com sucesso!`);
       onOpenChange(false);
       setFile(null);
     } catch (error) {
