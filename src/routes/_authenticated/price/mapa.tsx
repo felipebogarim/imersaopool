@@ -404,7 +404,7 @@ function MapaPrecosPage() {
             size="sm" 
             className={cn(
               "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
-              viewMode === "table" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+              viewMode === "table" ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-white"
             )}
             onClick={() => setViewMode("table")}
           >
@@ -415,7 +415,7 @@ function MapaPrecosPage() {
             size="sm" 
             className={cn(
               "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
-              viewMode === "charts" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+              viewMode === "charts" ? "bg-white/10 text-foreground shadow-sm" : "text-muted-foreground hover:text-white"
             )}
             onClick={() => setViewMode("charts")}
           >
@@ -471,7 +471,7 @@ function MapaPrecosPage() {
                   <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">Tabela Newline considerada</span>
                   <div className="flex items-center gap-3">
                     <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
-                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-white">
+                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
@@ -583,7 +583,7 @@ function MapaPrecosPage() {
                         </div>
                       </TableCell>
                       <TableCell className="py-5 border-r border-white/[0.05]">
-                        <span className="text-sm font-bold text-white/90">
+                        <span className="text-sm font-semibold text-nl-gold">
                           {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
