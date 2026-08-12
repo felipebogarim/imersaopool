@@ -79,16 +79,28 @@ function MapaPrecosPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   
-  // State for imported data
-  const [importedAnchors, setImportedAnchors] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`mapa_precos_anchors_${familia}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [importedCompetitors, setImportedCompetitors] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`mapa_precos_competitors_${familia}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  
+  // Filtros estruturados
+  const [filterBase, setFilterBase] = useState("todos");
+  const [filterConcorrente, setFilterConcorrente] = useState("todos");
+  const [filterMarca, setFilterMarca] = useState("todos");
+  const [filterTecnica, setFilterTecnica] = useState("todos");
+
+  // State for imported data (carregado após hidratação para evitar mismatch SSR)
+  const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
+  const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+      const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+      setImportedAnchors(a ? JSON.parse(a) : []);
+      setImportedCompetitors(c ? JSON.parse(c) : []);
+    } catch {
+      setImportedAnchors([]);
+      setImportedCompetitors([]);
+    }
+  }, [familia]);
+
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
   const activeAnchors = importedAnchors.length > 0 ? importedAnchors : PERFIS_ANCHORS;
