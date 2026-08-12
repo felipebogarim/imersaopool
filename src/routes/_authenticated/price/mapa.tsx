@@ -353,4 +353,3 @@ function Label({ className, children }: { className?: string; children: React.Re
   );
 }
 
-}
