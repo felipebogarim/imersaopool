@@ -74,6 +74,26 @@ function statusOf(c: CardRow) {
   return { label: c.kanban_lists?.name || "Em andamento", cls: "bg-primary/10 text-primary" };
 }
 
+/** Normaliza nome de cliente para comparação (sem acento, pontuação e sufixos societários). */
+function normName(s: string | null | undefined): string {
+  return (s ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/\b(LTDA|EPP|ME|EIRELI|S\/?A|SA|COMERCIO|COM|IMPORTACAO|IMP|E)\b/g, " ")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+
+/** Considera equivalente quando um nome normalizado é prefixo/contido no outro. */
+function sameClient(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const min = Math.min(a.length, b.length);
+  if (min < 4) return false;
+  return a.startsWith(b) || b.startsWith(a) || a.includes(b) || b.includes(a);
+}
+
 export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ["acoes-cliente", clientId, clientName],
@@ -87,26 +107,56 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
           kanban_card_members(user_id)`;
 
       const byId = new Map<string, CardRow>();
+      const name = (clientName ?? "").trim();
+      const nName = normName(name);
 
-      if (clientId) {
+      // 1) Descobre todos os ids de cliente equivalentes (o card pode gravar o id
+      // do cadastro, enquanto a imersão usa razão social ou vice-versa).
+      const ids = new Set<string>();
+      if (clientId) ids.add(clientId);
+      if (nName) {
+        const token = nName.split(" ")[0] ?? "";
+        if (token.length >= 3) {
+          const { data: cli } = await supabase
+            .from("clients")
+            .select("id, nome_fantasia, razao_social")
+            .or(`nome_fantasia.ilike.%${token}%,razao_social.ilike.%${token}%`)
+            .limit(200);
+          for (const c of (cli ?? []) as any[]) {
+            if (
+              sameClient(normName(c.nome_fantasia), nName) ||
+              sameClient(normName(c.razao_social), nName)
+            ) {
+              ids.add(c.id);
+            }
+          }
+        }
+      }
+
+      if (ids.size) {
         const { data, error } = await supabase
           .from("kanban_cards")
           .select(select)
-          .eq("metadata->>client_id", clientId)
+          .in("metadata->>client_id", Array.from(ids))
           .order("created_at", { ascending: false });
         if (error) throw error;
         for (const r of (data ?? []) as unknown as CardRow[]) byId.set(r.id, r);
       }
 
-      const name = (clientName ?? "").trim();
-      if (name) {
+      // 2) Fallback por nome: busca ampla pelo primeiro token e filtra por
+      // equivalência normalizada (cobre nomes truncados/abreviados nos cards).
+      const token = nName.split(" ")[0] ?? "";
+      if (token.length >= 3) {
         const { data, error } = await supabase
           .from("kanban_cards")
           .select(select)
-          .ilike("metadata->>client_name", `%${name}%`)
-          .order("created_at", { ascending: false });
+          .ilike("metadata->>client_name", `%${token}%`)
+          .order("created_at", { ascending: false })
+          .limit(300);
         if (error) throw error;
-        for (const r of (data ?? []) as unknown as CardRow[]) byId.set(r.id, r);
+        for (const r of (data ?? []) as unknown as CardRow[]) {
+          if (sameClient(normName(r.metadata?.client_name), nName)) byId.set(r.id, r);
+        }
       }
 
       const rows = Array.from(byId.values());
