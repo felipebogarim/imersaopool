@@ -125,15 +125,15 @@ function BIClientesPage() {
   const isLoading = loadingUploads || loadingRows;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-background">
       <PageHeader
         title="BI Clientes Consolidado"
         subtitle="Visão geral de performance de todos os clientes ativos"
       />
       
-      <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row gap-4 items-end bg-card p-4 rounded-xl border border-border shadow-sm">
-          <div className="flex-1 space-y-1.5">
+      <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 md:items-end bg-card p-3 sm:p-4 rounded-xl border border-border shadow-sm">
+          <div className="flex-1 min-w-0 space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pesquisar Cliente</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
