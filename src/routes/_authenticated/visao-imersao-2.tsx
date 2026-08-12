@@ -724,7 +724,7 @@ function VisaoImersao2Page() {
         )}
 
         {/* 6. LEITURA INTEGRADA */}
-        <LeituraIntegradaV2 visao={visao} defaultOpen={true} />
+        <LeituraIntegradaV2 visao={visaoComGrupo ?? visao} defaultOpen={true} />
 
         {/* 7. ÁREAS DE APROFUNDAMENTO */}
         <AreasAprofundamento
