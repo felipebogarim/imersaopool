@@ -146,7 +146,7 @@ function BIClientesPage() {
             </div>
           </div>
           
-          <div className="w-full md:w-64 space-y-1.5">
+          <div className="w-full md:w-64 md:shrink-0 space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Representante</label>
             <Select value={repFilter} onValueChange={setRepFilter}>
               <SelectTrigger>
