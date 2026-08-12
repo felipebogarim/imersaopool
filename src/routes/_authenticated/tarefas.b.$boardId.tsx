@@ -242,18 +242,22 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
   const style = { transform: CSS.Transform.toString(transform), transition };
   const [adding, setAdding] = useState(false);
 
-  async function createCard(title: string, client: NewCardClient) {
+  async function createCard(title: string, client: NewCardClient, rep?: { id: string; name: string } | null) {
     const { data: u } = await supabase.auth.getUser();
     const lastPos = cards[cards.length - 1]?.position ?? 0;
+    const metadata: Record<string, unknown> = {};
+    if (client) { metadata.client_id = client.id; metadata.client_name = client.name; }
+    if (rep) { metadata.rep_id = rep.id; metadata.rep_name = rep.name; }
     const { data, error } = await supabase.from("kanban_cards").insert({
       list_id: list.id, board_id: list.board_id, title,
       position: lastPos + 1000, created_by: u.user!.id,
-      metadata: client ? { client_id: client.id, client_name: client.name } : {},
+      metadata: metadata as any,
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
-    if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null }, data.id);
+    if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null, rep_id: rep?.id ?? null }, data.id);
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
+
 
   async function renameList() {
     const name = prompt("Nome da lista:", list.name)?.trim();
