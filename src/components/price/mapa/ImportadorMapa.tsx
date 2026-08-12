@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, X, FileSpreadsheet, AlertCircle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
