@@ -5,11 +5,11 @@ export interface RawMapaRow {
   familia: string;
   base_produto: string;
   base_codigo: string;
-  base_preco: number;
+  base_preco: number | null;
   concorrente_marca: string;
   concorrente_modelo: string;
   concorrente_codigo?: string;
-  concorrente_preco: number;
+  concorrente_preco: number | null;
   classificacao: string;
   nicho?: number;
   largura?: number;
@@ -23,8 +23,9 @@ export interface RawMapaRow {
 function mapClassificacao(text: string): EquivalenceLevel {
   const t = (text || "").toLowerCase();
   if (t.includes("direto")) return "direto";
-  if (t.includes("forte")) return "aproximado"; // Aproximado forte
+  if (t.includes("forte") || t.includes("aproximado forte")) return "aproximado"; 
   if (t.includes("aproximado")) return "aproximado";
+  if (t.includes("alternativa estrutural")) return "alternativo";
   if (t.includes("alternativo") || t.includes("alternativa")) return "alternativo";
   if (t.includes("incompativel") || t.includes("incompatível")) return "incompativel";
   return "alternativo"; // Default
@@ -62,7 +63,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
     const compId = `comp-${index}-${row.concorrente_marca}-${row.concorrente_modelo}`.replace(/\s+/g, '-').toLowerCase();
     
     // Regra especial: Usina Bob 30865 = R$ 39,60/m
-    let precoNormalizado = row.concorrente_preco;
+    let precoNormalizado = row.concorrente_preco ?? 0;
     if (row.concorrente_marca?.toLowerCase().includes("usina") && row.concorrente_modelo?.toLowerCase().includes("bob")) {
       precoNormalizado = 39.60;
     }
