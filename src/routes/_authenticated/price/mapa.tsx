@@ -590,13 +590,37 @@ function MapaPrecosPage() {
 
           {viewMode === "table" && (
             <div className="surface rounded-2xl border border-white/5 overflow-hidden">
+            <div className="flex items-center justify-end gap-2 p-3 border-b border-white/5">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 border-white/10 font-light text-[11px]">
+                    <Columns className="h-3.5 w-3.5 mr-2 text-nl-gold" /> Colunas
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10 text-foreground">
+                  <DropdownMenuItem onClick={() => setShowDimColumns(!showDimColumns)}>
+                    {showDimColumns ? "Ocultar" : "Exibir"} dimensões e nicho
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/5 hover:bg-transparent">
+                  <TableHead className="w-8 py-4"></TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Produto Base</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Newline (R$/m)</TableHead>
+                  {showDimColumns && (
+                    <>
+                      <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Dimensão Newline</TableHead>
+                      <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Nicho</TableHead>
+                    </>
+                  )}
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Concorrente</TableHead>
+                  {showDimColumns && (
+                    <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Dimensão Concorrente</TableHead>
+                  )}
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Marca</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Preço Concorrente</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4 text-center">Diferença Newline vs concorrente</TableHead>
@@ -608,6 +632,8 @@ function MapaPrecosPage() {
                 {filteredItems.map((item, index) => {
                   const base = activeAnchors.find(a => a.id === item.base_product_id);
                   const isEven = index % 2 === 0;
+                  const isExpanded = expandedId === item.id;
+                  const colSpan = showDimColumns ? 12 : 9;
                   const farolColors = {
                     verde: "bg-emerald-500/80 text-black border-emerald-500/20",
                     amarelo: "bg-amber-500/80 text-black border-amber-500/20",
@@ -616,30 +642,68 @@ function MapaPrecosPage() {
                   };
 
                   return (
+                    <Fragment key={item.id}>
                     <TableRow 
-                      key={item.id} 
                       className={cn(
                         "border-b border-white/15 hover:bg-nl-gold/5 transition-colors group",
                         isEven ? "bg-transparent" : "bg-white/[0.05]"
                       )}
                     >
+                      <TableCell className="py-5 pl-3 pr-0">
+                        <button
+                          type="button"
+                          aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"}
+                          className="text-muted-foreground hover:text-nl-gold transition-colors"
+                          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                        >
+                          <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+                        </button>
+                      </TableCell>
                       <TableCell className="py-5 border-r border-white/10">
-                        <div className="flex flex-col">
-                          <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
-                          <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
-                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col cursor-default">
+                                <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
+                                <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-[11px]">
+                              <p>Dimensão: {base?.dimensao_texto || "—"}</p>
+                              <p>Nicho: {base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="py-5 border-r border-white/10">
                         <span className="text-sm font-semibold text-nl-gold">
-                          {base?.preco_normalizado !== null ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
+                          {base?.preco_normalizado !== null && base?.preco_normalizado !== undefined ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
+                      {showDimColumns && (
+                        <>
+                          <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{base?.dimensao_texto || "—"}</TableCell>
+                          <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</TableCell>
+                        </>
+                      )}
                       <TableCell className="py-5 border-r border-white/10">
-                        <div className="flex flex-col">
-                          <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
-                          <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
-                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col cursor-default">
+                                <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
+                                <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-[11px]">
+                              <p>Dimensão concorrente: {item.dimensao_texto || "—"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
+                      {showDimColumns && (
+                        <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{item.dimensao_texto || "—"}</TableCell>
+                      )}
                       <TableCell className="py-5 border-r border-white/10">
                         <Badge variant="outline" className="font-light text-[10px] border-white/20 text-nl-gold/80 uppercase tracking-wider px-2 py-0">
                           {item.marca}
@@ -668,19 +732,104 @@ function MapaPrecosPage() {
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
                           {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
+                        {item.detalhamento_tecnico && (
+                          <span className="block text-[9px] text-muted-foreground mt-1 italic">{item.detalhamento_tecnico}</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-5 text-right pr-6">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/60 opacity-60 group-hover:opacity-100 transition-opacity">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10 text-foreground">
+                            <DropdownMenuItem onClick={() => setExpandedId(isExpanded ? null : item.id)}>
+                              <Info className="h-3.5 w-3.5 mr-2" /> Ver detalhes técnicos
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setNoteTarget(item); setNoteText(item.notas ?? ""); }}>
+                              Adicionar / editar nota
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-white/10" />
+                            <DropdownMenuItem onClick={() => alterarStatus(item, "validado")}>
+                              Marcar como validado
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => alterarStatus(item, "incompativel")}>
+                              Marcar como incompatível
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => alterarStatus(item, "em_analise")}>
+                              Voltar para em análise
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
+                    {isExpanded && (
+                      <TableRow className="border-b border-white/15 bg-nl-gold/[0.03] hover:bg-nl-gold/[0.03]">
+                        <TableCell colSpan={colSpan} className="py-5 px-8">
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs font-light">
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Dimensão Newline</span>
+                              <span className="text-foreground">{base?.dimensao_texto || "—"}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Nicho Newline</span>
+                              <span className="text-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Dimensão concorrente</span>
+                              <span className="text-foreground">{item.dimensao_texto || "—"}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Status</span>
+                              <span className="text-foreground">{STATUS_LABEL[(item.status ?? "em_analise") as EquivalenceStatus]}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Fonte principal</span>
+                              <span className="text-foreground">{item.fonte || base?.fonte || "—"}</span>
+                            </div>
+                            <div>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Detalhamento técnico</span>
+                              <span className="text-foreground">{item.detalhamento_tecnico || "—"}</span>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Notas</span>
+                              <span className="text-foreground">{item.notas || "—"}</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </Fragment>
                   );
                 })}
               </TableBody>
             </Table>
             </div>
           )}
+
+          <Dialog open={!!noteTarget} onOpenChange={(o) => !o && setNoteTarget(null)}>
+            <DialogContent className="bg-[#0A0A0A] border-white/10 text-foreground">
+              <DialogHeader>
+                <DialogTitle className="font-light">Nota da comparação</DialogTitle>
+                <DialogDescription className="font-light text-muted-foreground">
+                  {noteTarget?.marca} — {noteTarget?.nome}. A nota aparece na exportação Excel.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={5}
+                placeholder="Registre observações de auditoria, fonte adicional ou ressalvas técnicas..."
+                className="bg-background/50 border-white/10 font-light"
+              />
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setNoteTarget(null)}>Cancelar</Button>
+                <Button className="bg-nl-gold text-black hover:bg-nl-gold/90" onClick={salvarNota}>Salvar nota</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
 
           {viewMode === "table" && (
             <div className="flex flex-wrap gap-8 py-4 px-2">
