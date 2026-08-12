@@ -218,9 +218,9 @@ function BIClientesPage() {
                         const metasStatus = row.metas_status as Record<string, FarolStatus>;
                         const status = metasStatus?.[col];
                         
-                        // Busca o atingimento específico da família se disponível no JSON
-                        const familyPct = row.family_attainment && typeof row.family_attainment === 'object' 
-                          ? (row.family_attainment as Record<string, number>)[col] 
+                        // O campo correto no banco é familia_pct (conforme erro acima e tipos do Supabase)
+                        const familyPct = row.familia_pct && typeof row.familia_pct === 'object' 
+                          ? (row.familia_pct as Record<string, any>)[col] 
                           : null;
 
                         return (
