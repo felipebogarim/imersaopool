@@ -203,14 +203,14 @@ function MapaPrecosPage() {
     if (filterBase !== "todos") {
       items = items.filter((item) => {
         const base = activeAnchors.find((a) => a.id === item.base_product_id);
-        return (base?.nome ?? "") === filterBase;
+        return (base?.nome ?? "").trim() === filterBase;
       });
     }
     if (filterConcorrente !== "todos") {
-      items = items.filter((item) => item.nome === filterConcorrente);
+      items = items.filter((item) => (item.nome ?? "").trim() === filterConcorrente);
     }
     if (filterMarca !== "todos") {
-      items = items.filter((item) => item.marca === filterMarca);
+      items = items.filter((item) => (item.marca ?? "").trim() === filterMarca);
     }
     if (filterTecnica !== "todos") {
       items = items.filter((item) => (item.classificacao_tecnica ?? "insuficiente") === filterTecnica);
