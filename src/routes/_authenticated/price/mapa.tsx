@@ -234,12 +234,12 @@ function MapaPrecosPage() {
     const tecnicas = new Set<string>();
     calculatedItems.forEach((item) => {
       const base = activeAnchors.find((a) => a.id === item.base_product_id);
-      if (base?.nome) bases.add(base.nome);
-      if (item.nome) concorrentes.add(item.nome);
-      if (item.marca) marcas.add(item.marca);
+      if (base?.nome?.trim()) bases.add(base.nome.trim());
+      if (item.nome?.trim()) concorrentes.add(item.nome.trim());
+      if (item.marca?.trim()) marcas.add(item.marca.trim());
       tecnicas.add(item.classificacao_tecnica ?? "insuficiente");
     });
-    const sorted = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const sorted = (s: Set<string>) => Array.from(s).filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"));
     return {
       bases: sorted(bases),
       concorrentes: sorted(concorrentes),
