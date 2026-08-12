@@ -38,16 +38,35 @@ export function getAdmin(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export function verifyApiKey(request: Request): Response | null {
+export async function verifyApiKey(request: Request): Promise<Response | null> {
   const apikey = request.headers.get("apikey") ?? request.headers.get("x-api-key");
-  const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!expected || apikey !== expected) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
+  const authHeader = request.headers.get("Authorization");
+  
+  // Se for uma requisição interna autenticada (via server function ou app local)
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "");
+    const { createClient } = await import("@supabase/supabase-js");
+    const admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false }
     });
+    const { data: claims } = await admin.auth.getClaims(token);
+    if (claims?.claims?.sub) {
+      const { data: isAdmin } = await admin.rpc("has_role", {
+        _user_id: claims.claims.sub,
+        _role: "admin",
+      });
+      if (isAdmin) return null;
+    }
   }
-  return null;
+
+  // Fallback para cron/service calls usando o secret dedicado
+  const cronSecret = process.env.BACKUP_CRON_SECRET;
+  if (cronSecret && apikey === cronSecret) return null;
+
+  return new Response(JSON.stringify({ error: "unauthorized" }), {
+    status: 401,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 export async function logHistorico(
