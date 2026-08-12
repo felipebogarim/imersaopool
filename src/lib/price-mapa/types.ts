@@ -35,6 +35,12 @@ export type MapaProduct = {
   fonte?: string;
   data_fonte?: string;
   notas?: string;
+  dimensoes?: {
+    nicho?: number;
+    largura?: number;
+    altura?: number;
+    diametro?: number;
+  };
 };
 
 export type MapaCalculatedItem = MapaProduct & {
