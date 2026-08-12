@@ -135,6 +135,38 @@ function MapaPrecosPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    if (filteredItems.length === 0) {
+      toast.error("Nenhuma comparação para exportar.");
+      return;
+    }
+    const XLSX = await import("xlsx");
+    const rows = filteredItems.map((item: any) => {
+      const base = activeAnchors.find((a: any) => a.id === item.base_product_id);
+      return {
+        "Família": familia,
+        "Produto Base Newline": base?.nome ?? "",
+        "Código Newline": base?.referencia ?? "",
+        "Preço Newline (R$)": base?.preco_normalizado ?? null,
+        "Marca Concorrente": item.marca,
+        "Modelo Concorrente": item.nome,
+        "Referência Concorrente": item.referencia ?? "",
+        "Preço Concorrente (R$)": item.preco_simulado ?? item.preco_normalizado ?? null,
+        "Diferença (R$)": item.diff_absoluta ?? null,
+        "Diferença (%)": item.diff_percentual !== null && item.diff_percentual !== undefined
+          ? Number(item.diff_percentual.toFixed(1))
+          : null,
+        "Farol": item.farol,
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Mapa de Preços");
+    XLSX.writeFile(wb, `mapa-precos-${familia.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Planilha exportada com sucesso.");
+  };
+
+
 
   const indicators = useMemo(() => {
     const total = calculatedItems.length;
