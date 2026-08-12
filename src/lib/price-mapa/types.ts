@@ -30,11 +30,14 @@ export type MapaProduct = {
   is_base: boolean;
   base_product_id?: string; // Link to Newline anchor if this is a competitor
   classificacao_tecnica?: EquivalenceLevel;
+  detalhamento_tecnico?: string;
   proximidade_tecnica?: number; // 0-100
   status: EquivalenceStatus;
   fonte?: string;
   data_fonte?: string;
   notas?: string;
+  dimensao_texto?: string;
+  nicho_mm?: number;
   dimensoes?: {
     nicho?: number;
     largura?: number;
