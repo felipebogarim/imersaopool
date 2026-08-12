@@ -254,37 +254,44 @@ function MapaPrecosPage() {
             </Card>
           </div>
 
-          {/* Seletor de Tabela e Busca */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-end justify-between">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest">Tabela Newline considerada</Label>
-              <div className="flex items-center gap-3">
-                <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
-                  <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Black Brasil">Black Brasil</SelectItem>
-                    <SelectItem value="Black SP">Black SP</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-col text-[10px] text-muted-foreground">
-                  <span>Vigência: Jul/2026</span>
-                  <span className="text-emerald-500/80">Atualizada há 3 dias</span>
+          {viewMode === "charts" ? (
+            <GraficosMapa items={calculatedItems} anchors={PERFIS_ANCHORS} />
+          ) : (
+            <>
+              {/* Seletor de Tabela e Busca */}
+              <div className="flex flex-col lg:flex-row gap-4 lg:items-end justify-between">
+                <div className="space-y-2">
+                  <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">Tabela Newline considerada</span>
+                  <div className="flex items-center gap-3">
+                    <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
+                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
+                        <SelectItem value="Black Brasil">Black Brasil</SelectItem>
+                        <SelectItem value="Black SP">Black SP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-col text-[10px] text-muted-foreground">
+                      <span>Vigência: Jul/2026</span>
+                      <span className="text-emerald-500/80">Atualizada há 3 dias</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative w-full lg:w-80">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Pesquisar marca ou produto..." 
+                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-white"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
                 </div>
               </div>
-            </div>
+            </>
+          )}
 
-            <div className="relative w-full lg:w-80">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Pesquisar marca ou produto..." 
-                className="pl-9 bg-background/50 border-white/10 h-10 font-light"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-              />
-            </div>
-          </div>
 
           {/* Matriz de Preços */}
           <div className="surface rounded-2xl border border-white/5 overflow-hidden">
