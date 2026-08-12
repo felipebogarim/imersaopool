@@ -11,7 +11,9 @@ import {
   Columns,
   RefreshCw,
   Info,
-  ChevronDown
+  ChevronDown,
+  LayoutGrid,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +42,15 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { PERFIS_ANCHORS, PERFIS_COMPETITORS } from "@/lib/price-mapa/mock-data";
 import { FAMILIAS_MAPA, PriceTable, BrandAdjustment } from "@/lib/price-mapa/types";
 import { calculateMapaItem } from "@/lib/price-mapa/calculations";
 import { LEVEL_CLASS, LEVEL_LABEL } from "@/lib/price-comparativos-core";
 import { formatBRL } from "@/lib/price-comparativos-core";
+import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
+import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
+
 
 export const Route = createFileRoute("/_authenticated/price/mapa")({
   head: () => ({
@@ -61,6 +67,8 @@ function MapaPrecosPage() {
   const [tabelaBase, setTabelaBase] = useState<PriceTable>("Black Brasil");
   const [busca, setBusca] = useState("");
   const [adjustments, setAdjustments] = useState<BrandAdjustment[]>([]);
+  const [isSimuladorOpen, setIsSimuladorOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "charts">("table");
   
   const hasMapConfigured = familia === "Perfis";
 
@@ -89,6 +97,20 @@ function MapaPrecosPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <CenárioSimulador 
+        open={isSimuladorOpen}
+        onOpenChange={setIsSimuladorOpen}
+        adjustments={adjustments}
+        onAdjustmentsChange={setAdjustments}
+      />
+
+      {/* Breadcrumb / Nav */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest px-1">
+        <span>Price</span>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-white/60">Mapa de Preços</span>
+      </div>
+
       {/* Header com Seletor de Família */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between surface p-4 rounded-xl border border-white/5">
         <div className="space-y-1">
@@ -120,11 +142,60 @@ function MapaPrecosPage() {
           <Button variant="outline" size="sm" className="border-white/10 font-light h-9">
             <Columns className="h-4 w-4 mr-2 text-nl-gold" /> Colunas
           </Button>
-          <Button variant="outline" size="sm" className="border-white/10 font-light h-9 text-nl-gold border-nl-gold/20">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={cn(
+              "border-white/10 font-light h-9 text-nl-gold border-nl-gold/20",
+              isSimuladorOpen && "bg-nl-gold/10"
+            )}
+            onClick={() => setIsSimuladorOpen(true)}
+          >
             <SlidersHorizontal className="h-4 w-4 mr-2" /> Simular preços
           </Button>
         </div>
       </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
+              viewMode === "table" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+            )}
+            onClick={() => setViewMode("table")}
+          >
+            <LayoutGrid className="h-3.5 w-3.5 mr-2" /> Tabela
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 px-3 text-xs font-light tracking-wider uppercase transition-all",
+              viewMode === "charts" ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+            )}
+            onClick={() => setViewMode("charts")}
+          >
+            <BarChart3 className="h-3.5 w-3.5 mr-2" /> Gráficos
+          </Button>
+        </div>
+        
+        {adjustments.length > 0 && (
+          <Badge variant="outline" className="border-nl-gold/20 text-nl-gold bg-nl-gold/5 font-light py-1 flex items-center gap-2">
+            <RefreshCw className="h-3 w-3 animate-spin-slow" />
+            Simulação ativa: {adjustments.length} marcas ajustadas
+            <button 
+              className="ml-1 hover:text-white transition-colors"
+              onClick={() => setAdjustments([])}
+            >
+              ×
+            </button>
+          </Badge>
+        )}
+      </div>
+
 
       {!hasMapConfigured ? (
         <div className="flex flex-col items-center justify-center py-20 surface rounded-2xl border border-dashed border-white/10 space-y-4">
@@ -183,40 +254,48 @@ function MapaPrecosPage() {
             </Card>
           </div>
 
-          {/* Seletor de Tabela e Busca */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-end justify-between">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest">Tabela Newline considerada</Label>
-              <div className="flex items-center gap-3">
-                <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
-                  <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Black Brasil">Black Brasil</SelectItem>
-                    <SelectItem value="Black SP">Black SP</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-col text-[10px] text-muted-foreground">
-                  <span>Vigência: Jul/2026</span>
-                  <span className="text-emerald-500/80">Atualizada há 3 dias</span>
+          {viewMode === "charts" ? (
+            <GraficosMapa items={calculatedItems} anchors={PERFIS_ANCHORS} />
+          ) : (
+            <>
+              {/* Seletor de Tabela e Busca */}
+              <div className="flex flex-col lg:flex-row gap-4 lg:items-end justify-between">
+                <div className="space-y-2">
+                  <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">Tabela Newline considerada</span>
+                  <div className="flex items-center gap-3">
+                    <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
+                      <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
+                        <SelectItem value="Black Brasil">Black Brasil</SelectItem>
+                        <SelectItem value="Black SP">Black SP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-col text-[10px] text-muted-foreground">
+                      <span>Vigência: Jul/2026</span>
+                      <span className="text-emerald-500/80">Atualizada há 3 dias</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative w-full lg:w-80">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Pesquisar marca ou produto..." 
+                    className="pl-9 bg-background/50 border-white/10 h-10 font-light text-white"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
                 </div>
               </div>
-            </div>
+            </>
+          )}
 
-            <div className="relative w-full lg:w-80">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Pesquisar marca ou produto..." 
-                className="pl-9 bg-background/50 border-white/10 h-10 font-light"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-              />
-            </div>
-          </div>
 
-          {/* Matriz de Preços */}
-          <div className="surface rounded-2xl border border-white/5 overflow-hidden">
+          {viewMode === "table" && (
+            <div className="surface rounded-2xl border border-white/5 overflow-hidden">
+
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/5 hover:bg-transparent">
@@ -312,44 +391,34 @@ function MapaPrecosPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          )}
 
-          {/* Legendas */}
-          <div className="flex flex-wrap gap-8 py-4 px-2">
-            <div className="space-y-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Farol de Preço</span>
-              <div className="flex items-center gap-4 text-[11px] font-light">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Newline mais barata</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-amber-500" />
-                  <span>Até 10% acima</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-destructive" />
-                  <span>{">"}10% acima</span>
+          {viewMode === "table" && (
+            <div className="flex flex-wrap gap-8 py-4 px-2">
+              <div className="space-y-2">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Farol de Preço</span>
+                <div className="flex items-center gap-4 text-[11px] font-light">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span>Newline mais barata</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span>Até 10% acima</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-destructive" />
+                    <span>{">"}10% acima</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
   );
 }
 
-function Label({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <label
-      className={cn(
-        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-        className,
-      )}
-    >
-      {children}
-    </label>
-  );
-}
 
