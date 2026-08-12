@@ -203,14 +203,14 @@ function MapaPrecosPage() {
     if (filterBase !== "todos") {
       items = items.filter((item) => {
         const base = activeAnchors.find((a) => a.id === item.base_product_id);
-        return (base?.nome ?? "") === filterBase;
+        return (base?.nome ?? "").trim() === filterBase;
       });
     }
     if (filterConcorrente !== "todos") {
-      items = items.filter((item) => item.nome === filterConcorrente);
+      items = items.filter((item) => (item.nome ?? "").trim() === filterConcorrente);
     }
     if (filterMarca !== "todos") {
-      items = items.filter((item) => item.marca === filterMarca);
+      items = items.filter((item) => (item.marca ?? "").trim() === filterMarca);
     }
     if (filterTecnica !== "todos") {
       items = items.filter((item) => (item.classificacao_tecnica ?? "insuficiente") === filterTecnica);
@@ -234,12 +234,12 @@ function MapaPrecosPage() {
     const tecnicas = new Set<string>();
     calculatedItems.forEach((item) => {
       const base = activeAnchors.find((a) => a.id === item.base_product_id);
-      if (base?.nome) bases.add(base.nome);
-      if (item.nome) concorrentes.add(item.nome);
-      if (item.marca) marcas.add(item.marca);
+      if (base?.nome?.trim()) bases.add(base.nome.trim());
+      if (item.nome?.trim()) concorrentes.add(item.nome.trim());
+      if (item.marca?.trim()) marcas.add(item.marca.trim());
       tecnicas.add(item.classificacao_tecnica ?? "insuficiente");
     });
-    const sorted = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const sorted = (s: Set<string>) => Array.from(s).filter(Boolean).sort((a, b) => a.localeCompare(b, "pt-BR"));
     return {
       bases: sorted(bases),
       concorrentes: sorted(concorrentes),
@@ -521,7 +521,7 @@ function MapaPrecosPage() {
                       <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-foreground">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-white">
+                      <SelectContent className="bg-popover border-border text-popover-foreground">
                         <SelectItem value="Black Brasil">Black Brasil</SelectItem>
                         <SelectItem value="Black SP">Black SP</SelectItem>
                       </SelectContent>
@@ -564,7 +564,7 @@ function MapaPrecosPage() {
                       <SelectTrigger className="w-[200px] h-9 bg-background/50 border-white/10 font-light text-foreground">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-foreground max-h-72">
+                      <SelectContent className="bg-popover border-border text-popover-foreground max-h-72">
                         <SelectItem value="todos">Todos</SelectItem>
                         {f.options.map((o) => (
                           <SelectItem key={o} value={o}>{f.render(o)}</SelectItem>
@@ -597,7 +597,7 @@ function MapaPrecosPage() {
                     <Columns className="h-3.5 w-3.5 mr-2 text-nl-gold" /> Colunas
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10 text-foreground">
+                <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
                   <DropdownMenuItem onClick={() => setShowDimColumns(!showDimColumns)}>
                     {showDimColumns ? "Ocultar" : "Exibir"} dimensões e nicho
                   </DropdownMenuItem>
@@ -645,8 +645,8 @@ function MapaPrecosPage() {
                     <Fragment key={item.id}>
                     <TableRow 
                       className={cn(
-                        "border-b border-white/15 hover:bg-nl-gold/5 transition-colors group",
-                        isEven ? "bg-transparent" : "bg-white/[0.05]"
+                        "border-b border-border hover:bg-nl-gold/10 transition-colors group",
+                        isEven ? "bg-transparent" : "bg-muted/40"
                       )}
                     >
                       <TableCell className="py-5 pl-3 pr-0">
@@ -659,12 +659,12 @@ function MapaPrecosPage() {
                           <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
                         </button>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/10">
+                      <TableCell className="py-5 border-r border-border/60">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex flex-col cursor-default">
-                                <span className="font-light text-sm text-nl-gold/90">{base?.nome}</span>
+                                <span className="font-light text-sm text-foreground">{base?.nome}</span>
                                 <span className="text-[10px] text-muted-foreground/80">{base?.sku}</span>
                               </div>
                             </TooltipTrigger>
@@ -675,23 +675,23 @@ function MapaPrecosPage() {
                           </Tooltip>
                         </TooltipProvider>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/10">
-                        <span className="text-sm font-semibold text-nl-gold">
+                      <TableCell className="py-5 border-r border-border/60">
+                        <span className="text-sm font-semibold text-foreground">
                           {base?.preco_normalizado !== null && base?.preco_normalizado !== undefined ? formatBRL(base.preco_normalizado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                         </span>
                       </TableCell>
                       {showDimColumns && (
                         <>
-                          <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{base?.dimensao_texto || "—"}</TableCell>
-                          <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</TableCell>
+                          <TableCell className="py-5 border-r border-border/60 text-xs font-light text-muted-foreground">{base?.dimensao_texto || "—"}</TableCell>
+                          <TableCell className="py-5 border-r border-border/60 text-xs font-light text-muted-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</TableCell>
                         </>
                       )}
-                      <TableCell className="py-5 border-r border-white/10">
+                      <TableCell className="py-5 border-r border-border/60">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex flex-col cursor-default">
-                                <span className="font-light text-sm text-nl-gold/90">{item.nome}</span>
+                                <span className="font-light text-sm text-foreground">{item.nome}</span>
                                 <span className="text-[10px] text-muted-foreground/80">{item.sku}</span>
                               </div>
                             </TooltipTrigger>
@@ -702,21 +702,21 @@ function MapaPrecosPage() {
                         </TooltipProvider>
                       </TableCell>
                       {showDimColumns && (
-                        <TableCell className="py-5 border-r border-white/10 text-xs font-light text-muted-foreground">{item.dimensao_texto || "—"}</TableCell>
+                        <TableCell className="py-5 border-r border-border/60 text-xs font-light text-muted-foreground">{item.dimensao_texto || "—"}</TableCell>
                       )}
-                      <TableCell className="py-5 border-r border-white/10">
-                        <Badge variant="outline" className="font-light text-[10px] border-white/20 text-nl-gold/80 uppercase tracking-wider px-2 py-0">
+                      <TableCell className="py-5 border-r border-border/60">
+                        <Badge variant="outline" className="font-light text-[10px] border-white/20 text-foreground/80 uppercase tracking-wider px-2 py-0">
                           {item.marca}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/10">
+                      <TableCell className="py-5 border-r border-border/60">
                         <div className="flex flex-col">
-                          <span className="text-sm font-light text-nl-gold/90">
+                          <span className="text-sm font-light text-foreground">
                             {item.preco_simulado !== null ? formatBRL(item.preco_simulado) : <span className="text-xs text-muted-foreground italic font-light">Preço não identificado</span>}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/10">
+                      <TableCell className="py-5 border-r border-border/60">
                         <div className="flex justify-center h-8 items-center">
                           {item.diff_percentual !== null && (
                             <div className={cn(
@@ -728,7 +728,7 @@ function MapaPrecosPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 border-r border-white/10">
+                      <TableCell className="py-5 border-r border-border/60">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
                           {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
@@ -743,7 +743,7 @@ function MapaPrecosPage() {
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-[#0A0A0A] border-white/10 text-foreground">
+                          <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
                             <DropdownMenuItem onClick={() => setExpandedId(isExpanded ? null : item.id)}>
                               <Info className="h-3.5 w-3.5 mr-2" /> Ver detalhes técnicos
                             </DropdownMenuItem>
@@ -765,7 +765,7 @@ function MapaPrecosPage() {
                       </TableCell>
                     </TableRow>
                     {isExpanded && (
-                      <TableRow className="border-b border-white/15 bg-nl-gold/[0.03] hover:bg-nl-gold/[0.03]">
+                      <TableRow className="border-b border-border bg-nl-gold/[0.03] hover:bg-nl-gold/[0.03]">
                         <TableCell colSpan={colSpan} className="py-5 px-8">
                           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs font-light">
                             <div>
@@ -809,7 +809,7 @@ function MapaPrecosPage() {
           )}
 
           <Dialog open={!!noteTarget} onOpenChange={(o) => !o && setNoteTarget(null)}>
-            <DialogContent className="bg-[#0A0A0A] border-white/10 text-foreground">
+            <DialogContent className="bg-popover border-border text-popover-foreground">
               <DialogHeader>
                 <DialogTitle className="font-light">Nota da comparação</DialogTitle>
                 <DialogDescription className="font-light text-muted-foreground">
