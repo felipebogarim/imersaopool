@@ -362,25 +362,55 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      
-      if (!upload) return [];
 
-      const { data: rows } = await (supabase as any)
-        .from("rep_performance_rows")
-        .select("razao_social, total_pct")
-        .eq("upload_id", upload.id);
-      
-      if (!rows) return [];
+      const { data: rows } = upload
+        ? await (supabase as any)
+            .from("rep_performance_rows")
+            .select("razao_social, total_pct")
+            .eq("upload_id", upload.id)
+        : { data: [] as any[] };
 
-      return (rows as any[])
-        .map(r => ({
-          name: r.razao_social,
-          atingimento: (Number(r.total_pct) || 0) * 100
-        }))
+      // Fallback: BI individual do cliente (quando a planilha de performance
+      // foi importada apenas por cores, sem percentuais).
+      const { data: clientBis } = await (supabase as any)
+        .from("client_bi_uploads")
+        .select("razao_social, data, created_at")
+        .eq("representative_id", repId)
+        .eq("kind", "bi")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false });
+
+      const biByName = new Map<string, number>();
+      for (const b of (clientBis ?? []) as any[]) {
+        const name = String(b.razao_social ?? "").trim();
+        const g = Number(b?.data?.geral);
+        if (!name || !Number.isFinite(g) || biByName.has(name)) continue;
+        biByName.set(name, Math.abs(g) <= 1.5 ? g * 100 : g);
+      }
+
+      const byName = new Map<string, number>();
+      for (const r of ((rows ?? []) as any[])) {
+        const name = String(r.razao_social ?? "").trim();
+        if (!name) continue;
+        const raw = r.total_pct == null ? null : Number(r.total_pct);
+        const value =
+          raw != null && Number.isFinite(raw) && raw > 0
+            ? raw * 100
+            : (biByName.get(name) ?? null);
+        if (value == null || !Number.isFinite(value)) continue;
+        byName.set(name, value);
+      }
+      // clientes que só existem no BI individual
+      for (const [name, value] of biByName) if (!byName.has(name)) byName.set(name, value);
+
+      return [...byName.entries()]
+        .map(([name, atingimento]) => ({ name, atingimento }))
+        .filter((c) => c.atingimento > 0)
         .sort((a, b) => b.atingimento - a.atingimento)
         .slice(0, 6);
     }
   });
+
 
 
 
