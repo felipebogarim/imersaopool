@@ -106,7 +106,7 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
           tecnicos: Object.keys(tecnicos).length ? tecnicos : undefined,
           concorrente_marca: txt("concMarca") || "",
           concorrente_modelo: txt("concModelo") || "",
-          concorrente_codigo: txt("concCodigo") || null,
+          concorrente_codigo: txt("concCodigo"),
           concorrente_preco: concPreco,
           classificacao: txt("classificacao") || "",
           status_texto: txt("status"),
