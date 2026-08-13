@@ -14,6 +14,28 @@ import {
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { processRawMapaRows, RawMapaRow } from "@/lib/price-mapa/parser/import-logic";
+import {
+  getFamilyConfig,
+  pickField,
+  pickByAliases,
+  parsePreco,
+  labelPrecoBase,
+} from "@/lib/price-mapa/family-config";
+
+/** Só permitimos confirmar quando todos os campos obrigatórios foram identificados. */
+function isValidRecord(comp: any, anchors: any[]): boolean {
+  const anchor = anchors.find((a) => a.id === comp.base_product_id);
+  return Boolean(
+    anchor?.nome &&
+      anchor?.sku &&
+      anchor?.preco_normalizado !== null &&
+      anchor?.preco_normalizado !== undefined &&
+      comp.preco_normalizado !== null &&
+      comp.preco_normalizado !== undefined &&
+      comp.marca &&
+      comp.classificacao_texto,
+  );
+}
 
 interface ImportadorMapaProps {
   open: boolean;
@@ -28,6 +50,7 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
   const [previewData, setPreviewData] = useState<{ anchors: any[], competitors: any[] } | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [summary, setSummary] = useState<any>(null);
+  const [baseBrand, setBaseBrand] = useState<string>(getFamilyConfig(familia).baseBrand);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,48 +81,46 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const rawRows: RawMapaRow[] = jsonData.map((row: any) => {
-        // Obter os valores de preço Newline para posterior seleção baseada na tabela
-        const precoBrasil = row["Preço Newline Black Brasil"] !== undefined ? Number(String(row["Preço Newline Black Brasil"]).replace(",", ".").replace("R$", "").trim()) : null;
-        const precoSP = row["Preço Newline Black SP"] !== undefined ? Number(String(row["Preço Newline Black SP"]).replace(",", ".").replace("R$", "").trim()) : null;
-        
-        // Determinar o preço Newline com base no que estiver preenchido (o componente pai lidará com a seleção Brasil/SP na exibição se ambos existirem)
-        let basePreco = precoBrasil ?? precoSP;
-        if (basePreco === null) {
-          const fallbackPreco = row["Preço Newline"] || row["base_preco"] || row["PREÇO"] || row["VALOR_NEWLINE"];
-          if (fallbackPreco !== undefined && fallbackPreco !== "") {
-            basePreco = Number(String(fallbackPreco).replace(",", ".").replace("R$", "").trim());
-          }
-        }
+      const cfg = getFamilyConfig(familia);
 
-        const concPrecoRaw = row["Preço Concorrente Normalizado por m"] !== undefined ? row["Preço Concorrente Normalizado por m"] :
-                             (row["Preço Concorrente"] || row["concorrente_preco"] || row["PREÇO_CONCORRENTE"] || row["VALOR"]);
-        let concPreco = null;
-        if (concPrecoRaw !== undefined && concPrecoRaw !== "") {
-          concPreco = Number(String(concPrecoRaw).replace(",", ".").replace("R$", "").trim());
-        }
+      const rawRows: RawMapaRow[] = jsonData.map((row: any) => {
+        const tecnicos: Record<string, string> = {};
+        cfg.camposTecnicos.forEach((c) => {
+          const v = pickByAliases(row, c.aliases);
+          if (v !== undefined && String(v).trim() !== "") tecnicos[c.label] = String(v).trim();
+        });
+
+        const basePreco = parsePreco(pickField(row, cfg, "basePreco"));
+        const concPreco = parsePreco(pickField(row, cfg, "concPreco"));
+        const txt = (k: any) => {
+          const v = pickField(row, cfg, k);
+          return v === undefined ? undefined : String(v).trim();
+        };
 
         return {
-          familia: row["Família"] || row["familia"] || familia,
-          base_produto: row["Produto Base Newline"] || row["base_produto"] || row["PRODUTO_BASE"] || row["Produto"],
-          base_codigo: String(row["Código Newline"] || row["base_codigo"] || row["CÓDIGO"] || row["SKU_NEWLINE"] || ""),
+          familia: txt("familia") || familia,
+          base_brand: cfg.baseBrand,
+          base_produto: txt("baseProduto") || "",
+          base_codigo: txt("baseCodigo") || "",
+          base_descricao: txt("baseDescricao"),
           base_preco: basePreco,
-          concorrente_marca: row["Marca Concorrente"] || row["concorrente_marca"] || row["MARCA"] || row["CONCORRENTE"] || "",
-          concorrente_modelo: row["Modelo Concorrente"] || row["concorrente_modelo"] || row["MODELO"] || row["ITEM"] || "",
-          concorrente_codigo: row["Código Concorrente"] || row["concorrente_codigo"] || row["CÓDIGO_CONCORRENTE"] || null,
+          tecnicos: Object.keys(tecnicos).length ? tecnicos : undefined,
+          concorrente_marca: txt("concMarca") || "",
+          concorrente_modelo: txt("concModelo") || "",
+          concorrente_codigo: txt("concCodigo") || null,
           concorrente_preco: concPreco,
-          classificacao: row["Classificação Técnica"] || row["Classificação"] || row["classificacao"] || row["EQUIVALÊNCIA"] || "",
-          nicho: row["Nicho"] || row["nicho"],
-          largura: row["Largura"] || row["largura"],
-          altura: row["Altura"] || row["altura"],
-          notas: row["Notas"] || row["notas"] || row["Observações"] || "",
-          dimensao_newline: row["Dimensão Newline"] || row["Dimensao Newline"] || row["dimensao_newline"],
-          nicho_newline: row["Nicho Newline mm"] || row["Nicho Newline"] || row["nicho_newline"] || row["Nicho"],
-          dimensao_concorrente: row["Dimensão Concorrente"] || row["Dimensao Concorrente"] || row["dimensao_concorrente"],
-          fonte: row["Fonte Principal"] || row["Fonte"] || row["fonte"] || row["FONTE"],
-        };
+          classificacao: txt("classificacao") || "",
+          status_texto: txt("status"),
+          nicho: Number(pickField(row, cfg, "nichoBase")) || undefined,
+          largura: Number(pickField(row, cfg, "largura")) || undefined,
+          altura: Number(pickField(row, cfg, "altura")) || undefined,
+          notas: txt("observacao") || "",
+          dimensao_newline: txt("dimensaoBase"),
+          nicho_newline: txt("nichoBase"),
+          dimensao_concorrente: txt("dimensaoConcorrente"),
+          fonte: txt("fonte"),
+        } satisfies RawMapaRow;
       });
-
 
       const { anchors, competitors } = processRawMapaRows(rawRows);
 
@@ -108,13 +129,12 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
         return;
       }
 
-      // Check for zero prices that might be mapping errors
-      const zeroPrices = competitors.filter(c => c.preco_normalizado === 0 && !c.referencia?.toLowerCase().includes("bob"));
-      if (zeroPrices.length > 0) {
-        toast.warning(`${zeroPrices.length} produtos resultaram em preço R$ 0,00. Verifique o mapeamento das colunas.`);
-      }
-
+      setBaseBrand(cfg.baseBrand);
       setPreviewData({ anchors, competitors });
+      const invalidos = competitors.filter((c) => !isValidRecord(c, anchors)).length;
+      if (invalidos > 0) {
+        toast.warning(`${invalidos} registro(s) com campos obrigatórios ausentes. Corrija a planilha para confirmar.`);
+      }
       setSummary({
         total: rawRows.length,
         imported: competitors.length,
@@ -130,7 +150,15 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
     }
   };
 
+  const invalidCount = previewData
+    ? previewData.competitors.filter((c) => !isValidRecord(c, previewData.anchors)).length
+    : 0;
+
   const handleConfirmImport = () => {
+    if (invalidCount > 0) {
+      toast.error("Existem registros incompletos. Ajuste a planilha antes de confirmar.");
+      return;
+    }
     if (previewData) {
       onImported(previewData.anchors, previewData.competitors);
       toast.success(`${previewData.competitors.length} comparações da família ${familia} importadas com sucesso!`);
@@ -193,8 +221,9 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
                   <tr>
                     <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Produto Base</th>
                     <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Concorrente</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Marca Base</th>
                     <th className="p-3 border-b border-white/5 font-medium text-muted-foreground">Marca</th>
-                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-right">Preço Newline</th>
+                    <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-right">{`Preço Base — ${baseBrand}`}</th>
                     <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-right">Preço Concorrente</th>
                     <th className="p-3 border-b border-white/5 font-medium text-muted-foreground text-center">Técnica</th>
                   </tr>
@@ -204,9 +233,12 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
                     const anchor = previewData.anchors.find(a => a.id === comp.base_product_id);
                     return (
                       <tr key={idx} className="border-b border-white/5 hover:bg-white/5">
-                        <td className="p-3 font-light">{anchor?.nome}</td>
+                        <td className={cn("p-3 font-light", !anchor?.nome && "text-destructive italic")}>{anchor?.nome || "Não ident."}
+                          <span className="block text-[9px] text-muted-foreground">{anchor?.sku || ""}</span>
+                        </td>
                         <td className="p-3 font-light">{comp.nome}</td>
-                        <td className="p-3 font-light">{comp.marca}</td>
+                        <td className="p-3 font-light">{anchor?.marca || baseBrand}</td>
+                        <td className={cn("p-3 font-light", !comp.marca && "text-destructive italic")}>{comp.marca || "Não ident."}</td>
                         <td className={cn("p-3 text-right font-medium", !anchor?.preco_normalizado && "text-destructive italic")}>
                           {anchor?.preco_normalizado ? `R$ ${anchor.preco_normalizado.toFixed(2)}` : "Não ident."}
                         </td>
@@ -214,8 +246,8 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
                           {comp.preco_normalizado ? `R$ ${comp.preco_normalizado.toFixed(2)}` : "Não ident."}
                         </td>
                         <td className="p-3 text-center">
-                          <Badge variant="outline" className="text-[9px] uppercase font-light">
-                            {comp.classificacao_tecnica || "Alternativo"}
+                          <Badge variant="outline" className={cn("text-[9px] font-light", !comp.classificacao_texto && "border-destructive/40 text-destructive")}>
+                            {comp.classificacao_texto || "Não ident."}
                           </Badge>
                         </td>
                       </tr>
@@ -294,8 +326,12 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
               <Button variant="ghost" onClick={() => setPreviewData(null)} className="text-white hover:bg-white/5">
                 Voltar
               </Button>
-              <Button onClick={handleConfirmImport} className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px]">
-                Confirmar Importação
+              <Button
+                onClick={handleConfirmImport}
+                disabled={invalidCount > 0}
+                className="bg-nl-gold text-black hover:bg-nl-gold/90 min-w-[120px] disabled:opacity-40"
+              >
+                {invalidCount > 0 ? `${invalidCount} registro(s) incompleto(s)` : "Confirmar Importação"}
               </Button>
             </>
           ) : (
