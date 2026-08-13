@@ -419,7 +419,9 @@ function SinteseTipos() {
             </>
           )}
 
-          <VisaoPorFamilia />
+          {/* Mapas por família independentes: entrevistas (planilha) x visitas de campo (imersões). */}
+          {tipos.includes("entrevista") && <VisaoPorFamilia />}
+          {tipos.includes("visita_campo") && <VisaoPorFamiliaCampo regiao={regiao} />}
         </div>
 
         <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
