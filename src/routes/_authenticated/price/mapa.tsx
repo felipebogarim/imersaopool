@@ -770,19 +770,68 @@ function MapaPrecosPage() {
                     </TableRow>
                     {isExpanded && (
                       <TableRow className="border-b border-border bg-nl-gold/[0.03] hover:bg-nl-gold/[0.03]">
-                        <TableCell colSpan={colSpan} className="py-5 px-8">
+                        <TableCell colSpan={colSpan} className="py-5 px-8 space-y-6">
+                          <div>
+                            <span className="block text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Comparativo técnico</span>
+                            {techRows.length === 0 ? (
+                              <span className="text-xs font-light text-muted-foreground">Não informado</span>
+                            ) : (
+                              <div className="overflow-hidden rounded-lg border border-border">
+                                <table className="w-full text-xs font-light">
+                                  <thead className="bg-muted/50">
+                                    <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                                      <th className="text-left p-2 font-medium">Característica</th>
+                                      <th className="text-left p-2 font-medium">{baseBrand}</th>
+                                      <th className="text-left p-2 font-medium">{item.marca || "Concorrente"}</th>
+                                      <th className="text-left p-2 font-medium">Análise</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {techRows.map((r, i) => (
+                                      <tr key={r.key} className={cn("border-t border-border/60", i % 2 ? "bg-muted/20" : "")}>
+                                        <td className="p-2 text-muted-foreground">{r.label}</td>
+                                        <td className="p-2 text-foreground">{r.baseTexto}</td>
+                                        <td className="p-2 text-foreground">{r.concTexto}</td>
+                                        <td className="p-2">
+                                          <span className="inline-flex items-center gap-2 text-foreground">
+                                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", techDot[r.farol])} />
+                                            {r.analise}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs font-light">
+                            {familyCfg.mostrarDimensoes && (
+                              <>
+                                <div>
+                                  <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Dimensão ${baseBrand}`}</span>
+                                  <span className="text-foreground">{base?.dimensao_texto || "Não informado"}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Nicho ${baseBrand}`}</span>
+                                  <span className="text-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "Não informado"}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Dimensão concorrente</span>
+                                  <span className="text-foreground">{item.dimensao_texto || "Não informado"}</span>
+                                </div>
+                              </>
+                            )}
                             <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Dimensão ${baseBrand}`}</span>
-                              <span className="text-foreground">{base?.dimensao_texto || "—"}</span>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Classificação técnica</span>
+                              <span className="text-foreground">
+                                {item.classificacao_texto ?? LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
+                              </span>
                             </div>
                             <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Nicho ${baseBrand}`}</span>
-                              <span className="text-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Dimensão concorrente</span>
-                              <span className="text-foreground">{item.dimensao_texto || "—"}</span>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Detalhamento técnico</span>
+                              <span className="text-foreground">{item.detalhamento_tecnico || "Não informado"}</span>
                             </div>
                             <div>
                               <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Status</span>
@@ -790,20 +839,17 @@ function MapaPrecosPage() {
                             </div>
                             <div>
                               <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Fonte principal</span>
-                              <span className="text-foreground">{item.fonte || base?.fonte || "—"}</span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Detalhamento técnico</span>
-                              <span className="text-foreground">{item.detalhamento_tecnico || "—"}</span>
+                              <span className="text-foreground">{item.fonte || base?.fonte || "Não informado"}</span>
                             </div>
                             <div className="sm:col-span-2">
                               <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Notas</span>
-                              <span className="text-foreground">{item.notas || "—"}</span>
+                              <span className="text-foreground">{item.notas || "Não informado"}</span>
                             </div>
                           </div>
                         </TableCell>
                       </TableRow>
                     )}
+
                     </Fragment>
                   );
                 })}
