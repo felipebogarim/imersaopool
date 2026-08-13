@@ -17,6 +17,8 @@ import { extractFileText } from "@/lib/sintese-file-text";
 import { exportSintesePdf } from "@/lib/sintese-pdf";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
+import { VisaoPorFamiliaCampo } from "@/components/sintese/VisaoPorFamiliaCampo";
+import { reprocessarImersoesCampo } from "@/lib/sintese-imersoes.functions";
 import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2, FileDown, Upload, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -37,6 +39,7 @@ function SinteseTipos() {
   const qc = useQueryClient();
   const gerar = useServerFn(gerarPainelSintese);
   const importar = useServerFn(importarAnaliseSintese);
+  const reprocessarCampo = useServerFn(reprocessarImersoesCampo);
   const fileRef = useRef<HTMLInputElement>(null);
   const [tipos, setTipos] = useState<FonteTipo[]>(["entrevista"]);
   const [regiao, setRegiao] = useState<string>("todas");
@@ -104,12 +107,28 @@ function SinteseTipos() {
   async function reprocessar() {
     setBusy(true);
     try {
-      const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
-      if (error) throw error;
-      const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
-      toast.success(`Fontes reprocessadas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas.`);
+      const resumo: string[] = [];
+      // Cada universo tem seu próprio pipeline de ingestão. Nada é compartilhado.
+      if (tipos.includes("entrevista")) {
+        const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
+        if (error) throw error;
+        const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
+        resumo.push(`Entrevistas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas`);
+      }
+      if (tipos.includes("visita_campo")) {
+        const r = await reprocessarCampo({} as never);
+        resumo.push(
+          `Visitas de campo: ${r.criadas} criadas, ${r.atualizadas} atualizadas${r.ignoradas ? `, ${r.ignoradas} ignoradas` : ""}`,
+        );
+      }
+      if (!resumo.length) {
+        toast.info("Nenhum pipeline de reprocessamento para os universos selecionados.");
+        return;
+      }
+      toast.success(resumo.join(" · "));
       qc.invalidateQueries({ queryKey: ["insight-fontes-sintese"] });
       qc.invalidateQueries({ queryKey: ["insight-fontes"] });
+      qc.invalidateQueries({ queryKey: ["mapa-familia-campo"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao reprocessar fontes.");
     } finally {
@@ -169,6 +188,9 @@ function SinteseTipos() {
   function relatorioLink(fonteId: string): string | null {
     const f: any = fonteById.get(fonteId);
     if (!f) return null;
+    if (typeof f.arquivo_relatorio === "string" && f.arquivo_relatorio.startsWith("field_immersion_v2:")) {
+      return "/visao-imersao-2";
+    }
     if (f.arquivo_relatorio) return f.arquivo_relatorio;
     if (f.interview_id) return `/entrevistas/${f.interview_id}`;
     return `/fontes/${f.id}`;
@@ -397,7 +419,9 @@ function SinteseTipos() {
             </>
           )}
 
-          <VisaoPorFamilia />
+          {/* Mapas por família independentes: entrevistas (planilha) x visitas de campo (imersões). */}
+          {tipos.includes("entrevista") && <VisaoPorFamilia />}
+          {tipos.includes("visita_campo") && <VisaoPorFamiliaCampo regiao={regiao} />}
         </div>
 
         <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
