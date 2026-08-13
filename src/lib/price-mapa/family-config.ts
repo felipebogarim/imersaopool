@@ -23,17 +23,36 @@ export type MapaFieldKey =
   | "largura"
   | "altura";
 
+/** Campo técnico de uma família (rótulo, aliases da marca base e do concorrente). */
+export type MapaTechField = {
+  key: string;
+  label: string;
+  /** Aliases de cabeçalho para o valor da marca base. */
+  aliases: string[];
+  /** Aliases de cabeçalho para o valor do concorrente. */
+  aliasesConcorrente?: string[];
+  /** Unidade exibida no comparativo (W/m, lm/m, mm...). */
+  unidade?: string;
+  /** Direção técnica: "maior" = quanto maior melhor, "menor" = quanto menor melhor. */
+  direcao?: "maior" | "menor" | "neutro";
+  /** Quando false, o campo não entra na seção Comparativo Técnico. */
+  comparativo?: boolean;
+};
+
 export type MapaFamilyConfig = {
   familia: string;
   baseBrand: string;
   unidade: string;
   /** Tabelas de preço da marca base (quando aplicável). */
   tabelasBase?: string[];
-  /** Campos técnicos relevantes da família (rótulo -> aliases de cabeçalho). */
-  camposTecnicos: { key: string; label: string; aliases: string[] }[];
+  /** Exibe dimensão/nicho (lógica dimensional típica de Perfis). */
+  mostrarDimensoes?: boolean;
+  /** Campos técnicos relevantes da família, na ordem de prioridade de exibição. */
+  camposTecnicos: MapaTechField[];
   /** Aliases de cabeçalho por campo lógico. */
   aliases: Partial<Record<MapaFieldKey, string[]>>;
 };
+
 
 /** Aliases genéricos aplicados a qualquer família (fallback). */
 const ALIASES_GENERICOS: Record<MapaFieldKey, string[]> = {
