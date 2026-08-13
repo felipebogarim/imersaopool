@@ -188,6 +188,9 @@ function SinteseTipos() {
   function relatorioLink(fonteId: string): string | null {
     const f: any = fonteById.get(fonteId);
     if (!f) return null;
+    if (typeof f.arquivo_relatorio === "string" && f.arquivo_relatorio.startsWith("field_immersion_v2:")) {
+      return "/visao-imersao-2";
+    }
     if (f.arquivo_relatorio) return f.arquivo_relatorio;
     if (f.interview_id) return `/entrevistas/${f.interview_id}`;
     return `/fontes/${f.id}`;
