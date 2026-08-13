@@ -84,9 +84,12 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
 
       const rawRows: RawMapaRow[] = jsonData.map((row: any) => {
         const tecnicos: Record<string, string> = {};
+        const tecnicosConc: Record<string, string> = {};
         cfg.camposTecnicos.forEach((c) => {
           const v = pickByAliases(row, c.aliases);
           if (v !== undefined && String(v).trim() !== "") tecnicos[c.label] = String(v).trim();
+          const vc = pickByAliases(row, c.aliasesConcorrente ?? []);
+          if (vc !== undefined && String(vc).trim() !== "") tecnicosConc[c.label] = String(vc).trim();
         });
 
         const basePreco = parsePreco(pickField(row, cfg, "basePreco"));
@@ -104,6 +107,7 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
           base_descricao: txt("baseDescricao"),
           base_preco: basePreco,
           tecnicos: Object.keys(tecnicos).length ? tecnicos : undefined,
+          tecnicos_concorrente: Object.keys(tecnicosConc).length ? tecnicosConc : undefined,
           concorrente_marca: txt("concMarca") || "",
           concorrente_modelo: txt("concModelo") || "",
           concorrente_codigo: txt("concCodigo"),

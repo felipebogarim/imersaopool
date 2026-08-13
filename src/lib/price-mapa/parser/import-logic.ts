@@ -6,8 +6,10 @@ export interface RawMapaRow {
   /** Marca base da família (Newline, Studio, ...). Genérico por família. */
   base_brand?: string;
   base_descricao?: string;
-  /** Campos técnicos da família (label -> valor original). */
+  /** Campos técnicos da marca base (label -> valor original). */
   tecnicos?: Record<string, string>;
+  /** Campos técnicos do concorrente (label -> valor original). */
+  tecnicos_concorrente?: Record<string, string>;
   status_texto?: string;
   base_produto: string;
   base_codigo: string;
@@ -116,6 +118,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
       existing.dimensao_texto = existing.dimensao_texto ?? dimNewline;
       existing.nicho_mm = existing.nicho_mm ?? nichoNewline;
       existing.fonte = existing.fonte ?? cleanText(row.fonte);
+      if (row.tecnicos) existing.tecnicos = { ...(row.tecnicos ?? {}), ...(existing.tecnicos ?? {}) };
     }
 
     // 2. Criar Concorrente
@@ -149,7 +152,7 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
       // Somente ação manual autorizada pode alterar para validado/incompatível.
       status: "em_analise",
       classificacao_texto: cleanText(row.classificacao),
-      tecnicos: row.tecnicos,
+      tecnicos: row.tecnicos_concorrente,
       notas: cleanText(row.notas) ?? "",
       fonte: cleanText(row.fonte),
       dimensao_texto: cleanText(row.dimensao_concorrente),

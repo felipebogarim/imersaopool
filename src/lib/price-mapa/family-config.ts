@@ -23,17 +23,36 @@ export type MapaFieldKey =
   | "largura"
   | "altura";
 
+/** Campo técnico de uma família (rótulo, aliases da marca base e do concorrente). */
+export type MapaTechField = {
+  key: string;
+  label: string;
+  /** Aliases de cabeçalho para o valor da marca base. */
+  aliases: string[];
+  /** Aliases de cabeçalho para o valor do concorrente. */
+  aliasesConcorrente?: string[];
+  /** Unidade exibida no comparativo (W/m, lm/m, mm...). */
+  unidade?: string;
+  /** Direção técnica: "maior" = quanto maior melhor, "menor" = quanto menor melhor. */
+  direcao?: "maior" | "menor" | "neutro";
+  /** Quando false, o campo não entra na seção Comparativo Técnico. */
+  comparativo?: boolean;
+};
+
 export type MapaFamilyConfig = {
   familia: string;
   baseBrand: string;
   unidade: string;
   /** Tabelas de preço da marca base (quando aplicável). */
   tabelasBase?: string[];
-  /** Campos técnicos relevantes da família (rótulo -> aliases de cabeçalho). */
-  camposTecnicos: { key: string; label: string; aliases: string[] }[];
+  /** Exibe dimensão/nicho (lógica dimensional típica de Perfis). */
+  mostrarDimensoes?: boolean;
+  /** Campos técnicos relevantes da família, na ordem de prioridade de exibição. */
+  camposTecnicos: MapaTechField[];
   /** Aliases de cabeçalho por campo lógico. */
   aliases: Partial<Record<MapaFieldKey, string[]>>;
 };
+
 
 /** Aliases genéricos aplicados a qualquer família (fallback). */
 const ALIASES_GENERICOS: Record<MapaFieldKey, string[]> = {
@@ -69,10 +88,30 @@ export const FAMILY_CONFIGS: Record<string, MapaFamilyConfig> = {
     baseBrand: "Newline",
     unidade: "R$/m",
     tabelasBase: ["Black Brasil", "Black SP"],
+    mostrarDimensoes: true,
     camposTecnicos: [
-      { key: "dimensao", label: "Dimensão", aliases: ["Dimensão Newline", "Dimensao Newline", "Dimensão"] },
-      { key: "nicho", label: "Nicho", aliases: ["Nicho Newline mm", "Nicho Newline", "Nicho"] },
-      { key: "instalacao", label: "Instalação", aliases: ["Instalação", "Instalacao"] },
+      {
+        key: "dimensao",
+        label: "Dimensão",
+        aliases: ["Dimensão Newline", "Dimensao Newline", "Dimensão"],
+        aliasesConcorrente: ["Dimensão Concorrente", "Dimensao Concorrente", "dimensao_concorrente"],
+        direcao: "neutro",
+      },
+      {
+        key: "nicho",
+        label: "Nicho",
+        aliases: ["Nicho Newline mm", "Nicho Newline", "Nicho"],
+        aliasesConcorrente: ["Nicho Concorrente mm", "Nicho Concorrente"],
+        unidade: "mm",
+        direcao: "neutro",
+      },
+      {
+        key: "instalacao",
+        label: "Instalação",
+        aliases: ["Instalação", "Instalacao"],
+        aliasesConcorrente: ["Instalação Concorrente", "Instalacao Concorrente"],
+        direcao: "neutro",
+      },
     ],
     aliases: {
       baseProduto: ["Produto Base Newline", "Produto Base Standard"],
@@ -92,19 +131,104 @@ export const FAMILY_CONFIGS: Record<string, MapaFamilyConfig> = {
     familia: "Fitas e Fontes",
     baseBrand: "Studio",
     unidade: "R$/m",
+    mostrarDimensoes: false,
     camposTecnicos: [
-      { key: "tecnologia", label: "Tecnologia", aliases: ["Tecnologia", "Tecnologia Studio"] },
-      { key: "tensao", label: "Tensão", aliases: ["Tensão Studio", "Tensão", "Tensao"] },
-      { key: "potencia_m", label: "Potência W/m", aliases: ["Potência Studio W/m", "Potência W/m", "Potencia W/m"] },
-      { key: "fluxo_m", label: "Fluxo lm/m", aliases: ["Fluxo Studio lm/m", "Fluxo lm/m"] },
-      { key: "irc", label: "IRC", aliases: ["IRC Studio", "IRC"] },
-      { key: "leds_m", label: "LEDs/m", aliases: ["LEDs/m Studio", "LEDs/m", "Leds/m"] },
-      { key: "ip", label: "IP", aliases: ["IP Studio", "IP"] },
-      { key: "cct", label: "CCT", aliases: ["CCT Studio", "CCT"] },
-      { key: "largura_fita", label: "Largura", aliases: ["Largura Studio", "Largura"] },
-      { key: "bobina", label: "Comprimento da bobina", aliases: ["Comprimento da Bobina", "Bobina"] },
-      { key: "passo_corte", label: "Passo de corte", aliases: ["Passo de Corte", "Corte"] },
-      { key: "sdcm", label: "SDCM", aliases: ["SDCM"] },
+      {
+        key: "potencia_m",
+        label: "Potência W/m",
+        aliases: ["Potência Studio W/m", "Potência Base W/m", "Potência W/m", "Potencia W/m", "Potência por metro"],
+        aliasesConcorrente: ["Potência Concorrente W/m", "Potência Concorrente", "Potencia Concorrente W/m"],
+        unidade: "W/m",
+        direcao: "neutro",
+      },
+      {
+        key: "fluxo_m",
+        label: "Fluxo lm/m",
+        aliases: ["Fluxo Studio lm/m", "Fluxo Base lm/m", "Fluxo lm/m", "Fluxo luminoso lm/m", "Lumens/m"],
+        aliasesConcorrente: ["Fluxo Concorrente lm/m", "Fluxo Concorrente", "Lumens/m Concorrente"],
+        unidade: "lm/m",
+        direcao: "maior",
+      },
+      {
+        key: "leds_m",
+        label: "LEDs/m",
+        aliases: ["LEDs/m Studio", "LEDs/m Base", "LEDs/m", "Leds/m", "LEDs por metro"],
+        aliasesConcorrente: ["LEDs/m Concorrente", "Leds/m Concorrente", "LEDs por metro Concorrente"],
+        direcao: "maior",
+      },
+      {
+        key: "irc",
+        label: "IRC",
+        aliases: ["IRC Studio", "IRC Base", "IRC", "CRI Studio", "CRI"],
+        aliasesConcorrente: ["IRC Concorrente", "CRI Concorrente"],
+        direcao: "maior",
+      },
+      {
+        key: "sdcm",
+        label: "SDCM",
+        aliases: ["SDCM Studio", "SDCM Base", "SDCM", "MacAdam Studio", "MacAdam"],
+        aliasesConcorrente: ["SDCM Concorrente", "MacAdam Concorrente"],
+        direcao: "menor",
+      },
+      {
+        key: "tensao",
+        label: "Tensão",
+        aliases: ["Tensão Studio", "Tensão Base", "Tensão", "Tensao"],
+        aliasesConcorrente: ["Tensão Concorrente", "Tensao Concorrente"],
+        direcao: "neutro",
+      },
+      {
+        key: "ip",
+        label: "IP",
+        aliases: ["IP Studio", "IP Base", "IP", "Grau de Proteção"],
+        aliasesConcorrente: ["IP Concorrente", "Grau de Proteção Concorrente"],
+        direcao: "maior",
+      },
+      {
+        key: "cct",
+        label: "CCT",
+        aliases: ["CCT Studio", "CCT Base", "CCT", "Temperatura de Cor"],
+        aliasesConcorrente: ["CCT Concorrente", "Temperatura de Cor Concorrente"],
+        direcao: "neutro",
+      },
+      {
+        key: "eficiencia",
+        label: "Eficiência lm/W",
+        aliases: ["Eficiência Studio lm/W", "Eficiência lm/W", "Eficiencia lm/W", "Eficiência"],
+        aliasesConcorrente: ["Eficiência Concorrente lm/W", "Eficiência Concorrente", "Eficiencia Concorrente"],
+        unidade: "lm/W",
+        direcao: "maior",
+      },
+      {
+        key: "largura_fita",
+        label: "Largura da fita",
+        aliases: ["Largura Studio", "Largura da Fita", "Largura"],
+        aliasesConcorrente: ["Largura Concorrente", "Largura da Fita Concorrente"],
+        unidade: "mm",
+        direcao: "neutro",
+      },
+      {
+        key: "passo_corte",
+        label: "Passo de corte",
+        aliases: ["Passo de Corte Studio", "Passo de Corte", "Corte"],
+        aliasesConcorrente: ["Passo de Corte Concorrente", "Corte Concorrente"],
+        direcao: "menor",
+      },
+      {
+        key: "bobina",
+        label: "Comprimento da bobina",
+        aliases: ["Comprimento da Bobina Studio", "Comprimento da Bobina", "Bobina"],
+        aliasesConcorrente: ["Comprimento da Bobina Concorrente", "Bobina Concorrente"],
+        unidade: "m",
+        direcao: "neutro",
+      },
+      {
+        key: "tecnologia",
+        label: "Tecnologia",
+        aliases: ["Tecnologia Studio", "Tecnologia"],
+        aliasesConcorrente: ["Tecnologia Concorrente"],
+        direcao: "neutro",
+      },
     ],
     aliases: {
       baseProduto: ["Produto Base Studio", "Produto Studio"],
@@ -113,6 +237,7 @@ export const FAMILY_CONFIGS: Record<string, MapaFamilyConfig> = {
       basePreco: ["Preço Studio R$/m", "Preco Studio R$/m", "Preço Studio", "Preço Base Studio"],
     },
   },
+
 };
 
 export function getFamilyConfig(familia: string): MapaFamilyConfig {
