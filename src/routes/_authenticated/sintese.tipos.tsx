@@ -106,12 +106,28 @@ function SinteseTipos() {
   async function reprocessar() {
     setBusy(true);
     try {
-      const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
-      if (error) throw error;
-      const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
-      toast.success(`Fontes reprocessadas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas.`);
+      const resumo: string[] = [];
+      // Cada universo tem seu próprio pipeline de ingestão. Nada é compartilhado.
+      if (tipos.includes("entrevista")) {
+        const { data, error } = await supabase.rpc("reprocessar_fontes_entrevistas");
+        if (error) throw error;
+        const r = (data ?? {}) as { criadas?: number; atualizadas?: number };
+        resumo.push(`Entrevistas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas`);
+      }
+      if (tipos.includes("visita_campo")) {
+        const r = await reprocessarCampo({ data: {} });
+        resumo.push(
+          `Visitas de campo: ${r.criadas} criadas, ${r.atualizadas} atualizadas${r.ignoradas ? `, ${r.ignoradas} ignoradas` : ""}`,
+        );
+      }
+      if (!resumo.length) {
+        toast.info("Nenhum pipeline de reprocessamento para os universos selecionados.");
+        return;
+      }
+      toast.success(resumo.join(" · "));
       qc.invalidateQueries({ queryKey: ["insight-fontes-sintese"] });
       qc.invalidateQueries({ queryKey: ["insight-fontes"] });
+      qc.invalidateQueries({ queryKey: ["mapa-familia-campo"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao reprocessar fontes.");
     } finally {
