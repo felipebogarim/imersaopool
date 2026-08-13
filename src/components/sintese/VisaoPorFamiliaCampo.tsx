@@ -50,7 +50,7 @@ export function VisaoPorFamiliaCampo({
     const out: ImersaoFonte[] = [];
     for (const r of reports as any[]) {
       const raw = r.structured_data;
-      const candidate = raw?.schema === "visao_imersao_2_data_v1" ? raw : raw?.data ?? raw?.visao_imersao_2_data_v1;
+      const candidate = raw?.data?.client ? raw.data : raw?.schema === "visao_imersao_2_data_v1" && raw?.client ? raw : (raw?.data ?? raw?.visao_imersao_2_data_v1 ?? raw);
       const parsed = Immersion2DataSchema.safeParse(candidate);
       if (!parsed.success) continue;
       out.push({
