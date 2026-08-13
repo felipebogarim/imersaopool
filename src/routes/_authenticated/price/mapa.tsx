@@ -56,6 +56,7 @@ import { formatBRL } from "@/lib/price-comparativos-core";
 import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
 import { ImportadorMapa } from "@/components/price/mapa/ImportadorMapa";
+import { getFamilyConfig, labelColunaBase } from "@/lib/price-mapa/family-config";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -107,6 +108,9 @@ function MapaPrecosPage() {
       setImportedCompetitors([]);
     }
   }, [familia]);
+
+  const familyCfg = getFamilyConfig(familia);
+  const baseBrand = familyCfg.baseBrand;
 
   const hasMapConfigured = (familia === "Perfis") || (importedCompetitors.length > 0);
 
@@ -289,11 +293,11 @@ function MapaPrecosPage() {
       const base = activeAnchors.find((a: any) => a.id === item.base_product_id);
       return {
         "Família": familia,
-        "Produto Base Newline": base?.nome ?? "",
-        "Código Newline": base?.sku ?? base?.referencia ?? "",
-        "Preço Newline (R$)": base?.preco_normalizado ?? null,
-        "Dimensão Newline": base?.dimensao_texto ?? "",
-        "Nicho Newline": base?.nicho_mm ?? "",
+        [`Produto Base ${baseBrand}`]: base?.nome ?? "",
+        [`Código ${baseBrand}`]: base?.sku ?? base?.referencia ?? "",
+        [`Preço ${baseBrand} (R$)`]: base?.preco_normalizado ?? null,
+        [`Dimensão ${baseBrand}`]: base?.dimensao_texto ?? "",
+        [`Nicho ${baseBrand}`]: base?.nicho_mm ?? "",
         "Marca Concorrente": item.marca,
         "Modelo Concorrente": item.nome,
         "Referência Concorrente": item.referencia ?? "",
@@ -307,7 +311,7 @@ function MapaPrecosPage() {
           ? Number(item.diff_percentual.toFixed(1))
           : null,
         "Farol": item.farol,
-        "Classificação Técnica": item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : "Alternativo",
+        "Classificação Técnica": item.classificacao_texto ?? (item.classificacao_tecnica ? LEVEL_LABEL[item.classificacao_tecnica] : ""),
         "Detalhamento Técnico": item.detalhamento_tecnico ?? "",
         "Status": STATUS_LABEL[(item.status ?? "em_analise") as EquivalenceStatus] ?? item.status,
         "Fonte Principal": item.fonte ?? base?.fonte ?? "",
@@ -515,7 +519,7 @@ function MapaPrecosPage() {
               {/* Seletor de Tabela e Busca */}
               <div className="flex flex-col lg:flex-row gap-4 lg:items-end justify-between">
                 <div className="space-y-2">
-                  <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">Tabela Newline considerada</span>
+                  <span className="text-xs text-muted-foreground font-light px-1 uppercase tracking-widest block mb-1">{`Tabela ${baseBrand} considerada`}</span>
                   <div className="flex items-center gap-3">
                     <Select value={tabelaBase} onValueChange={(v: PriceTable) => setTabelaBase(v)}>
                       <SelectTrigger className="w-[200px] h-10 bg-background/50 border-white/10 font-light text-foreground">
@@ -610,10 +614,10 @@ function MapaPrecosPage() {
                 <TableRow className="border-white/5 hover:bg-transparent">
                   <TableHead className="w-8 py-4"></TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Produto Base</TableHead>
-                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Newline (R$/m)</TableHead>
+                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">{labelColunaBase(familyCfg)}</TableHead>
                   {showDimColumns && (
                     <>
-                      <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Dimensão Newline</TableHead>
+                      <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">{`Dimensão ${baseBrand}`}</TableHead>
                       <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Nicho</TableHead>
                     </>
                   )}
@@ -623,7 +627,7 @@ function MapaPrecosPage() {
                   )}
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Marca</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Preço Concorrente</TableHead>
-                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4 text-center">Diferença Newline vs concorrente</TableHead>
+                  <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4 text-center">{`Diferença ${baseBrand} vs concorrente`}</TableHead>
                   <TableHead className="text-[10px] uppercase font-medium text-muted-foreground py-4">Técnica</TableHead>
                   <TableHead className="text-right py-4 pr-6"></TableHead>
                 </TableRow>
@@ -730,7 +734,7 @@ function MapaPrecosPage() {
                       </TableCell>
                       <TableCell className="py-5 border-r border-border/60">
                         <Badge className={cn("font-light text-[10px] py-0", LEVEL_CLASS[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel])}>
-                          {LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
+                          {item.classificacao_texto ?? LEVEL_LABEL[(item.classificacao_tecnica ?? "insuficiente") as EquivalenceLevel]}
                         </Badge>
                         {item.detalhamento_tecnico && (
                           <span className="block text-[9px] text-muted-foreground mt-1 italic">{item.detalhamento_tecnico}</span>
@@ -769,11 +773,11 @@ function MapaPrecosPage() {
                         <TableCell colSpan={colSpan} className="py-5 px-8">
                           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs font-light">
                             <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Dimensão Newline</span>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Dimensão ${baseBrand}`}</span>
                               <span className="text-foreground">{base?.dimensao_texto || "—"}</span>
                             </div>
                             <div>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Nicho Newline</span>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">{`Nicho ${baseBrand}`}</span>
                               <span className="text-foreground">{base?.nicho_mm ? `${base.nicho_mm} mm` : "—"}</span>
                             </div>
                             <div>
@@ -838,7 +842,7 @@ function MapaPrecosPage() {
                 <div className="flex items-center gap-4 text-[11px] font-light">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                    <span>Newline mais barata</span>
+                    <span>{`${baseBrand} mais barata`}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-amber-500" />
