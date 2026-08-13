@@ -116,7 +116,7 @@ function SinteseTipos() {
         resumo.push(`Entrevistas: ${r.criadas ?? 0} criadas, ${r.atualizadas ?? 0} atualizadas`);
       }
       if (tipos.includes("visita_campo")) {
-        const r = await reprocessarCampo({ data: {} });
+        const r = await reprocessarCampo({} as never);
         resumo.push(
           `Visitas de campo: ${r.criadas} criadas, ${r.atualizadas} atualizadas${r.ignoradas ? `, ${r.ignoradas} ignoradas` : ""}`,
         );
