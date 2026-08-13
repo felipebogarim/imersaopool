@@ -19,7 +19,6 @@ import {
   pickField,
   pickByAliases,
   parsePreco,
-  labelPrecoBase,
 } from "@/lib/price-mapa/family-config";
 
 /** Só permitimos confirmar quando todos os campos obrigatórios foram identificados. */
@@ -188,7 +187,7 @@ export function ImportadorMapa({ open, onOpenChange, familia, onImported }: Impo
           <DialogDescription className="text-muted-foreground font-light pt-2">
             {showSummary ? "Resumo detalhado do processamento realizado." : 
              previewData ? "Verifique se os preços e classificações foram identificados corretamente antes de confirmar." : 
-             "Carregue uma planilha Excel contendo os produtos âncora e comparativos de mercado."}
+             `Carregue uma planilha Excel da família ${familia}. Marca base: ${getFamilyConfig(familia).baseBrand}.`}
           </DialogDescription>
         </DialogHeader>
 
