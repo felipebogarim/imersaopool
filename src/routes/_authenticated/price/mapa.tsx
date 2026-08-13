@@ -57,6 +57,15 @@ import { CenárioSimulador } from "@/components/price/mapa/CenárioSimulador";
 import { GraficosMapa } from "@/components/price/mapa/GraficosMapa";
 import { ImportadorMapa } from "@/components/price/mapa/ImportadorMapa";
 import { getFamilyConfig, labelColunaBase } from "@/lib/price-mapa/family-config";
+import { buildTechComparison } from "@/lib/price-mapa/tech-compare";
+
+const techDot: Record<string, string> = {
+  verde: "bg-emerald-500",
+  amarelo: "bg-amber-500",
+  vermelho: "bg-destructive",
+  cinza: "bg-muted-foreground/40",
+};
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
