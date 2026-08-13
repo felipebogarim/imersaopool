@@ -138,27 +138,43 @@ function MapaPrecosPage() {
   }, [hasMapConfigured, activeCompetitors, activeAnchors, adjustments]);
 
   const handleImported = (anchors: any[], competitors: any[]) => {
+    // Upsert: enriquece registros existentes (inclusive especificações técnicas)
+    // sem criar duplicidades e sem sobrescrever preços já importados por vazio.
+    const mergeTecnicos = (old: any, novo: any) => {
+      const merged = { ...(old?.tecnicos ?? {}), ...(novo?.tecnicos ?? {}) };
+      return Object.keys(merged).length ? merged : undefined;
+    };
+    const mergeRegistro = (old: any, novo: any) => ({
+      ...old,
+      ...novo,
+      preco_base: novo.preco_base ?? old.preco_base,
+      preco_normalizado: novo.preco_normalizado ?? old.preco_normalizado,
+      price_availability:
+        (novo.preco_normalizado ?? old.preco_normalizado) !== null ? "informado" : "nao_informado",
+      tecnicos: mergeTecnicos(old, novo),
+      notas: old.notas || novo.notas,
+    });
+
     setImportedAnchors(prev => {
       const map = new Map(prev.map((a) => [a.id, a]));
       anchors.forEach((a) => {
         const old = map.get(a.id);
-        map.set(a.id, old ? { ...old, ...a, notas: old.notas || a.notas } : a);
+        map.set(a.id, old ? mergeRegistro(old, a) : a);
       });
       return Array.from(map.values());
     });
     setImportedCompetitors(prev => {
-      // Upsert por ID lógico. Registros já existentes preservam status e notas
-      // (não reverter validações manuais já realizadas).
       const competitorMap = new Map(prev.map(c => [c.id, c]));
       competitors.forEach(c => {
         const old = competitorMap.get(c.id);
         competitorMap.set(c.id, old
-          ? { ...old, ...c, status: old.status ?? c.status, notas: old.notas || c.notas }
+          ? { ...mergeRegistro(old, c), status: old.status ?? c.status }
           : c);
       });
       return Array.from(competitorMap.values());
     });
   };
+
 
   const persist = (anchors: any[], competitors: any[]) => {
     try {
