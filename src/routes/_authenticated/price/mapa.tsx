@@ -637,7 +637,11 @@ function MapaPrecosPage() {
                   const base = activeAnchors.find(a => a.id === item.base_product_id);
                   const isEven = index % 2 === 0;
                   const isExpanded = expandedId === item.id;
+                  const techRows = isExpanded
+                    ? buildTechComparison(familyCfg, base?.tecnicos, item.tecnicos)
+                    : [];
                   const colSpan = showDimColumns ? 12 : 9;
+
                   const farolColors = {
                     verde: "bg-emerald-500/80 text-black border-emerald-500/20",
                     amarelo: "bg-amber-500/80 text-black border-amber-500/20",
