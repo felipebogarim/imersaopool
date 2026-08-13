@@ -3,6 +3,12 @@ import { EquivalenceLevel } from "../../price-comparativos-core";
 
 export interface RawMapaRow {
   familia: string;
+  /** Marca base da família (Newline, Studio, ...). Genérico por família. */
+  base_brand?: string;
+  base_descricao?: string;
+  /** Campos técnicos da família (label -> valor original). */
+  tecnicos?: Record<string, string>;
+  status_texto?: string;
   base_produto: string;
   base_codigo: string;
   base_preco: number | null;
@@ -55,10 +61,9 @@ export function mapClassificacao(text: string): { nivel: EquivalenceLevel; detal
     insuficiente: "dados insuficientes",
   };
 
-  return {
-    nivel,
-    detalhe: detalhe && t !== rotuloPrincipal[nivel] ? detalhe : undefined,
-  };
+  void rotuloPrincipal;
+  // Preservamos sempre o texto original da planilha; o enum é apenas um índice interno.
+  return { nivel, detalhe };
 }
 
 function cleanText(v: unknown): string | undefined {
@@ -89,11 +94,13 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
     if (!anchorsMap.has(anchorId)) {
       anchorsMap.set(anchorId, {
         id: anchorId,
-        marca: "Newline",
+        marca: row.base_brand || "Newline",
         sku: row.base_codigo,
         referencia: row.base_produto,
         nome: row.base_produto,
+        descricao: cleanText(row.base_descricao),
         specs: {},
+        tecnicos: row.tecnicos,
         preco_base: row.base_preco,
         preco_normalizado: row.base_preco,
         price_availability: row.base_preco !== null ? "informado" : "nao_informado",
@@ -141,6 +148,8 @@ export function processRawMapaRows(rows: RawMapaRow[]): { anchors: MapaProduct[]
       // Novas comparações entram sempre como "Em análise".
       // Somente ação manual autorizada pode alterar para validado/incompatível.
       status: "em_analise",
+      classificacao_texto: cleanText(row.classificacao),
+      tecnicos: row.tecnicos,
       notas: cleanText(row.notas) ?? "",
       fonte: cleanText(row.fonte),
       dimensao_texto: cleanText(row.dimensao_concorrente),

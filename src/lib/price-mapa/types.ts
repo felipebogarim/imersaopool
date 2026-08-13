@@ -30,6 +30,10 @@ export type MapaProduct = {
   is_base: boolean;
   base_product_id?: string; // Link to Newline anchor if this is a competitor
   classificacao_tecnica?: EquivalenceLevel;
+  /** Texto original da classificação vindo da planilha (nunca sobrescrito). */
+  classificacao_texto?: string;
+  /** Campos técnicos específicos da família (label -> valor original). */
+  tecnicos?: Record<string, string>;
   detalhamento_tecnico?: string;
   proximidade_tecnica?: number; // 0-100
   status: EquivalenceStatus;
