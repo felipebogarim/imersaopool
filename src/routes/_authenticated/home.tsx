@@ -128,7 +128,7 @@ function HomeComponent() {
             </div>
 
             {/* Right Column */}
-            <div className="flex flex-col gap-5 lg:col-span-5">
+            <div className="flex flex-col gap-5 lg:col-span-5 self-end">
               <Link
                 to="/mapa-acoes"
                 className="group relative overflow-hidden rounded-2xl border border-nl-gold/40 bg-nl-gold/[0.08] p-8 transition-all hover:bg-nl-gold/[0.14]"
