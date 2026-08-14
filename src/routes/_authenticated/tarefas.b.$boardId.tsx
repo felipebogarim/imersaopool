@@ -187,9 +187,9 @@ function BoardPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto bg-white">
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="flex gap-3">
+          <div className="flex h-full">
             <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <ListColumn
@@ -203,12 +203,14 @@ function BoardPage() {
                 />
               ))}
             </SortableContext>
-            <button
-              onClick={addList}
-              className="h-fit w-72 shrink-0 rounded-lg border border-dashed p-3 text-sm text-muted-foreground hover:bg-muted/50"
-            >
-              <Plus className="mr-1 inline h-4 w-4" /> Nova lista
-            </button>
+            <div className="flex h-fit w-72 shrink-0 p-3">
+              <button
+                onClick={addList}
+                className="flex w-full items-center justify-center gap-2 rounded-sm border border-dashed border-slate-300 py-3 text-xs font-medium text-slate-400 hover:bg-slate-50 transition"
+              >
+                <Plus className="h-4 w-4" /> Nova etapa
+              </button>
+            </div>
           </div>
           <DragOverlay>
             {activeCard && <KanbanCard card={activeCard} onClick={() => {}} isDragging />}
@@ -275,34 +277,54 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
 
+  const isFirstList = list.position === 1000 || list.name.toLowerCase().includes("negócio");
+
   return (
-    <div ref={setNodeRef} style={style} className="flex h-fit w-72 shrink-0 flex-col rounded-lg bg-muted/60 p-2">
-      <div className="mb-2 flex items-center justify-between px-1" {...attributes} {...listeners}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{list.name}</span>
-          <Badge variant="outline" className="h-5 px-1.5 text-[10px]">{cards.length}</Badge>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="flex h-fit min-h-[500px] w-72 shrink-0 flex-col border-r border-slate-200 bg-slate-50/40 p-3"
+    >
+      <div className="mb-4 flex flex-col gap-1 px-1" {...attributes} {...listeners}>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{list.name} ({cards.length})</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={renameList}>Renomear</DropdownMenuItem>
+              <DropdownMenuItem onClick={archiveList} className="text-destructive">Arquivar</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={renameList}>Renomear</DropdownMenuItem>
-            <DropdownMenuItem onClick={archiveList} className="text-destructive">Arquivar</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="text-[10px] text-slate-400 font-medium">Total: R$ 0,00</div>
       </div>
+
+      {isFirstList && (
+        <Button 
+          variant="default" 
+          className="mb-4 w-full bg-[#4A8AB0] hover:bg-[#3D7292] text-white shadow-sm h-9 rounded-sm font-medium text-xs"
+          onClick={() => setAdding(true)}
+        >
+          Criar Negócio
+        </Button>
+      )}
+
       <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {cards.map((c) => <SortableCard key={c.id} card={c} onClick={() => onOpenCard(c.id)} />)}
         </div>
       </SortableContext>
-      <button
-        onClick={() => setAdding(true)}
-        className="mt-2 flex items-center gap-1 rounded p-1.5 text-xs text-muted-foreground hover:bg-muted"
-      >
-        <Plus className="h-3.5 w-3.5" /> Adicionar card
-      </button>
+
+      {!isFirstList && (
+        <button
+          onClick={() => setAdding(true)}
+          className="mt-4 flex items-center gap-1 rounded p-1.5 text-xs text-slate-400 hover:bg-slate-100 transition"
+        >
+          <Plus className="h-3.5 w-3.5" /> Adicionar card
+        </button>
+      )}
       <NewCardDialog open={adding} onOpenChange={setAdding} onCreate={createCard} />
     </div>
   );
