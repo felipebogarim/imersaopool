@@ -614,7 +614,7 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_workspace_members")
-        .select("user_id, role, profiles!kanban_workspace_members_user_id_fkey(full_name, email)")
+        .select("user_id, role, profiles(full_name, email)")
         .eq("workspace_id", workspaceId);
       return data ?? [];
     },
@@ -624,12 +624,12 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
     queryKey: ["kanban-card-members", cardId],
     queryFn: async () => {
       const { data } = await supabase.from("kanban_card_members").select("user_id").eq("card_id", cardId);
-      return (data ?? []).map((r) => r.user_id);
+      return (data ?? []).map((r: any) => r.user_id);
     },
   });
 
-  const cardMeta = (useQueryClient().getQueryData(["kanban-card-meta", cardId]) as any) || {};
-  const responsibleId = cardMeta.metadata?.responsible_id;
+  const cardMeta = (card.metadata ?? {}) as any;
+  const responsibleId = cardMeta.responsible_id;
 
   async function toggle(userId: string, active: boolean) {
     if (active) {
@@ -640,19 +640,18 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
       await logActivity(boardId, "member_assigned", { user_id: userId }, cardId);
     }
     qc.invalidateQueries({ queryKey: ["kanban-card-members", cardId] });
-    qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
+    qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
   }
 
   async function setResponsible(userId: string | null) {
-    const { data: card } = await supabase.from("kanban_cards").select("metadata").eq("id", cardId).single();
-    const meta = { ...(card?.metadata || {}) } as any;
+    const meta = { ...cardMeta };
     
     if (userId) {
       meta.responsible_id = userId;
-      const profile = wsMembers.find(m => m.user_id === userId)?.profiles;
+      const m = wsMembers.find((item: any) => item.user_id === userId);
+      const profile = m?.profiles as any;
       meta.responsible_name = profile?.full_name || profile?.email || "Usuário";
       
-      // Auto-assign as member if not already
       if (!assigned.includes(userId)) {
         await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: userId });
       }
@@ -661,13 +660,12 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
       delete meta.responsible_name;
     }
     
-    await supabase.from("kanban_cards").update({ metadata: meta }).eq("id", cardId);
+    await patch({ metadata: meta as any });
     await logActivity(boardId, "card_updated", { field: "responsible", user_id: userId }, cardId);
-    qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
-    qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
   }
 
-  const responsibleProfile = wsMembers.find(m => m.user_id === responsibleId)?.profiles;
+  const resMember = wsMembers.find((item: any) => item.user_id === responsibleId);
+  const responsibleProfile = resMember?.profiles as any;
 
   return (
     <div className="space-y-4">
