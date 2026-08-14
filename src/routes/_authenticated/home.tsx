@@ -56,9 +56,9 @@ function HomeComponent() {
         </header>
 
         <main className="mx-auto flex w-full max-w-7xl flex-grow flex-col justify-center px-6 py-12 md:px-12">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div className="grid grid-cols-1 items-stretch gap-12 lg:grid-cols-12">
             {/* Left Column */}
-            <div className="space-y-12 lg:col-span-7">
+            <div className="space-y-12 lg:col-span-8">
               <div className="space-y-5">
                 <div className="flex items-center gap-4">
                   <div className="h-px w-10 bg-nl-gold" />
@@ -104,13 +104,13 @@ function HomeComponent() {
                 ].map((group) => (
                   <div
                     key={group.title}
-                    className="group rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-md transition-all hover:border-nl-gold/40 hover:bg-white/[0.07]"
+                    className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-md transition-all hover:border-nl-gold/40 hover:bg-white/[0.07]"
                   >
-                    <div className="mb-5 flex items-start justify-between">
-                      <group.icon className="h-4 w-4 text-nl-gold" strokeWidth={1.5} />
+                    <div className="mb-8 flex items-start justify-between">
+                      <group.icon className="h-6 w-6 text-nl-gold" strokeWidth={1.5} />
                     </div>
-                    <h2 className="mb-4 text-xl font-normal tracking-wide text-white">{group.title}</h2>
-                    <div className="flex flex-col gap-2.5">
+                    <h2 className="mb-6 text-4xl font-light leading-none tracking-tight text-white">{group.title}</h2>
+                    <div className="mt-auto flex flex-col gap-2.5">
                       {group.links.map((link) => (
                         <Link
                           key={link.label}
@@ -128,21 +128,21 @@ function HomeComponent() {
             </div>
 
             {/* Right Column */}
-            <div className="flex flex-col gap-5 lg:col-span-5 self-end">
+            <div className="flex flex-col lg:col-span-4">
               <Link
                 to="/mapa-acoes"
-                className="group relative overflow-hidden rounded-2xl border border-nl-gold/40 bg-nl-gold/[0.08] p-8 transition-all hover:bg-nl-gold/[0.14]"
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-nl-gold/40 bg-nl-gold/[0.08] p-8 transition-all hover:bg-nl-gold/[0.14]"
               >
-                <div className="absolute right-6 top-6">
-                  <ArrowRight className="h-6 w-6 text-nl-gold/60 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
+                <div className="absolute right-8 top-8">
+                  <ArrowRight className="h-8 w-8 text-nl-gold/60 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
                 </div>
-                <span className="mb-3 block text-[10px] font-light uppercase tracking-[0.35em] text-nl-gold/80">
+                <span className="mb-8 block text-[10px] font-light uppercase tracking-[0.35em] text-nl-gold/80">
                   Decisão Central
                 </span>
                 <h2 className="text-4xl font-light leading-none tracking-tight text-white">
                   Mapa de <br /> Ações
                 </h2>
-                <div className="mt-8 flex items-center gap-3">
+                <div className="mt-auto flex items-center gap-3">
                   <div className="h-px flex-grow bg-white/15" />
                   <span className="text-[9px] font-light uppercase tracking-[0.25em] text-white/40">
                     Execução em tempo real
