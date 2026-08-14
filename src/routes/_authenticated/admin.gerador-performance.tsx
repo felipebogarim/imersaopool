@@ -529,7 +529,7 @@ function GeradorPerformancePage() {
     <div>
       <PageHeader
         title="Gerador de Performance"
-        subtitle="Faça upload de uma ou mais planilhas brutas — a IA extrai metas, categorias e faróis e gera a planilha padrão de Performance."
+        subtitle="Faça upload de uma ou mais planilhas brutas — a IA extrai percentuais e faróis e gera a planilha padrão de Performance."
       />
       <div className="p-4 sm:p-8 space-y-6 max-w-6xl">
         {/* Aviso de privacidade */}
@@ -538,9 +538,9 @@ function GeradorPerformancePage() {
           <div className="text-sm">
             <div className="font-medium text-foreground">Seus dados brutos não são publicados nem compartilhados.</div>
             <p className="text-muted-foreground mt-1">
-              As planilhas enviadas são usadas <strong>somente</strong> para que a IA extraia metas, percentuais e
+              As planilhas enviadas são usadas <strong>somente</strong> para que a IA extraia percentuais e
               faróis. <strong className="font-bold text-red-600 dark:text-red-500">Nenhum valor de faturamento/realização é armazenado nem exposto</strong> — o resultado final contém
-              apenas <strong>metas em R$</strong> e <strong>faixas de farol</strong>, exatamente como na área de
+              apenas <strong>faixas de farol</strong>, exatamente como na área de
               Performance.
             </p>
           </div>
@@ -668,9 +668,6 @@ function GeradorPerformancePage() {
                       <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
                         Categoria
                       </th>
-                      <th className="text-right px-3 py-3 whitespace-nowrap min-w-[130px] bg-muted">
-                        Total meta
-                      </th>
                       <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">
                         Total %
                       </th>
@@ -705,9 +702,6 @@ function GeradorPerformancePage() {
                               {r.categoria ?? "—"}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums font-semibold bg-muted/20">
-                            {fmtBRL(totalRow)}
-                          </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
                             {r.total_pct_status ? (
                               <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
@@ -736,29 +730,12 @@ function GeradorPerformancePage() {
                     })}
                     {derived && (
                       <>
-                        {/* TOTAL GERAL DA META */}
-                        <tr className="border-t-2 border-border bg-muted/60 font-semibold">
-                          <td className="px-3 py-3 sticky left-0 bg-muted/80 z-10 uppercase text-xs tracking-wider">
-                            Total geral da meta
-                          </td>
-                          <td className="px-3 py-3 sticky left-[240px] bg-muted/80 z-10"></td>
-                          <td className="px-3 py-3 text-right tabular-nums">
-                            {fmtBRL(derived.grand)}
-                          </td>
-                          <td className="px-3 py-3"></td>
-                          {result.familias.map((f) => (
-                            <td key={f} className="px-3 py-3 text-right tabular-nums">
-                              {fmtBRL(derived.perFamilia[f] || 0)}
-                            </td>
-                          ))}
-                        </tr>
                         {/* PARTICIPAÇÃO ESTIMADA NA VENDA */}
                         <tr className="border-t border-border bg-sky-50 dark:bg-sky-950/30 font-medium">
                           <td className="px-3 py-2.5 sticky left-0 bg-sky-100/90 dark:bg-sky-950/60 z-10 text-xs uppercase tracking-wider">
                             Participação estimada na venda
                           </td>
                           <td className="px-3 py-2.5 sticky left-[240px] bg-sky-100/90 dark:bg-sky-950/60 z-10"></td>
-                          <td className="px-3 py-2.5"></td>
                           <td className="px-3 py-2.5 text-center tabular-nums">
                             {fmtPct(derived.participacao.__total__)}
                           </td>
@@ -774,7 +751,7 @@ function GeradorPerformancePage() {
                             Atingimento estimado da meta
                           </td>
                           <td className="px-3 py-2.5 sticky left-[240px] bg-amber-100/90 dark:bg-amber-950/60 z-10"></td>
-                          <td className="px-3 py-2.5"></td>
+                          
                           <td className="px-3 py-2.5 text-center tabular-nums">
                             {fmtPct(derived.atingimento.__total__)}
                           </td>
