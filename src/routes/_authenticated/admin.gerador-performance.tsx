@@ -303,7 +303,7 @@ function GeradorPerformancePage() {
         periodo_fim: periodoObj.fim || null,
         familias: result.familias as any,
         rows: result.rows as any,
-        categoria_metas: (result.categoria_metas ?? {}) as any,
+        categoria_metas: result.categoria_metas as any,
         participacao: derived.participacao as any,
         observacoes: result.observacoes ?? null,
       } as any);

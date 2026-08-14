@@ -1552,6 +1552,7 @@ export type Database = {
       }
       gerador_performance_salvos: {
         Row: {
+          categoria_metas: Json | null
           created_at: string
           familias: Json
           id: string
@@ -1567,6 +1568,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          categoria_metas?: Json | null
           created_at?: string
           familias?: Json
           id?: string
@@ -1582,6 +1584,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          categoria_metas?: Json | null
           created_at?: string
           familias?: Json
           id?: string
