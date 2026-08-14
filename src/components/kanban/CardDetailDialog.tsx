@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
-  Sparkles, ThumbsUp, ThumbsDown, Shield, User,
+  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
