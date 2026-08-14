@@ -153,20 +153,6 @@ function Page() {
         subtitle="Monitoramento contínuo dos controles de segurança, privacidade e proteção de dados da plataforma."
         actions={
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={async () => {
-                const { grantAdminAccessToWorkspaces } = await import("@/lib/kanban-admin.functions");
-                try {
-                  const res = await grantAdminAccessToWorkspaces({ data: { userId: "15838724-465b-49f6-8550-0f40bca36183" } });
-                  alert(`Sucesso! Angélica Galan agora tem acesso a ${res.count} quadros de Kanban.`);
-                } catch (e: any) {
-                  alert("Erro: " + e.message);
-                }
-              }}
-            >
-              Liberar Acesso Kanban (Angélica)
-            </Button>
             <Button variant="outline" onClick={() => qc.invalidateQueries()}>
               <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
             </Button>
