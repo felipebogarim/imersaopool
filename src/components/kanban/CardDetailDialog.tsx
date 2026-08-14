@@ -607,7 +607,7 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
 }
 
 // ============ MEMBERS ============
-function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; boardId: string; workspaceId: string }) {
+function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: string; boardId: string; workspaceId: string; card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
   const qc = useQueryClient();
   const { data: wsMembers = [] } = useQuery({
     queryKey: ["kanban-ws-members", workspaceId],
