@@ -98,12 +98,31 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         )}
       </div>
       {meta?.members && meta.members.length > 0 && (
-        <div className="mt-2 flex -space-x-1">
-          {meta.members.slice(0, 4).map((m: any) => (
-            <div key={m.user_id} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary/20 text-[10px] font-medium">
-              {(m.profiles?.full_name ?? "?").split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
-            </div>
-          ))}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex -space-x-1">
+            {meta.members.slice(0, 4).map((m: any) => (
+              <div 
+                key={m.user_id} 
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-full border-2 border-background text-[10px] font-medium transition-transform hover:z-10",
+                  (card.metadata as any)?.responsible_id === m.user_id ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/20"
+                )}
+                title={(card.metadata as any)?.responsible_id === m.user_id ? `Responsável: ${m.profiles?.full_name}` : m.profiles?.full_name}
+              >
+                {(m.profiles?.full_name ?? "?").split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+              </div>
+            ))}
+            {meta.members.length > 4 && (
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-muted text-[9px] font-medium">
+                +{meta.members.length - 4}
+              </div>
+            )}
+          </div>
+          {(card.metadata as any)?.responsible_name && (
+            <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
+              Resp: {(card.metadata as any).responsible_name.split(" ")[0]}
+            </span>
+          )}
         </div>
       )}
     </div>

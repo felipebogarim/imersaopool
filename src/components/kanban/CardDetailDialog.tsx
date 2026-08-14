@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
-  Sparkles, ThumbsUp, ThumbsDown,
+  Sparkles, ThumbsUp, ThumbsDown, Shield, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
@@ -153,7 +153,7 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
               <RepLinkSection card={card} patch={patch} />
 
               <LabelsPicker cardId={card.id} boardId={card.board_id} />
-              <MembersPicker cardId={card.id} boardId={card.board_id} workspaceId={board.workspace_id} />
+              <MembersPicker cardId={card.id} boardId={card.board_id} workspaceId={board.workspace_id} card={card} patch={patch} />
               <SuggestedActionSection card={card} patch={patch} />
 
 
@@ -607,25 +607,29 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
 }
 
 // ============ MEMBERS ============
-function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; boardId: string; workspaceId: string }) {
+function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: string; boardId: string; workspaceId: string; card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
   const qc = useQueryClient();
   const { data: wsMembers = [] } = useQuery({
     queryKey: ["kanban-ws-members", workspaceId],
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_workspace_members")
-        .select("user_id, role, profiles!kanban_workspace_members_user_id_fkey(full_name, email)")
+        .select("user_id, role, profiles(full_name, email)")
         .eq("workspace_id", workspaceId);
       return data ?? [];
     },
   });
+  
   const { data: assigned = [] } = useQuery({
     queryKey: ["kanban-card-members", cardId],
     queryFn: async () => {
       const { data } = await supabase.from("kanban_card_members").select("user_id").eq("card_id", cardId);
-      return (data ?? []).map((r) => r.user_id);
+      return (data ?? []).map((r: any) => r.user_id);
     },
   });
+
+  const cardMeta = (card.metadata ?? {}) as any;
+  const responsibleId = cardMeta.responsible_id;
 
   async function toggle(userId: string, active: boolean) {
     if (active) {
@@ -636,37 +640,97 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
       await logActivity(boardId, "member_assigned", { user_id: userId }, cardId);
     }
     qc.invalidateQueries({ queryKey: ["kanban-card-members", cardId] });
-    qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
+    qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
   }
 
+  async function setResponsible(userId: string | null) {
+    const meta = { ...cardMeta };
+    
+    if (userId) {
+      meta.responsible_id = userId;
+      const m = wsMembers.find((item: any) => item.user_id === userId);
+      const profile = m?.profiles as any;
+      meta.responsible_name = profile?.full_name || profile?.email || "Usuário";
+      
+      if (!assigned.includes(userId)) {
+        await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: userId });
+      }
+    } else {
+      delete meta.responsible_id;
+      delete meta.responsible_name;
+    }
+    
+    await patch({ metadata: meta as any });
+    await logActivity(boardId, "card_updated", { field: "responsible", user_id: userId }, cardId);
+  }
+
+  const resMember = wsMembers.find((item: any) => item.user_id === responsibleId);
+  const responsibleProfile = resMember?.profiles as any;
+
   return (
-    <div>
-      <label className="text-xs font-medium text-muted-foreground">Responsáveis</label>
-      <div className="mt-1 space-y-1">
-        {wsMembers.filter((m: any) => assigned.includes(m.user_id)).map((m: any) => (
-          <div key={m.user_id} className="flex items-center justify-between text-sm">
-            <span>{m.profiles?.full_name ?? m.profiles?.email ?? "—"}</span>
-            <button onClick={() => toggle(m.user_id, true)}><X className="h-3 w-3 text-muted-foreground hover:text-destructive" /></button>
-          </div>
-        ))}
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Responsável</label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="mt-1 w-full justify-start gap-2">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="truncate">{responsibleProfile?.full_name || responsibleProfile?.email || "Definir responsável"}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuItem onClick={() => setResponsible(null)} className="text-destructive">
+              Remover responsável
+            </DropdownMenuItem>
+            {wsMembers.map((m: any) => (
+              <DropdownMenuItem
+                key={m.user_id}
+                onClick={() => setResponsible(m.user_id)}
+                className={cn(responsibleId === m.user_id && "bg-muted")}
+              >
+                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="outline" className="mt-2 w-full gap-2"><Users className="h-3.5 w-3.5" /> Adicionar</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
-          {wsMembers.length === 0 && <DropdownMenuItem disabled>Nenhum membro no workspace</DropdownMenuItem>}
-          {wsMembers.map((m: any) => (
-            <DropdownMenuCheckboxItem
-              key={m.user_id}
-              checked={assigned.includes(m.user_id)}
-              onCheckedChange={() => toggle(m.user_id, assigned.includes(m.user_id))}
-            >
-              {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
-            </DropdownMenuCheckboxItem>
+
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Membros / Acompanhadores</label>
+        <div className="mt-1 space-y-1">
+          {wsMembers.filter((m: any) => assigned.includes(m.user_id)).map((m: any) => (
+            <div key={m.user_id} className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-sm">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <User className="h-3 w-3 shrink-0 opacity-50" />
+                <span className="truncate">{m.profiles?.full_name ?? m.profiles?.email ?? "—"}</span>
+              </div>
+              <button 
+                onClick={() => toggle(m.user_id, true)}
+                className="ml-2 rounded-full p-0.5 hover:bg-muted"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="mt-2 w-full gap-2"><Plus className="h-3.5 w-3.5" /> Adicionar membro</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            {wsMembers.length === 0 && <DropdownMenuItem disabled>Nenhum membro no workspace</DropdownMenuItem>}
+            {wsMembers.map((m: any) => (
+              <DropdownMenuCheckboxItem
+                key={m.user_id}
+                checked={assigned.includes(m.user_id)}
+                onCheckedChange={() => toggle(m.user_id, assigned.includes(m.user_id))}
+              >
+                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
