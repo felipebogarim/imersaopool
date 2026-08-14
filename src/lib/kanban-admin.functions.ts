@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { KanbanRole } from "./kanban-types";
 
 export const grantAdminAccessToWorkspaces = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -27,7 +28,7 @@ export const grantAdminAccessToWorkspaces = createServerFn({ method: "POST" })
     const members = workspaces.map(ws => ({
       workspace_id: ws.id,
       user_id: data.userId,
-      role: "admin",
+      role: "admin" as KanbanRole,
     }));
 
     const { error } = await supabaseAdmin
