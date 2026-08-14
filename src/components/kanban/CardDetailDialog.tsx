@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
-  Sparkles, ThumbsUp, ThumbsDown, Shield, User,
+  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
@@ -609,6 +610,9 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
 // ============ MEMBERS ============
 function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: string; boardId: string; workspaceId: string; card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
   const qc = useQueryClient();
+  const [memberTerm, setMemberTerm] = useState("");
+  const [respTerm, setRespTerm] = useState("");
+
   const { data: wsMembers = [] } = useQuery({
     queryKey: ["kanban-ws-members", workspaceId],
     queryFn: async () => {
@@ -618,6 +622,12 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
         .eq("workspace_id", workspaceId);
       return data ?? [];
     },
+  });
+
+  const { data: reps = [] } = useQuery({
+    queryKey: ["kanban-reps-all"],
+    staleTime: 5 * 60_000,
+    queryFn: fetchAllKanbanReps,
   });
   
   const { data: assigned = [] } = useQuery({
@@ -643,56 +653,106 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
     qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
   }
 
-  async function setResponsible(userId: string | null) {
+  async function setResponsible(id: string | null, name: string | null) {
     const meta = { ...cardMeta };
-    
-    if (userId) {
-      meta.responsible_id = userId;
-      const m = wsMembers.find((item: any) => item.user_id === userId);
-      const profile = m?.profiles as any;
-      meta.responsible_name = profile?.full_name || profile?.email || "Usuário";
-      
-      if (!assigned.includes(userId)) {
-        await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: userId });
+    if (id) {
+      meta.responsible_id = id;
+      meta.responsible_name = name;
+      const isUser = wsMembers.some((m: any) => m.user_id === id);
+      if (isUser && !assigned.includes(id)) {
+        await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: id });
+        qc.invalidateQueries({ queryKey: ["kanban-card-members", cardId] });
       }
     } else {
       delete meta.responsible_id;
       delete meta.responsible_name;
     }
-    
     await patch({ metadata: meta as any });
-    await logActivity(boardId, "card_updated", { field: "responsible", user_id: userId }, cardId);
+    await logActivity(boardId, "card_updated", { field: "responsible", user_id: id }, cardId);
   }
 
-  const resMember = wsMembers.find((item: any) => item.user_id === responsibleId);
-  const responsibleProfile = resMember?.profiles as any;
+  const responsibleDisplayName = cardMeta.responsible_name || responsibleId || "Definir responsável";
+
+  const filteredWsMembersResp = respTerm.trim().toLowerCase() 
+    ? wsMembers.filter((m: any) => (m.profiles?.full_name ?? "").toLowerCase().includes(respTerm.toLowerCase()) || (m.profiles?.email ?? "").toLowerCase().includes(respTerm.toLowerCase()))
+    : wsMembers;
+
+  const filteredRepsResp = respTerm.trim().toLowerCase()
+    ? reps.filter((r) => (r.nome ?? "").toLowerCase().includes(respTerm.toLowerCase()))
+    : reps;
+
+  const filteredWsMembersMem = memberTerm.trim().toLowerCase()
+    ? wsMembers.filter((m: any) => (m.profiles?.full_name ?? "").toLowerCase().includes(memberTerm.toLowerCase()) || (m.profiles?.email ?? "").toLowerCase().includes(memberTerm.toLowerCase()))
+    : wsMembers;
 
   return (
     <div className="space-y-4">
       <div>
         <label className="text-xs font-medium text-muted-foreground">Responsável</label>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button size="sm" variant="outline" className="mt-1 w-full justify-start gap-2">
               <Shield className="h-3.5 w-3.5" />
-              <span className="truncate">{responsibleProfile?.full_name || responsibleProfile?.email || "Definir responsável"}</span>
+              <span className="truncate">{responsibleDisplayName}</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuItem onClick={() => setResponsible(null)} className="text-destructive">
-              Remover responsável
-            </DropdownMenuItem>
-            {wsMembers.map((m: any) => (
-              <DropdownMenuItem
-                key={m.user_id}
-                onClick={() => setResponsible(m.user_id)}
-                className={cn(responsibleId === m.user_id && "bg-muted")}
-              >
-                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-0" align="start">
+            <div className="border-b p-2">
+              <Input 
+                placeholder="Pesquisar..." 
+                value={respTerm} 
+                onChange={e => setRespTerm(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto p-1">
+              {responsibleId && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full justify-start text-[11px] h-7 text-destructive" 
+                  onClick={() => setResponsible(null, null)}
+                >
+                  Remover responsável
+                </Button>
+              )}
+              
+              {filteredWsMembersResp.length > 0 && (
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Usuários</div>
+              )}
+              {filteredWsMembersResp.map((m: any) => (
+                <button
+                  key={m.user_id}
+                  onClick={() => setResponsible(m.user_id, m.profiles?.full_name || m.profiles?.email)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[13px] hover:bg-accent",
+                    responsibleId === m.user_id && "bg-accent"
+                  )}
+                >
+                  <User className="h-3.5 w-3.5 opacity-50" />
+                  <span className="truncate">{m.profiles?.full_name || m.profiles?.email}</span>
+                </button>
+              ))}
+
+              {filteredRepsResp.length > 0 && (
+                <div className="mt-2 px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-t">Representantes</div>
+              )}
+              {filteredRepsResp.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setResponsible(r.id, r.nome)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[13px] hover:bg-accent",
+                    responsibleId === r.id && "bg-accent"
+                  )}
+                >
+                  <UserRound className="h-3.5 w-3.5 opacity-50" />
+                  <span className="truncate">{r.nome}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div>
@@ -713,23 +773,42 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
             </div>
           ))}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="mt-2 w-full gap-2"><Plus className="h-3.5 w-3.5" /> Adicionar membro</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            {wsMembers.length === 0 && <DropdownMenuItem disabled>Nenhum membro no workspace</DropdownMenuItem>}
-            {wsMembers.map((m: any) => (
-              <DropdownMenuCheckboxItem
-                key={m.user_id}
-                checked={assigned.includes(m.user_id)}
-                onCheckedChange={() => toggle(m.user_id, assigned.includes(m.user_id))}
-              >
-                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="sm" variant="outline" className="mt-2 w-full gap-2">
+              <Plus className="h-3.5 w-3.5" /> Adicionar membro
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-0" align="start">
+            <div className="border-b p-2">
+              <Input 
+                placeholder="Pesquisar usuários..." 
+                value={memberTerm} 
+                onChange={e => setMemberTerm(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto p-1">
+              {filteredWsMembersMem.map((m: any) => (
+                <button
+                  key={m.user_id}
+                  onClick={() => toggle(m.user_id, assigned.includes(m.user_id))}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1 text-left text-[13px] hover:bg-accent",
+                    assigned.includes(m.user_id) && "bg-accent"
+                  )}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <User className="h-3.5 w-3.5 opacity-50" />
+                    <span className="truncate">{m.profiles?.full_name || m.profiles?.email}</span>
+                  </div>
+                  {assigned.includes(m.user_id) && <Check className="h-3.5 w-3.5 text-primary" />}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );
