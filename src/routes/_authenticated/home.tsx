@@ -109,13 +109,13 @@ function HomeComponent() {
                     <div className="mb-5 flex items-start justify-between">
                       <group.icon className="h-4 w-4 text-nl-gold" strokeWidth={1.5} />
                     </div>
-                    <h2 className="mb-4 text-sm font-normal tracking-wide text-white">{group.title}</h2>
+                    <h2 className="mb-4 text-xl font-normal tracking-wide text-white">{group.title}</h2>
                     <div className="flex flex-col gap-2.5">
                       {group.links.map((link) => (
                         <Link
                           key={link.label}
                           to={link.to as any}
-                          className="flex items-center gap-2 text-xs font-light text-white/55 transition-colors hover:text-nl-gold"
+                          className="flex items-center gap-2 text-sm font-light text-white/55 transition-colors hover:text-nl-gold"
                         >
                           <div className="h-px w-3 bg-white/25" />
                           {link.label}
