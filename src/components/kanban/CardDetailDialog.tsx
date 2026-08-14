@@ -619,6 +619,7 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
       return data ?? [];
     },
   });
+  
   const { data: assigned = [] } = useQuery({
     queryKey: ["kanban-card-members", cardId],
     queryFn: async () => {
@@ -626,6 +627,9 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
       return (data ?? []).map((r) => r.user_id);
     },
   });
+
+  const cardMeta = (useQueryClient().getQueryData(["kanban-card-meta", cardId]) as any) || {};
+  const responsibleId = cardMeta.metadata?.responsible_id;
 
   async function toggle(userId: string, active: boolean) {
     if (active) {
@@ -639,34 +643,96 @@ function MembersPicker({ cardId, boardId, workspaceId }: { cardId: string; board
     qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
   }
 
+  async function setResponsible(userId: string | null) {
+    const { data: card } = await supabase.from("kanban_cards").select("metadata").eq("id", cardId).single();
+    const meta = { ...(card?.metadata || {}) } as any;
+    
+    if (userId) {
+      meta.responsible_id = userId;
+      const profile = wsMembers.find(m => m.user_id === userId)?.profiles;
+      meta.responsible_name = profile?.full_name || profile?.email || "Usuário";
+      
+      // Auto-assign as member if not already
+      if (!assigned.includes(userId)) {
+        await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: userId });
+      }
+    } else {
+      delete meta.responsible_id;
+      delete meta.responsible_name;
+    }
+    
+    await supabase.from("kanban_cards").update({ metadata: meta }).eq("id", cardId);
+    await logActivity(boardId, "card_updated", { field: "responsible", user_id: userId }, cardId);
+    qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
+    qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
+  }
+
+  const responsibleProfile = wsMembers.find(m => m.user_id === responsibleId)?.profiles;
+
   return (
-    <div>
-      <label className="text-xs font-medium text-muted-foreground">Responsáveis</label>
-      <div className="mt-1 space-y-1">
-        {wsMembers.filter((m: any) => assigned.includes(m.user_id)).map((m: any) => (
-          <div key={m.user_id} className="flex items-center justify-between text-sm">
-            <span>{m.profiles?.full_name ?? m.profiles?.email ?? "—"}</span>
-            <button onClick={() => toggle(m.user_id, true)}><X className="h-3 w-3 text-muted-foreground hover:text-destructive" /></button>
-          </div>
-        ))}
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Responsável</label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="mt-1 w-full justify-start gap-2">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="truncate">{responsibleProfile?.full_name || responsibleProfile?.email || "Definir responsável"}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuItem onClick={() => setResponsible(null)} className="text-destructive">
+              Remover responsável
+            </DropdownMenuItem>
+            {wsMembers.map((m: any) => (
+              <DropdownMenuItem
+                key={m.user_id}
+                onClick={() => setResponsible(m.user_id)}
+                className={cn(responsibleId === m.user_id && "bg-muted")}
+              >
+                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="outline" className="mt-2 w-full gap-2"><Users className="h-3.5 w-3.5" /> Adicionar</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
-          {wsMembers.length === 0 && <DropdownMenuItem disabled>Nenhum membro no workspace</DropdownMenuItem>}
-          {wsMembers.map((m: any) => (
-            <DropdownMenuCheckboxItem
-              key={m.user_id}
-              checked={assigned.includes(m.user_id)}
-              onCheckedChange={() => toggle(m.user_id, assigned.includes(m.user_id))}
-            >
-              {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
-            </DropdownMenuCheckboxItem>
+
+      <div>
+        <label className="text-xs font-medium text-muted-foreground">Membros / Acompanhadores</label>
+        <div className="mt-1 space-y-1">
+          {wsMembers.filter((m: any) => assigned.includes(m.user_id)).map((m: any) => (
+            <div key={m.user_id} className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-sm">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <User className="h-3 w-3 shrink-0 opacity-50" />
+                <span className="truncate">{m.profiles?.full_name ?? m.profiles?.email ?? "—"}</span>
+              </div>
+              <button 
+                onClick={() => toggle(m.user_id, true)}
+                className="ml-2 rounded-full p-0.5 hover:bg-muted"
+              >
+                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="mt-2 w-full gap-2"><Plus className="h-3.5 w-3.5" /> Adicionar membro</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            {wsMembers.length === 0 && <DropdownMenuItem disabled>Nenhum membro no workspace</DropdownMenuItem>}
+            {wsMembers.map((m: any) => (
+              <DropdownMenuCheckboxItem
+                key={m.user_id}
+                checked={assigned.includes(m.user_id)}
+                onCheckedChange={() => toggle(m.user_id, assigned.includes(m.user_id))}
+              >
+                {m.profiles?.full_name ?? m.profiles?.email ?? "—"}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
