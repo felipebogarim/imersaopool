@@ -109,7 +109,7 @@ function HomeComponent() {
                     <div className="mb-8 flex items-start justify-between">
                       <group.icon className="h-6 w-6 text-nl-gold" strokeWidth={1.5} />
                     </div>
-                    <h2 className="mb-6 text-4xl font-light leading-none tracking-tight text-white">{group.title}</h2>
+                    <h2 className="mb-6 text-3xl font-light leading-none tracking-tight text-white">{group.title}</h2>
                     <div className="mt-auto flex flex-col gap-2.5">
                       {group.links.map((link) => (
                         <Link
@@ -139,7 +139,7 @@ function HomeComponent() {
                 <span className="mb-8 block text-[10px] font-light uppercase tracking-[0.35em] text-nl-gold/80">
                   Decisão Central
                 </span>
-                <h2 className="text-4xl font-light leading-none tracking-tight text-white">
+                <h2 className="text-3xl font-light leading-none tracking-tight text-white">
                   Mapa de <br /> Ações
                 </h2>
                 <div className="mt-auto flex items-center gap-3">
