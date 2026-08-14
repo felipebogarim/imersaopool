@@ -40,72 +40,90 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
   const overdue = card.due_date && new Date(card.due_date) < now && !card.completed_at;
   const suggested = getSuggested(card);
 
+  // Mapeamento de cores para a faixa superior baseada na prioridade
+  const stripColorMap: Record<string, string> = {
+    baixa: "bg-emerald-500",
+    media: "bg-blue-500",
+    alta: "bg-amber-500",
+    urgente: "bg-rose-500",
+  };
+  const stripColor = stripColorMap[card.priority] || "bg-slate-300";
+
+  // Mapeamento de badges de status estilo CRM
+  const getStatusBadge = () => {
+    if (overdue) {
+      return (
+        <Badge className="bg-rose-500 text-white hover:bg-rose-600 border-none rounded-sm text-[10px] h-6 px-3">
+          Atrasada
+        </Badge>
+      );
+    }
+    if (card.completed_at) {
+      return (
+        <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-none rounded-sm text-[10px] h-6 px-3">
+          Concluída
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-none rounded-sm text-[10px] h-6 px-3">
+        Planejada
+      </Badge>
+    );
+  };
+
+  const formattedValue = (card.metadata as any)?.value 
+    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((card.metadata as any).value)
+    : "R$ 0,00";
+
+  const ownerName = meta?.members?.[0]?.profiles?.full_name || "Não atribuído";
+  const cardId = card.id.slice(0, 5).toUpperCase();
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        "cursor-pointer rounded-md border bg-background p-2.5 text-sm shadow-sm transition hover:shadow-md",
-        card.completed_at && "opacity-60",
-        isDragging && "rotate-2",
+        "cursor-pointer rounded-sm border-none bg-white p-4 text-sm shadow-sm transition hover:shadow-md",
+        card.completed_at && "opacity-80",
+        isDragging && "rotate-2 shadow-lg",
       )}
     >
-      {card.cover_color && <div className="mb-2 h-2 w-full rounded" style={{ background: card.cover_color }} />}
-      {meta?.labels && meta.labels.length > 0 && (
-        <div className="mb-1.5 flex flex-wrap gap-1">
-          {meta.labels.map((l: any, i: number) => (
-            <span key={i} className="h-1.5 w-8 rounded-full" style={{ background: l.color }} title={l.name} />
-          ))}
+      <div className="flex flex-col gap-3">
+        {/* Title and dots */}
+        <div className="flex items-start justify-between">
+          <div className="font-semibold text-emerald-600 text-xs">
+            {typeof (card.metadata as any)?.client_name === "string" 
+              ? (card.metadata as any).client_name 
+              : card.title}
+          </div>
+          <div className="text-slate-300 text-xs font-bold leading-none">...</div>
         </div>
-      )}
-      <div className="font-medium leading-snug">{card.title}</div>
-      {suggested.suggested && (
-        <Badge variant="outline" className={cn("mt-1.5 gap-1 text-[10px]", SUGGESTED_COLOR[suggested.status])}>
-          <Sparkles className="h-3 w-3" /> {SUGGESTED_LABEL[suggested.status]}
-        </Badge>
-      )}
-      {typeof (card.metadata as any)?.client_name === "string" && (
-        <Badge variant="secondary" className="mt-1.5 max-w-full truncate text-[10px]">
-          <Building2 className="mr-1 h-3 w-3 shrink-0" />
-          {(card.metadata as any).client_name}
-        </Badge>
-      )}
-      {typeof (card.metadata as any)?.rep_name === "string" && (
-        <Badge variant="secondary" className="ml-1 mt-1.5 max-w-full truncate text-[10px]">
-          <UserRound className="mr-1 h-3 w-3 shrink-0" />
-          {(card.metadata as any).rep_name}
-        </Badge>
-      )}
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px]", PRIORITY_COLOR[card.priority])}>
-          {PRIORITY_LABEL[card.priority]}
-        </Badge>
-        {card.due_date && (
-          <span className={cn("flex items-center gap-1", overdue && "font-medium text-red-600")}>
-            <Calendar className="h-3 w-3" />
-            {new Date(card.due_date).toLocaleDateString("pt-BR")}
-          </span>
-        )}
-        {(meta?.checklistTotal ?? 0) > 0 && (
-          <span className="flex items-center gap-0.5">
-            <CheckSquare className="h-3 w-3" /> {meta!.checklistDone}/{meta!.checklistTotal}
-          </span>
-        )}
-        {(meta?.comments ?? 0) > 0 && (
-          <span className="flex items-center gap-0.5"><MessageSquare className="h-3 w-3" /> {meta!.comments}</span>
-        )}
-        {(meta?.attachments ?? 0) > 0 && (
-          <span className="flex items-center gap-0.5"><Paperclip className="h-3 w-3" /> {meta!.attachments}</span>
-        )}
+
+        {/* Color Strip */}
+        <div className={cn("h-[3px] w-full rounded-full", stripColor)} />
+
+        {/* Responsible */}
+        <div className="space-y-0.5">
+          <div className="text-[10px] text-slate-400">Responsável: {ownerName}</div>
+          <div className="h-[1px] w-full bg-slate-100" />
+        </div>
+
+        {/* Value and Date */}
+        <div className="flex items-end justify-between">
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-slate-500">{formattedValue}</div>
+            <div className="text-[10px] text-slate-400"># {cardId}</div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            {card.due_date && (
+              <div className="text-[9px] text-slate-400">
+                Início {new Date(card.due_date).toLocaleDateString("pt-BR")}
+              </div>
+            )}
+            {getStatusBadge()}
+          </div>
+        </div>
       </div>
-      {meta?.members && meta.members.length > 0 && (
-        <div className="mt-2 flex -space-x-1">
-          {meta.members.slice(0, 4).map((m: any) => (
-            <div key={m.user_id} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary/20 text-[10px] font-medium">
-              {(m.profiles?.full_name ?? "?").split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
