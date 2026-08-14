@@ -151,7 +151,7 @@ function HomeComponent() {
                 </div>
               </Link>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="hidden grid-cols-2 gap-4">
                 {[
                   { label: "Comercial", icon: TrendingUp },
                   { label: "Produto", icon: Tag },
