@@ -108,7 +108,6 @@ function HomeComponent() {
                   >
                     <div className="mb-5 flex items-start justify-between">
                       <group.icon className="h-4 w-4 text-nl-gold" strokeWidth={1.5} />
-                      <span className="text-[9px] font-light uppercase tracking-[0.25em] text-white/30">Análise</span>
                     </div>
                     <h2 className="mb-4 text-sm font-normal tracking-wide text-white">{group.title}</h2>
                     <div className="flex flex-col gap-2.5">
