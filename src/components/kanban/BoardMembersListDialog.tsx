@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Board, KCard, KList } from "@/lib/kanban-types";
 import { exportMemberActionsPdf, shareOnWhatsApp, shareViaEmail } from "@/lib/kanban-member-pdf";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MemberActionsPanel } from "./MemberActionsPanel";
+import { fetchAllKanbanReps } from "@/lib/kanban-reps";
 
 interface Props {
   board: Board;
@@ -38,23 +39,31 @@ interface Member {
 export function BoardMembersListDialog({ board, lists, cards, open, onOpenChange }: Props) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
+  // Buscar todos os representantes para obter telefones e e-mails se necessário
+  const { data: reps = [] } = useQuery({
+    queryKey: ["kanban-reps-full"],
+    queryFn: fetchAllKanbanReps,
+    enabled: open,
+  });
+
   // Derivar membros dos cards do board
   const members = useMemo(() => {
     const map = new Map<string, Member>();
 
-    // 1. Membros vinculados via kanban_card_members (Perfis)
-    // Para simplificar, vamos buscar os nomes dos membros associados aos cards deste board
-    // Idealmente faríamos um join, mas para o MVP vamos usar o que temos nos cards e metadados
-    
     cards.forEach(card => {
       const meta = (card.metadata || {}) as any;
       
       // Representante vinculado
       if (meta.rep_id && meta.rep_name) {
+        const repData = reps.find(r => r.id === meta.rep_id);
         map.set(`rep-${meta.rep_id}`, {
           id: meta.rep_id,
           name: meta.rep_name,
-          type: "representative"
+          type: "representative",
+          // Email e telefone viriam da tabela representatives (nomeada como email, celular etc)
+          // Assumindo campos padrão se existirem
+          email: (repData as any)?.email,
+          phone: (repData as any)?.celular || (repData as any)?.telefone
         });
       }
 
@@ -69,7 +78,7 @@ export function BoardMembersListDialog({ board, lists, cards, open, onOpenChange
     });
 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [cards]);
+  }, [cards, reps]);
 
   const handleDownloadPdf = (member: Member) => {
     const memberCards = cards.filter(c => {
@@ -80,8 +89,7 @@ export function BoardMembersListDialog({ board, lists, cards, open, onOpenChange
   };
 
   const handleShareWhatsApp = (member: Member) => {
-    // Busca telefone se for representante, ou placeholder
-    shareOnWhatsApp("", member.name, board.name);
+    shareOnWhatsApp(member.phone || "", member.name, board.name);
   };
 
   const handleShareEmail = (member: Member) => {
@@ -163,5 +171,3 @@ export function BoardMembersListDialog({ board, lists, cards, open, onOpenChange
     </>
   );
 }
-
-import { useMemo } from "react";
