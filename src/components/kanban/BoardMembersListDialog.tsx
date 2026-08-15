@@ -157,7 +157,7 @@ export function BoardMembersListDialog({ board, lists, cards, open, onOpenChange
           })}
           lists={lists}
           open={!!selectedMember}
-          onOpenChange={(o) => !o && setSelectedMember(null)}
+          onOpenChange={(o: boolean) => !o && setSelectedMember(null)}
         />
       )}
     </>
