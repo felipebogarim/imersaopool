@@ -613,6 +613,17 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
   const [memberTerm, setMemberTerm] = useState("");
   const [respTerm, setRespTerm] = useState("");
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["kanban-all-profiles"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+      return data ?? [];
+    },
+  });
+
   const { data: wsMembers = [] } = useQuery({
     queryKey: ["kanban-ws-members", workspaceId],
     queryFn: async () => {
@@ -673,9 +684,9 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
 
   const responsibleDisplayName = cardMeta.responsible_name || responsibleId || "Definir responsável";
 
-  const filteredWsMembersResp = respTerm.trim().toLowerCase() 
-    ? wsMembers.filter((m: any) => (m.profiles?.full_name ?? "").toLowerCase().includes(respTerm.toLowerCase()) || (m.profiles?.email ?? "").toLowerCase().includes(respTerm.toLowerCase()))
-    : wsMembers;
+  const filteredAllUsersResp = respTerm.trim().toLowerCase() 
+    ? allUsers.filter((u: any) => (u.full_name ?? "").toLowerCase().includes(respTerm.toLowerCase()) || (u.email ?? "").toLowerCase().includes(respTerm.toLowerCase()))
+    : allUsers;
 
   const filteredRepsResp = respTerm.trim().toLowerCase()
     ? reps.filter((r) => (r.nome ?? "").toLowerCase().includes(respTerm.toLowerCase()))
@@ -717,20 +728,20 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
                 </Button>
               )}
               
-              {filteredWsMembersResp.length > 0 && (
+              {filteredAllUsersResp.length > 0 && (
                 <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Usuários</div>
               )}
-              {filteredWsMembersResp.map((m: any) => (
+              {filteredAllUsersResp.map((u: any) => (
                 <button
-                  key={m.user_id}
-                  onClick={() => setResponsible(m.user_id, m.profiles?.full_name || m.profiles?.email)}
+                  key={u.id}
+                  onClick={() => setResponsible(u.id, u.full_name || u.email)}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-[13px] hover:bg-accent",
-                    responsibleId === m.user_id && "bg-accent"
+                    responsibleId === u.id && "bg-accent"
                   )}
                 >
                   <User className="h-3.5 w-3.5 opacity-50" />
-                  <span className="truncate">{m.profiles?.full_name || m.profiles?.email}</span>
+                  <span className="truncate">{u.full_name || u.email}</span>
                 </button>
               ))}
 
