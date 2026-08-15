@@ -20,6 +20,7 @@ import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { NewCardDialog, type NewCardClient } from "@/components/kanban/NewCardDialog";
 import { CardDetailDialog } from "@/components/kanban/CardDetailDialog";
 import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
+import { BoardMembersListDialog } from "@/components/kanban/BoardMembersListDialog";
 import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDialog";
 import { logActivity } from "@/lib/kanban-activity";
 import { runAutomationsForMove } from "@/lib/kanban-automations";
@@ -42,7 +43,8 @@ function BoardPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [openMembers, setOpenMembers] = useState(false);
+  const [openSettingsMembers, setOpenSettingsMembers] = useState(false);
+  const [openExecutionMembers, setOpenExecutionMembers] = useState(false);
   const [openAutomations, setOpenAutomations] = useState(false);
   const [openCardId, setOpenCardId] = useState<string | null>(search.card ?? null);
 
@@ -178,8 +180,11 @@ function BoardPage() {
           <h2 className="font-semibold">{board?.name ?? "Board"}</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenMembers(true)}>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenExecutionMembers(true)}>
             <Users className="h-4 w-4" /> Membros
+          </Button>
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenSettingsMembers(true)}>
+            <Users className="h-4 w-4" /> Workspace
           </Button>
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenAutomations(true)}>
             <Zap className="h-4 w-4" /> Automações
@@ -230,7 +235,16 @@ function BoardPage() {
           }}
         />
       )}
-      {board && <BoardMembersDialog board={board} open={openMembers} onOpenChange={setOpenMembers} />}
+      {board && (
+        <BoardMembersListDialog 
+          board={board} 
+          lists={lists} 
+          cards={cards} 
+          open={openExecutionMembers} 
+          onOpenChange={setOpenExecutionMembers} 
+        />
+      )}
+      {board && <BoardMembersDialog board={board} open={openSettingsMembers} onOpenChange={setOpenSettingsMembers} />}
       {board && <BoardAutomationsDialog board={board} lists={lists} open={openAutomations} onOpenChange={setOpenAutomations} />}
     </div>
   );
