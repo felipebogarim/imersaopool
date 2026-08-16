@@ -64,15 +64,15 @@ function HomeComponent() {
                   <div className="h-px w-10 bg-nl-gold" />
                   <span className="text-[11px] font-light uppercase tracking-[0.45em] text-white/45">Newline</span>
                 </div>
-                <h1 className="text-5xl font-light leading-[1.05] tracking-tight md:text-7xl">
-                  Gestão <span className="text-nl-gold">Inteligente</span>
+                <h1 className="text-3xl font-light leading-[1.05] tracking-tight md:text-5xl">
+                  Dados e tomada de <span className="text-nl-gold">decisão.</span>
                 </h1>
                 <p className="max-w-xl text-base font-light text-white/55 md:text-lg">
                   Dados e indicadores para potencializar a operação comercial Newline.
                 </p>
               </div>
 
-              {/* NÍVEL 1: ÁREAS DE ANÁLISE */}
+              {/* NÍVEL 1: DADOS E TOMADA DE DECISÃO. */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
                   {
