@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
 import { cn } from "@/lib/utils";
+import { GrowUpSaudeLogo } from "@/components/Brand";
+
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, type FarolStatus } from "@/lib/performance-farol";
 
 const ICONES = [MessageSquare, Eye, BarChart3, Users, Search, Tag, ListChecks, Settings2];
@@ -197,7 +199,12 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                     : "border-border bg-card text-muted-foreground group-hover:border-primary/60 group-hover:text-primary"
                 }`}
               >
-                <Icon className="h-[18px] w-[18px]" />
+                {e.id === "performance" ? (
+                  <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                ) : (
+                  <Icon className="h-[18px] w-[18px]" />
+                )}
+
                 <span
                   className={`absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold ${
                     on ? "bg-background text-primary" : "bg-muted text-muted-foreground"
@@ -252,8 +259,13 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                     on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
                   }`}
                 >
-                  <Icon className="h-[18px] w-[18px]" />
+                  {e.id === "performance" ? (
+                    <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                  ) : (
+                    <Icon className="h-[18px] w-[18px]" />
+                  )}
                 </span>
+
                 <span className="min-w-0 pt-1">
                   <span className={`block text-xs font-semibold uppercase tracking-wide ${on ? "text-foreground" : "text-muted-foreground"}`}>
                     {e.numero}. {e.titulo}
@@ -310,11 +322,16 @@ function EtapaDetalhe({
               Etapa {etapa.numero} de {total}
             </p>
             <h2 className="mt-1 flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-                <Icon className="h-5 w-5" />
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary overflow-hidden">
+                {etapa.id === "performance" ? (
+                  <GrowUpSaudeLogo className="h-6 w-auto" />
+                ) : (
+                  <Icon className="h-5 w-5" />
+                )}
               </span>
               {etapa.titulo}
             </h2>
+
             <p className="mt-3 text-sm font-medium text-primary">{etapa.frase}</p>
           </div>
           {etapa.to ? (
