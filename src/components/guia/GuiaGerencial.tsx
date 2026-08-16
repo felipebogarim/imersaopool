@@ -285,6 +285,8 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
 function Bloco({
   icon: Icon, titulo, children, tone = "card",
 }: { icon: any; titulo: string; children: React.ReactNode; tone?: "card" | "inset" }) {
+  const displayTitle = titulo === "O que você encontrará" ? "Dados e tomada de decisão." : titulo;
+
   return (
     <div className={`${tone === "inset" ? "surface-inset" : "surface"} rounded-xl p-5`}>
       <div className="flex items-center gap-2 mb-3">

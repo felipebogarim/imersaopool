@@ -72,7 +72,7 @@ function HomeComponent() {
                 </p>
               </div>
 
-              {/* NÍVEL 1: ÁREAS DE ANÁLISE */}
+              {/* NÍVEL 1: DADOS E TOMADA DE DECISÃO. */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
                   {
