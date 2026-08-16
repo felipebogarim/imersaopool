@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { BrandLogo } from "@/components/Brand";
+import { BrandLogo, PoolFlowLogo } from "@/components/Brand";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,11 +147,18 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <Link to="/" className="flex justify-center mb-8"><BrandLogo /></Link>
-        <div className="surface rounded-2xl p-6 sm:p-8">
+      <div className="w-full max-w-md text-center">
+        <Link to="/" className="inline-flex justify-center mb-8">
+          {emailConvite?.toLowerCase().includes("flow") || emailConvite?.toLowerCase().includes("crm") ? (
+            <PoolFlowLogo className="h-12 w-auto" />
+          ) : (
+            <BrandLogo />
+          )}
+        </Link>
+        <div className="surface rounded-2xl p-6 sm:p-8 text-left">
           <h1 className="text-2xl font-bold mb-1">Acessar plataforma</h1>
           <p className="text-sm text-muted-foreground mb-6">Imersão Comercial Pool</p>
+
 
           <Button onClick={signInGoogle} variant="outline" className="w-full mb-4">
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path fill="#fff" d="M21.35 11.1h-9.17v2.96h5.27c-.23 1.5-1.7 4.4-5.27 4.4-3.17 0-5.76-2.62-5.76-5.86s2.59-5.86 5.76-5.86c1.8 0 3.01.77 3.7 1.43l2.52-2.43C16.65 4.27 14.6 3.3 12.18 3.3 6.96 3.3 2.73 7.5 2.73 12.6S6.96 21.9 12.18 21.9c6.5 0 9.17-4.55 9.17-7.99 0-.6-.07-1.05-.18-1.5z"/></svg>
