@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { PoolFlowLogo } from "@/components/Brand";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
@@ -23,6 +24,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/tarefas/")({
   head: () => ({ meta: [{ title: "Gestão de Tarefas — PoolFlux" }] }),
+
   component: TarefasPage,
 });
 
@@ -130,12 +132,17 @@ function BoardsView() {
           <section key={ws.id}>
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded" style={{ background: ws.color ?? "#3B82F6" }} />
+                {ws.name.toLowerCase().includes("marketing") || ws.name.toLowerCase().includes("flow") ? (
+                  <PoolFlowLogo className="h-8 w-auto grayscale brightness-200" />
+                ) : (
+                  <div className="h-8 w-8 rounded" style={{ background: ws.color ?? "#3B82F6" }} />
+                )}
                 <div>
                   <h3 className="font-semibold">{ws.name}</h3>
                   {ws.description && <p className="text-xs text-muted-foreground">{ws.description}</p>}
                 </div>
               </div>
+
               <div className="flex items-center gap-2">
                 <Dialog open={openNewBoard === ws.id} onOpenChange={(o) => setOpenNewBoard(o ? ws.id : null)}>
                   <DialogTrigger asChild>
