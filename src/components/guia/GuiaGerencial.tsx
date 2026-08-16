@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
 import { cn } from "@/lib/utils";
-import { GrowUpSaudeLogo } from "@/components/Brand";
+import { GrowUpSaudeLogo, JornadaProdutosLogo, PoolFlowLogo } from "@/components/Brand";
 
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, type FarolStatus } from "@/lib/performance-farol";
 
@@ -201,6 +201,10 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
               >
                 {e.id === "performance" ? (
                   <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                ) : e.id === "visoes-consolidadas" ? (
+                  <JornadaProdutosLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                ) : e.id === "tarefas" ? (
+                  <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                 ) : (
                   <Icon className="h-[18px] w-[18px]" />
                 )}
@@ -261,6 +265,10 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                 >
                   {e.id === "performance" ? (
                     <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                  ) : e.id === "visoes-consolidadas" ? (
+                    <JornadaProdutosLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                  ) : e.id === "tarefas" ? (
+                    <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                   ) : (
                     <Icon className="h-[18px] w-[18px]" />
                   )}
@@ -328,6 +336,10 @@ function EtapaDetalhe({
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary overflow-hidden">
                 {etapa.id === "performance" ? (
                   <GrowUpSaudeLogo className="h-6 w-auto" />
+                ) : etapa.id === "visoes-consolidadas" ? (
+                  <JornadaProdutosLogo className="h-6 w-auto" />
+                ) : etapa.id === "tarefas" ? (
+                  <PoolFlowLogo className="h-6 w-auto" />
                 ) : (
                   <Icon className="h-5 w-5" />
                 )}
