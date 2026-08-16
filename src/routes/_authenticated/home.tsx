@@ -1,16 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, FileSearch, Tag, Map as MapIcon, ArrowRight, Target, BarChart3, Settings2 } from "lucide-react";
+import { GrowUpSaudeLogo, JornadaProdutosLogo, PoolFlowLogo } from "@/components/Brand";
 import backgroundVideoAsset from "@/assets/background-video.mp4.asset.json";
 import newlineLogo from "@/assets/newline-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
-      { title: "Gestão Inteligente — PoolFlux" },
+      { title: "Dados e tomada de decisão. — PoolFlux" },
       { name: "description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações em um único fluxo de decisão." },
-      { property: "og:title", content: "Gestão Inteligente — PoolFlux" },
+      { property: "og:title", content: "Dados e tomada de decisão. — PoolFlux" },
       { property: "og:description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -81,7 +83,7 @@ function HomeComponent() {
                       { label: "Performance Reps", to: "/representantes/performance" },
                       { label: "BI Clientes", to: "/performance/bi-clientes" },
                     ],
-                    icon: BarChart3,
+                    icon: GrowUpSaudeLogo,
                   },
                   {
                     title: "Imersões",
@@ -90,7 +92,7 @@ function HomeComponent() {
                       { label: "Imersões Campo", to: "/visao-imersao-2" },
                       { label: "Consolidados", to: "/sintese/tipos" },
                     ],
-                    icon: Target,
+                    icon: JornadaProdutosLogo,
                   },
                   {
                     title: "Preços",
@@ -102,12 +104,13 @@ function HomeComponent() {
                     icon: Settings2,
                   },
                 ].map((group) => (
+
                   <div
                     key={group.title}
                     className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-md transition-all hover:border-nl-gold/40 hover:bg-white/[0.07]"
                   >
                     <div className="mb-8 flex items-start justify-between">
-                      <group.icon className="h-6 w-6 text-nl-gold" strokeWidth={1.5} />
+                      <group.icon className={cn("h-6 w-auto", group.title === "Preços" ? "text-nl-gold" : "")} />
                     </div>
                     <h2 className="mb-6 text-3xl font-light leading-none tracking-tight text-white">{group.title}</h2>
                     <div className="mt-auto flex flex-col gap-2.5">
@@ -152,9 +155,9 @@ function HomeComponent() {
 
               <div className="hidden grid-cols-2 gap-4">
                 {[
-                  { label: "Comercial", icon: TrendingUp },
-                  { label: "Produto", icon: Tag },
-                  { label: "Marketing", icon: FileSearch },
+                  { label: "Comercial", icon: PoolFlowLogo },
+                  { label: "Produto", icon: JornadaProdutosLogo },
+                  { label: "Marketing", icon: PoolFlowLogo },
                   { label: "Governança", icon: MapIcon },
                 ].map((item) => (
                   <Link
@@ -162,7 +165,8 @@ function HomeComponent() {
                     to="/mapa-acoes"
                     className="flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-6 text-center backdrop-blur-md transition-all hover:border-nl-gold/40 hover:bg-white/[0.07]"
                   >
-                    <item.icon className="h-4 w-4 text-white/40" strokeWidth={1.5} />
+                    <item.icon className="h-4 w-auto text-white/40" />
+
                     <h3 className="text-[11px] font-light uppercase tracking-[0.2em] text-white/80">{item.label}</h3>
                   </Link>
                 ))}
