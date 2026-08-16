@@ -291,7 +291,7 @@ function Bloco({
     <div className={`${tone === "inset" ? "surface-inset" : "surface"} rounded-xl p-5`}>
       <div className="flex items-center gap-2 mb-3">
         <Icon className="h-4 w-4 text-primary" />
-        <h3 className="text-xs font-semibold uppercase tracking-wider">{titulo}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider">{displayTitle}</h3>
       </div>
       {children}
     </div>
