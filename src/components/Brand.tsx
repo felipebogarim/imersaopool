@@ -1,6 +1,8 @@
 import { cn } from "@/lib/utils";
 import logo from "@/assets/poolflux-logo.png.asset.json";
 import poolflowLogo from "@/assets/poolflow-logo.png.asset.json";
+import jornadaLogo from "@/assets/logo_jornada_de_produtos.png.asset.json";
+
 
 export function BrandMark({ className }: { className?: string }) {
   return (
@@ -31,4 +33,15 @@ export function PoolFlowLogo({ className }: { className?: string }) {
     />
   );
 }
+
+export function JornadaProdutosLogo({ className }: { className?: string }) {
+  return (
+    <img
+      src={jornadaLogo.url}
+      alt="Jornada de Produtos Pool"
+      className={cn("h-8 w-auto object-contain", className)}
+    />
+  );
+}
+
 
