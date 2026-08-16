@@ -10,9 +10,9 @@ import newlineLogo from "@/assets/newline-logo.png.asset.json";
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
-      { title: "Gestão Inteligente — PoolFlux" },
+      { title: "Dados e tomada de decisão. — PoolFlux" },
       { name: "description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações em um único fluxo de decisão." },
-      { property: "og:title", content: "Gestão Inteligente — PoolFlux" },
+      { property: "og:title", content: "Dados e tomada de decisão. — PoolFlux" },
       { property: "og:description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

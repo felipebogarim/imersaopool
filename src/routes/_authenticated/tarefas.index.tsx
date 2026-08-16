@@ -132,10 +132,11 @@ function BoardsView() {
           <section key={ws.id}>
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {ws.name.toLowerCase().includes("marketing") || ws.name.toLowerCase().includes("flow") ? (
+                {ws.name.toLowerCase().includes("marketing") || ws.name.toLowerCase().includes("flow") || ws.name.toLowerCase().includes("crm") ? (
                   <PoolFlowLogo className="h-8 w-auto grayscale brightness-200" />
-                ) : ws.name.toLowerCase().includes("jornada") && ws.name.toLowerCase().includes("produtos") ? (
+                ) : (ws.name.toLowerCase().includes("jornada") && ws.name.toLowerCase().includes("produtos")) || ws.name.toLowerCase().includes("produto") ? (
                   <JornadaProdutosLogo className="h-8 w-auto grayscale brightness-200" />
+
                 ) : (
                   <div className="h-8 w-8 rounded" style={{ background: ws.color ?? "#3B82F6" }} />
                 )}
