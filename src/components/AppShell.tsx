@@ -4,8 +4,9 @@ import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrandMark } from "@/components/Brand";
+import { BrandMark, PoolFlowLogo } from "@/components/Brand";
 import newlineLogo from "@/assets/newline-logo.png.asset.json";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
@@ -319,11 +320,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="p-3 border-b border-sidebar-border flex items-center gap-3 h-[73px]">
           {workspace?.companyName?.toLowerCase().includes("newline") ? (
             <img src={newlineLogo.url} alt="Newline" className="h-8 w-auto shrink-0 object-contain" />
+          ) : workspace?.companyName?.toLowerCase().includes("flow") ? (
+            <PoolFlowLogo className="h-8 shrink-0" />
           ) : (
             <BrandMark className="h-8 shrink-0" />
           )}
           <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>Imersões Comerciais</p>
         </div>
+
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
           {workspace?.isComercialOnly ? (
             <NavItem
@@ -407,11 +411,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2 min-w-0">
             {workspace?.companyName?.toLowerCase().includes("newline") ? (
               <img src={newlineLogo.url} alt="Newline" className="h-6 w-auto shrink-0 object-contain" />
+            ) : workspace?.companyName?.toLowerCase().includes("flow") ? (
+              <PoolFlowLogo className="h-6 shrink-0" />
             ) : (
               <BrandMark className="h-6 shrink-0" />
             )}
             <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
           </div>
+
           <div className="ml-auto">
             <UserMenu
               name={workspace?.userName ?? "Minha conta"}
