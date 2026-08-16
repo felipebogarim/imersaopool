@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PoolFlowLogo } from "@/components/Brand";
+import { PoolFlowLogo, JornadaProdutosLogo } from "@/components/Brand";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
@@ -134,6 +134,8 @@ function BoardsView() {
               <div className="flex items-center gap-3">
                 {ws.name.toLowerCase().includes("marketing") || ws.name.toLowerCase().includes("flow") ? (
                   <PoolFlowLogo className="h-8 w-auto grayscale brightness-200" />
+                ) : ws.name.toLowerCase().includes("jornada") && ws.name.toLowerCase().includes("produtos") ? (
+                  <JornadaProdutosLogo className="h-8 w-auto grayscale brightness-200" />
                 ) : (
                   <div className="h-8 w-8 rounded" style={{ background: ws.color ?? "#3B82F6" }} />
                 )}
