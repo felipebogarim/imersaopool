@@ -45,7 +45,7 @@ export function GuiaGerencial() {
       <section className="border-b border-border bg-gradient-to-b from-muted/60 via-background to-background">
         <div className="mx-auto max-w-[1320px] px-4 sm:px-8 pt-12 pb-8 text-center">
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">
-            Guia de Uso <span className="text-primary">Gerencial</span>
+            Dados e tomada de <span className="text-primary">decisão.</span>
           </h1>
           <p className="mt-3 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Siga a trilha para transformar informações comerciais em decisões, prioridades e ações.
