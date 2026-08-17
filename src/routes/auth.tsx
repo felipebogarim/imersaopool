@@ -61,7 +61,7 @@ function AuthPage() {
         return;
       }
 
-      if (data.session) navigate({ to: "/dashboard" });
+      if (data.session) navigate({ to: "/home" });
     }
 
     prepareAuth();
@@ -97,7 +97,7 @@ function AuthPage() {
 
       toast.success("Bem-vindo!");
       setLoading(false);
-      void navigate({ to: "/dashboard", replace: true }).catch((navigationError) => {
+      void navigate({ to: "/home", replace: true }).catch((navigationError) => {
         const message = navigationError instanceof Error
           ? navigationError.message
           : "Não foi possível abrir o painel.";
@@ -115,7 +115,7 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: window.location.origin + "/dashboard", data: { full_name: fullName } },
+      options: { emailRedirectTo: window.location.origin + "/home", data: { full_name: fullName } },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -129,7 +129,7 @@ function AuthPage() {
       // Some flows return an error shape even when session was set. Check session first.
       const { data: sess } = await supabase.auth.getSession();
       if (sess.session) {
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/home" });
         return;
       }
       if (result?.error) {

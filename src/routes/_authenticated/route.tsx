@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (roleList.includes("admin") && gate.mustEnrollMfa) {
         throw redirect({ to: "/admin/mfa", replace: true });
       }
-      throw redirect({ to: "/dashboard", replace: true });
+      throw redirect({ to: "/home", replace: true });
     }
 
     if (path === "/nda" && gate.ndaAcceptedAt) {
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (roleList.includes("admin") && gate.mustEnrollMfa) {
         throw redirect({ to: "/admin/mfa", replace: true });
       }
-      throw redirect({ to: "/dashboard", replace: true });
+      throw redirect({ to: "/home", replace: true });
     }
 
     // Aceite dos Termos de Uso (versão vigente) — bloqueia app até aceitar
