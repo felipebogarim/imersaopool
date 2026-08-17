@@ -196,7 +196,7 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                 className={`relative grid h-11 w-11 place-items-center rounded-full border transition-all duration-300 group-hover:scale-110 ${
                   on
                     ? "border-primary bg-primary text-primary-foreground shadow-[0_0_0_6px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
-                    : "border-border bg-card text-muted-foreground group-hover:border-primary/60 group-hover:text-primary"
+                    : "border-border bg-card text-nl-gold group-hover:border-nl-gold/60 group-hover:text-nl-gold"
                 }`}
               >
                 {e.id === "performance" ? (
@@ -206,7 +206,7 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                 ) : e.id === "tarefas" ? (
                   <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                 ) : (
-                  <Icon className="h-[18px] w-[18px]" />
+                    <Icon className="h-[18px] w-[18px] text-nl-gold" />
                 )}
 
                 <span
@@ -260,7 +260,7 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
               >
                 <span
                   className={`relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-full border transition-colors ${
-                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-nl-gold"
                   }`}
                 >
                   {e.id === "performance" ? (
@@ -270,7 +270,7 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                   ) : e.id === "tarefas" ? (
                     <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                   ) : (
-                    <Icon className="h-[18px] w-[18px]" />
+                    <Icon className="h-[18px] w-[18px] text-nl-gold" />
                   )}
                 </span>
 
@@ -299,7 +299,7 @@ function Bloco({
   return (
     <div className={`${tone === "inset" ? "surface-inset" : "surface"} rounded-xl p-5`}>
       <div className="flex items-center gap-2 mb-3">
-        <Icon className="h-4 w-4 text-primary" />
+        <Icon className="h-4 w-4 text-nl-gold" />
         <h3 className="text-xs font-semibold uppercase tracking-wider">{displayTitle}</h3>
       </div>
       {children}
@@ -341,13 +341,13 @@ function EtapaDetalhe({
                 ) : etapa.id === "tarefas" ? (
                   <PoolFlowLogo className="h-6 w-auto" />
                 ) : (
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-5 w-5 text-nl-gold" />
                 )}
               </span>
               {etapa.titulo}
             </h2>
 
-            <p className="mt-3 text-sm font-medium text-primary">{etapa.frase}</p>
+            <p className="mt-3 text-sm font-medium text-nl-gold">{etapa.frase}</p>
           </div>
           {etapa.to ? (
             <Button asChild className="gap-2">
