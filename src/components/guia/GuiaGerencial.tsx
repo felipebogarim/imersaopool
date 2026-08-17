@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
-  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
+  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks, TrendingUp,
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
 import { cn } from "@/lib/utils";
