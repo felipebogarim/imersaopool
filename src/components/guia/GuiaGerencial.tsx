@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, BarChart3, Compass, ExternalLink, Eye, Flag,
-  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks,
+  LayoutGrid, Lightbulb, MessageSquare, Search, Settings2, Tag, Users, ListChecks, TrendingUp,
 } from "lucide-react";
 import { ENTREVISTA_CAPITULOS, GUIA_ETAPAS, VISAO_REP_GRUPOS, type GuiaEtapa } from "@/lib/guia-gerencial";
 import { cn } from "@/lib/utils";
@@ -200,9 +200,9 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                 }`}
               >
                 {e.id === "performance" ? (
-                  <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                  <BarChart3 className={cn("h-[18px] w-[18px]", on ? "text-primary-foreground" : "")} />
                 ) : e.id === "visoes-consolidadas" ? (
-                  <JornadaProdutosLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                  <TrendingUp className={cn("h-[18px] w-[18px]", on ? "text-primary-foreground" : "")} />
                 ) : e.id === "tarefas" ? (
                   <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                 ) : (
@@ -264,9 +264,9 @@ function TrilhaFluida({ ativo, onSelect }: { ativo: number | null; onSelect: (i:
                   }`}
                 >
                   {e.id === "performance" ? (
-                    <GrowUpSaudeLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                    <BarChart3 className={cn("h-[18px] w-[18px]", on ? "text-primary-foreground" : "")} />
                   ) : e.id === "visoes-consolidadas" ? (
-                    <JornadaProdutosLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
+                    <TrendingUp className={cn("h-[18px] w-[18px]", on ? "text-primary-foreground" : "")} />
                   ) : e.id === "tarefas" ? (
                     <PoolFlowLogo className={cn("h-[18px] w-auto", on ? "brightness-0 invert" : "")} />
                   ) : (
@@ -335,9 +335,9 @@ function EtapaDetalhe({
             <h2 className="mt-1 flex items-center gap-3 text-2xl sm:text-3xl font-bold tracking-tight">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary overflow-hidden">
                 {etapa.id === "performance" ? (
-                  <GrowUpSaudeLogo className="h-6 w-auto" />
+                  <BarChart3 className="h-6 w-6" />
                 ) : etapa.id === "visoes-consolidadas" ? (
-                  <JornadaProdutosLogo className="h-6 w-auto" />
+                  <TrendingUp className="h-6 w-6" />
                 ) : etapa.id === "tarefas" ? (
                   <PoolFlowLogo className="h-6 w-auto" />
                 ) : (
