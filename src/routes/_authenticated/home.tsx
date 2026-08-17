@@ -110,7 +110,7 @@ function HomeComponent() {
                     className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-md transition-all hover:border-nl-gold/40 hover:bg-white/[0.07]"
                   >
                     <div className="mb-8 flex items-start justify-between">
-                      <group.icon className={cn("h-6 w-auto", group.title === "Preços" ? "text-nl-gold" : "")} />
+                      <group.icon className="h-6 w-auto text-nl-gold" />
                     </div>
                     <h2 className="mb-6 text-3xl font-light leading-none tracking-tight text-white">{group.title}</h2>
                     <div className="mt-auto flex flex-col gap-2.5">
