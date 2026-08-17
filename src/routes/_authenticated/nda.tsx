@@ -42,7 +42,7 @@ function NdaPage() {
     clearAuthGateCache();
     toast.success("Termo aceito");
     await router.invalidate();
-    await navigate({ to: "/dashboard", replace: true });
+    await navigate({ to: "/home", replace: true });
     setSaving(false);
   }
 
