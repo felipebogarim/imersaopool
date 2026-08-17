@@ -23,18 +23,19 @@ export function useNavAccess(): NavAccess {
       const base = new Set<string>();
       const isAdmin = roles.includes("admin");
       if (isAdmin) {
-        ALL_NAV_KEYS.forEach(key => base.add(key));
-      }
-
-      // Adiciona 'home' explicitamente para todos se não estiver bloqueado por override
-      base.add("home");
+        ALL_NAV_KEYS.forEach((key) => base.add(key));
       } else if (roles.length) {
         const { data: perms } = await supabase
           .from("role_permissions")
           .select("role, nav_key, allowed")
           .in("role", roles as any);
-        for (const p of (perms ?? []) as any[]) if (p.allowed) base.add(p.nav_key as string);
+        for (const p of (perms ?? []) as any[]) {
+          if (p.allowed) base.add(p.nav_key as string);
+        }
       }
+
+      // 'home' deve estar sempre liberada por padrão
+      base.add("home");
 
       // override individual do usuário (libera ou bloqueia por pessoa)
       const { data: userPerms } = await supabase
