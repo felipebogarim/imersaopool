@@ -83,7 +83,7 @@ function HomeComponent() {
                       { label: "Performance Reps", to: "/representantes/performance" },
                       { label: "BI Clientes", to: "/performance/bi-clientes" },
                     ],
-                    icon: GrowUpSaudeLogo,
+                    icon: BarChart3,
                   },
                   {
                     title: "Imersões",
@@ -92,7 +92,7 @@ function HomeComponent() {
                       { label: "Imersões Campo", to: "/visao-imersao-2" },
                       { label: "Consolidados", to: "/sintese/tipos" },
                     ],
-                    icon: JornadaProdutosLogo,
+                    icon: TrendingUp,
                   },
                   {
                     title: "Preços",
