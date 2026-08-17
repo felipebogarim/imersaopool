@@ -121,7 +121,7 @@ function DefinirSenhaPage() {
       toast.success("Senha criada com sucesso");
       // Primeiro acesso: garante que nada de uma versão antiga siga em cache.
       await purgeAppCaches();
-      window.location.replace("/dashboard");
+      window.location.replace("/home");
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar a senha");
     } finally {

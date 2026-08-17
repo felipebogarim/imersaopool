@@ -74,7 +74,7 @@ function EmpresasPage() {
     const { error } = await supabase.from("profiles").update({ active_company_id: id }).eq("id", me.uid);
     if (error) return toast.error(error.message);
     await qc.invalidateQueries();
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/home" });
   }
 
   async function lookupCep() {

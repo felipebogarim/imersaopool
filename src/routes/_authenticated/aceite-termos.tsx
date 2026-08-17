@@ -40,7 +40,7 @@ function AceitePage() {
       clearAuthGateCache();
       toast.success("Aceite registrado.");
       await router.invalidate();
-      await navigate({ to: "/dashboard", replace: true });
+      await navigate({ to: "/home", replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível registrar seu aceite. Verifique sua conexão e tente novamente.");
     } finally {
