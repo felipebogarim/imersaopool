@@ -24,6 +24,10 @@ export function useNavAccess(): NavAccess {
       const isAdmin = roles.includes("admin");
       if (isAdmin) {
         ALL_NAV_KEYS.forEach(key => base.add(key));
+      }
+
+      // Adiciona 'home' explicitamente para todos se não estiver bloqueado por override
+      base.add("home");
       } else if (roles.length) {
         const { data: perms } = await supabase
           .from("role_permissions")

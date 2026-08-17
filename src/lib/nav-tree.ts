@@ -123,6 +123,7 @@ export const NAV_TREE: NavGroup[] = [
 
 /** Rotas sempre liberadas (fluxos obrigatórios / institucionais) */
 export const ALWAYS_ALLOWED = [
+  "/home",
   "/aceite-termos",
   "/termos-de-uso",
   "/nda",
