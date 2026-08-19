@@ -33,8 +33,9 @@ const arcPath = (from: number, to: number) => {
   return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${large} 1 ${p2.x} ${p2.y}`;
 };
 
-export function GaugeAtingimento({ valor, label }: { valor: number | null | undefined; label?: string }) {
+export function GaugeAtingimento({ valor, label, placeholder }: { valor: number | null | undefined; label?: string; placeholder?: string }) {
   const v = valor == null || Number.isNaN(valor) ? null : valor;
+
   
   // No gráfico, se o valor for < MIN, o ponteiro fica no MIN. 
   // Se for > MAX, fica no MAX.
@@ -126,9 +127,10 @@ export function GaugeAtingimento({ valor, label }: { valor: number | null | unde
       </svg>
       <div className="min-w-0">
         <p className={cn("text-3xl font-semibold leading-none tabular-nums", v !== null && needleColor.split(' ').find(c => c.startsWith('text-')))}>
-          {v == null ? "—" : `${v.toFixed(1).replace(".", ",")}%`}
+          {v == null ? (placeholder || "—") : `${v.toFixed(1).replace(".", ",")}%`}
         </p>
-        <p className="mt-1 text-[11px] text-muted-foreground">meta 100%</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">{v == null ? "performance indisponível" : "meta 100%"}</p>
+
       </div>
     </div>
   );
