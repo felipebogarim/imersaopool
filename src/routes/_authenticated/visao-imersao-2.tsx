@@ -392,19 +392,19 @@ function VisaoImersao2Page() {
 
   async function fetchClientCommercialData(clientId: string) {
     // Busca o cliente primeiro para ter a Razão Social canônica
-    const { data: client } = await supabase
+    const { data: clientInfo } = await supabase
       .from("clients")
       .select("razao_social, categoria, representative_id")
       .eq("id", clientId)
       .single();
 
-    if (!client) return { status: "not_found" };
+    if (!clientInfo) return { status: "not_found" };
 
     // Busca o BI mais recente pela Razão Social (o schema não tem client_id)
     const { data: biUpload } = await (supabase as any)
       .from("client_bi_uploads")
       .select("data, representative_id, razao_social")
-      .eq("razao_social", client.razao_social)
+      .eq("razao_social", clientInfo.razao_social)
       .eq("kind", "bi")
       .is("substituida_em", null)
       .order("created_at", { ascending: false })
@@ -412,13 +412,7 @@ function VisaoImersao2Page() {
       .maybeSingle();
 
     const biPayload = biUpload?.data as any;
-    
-    // Busca performance (caso o BI não tenha tudo ou para complementar)
-    const { data: client } = await supabase
-      .from("clients")
-      .select("razao_social, categoria, representative_id")
-      .eq("id", clientId)
-      .single();
+    const client = clientInfo;
 
     if (!biPayload && !client) return { status: "not_found" };
 
