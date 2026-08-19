@@ -654,7 +654,7 @@ function VisaoImersao2Page() {
             visao={visao}
             teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
             mode="imersao"
-            categoria={commercialData?.status === "linked" ? commercialData.categoria : null}
+            categoria={commercialData?.status === "linked" ? (commercialData as any).categoria : null}
           />
 
           {commercialData?.status === "ambiguous" && (
@@ -664,7 +664,7 @@ function VisaoImersao2Page() {
               <AlertDescription className="space-y-4">
                 <p>Encontramos mais de um cliente compatível com este relatório. Selecione o cadastro correto para vincular os dados de performance:</p>
                 <div className="grid gap-2 mt-2">
-                  {commercialData.candidates?.map((c: any) => (
+                  {commercialData?.status === "ambiguous" && (commercialData as any).candidates?.map((c: any) => (
                     <div key={c.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent transition-colors">
                       <div className="text-sm">
                         <p className="font-bold">{c.razao_social}</p>
@@ -697,8 +697,9 @@ function VisaoImersao2Page() {
         {/* 5. RESULTADO POR FAMÍLIA — o mesmo gráfico e a mesma fonte do BI do cliente. */}
         {commercialData?.status === "linked" ? (
           <ClientFamiliasChart
-            repId={commercialData.representativeId}
-            razaoSocial={commercialData.razaoSocial}
+            repId={(commercialData as any).representativeId}
+            razaoSocial={(commercialData as any).razaoSocial}
+
             companyId={null}
             filterFams={[]}
           />
@@ -732,7 +733,7 @@ function VisaoImersao2Page() {
 
         {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
         <AcoesComerciaisCliente
-          clientId={commercialData?.status === "linked" ? commercialData.clientId : null}
+          clientId={commercialData?.status === "linked" ? (commercialData as any).clientId : null}
           clientName={visao.metadata.client_name ?? null}
         />
 
@@ -744,7 +745,7 @@ function VisaoImersao2Page() {
             <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
             <div className="grid gap-6 text-xs md:grid-cols-2">
               <div className="space-y-2">
-                <p><strong>Cliente resolvido:</strong> {commercialData?.status === "linked" ? commercialData.clientId : "Não vinculado"}</p>
+                <p><strong>Cliente resolvido:</strong> {commercialData?.status === "linked" ? (commercialData as any).clientId : "Não vinculado"}</p>
                 <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
                 <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
                 <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
