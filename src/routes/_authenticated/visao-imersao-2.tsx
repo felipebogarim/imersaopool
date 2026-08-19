@@ -282,188 +282,164 @@ function VisaoImersao2Page() {
   }
 
 
-  // Busca dados comerciais reais do cliente resolvido
+  // 1. Busca vínculo persistente ou candidatos em caso de ambiguidade
   const clientName = visao?.metadata?.client_name;
-  const { data: commercialData } = useQuery({
-    queryKey: ["vi2-commercial", clientName],
+  const representativeName = visao?.metadata?.representative_name;
+
+  const { data: commercialData, refetch: refetchCommercial } = useQuery({
+    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName],
     enabled: !!clientName,
     queryFn: async () => {
-      // Normalização canônica para busca
-      const rawClientName = clientName!.trim();
-      const searchName = rawClientName
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toUpperCase();
-
-      const repName = visao?.metadata?.representative_name;
-      
-      // 1. TENTATIVA PRIORITÁRIA: Buscar na lista de performance do representante
-      if (repName) {
-        // Busca o representante pelo nome
-        const { data: reps } = await supabase
-          .from("representatives")
-          .select("id")
-          .or(`nome.ilike.%${repName.trim()}%,representacao.ilike.%${repName.trim()}%`)
-          .limit(1);
-          
-        if (reps?.length) {
-          const repId = reps[0].id;
-          
-          // Busca o upload de performance ativo (mais recente)
-          const { data: uploads } = await supabase
-            .from("rep_performance_uploads")
-            .select("id, periodo_label")
-            .eq("representative_id", repId)
-            .is("substituida_em", null)
-            .order("created_at", { ascending: false })
-            .limit(1);
-            
-          if (uploads?.length) {
-            const uploadId = uploads[0].id;
-            
-            // Busca o cliente nas linhas deste upload específico
-            const { data: perfRows } = await supabase
-              .from("rep_performance_rows")
-              .select("id, razao_social, categoria, total_pct, familia_pct")
-              .eq("upload_id", uploadId)
-              .limit(2000);
-              
-            if (perfRows?.length) {
-              const normalizeName = (value: unknown) => String(value ?? "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .replace(/\s+/g, " ")
-                .trim()
-                .toUpperCase();
-              const row = perfRows.find(item => normalizeName(item.razao_social) === searchName)
-                ?? perfRows.find(item => normalizeName(item.razao_social).includes(searchName) || searchName.includes(normalizeName(item.razao_social)));
-
-              if (!row) return null;
-
-              // Fonte canônica do gráfico: o mesmo upload exibido no BI do cliente.
-              const { data: clientBiUpload } = await (supabase as any)
-                .from("client_bi_uploads")
-                .select("data")
-                .eq("representative_id", repId)
-                .eq("razao_social", row.razao_social)
-                .eq("kind", "bi")
-                .is("substituida_em", null)
-                .order("created_at", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              const biPayload = clientBiUpload?.data as { geral?: number | null; categoria?: string | null; familias?: Array<{ familia?: string; atingimento?: number | null; farol?: string | null }> } | null;
-              const biFamilias = Array.isArray(biPayload?.familias) ? biPayload.familias : [];
-              const familias = biFamilias.length > 0
-                ? biFamilias.map(item => ({
-                    familia: String(item.familia ?? ""),
-                    pct: Math.abs(Number(item.atingimento ?? 0)) <= 1.5
-                      ? Number(item.atingimento ?? 0) * 100
-                      : Number(item.atingimento ?? 0),
-                    vendas: 0,
-                    meta: 0,
-                    status: item.farol ?? "normal",
-                  }))
-                : Object.entries(row.familia_pct || {}).map(([familia, ating]) => ({
-                    familia,
-                    pct: Math.abs(Number(ating ?? 0)) <= 1.5 ? Number(ating ?? 0) * 100 : Number(ating ?? 0),
-                    vendas: 0,
-                    meta: 0,
-                    status: "normal",
-                  }));
-
-              const resData = {
-                clientId: row.id,
-                clientsFound: 1,
-                categoria: row.categoria ?? biPayload?.categoria ?? null,
-                geralPct: biPayload?.geral != null
-                  ? (Math.abs(Number(biPayload.geral)) <= 1.5 ? Number(biPayload.geral) * 100 : Number(biPayload.geral))
-                  : (Math.abs(Number(row.total_pct ?? 0)) <= 1.5 ? Number(row.total_pct ?? 0) * 100 : Number(row.total_pct ?? 0)),
-                atingimentoPonderado: null as number | null,
-                periodoLabel: uploads[0].periodo_label || "1º Semestre 2026",
-                familias,
-                hasClientBi: biFamilias.length > 0,
-                representativeId: repId,
-                razaoSocial: row.razao_social,
-              };
-
-              // Recalcula o atingimento ponderado usando a regra canônica
-              if (resData.categoria && resData.familias.length > 0) {
-                const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
-                resData.atingimentoPonderado = calculateWeightedAtainment(
-                  resData.categoria, 
-                  resData.familias.map((f: any) => ({
-                    familia: f.familia,
-                    atingimento: f.pct
-                  }))
-                );
-              }
-
-              return resData;
-            }
-          }
+      // 1. PRIORIDADE: Vínculo já persistido no relatório
+      const reportId = avulso?.id;
+      if (reportId) {
+        const { data: savedReport } = await supabase
+          .from("field_immersion_v2_reports")
+          .select("structured_data")
+          .eq("id", reportId)
+          .single();
+        
+        const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
+        if (savedClientId) {
+          return await fetchClientCommercialData(savedClientId);
         }
       }
 
-      // 2. FALLBACK: Busca genérica na tabela de clientes e client_bi (lógica atual)
-      const { data: clients } = await supabase
+      // 2. BUSCA DE CANDIDATOS (CNPJ ou Nome)
+      const normalizedSearch = clientName!.trim().toUpperCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      const { data: candidates } = await supabase
         .from("clients")
-        .select("id, nome_fantasia, razao_social, categoria")
-        .or(`nome_fantasia.ilike.%${rawClientName}%,razao_social.ilike.%${rawClientName}%`)
+        .select(`
+          id, 
+          razao_social, 
+          nome_fantasia, 
+          cnpj, 
+          cidade, 
+          estado,
+          categoria,
+          representative_id,
+          representatives:representative_id (nome, representacao)
+        `)
+        .or(`razao_social.ilike.%${normalizedSearch}%,nome_fantasia.ilike.%${normalizedSearch}%`)
         .limit(10);
-      
-      if (!clients?.length) return null;
-      
-      // Tenta encontrar o melhor match
-      const exactMatch = clients.find(c => 
-        (c.nome_fantasia?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName) ||
-        (c.razao_social?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase() === searchName)
-      );
-      
-      const client = exactMatch || clients[0];
-      const clientId = client.id;
 
-      const { data: bi } = await (supabase as any)
-        .from("client_bi")
-        .select("respostas")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (!candidates || candidates.length === 0) return { status: "not_found" };
 
-      const biData = bi?.respostas?.__client_bi__;
-      
-      const resData = {
-        clientId,
-        clientsFound: clients.length,
-        categoria: client.categoria ?? null,
-        geralPct: biData?.geral != null ? Number(biData.geral) : null,
-        atingimentoPonderado: null as number | null,
-        periodoLabel: (biData?.periodo as string) || "1º Semestre 2026",
-        familias: (biData?.familias || []).map((f: any) => ({
-          familia: f.familia as string,
-          pct: Number(f.atingimento || 0),
-          vendas: Number(f.vendas || 0),
-          meta: Number(f.meta || 0),
-          status: f.status as string
-        }))
-      };
-
-      if (resData.categoria && resData.familias.length > 0) {
-        const { calculateWeightedAtainment } = await import("@/lib/performance-matriz.functions");
-        resData.atingimentoPonderado = calculateWeightedAtainment(
-          resData.categoria, 
-          resData.familias.map((f: any) => ({
-            familia: f.familia,
-            atingimento: f.pct
-          }))
-        );
+      // Se houver apenas um match exato ou único, vincula automaticamente
+      if (candidates.length === 1) {
+        return await fetchClientCommercialData(candidates[0].id);
       }
 
-      return resData;
+      // 3. AMBIGUIDADE: Retorna lista de candidatos para seleção manual
+      return { 
+        status: "ambiguous", 
+        candidates: candidates.map(c => ({
+          id: c.id,
+          razao_social: c.razao_social,
+          nome_fantasia: c.nome_fantasia,
+          cnpj: c.cnpj,
+          local: `${c.cidade || ""} / ${c.estado || ""}`,
+          representante: (c as any).representatives?.nome || (c as any).representatives?.representacao || "—",
+          categoria: c.categoria
+        }))
+      };
     }
   });
+
+  async function fetchClientCommercialData(clientId: string) {
+    // Busca o BI mais recente do cliente
+    const { data: biUpload } = await (supabase as any)
+      .from("client_bi_uploads")
+      .select("data, representative_id, razao_social")
+      .eq("client_id", clientId)
+      .eq("kind", "bi")
+      .is("substituida_em", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const biPayload = biUpload?.data as any;
+    
+    // Busca performance (caso o BI não tenha tudo ou para complementar)
+    const { data: client } = await supabase
+      .from("clients")
+      .select("razao_social, categoria, representative_id")
+      .eq("id", clientId)
+      .single();
+
+    if (!biPayload && !client) return { status: "not_found" };
+
+    const familias = Array.isArray(biPayload?.familias) 
+      ? biPayload.familias.map((item: any) => ({
+          familia: String(item.familia ?? ""),
+          pct: Math.abs(Number(item.atingimento ?? 0)) <= 1.5
+            ? Number(item.atingimento ?? 0) * 100
+            : Number(item.atingimento ?? 0),
+          status: item.farol ?? "normal",
+        }))
+      : [];
+
+    return {
+      status: "linked",
+      clientId,
+      razaoSocial: client?.razao_social || biUpload?.razao_social,
+      representativeId: client?.representative_id || biUpload?.representative_id,
+      categoria: client?.categoria || biPayload?.categoria,
+      geralPct: biPayload?.geral != null
+        ? (Math.abs(Number(biPayload.geral)) <= 1.5 ? Number(biPayload.geral) * 100 : Number(biPayload.geral))
+        : null,
+      periodoLabel: biPayload?.periodo || "1º Semestre 2026",
+      familias
+    };
+  }
+
+  async function confirmarVinculo(clientId: string) {
+    if (!avulso?.id) {
+      toast.error("Salve o relatório primeiro para vincular o cliente permanentemente.");
+      // Alternativa: Se for relatório novo, guardamos o ID no estado temporário do import
+      setAvulso(prev => prev ? {
+        ...prev,
+        data: {
+          ...prev.data,
+          resolved_client_id: clientId
+        }
+      } : null);
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      const { data: current } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("structured_data")
+        .eq("id", avulso.id)
+        .single();
+
+      const newData = {
+        ...(current?.structured_data as any || {}),
+        resolved_client_id: clientId,
+        resolved_at: new Date().toISOString(),
+        resolution_method: "manual"
+      };
+
+      const { error } = await supabase
+        .from("field_immersion_v2_reports")
+        .update({ structured_data: newData })
+        .eq("id", avulso.id);
+
+      if (error) throw error;
+      
+      toast.success("Vínculo comercial confirmado.");
+      refetchCommercial();
+    } catch (e: any) {
+      toast.error("Erro ao vincular: " + e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
 
   const perf = useMemo((): PerfResumo | null => {
     if (!commercialData || !('geralPct' in commercialData) || commercialData === null) return null;
@@ -678,32 +654,48 @@ function VisaoImersao2Page() {
             visao={visao}
             teia={<BrandPositioningRadarV2 atual={visao} comparaveis={comparaveis} />}
             mode="imersao"
-            categoria={(commercialData && 'categoria' in commercialData) ? commercialData.categoria : null}
+            categoria={commercialData?.status === "linked" ? commercialData.categoria : null}
           />
 
-          {commercialData && commercialData.clientsFound > 1 && (
-            <Alert variant="destructive">
+          {commercialData?.status === "ambiguous" && (
+            <Alert variant="destructive" className="bg-destructive/5">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Ambiguidade comercial</AlertTitle>
-              <AlertDescription>
-                Foram encontrados {commercialData.clientsFound} clientes com nomes similares. Os dados comerciais podem estar imprecisos.
+              <AlertDescription className="space-y-4">
+                <p>Encontramos mais de um cliente compatível com este relatório. Selecione o cadastro correto para vincular os dados de performance:</p>
+                <div className="grid gap-2 mt-2">
+                  {commercialData.candidates?.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent transition-colors">
+                      <div className="text-sm">
+                        <p className="font-bold">{c.razao_social}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {c.local} · Rep: {c.representante} · Categoria: {c.categoria || "—"}
+                        </p>
+                        {c.cnpj && <p className="text-[10px] text-muted-foreground">CNPJ: {c.cnpj}</p>}
+                      </div>
+                      <Button size="sm" onClick={() => confirmarVinculo(c.id)}>
+                        Confirmar vínculo
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </AlertDescription>
             </Alert>
           )}
 
-          {!commercialData?.clientId && (
+          {commercialData?.status === "not_found" && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Dados comerciais não vinculados</AlertTitle>
+              <AlertTitle>Aguardando vínculo com a base comercial</AlertTitle>
               <AlertDescription>
-                Não foi possível localizar este cliente na base comercial do PoolFlux.
+                Não foi possível localizar este cliente automaticamente na base PoolFlux. Os indicadores de performance serão exibidos após o vínculo manual ou correção do nome no relatório.
               </AlertDescription>
             </Alert>
           )}
         </div>
         
         {/* 5. RESULTADO POR FAMÍLIA — o mesmo gráfico e a mesma fonte do BI do cliente. */}
-        {commercialData && "representativeId" in commercialData && commercialData.representativeId ? (
+        {commercialData?.status === "linked" ? (
           <ClientFamiliasChart
             repId={commercialData.representativeId}
             razaoSocial={commercialData.razaoSocial}
@@ -717,11 +709,15 @@ function VisaoImersao2Page() {
                 Resultado por família
               </h3>
             </div>
-            <p className="p-4 text-sm text-muted-foreground">
-              O BI deste cliente ainda não possui resultado por família vinculado.
-            </p>
+            <div className="p-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                —<br />
+                Aguardando vínculo com a base comercial para carregar resultados por família.
+              </p>
+            </div>
           </section>
         )}
+
 
         {/* 6. LEITURA INTEGRADA */}
         <LeituraIntegradaV2 visao={visaoComGrupo ?? visao} defaultOpen={true} />
@@ -736,9 +732,10 @@ function VisaoImersao2Page() {
 
         {/* 8. AÇÕES COMERCIAIS NO CLIENTE (espelho da Gestão de Tarefas) */}
         <AcoesComerciaisCliente
-          clientId={commercialData?.clientId ?? null}
+          clientId={commercialData?.status === "linked" ? commercialData.clientId : null}
           clientName={visao.metadata.client_name ?? null}
         />
+
 
 
         {/* Diagnóstico Técnico (Admin Only) */}
@@ -747,7 +744,7 @@ function VisaoImersao2Page() {
             <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
             <div className="grid gap-6 text-xs md:grid-cols-2">
               <div className="space-y-2">
-                <p><strong>Cliente resolvido:</strong> {commercialData?.clientId || "Não vinculado"}</p>
+                <p><strong>Cliente resolvido:</strong> {commercialData?.status === "linked" ? commercialData.clientId : "Não vinculado"}</p>
                 <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
                 <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
                 <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>

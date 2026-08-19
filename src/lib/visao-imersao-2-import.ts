@@ -169,7 +169,7 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
     upload_id: null,
     periodo_label: "1º Semestre 2026",
     linked: true,
-    geral_pct: 42.9,
+    geral_pct: null,
     comparativo_grupo_pct: null,
     periodo_referencia: "1º Semestre 2026",
     status_atendimento: null,
