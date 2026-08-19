@@ -81,6 +81,7 @@ export const Immersion2DataSchema = z.object({
     )
     .optional(),
   chapter_review_policy: z.string().optional(),
+  resolved_client_id: z.string().optional(),
 });
 
 export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;
