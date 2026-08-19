@@ -460,9 +460,14 @@ function VisaoImersao2Page() {
 
       if (fetchError) throw fetchError;
 
+      const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
       const newData = {
         ...(current?.structured_data as any || {}),
-        resolved_client_id: clientId,
+        data: {
+          ...currentData,
+          resolved_client_id: clientId,
+        },
+        resolved_client_id: clientId, // Mantemos no root para compatibilidade com o query selector atual
         resolved_at: new Date().toISOString(),
         resolution_method: "manual"
       };
