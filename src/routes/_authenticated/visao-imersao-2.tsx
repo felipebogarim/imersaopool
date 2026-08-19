@@ -391,11 +391,20 @@ function VisaoImersao2Page() {
   });
 
   async function fetchClientCommercialData(clientId: string) {
-    // Busca o BI mais recente do cliente
+    // Busca o cliente primeiro para ter a Razão Social canônica
+    const { data: client } = await supabase
+      .from("clients")
+      .select("razao_social, categoria, representative_id")
+      .eq("id", clientId)
+      .single();
+
+    if (!client) return { status: "not_found" };
+
+    // Busca o BI mais recente pela Razão Social (o schema não tem client_id)
     const { data: biUpload } = await (supabase as any)
       .from("client_bi_uploads")
       .select("data, representative_id, razao_social")
-      .eq("client_id", clientId)
+      .eq("razao_social", client.razao_social)
       .eq("kind", "bi")
       .is("substituida_em", null)
       .order("created_at", { ascending: false })
