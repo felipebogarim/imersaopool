@@ -301,7 +301,11 @@ function VisaoImersao2Page() {
         
         const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
-          return await fetchClientCommercialData(savedClientId);
+          const commercial = await fetchClientCommercialData(savedClientId);
+          if (commercial.status === "linked") {
+            return commercial;
+          }
+          // Se o ID salvo não retornar dados (ex: deletado), segue para busca fuzzy
         }
       }
 
@@ -411,11 +415,13 @@ function VisaoImersao2Page() {
 
     setSalvando(true);
     try {
-      const { data: current } = await supabase
+      const { data: current, error: fetchError } = await supabase
         .from("field_immersion_v2_reports")
         .select("structured_data")
         .eq("id", avulso.id)
         .single();
+
+      if (fetchError) throw fetchError;
 
       const newData = {
         ...(current?.structured_data as any || {}),
@@ -424,17 +430,29 @@ function VisaoImersao2Page() {
         resolution_method: "manual"
       };
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("field_immersion_v2_reports")
         .update({ structured_data: newData })
         .eq("id", avulso.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
       
-      toast.success("Vínculo comercial confirmado.");
-      refetchCommercial();
+      // Forçar atualização do estado local do avulso para evitar que o render atual
+      // use structured_data antigo antes do refetch
+      setAvulso(prev => prev ? {
+        ...prev,
+        data: {
+          ...prev.data,
+          resolved_client_id: clientId
+        }
+      } : null);
+
+      await queryClient.invalidateQueries({ queryKey: ["vi2-commercial", avulso.id] });
+      await refetchCommercial();
+      toast.success("Vínculo comercial confirmado e persistido.");
     } catch (e: any) {
-      toast.error("Erro ao vincular: " + e.message);
+      console.error("[VisaoImersao2] Erro na persistência do vínculo:", e);
+      toast.error("Erro ao salvar vínculo no banco: " + e.message);
     } finally {
       setSalvando(false);
     }
