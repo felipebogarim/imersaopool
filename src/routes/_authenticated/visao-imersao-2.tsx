@@ -344,17 +344,30 @@ function VisaoImersao2Page() {
             .eq("id", reportId)
             .single();
           
-          if (!(current?.structured_data as any)?.resolved_client_id) {
+          if (!(current?.structured_data as any)?.data?.resolved_client_id) {
+            const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
             const newData = {
-              ...(current?.structured_data as any || {}),
-              resolved_client_id: candidate.id,
-              resolved_at: new Date().toISOString(),
-              resolution_method: "auto_unique"
+              ...current,
+              structured_data: {
+                ...(current?.structured_data as any || {}),
+                data: {
+                  ...currentData,
+                  resolved_client_id: candidate.id,
+                },
+                resolved_at: new Date().toISOString(),
+                resolution_method: "auto_unique"
+              }
             };
             await supabase
               .from("field_immersion_v2_reports")
-              .update({ structured_data: newData })
+              .update({ structured_data: newData.structured_data })
               .eq("id", reportId);
+            
+            // Atualiza estado local também para sincronia imediata
+            setAvulso(prev => prev ? {
+              ...prev,
+              data: { ...prev.data, resolved_client_id: candidate.id }
+            } : null);
           }
         }
         return await fetchClientCommercialData(candidate.id);
