@@ -287,10 +287,15 @@ function VisaoImersao2Page() {
   const representativeName = visao?.metadata?.representative_name;
 
   const { data: commercialData, refetch: refetchCommercial } = useQuery({
-    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName],
+    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName, avulso?.data?.resolved_client_id],
     enabled: !!clientName,
     queryFn: async () => {
-      // 1. PRIORIDADE: Vínculo já persistido no relatório
+      // 1. PRIORIDADE: Vínculo em memória (estado local do componente) ou persistido
+      const manualId = avulso?.data?.resolved_client_id;
+      if (manualId) {
+        return await fetchClientCommercialData(manualId);
+      }
+
       const reportId = avulso?.id;
       if (reportId) {
         const { data: savedReport } = await supabase
@@ -299,13 +304,9 @@ function VisaoImersao2Page() {
           .eq("id", reportId)
           .single();
         
-        const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
+        const savedClientId = (savedReport?.structured_data as any)?.data?.resolved_client_id || (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
-          const commercial = await fetchClientCommercialData(savedClientId);
-          if (commercial.status === "linked") {
-            return commercial;
-          }
-          // Se o ID salvo não retornar dados (ex: deletado), segue para busca fuzzy
+          return await fetchClientCommercialData(savedClientId);
         }
       }
 
@@ -343,17 +344,30 @@ function VisaoImersao2Page() {
             .eq("id", reportId)
             .single();
           
-          if (!(current?.structured_data as any)?.resolved_client_id) {
+          if (!(current?.structured_data as any)?.data?.resolved_client_id && !(current?.structured_data as any)?.resolved_client_id) {
+            const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
             const newData = {
-              ...(current?.structured_data as any || {}),
-              resolved_client_id: candidate.id,
-              resolved_at: new Date().toISOString(),
-              resolution_method: "auto_unique"
+              ...current,
+              structured_data: {
+                ...(current?.structured_data as any || {}),
+                data: {
+                  ...currentData,
+                  resolved_client_id: candidate.id,
+                },
+                resolved_at: new Date().toISOString(),
+                resolution_method: "auto_unique"
+              }
             };
             await supabase
               .from("field_immersion_v2_reports")
-              .update({ structured_data: newData })
+              .update({ structured_data: newData.structured_data })
               .eq("id", reportId);
+            
+            // Atualiza estado local também para sincronia imediata
+            setAvulso(prev => prev ? {
+              ...prev,
+              data: { ...prev.data, resolved_client_id: candidate.id }
+            } : null);
           }
         }
         return await fetchClientCommercialData(candidate.id);
@@ -446,9 +460,14 @@ function VisaoImersao2Page() {
 
       if (fetchError) throw fetchError;
 
+      const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
       const newData = {
         ...(current?.structured_data as any || {}),
-        resolved_client_id: clientId,
+        data: {
+          ...currentData,
+          resolved_client_id: clientId,
+        },
+        resolved_client_id: clientId, // Mantemos no root para compatibilidade com o query selector atual
         resolved_at: new Date().toISOString(),
         resolution_method: "manual"
       };
