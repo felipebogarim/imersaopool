@@ -344,7 +344,7 @@ function VisaoImersao2Page() {
             .eq("id", reportId)
             .single();
           
-          if (!(current?.structured_data as any)?.data?.resolved_client_id) {
+          if (!(current?.structured_data as any)?.data?.resolved_client_id && !(current?.structured_data as any)?.resolved_client_id) {
             const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
             const newData = {
               ...current,
