@@ -287,10 +287,15 @@ function VisaoImersao2Page() {
   const representativeName = visao?.metadata?.representative_name;
 
   const { data: commercialData, refetch: refetchCommercial } = useQuery({
-    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName],
+    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName, avulso?.data?.resolved_client_id],
     enabled: !!clientName,
     queryFn: async () => {
-      // 1. PRIORIDADE: Vínculo já persistido no relatório
+      // 1. PRIORIDADE: Vínculo em memória (estado local do componente) ou persistido
+      const manualId = avulso?.data?.resolved_client_id;
+      if (manualId) {
+        return await fetchClientCommercialData(manualId);
+      }
+
       const reportId = avulso?.id;
       if (reportId) {
         const { data: savedReport } = await supabase
@@ -301,11 +306,7 @@ function VisaoImersao2Page() {
         
         const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
-          const commercial = await fetchClientCommercialData(savedClientId);
-          if (commercial.status === "linked") {
-            return commercial;
-          }
-          // Se o ID salvo não retornar dados (ex: deletado), segue para busca fuzzy
+          return await fetchClientCommercialData(savedClientId);
         }
       }
 
