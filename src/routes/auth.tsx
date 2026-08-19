@@ -41,8 +41,10 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [preparingFirstAccess, setPreparingFirstAccess] = useState(primeiro);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     let active = true;
 
     async function prepareAuth() {
@@ -149,7 +151,7 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         <Link to="/" className="inline-flex justify-center mb-8">
-          {emailConvite?.toLowerCase().includes("flow") || emailConvite?.toLowerCase().includes("crm") ? (
+          {mounted && (emailConvite?.toLowerCase().includes("flow") || emailConvite?.toLowerCase().includes("crm")) ? (
             <PoolFlowLogo className="h-12 w-auto" />
           ) : (
             <BrandLogo />
