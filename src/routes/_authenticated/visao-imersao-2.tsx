@@ -442,13 +442,13 @@ function VisaoImersao2Page() {
 
 
   const perf = useMemo((): PerfResumo | null => {
-    if (!commercialData || !('geralPct' in commercialData) || commercialData === null) return null;
-    const valorExibicao = (commercialData as any).atingimentoPonderado ?? (commercialData as any).geralPct;
+    if (!commercialData || (commercialData as any).status !== "linked") return null;
+    const cd = commercialData as any;
     
     return {
-      geralPct: valorExibicao,
-      periodoLabel: commercialData.periodoLabel,
-      familias: commercialData.familias,
+      geralPct: cd.geralPct,
+      periodoLabel: cd.periodoLabel,
+      familias: cd.familias,
       mediaGrupoPct: 0,
       diffPp: 0,
       posicao: 0,
@@ -460,6 +460,7 @@ function VisaoImersao2Page() {
       estimado: false,
     };
   }, [commercialData]);
+
 
 
   const previewDialog = (
