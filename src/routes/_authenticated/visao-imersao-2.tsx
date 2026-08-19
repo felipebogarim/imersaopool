@@ -293,6 +293,7 @@ function VisaoImersao2Page() {
       // 1. PRIORIDADE: Vínculo em memória (estado local do componente) ou persistido
       const manualId = avulso?.data?.resolved_client_id;
       if (manualId) {
+        console.log("[VisaoImersao2] Usando ID de cliente em memória:", manualId);
         return await fetchClientCommercialData(manualId);
       }
 
@@ -306,6 +307,7 @@ function VisaoImersao2Page() {
         
         const savedClientId = (savedReport?.structured_data as any)?.data?.resolved_client_id || (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
+          console.log("[VisaoImersao2] Usando ID de cliente persistido:", savedClientId);
           return await fetchClientCommercialData(savedClientId);
         }
       }
@@ -345,22 +347,21 @@ function VisaoImersao2Page() {
             .single();
           
           if (!(current?.structured_data as any)?.data?.resolved_client_id && !(current?.structured_data as any)?.resolved_client_id) {
+            console.log("[VisaoImersao2] Persistindo vínculo automático único:", candidate.id);
             const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
             const newData = {
-              ...current,
-              structured_data: {
-                ...(current?.structured_data as any || {}),
-                data: {
-                  ...currentData,
-                  resolved_client_id: candidate.id,
-                },
-                resolved_at: new Date().toISOString(),
-                resolution_method: "auto_unique"
-              }
+              ...(current?.structured_data as any || {}),
+              data: {
+                ...currentData,
+                resolved_client_id: candidate.id,
+              },
+              resolved_client_id: candidate.id,
+              resolved_at: new Date().toISOString(),
+              resolution_method: "auto_unique"
             };
             await supabase
               .from("field_immersion_v2_reports")
-              .update({ structured_data: newData.structured_data })
+              .update({ structured_data: newData })
               .eq("id", reportId);
             
             // Atualiza estado local também para sincronia imediata
@@ -467,7 +468,7 @@ function VisaoImersao2Page() {
           ...currentData,
           resolved_client_id: clientId,
         },
-        resolved_client_id: clientId, // Mantemos no root para compatibilidade com o query selector atual
+        resolved_client_id: clientId, // Root para compatibilidade
         resolved_at: new Date().toISOString(),
         resolution_method: "manual"
       };
