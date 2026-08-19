@@ -304,7 +304,7 @@ function VisaoImersao2Page() {
           .eq("id", reportId)
           .single();
         
-        const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
+        const savedClientId = (savedReport?.structured_data as any)?.data?.resolved_client_id || (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
           return await fetchClientCommercialData(savedClientId);
         }
