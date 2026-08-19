@@ -301,7 +301,11 @@ function VisaoImersao2Page() {
         
         const savedClientId = (savedReport?.structured_data as any)?.resolved_client_id;
         if (savedClientId) {
-          return await fetchClientCommercialData(savedClientId);
+          const commercial = await fetchClientCommercialData(savedClientId);
+          if (commercial.status === "linked") {
+            return commercial;
+          }
+          // Se o ID salvo não retornar dados (ex: deletado), segue para busca fuzzy
         }
       }
 
@@ -329,7 +333,30 @@ function VisaoImersao2Page() {
 
       // Se houver apenas um match exato ou único, vincula automaticamente
       if (candidates.length === 1) {
-        return await fetchClientCommercialData(candidates[0].id);
+        const candidate = candidates[0];
+        // Short-circuit: Se o relatório já está salvo e identificamos o cliente único, 
+        // persistimos o vínculo imediatamente para evitar re-calculo fuzzy no futuro.
+        if (reportId) {
+          const { data: current } = await supabase
+            .from("field_immersion_v2_reports")
+            .select("structured_data")
+            .eq("id", reportId)
+            .single();
+          
+          if (!(current?.structured_data as any)?.resolved_client_id) {
+            const newData = {
+              ...(current?.structured_data as any || {}),
+              resolved_client_id: candidate.id,
+              resolved_at: new Date().toISOString(),
+              resolution_method: "auto_unique"
+            };
+            await supabase
+              .from("field_immersion_v2_reports")
+              .update({ structured_data: newData })
+              .eq("id", reportId);
+          }
+        }
+        return await fetchClientCommercialData(candidate.id);
       }
 
       // 3. AMBIGUIDADE: Retorna lista de candidatos para seleção manual
@@ -411,11 +438,13 @@ function VisaoImersao2Page() {
 
     setSalvando(true);
     try {
-      const { data: current } = await supabase
+      const { data: current, error: fetchError } = await supabase
         .from("field_immersion_v2_reports")
         .select("structured_data")
         .eq("id", avulso.id)
         .single();
+
+      if (fetchError) throw fetchError;
 
       const newData = {
         ...(current?.structured_data as any || {}),
@@ -424,17 +453,29 @@ function VisaoImersao2Page() {
         resolution_method: "manual"
       };
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("field_immersion_v2_reports")
         .update({ structured_data: newData })
         .eq("id", avulso.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
       
-      toast.success("Vínculo comercial confirmado.");
-      refetchCommercial();
+      // Forçar atualização do estado local do avulso para evitar que o render atual
+      // use structured_data antigo antes do refetch
+      setAvulso(prev => prev ? {
+        ...prev,
+        data: {
+          ...prev.data,
+          resolved_client_id: clientId
+        }
+      } : null);
+
+      await queryClient.invalidateQueries({ queryKey: ["vi2-commercial", avulso.id] });
+      await refetchCommercial();
+      toast.success("Vínculo comercial confirmado e persistido.");
     } catch (e: any) {
-      toast.error("Erro ao vincular: " + e.message);
+      console.error("[VisaoImersao2] Erro na persistência do vínculo:", e);
+      toast.error("Erro ao salvar vínculo no banco: " + e.message);
     } finally {
       setSalvando(false);
     }
@@ -746,7 +787,15 @@ function VisaoImersao2Page() {
             <h4 className="mb-4 font-bold text-primary">Diagnóstico Técnico da Importação</h4>
             <div className="grid gap-6 text-xs md:grid-cols-2">
               <div className="space-y-2">
+                <p><strong>Status do vínculo:</strong> {commercialData?.status === "linked" ? "Resolvido" : commercialData?.status === "ambiguous" ? "Ambíguo" : "Não encontrado"}</p>
+                <p><strong>Método:</strong> {(commercialData as any)?.status === "linked" ? "Persistido/Auto" : "N/A"}</p>
                 <p><strong>Cliente resolvido:</strong> {commercialData?.status === "linked" ? (commercialData as any).clientId : "Não vinculado"}</p>
+                {commercialData?.status === "linked" && (
+                  <>
+                    <p><strong>Razão:</strong> {(commercialData as any).razaoSocial}</p>
+                    <p><strong>Categoria:</strong> {(commercialData as any).categoria || "—"}</p>
+                  </>
+                )}
                 <p><strong>Sinais válidos:</strong> {visao.executive_view.priority_signals.length}</p>
                 <p><strong>Perspectivas válidas:</strong> {visao.perspectives.length}</p>
                 <p><strong>Marcas detectadas:</strong> {visao.representative_context.represented_brands.join(", ")}</p>
