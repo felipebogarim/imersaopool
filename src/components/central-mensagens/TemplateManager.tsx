@@ -2,13 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, Send, Edit, Trash2, Mail, MessageSquare } from "lucide-react";
+import { Plus, Edit, Trash2, Mail, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { TemplateDialog } from "./TemplateDialog";
 
 export function TemplateManager() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   useEffect(() => {
     fetchTemplates();
@@ -18,7 +21,7 @@ export function TemplateManager() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("app_update_templates" as any)
+        .from("app_update_templates")
         .select("*")
         .order("created_at", { ascending: false });
       
@@ -32,6 +35,39 @@ export function TemplateManager() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Tem certeza que deseja excluir este template?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("app_update_templates")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast.success("Template excluído com sucesso");
+      fetchTemplates();
+    } catch (error: any) {
+      console.error("Error deleting template:", error);
+      toast.error("Erro ao excluir template");
+    }
+  }
+
+  function handleEdit(template: any) {
+    setSelectedTemplate(template);
+    setIsDialogOpen(true);
+  }
+
+  function handleCreate() {
+    setSelectedTemplate(null);
+    setIsDialogOpen(true);
+  }
+
+  function handleSendSimulation(type: "email" | "whatsapp", templateName: string) {
+    toast.info(`Simulação de envio (${type}): ${templateName}`);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -39,7 +75,7 @@ export function TemplateManager() {
           <h3 className="text-lg font-semibold">Templates de Mensagens</h3>
           <p className="text-sm text-muted-foreground">Crie e gerencie templates para e-mail e WhatsApp</p>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Template
         </Button>
@@ -55,7 +91,7 @@ export function TemplateManager() {
             <Mail className="h-12 w-12 text-muted-foreground/20 mb-4" />
             <CardTitle>Nenhum template criado</CardTitle>
             <CardDescription>Comece criando seu primeiro template de atualização.</CardDescription>
-            <Button className="mt-4" variant="outline">
+            <Button className="mt-4" variant="outline" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" /> Criar Template
             </Button>
           </Card>
@@ -68,10 +104,20 @@ export function TemplateManager() {
                     {template.status === "published" ? "Publicado" : "Rascunho"}
                   </Badge>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(template)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => handleDelete(template.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -81,10 +127,18 @@ export function TemplateManager() {
               </CardHeader>
               <CardContent className="mt-auto pt-0">
                 <div className="flex gap-2 w-full mt-4">
-                  <Button variant="outline" className="flex-1 text-xs gap-1 h-8">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 text-xs gap-1 h-8"
+                    onClick={() => handleSendSimulation("email", template.name)}
+                  >
                     <Mail className="h-3 w-3" /> E-mail
                   </Button>
-                  <Button variant="outline" className="flex-1 text-xs gap-1 h-8 text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 text-xs gap-1 h-8 text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                    onClick={() => handleSendSimulation("whatsapp", template.name)}
+                  >
                     <MessageSquare className="h-3 w-3" /> WhatsApp
                   </Button>
                 </div>
@@ -93,6 +147,14 @@ export function TemplateManager() {
           ))
         )}
       </div>
+
+      <TemplateDialog 
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        template={selectedTemplate}
+        onSuccess={fetchTemplates}
+      />
     </div>
   );
 }
+
