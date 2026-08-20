@@ -33,8 +33,10 @@ const formSchema = z.object({
   phone: z.string().optional(),
   tags: z.string().optional(),
   notes: z.string().optional(),
-  active: z.boolean().default(true),
+  active: z.boolean(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface ContactDialogProps {
   open: boolean;
@@ -46,7 +48,7 @@ interface ContactDialogProps {
 export function ContactDialog({ open, onOpenChange, contact, onSuccess }: ContactDialogProps) {
   const [loading, setLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -80,7 +82,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
     }
   }, [contact, form, open]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormValues) {
     try {
       setLoading(true);
       
