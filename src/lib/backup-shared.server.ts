@@ -49,10 +49,12 @@ export async function verifyApiKey(request: Request): Promise<Response | null> {
     const admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
       auth: { persistSession: false, autoRefreshToken: false }
     });
-    const { data: claims } = await admin.auth.getClaims(token);
-    if (claims?.claims?.sub) {
+    
+    // getClaims is not standard for anon client, let's use getUser
+    const { data: { user } } = await admin.auth.getUser(token);
+    if (user?.id) {
       const { data: isAdmin } = await admin.rpc("has_role", {
-        _user_id: claims.claims.sub,
+        _user_id: user.id,
         _role: "admin",
       });
       if (isAdmin) return null;
