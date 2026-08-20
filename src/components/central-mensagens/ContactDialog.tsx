@@ -99,7 +99,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
 
       if (contact?.id) {
         const { error } = await supabase
-          .from("app_email_contacts" as any)
+          .from("app_email_contacts")
           .update(payload)
           .eq("id", contact.id);
         
@@ -107,7 +107,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
         toast.success("Contato atualizado com sucesso");
       } else {
         const { error } = await supabase
-          .from("app_email_contacts" as any)
+          .from("app_email_contacts")
           .insert([payload]);
         
         if (error) throw error;
