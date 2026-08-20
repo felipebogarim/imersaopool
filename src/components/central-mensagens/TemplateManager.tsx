@@ -6,11 +6,13 @@ import { Plus, Edit, Trash2, Mail, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { TemplateDialog } from "./TemplateDialog";
+import { SendEmailDialog } from "./SendEmailDialog";
 
 export function TemplateManager() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
   useEffect(() => {
@@ -64,8 +66,13 @@ export function TemplateManager() {
     setIsDialogOpen(true);
   }
 
-  function handleSendSimulation(type: "email" | "whatsapp", templateName: string) {
-    toast.info(`Simulação de envio (${type}): ${templateName}`);
+  function handleSendSimulation(type: "email" | "whatsapp", template: any) {
+    if (type === "email") {
+      setSelectedTemplate(template);
+      setIsSendDialogOpen(true);
+    } else {
+      toast.info(`Simulação de envio (${type}): ${template.name}`);
+    }
   }
 
   return (
@@ -130,14 +137,14 @@ export function TemplateManager() {
                   <Button 
                     variant="outline" 
                     className="flex-1 text-xs gap-1 h-8"
-                    onClick={() => handleSendSimulation("email", template.name)}
+                    onClick={() => handleSendSimulation("email", template)}
                   >
                     <Mail className="h-3 w-3" /> E-mail
                   </Button>
                   <Button 
                     variant="outline" 
                     className="flex-1 text-xs gap-1 h-8 text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
-                    onClick={() => handleSendSimulation("whatsapp", template.name)}
+                    onClick={() => handleSendSimulation("whatsapp", template)}
                   >
                     <MessageSquare className="h-3 w-3" /> WhatsApp
                   </Button>
@@ -153,6 +160,12 @@ export function TemplateManager() {
         onOpenChange={setIsDialogOpen}
         template={selectedTemplate}
         onSuccess={fetchTemplates}
+      />
+
+      <SendEmailDialog 
+        open={isSendDialogOpen}
+        onOpenChange={setIsSendDialogOpen}
+        template={selectedTemplate}
       />
     </div>
   );
