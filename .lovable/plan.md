@@ -1,36 +1,58 @@
-# Plan: Fix Visão Imersão 2 Client Resolution and Hydration Error
+# Plan: Make Central de Mensagens Buttons Functional
 
-The user is experiencing a loop when trying to confirm a commercial link in the "Visão Imersão 2" report, specifically for the client "V LAMPADARIO ILUMINACAO E DECORACAO LTDA". Additionally, a hydration mismatch error has been identified in the authentication page.
+The goal is to implement the full CRUD and operational logic for the "Central de Mensagens" module, ensuring all buttons (New, Edit, Delete, Send) perform their intended actions.
 
 ## User Review Required
 
 > [!NOTE]
-> No critical items requiring user attention at this stage.
+> The "Send Email" and "WhatsApp" actions will currently simulate the sending process (logging and showing a toast) as there is no integrated external ESP/Gateway configured yet.
 
 ## Proposed Changes
 
-### Visão Imersão 2 (`src/routes/_authenticated/visao-imersao-2.tsx`)
-- **Fix Resolution Persistence:** Ensure `confirmarVinculo` correctly updates the `structured_data` in the database and that the local state (`avulso`) is updated immediately to reflect the change, preventing the UI from reverting to the "ambiguous" state.
-- **Avoid Search Loop:** Add a check to skip fuzzy search if a valid `resolved_client_id` is already present in the `avulso.data`.
-- **Reliable Data Fetching:** Ensure the commercial data query (`vi2-commercial`) correctly prioritizes the newly linked ID.
+### Components - Central de Mensagens (`src/components/central-mensagens/`)
 
-### Authentication (`src/routes/auth.tsx`)
-- **Fix Hydration Mismatch:** Wrap the main content of `AuthPage` in a check or component that ensures it only renders on the client, or use `useHydrated` hook to avoid rendering elements like `PoolFlowLogo` based on search params that might not be available during SSR.
+- **Create `TemplateDialog.tsx`**: A modal component to create and edit message templates.
+    - Fields: Name, Subject, Intro Text, Farewell Text, Status (Draft/Published).
+    - Logic for upserting into `app_update_templates`.
+
+- **Create `ContactDialog.tsx`**: A modal component to create and edit contacts.
+    - Fields: Name, Email, Phone, Tags (multi-select/comma separated), Notes, Active status.
+    - Logic for upserting into `app_email_contacts`.
+
+- **Create `GroupManagerDialog.tsx`**: A modal to manage contact groups and their members.
+    - List of groups with ability to add/edit/delete.
+    - Member selection interface.
+
+- **Update `TemplateManager.tsx`**:
+    - Integrate `TemplateDialog` for creation and editing.
+    - Implement deletion logic with confirmation.
+    - Implement "Send" flow (selecting a group/contacts and "sending").
+
+- **Update `EmailContactsManager.tsx`**:
+    - Integrate `ContactDialog` for creation and editing.
+    - Integrate `GroupManagerDialog`.
+    - Implement contact deletion logic.
+
+### Database Logic
+- Use `supabase` client for direct table operations.
+- Ensure `updated_at` is handled on templates.
 
 ## Technical Details
-- The loop in `visao-imersao-2.tsx` likely happens because the `useQuery` for commercial data triggers a refetch that might find multiple candidates again if the persistence hasn't fully propagated to the query's dependency keys.
-- I will ensure the `queryKey` includes the `resolved_client_id` if present in state.
-- For the hydration fix, I'll use a `mounted` state in `AuthPage` to delay rendering until after the first client-side effect.
+
+- Use `react-hook-form` and `zod` for form validation within dialogs.
+- Use `sonner` for feedback (success/error toasts).
+- Use `shadcn/ui` components (Dialog, Form, Input, Select, etc.).
 
 ## Verification Plan
 
 ### Automated Tests
 - Run Playwright scripts to:
-  1. Navigate to `/visao-imersao-2`.
-  2. Open a report with ambiguity.
-  3. Click "Confirmar vínculo".
-  4. Verify that the "Ambiguidade comercial" alert disappears and performance data is loaded.
-  5. Reload the page and verify the link is preserved.
+    1. Create a new template and verify it appears in the list.
+    2. Edit the template and verify changes persist.
+    3. Delete the template and verify it's removed.
+    4. Create a new contact and verify it appears in the list.
+    5. Perform a simulated "Send" action and check for success toast.
 
 ### Manual Verification
-- Check the authentication page at `/auth` to ensure the hydration warning is no longer present in the console.
+- Verify the modal interactions are smooth and validation works as expected.
+- Check the Supabase tables (`app_update_templates`, `app_email_contacts`) to ensure data is correctly stored.
