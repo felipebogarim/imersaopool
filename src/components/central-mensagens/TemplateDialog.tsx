@@ -75,7 +75,7 @@ export function TemplateDialog({ open, onOpenChange, template, onSuccess }: Temp
         name: "",
         subject: "",
         intro: "",
-        farewell: "",
+        farewell: "Até a próxima",
         status: "draft",
       });
     }
