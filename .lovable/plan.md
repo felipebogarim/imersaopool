@@ -1,58 +1,45 @@
-# Plan: Make Central de Mensagens Buttons Functional
+# Plan: Implement Block-based Email Template Editor
 
-The goal is to implement the full CRUD and operational logic for the "Central de Mensagens" module, ensuring all buttons (New, Edit, Delete, Send) perform their intended actions.
-
-## User Review Required
-
-> [!NOTE]
-> The "Send Email" and "WhatsApp" actions will currently simulate the sending process (logging and showing a toast) as there is no integrated external ESP/Gateway configured yet.
+The goal is to replace the simple template dialog with a full-page, block-based editor as per the user's reference image. This will allow structuring messages with multiple blocks containing media and rich text.
 
 ## Proposed Changes
 
-### Components - Central de Mensagens (`src/components/central-mensagens/`)
+### Routes
+- **Create `src/routes/_authenticated/admin.central-mensagens.template.$id.tsx`**:
+    - Full-page layout with two columns.
+    - Left column: Editor form.
+    - Right column: Live preview.
+    - Handle `$id` being "new" or an existing UUID.
 
-- **Create `TemplateDialog.tsx`**: A modal component to create and edit message templates.
-    - Fields: Name, Subject, Intro Text, Farewell Text, Status (Draft/Published).
-    - Logic for upserting into `app_update_templates`.
+### Components - Template Editor (`src/components/central-mensagens/`)
+- **Create `TemplateEditor.tsx`**: The main component for the new editor page.
+    - States for intro, name, blocks, farewell, and status.
+    - Logic to add/remove/reorder content blocks.
+- **Create `ContentBlockEditor.tsx`**: Sub-component for individual blocks.
+    - Media upload placeholder.
+    - Video URL input.
+    - Rich text editor for "Texto descritivo" (using a simple editor or standard textarea with formatting buttons as in the image).
+- **Create `TemplatePreview.tsx`**: Live preview component that renders the current state of the template.
 
-- **Create `ContactDialog.tsx`**: A modal component to create and edit contacts.
-    - Fields: Name, Email, Phone, Tags (multi-select/comma separated), Notes, Active status.
-    - Logic for upserting into `app_email_contacts`.
-
-- **Create `GroupManagerDialog.tsx`**: A modal to manage contact groups and their members.
-    - List of groups with ability to add/edit/delete.
-    - Member selection interface.
-
+### Navigation & Integration
 - **Update `TemplateManager.tsx`**:
-    - Integrate `TemplateDialog` for creation and editing.
-    - Implement deletion logic with confirmation.
-    - Implement "Send" flow (selecting a group/contacts and "sending").
+    - Redirect "Novo Template" to `/admin/central-mensagens/template/new`.
+    - Redirect "Edit" action to `/admin/central-mensagens/template/[id]`.
+    - Remove the `TemplateDialog` integration.
 
-- **Update `EmailContactsManager.tsx`**:
-    - Integrate `ContactDialog` for creation and editing.
-    - Integrate `GroupManagerDialog`.
-    - Implement contact deletion logic.
-
-### Database Logic
-- Use `supabase` client for direct table operations.
-- Ensure `updated_at` is handled on templates.
+### Database
+- Ensure the `blocks` column in `app_update_templates` stores the array of content blocks.
+- Update persistence logic to handle the full structure.
 
 ## Technical Details
-
-- Use `react-hook-form` and `zod` for form validation within dialogs.
-- Use `sonner` for feedback (success/error toasts).
-- Use `shadcn/ui` components (Dialog, Form, Input, Select, etc.).
+- Use `shadcn/ui` components for the layout (Card, Button, Input, Textarea).
+- Implement image upload to Supabase Storage (already bucket `app-assets` or similar).
+- For rich text, use a simple implementation with `selectionStart/End` for the toolbar buttons if a full lib like Tiptap is overkill, or just follow the visual pattern.
 
 ## Verification Plan
-
-### Automated Tests
-- Run Playwright scripts to:
-    1. Create a new template and verify it appears in the list.
-    2. Edit the template and verify changes persist.
-    3. Delete the template and verify it's removed.
-    4. Create a new contact and verify it appears in the list.
-    5. Perform a simulated "Send" action and check for success toast.
-
-### Manual Verification
-- Verify the modal interactions are smooth and validation works as expected.
-- Check the Supabase tables (`app_update_templates`, `app_email_contacts`) to ensure data is correctly stored.
+- Manual testing of the full flow:
+    1. Navigate to "Novo Template".
+    2. Fill intro, name, add 2 blocks with images and text.
+    3. Verify the live preview updates in real-time.
+    4. Save as draft and verify it appears in the list.
+    5. Re-edit and verify all data is restored correctly.
