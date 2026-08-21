@@ -98,6 +98,18 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
   };
 
   const applyFormat = (format: string) => {
+    if (format === 'link') {
+      const url = prompt("Digite o link (URL):", "https://");
+      if (url) {
+        const selectedText = window.getSelection()?.toString();
+        if (selectedText) {
+          onUpdate({ description: block.description + ` [${selectedText}](${url})` });
+        } else {
+          onUpdate({ description: block.description + ` ${url}` });
+        }
+      }
+      return;
+    }
     // Basic formatting logic could go here if using a textarea
     // For now, we'll just focus on the visual representation as requested
     toast.info(`Formatação ${format} selecionada (demonstrativo)`);
