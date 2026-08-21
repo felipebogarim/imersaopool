@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppShell";
 import { EmailsAtualizacoes } from "@/components/central-mensagens/EmailsAtualizacoes";
 
-export const Route = createFileRoute("/_authenticated/admin/central-mensagens")({
+export const Route = createFileRoute("/_authenticated/admin/central-mensagens/")({
   component: CentralMensagensPage,
 });
 
