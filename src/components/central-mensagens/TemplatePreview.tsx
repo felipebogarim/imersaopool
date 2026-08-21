@@ -18,8 +18,8 @@ interface TemplatePreviewProps {
 export function TemplatePreview({ name, intro, blocks, farewell }: TemplatePreviewProps) {
   return (
     <div className="w-full bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-      <div className="bg-[#003087] p-4">
-        <h2 className="text-white text-lg font-bold">{name || "Nome da novidade"}</h2>
+      <div className="bg-[#003087] p-6">
+        <h2 className="text-white text-xl font-bold">{name || "Nome da novidade"}</h2>
       </div>
       
       <div className="p-6 space-y-6">

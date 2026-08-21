@@ -95,6 +95,7 @@ import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
+import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -582,6 +583,12 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCentralMensagensIndexRoute =
+  AuthenticatedAdminCentralMensagensIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminCentralMensagensRoute,
+  } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -775,6 +782,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -816,7 +824,6 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
-  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -877,6 +884,7 @@ export interface FileRoutesByTo {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -982,6 +990,7 @@ export interface FileRoutesById {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/_authenticated/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/_authenticated/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -1087,6 +1096,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/admin/central-mensagens/'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1128,7 +1138,6 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
-    | '/admin/central-mensagens'
     | '/admin/conformidade'
     | '/admin/criterios-seguranca'
     | '/admin/evento-checkout-teste'
@@ -1189,6 +1198,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/admin/central-mensagens'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1293,6 +1303,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/_authenticated/admin/central-mensagens/'
     | '/_authenticated/admin/central-mensagens/template/$id'
     | '/_authenticated/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1936,6 +1947,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/central-mensagens/': {
+      id: '/_authenticated/admin/central-mensagens/'
+      path: '/'
+      fullPath: '/admin/central-mensagens/'
+      preLoaderRoute: typeof AuthenticatedAdminCentralMensagensIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminCentralMensagensRoute
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -2074,11 +2092,14 @@ const AuthenticatedPriceRouteRouteWithChildren =
   )
 
 interface AuthenticatedAdminCentralMensagensRouteChildren {
+  AuthenticatedAdminCentralMensagensIndexRoute: typeof AuthenticatedAdminCentralMensagensIndexRoute
   AuthenticatedAdminCentralMensagensTemplateIdRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
 }
 
 const AuthenticatedAdminCentralMensagensRouteChildren: AuthenticatedAdminCentralMensagensRouteChildren =
   {
+    AuthenticatedAdminCentralMensagensIndexRoute:
+      AuthenticatedAdminCentralMensagensIndexRoute,
     AuthenticatedAdminCentralMensagensTemplateIdRoute:
       AuthenticatedAdminCentralMensagensTemplateIdRoute,
   }

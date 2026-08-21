@@ -46,6 +46,13 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
   const [farewell, setFarewell] = useState("Equipe Delis Iluminação");
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    if (name || subject || blocks.length > 0) {
+      setHasUnsavedChanges(true);
+    }
+  }, [name, subject, intro, farewell, blocks]);
 
   useEffect(() => {
     if (templateId) {
@@ -123,6 +130,7 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
       }
 
       toast.success(currentStatus === "published" ? "Template publicado com sucesso" : "Rascunho salvo com sucesso");
+      setHasUnsavedChanges(false);
       navigate({ to: "/admin/central-mensagens" });
     } catch (error: any) {
       console.error("Error saving template:", error);
@@ -144,7 +152,19 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
     <div className="flex flex-col h-full bg-slate-50/50">
       <header className="flex items-center justify-between p-4 border-b bg-white">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/admin/central-mensagens" })}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              if (hasUnsavedChanges) {
+                if (confirm("Você tem alterações não salvas. Deseja realmente sair?")) {
+                  navigate({ to: "/admin/central-mensagens" });
+                }
+              } else {
+                navigate({ to: "/admin/central-mensagens" });
+              }
+            }}
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Voltar
           </Button>

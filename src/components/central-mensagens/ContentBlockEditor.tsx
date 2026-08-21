@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,9 @@ import {
   Trash2,
   Upload,
   Loader2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  List,
+  AlignLeft
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,13 +38,29 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    const handlePaste = async (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
 
+      for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            await uploadFile(file);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
+  const uploadFile = async (file: File) => {
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop() || 'png';
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `templates/${fileName}`;
 
@@ -67,6 +85,11 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) uploadFile(file);
   };
 
   const applyFormat = (format: string) => {
@@ -149,10 +172,16 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyFormat('italic')}>
                   <Italic className="h-3.5 w-3.5" />
                 </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyFormat('list')}>
+                  <List className="h-3.5 w-3.5" />
+                </Button>
                 <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px]" onClick={() => applyFormat('size')}>
                   Tamanho
                   <Type className="h-3 w-3 ml-1" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyFormat('align')}>
+                  <AlignLeft className="h-3.5 w-3.5" />
                 </Button>
               </div>
               <Textarea 
