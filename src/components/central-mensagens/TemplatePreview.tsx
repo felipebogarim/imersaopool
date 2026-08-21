@@ -58,7 +58,7 @@ export function TemplatePreview({ name, intro, blocks, farewell }: TemplatePrevi
 
         <div className="pt-6 border-t border-slate-100">
           <div className="text-slate-500 italic text-sm">
-            {farewell || "Equipe Delis Iluminação"}
+            {farewell || "Até a próxima"}
           </div>
         </div>
       </div>
