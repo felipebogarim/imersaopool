@@ -91,6 +91,7 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
     }
   };
 
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) uploadFile(file);
