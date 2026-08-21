@@ -57,11 +57,17 @@ export function TemplateManager() {
   }
 
   function handleEdit(template: any) {
-    navigate({ to: `/admin/central-mensagens/template/${template.id}` });
+    navigate({ 
+      to: "/admin/central-mensagens/template/$id",
+      params: { id: template.id }
+    });
   }
 
   function handleCreate() {
-    navigate({ to: "/admin/central-mensagens/template/new" });
+    navigate({ 
+      to: "/admin/central-mensagens/template/$id",
+      params: { id: "new" }
+    });
   }
 
   function handleSendSimulation(type: "email" | "whatsapp", template: any) {
