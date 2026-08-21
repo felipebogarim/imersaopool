@@ -1,45 +1,44 @@
-# Plan: Implement Block-based Email Template Editor
+# Plan - Block-based Email Template Editor Fixes
 
-The goal is to replace the simple template dialog with a full-page, block-based editor as per the user's reference image. This will allow structuring messages with multiple blocks containing media and rich text.
+Fix the routing structure to allow the new template editor to render and refine the UI to strictly follow the block-based mockup provided.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The editor will allow adding multiple blocks, each with its own media (image/video) and description. Are there any specific character limits for these descriptions?
 
 ## Proposed Changes
 
-### Routes
-- **Create `src/routes/_authenticated/admin.central-mensagens.template.$id.tsx`**:
-    - Full-page layout with two columns.
-    - Left column: Editor form.
-    - Right column: Live preview.
-    - Handle `$id` being "new" or an existing UUID.
+### Routing Hierarchy
+- Move current `CentralMensagensPage` from `admin.central-mensagens.tsx` to a new `admin.central-mensagens.index.tsx` file.
+- Update `admin.central-mensagens.tsx` to be a layout route that only renders an `<Outlet />`. This ensures sub-routes like `/template/$id` can be displayed.
 
-### Components - Template Editor (`src/components/central-mensagens/`)
-- **Create `TemplateEditor.tsx`**: The main component for the new editor page.
-    - States for intro, name, blocks, farewell, and status.
-    - Logic to add/remove/reorder content blocks.
-- **Create `ContentBlockEditor.tsx`**: Sub-component for individual blocks.
-    - Media upload placeholder.
-    - Video URL input.
-    - Rich text editor for "Texto descritivo" (using a simple editor or standard textarea with formatting buttons as in the image).
-- **Create `TemplatePreview.tsx`**: Live preview component that renders the current state of the template.
+### Template Editor Refinement
+- **UI Structure**: Ensure the two-column layout (Editor vs Preview) is responsive and follows the visual style of the mockup.
+- **Rich Text Controls**: Add visual formatting buttons (Bold, Italic, Link, etc.) to each block's description field.
+- **Media Handling**: 
+  - Ensure the "app_update_assets" bucket is used for all uploads.
+  - Implement paste-to-upload (print/clipboard) functionality in the media block.
+- **Data Persistence**: Verify the `blocks` JSONB column in `app_update_templates` stores the array of blocks correctly.
 
-### Navigation & Integration
-- **Update `TemplateManager.tsx`**:
-    - Redirect "Novo Template" to `/admin/central-mensagens/template/new`.
-    - Redirect "Edit" action to `/admin/central-mensagens/template/[id]`.
-    - Remove the `TemplateDialog` integration.
-
-### Database
-- Ensure the `blocks` column in `app_update_templates` stores the array of content blocks.
-- Update persistence logic to handle the full structure.
+### Components
+- **TemplateEditor.tsx**: Refine the layout and add a "Voltar" button that confirms if there are unsaved changes.
+- **ContentBlockEditor.tsx**: Improve the drag-and-drop/upload area appearance.
+- **TemplatePreview.tsx**: Ensure the blue header and block separation match the mockup exactly.
 
 ## Technical Details
-- Use `shadcn/ui` components for the layout (Card, Button, Input, Textarea).
-- Implement image upload to Supabase Storage (already bucket `app-assets` or similar).
-- For rich text, use a simple implementation with `selectionStart/End` for the toolbar buttons if a full lib like Tiptap is overkill, or just follow the visual pattern.
+- TanStack Router hierarchical routing.
+- Supabase Storage for media.
+- React state for live preview synchronization.
+- JSONB storage for block arrays.
 
 ## Verification Plan
-- Manual testing of the full flow:
-    1. Navigate to "Novo Template".
-    2. Fill intro, name, add 2 blocks with images and text.
-    3. Verify the live preview updates in real-time.
-    4. Save as draft and verify it appears in the list.
-    5. Re-edit and verify all data is restored correctly.
+
+### Automated Tests
+- Run Playwright to verify that navigating to `/admin/central-mensagens/template/new` renders the editor.
+- Verify that clicking "Add Block" inserts a new section in both the editor and preview.
+
+### Manual Verification
+- Upload an image to a block and see it reflect in the preview.
+- Save a draft and verify it appears in the `TemplateManager` list.
+- Navigate back to the list and re-edit the draft.
