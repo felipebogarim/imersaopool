@@ -98,6 +98,18 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
   };
 
   const applyFormat = (format: string) => {
+    if (format === 'link') {
+      const url = prompt("Digite o link (URL):", "https://");
+      if (url) {
+        const selectedText = window.getSelection()?.toString();
+        if (selectedText) {
+          onUpdate({ description: block.description + ` [${selectedText}](${url})` });
+        } else {
+          onUpdate({ description: block.description + ` ${url}` });
+        }
+      }
+      return;
+    }
     // Basic formatting logic could go here if using a textarea
     // For now, we'll just focus on the visual representation as requested
     toast.info(`Formatação ${format} selecionada (demonstrativo)`);
@@ -179,6 +191,10 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyFormat('list')}>
                   <List className="h-3.5 w-3.5" />
+                </Button>
+                <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => applyFormat('link')} title="Inserir Link">
+                  <LinkIcon className="h-3.5 w-3.5" />
                 </Button>
                 <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px]" onClick={() => applyFormat('size')}>
