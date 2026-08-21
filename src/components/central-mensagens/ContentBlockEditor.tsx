@@ -74,6 +74,9 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
         .from('app_update_assets')
         .getPublicUrl(filePath);
 
+      console.log("Generated Public URL:", publicUrl);
+
+
       onUpdate({ 
         media_url: publicUrl, 
         media_type: file.type.startsWith('video/') ? 'video' : 'image' 
