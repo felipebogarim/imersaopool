@@ -81,7 +81,11 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
       toast.success("Arquivo enviado com sucesso");
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error("Erro ao enviar arquivo: " + error.message);
+      if (error.message === "Bucket not found") {
+        toast.error("Erro ao enviar arquivo: A pasta de armazenamento não foi encontrada. Por favor, tente novamente em alguns instantes ou contate o suporte.");
+      } else {
+        toast.error("Erro ao enviar arquivo: " + error.message);
+      }
     } finally {
       setUploading(false);
     }
