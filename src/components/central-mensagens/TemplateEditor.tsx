@@ -43,7 +43,7 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [intro, setIntro] = useState("Olá! Temos novidades no sistema para você.");
-  const [farewell, setFarewell] = useState("Equipe Delis Iluminação");
+  const [farewell, setFarewell] = useState("Até a próxima");
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
