@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, Edit, Trash2, Mail, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { TemplateDialog } from "./TemplateDialog";
 import { SendEmailDialog } from "./SendEmailDialog";
 
 export function TemplateManager() {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
 
@@ -57,13 +57,11 @@ export function TemplateManager() {
   }
 
   function handleEdit(template: any) {
-    setSelectedTemplate(template);
-    setIsDialogOpen(true);
+    navigate({ to: `/admin/central-mensagens/template/${template.id}` });
   }
 
   function handleCreate() {
-    setSelectedTemplate(null);
-    setIsDialogOpen(true);
+    navigate({ to: "/admin/central-mensagens/template/new" });
   }
 
   function handleSendSimulation(type: "email" | "whatsapp", template: any) {
@@ -155,12 +153,6 @@ export function TemplateManager() {
         )}
       </div>
 
-      <TemplateDialog 
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        template={selectedTemplate}
-        onSuccess={fetchTemplates}
-      />
 
       <SendEmailDialog 
         open={isSendDialogOpen}
