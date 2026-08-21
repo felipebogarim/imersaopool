@@ -64,7 +64,6 @@ export function TemplateManager() {
   }
 
   function handleCreate() {
-    console.log("Navigating to new template editor");
     navigate({ 
       to: "/admin/central-mensagens/template/$id",
       params: { id: "new" }
