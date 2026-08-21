@@ -92,6 +92,7 @@ import { Route as AuthenticatedAdminGeradorPerformanceRouteImport } from './rout
 import { Route as AuthenticatedAdminEventoCheckoutTesteRouteImport } from './routes/_authenticated/admin.evento-checkout-teste'
 import { Route as AuthenticatedAdminCriteriosSegurancaRouteImport } from './routes/_authenticated/admin.criterios-seguranca'
 import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_authenticated/admin.conformidade'
+import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
@@ -564,6 +565,12 @@ const AuthenticatedAdminConformidadeRoute =
     path: '/conformidade',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCentralMensagensRoute =
+  AuthenticatedAdminCentralMensagensRouteImport.update({
+    id: '/central-mensagens',
+    path: '/central-mensagens',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBackupRoute =
   AuthenticatedAdminBackupRouteImport.update({
     id: '/backup',
@@ -578,9 +585,9 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
   } as any)
 const AuthenticatedAdminCentralMensagensIndexRoute =
   AuthenticatedAdminCentralMensagensIndexRouteImport.update({
-    id: '/central-mensagens/',
-    path: '/central-mensagens/',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminCentralMensagensRoute,
   } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
@@ -672,9 +679,9 @@ const AuthenticatedClientesBiCompararRepIdRazaoRoute =
   } as any)
 const AuthenticatedAdminCentralMensagensTemplateIdRoute =
   AuthenticatedAdminCentralMensagensTemplateIdRouteImport.update({
-    id: '/central-mensagens/template/$id',
-    path: '/central-mensagens/template/$id',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/template/$id',
+    path: '/template/$id',
+    getParentRoute: () => AuthenticatedAdminCentralMensagensRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -714,6 +721,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -921,6 +929,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
+  '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/_authenticated/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/_authenticated/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -1026,6 +1035,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
+    | '/admin/central-mensagens'
     | '/admin/conformidade'
     | '/admin/criterios-seguranca'
     | '/admin/evento-checkout-teste'
@@ -1232,6 +1242,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
+    | '/_authenticated/admin/central-mensagens'
     | '/_authenticated/admin/conformidade'
     | '/_authenticated/admin/criterios-seguranca'
     | '/_authenticated/admin/evento-checkout-teste'
@@ -1915,6 +1926,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminConformidadeRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/central-mensagens': {
+      id: '/_authenticated/admin/central-mensagens'
+      path: '/central-mensagens'
+      fullPath: '/admin/central-mensagens'
+      preLoaderRoute: typeof AuthenticatedAdminCentralMensagensRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/backup': {
       id: '/_authenticated/admin/backup'
       path: '/backup'
@@ -1931,10 +1949,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/central-mensagens/': {
       id: '/_authenticated/admin/central-mensagens/'
-      path: '/central-mensagens'
+      path: '/'
       fullPath: '/admin/central-mensagens/'
       preLoaderRoute: typeof AuthenticatedAdminCentralMensagensIndexRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedAdminCentralMensagensRoute
     }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
@@ -2043,10 +2061,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/central-mensagens/template/$id': {
       id: '/_authenticated/admin/central-mensagens/template/$id'
-      path: '/central-mensagens/template/$id'
+      path: '/template/$id'
       fullPath: '/admin/central-mensagens/template/$id'
       preLoaderRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedAdminCentralMensagensRoute
     }
   }
 }
@@ -2073,9 +2091,28 @@ const AuthenticatedPriceRouteRouteWithChildren =
     AuthenticatedPriceRouteRouteChildren,
   )
 
+interface AuthenticatedAdminCentralMensagensRouteChildren {
+  AuthenticatedAdminCentralMensagensIndexRoute: typeof AuthenticatedAdminCentralMensagensIndexRoute
+  AuthenticatedAdminCentralMensagensTemplateIdRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
+}
+
+const AuthenticatedAdminCentralMensagensRouteChildren: AuthenticatedAdminCentralMensagensRouteChildren =
+  {
+    AuthenticatedAdminCentralMensagensIndexRoute:
+      AuthenticatedAdminCentralMensagensIndexRoute,
+    AuthenticatedAdminCentralMensagensTemplateIdRoute:
+      AuthenticatedAdminCentralMensagensTemplateIdRoute,
+  }
+
+const AuthenticatedAdminCentralMensagensRouteWithChildren =
+  AuthenticatedAdminCentralMensagensRoute._addFileChildren(
+    AuthenticatedAdminCentralMensagensRouteChildren,
+  )
+
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaSegurancaRoute: typeof AuthenticatedAdminAuditoriaSegurancaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
+  AuthenticatedAdminCentralMensagensRoute: typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   AuthenticatedAdminConformidadeRoute: typeof AuthenticatedAdminConformidadeRoute
   AuthenticatedAdminCriteriosSegurancaRoute: typeof AuthenticatedAdminCriteriosSegurancaRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -2086,14 +2123,14 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMfaRecuperacaoRoute: typeof AuthenticatedAdminMfaRecuperacaoRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
-  AuthenticatedAdminCentralMensagensIndexRoute: typeof AuthenticatedAdminCentralMensagensIndexRoute
-  AuthenticatedAdminCentralMensagensTemplateIdRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaSegurancaRoute:
     AuthenticatedAdminAuditoriaSegurancaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
+  AuthenticatedAdminCentralMensagensRoute:
+    AuthenticatedAdminCentralMensagensRouteWithChildren,
   AuthenticatedAdminConformidadeRoute: AuthenticatedAdminConformidadeRoute,
   AuthenticatedAdminCriteriosSegurancaRoute:
     AuthenticatedAdminCriteriosSegurancaRoute,
@@ -2107,10 +2144,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminMfaRecuperacaoRoute: AuthenticatedAdminMfaRecuperacaoRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
-  AuthenticatedAdminCentralMensagensIndexRoute:
-    AuthenticatedAdminCentralMensagensIndexRoute,
-  AuthenticatedAdminCentralMensagensTemplateIdRoute:
-    AuthenticatedAdminCentralMensagensTemplateIdRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
