@@ -190,7 +190,7 @@ export function TemplateEditor({ templateId }: TemplateEditorProps) {
                   key={block.id}
                   block={block}
                   index={index}
-                  onUpdate={(updates) => updateBlock(block.id, updates)}
+                  onUpdate={(updates: Partial<ContentBlock>) => updateBlock(block.id, updates)}
                   onRemove={() => removeBlock(block.id)}
                 />
               ))}
