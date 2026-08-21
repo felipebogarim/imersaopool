@@ -110,6 +110,7 @@ import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/
 import { Route as ApiPublicMpTestWebhookRouteImport } from './routes/api/public/mp/test/webhook'
 import { Route as ApiPublicMpTestCreatePreferenceRouteImport } from './routes/api/public/mp/test/create-preference'
 import { Route as AuthenticatedClientesBiCompararRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.comparar.$repId.$razao'
+import { Route as AuthenticatedAdminCentralMensagensTemplateIdRouteImport } from './routes/_authenticated/admin.central-mensagens.template.$id'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -669,6 +670,12 @@ const AuthenticatedClientesBiCompararRepIdRazaoRoute =
     path: '/clientes-bi/comparar/$repId/$razao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminCentralMensagensTemplateIdRoute =
+  AuthenticatedAdminCentralMensagensTemplateIdRouteImport.update({
+    id: '/template/$id',
+    path: '/template/$id',
+    getParentRoute: () => AuthenticatedAdminCentralMensagensRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -707,7 +714,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
-  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRoute
+  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -768,6 +775,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
@@ -808,7 +816,7 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
-  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRoute
+  '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -869,6 +877,7 @@ export interface FileRoutesByTo {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
@@ -912,7 +921,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
-  '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRoute
+  '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   '/_authenticated/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
   '/_authenticated/admin/criterios-seguranca': typeof AuthenticatedAdminCriteriosSegurancaRoute
   '/_authenticated/admin/evento-checkout-teste': typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -973,6 +982,7 @@ export interface FileRoutesById {
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
+  '/_authenticated/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
   '/api/public/mp/test/webhook': typeof ApiPublicMpTestWebhookRoute
@@ -1077,6 +1087,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
@@ -1178,6 +1189,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
@@ -1281,6 +1293,7 @@ export interface FileRouteTypes {
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
+    | '/_authenticated/admin/central-mensagens/template/$id'
     | '/_authenticated/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
     | '/api/public/mp/test/webhook'
@@ -2028,6 +2041,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/central-mensagens/template/$id': {
+      id: '/_authenticated/admin/central-mensagens/template/$id'
+      path: '/template/$id'
+      fullPath: '/admin/central-mensagens/template/$id'
+      preLoaderRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRouteImport
+      parentRoute: typeof AuthenticatedAdminCentralMensagensRoute
+    }
   }
 }
 
@@ -2053,10 +2073,25 @@ const AuthenticatedPriceRouteRouteWithChildren =
     AuthenticatedPriceRouteRouteChildren,
   )
 
+interface AuthenticatedAdminCentralMensagensRouteChildren {
+  AuthenticatedAdminCentralMensagensTemplateIdRoute: typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
+}
+
+const AuthenticatedAdminCentralMensagensRouteChildren: AuthenticatedAdminCentralMensagensRouteChildren =
+  {
+    AuthenticatedAdminCentralMensagensTemplateIdRoute:
+      AuthenticatedAdminCentralMensagensTemplateIdRoute,
+  }
+
+const AuthenticatedAdminCentralMensagensRouteWithChildren =
+  AuthenticatedAdminCentralMensagensRoute._addFileChildren(
+    AuthenticatedAdminCentralMensagensRouteChildren,
+  )
+
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaSegurancaRoute: typeof AuthenticatedAdminAuditoriaSegurancaRoute
   AuthenticatedAdminBackupRoute: typeof AuthenticatedAdminBackupRoute
-  AuthenticatedAdminCentralMensagensRoute: typeof AuthenticatedAdminCentralMensagensRoute
+  AuthenticatedAdminCentralMensagensRoute: typeof AuthenticatedAdminCentralMensagensRouteWithChildren
   AuthenticatedAdminConformidadeRoute: typeof AuthenticatedAdminConformidadeRoute
   AuthenticatedAdminCriteriosSegurancaRoute: typeof AuthenticatedAdminCriteriosSegurancaRoute
   AuthenticatedAdminEventoCheckoutTesteRoute: typeof AuthenticatedAdminEventoCheckoutTesteRoute
@@ -2074,7 +2109,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
     AuthenticatedAdminAuditoriaSegurancaRoute,
   AuthenticatedAdminBackupRoute: AuthenticatedAdminBackupRoute,
   AuthenticatedAdminCentralMensagensRoute:
-    AuthenticatedAdminCentralMensagensRoute,
+    AuthenticatedAdminCentralMensagensRouteWithChildren,
   AuthenticatedAdminConformidadeRoute: AuthenticatedAdminConformidadeRoute,
   AuthenticatedAdminCriteriosSegurancaRoute:
     AuthenticatedAdminCriteriosSegurancaRoute,
