@@ -1,9 +1,8 @@
-import { useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Upload, BarChart3, Sparkles, Loader2, MoreVertical, FileText, FileSpreadsheet, Share2 } from "lucide-react";
+import { ChevronRight, RefreshCw, BarChart3, Sparkles, Loader2, MoreVertical, FileText, FileSpreadsheet, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +11,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
-import { parseBIWorkbook, type BIData } from "@/lib/bi-parser";
 import { FAROL_CELL_CLASS, FAROL_LABEL, FAROL_ORDER, catBadge, type FarolStatus } from "@/lib/performance-farol";
 import { GaugeAtingimento } from "@/components/visao-rep2/GaugeAtingimento";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
+import { useRecalcBI, useRepresentativeBI } from "@/lib/use-performance-bi";
+import type { FamilyShare } from "@/lib/performance-bi-engine";
 
-
-const fmtPct = (n: number | null | undefined) => {
-  if (n == null || Number.isNaN(n)) return "—";
-  const v = Math.abs(n) <= 1.5 ? n * 100 : n;
-  return `${v.toFixed(1).replace(".", ",")}%`;
-};
+// Todos os indicadores do BI trafegam como ratio (1 = 100%).
+const fmtPct = (r: number | null | undefined) =>
+  r == null || Number.isNaN(r) ? "—" : `${(r * 100).toFixed(1).replace(".", ",")}%`;
 
 // Formatador único para shareRatio (decimal entre 0 e 1) → "12,3%".
 const pctFormatter = new Intl.NumberFormat("pt-BR", {
@@ -39,14 +36,8 @@ const farolKey = (grupo: string): keyof typeof FAROL_LABEL | null => {
   return (found as any) ?? null;
 };
 
+export type { FamilyShare };
 
-export type FamilyShare = {
-  familyKey: string;
-  familyName: string;
-  shareRatio: number; // 0..1
-  attainmentRatio: number | null; // 0..1+, null when meta = 0
-  metaTotal?: number;
-};
 
 
 type Metric = "participation" | "attainment";
@@ -124,138 +115,61 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
   const fileRef = useRef<HTMLInputElement>(null);
 
 
-  const { data: bi = null, isLoading } = useQuery({
-    queryKey: ["rep-bi", repId],
-    enabled: !!repId,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("rep_bi_uploads")
-        .select("*")
-        .eq("representative_id", repId)
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
-    },
-  });
+  // ==========================================================================
+  // FONTE ÚNICA: versão ativa de Performance → motor central → BI.
+  // Nenhum Excel/JSON antigo de BI participa deste cálculo.
+  // ==========================================================================
+  const { data: perf = null, isLoading } = useRepresentativeBI(repId);
+  const recalc = useRecalcBI();
+  const version = perf?.version ?? null;
+  const repBI = perf?.bi ?? null;
 
-  const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const buf = await file.arrayBuffer();
-      const parsed: BIData = parseBIWorkbook(buf);
-      const { data: userRes } = await supabase.auth.getUser();
-      const { data: rep } = await supabase
-        .from("representatives")
-        .select("company_id")
-        .eq("id", repId)
-        .single();
-      if (!rep?.company_id) throw new Error("Representante sem empresa associada.");
-      if (bi?.id) {
-        await (supabase as any)
-          .from("rep_bi_uploads")
-          .update({ substituida_em: new Date().toISOString() })
-          .eq("id", bi.id);
-      }
-      const { error } = await (supabase as any).from("rep_bi_uploads").insert({
-        representative_id: repId,
-        company_id: rep.company_id,
-        periodo_label: "1º Semestre 2026",
-        filename: file.name,
-        data_safe: parsed,
-        uploaded_by: userRes.user?.id ?? null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Planilha de BI importada.");
-      qc.invalidateQueries({ queryKey: ["rep-bi", repId] });
-      setOpen(true);
-    },
-    onError: (e: any) => toast.error(e?.message ?? "Erro ao importar BI."),
-    onSettled: () => setBusy(false),
-  });
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
+  function onRecalc() {
     setBusy(true);
-    upload.mutate(f);
+    Promise.resolve(recalc())
+      .then(() => toast.success("BI recalculado a partir da Performance ativa."))
+      .catch((e: any) => toast.error(e?.message ?? "Falha ao recalcular o BI."))
+      .finally(() => setBusy(false));
   }
 
-  const d: BIData | null = ((bi?.data_safe ?? bi?.data) as BIData) ?? null;
+  // Objeto de apresentação (todos os valores são ratios 0..1+).
+  const d = useMemo(() => {
+    if (!repBI) return null;
+    return {
+      geral: repBI.atingimento_geral_ratio,
+      indice: repBI.indice_geral,
+      categorias: repBI.categorias,
+      farol: repBI.farol,
+      performance_version_id: repBI.performance_version_id,
+      calculation_version: repBI.calculation_version,
+    };
+  }, [repBI]);
+
   const catsSorted = useMemo(
     () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
     [d],
   );
   const farolSorted = useMemo(
-    () => (d?.farol ?? []).slice().sort((a, b) => FAROL_ORDER.indexOf(farolKey(a.grupo) as any) - FAROL_ORDER.indexOf(farolKey(b.grupo) as any)),
+    () =>
+      (d?.farol ?? [])
+        .slice()
+        .sort((a, b) => FAROL_ORDER.indexOf(a.status) - FAROL_ORDER.indexOf(b.status)),
     [d],
   );
-  // Fallback: quando a planilha não traz os destaques prontos, derivamos
-  // do próprio ranking de categorias / grupos do farol já calculado.
   const maiorCategoria = useMemo(() => {
-    const v = d?.maior_categoria;
-    if (v?.label && v.participacao != null) return v;
     const top = catsSorted[0];
     return top
       ? { label: top.categoria, participacao: top.participacao }
-      : { label: null, participacao: null };
-  }, [d, catsSorted]);
+      : { label: null as string | null, participacao: null as number | null };
+  }, [catsSorted]);
   const maiorGrupoFarol = useMemo(() => {
-    const v = d?.maior_grupo_farol;
-    if (v?.label && v.participacao != null) return v;
-    const top = (d?.farol ?? [])
-      .slice()
-      .sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0];
-    return top ? { label: top.grupo, participacao: top.participacao } : { label: null, participacao: null };
+    const top = (d?.farol ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0))[0];
+    return top
+      ? { label: top.grupo, participacao: top.participacao }
+      : { label: null as string | null, participacao: null as number | null };
   }, [d]);
 
-  // Rankings de participação por família — cálculo agora ocorre no banco
-  // (função SECURITY DEFINER `compute_bi_shares`) para não expor metas em R$
-  // ao cliente. Retorna shareRatio (0..1) por família, agrupado por categoria.
-  const { data: sharesRpc = {} } = useQuery({
-    queryKey: ["bi-shares", repId],
-    enabled: !!repId,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("compute_bi_shares", { _rep_id: repId });
-      if (error) throw error;
-      return (data ?? {}) as Record<string, FamilyShare[]>;
-    },
-  });
-
-  // Fallback determinístico: quando não há base de performance no banco, usa a
-  // matriz categoria × família extraída da aba "Base BI" do arquivo importado.
-  const sharesByCategory: Record<string, FamilyShare[]> = useMemo(() => {
-    // O RPC só é considerado útil quando traz valores efetivos (meta/participação/
-    // atingimento). Retornos "vazios" (tudo zero) caem para a base do arquivo.
-    const rpcHas = Object.values(sharesRpc ?? {}).some((v) =>
-      (v ?? []).some(
-        (x) => (x?.metaTotal ?? 0) > 0 || (x?.shareRatio ?? 0) > 0 || (x?.attainmentRatio ?? 0) > 0,
-      ),
-    );
-    if (rpcHas) return sharesRpc;
-    const fams = d?.familias ?? [];
-    if (!fams.length) return sharesRpc;
-    const out: Record<string, FamilyShare[]> = {};
-    for (const f of fams) {
-      const part = f.participacao ?? 0;
-      out[f.categoria] ??= [];
-      out[f.categoria].push({
-        familyKey: f.familia,
-        familyName: f.familia,
-        shareRatio: part / 100,
-        attainmentRatio: f.atingimento == null ? null : f.atingimento / 100,
-        // Peso relativo dentro da categoria: usa a participação como proxy da meta
-        // (metas em R$ não trafegam para o cliente).
-        metaTotal: part > 0 ? part : 0.0001,
-      });
-    }
-    return out;
-  }, [sharesRpc, d]);
-
-
+  const sharesByCategory: Record<string, FamilyShare[]> = repBI?.familiasPorCategoria ?? {};
 
   const CAT_ORDER = ["Black", "Gold", "Silver"] as const;
 
@@ -275,7 +189,6 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     const out: Record<string, { menores: FamilyShare[]; maiores: FamilyShare[] }> = {};
     for (const cat of orderedCats) {
       const list = sharesByCategory[cat] ?? [];
-      // Só famílias com meta financeira > 0 entram no ranking.
       const base = list.filter((x) => (x.metaTotal ?? 0) > 0);
       const key: keyof FamilyShare = metric === "participation" ? "shareRatio" : "attainmentRatio";
       const withMetric = base.filter((x) => x[key] != null);
@@ -294,122 +207,34 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     return out;
   }, [sharesByCategory, orderedCats, metric]);
 
-  // Consolidação por família (todas as categorias) para o gráfico de barras.
-  // Média ponderada pela meta de cada família dentro de cada categoria.
+  // Consolidado por família — mesma derivação usada nos rankings (denominador único).
   const familyChart = useMemo(() => {
-    // Participação estimada: denominador único = soma do índice ponderado de
-    // todas as famílias (todas as categorias). O índice global de cada célula é
-    // participação da família na categoria × participação da categoria no total.
-    if (metric === "participation") {
-      const catShare = new Map<string, number>();
-      for (const c of d?.categorias ?? []) {
-        if (c.participacao != null) catShare.set(c.categoria, c.participacao / 100);
-      }
-      const acc = new Map<string, { name: string; v: number }>();
-      let total = 0;
-      for (const cat of orderedCats) {
-        const list = sharesByCategory[cat] ?? [];
-        const cs =
-          catShare.get(cat) ??
-          list.reduce((s, f) => s + (f.metaTotal ?? 0) * (f.attainmentRatio ?? 1), 0);
-        for (const f of list) {
-          const v = (f.shareRatio ?? 0) * cs;
-          if (!Number.isFinite(v)) continue;
-          const cur = acc.get(f.familyKey) ?? { name: f.familyName, v: 0 };
-          cur.v += v;
-          acc.set(f.familyKey, cur);
-          total += v;
-        }
-      }
-      return [...acc.entries()]
-        .map(([key, v]) => ({ key, name: v.name, ratio: total > 0 ? v.v / total : 0 }))
-        .sort((a, b) => b.ratio - a.ratio);
-    }
-
-    const acc = new Map<string, { name: string; num: number; den: number }>();
-    for (const cat of orderedCats) {
-      for (const f of sharesByCategory[cat] ?? []) {
-        const value = f.attainmentRatio;
-        if (value == null || Number.isNaN(value)) continue;
-        const w = (f.metaTotal ?? 0) > 0 ? (f.metaTotal as number) : 1;
-        const cur = acc.get(f.familyKey) ?? { name: f.familyName, num: 0, den: 0 };
-        cur.num += value * w;
-        cur.den += w;
-        acc.set(f.familyKey, cur);
-      }
-    }
-    return [...acc.entries()]
-      .map(([key, v]) => ({ key, name: v.name, ratio: v.den > 0 ? v.num / v.den : 0 }))
+    const base = repBI?.familias ?? [];
+    return base
+      .map((f) => ({
+        key: f.familia,
+        name: f.familia,
+        ratio: metric === "participation" ? f.shareRatio : (f.attainmentRatio ?? 0),
+      }))
       .sort((a, b) => b.ratio - a.ratio);
-  }, [sharesByCategory, orderedCats, metric, d]);
-
+  }, [repBI, metric]);
 
   const familyChartMax = useMemo(
     () => Math.max(0.0001, ...familyChart.map((f) => f.ratio)),
     [familyChart],
   );
 
-  // Top 6 clientes por atingimento ponderado
-  const { data: top6Clients = [] } = useQuery({
-    queryKey: ["bi-top6-clients", repId],
-    enabled: !!repId,
-    queryFn: async () => {
-      const { data: upload } = await supabase
-        .from("rep_performance_uploads")
-        .select("id")
-        .eq("representative_id", repId)
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  // Top 6 clientes por atingimento real — mesma versão de Performance.
+  const top6Clients = useMemo(
+    () =>
+      (repBI?.clientes ?? [])
+        .filter((c) => (c.atingimento_ratio ?? 0) > 0)
+        .sort((a, b) => (b.atingimento_ratio ?? 0) - (a.atingimento_ratio ?? 0))
+        .slice(0, 6)
+        .map((c) => ({ name: c.razao_social, atingimento: (c.atingimento_ratio as number) * 100 })),
+    [repBI],
+  );
 
-      const { data: rows } = upload
-        ? await (supabase as any)
-            .from("rep_performance_rows")
-            .select("razao_social, total_pct")
-            .eq("upload_id", upload.id)
-        : { data: [] as any[] };
-
-      // Fallback: BI individual do cliente (quando a planilha de performance
-      // foi importada apenas por cores, sem percentuais).
-      const { data: clientBis } = await (supabase as any)
-        .from("client_bi_uploads")
-        .select("razao_social, data, created_at")
-        .eq("representative_id", repId)
-        .eq("kind", "bi")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false });
-
-      const biByName = new Map<string, number>();
-      for (const b of (clientBis ?? []) as any[]) {
-        const name = String(b.razao_social ?? "").trim();
-        const g = Number(b?.data?.geral);
-        if (!name || !Number.isFinite(g) || biByName.has(name)) continue;
-        biByName.set(name, Math.abs(g) <= 1.5 ? g * 100 : g);
-      }
-
-      const byName = new Map<string, number>();
-      for (const r of ((rows ?? []) as any[])) {
-        const name = String(r.razao_social ?? "").trim();
-        if (!name) continue;
-        const raw = r.total_pct == null ? null : Number(r.total_pct);
-        const value =
-          raw != null && Number.isFinite(raw) && raw > 0
-            ? raw * 100
-            : (biByName.get(name) ?? null);
-        if (value == null || !Number.isFinite(value)) continue;
-        byName.set(name, value);
-      }
-      // clientes que só existem no BI individual
-      for (const [name, value] of biByName) if (!byName.has(name)) byName.set(name, value);
-
-      return [...byName.entries()]
-        .map(([name, atingimento]) => ({ name, atingimento }))
-        .filter((c) => c.atingimento > 0)
-        .sort((a, b) => b.atingimento - a.atingimento)
-        .slice(0, 6);
-    }
-  });
 
 
 
@@ -432,34 +257,23 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
           </p>
           {d?.geral != null && (
             <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Atingimento ponderado geral: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
+              Atingimento real ponderado: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
             </span>
           )}
         </button>
         <div className="flex items-center gap-2">
-          {bi?.filename && (
-            <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[240px]">
-              {bi.filename}
+          {version?.periodo_label && (
+            <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[280px]">
+              Performance: {version.periodo_label}
             </span>
           )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={onFile}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => fileRef.current?.click()}
-            disabled={busy}
-          >
-            <Upload className="h-3.5 w-3.5 mr-1" />
-            {bi ? "Atualizar BI" : "Carregar planilha BI"}
+          <Button size="sm" variant="outline" onClick={onRecalc} disabled={busy}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+            Atualizar BI
           </Button>
         </div>
       </div>
+
 
       {open && (
         <div className="p-4 space-y-6">
@@ -467,8 +281,10 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
             <div className="text-sm text-muted-foreground">Carregando…</div>
           ) : !d ? (
             <div className="text-sm text-muted-foreground">
-              Nenhuma planilha de BI carregada. Use o botão <strong>Carregar planilha BI</strong> acima.
+              Nenhuma versão de Performance ativa para este representante. Importe uma planilha de
+              Performance — o BI é calculado automaticamente a partir dela.
             </div>
+
           ) : (
             <>
               {/* Atingimento TOP6 Clientes */}

@@ -1,13 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { BarChart3 } from "lucide-react";
-import {
-  getFamiliasCliente,
-  toPercent,
-  type FamiliaResultado,
-} from "@/lib/client-bi-familias";
-
 import {
   Bar,
   BarChart,
@@ -19,68 +11,38 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { FAROL_HEX, FAROL_LABEL, FAROL_ORDER, statusFromPercent, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
+import { useClientBI } from "@/lib/use-performance-bi";
 
-const fmtPct = (n: number | null | undefined) => {
-  if (n == null || Number.isNaN(n)) return "—";
-  return `${n.toFixed(1).replace(".", ",")}%`;
-};
-
-const farolKey = (grupo: string | null | undefined): FarolStatus | null => {
-  if (!grupo) return null;
-  const g = grupo.toLowerCase();
-  const found = FAROL_ORDER.find((k) => FAROL_LABEL[k].toLowerCase() === g);
-  return (found as FarolStatus) ?? null;
-};
+const fmtPct = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n) ? "—" : `${n.toFixed(1).replace(".", ",")}%`;
 
 export function ClientFamiliasChart({
   repId,
   razaoSocial,
   filterFams,
+  versionId = null,
 }: {
   repId: string;
   razaoSocial: string;
   companyId: string | null;
   filterFams: string[];
+  versionId?: string | null;
 }) {
-  // Fonte única: o gráfico consome exatamente `bi.familias` (mesmos dados dos cards).
-  const { data: up = null, isLoading } = useQuery({
-    queryKey: ["client-familias", repId, razaoSocial],
-    enabled: !!repId && !!razaoSocial,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("client_bi_uploads")
-        .select("*")
-        .eq("representative_id", repId)
-        .eq("razao_social", razaoSocial)
-        .eq("kind", "bi")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
-    },
-  });
-
-  const d = (up?.data as { familias?: FamiliaResultado[] } | null) ?? null;
+  // Fonte única: exatamente os mesmos dados derivados usados pelos cards.
+  const { data: bi = null, isLoading } = useClientBI(repId, razaoSocial, versionId);
 
   const chartData = useMemo(() => {
-    const itens = getFamiliasCliente(d);
     const wanted = new Set(filterFams);
-    return itens
-      .filter((r) => (filterFams.length === 0 ? true : wanted.has(r.familia)))
-      .map((r) => {
-        const pct = toPercent(r.atingimento);
-        const st = r.farol ? farolKey(r.farol) : statusFromPercent(pct);
-        return {
-          familia: r.familia,
-          atingimento: pct ?? 0,
-          farol: st ? FAROL_LABEL[st] : "—",
-          fill: FAROL_HEX[st ?? "sem_compra"],
-        };
-      });
-  }, [d, filterFams]);
-
+    return (bi?.familias ?? [])
+      .filter((f) => (filterFams.length === 0 ? true : wanted.has(f.familia)))
+      .map((f) => ({
+        familia: f.familia,
+        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : 0,
+        farol: f.farol ? FAROL_LABEL[f.farol] : "—",
+        fill: FAROL_HEX[f.farol ?? "sem_compra"],
+      }));
+  }, [bi, filterFams]);
 
   return (
     <div className="surface rounded-xl overflow-hidden">
@@ -93,9 +55,9 @@ export function ClientFamiliasChart({
       <div className="p-4">
         {isLoading ? (
           <div className="text-sm text-muted-foreground">Carregando…</div>
-        ) : !d || chartData.length === 0 ? (
+        ) : chartData.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            Nenhuma planilha de resultado por família carregada.
+            Sem dados de Performance para este cliente na versão selecionada.
           </div>
         ) : (
           <div className="h-[380px] w-full">
@@ -114,11 +76,11 @@ export function ClientFamiliasChart({
                 <Tooltip
                   formatter={(value: any, _name: any, item: any) => [
                     `${fmtPct(value as number)} · ${item?.payload?.farol ?? ""}`,
-                    "Atingimento",
+                    "Atingimento real",
                   ]}
                 />
                 <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" />
-                <Bar dataKey="atingimento" name="Atingimento" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="atingimento" name="Atingimento real" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, idx) => (
                     <Cell key={idx} fill={`#${entry.fill}`} />
                   ))}
