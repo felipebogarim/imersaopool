@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -576,30 +575,5 @@ function RelatorioExecutivoPage() {
         />
       )}
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border bg-muted/40 p-3 text-center">
-      <p className="text-xl font-bold">{value}</p>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button size="sm" variant={active ? "default" : "outline"} onClick={onClick}>
-      {children}
-    </Button>
   );
 }
