@@ -381,9 +381,10 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
                         <span className="text-xs text-muted-foreground">participação</span>
                       </div>
                       <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtPct(c.participacao)}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        Atingimento ponderado: <span className="tabular-nums text-foreground">{fmtPct(c.atingimento)}</span>
+                      <div className="mt-1 text-xs text-muted-foreground" title={METRIC_DEFS.real_achievement.tooltip}>
+                        Atingimento real: <span className="tabular-nums text-foreground">{fmtPct(c.atingimento)}</span>
                       </div>
+
                     </div>
                   ))}
                 </div>
