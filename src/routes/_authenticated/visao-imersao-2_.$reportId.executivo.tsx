@@ -23,18 +23,18 @@ import {
   FileUp,
   History,
   Loader2,
-  Lock,
   Mail,
   RefreshCw,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import {
   BriefingChapter,
-  ChapterHeader,
   DiagnosticoChapter,
   LeituraChapter,
   NaoPrioridadeChapter,
 } from "@/components/executive-report/ExecutiveChapters";
-import { ActionCard } from "@/components/executive-report/ActionCard";
+import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
@@ -45,8 +45,8 @@ import {
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
 
 import {
-  closeReport,
   createExecutiveReport,
+  deleteExecutiveReport,
   listEmailLogs,
   loadExecutiveReport,
   logEmail,
@@ -54,19 +54,11 @@ import {
   updateAction,
 } from "@/lib/executive-report/store";
 import {
-  AREAS,
-  AREA_LABEL,
-  STATUSES,
-  STATUS_LABEL,
-  actionCounts,
-  canClose,
-  finalActions,
   toFinalData,
-  type ExecArea,
-  type ExecStatus,
   type ExecutiveAction,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
+
 
 export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId/executivo")({
   head: () => ({
