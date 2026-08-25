@@ -94,6 +94,7 @@ export function PerformancePageContent() {
   const [pwdOpen, setPwdOpen] = useState(false);
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
   const [acoesOpen, setAcoesOpen] = useState(false);
+  const [massaOpen, setMassaOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "meta";
     return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
