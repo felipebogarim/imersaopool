@@ -38,7 +38,12 @@ import { ActionCard } from "@/components/executive-report/ActionCard";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
+import {
+  resolveActionOrigin,
+  useExistingClientActions,
+} from "@/lib/executive-report/match-existing";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
+
 import {
   closeReport,
   createExecutiveReport,
