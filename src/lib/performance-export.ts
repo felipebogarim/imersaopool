@@ -116,13 +116,25 @@ export function exportPerformanceXlsx(opts: {
     fmtPct(opts.participacao?.__total__ ?? null),
     ...familias.map((f) => fmtPct((opts.participacao?.[f] as number | null | undefined) ?? null)),
   ];
+  // Atingimento: usa o valor informado; na ausência, calcula a média dos
+  // percentuais reais das linhas (mesma base exibida no painel).
+  const mediaPct = (vals: (number | null)[]) => {
+    const ok = vals.filter((v): v is number => v != null && !Number.isNaN(v));
+    return ok.length ? ok.reduce((s, v) => s + v, 0) / ok.length : null;
+  };
+  const atingFam = (f: string) =>
+    (opts.atingimento?.[f] as number | null | undefined) ??
+    mediaPct(rows.map((r) => pctOf(r.familia_pct?.[f])));
+  const atingTotal =
+    opts.atingimento?.__total__ ?? mediaPct(rows.map((r) => pctOf(r.total_pct)));
   const atingimentoRow: any[] = [
     "ATINGIMENTO ESTIMADO DA META",
     "",
     "",
-    fmtPct(opts.atingimento?.__total__ ?? null),
-    ...familias.map((f) => fmtPct((opts.atingimento?.[f] as number | null | undefined) ?? null)),
+    fmtPct(atingTotal),
+    ...familias.map((f) => fmtPct(atingFam(f))),
   ];
+
   aoa.push(totalRow, participacaoRow, atingimentoRow);
 
   const ws = XLSXStyle.utils.aoa_to_sheet(aoa);
