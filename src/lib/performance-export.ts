@@ -99,10 +99,11 @@ export function exportPerformanceXlsx(opts: {
   const totalRow: any[] = [
     "TOTAL GERAL DA META",
     "",
-    totals.grand ?? 0,
+    totals.grand || "",
     "",
-    ...familias.map((f) => totals.perFamilia[f] ?? 0),
+    ...familias.map((f) => totals.perFamilia[f] || ""),
   ];
+
   const fmtPct = (n: number | null | undefined) => {
     if (n == null || Number.isNaN(n)) return "";
     const v = Math.abs(n) <= 1.5 ? n * 100 : n;
