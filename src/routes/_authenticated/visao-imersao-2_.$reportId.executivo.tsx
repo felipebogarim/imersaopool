@@ -425,6 +425,15 @@ function RelatorioExecutivoPage() {
         <div className="mt-6 space-y-8">
           <BriefingChapter data={viewData} />
           <LeituraChapter data={viewData} />
+          {commercial?.representativeId && commercial?.razaoSocial && (
+            <ClientFamiliasChart
+              repId={commercial.representativeId}
+              razaoSocial={commercial.razaoSocial}
+              companyId={null}
+              filterFams={[]}
+            />
+          )}
+
           <DiagnosticoChapter
             data={viewData}
             readOnly={closed}
