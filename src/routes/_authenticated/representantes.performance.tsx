@@ -162,7 +162,7 @@ export function PerformancePageContent() {
     queryFn: async () => {
       const { data: ups } = await supabase
         .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename, familias, participacao, atingimento")
         .is("substituida_em", null)
         .order("created_at", { ascending: false });
       const byRep = new Map<string, any>();
