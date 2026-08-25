@@ -231,6 +231,8 @@ function RelatorioExecutivoPage() {
       const text = await file.text();
       const parsed = parseExecutiveReportFile(text);
       const parentInfo = (parent?.structured_data as any)?.data ?? {};
+      // "Atualizar": substitui integralmente os dados atuais pelo novo arquivo.
+      if (data?.id) await deleteExecutiveReport(data.id);
       await createExecutiveReport({
         immersionReportId: reportId,
         companyId: parent?.company_id ?? me?.companyId ?? null,
@@ -272,41 +274,28 @@ function RelatorioExecutivoPage() {
     }
   }
 
-  async function handleClose() {
-    if (!data) return;
-    if (!canClose(data.actions)) {
-      toast.error("Revise todas as ações antes de finalizar.");
-      return;
-    }
+  async function handleRevisar() {
+    if (!data?.id) return;
+    await reopenReport(data.id);
+    await refetch();
+    toast.success("Relatório reaberto para revisão.");
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
     setBusy(true);
     try {
-      const v = await closeReport({
-        data,
-        companyId: parent?.company_id ?? me?.companyId ?? null,
-        userId: me?.userId ?? null,
-        userName: me?.name ?? null,
-      });
+      await deleteExecutiveReport(data.id);
       await refetch();
-      toast.success(`Relatório finalizado — versão ${v}.`);
+      setConfirmDelete(false);
+      toast.success("Relatório executivo excluído.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível fechar o relatório.");
+      toast.error(err instanceof Error ? err.message : "Não foi possível excluir o relatório.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleNewVersion() {
-    if (!data?.id) return;
-    await reopenReport(data.id);
-    await refetch();
-    toast.success("Nova versão aberta. O relatório voltou para Em revisão.");
-  }
-
-  const filteredActions = (data?.actions ?? []).filter(
-    (a) =>
-      (filterArea === "all" || a.area === filterArea) &&
-      (filterStatus === "all" || a.status === filterStatus),
-  );
 
   const clientName = parent?.client_name ?? data?.client.display_name ?? "Cliente";
 
