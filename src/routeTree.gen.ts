@@ -103,6 +103,7 @@ import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/w
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
 import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
+import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
@@ -630,6 +631,12 @@ const ApiPublicHooksMfaDeadlineCheckRoute =
     path: '/api/public/hooks/mfa-deadline-check',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedVisaoImersao2ReportIdExecutivoRoute =
+  AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport.update({
+    id: '/visao-imersao-2_/$reportId/executivo',
+    path: '/visao-imersao-2/$reportId/executivo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTarefasBBoardIdRoute =
   AuthenticatedTarefasBBoardIdRouteImport.update({
     id: '/tarefas/b/$boardId',
@@ -775,6 +782,7 @@ export interface FileRoutesByFullPath {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
@@ -877,6 +885,7 @@ export interface FileRoutesByTo {
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
@@ -983,6 +992,7 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
+  '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
@@ -1089,6 +1099,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
@@ -1191,6 +1202,7 @@ export interface FileRouteTypes {
     | '/entrevistas/$id/sessao'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
+    | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
@@ -1296,6 +1308,7 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
+    | '/_authenticated/visao-imersao-2_/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/mp/create-preference'
@@ -2003,6 +2016,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMfaDeadlineCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/visao-imersao-2_/$reportId/executivo': {
+      id: '/_authenticated/visao-imersao-2_/$reportId/executivo'
+      path: '/visao-imersao-2/$reportId/executivo'
+      fullPath: '/visao-imersao-2/$reportId/executivo'
+      preLoaderRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tarefas/b/$boardId': {
       id: '/_authenticated/tarefas/b/$boardId'
       path: '/tarefas/b/$boardId'
@@ -2229,6 +2249,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
+  AuthenticatedVisaoImersao2ReportIdExecutivoRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   AuthenticatedClientesBiCompararRepIdRazaoRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
 }
 
@@ -2289,6 +2310,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedClientesBiRepIdRazaoRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
+  AuthenticatedVisaoImersao2ReportIdExecutivoRoute:
+    AuthenticatedVisaoImersao2ReportIdExecutivoRoute,
   AuthenticatedClientesBiCompararRepIdRazaoRoute:
     AuthenticatedClientesBiCompararRepIdRazaoRoute,
 }

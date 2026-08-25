@@ -1393,6 +1393,283 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_report_actions: {
+        Row: {
+          area: string
+          company_id: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          executive_report_id: string
+          external_id: string
+          history: Json
+          id: string
+          note: string | null
+          ordem: number
+          owner: string | null
+          priority: string
+          reject_reason: string | null
+          source_decision_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          area?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          executive_report_id: string
+          external_id: string
+          history?: Json
+          id?: string
+          note?: string | null
+          ordem?: number
+          owner?: string | null
+          priority?: string
+          reject_reason?: string | null
+          source_decision_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          area?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          executive_report_id?: string
+          external_id?: string
+          history?: Json
+          id?: string
+          note?: string | null
+          ordem?: number
+          owner?: string | null
+          priority?: string
+          reject_reason?: string | null
+          source_decision_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_report_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_report_actions_executive_report_id_fkey"
+            columns: ["executive_report_id"]
+            isOneToOne: false
+            referencedRelation: "executive_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_report_email_logs: {
+        Row: {
+          attach_pdf: boolean
+          company_id: string | null
+          error: string | null
+          executive_report_id: string
+          executive_report_version_id: string | null
+          id: string
+          recipients: Json
+          sent_at: string
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          attach_pdf?: boolean
+          company_id?: string | null
+          error?: string | null
+          executive_report_id: string
+          executive_report_version_id?: string | null
+          id?: string
+          recipients?: Json
+          sent_at?: string
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          attach_pdf?: boolean
+          company_id?: string | null
+          error?: string | null
+          executive_report_id?: string
+          executive_report_version_id?: string | null
+          id?: string
+          recipients?: Json
+          sent_at?: string
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_report_email_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_report_email_logs_executive_report_id_fkey"
+            columns: ["executive_report_id"]
+            isOneToOne: false
+            referencedRelation: "executive_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_report_email_logs_executive_report_version_id_fkey"
+            columns: ["executive_report_version_id"]
+            isOneToOne: false
+            referencedRelation: "executive_report_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_report_versions: {
+        Row: {
+          closed_at: string
+          closed_by: string | null
+          closed_by_name: string | null
+          company_id: string | null
+          executive_report_id: string
+          id: string
+          snapshot: Json
+          version: number
+        }
+        Insert: {
+          closed_at?: string
+          closed_by?: string | null
+          closed_by_name?: string | null
+          company_id?: string | null
+          executive_report_id: string
+          id?: string
+          snapshot: Json
+          version: number
+        }
+        Update: {
+          closed_at?: string
+          closed_by?: string | null
+          closed_by_name?: string | null
+          company_id?: string | null
+          executive_report_id?: string
+          id?: string
+          snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_report_versions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_report_versions_executive_report_id_fkey"
+            columns: ["executive_report_id"]
+            isOneToOne: false
+            referencedRelation: "executive_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_reports: {
+        Row: {
+          brands_observed: Json
+          client: Json
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          current_version: number
+          decision_blocks: Json
+          do_not_prioritize: Json
+          email: Json
+          executive_reading: string | null
+          id: string
+          immersion_report_id: string
+          report_title: string | null
+          source_filename: string | null
+          source_schema: string | null
+          status: string
+          updated_at: string
+          validation: Json
+        }
+        Insert: {
+          brands_observed?: Json
+          client?: Json
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_version?: number
+          decision_blocks?: Json
+          do_not_prioritize?: Json
+          email?: Json
+          executive_reading?: string | null
+          id?: string
+          immersion_report_id: string
+          report_title?: string | null
+          source_filename?: string | null
+          source_schema?: string | null
+          status?: string
+          updated_at?: string
+          validation?: Json
+        }
+        Update: {
+          brands_observed?: Json
+          client?: Json
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_version?: number
+          decision_blocks?: Json
+          do_not_prioritize?: Json
+          email?: Json
+          executive_reading?: string | null
+          id?: string
+          immersion_report_id?: string
+          report_title?: string | null
+          source_filename?: string | null
+          source_schema?: string | null
+          status?: string
+          updated_at?: string
+          validation?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_reports_immersion_report_id_fkey"
+            columns: ["immersion_report_id"]
+            isOneToOne: true
+            referencedRelation: "field_immersion_v2_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       familias_produto: {
         Row: {
           ativo: boolean
