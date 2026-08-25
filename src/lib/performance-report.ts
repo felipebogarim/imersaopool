@@ -228,14 +228,23 @@ export function exportPerformanceReport(opts: {
 </header>
 
 <div class="grid">
-  ${kpi("Clientes na base", String(rows.length), `${familias.length} famílias avaliadas`)}
-  ${kpi("Atingimento médio estimado", pct(mediaGeral), "média das faixas de farol")}
-  ${kpi("Clientes na meta ou acima", comStatus ? pct((acimaMeta / comStatus) * 100) : "—", `${acimaMeta} de ${comStatus} clientes`)}
-  ${kpi("Clientes críticos", comStatus ? pct((criticos / comStatus) * 100) : "—", `${semCompra} sem compra no período`)}
+  ${kpi("Clientes na base", String(rep.clientes.length), `${familias.length} famílias avaliadas`)}
+  ${kpi("Atingimento real geral", pctR(rep.metrics.real_achievement), METRIC_DEFS.real_achievement.formula, METRIC_DEFS.real_achievement.tooltip)}
+  ${kpi("Clientes na meta ou acima", comStatus ? pct((naMeta / comStatus) * 100) : "—", `${naMeta} de ${comStatus} clientes · atingimento real ≥ 100%`)}
+  ${kpi("Clientes críticos", comStatus ? pct((criticos / comStatus) * 100) : "—", `${semCompra} sem compra · sem compra + abaixo da meta`)}
+</div>
+
+<h2>Indicadores analíticos complementares</h2>
+<div class="grid">
+  ${kpi("Média de atingimento dos clientes", pctR(rep.metrics.client_average_achievement), METRIC_DEFS.client_average_achievement.formula, METRIC_DEFS.client_average_achievement.tooltip)}
+  ${kpi("Índice ponderado do farol", pctR(rep.metrics.weighted_farol_index), METRIC_DEFS.weighted_farol_index.formula, METRIC_DEFS.weighted_farol_index.tooltip)}
+  ${kpi("Índice de equilíbrio do portfólio", pctR(rep.metrics.portfolio_balance_index), METRIC_DEFS.portfolio_balance_index.formula, METRIC_DEFS.portfolio_balance_index.tooltip)}
+  ${kpi("Famílias avaliadas", String(familias.length), "universo de famílias da versão de Performance")}
 </div>
 
 <h2>Distribuição geral do farol</h2>
 <div class="card">
+  <div class="kpi-s" style="padding:6px 0 0">Farol derivado do atingimento real de cada cliente.</div>
   <div style="padding:12px 0 2px">${distBar(geral, comStatus)}</div>
   <div class="legend">${legenda}</div>
   <table><thead><tr><th>Faixa</th><th>Clientes</th><th>Participação</th><th style="width:40%"></th><th style="width:36px"></th></tr></thead><tbody>
@@ -255,40 +264,53 @@ export function exportPerformanceReport(opts: {
     </tr>`,
   ).join("")}
   </tbody></table>
-
+  <div class="kpi-s">Validação: ${FAROL_ORDER.reduce((s, k) => s + geral[k], 0)} clientes classificados de ${rep.clientes.length} na base.</div>
 </div>
 
 <h2>Performance por família de produto</h2>
 <div class="card">
-  <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento</th><th>Escala</th><th>Distribuição do farol</th><th style="text-align:right">Clientes que compraram</th></tr></thead>
+  <table><thead><tr><th>Família</th><th style="text-align:right" title="${esc(METRIC_DEFS.real_achievement.tooltip)}">Atingimento real</th><th style="text-align:right" title="${esc(METRIC_DEFS.portfolio_balance_index.tooltip)}">Índice de equilíbrio</th><th>Distribuição do farol</th><th style="text-align:right">Clientes que compraram</th></tr></thead>
   <tbody>${famRows || `<tr><td colspan="5" class="small">Sem dados de família.</td></tr>`}</tbody></table>
   <div class="legend">${legenda}</div>
 </div>
 
 <h2>Performance por categoria de cliente</h2>
 <div class="card">
-  <table><thead><tr><th>Categoria</th><th style="text-align:right">Clientes</th><th style="text-align:right">Atingimento</th><th>Distribuição do farol</th></tr></thead>
-  <tbody>${catRows || `<tr><td colspan="4" class="small">Sem categorias.</td></tr>`}</tbody></table>
+  <table><thead><tr><th>Categoria</th><th style="text-align:right">Clientes</th><th style="text-align:right" title="${esc(METRIC_DEFS.real_achievement.tooltip)}">Atingimento real</th><th style="text-align:right" title="${esc(METRIC_DEFS.portfolio_balance_index.tooltip)}">Índice de equilíbrio</th><th>Distribuição do farol</th></tr></thead>
+  <tbody>${catRows || `<tr><td colspan="5" class="small">Sem categorias.</td></tr>`}</tbody></table>
 </div>
 
-<h2>Destaques e pontos de atenção</h2>
+<h2>Rankings de desempenho</h2>
 <div class="two">
   <div class="card">
     <h2 style="margin:12px 0 4px">Top 10 — melhor desempenho</h2>
-    <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento</th><th>Faixa</th></tr></thead>
+    <div class="kpi-s">Ordenado e exibido por atingimento real (decrescente).</div>
+    <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento real</th><th>Faixa</th></tr></thead>
     <tbody>${listRows(destaques) || `<tr><td colspan="4" class="small">Sem dados.</td></tr>`}</tbody></table>
   </div>
   <div class="card">
-    <h2 style="margin:12px 0 4px">Top 10 — maior oportunidade</h2>
-    <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento</th><th>Faixa</th></tr></thead>
-    <tbody>${listRows(atencao) || `<tr><td colspan="4" class="small">Sem dados.</td></tr>`}</tbody></table>
+    <h2 style="margin:12px 0 4px">Top 10 — menor atingimento</h2>
+    <div class="kpi-s">Ordenado e exibido por atingimento real (crescente).</div>
+    <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento real</th><th>Faixa</th></tr></thead>
+    <tbody>${listRows(piores) || `<tr><td colspan="4" class="small">Sem dados.</td></tr>`}</tbody></table>
   </div>
 </div>
 
-<div class="note">
-  Documento gerencial confidencial. Os percentuais são estimativas derivadas das faixas de farol (ponto médio de cada faixa);
-  nenhum valor monetário de meta ou venda é exibido.
+<h2>Top 10 — oportunidades de expansão de portfólio</h2>
+<div class="card">
+  <div class="kpi-s">Critério: 1) mais famílias sem compra, 2) menor cobertura de famílias, 3) menor atingimento real.</div>
+  <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Famílias sem compra</th><th style="text-align:right">Cobertura de famílias</th><th style="text-align:right">Atingimento real</th></tr></thead>
+  <tbody>${oportunidadeRows || `<tr><td colspan="5" class="small">Sem dados.</td></tr>`}</tbody></table>
 </div>
+
+<div class="note">
+  Documento gerencial confidencial. Métricas: <strong>Atingimento real</strong> = ${esc(METRIC_DEFS.real_achievement.formula)};
+  <strong>Média de atingimento dos clientes</strong> = ${esc(METRIC_DEFS.client_average_achievement.formula)};
+  <strong>Índice ponderado do farol</strong> = ${esc(METRIC_DEFS.weighted_farol_index.formula)};
+  <strong>Índice de equilíbrio do portfólio</strong> = ${esc(METRIC_DEFS.portfolio_balance_index.formula)}.
+  Nenhum valor monetário de meta ou venda é exibido.
+</div>
+
 
 <div class="overlay" id="ov"><div class="modal">
   <div class="mhead"><strong id="mtitle"></strong><button id="mclose">Fechar</button></div>
