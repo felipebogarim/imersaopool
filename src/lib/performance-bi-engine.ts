@@ -123,6 +123,7 @@ export type RepresentativeBIResult = {
     categoria: string | null;
     indice: number | null;
     atingimento_ratio: number | null;
+    farol: FarolStatus | null;
   }>;
   categorias: Array<{
     categoria: string;
@@ -134,6 +135,10 @@ export type RepresentativeBIResult = {
   familiasPorCategoria: Record<string, FamilyShare[]>;
   /** Consolidado por família (todas as categorias). */
   familias: Array<{ familia: string; shareRatio: number; attainmentRatio: number | null; metaTotal: number }>;
+  /** Objeto padrão de métricas do representante (governança única). */
+  metrics: MetricsObject;
+  /** Métricas detalhadas por nível (clientes, famílias, categorias). */
+  detalhado: ReturnType<typeof calculateRepresentativeMetrics>;
   indice_geral: number | null;
   atingimento_geral_ratio: number | null;
   erros: string[];
@@ -143,12 +148,12 @@ export type RepresentativeBIResult = {
 
 /** Classificação oficial do farol a partir do atingimento real (ratio). */
 export function classifyFarol(ratio: number | null | undefined): FarolStatus | null {
-  return statusFromRatio(ratio);
+  return classifyFarolMetric(ratio);
 }
 
 export function getFarolCoefficient(status: FarolStatus | null | undefined): number | null {
-  if (!status) return null;
-  return FAROL_COEFFICIENT[status];
+  return getFarolCoefficientMetric(status);
+
 }
 
 const asStatus = (v: unknown): FarolStatus | null =>
