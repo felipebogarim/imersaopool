@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_LABEL, catBadge } from "@/lib/performance-farol";
 import { useClientBI } from "@/lib/use-performance-bi";
 import { validateClientBIResult } from "@/lib/performance-bi-engine";
+import { METRIC_DEFS } from "@/lib/performance-metrics";
 
 const fmtRatio = (r: number | null | undefined) =>
   r == null || Number.isNaN(r) ? "—" : `${(r * 100).toFixed(1).replace(".", ",")}%`;
