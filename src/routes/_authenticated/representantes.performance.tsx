@@ -162,7 +162,7 @@ export function PerformancePageContent() {
     queryFn: async () => {
       const { data: ups } = await supabase
         .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename, familias, participacao, atingimento")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename, familias")
         .is("substituida_em", null)
         .order("created_at", { ascending: false });
       const byRep = new Map<string, any>();
@@ -759,8 +759,6 @@ export function PerformancePageContent() {
       familias,
       rows: view.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, familias) })),
       totals,
-      participacao: (currentUpload as any).participacao ?? undefined,
-      atingimento: (currentUpload as any).atingimento ?? undefined,
     });
 
   }
@@ -817,8 +815,6 @@ export function PerformancePageContent() {
       familias: fams,
       rows: rowsE.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, fams) })),
       totals: { perFamilia, grand },
-      participacao: (upload as any).participacao ?? undefined,
-      atingimento: (upload as any).atingimento ?? undefined,
     });
 
   }
