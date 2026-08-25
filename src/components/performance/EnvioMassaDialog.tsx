@@ -9,7 +9,7 @@ import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import { Upload, X, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
+import { listPerformanceSheetNames, parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
 import { generatePerformanceFromRaw } from "@/lib/generate-performance.functions";
 import { expandFiles, guessRepId, pdfToAoa, type BulkEntry } from "@/lib/performance-bulk";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,8 @@ export function EnvioMassaDialog({
   });
   const [entries, setEntries] = useState<BulkEntry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function onPick(fileList: FileList | null) {
@@ -188,11 +190,13 @@ export function EnvioMassaDialog({
     if (!periodo.label.trim()) return toast.error("Informe o período.");
     if (entries.some((e) => !e.repId)) return toast.error("Há arquivos sem representante definido.");
     setBusy(true);
+    const fila = entries.filter((e) => e.status !== "ok");
+    setProgress({ done: 0, total: fila.length });
     let ok = 0;
     let fail = 0;
-    for (const entry of entries) {
-      if (entry.status === "ok") continue;
+    for (const entry of fila) {
       patch(entry.id, { status: "processando", message: undefined });
+      await new Promise((r) => setTimeout(r, 0));
       try {
         const n = await processEntry(entry);
         patch(entry.id, { status: "ok", message: `${n} cliente(s) importado(s)` });
@@ -201,8 +205,10 @@ export function EnvioMassaDialog({
         patch(entry.id, { status: "erro", message: String(e?.message ?? e) });
         fail++;
       }
+      setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
     }
     setBusy(false);
+    setProgress(null);
     if (ok) toast.success(`${ok} arquivo(s) importado(s) com sucesso.`);
     if (fail) toast.error(`${fail} arquivo(s) com erro. Veja os detalhes na lista.`);
     if (ok) onDone?.();
@@ -231,7 +237,7 @@ export function EnvioMassaDialog({
               onChange={(e) => onPick(e.target.files)}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Carregue os resultados de vários representantes de uma só vez. Arquivos .zip são
+              {scanning ? "Analisando arquivos… " : ""}Carregue os resultados de vários representantes de uma só vez. Planilhas com uma aba por representante geram um relatório para cada aba. Arquivos .zip são
               expandidos automaticamente. O representante é identificado pelo nome do arquivo e pode
               ser ajustado abaixo.
             </p>
@@ -296,10 +302,11 @@ export function EnvioMassaDialog({
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
             Fechar
           </Button>
-          <Button onClick={runAll} disabled={busy || !entries.length}>
+          <Button onClick={runAll} disabled={busy || scanning || !entries.length}>
             {busy ? (
               <>
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Importando…
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />{" "}
+                {progress ? `Importando ${progress.done + 1}/${progress.total}…` : "Importando…"}
               </>
             ) : (
               <>
