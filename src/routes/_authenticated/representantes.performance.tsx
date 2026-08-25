@@ -759,7 +759,10 @@ export function PerformancePageContent() {
       familias,
       rows: view.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, familias) })),
       totals,
+      participacao: (currentUpload as any).participacao ?? undefined,
+      atingimento: (currentUpload as any).atingimento ?? undefined,
     });
+
   }
 
   function doExportReport() {
