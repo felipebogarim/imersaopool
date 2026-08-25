@@ -671,6 +671,7 @@ function VisaoImersao2Page() {
         subtitle={`Arquivo: ${avulso.arquivo}${dirty ? " · alterações não salvas" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <ExecutiveReportButton reportId={avulso.id} />
             <Button onClick={() => void salvarRelatorio()} disabled={salvando}>
               <Save className="mr-1 h-4 w-4" />
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
