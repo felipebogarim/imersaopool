@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,18 +22,18 @@ import {
   FileUp,
   History,
   Loader2,
-  Lock,
   Mail,
   RefreshCw,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import {
   BriefingChapter,
-  ChapterHeader,
   DiagnosticoChapter,
   LeituraChapter,
   NaoPrioridadeChapter,
 } from "@/components/executive-report/ExecutiveChapters";
-import { ActionCard } from "@/components/executive-report/ActionCard";
+import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
@@ -45,8 +44,8 @@ import {
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
 
 import {
-  closeReport,
   createExecutiveReport,
+  deleteExecutiveReport,
   listEmailLogs,
   loadExecutiveReport,
   logEmail,
@@ -54,19 +53,11 @@ import {
   updateAction,
 } from "@/lib/executive-report/store";
 import {
-  AREAS,
-  AREA_LABEL,
-  STATUSES,
-  STATUS_LABEL,
-  actionCounts,
-  canClose,
-  finalActions,
   toFinalData,
-  type ExecArea,
-  type ExecStatus,
   type ExecutiveAction,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
+
 
 export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId/executivo")({
   head: () => ({
@@ -100,9 +91,9 @@ function RelatorioExecutivoPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [filterArea, setFilterArea] = useState<"all" | ExecArea>("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | ExecStatus>("all");
+
 
   const { data: me } = useQuery({
     queryKey: ["exec-me"],
@@ -146,12 +137,85 @@ function RelatorioExecutivoPage() {
 
   const data = loaded?.data ?? null;
   const versions = loaded?.versions ?? [];
-  const counts = useMemo(() => actionCounts(data?.actions ?? []), [data]);
   const closed = data?.status === "closed";
-  const viewData = useMemo<ExecutiveReportData | null>(
-    () => (data ? (closed ? toFinalData(data) : data) : null),
-    [data, closed],
-  );
+
+  // Dados comerciais do cliente (mesma fonte da Visão Imersão 2): categoria,
+  // atingimento geral e período de referência.
+  const parentClientName = parent?.client_name ?? null;
+  const parentResolvedClientId =
+    (parent?.structured_data as any)?.data?.resolved_client_id ??
+    (parent?.structured_data as any)?.resolved_client_id ??
+    null;
+
+  const { data: commercial } = useQuery({
+    queryKey: ["exec-commercial", parentResolvedClientId, parentClientName],
+    enabled: Boolean(parentResolvedClientId || parentClientName),
+    queryFn: async () => {
+      let clientRow: any = null;
+      if (parentResolvedClientId) {
+        const { data: c } = await supabase
+          .from("clients")
+          .select("id, razao_social, categoria, representative_id")
+          .eq("id", parentResolvedClientId)
+          .maybeSingle();
+        clientRow = c ?? null;
+      }
+      if (!clientRow && parentClientName) {
+        const term = parentClientName.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const { data: cands } = await supabase
+          .from("clients")
+          .select("id, razao_social, categoria, representative_id")
+          .or(`razao_social.ilike.%${term}%,nome_fantasia.ilike.%${term}%`)
+          .limit(2);
+        if (cands?.length === 1) clientRow = cands[0];
+      }
+      if (!clientRow) return null;
+
+      const { data: bi } = await (supabase as any)
+        .from("client_bi_uploads")
+        .select("data, representative_id, razao_social")
+        .eq("razao_social", clientRow.razao_social)
+        .eq("kind", "bi")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const payload = bi?.data as any;
+      const geralRaw = payload?.geral != null ? Number(payload.geral) : null;
+      const geralPct =
+        geralRaw == null ? null : Math.abs(geralRaw) <= 1.5 ? geralRaw * 100 : geralRaw;
+
+      return {
+        clientId: clientRow.id as string,
+        razaoSocial: (clientRow.razao_social ?? bi?.razao_social ?? null) as string | null,
+        representativeId: (clientRow.representative_id ?? bi?.representative_id ?? null) as
+          | string
+          | null,
+        categoria: (clientRow.categoria ?? payload?.categoria ?? null) as string | null,
+        geralPct,
+        periodoLabel: (payload?.periodo || "1º Semestre 2026") as string,
+      };
+    },
+  });
+
+  const viewData = useMemo<ExecutiveReportData | null>(() => {
+    if (!data) return null;
+    const base = closed ? toFinalData(data) : data;
+    const attainment =
+      commercial?.geralPct != null
+        ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
+        : base.client.attainment || null;
+    return {
+      ...base,
+      client: {
+        ...base.client,
+        attainment,
+        category: commercial?.categoria || base.client.category || null,
+      },
+    };
+  }, [data, closed, commercial]);
+
 
   const { data: emailLogs = [] } = useQuery({
     queryKey: ["exec-email-logs", data?.id, historyOpen],
@@ -166,6 +230,8 @@ function RelatorioExecutivoPage() {
       const text = await file.text();
       const parsed = parseExecutiveReportFile(text);
       const parentInfo = (parent?.structured_data as any)?.data ?? {};
+      // "Atualizar": substitui integralmente os dados atuais pelo novo arquivo.
+      if (data?.id) await deleteExecutiveReport(data.id);
       await createExecutiveReport({
         immersionReportId: reportId,
         companyId: parent?.company_id ?? me?.companyId ?? null,
@@ -207,41 +273,28 @@ function RelatorioExecutivoPage() {
     }
   }
 
-  async function handleClose() {
-    if (!data) return;
-    if (!canClose(data.actions)) {
-      toast.error("Revise todas as ações antes de finalizar.");
-      return;
-    }
+  async function handleRevisar() {
+    if (!data?.id) return;
+    await reopenReport(data.id);
+    await refetch();
+    toast.success("Relatório reaberto para revisão.");
+  }
+
+  async function handleDelete() {
+    if (!data?.id) return;
     setBusy(true);
     try {
-      const v = await closeReport({
-        data,
-        companyId: parent?.company_id ?? me?.companyId ?? null,
-        userId: me?.userId ?? null,
-        userName: me?.name ?? null,
-      });
+      await deleteExecutiveReport(data.id);
       await refetch();
-      toast.success(`Relatório finalizado — versão ${v}.`);
+      setConfirmDelete(false);
+      toast.success("Relatório executivo excluído.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível fechar o relatório.");
+      toast.error(err instanceof Error ? err.message : "Não foi possível excluir o relatório.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleNewVersion() {
-    if (!data?.id) return;
-    await reopenReport(data.id);
-    await refetch();
-    toast.success("Nova versão aberta. O relatório voltou para Em revisão.");
-  }
-
-  const filteredActions = (data?.actions ?? []).filter(
-    (a) =>
-      (filterArea === "all" || a.area === filterArea) &&
-      (filterStatus === "all" || a.status === filterStatus),
-  );
 
   const clientName = parent?.client_name ?? data?.client.display_name ?? "Cliente";
 
@@ -269,11 +322,6 @@ function RelatorioExecutivoPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {data && (
-              <Badge variant={closed ? "default" : "secondary"}>
-                {closed ? `Finalizado · versão ${data.current_version}` : "Em revisão"}
-              </Badge>
-            )}
-            {data && closed && (
               <>
                 <Button size="sm" onClick={() => viewData && exportExecutiveReportPdf(viewData)}>
                   <FileDown className="mr-1 h-4 w-4" /> Exportar PDF
@@ -281,15 +329,42 @@ function RelatorioExecutivoPage() {
                 <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
                   <Mail className="mr-1 h-4 w-4" /> Enviar por e-mail
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => void handleNewVersion()}>
-                  <RefreshCw className="mr-1 h-4 w-4" /> Nova versão
+                {closed && (
+                  <Button size="sm" variant="outline" onClick={() => void handleRevisar()}>
+                    <RefreshCw className="mr-1 h-4 w-4" /> Revisar
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={importing}
+                >
+                  {importing ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-1 h-4 w-4" />
+                  )}
+                  Atualizar
                 </Button>
+                <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setHistoryOpen(true)}>
+                  <History className="mr-1 h-4 w-4" /> Histórico de envios
+                </Button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".txt,.md,.markdown,text/plain,text/markdown"
+                  className="hidden"
+                  aria-label="Selecionar novo arquivo do relatório executivo"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleFile(f);
+                  }}
+                />
               </>
-            )}
-            {data && (
-              <Button size="sm" variant="ghost" onClick={() => setHistoryOpen(true)}>
-                <History className="mr-1 h-4 w-4" /> Histórico de envios
-              </Button>
             )}
             <Button asChild size="sm" variant="ghost">
               <Link to="/visao-imersao-2">
@@ -297,6 +372,7 @@ function RelatorioExecutivoPage() {
               </Link>
             </Button>
           </div>
+
         }
       />
 
@@ -348,6 +424,15 @@ function RelatorioExecutivoPage() {
         <div className="mt-6 space-y-8">
           <BriefingChapter data={viewData} />
           <LeituraChapter data={viewData} />
+          {commercial?.representativeId && commercial?.razaoSocial && (
+            <ClientFamiliasChart
+              repId={commercial.representativeId}
+              razaoSocial={commercial.razaoSocial}
+              companyId={null}
+              filterFams={[]}
+            />
+          )}
+
           <DiagnosticoChapter
             data={viewData}
             readOnly={closed}
@@ -371,119 +456,32 @@ function RelatorioExecutivoPage() {
             }}
           />
           <NaoPrioridadeChapter data={viewData} />
-
-          <section>
-            <ChapterHeader num="05" title="Plano de ação" />
-            {!closed && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                <FilterChip active={filterArea === "all"} onClick={() => setFilterArea("all")}>
-                  Todas as áreas
-                </FilterChip>
-                {AREAS.map((a) => (
-                  <FilterChip key={a} active={filterArea === a} onClick={() => setFilterArea(a)}>
-                    {AREA_LABEL[a]}
-                  </FilterChip>
-                ))}
-                <span className="w-full" />
-                <FilterChip active={filterStatus === "all"} onClick={() => setFilterStatus("all")}>
-                  Todos os status
-                </FilterChip>
-                {STATUSES.map((s) => (
-                  <FilterChip key={s} active={filterStatus === s} onClick={() => setFilterStatus(s)}>
-                    {STATUS_LABEL[s]}s
-                  </FilterChip>
-                ))}
-              </div>
-            )}
-            <div className="space-y-3">
-              {(closed ? finalActions(viewData.actions) : filteredActions).map((a) => (
-                <ActionCard
-                  key={a.id}
-                  action={a}
-                  origin={originOf(a)}
-                  readOnly={closed}
-
-                  onValidate={() =>
-                    void mutate(
-                      a,
-                      {
-                        status: "validated",
-                        validated_at: new Date().toISOString(),
-                        validated_by: me?.userId ?? null,
-                      },
-                      "validou",
-                    )
-                  }
-                  onEdit={() => setEditing(a)}
-                  onReject={() => {
-                    setRejecting(a);
-                    setRejectReason("");
-                  }}
-                />
-              ))}
-              {!closed && filteredActions.length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhuma ação neste filtro.</p>
-              )}
-            </div>
-          </section>
-
-          <section>
-            <ChapterHeader num="06" title="Validação e fechamento" />
-            <Card>
-              <CardContent className="space-y-4 p-5">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                  <Stat label="Ações" value={counts.total} />
-                  <Stat label="Validadas" value={counts.validated} />
-                  <Stat label="Editadas" value={counts.edited} />
-                  <Stat label="Rejeitadas" value={counts.rejected} />
-                  <Stat label="Não revisadas" value={counts.suggested} />
-                </div>
-                {closed ? (
-                  <Alert>
-                    <Lock className="h-4 w-4" />
-                    <AlertTitle>Versão {data?.current_version} finalizada</AlertTitle>
-                    <AlertDescription>
-                      {versions[0]
-                        ? `Finalizada em ${new Date(versions[0].closed_at).toLocaleString("pt-BR")}${
-                            versions[0].closed_by_name ? ` por ${versions[0].closed_by_name}` : ""
-                          }.`
-                        : "Versão final registrada."}{" "}
-                      Para alterar, abra uma nova versão.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <>
-                    {counts.suggested > 0 && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>Revise todas as ações antes de finalizar.</AlertDescription>
-                      </Alert>
-                    )}
-                    <Button
-                      onClick={() => void handleClose()}
-                      disabled={busy || counts.suggested > 0 || counts.total === 0}
-                    >
-                      Fechar relatório
-                    </Button>
-                  </>
-                )}
-                {versions.length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    {versions.map((v) => (
-                      <p key={v.id}>
-                        Versão {v.version} · {new Date(v.closed_at).toLocaleString("pt-BR")}
-                        {v.closed_by_name ? ` · ${v.closed_by_name}` : ""}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
         </div>
+
       )}
 
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir relatório executivo</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta ação remove o relatório executivo desta imersão, incluindo ações e versões. A
+            Visão Imersão 2 original não é afetada.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDelete()}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ActionEditDialog
+
         action={editing}
         open={!!editing}
         onOpenChange={(v) => !v && setEditing(null)}
@@ -577,30 +575,5 @@ function RelatorioExecutivoPage() {
         />
       )}
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border bg-muted/40 p-3 text-center">
-      <p className="text-xl font-bold">{value}</p>
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button size="sm" variant={active ? "default" : "outline"} onClick={onClick}>
-      {children}
-    </Button>
   );
 }
