@@ -582,7 +582,12 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        const status =
+          res.status ??
+          statusFromFaixa(cell?.v == null ? null : String(cell.v)) ??
+          (blankMeansSemCompra && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
+            ? "sem_compra"
+            : null);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
