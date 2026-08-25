@@ -7,7 +7,7 @@
 // Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromFaixa, statusFromPercent, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromHex, statusFromPercent, type FarolStatus } from "./performance-farol";
 import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
 import {
   parseMatrizFinanceiraGrid,
@@ -17,7 +17,7 @@ import {
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
 
-export const PARSER_VERSION = "performance-parser@4";
+export const PARSER_VERSION = "performance-parser@5";
 
 export type ParsedRow = {
   ordem: number;
@@ -151,6 +151,23 @@ function readMatriz(wb: XLSXStyle.WorkBook): MatrizParseResult | null {
 
 export type GridCell = { v: any; c: string | null; raw: string | null; hasStyle: boolean };
 
+function statusFromFarolText(v: unknown): FarolStatus | null {
+  const faixa = statusFromFaixa(v == null ? null : String(v));
+  if (faixa) return faixa;
+  const s = normSheet(String(v ?? ""));
+  if (!s) return null;
+  if (s === "SEM COMPRA" || s === "SEM VENDA") return "sem_compra";
+  if (s === "ABAIXO DA META" || s === "ABAIXO META") return "abaixo_meta";
+  if (s === "PODE MELHORAR") return "pode_melhorar";
+  if (s === "PROXIMO" || s === "PROXIMO DA META") return "proximo";
+  if (s === "OTIMO") return "otimo";
+  if (s === "EXCELENTE") return "excelente";
+  return null;
+}
+
+const statusCount = (stats: CellStats) =>
+  Object.values(stats.por_status).reduce((sum, n) => sum + (Number(n) || 0), 0);
+
 function collectFamilyColumns(row: GridCell[], startCol: number): { familias: string[]; famCols: number[] } {
   const familias: string[] = [];
   const famCols: number[] = [];
@@ -163,6 +180,88 @@ function collectFamilyColumns(row: GridCell[], startCol: number): { familias: st
     famCols.push(c);
   }
   return { familias, famCols };
+}
+
+function parseBaseBISheet(wb: XLSXStyle.WorkBook): BaseSheet | null {
+  const name = wb.SheetNames.find((n) => normSheet(n) === "BASE BI");
+  if (!name) return null;
+  const ws = wb.Sheets[name];
+  if (!ws) return null;
+  const raw = XLSXStyle.utils.sheet_to_json<unknown[]>(ws, { header: 1, blankrows: false, raw: true }) as unknown[][];
+  const headerRow = raw.findIndex((row) => {
+    const cells = (row ?? []).map((v) => normSheet(String(v ?? "")));
+    return cells.includes("CLIENTE") && cells.includes("CATEGORIA") && cells.includes("FAMILIA") && cells.some((v) => v.includes("FAROL"));
+  });
+  if (headerRow < 0) return null;
+
+  const header = raw[headerRow] ?? [];
+  const indexOf = (pred: (s: string) => boolean) =>
+    header.findIndex((v) => pred(normSheet(String(v ?? ""))));
+  const clienteCol = indexOf((s) => s === "CLIENTE" || s === "RAZAO SOCIAL");
+  const categoriaCol = indexOf((s) => s === "CATEGORIA");
+  const familiaCol = indexOf((s) => s === "FAMILIA");
+  const metaCol = indexOf((s) => s === "META" || s.includes("R$ META"));
+  const farolCol = indexOf((s) => s.includes("FAROL"));
+  if (clienteCol < 0 || categoriaCol < 0 || familiaCol < 0 || farolCol < 0) return null;
+
+  const byClient = new Map<string, ParsedRow>();
+  const familias: string[] = [];
+  const familySet = new Set<string>();
+  const stats = emptyStats();
+  let linhas_lidas = 0;
+
+  for (let r = headerRow + 1; r < raw.length; r++) {
+    const row = raw[r] ?? [];
+    const razao = String(row[clienteCol] ?? "").trim();
+    const categoria = String(row[categoriaCol] ?? "").trim();
+    const familia = normalizeFamilyName(row[familiaCol]);
+    if (!razao || !familia) continue;
+    linhas_lidas++;
+    if (!isClientRow({ razao_social: razao, categoria })) continue;
+    if (!familySet.has(familia)) {
+      familySet.add(familia);
+      familias.push(familia);
+    }
+    const key = `${normSheet(razao)}|${normSheet(categoria)}`;
+    let out = byClient.get(key);
+    if (!out) {
+      out = {
+        ordem: byClient.size,
+        razao_social: razao,
+        categoria: categoria || null,
+        metas: {},
+        metas_status: {},
+        metas_cores: {},
+        total_meta: null,
+        total_pct_status: null,
+      };
+      byClient.set(key, out);
+    }
+    const meta = metaCol >= 0 ? row[metaCol] : null;
+    if (typeof meta === "number" && Number.isFinite(meta)) out.metas[familia] = meta;
+    const status = statusFromFarolText(row[farolCol]);
+    stats.celulas_avaliadas++;
+    stats.celulas_familias++;
+    stats.estilos_ausentes++;
+    if (status) {
+      out.metas_status[familia] = status;
+      stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
+    }
+  }
+
+  return {
+    familias,
+    categoriaMetas: {},
+    escala: [],
+    rows: Array.from(byClient.values()).filter((r) => Object.keys(r.metas_status).length > 0),
+    participacao: null,
+    atingimento: null,
+    ignoradas: [],
+    linhas_lidas,
+    conflitos: [],
+    stats,
+    parser_version: PARSER_VERSION,
+  };
 }
 
 function statusFromPercentCellValue(v: unknown): FarolStatus | null {
@@ -209,7 +308,11 @@ function findSheetByHeader(wb: XLSXStyle.WorkBook): string | undefined {
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
   const performanceSheetName = findPerformanceSheetName(wb.SheetNames) ?? findSheetByHeader(wb);
+  const matriz = readMatriz(wb);
+  const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
+  const baseBI = parseBaseBISheet(wb);
   if (!performanceSheetName) {
+    if (baseBI && statusCount(baseBI.stats) > 0) return { ...baseBI, matriz, matriz_erros };
     throw new Error(
       `Não encontramos a aba de Performance no arquivo. Abas disponíveis: ${wb.SheetNames.join(", ") || "nenhuma"}. Renomeie a aba com os dados para "Performance" ou garanta o cabeçalho RAZÃO SOCIAL + CATEGORIA.`,
     );
@@ -234,15 +337,22 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const head = findHeaderRow(grid);
   if (!head) throw new Error("Cabeçalho não encontrado (linha com RAZÃO SOCIAL + CATEGORIA).");
 
-  const matriz = readMatriz(wb);
-  const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
-
   const base =
     head.layout === "novo"
       ? parseNovo(grid, head.row)
       : head.layout === "percentual"
         ? parsePercentual(grid, head.row)
         : parseAntigo(grid, head.row);
+
+  if (statusCount(base.stats) === 0 && baseBI && statusCount(baseBI.stats) > 0) {
+    return { ...baseBI, matriz, matriz_erros };
+  }
+
+  if (base.stats.celulas_familias > 0 && statusCount(base.stats) === 0) {
+    throw new Error(
+      "Não foi possível ler os faróis de desempenho da planilha. As células de família não trouxeram cores/faixas válidas, então a importação foi interrompida para evitar resultados zerados ou incorretos.",
+    );
+  }
 
   return { ...base, matriz, matriz_erros };
 }
@@ -339,11 +449,11 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFarolText(cell?.v);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
-      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFarolText(cell?.v);
       if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
         if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
         stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
@@ -444,11 +554,11 @@ function parsePercentual(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFarolText(cell?.v);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
-      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFarolText(cell?.v);
       if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
         if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
         stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
@@ -524,6 +634,9 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
   const hasTotalPctStatus = isExplicitPercentStatusHeader(grid[headerRow]?.[totalCol]?.v);
+  const legacyUsesColorFarol = grid.slice(headerRow + 1).some((row) =>
+    famCols.some((col) => statusFromHex(row?.[col]?.c)),
+  );
 
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
@@ -563,7 +676,7 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       continue;
     }
 
-    const avaliar = (cell: GridCell | undefined, familia: string, blankMeansSemCompra = false): FarolStatus | null => {
+    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
       stats.celulas_avaliadas++;
       if (cell?.hasStyle) stats.estilos_carregados++;
       else stats.estilos_ausentes++;
@@ -579,15 +692,15 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       if (res.ok) {
         const status =
           res.status ??
-          statusFromFaixa(cell?.v == null ? null : String(cell.v)) ??
-          (blankMeansSemCompra && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
+          statusFromFarolText(cell?.v) ??
+          (legacyUsesColorFarol && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
             ? "sem_compra"
             : null);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
 
-      const fallback = statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      const fallback = statusFromFarolText(cell?.v);
       if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
         if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
         stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
@@ -608,7 +721,7 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       const cell = row[famCols[i]];
       if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
       stats.celulas_familias++;
-      const status = avaliar(cell, f, true);
+      const status = avaliar(cell, f);
       if (status) metas_status[f] = status;
       if (cell?.c) metas_cores[f] = cell.c;
     });
