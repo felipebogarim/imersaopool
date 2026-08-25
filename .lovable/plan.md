@@ -1,36 +1,69 @@
-# Por que as convergências caíram de 33 para 16
+# Relatório Executivo da Visão Imersão 2
 
-## O que os dados mostram
+Nova camada de decisão, complementar e isolada. Nada da Visão Imersão 2 atual é alterado, exceto o acréscimo de um botão no topo.
 
-Comparando as duas versões do painel de Entrevistas:
+## Fluxo
 
-| Versão | Data | Fontes | Corte exigido | Convergências fortes |
-|---|---|---|---|---|
-| v4 | 31/07 | 6 | 3 | 33 |
-| v5 | 25/08 | 13 | 7 | 16 |
+```text
+Visão Imersão 2 (reportId)
+   ↓ botão RELATÓRIO EXECUTIVO (nova aba)
+/visao-imersao-2/$reportId/executivo
+   ↓ importar arquivo executivo (.txt/.md)
+EM REVISÃO → validar / editar / rejeitar ações
+   ↓ FECHAR RELATÓRIO
+VERSÃO FINAL (imutável) → PDF + E-mail HTML
+```
 
-Nada foi excluído. O que mudou foi a régua.
+O vínculo comercial (cliente, client_id, representante, consultor, BI) é herdado do relatório pai. Nenhum fuzzy matching novo.
 
-## A causa
+## Estados da página
 
-O motor de síntese classifica um tema como "convergência forte" quando ele é sustentado por pelo menos a **maioria simples das fontes**: `corte = arredonda_para_cima(total / 2)`.
+- **Sem relatório**: título, nome do cliente, texto de instrução e botão CARREGAR ARQUIVO.
+- **Em revisão**: capítulos completos com controles de validação.
+- **Finalizado**: versão limpa, sem controles; botões Exportar PDF, Enviar por e-mail, Nova versão, Voltar.
 
-- Com 6 entrevistas, bastavam 3 fontes.
-- Com 13 entrevistas, passam a ser necessárias 7 fontes.
+Badge de estado também aparece no botão dentro da Visão Imersão 2 (Em revisão / Finalizado).
 
-Um tema citado por 4 pessoas era convergência com 6 fontes e deixa de ser com 13 — mesmo tendo ganhado apoio. Ele não some do painel: cai para "específico/individual" ou entra em divergência. Ou seja, a queda é matemática, não perda de conteúdo.
+## Capítulos
 
-## O que proponho corrigir
+1. Briefing executivo (cliente, data, local, rep, consultor, categoria, atingimento e marcas — BI reaproveitado, sem recálculo)
+2. Leitura executiva (`executive_reading`, curto)
+3. Do diagnóstico à ação (um card por `decision_block`: Causa → O que isso gera → Evidência essencial única → ações referenciadas)
+4. Decisões de não prioridade (`do_not_prioritize`)
+5. Plano de ação (mesma entidade `actions[]`, com filtros por área e status)
+6. Validação e fechamento (contadores + botão Fechar relatório)
 
-1. **Tornar o corte explícito na tela**: exibir no cabeçalho do painel "convergência = X de Y fontes (maioria)" e um seletor para ajustar o corte (ex.: 3, maioria, 2/3), regerando a leitura sem reimportar nada.
-2. **Mostrar a força junto do número**: cada convergência já guarda o peso (nº de fontes); passar a exibir "7/13" e ordenar por proporção, para que a comparação entre versões faça sentido.
-3. **Nova faixa "convergência emergente"**: temas com 2+ fontes mas abaixo do corte ganham um bloco próprio, em vez de se dissolverem em "específicos". É aí que estão a maior parte dos 17 itens que "sumiram".
-4. **Comparativo entre versões**: ao abrir a v5, indicar quais temas da versão anterior mudaram de faixa e por quê (ganharam apoio, perderam, ou só mudou o corte).
+## Ações
+
+Entidade única (`actions[]`), nunca duplicada: os blocos de decisão apenas referenciam ids.
+
+- Áreas: Comercial, Produto, Marketing, Governança.
+- Prioridades: Alta, Média, Baixa.
+- Status: Sugerida, Validada, Editada, Rejeitada.
+- Validar grava `validated_at`/`validated_by`; Editar abre modal (título, descrição, área, prioridade, prazo, observação) e grava histórico; Rejeitar pede motivo opcional e mantém a ação apenas para auditoria.
+- Fechamento bloqueado enquanto existir ação Sugerida. Só Validadas e Editadas entram na versão final, PDF e e-mail.
+- Nesta versão nada vira tarefa do Kanban automaticamente.
+
+## Importador exclusivo
+
+Reconhece somente o bloco ` ```relatorio_executivo_imersao ` com `schema: executive_field_visit_report_v1`. Sem qualquer fallback para os importadores existentes; schema não reconhecido gera diagnóstico explícito. Todo texto é tratado como dado (sem HTML executável).
+
+Primeiro teste com `Relatorio_Executivo_LLUMINAH_BASE_LOVABLE_v1.txt`: 5 decisões, 9 ações, 1 não prioridade, tudo em Sugerida.
+
+## PDF e e-mail
+
+- PDF A4 gerado do próprio relatório executivo final, com jsPDF (já usado em `visao-rep2-pdf.ts`), seguindo os tokens visuais do sistema. Nenhuma biblioteca nova.
+- E-mail com o relatório no corpo em HTML table-safe, uma coluna, 640px, estilos inline, responsivo. Modal com destinatários (digitados + autocomplete de usuários cadastrados por nome/e-mail), assunto pré-preenchido, mensagem opcional, pré-visualização desktop/mobile e CTA discreto para abrir no sistema.
+- Envio pela infraestrutura de e-mail já existente do projeto (rota transacional interna + registro de template), sem novo provedor.
+- Cada envio é registrado e visível em Histórico de envios.
+
+### Ponto que precisa da sua decisão
+
+A infraestrutura de e-mail atual do projeto **não suporta anexos**. Em vez do PDF anexado, o e-mail traria um link seguro de download do PDF, mantendo o relatório completo no corpo da mensagem. Se anexo for indispensável, isso exige um provedor de e-mail próprio.
 
 ## Detalhes técnicos
 
-- Regra atual em `src/lib/sintese-engine.ts` (`corteMaioria`, aplicada em `consolidar` e replicada no prompt de `src/lib/sintese-cluster.server.ts`).
-- O corte já é persistido por versão em `paineis_sintese.corte_convergencia` e `resultado.meta.corte`; a UI em `src/routes/_authenticated/sintese.tipos.tsx` apenas não o expõe.
-- `sintese.functions.ts` já aceita `corte` como parâmetro de entrada — o seletor da UI apenas passaria esse valor.
-- A faixa "emergente" sai do mesmo agrupamento: grupos com peso entre 2 e `corte - 1`, hoje descartados no ramo `peso === 1` / ignorados.
-- Nenhuma alteração de dados; painéis antigos continuam íntegros.
+- Nova rota `src/routes/_authenticated/visao-imersao-2.$reportId.executivo.tsx`, aberta em nova aba a partir do botão no cabeçalho de `visao-imersao-2.tsx` (única alteração naquele arquivo).
+- Novas tabelas: `executive_reports` (1:1 com `field_immersion_v2_reports`), `executive_report_versions` (snapshot imutável ao fechar), `executive_report_actions` (entidade única de ação + histórico), `executive_report_email_logs` — todas com GRANTs e RLS espelhando o acesso já concedido aos relatórios de imersão.
+- Modelo único `ExecutiveReportData` em `src/lib/executive-report/`, com três renderers (web, PDF, e-mail) consumindo a mesma estrutura, evitando divergência entre canais.
+- Parser dedicado em `src/lib/executive-report/parse.ts`, isolado dos parsers atuais.
