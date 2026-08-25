@@ -316,3 +316,14 @@ const button = {
 };
 const hr = { borderColor: LINE, margin: "20px 0 12px" };
 const footer = { color: MUTED, fontSize: "12px", lineHeight: "18px", textAlign: "center" as const, margin: "0" };
+const readingParagraph = { color: TEXT, fontSize: "15px", lineHeight: "25px", margin: "0 0 18px" };
+const tag = {
+  backgroundColor: "#E6F4F8",
+  color: BRAND,
+  borderRadius: "4px",
+  fontSize: "11px",
+  fontWeight: "bold",
+  letterSpacing: "0.6px",
+  padding: "3px 8px",
+  textTransform: "uppercase" as const,
+};
