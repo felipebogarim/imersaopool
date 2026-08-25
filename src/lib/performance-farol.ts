@@ -127,6 +127,7 @@ export const IMPORT_FAROL_HEX: Record<string, FarolStatus> = {
   F4D7BE: "pode_melhorar",
   F3EFD9: "proximo",
   DFF0D0: "otimo",
+  // Variação encontrada em planilhas legadas exportadas pelo Excel/Sheets.
   C2F1C8: "otimo",
   "9FC7E8": "excelente",
 };

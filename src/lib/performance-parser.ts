@@ -7,7 +7,7 @@
 // Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromFaixa, statusFromPercent, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromHex, statusFromPercent, type FarolStatus } from "./performance-farol";
 import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
 import {
   parseMatrizFinanceiraGrid,
@@ -634,6 +634,9 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
   const hasTotalPctStatus = isExplicitPercentStatusHeader(grid[headerRow]?.[totalCol]?.v);
+  const legacyUsesColorFarol = grid.slice(headerRow + 1).some((row) =>
+    famCols.some((col) => statusFromHex(row?.[col]?.c)),
+  );
 
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
@@ -687,7 +690,12 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromFarolText(cell?.v);
+        const status =
+          res.status ??
+          statusFromFarolText(cell?.v) ??
+          (legacyUsesColorFarol && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
+            ? "sem_compra"
+            : null);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
