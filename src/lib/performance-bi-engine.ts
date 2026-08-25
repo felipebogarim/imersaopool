@@ -52,6 +52,10 @@ export type PerformanceRow = {
   razao_social: string;
   categoria?: string | null;
   ordem?: number | null;
+  /** Meta monetária por família (pode estar indisponível por sigilo). */
+  metas?: Record<string, number> | null;
+  /** Realizado monetário por família (pode estar indisponível por sigilo). */
+  realizado?: Record<string, number> | null;
   /** Atingimento real por família, em ratio canônico (1 = 100%). */
   familia_pct?: Record<string, number | null> | null;
   /** Farol por família quando o percentual não existe na origem. */
@@ -59,6 +63,7 @@ export type PerformanceRow = {
   total_pct?: number | null;
   total_pct_status?: string | null;
 };
+
 
 // ============================ Tipos de saída ================================
 
