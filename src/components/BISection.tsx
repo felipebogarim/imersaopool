@@ -100,7 +100,6 @@ function shareAiWhats(repName: string, question: string, answer: string) {
 
 
 export function BISection({ repId, repName, defaultOpen = false }: { repId: string; repName: string; defaultOpen?: boolean }) {
-  const qc = useQueryClient();
   const [open, setOpen] = useState(defaultOpen);
   const [busy, setBusy] = useState(false);
   const [metric, setMetric] = useState<Metric>("participation");
@@ -112,7 +111,7 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     onSuccess: (res: any) => setAiAnswer(res?.answer ?? ""),
     onError: (e: any) => toast.error(e?.message ?? "Erro na consulta IA."),
   });
-  const fileRef = useRef<HTMLInputElement>(null);
+
 
 
   // ==========================================================================
