@@ -122,17 +122,22 @@ export function exportPerformanceXlsx(opts: {
     const ok = vals.filter((v): v is number => v != null && !Number.isNaN(v));
     return ok.length ? ok.reduce((s, v) => s + v, 0) / ok.length : null;
   };
-  const atingFam = (f: string) =>
-    (opts.atingimento?.[f] as number | null | undefined) ??
-    mediaPct(rows.map((r) => pctOf(r.familia_pct?.[f])));
-  const atingTotal =
-    opts.atingimento?.__total__ ?? mediaPct(rows.map((r) => pctOf(r.total_pct)));
+  const atingFam = (f: string) => {
+    const given = opts.atingimento?.[f] as number | null | undefined;
+    if (given != null) return fmtPct(given);
+    const calc = mediaPct(rows.map((r) => pctOf(r.familia_pct?.[f])));
+    return calc == null ? "" : fmtPctCell(calc);
+  };
+  const givenTotal = opts.atingimento?.__total__;
+  const calcTotal = mediaPct(rows.map((r) => pctOf(r.total_pct)));
+  const atingTotalTxt =
+    givenTotal != null ? fmtPct(givenTotal) : calcTotal == null ? "" : fmtPctCell(calcTotal);
   const atingimentoRow: any[] = [
     "ATINGIMENTO ESTIMADO DA META",
     "",
     "",
-    fmtPct(atingTotal),
-    ...familias.map((f) => fmtPct(atingFam(f))),
+    atingTotalTxt,
+    ...familias.map((f) => atingFam(f)),
   ];
 
   aoa.push(totalRow, participacaoRow, atingimentoRow);
