@@ -657,6 +657,9 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
   const hasTotalPctStatus = isExplicitPercentStatusHeader(grid[headerRow]?.[totalCol]?.v);
+  const legacyUsesColorFarol = grid
+    .slice(headerRow + 1)
+    .some((row) => famCols.some((col) => statusFromHex(row[col]?.c)) || statusFromHex(row[totalCol]?.c));
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
   const CATS = ["BLACK", "GOLD", "SILVER", "BRONZE", "DIAMOND", "PLATINUM"];
@@ -737,11 +740,24 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       stats.celulas_familias++;
       const status = avaliar(cell, f);
       if (status) metas_status[f] = status;
+      else if (
+        legacyUsesColorFarol &&
+        typeof cell?.v === "number" &&
+        Number.isFinite(cell.v) &&
+        cell.v > 0 &&
+        !cell.c &&
+        !cell.raw
+      ) {
+        metas_status[f] = "sem_compra";
+        stats.por_status.sem_compra = (stats.por_status.sem_compra ?? 0) + 1;
+      }
       if (cell?.c) metas_cores[f] = cell.c;
     });
-    const total = typeof row[totalCol]?.v === "number" ? (row[totalCol].v as number) : null;
-    const total_pct_status = hasTotalPctStatus ? avaliar(row[totalCol], "TOTAL") : null;
-    if (hasTotalPctStatus) stats.celulas_total_pct++;
+    const totalCell = row[totalCol];
+    const total = typeof totalCell?.v === "number" ? (totalCell.v as number) : null;
+    const shouldReadTotalStatus = hasTotalPctStatus || Boolean(totalCell?.c);
+    const total_pct_status = shouldReadTotalStatus ? avaliar(totalCell, "TOTAL") : null;
+    if (shouldReadTotalStatus) stats.celulas_total_pct++;
     rows.push({
       ordem: ordem++,
       razao_social: razao,

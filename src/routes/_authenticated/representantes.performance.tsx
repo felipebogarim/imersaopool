@@ -14,7 +14,7 @@ import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { EnvioMassaDialog } from "@/components/performance/EnvioMassaDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
-import { parseWorkbook } from "@/lib/performance-parser";
+import { parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
 import { conflictMessage, CONFLICT_LABEL } from "@/lib/performance-cell-status";
 
 /** SHA-256 do arquivo, usado para identificar reimportações do mesmo arquivo. */
@@ -38,6 +38,7 @@ import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
   FAROL_LABEL,
+  FAROL_MIDPOINT,
   FAROL_ORDER,
   catBadge,
   statusFromPercent,
@@ -72,9 +73,32 @@ type Row = {
   metas_status: Record<string, FarolStatus>;
   metas_cores: Record<string, string>;
   realizado: Record<string, number>;
+  familia_pct: Record<string, number>;
   total_meta: number | null;
+  total_pct: number | null;
   total_pct_status: FarolStatus | null;
 };
+
+type StatusCarrier = {
+  total_pct_status?: FarolStatus | null;
+  total_pct?: number | null;
+  metas_status?: Record<string, FarolStatus> | null;
+};
+
+function percentValue(v: number | null | undefined): number | null {
+  if (v == null || Number.isNaN(v)) return null;
+  return Math.abs(v) <= 1.5 ? v * 100 : v;
+}
+
+function inferRowStatus(row: StatusCarrier, familias: string[]): FarolStatus | null {
+  const totalPct = percentValue(row.total_pct);
+  if (totalPct != null) return statusFromPercent(totalPct);
+  if (row.total_pct_status) return row.total_pct_status;
+  const statuses = familias.map((f) => row.metas_status?.[f]).filter(Boolean) as FarolStatus[];
+  if (!statuses.length) return null;
+  const avg = statuses.reduce((sum, status) => sum + FAROL_MIDPOINT[status], 0) / statuses.length;
+  return statusFromPercent(avg);
+}
 
 export function PerformancePageContent() {
   const qc = useQueryClient();
@@ -219,7 +243,9 @@ export function PerformancePageContent() {
           metas_status: r.metas_status ?? {},
           metas_cores: r.metas_cores ?? {},
           realizado: r.realizado ?? {},
+          familia_pct: r.familia_pct ?? {},
           total_meta: r.total_meta,
+          total_pct: r.total_pct ?? null,
           total_pct_status: (r.total_pct_status ?? null) as FarolStatus | null,
         })),
     [dbRows],
@@ -344,23 +370,10 @@ export function PerformancePageContent() {
       perCat[cat].meta += rowMeta;
       perCat[cat].real += rowReal;
       if (rowReal > 0) hasRealizado = true;
-      // Status da linha: prioriza total_pct_status; senão calcula por realizado/meta;
-      // senão infere de metas_status (predominante ou sem_compra).
-      let status: FarolStatus | null = r.total_pct_status ?? null;
-      if (!status && rowMeta > 0 && rowReal > 0) {
-        status = statusFromPercent((rowReal / rowMeta) * 100);
-      }
-      if (!status) {
-        const values = Object.values(r.metas_status ?? {});
-        if (values.length > 0) {
-          if (values.every((s) => s === "sem_compra")) status = "sem_compra";
-          else {
-            const counts: Record<string, number> = {};
-            for (const v of values) counts[v] = (counts[v] ?? 0) + 1;
-            status = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FarolStatus) ?? null;
-          }
-        }
-      }
+      // Status da linha: usa o percentual total quando existe; se a planilha só trouxe
+      // faróis por família, calcula uma faixa média sem depender de valores monetários.
+      let status = inferRowStatus(r, familias);
+      if (!status && rowMeta > 0 && rowReal > 0) status = statusFromPercent((rowReal / rowMeta) * 100);
       if (status) perStatus[status] += 1;
     }
     return { perCat, perStatus, hasRealizado };
@@ -461,6 +474,14 @@ export function PerformancePageContent() {
         throw new Error(parsed.matriz_erros.slice(0, 3).join("\n"));
       }
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada na planilha.");
+      const coverage = validatePerformanceStatusCoverage(parsed);
+      audit.celulas_status_reconhecidas = coverage.statusCells;
+      audit.clientes_com_status = coverage.rowsWithStatus;
+      if (!coverage.ok) {
+        throw new Error(
+          "Importação interrompida: nenhuma célula de farol foi reconhecida nas famílias. O arquivo não será salvo para evitar performance vazia ou zerada.",
+        );
+      }
 
       const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
       const targetsMatrix =
@@ -480,6 +501,7 @@ export function PerformancePageContent() {
           razao_social: r.razao_social,
           categoria: r.categoria,
           metas_status: r.metas_status ?? {},
+          metas_cores: r.metas_cores ?? {},
           total_pct_status: r.total_pct_status,
         })),
       };
@@ -497,7 +519,7 @@ export function PerformancePageContent() {
       toast.success("Arquivo validado com sucesso.", {
         description:
           `${parsed.rows.length} clientes encontrados. ${parsed.familias.length} famílias reconhecidas. ` +
-          `${parsed.stats?.celulas_avaliadas ?? 0} células de desempenho validadas. ` +
+          `${coverage.statusCells} células de farol reconhecidas. ` +
           `Matriz Financeira ${parsed.matriz ? (parsed.matriz_erros.length ? "inválida" : "válida") : "ausente"}. ` +
           `Nenhuma divergência entre texto e cor.` +
           (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),
@@ -737,7 +759,7 @@ export function PerformancePageContent() {
       representante: rep,
       periodo: currentUpload.periodo_label,
       familias,
-      rows: view,
+      rows: view.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, familias) })),
       totals,
     });
   }
@@ -753,7 +775,7 @@ export function PerformancePageContent() {
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas_status: r.metas_status,
-        total_pct_status: r.total_pct_status,
+        total_pct_status: inferRowStatus(r, familias),
       })),
     });
   }
@@ -775,6 +797,9 @@ export function PerformancePageContent() {
       metas: r.metas ?? {},
       metas_status: r.metas_status ?? {},
       metas_cores: r.metas_cores ?? {},
+      familia_pct: r.familia_pct ?? {},
+      total_pct: r.total_pct ?? null,
+      total_pct_status: r.total_pct_status ?? null,
       total_meta: r.total_meta,
     }));
     const perFamilia: Record<string, number> = {};
@@ -788,7 +813,7 @@ export function PerformancePageContent() {
       representante: rep,
       periodo: upload.periodo_label,
       familias: fams,
-      rows: rowsE,
+      rows: rowsE.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, fams) })),
       totals: { perFamilia, grand },
     });
   }
@@ -1224,7 +1249,8 @@ export function PerformancePageContent() {
                     {filteredView.map((r) => {
                       const rowIdx = view.indexOf(r);
                       const totalRow = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-                      const totalPctCls = r.total_pct_status ? FAROL_CELL_CLASS[r.total_pct_status] : "";
+                      const totalStatus = inferRowStatus(r, familias);
+                      const totalPctCls = totalStatus ? FAROL_CELL_CLASS[totalStatus] : "";
                       return (
                         <tr key={r.id ?? rowIdx} className="border-t border-border">
                           <td
@@ -1268,9 +1294,9 @@ export function PerformancePageContent() {
                             </span>
                           </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
-                            {r.total_pct_status ? (
+                            {totalStatus ? (
                               <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
-                                {FAROL_FAIXA_TEXT[r.total_pct_status]}
+                                {FAROL_FAIXA_TEXT[totalStatus]}
                               </span>
                             ) : (
                               ""
@@ -1489,7 +1515,8 @@ function MatrixCell({
 }) {
   const meta = Number(row.metas?.[familia]) || 0;
   const real = Number(row.realizado?.[familia]) || 0;
-  const pct = meta > 0 && real > 0 ? (real / meta) * 100 : null;
+  const storedPct = percentValue(row.familia_pct?.[familia]);
+  const pct = meta > 0 && real > 0 ? (real / meta) * 100 : storedPct;
   const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : row.metas_status?.[familia] ?? null;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 

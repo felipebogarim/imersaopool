@@ -9,7 +9,7 @@ import { PeriodoPicker, type PeriodoValue } from "@/components/PeriodoPicker";
 import { Upload, X, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { parseWorkbook } from "@/lib/performance-parser";
+import { parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
 import { generatePerformanceFromRaw } from "@/lib/generate-performance.functions";
 import { expandFiles, guessRepId, pdfToAoa, type BulkEntry } from "@/lib/performance-bulk";
 import { cn } from "@/lib/utils";
@@ -79,6 +79,10 @@ export function EnvioMassaDialog({
       if (parsed.conflitos?.length) throw new Error("Divergências entre texto e cor na planilha.");
       if (parsed.matriz && parsed.matriz_erros.length) throw new Error(parsed.matriz_erros[0]);
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada.");
+      const coverage = validatePerformanceStatusCoverage(parsed);
+      if (!coverage.ok) {
+        throw new Error("Nenhuma célula de farol foi reconhecida nas famílias. O arquivo não foi salvo para evitar performance vazia ou zerada.");
+      }
       const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
       familias = parsed.familias;
       targetsMatrix =
@@ -87,6 +91,7 @@ export function EnvioMassaDialog({
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas_status: r.metas_status ?? {},
+        metas_cores: r.metas_cores ?? {},
         total_pct_status: r.total_pct_status,
       }));
     } else {
