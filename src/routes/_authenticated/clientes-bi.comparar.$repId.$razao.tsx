@@ -15,6 +15,8 @@ import {
   type ComparableRecord,
   type Situacao,
 } from "@/lib/client-profile-comparison";
+import { useAllClientBIs } from "@/lib/use-performance-bi";
+import { toLegacyClientBIData } from "@/lib/performance-bi-engine";
 import {
   Bar,
   BarChart,
