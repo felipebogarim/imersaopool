@@ -326,16 +326,6 @@ function firstStatusByColor(cells: (RawCell | undefined)[]): { status: FarolStat
   return null;
 }
 
-function statusFactor(status: FarolStatus | null): number | null {
-  if (!status) return null;
-  if (status === "sem_compra") return 0;
-  if (status === "abaixo_meta") return 0.25;
-  if (status === "pode_melhorar") return 0.6;
-  if (status === "proximo") return 0.8;
-  if (status === "otimo") return 0.95;
-  return 1.1;
-}
-
 function scoreDiagnostic(d: ImportDiagnostic): ImportDiagnostic {
   let score = 0;
   if (d.validacao.rowsAccepted > 0) score += 25;
@@ -491,19 +481,8 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       if (status) row.metas_status[group.familia] = status;
     }
 
-    if (row.total_pct == null && rowMetaSum > 0 && rowRealSum > 0) row.total_pct = rowRealSum / rowMetaSum;
-    if (row.total_pct == null && rowMetaSum > 0) {
-      let weighted = 0;
-      let weight = 0;
-      for (const group of structure.groups) {
-        const meta = row.metas[group.familia];
-        const factor = statusFactor(row.metas_status[group.familia] ?? null);
-        if (meta > 0 && factor != null) {
-          weighted += meta * factor;
-          weight += meta;
-        }
-      }
-      if (weight > 0) row.total_pct = weighted / weight;
+    if (row.total_pct == null && rowMetaSum > 0 && Object.keys(row.realizado).length > 0) {
+      row.total_pct = rowRealSum / rowMetaSum;
     }
     row.total_pct_status = row.total_pct != null ? statusFromPercent(row.total_pct * 100) : null;
     if (row.total_meta == null && rowMetaSum > 0) row.total_meta = rowMetaSum;
