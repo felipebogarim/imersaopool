@@ -28,6 +28,7 @@ import {
 } from "@/components/visao-imersao-2/VisaoImersao2Importer";
 import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
 import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerciaisCliente";
+import { ExecutiveReportButton } from "@/components/executive-report/ExecutiveReportButton";
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
