@@ -282,9 +282,20 @@ export function PerformancePageContent() {
       }
       if (filterZero) {
         // Considera 0% apenas nas colunas de famílias (ignora coluna Total %).
-        const hasZero = famsToCheck.some((f) => r.metas_status?.[f] === "sem_compra");
+        // Mesma regra da célula: status sem_compra, ou célula vazia (sem meta, sem realizado e sem %).
+        const hasZero = famsToCheck.some((f) => {
+          const meta = Number(r.metas?.[f]) || 0;
+          const real = Number(r.realizado?.[f]) || 0;
+          const storedPct = percentValue(r.familia_pct?.[f]);
+          const pct = meta > 0 && real > 0 ? (real / meta) * 100 : storedPct;
+          if (pct != null) return pct <= 0;
+          const st = r.metas_status?.[f];
+          if (st) return st === "sem_compra";
+          return meta === 0 && real === 0;
+        });
         if (!hasZero) return false;
       }
+
       return true;
     });
   }, [view, filterQ, filterCats, filterZero, filterFams, familias]);
