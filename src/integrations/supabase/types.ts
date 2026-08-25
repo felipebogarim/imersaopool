@@ -5479,6 +5479,17 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      kanban_notify: {
+        Args: {
+          _board_id: string
+          _body: string
+          _card_id: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
+      }
       kanban_workspace_role: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["kanban_member_role"]
