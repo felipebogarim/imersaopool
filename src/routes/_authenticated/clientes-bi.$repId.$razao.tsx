@@ -1,27 +1,42 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BarChart2, FileDown } from "lucide-react";
+import { ArrowLeft, BarChart2, FileDown, RefreshCw } from "lucide-react";
 import { ClientBISection } from "@/components/ClientBISection";
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { catBadge } from "@/lib/performance-farol";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { exportClientBIPdf } from "@/lib/client-bi-pdf";
-import type { ClientBIData } from "@/lib/client-bi-parser";
+import { useClientBI, useRecalcBI } from "@/lib/use-performance-bi";
+import { toLegacyClientBIData } from "@/lib/performance-bi-engine";
 
 export const Route = createFileRoute("/_authenticated/clientes-bi/$repId/$razao")({
-  head: () => ({ meta: [{ title: "BI do cliente — PoolFlux" }] }),
+  head: () => ({
+    meta: [
+      { title: "BI do cliente — PoolFlux" },
+      {
+        name: "description",
+        content:
+          "BI do cliente calculado diretamente da versão ativa de Performance: atingimento real, farol e participação por família.",
+      },
+      { property: "og:title", content: "BI do cliente — PoolFlux" },
+      {
+        property: "og:description",
+        content: "Indicadores do cliente derivados da Performance ativa.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ClientBIPage,
 });
 
 function ClientBIPage() {
   const { repId, razao } = Route.useParams();
-  const navigate = useNavigate();
   const razaoSocial = useMemo(() => {
     try {
       return decodeURIComponent(razao);
@@ -30,60 +45,21 @@ function ClientBIPage() {
     }
   }, [razao]);
 
+  const recalc = useRecalcBI();
+
   const { data: rep } = useQuery({
     queryKey: ["rep-info", repId],
     queryFn: async () =>
-      (await supabase.from("representatives").select("id, nome, company_id").eq("id", repId).single()).data,
+      (await supabase.from("representatives").select("id, nome, company_id").eq("id", repId).single())
+        .data,
   });
 
-  // Recupera categoria e famílias a partir da última planilha de performance ativa
-  const { data: rowInfo } = useQuery({
-    queryKey: ["client-row-info", repId, razaoSocial],
-    enabled: !!repId && !!razaoSocial,
-    queryFn: async () => {
-      const { data: up } = await supabase
-        .from("rep_performance_uploads")
-        .select("id")
-        .eq("representative_id", repId)
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!up?.id) return null;
-      const { data: row } = await supabase
-        .from("rep_performance_rows")
-        .select("*")
-        .eq("upload_id", up.id)
-        .eq("razao_social", razaoSocial)
-        .maybeSingle();
-      return row ?? null;
-    },
-  });
-
-  const { data: biUpload } = useQuery({
-    queryKey: ["client-bi", repId, razaoSocial],
-    enabled: !!repId && !!razaoSocial,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("client_bi_uploads")
-        .select("*")
-        .eq("representative_id", repId)
-        .eq("razao_social", razaoSocial)
-        .eq("kind", "bi")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
-    },
-  });
-
-  const biData: ClientBIData | null = (biUpload?.data as ClientBIData) ?? null;
+  const { data: bi = null } = useClientBI(repId, razaoSocial);
 
   function exportarRelatorio() {
-    if (!biData) {
-      toast.error("Sem dados de BI", {
-        description: "Carregue a planilha de BI deste cliente antes de exportar.",
+    if (!bi) {
+      toast.error("Sem dados de Performance", {
+        description: "Importe a Performance deste representante para gerar o BI.",
       });
       return;
     }
@@ -91,8 +67,8 @@ function ClientBIPage() {
       exportClientBIPdf({
         razaoSocial,
         representante: rep?.nome ?? null,
-        categoria: (rowInfo as any)?.categoria ?? biData.categoria ?? null,
-        data: biData,
+        categoria: bi.categoria ?? null,
+        data: toLegacyClientBIData(bi) as any,
       });
       toast.success("Relatório visual gerado");
     } catch (e: any) {
@@ -100,10 +76,7 @@ function ClientBIPage() {
     }
   }
 
-  const familias = useMemo(
-    () => (rowInfo ? Object.keys((rowInfo as any).metas ?? {}) : []),
-    [rowInfo],
-  );
+  const familias = useMemo(() => (bi?.familias ?? []).map((f) => f.familia), [bi]);
   const [filterFams, setFilterFams] = useState<string[]>([]);
 
   return (
@@ -112,14 +85,21 @@ function ClientBIPage() {
         title={razaoSocial}
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                recalc();
+                toast.success("BI recalculado a partir da Performance ativa");
+              }}
+              aria-label="Atualizar BI"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" /> Atualizar BI
+            </Button>
             <Button variant="outline" onClick={exportarRelatorio} aria-label="Exportar relatório visual">
               <FileDown className="h-4 w-4 mr-1" /> Exportar relatório
             </Button>
             <Button asChild aria-label="Comparar dentro do perfil">
-              <Link
-                to="/clientes-bi/comparar/$repId/$razao"
-                params={{ repId, razao }}
-              >
+              <Link to="/clientes-bi/comparar/$repId/$razao" params={{ repId, razao }}>
                 <BarChart2 className="h-4 w-4 mr-1" /> Comparar dentro do perfil
               </Link>
             </Button>
@@ -135,14 +115,17 @@ function ClientBIPage() {
         <div className="surface rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
           <div className="text-sm text-muted-foreground">Representante</div>
           <div className="font-medium">{rep?.nome ?? "—"}</div>
-          {rowInfo?.categoria && (
+          {bi?.categoria && (
             <span
-              className={cn(
-                "inline-flex px-2 py-0.5 rounded-full text-xs border",
-                catBadge(rowInfo.categoria),
-              )}
+              className={cn("inline-flex px-2 py-0.5 rounded-full text-xs border", catBadge(bi.categoria))}
             >
-              {rowInfo.categoria}
+              {bi.categoria}
+            </span>
+          )}
+          {bi && (
+            <span className="text-[11px] text-muted-foreground">
+              Versão da Performance: {bi.periodo_label ?? bi.performance_version_id.slice(0, 8)} ·
+              metodologia {bi.calculation_version}
             </span>
           )}
         </div>
@@ -201,6 +184,3 @@ function ClientBIPage() {
     </div>
   );
 }
-
-// keep import for Badge type usage (avoids tree-shake warning); noop
-void Badge;
