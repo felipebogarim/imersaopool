@@ -366,8 +366,9 @@ export function PerformancePageContent() {
     return { perCat, perStatus, hasRealizado };
   }, [view, familias]);
 
-  function openUpload(mode: "new" | "replace") {
-    if (!repId) {
+  function openUpload(mode: "new" | "replace", forcedRepId?: string) {
+    const rid = forcedRepId ?? repId;
+    if (!rid) {
       toast.error("Selecione um representante primeiro.");
       return;
     }
