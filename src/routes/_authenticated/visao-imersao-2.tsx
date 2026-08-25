@@ -28,6 +28,7 @@ import {
 } from "@/components/visao-imersao-2/VisaoImersao2Importer";
 import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
 import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerciaisCliente";
+import { ExecutiveReportButton } from "@/components/executive-report/ExecutiveReportButton";
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { 
@@ -671,6 +672,7 @@ function VisaoImersao2Page() {
         subtitle={`Arquivo: ${avulso.arquivo}${dirty ? " · alterações não salvas" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <ExecutiveReportButton reportId={avulso.id} />
             <Button onClick={() => void salvarRelatorio()} disabled={salvando}>
               <Save className="mr-1 h-4 w-4" />
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
