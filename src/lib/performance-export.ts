@@ -88,8 +88,9 @@ export function exportPerformanceXlsx(opts: {
         const pct = meta > 0 && real > 0 ? (real / meta) * 100 : pctOf(r.familia_pct?.[f]);
         if (meta > 0 && real === 0) return meta as any;
         if (pct != null) return fmtPctCell(pct) as any;
-        const st = r.metas_status?.[f];
-        return st ? (FAROL_FAIXA_TEXT[st] as any) : (null as any);
+        const st = r.metas_status?.[f] ?? "sem_compra";
+        return FAROL_FAIXA_TEXT[st] as any;
+
       }),
     ]);
   }

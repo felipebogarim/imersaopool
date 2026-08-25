@@ -87,10 +87,10 @@ export function exportPerformancePdf(opts: {
         },
       },
       ...familias.map<CellDef>((f) => {
-        const st = r.metas_status?.[f];
-        const bg = st ? hexToRgb(FAROL_HEX[st]) : null;
+        const st = r.metas_status?.[f] ?? "sem_compra";
+        const bg = hexToRgb(FAROL_HEX[st]);
         return {
-          content: st ? FAROL_FAIXA_TEXT[st] : "",
+          content: FAROL_FAIXA_TEXT[st],
           styles: {
             halign: "center",
             fontStyle: "bold",
@@ -98,6 +98,7 @@ export function exportPerformancePdf(opts: {
           },
         };
       }),
+
     ];
     return cells;
   });

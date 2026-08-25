@@ -712,19 +712,20 @@ function GeradorPerformancePage() {
                             )}
                           </td>
                           {result.familias.map((f) => {
-                            const st = r.metas_status?.[f] as FarolStatus | undefined;
+                            const st = (r.metas_status?.[f] as FarolStatus | undefined) ?? "sem_compra";
                             return (
                               <td
                                 key={f}
                                 className={cn(
                                   "px-2 py-1 text-center font-semibold text-xs tabular-nums",
-                                  st && FAROL_CELL_CLASS[st],
+                                  FAROL_CELL_CLASS[st],
                                 )}
                               >
-                                {st ? FAROL_FAIXA_TEXT[st] : ""}
+                                {FAROL_FAIXA_TEXT[st]}
                               </td>
                             );
                           })}
+
                         </tr>
                       );
                     })}
