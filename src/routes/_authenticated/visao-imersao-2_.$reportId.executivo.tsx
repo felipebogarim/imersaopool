@@ -92,9 +92,9 @@ function RelatorioExecutivoPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [filterArea, setFilterArea] = useState<"all" | ExecArea>("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | ExecStatus>("all");
+
 
   const { data: me } = useQuery({
     queryKey: ["exec-me"],
