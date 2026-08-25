@@ -327,21 +327,52 @@ export function findPerformanceSheetName(names: string[]): string | undefined {
 }
 
 /** Última tentativa: qualquer aba que contenha o cabeçalho canônico (RAZÃO SOCIAL + CATEGORIA). */
-function findSheetByHeader(wb: XLSXStyle.WorkBook): string | undefined {
-  for (const name of wb.SheetNames) {
-    const ws = wb.Sheets[name];
-    if (!ws) continue;
-    const grid = XLSXStyle.utils.sheet_to_json<unknown[]>(ws, { header: 1, blankrows: false, raw: true }) as unknown[][];
-    const asCells = grid.slice(0, 25).map((r) => (r ?? []).map((v) => ({ v })));
-    if (findHeaderRow(asCells)) return name;
-  }
-  return undefined;
+function sheetHasPerformanceHeader(wb: XLSXStyle.WorkBook, name: string): boolean {
+  const ws = wb.Sheets[name];
+  if (!ws) return false;
+  const grid = XLSXStyle.utils.sheet_to_json<unknown[]>(ws, { header: 1, blankrows: false, raw: true }) as unknown[][];
+  const asCells = grid.slice(0, 25).map((r) => (r ?? []).map((v) => ({ v })));
+  return !!findHeaderRow(asCells);
 }
 
-export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
-  const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
+function findSheetByHeader(wb: XLSXStyle.WorkBook): string | undefined {
+  return wb.SheetNames.find((name) => sheetHasPerformanceHeader(wb, name));
+}
+
+/** Abas auxiliares que devem acompanhar qualquer aba de performance selecionada. */
+function isAuxSheet(name: string): boolean {
+  const v = normSheet(name);
+  return (v.includes("MATRIZ") && v.includes("FINANC")) || v === "BASE BI";
+}
+
+/**
+ * Lista TODAS as abas do arquivo que contêm uma matriz de performance
+ * (uma por representante, no caso do envio em massa).
+ */
+export function listPerformanceSheetNames(buf: ArrayBuffer): string[] {
+  const wb = XLSXStyle.read(buf, { type: "array" });
+  return wb.SheetNames.filter(
+    (n) => !isAuxSheet(n) && (normSheet(n).includes("PERFORMANC") || sheetHasPerformanceHeader(wb, n)),
+  );
+}
+
+export async function parseWorkbook(
+  buf: ArrayBuffer,
+  opts?: { sheetName?: string },
+): Promise<ParsedSheet> {
+  const full = XLSXStyle.read(buf, { type: "array", cellStyles: true });
+  let wb = full;
+  if (opts?.sheetName && full.SheetNames.includes(opts.sheetName)) {
+    const keep = [opts.sheetName, ...full.SheetNames.filter((n) => n !== opts.sheetName && isAuxSheet(n))];
+    const sheets: Record<string, any> = {};
+    for (const n of keep) sheets[n] = full.Sheets[n];
+    wb = { ...full, SheetNames: keep, Sheets: sheets } as XLSXStyle.WorkBook;
+  }
   const deterministic = parsePerformanceWorkbookDeterministic(wb);
-  const performanceSheetName = findPerformanceSheetName(wb.SheetNames) ?? findSheetByHeader(wb);
+  const performanceSheetName =
+    (opts?.sheetName && wb.SheetNames.includes(opts.sheetName) ? opts.sheetName : undefined) ??
+    findPerformanceSheetName(wb.SheetNames) ??
+    findSheetByHeader(wb);
   const matriz = readMatriz(wb);
   const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
   if (deterministic && deterministic.diagnostic.resultado.statusCells > 0) {
