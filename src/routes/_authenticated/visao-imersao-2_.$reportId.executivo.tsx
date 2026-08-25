@@ -351,6 +351,8 @@ function RelatorioExecutivoPage() {
           <DiagnosticoChapter
             data={viewData}
             readOnly={closed}
+            originOf={originOf}
+
             onValidate={(a) =>
               void mutate(
                 a,
