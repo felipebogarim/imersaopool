@@ -461,7 +461,28 @@ function RelatorioExecutivoPage() {
 
       )}
 
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir relatório executivo</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Esta ação remove o relatório executivo desta imersão, incluindo ações e versões. A
+            Visão Imersão 2 original não é afetada.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDelete()}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ActionEditDialog
+
         action={editing}
         open={!!editing}
         onOpenChange={(v) => !v && setEditing(null)}
