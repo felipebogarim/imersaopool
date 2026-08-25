@@ -409,6 +409,21 @@ export function calculateRepresentativeBI(
       };
     });
 
+  // Métricas oficiais do representante (camada central).
+  const detalhado = calculateRepresentativeMetrics(
+    rows.map((r) => ({
+      razao_social: r.razao_social,
+      categoria: r.categoria ?? null,
+      metas: r.metas ?? null,
+      realizado: r.realizado ?? null,
+      familia_pct: r.familia_pct ?? null,
+      metas_status: r.metas_status ?? null,
+      total_pct: r.total_pct ?? null,
+    })),
+    familias,
+  );
+  const indiceGeralPonderado = total.meta > 0 ? total.indice / total.meta : null;
+
   return {
     performance_version_id: version.id,
     calculation_version: CALCULATION_VERSION,
@@ -419,15 +434,19 @@ export function calculateRepresentativeBI(
       categoria: c.categoria,
       indice: c.indice_geral,
       atingimento_ratio: c.atingimento_geral_ratio,
+      farol: c.farol,
     })),
     categorias,
     farol,
     familiasPorCategoria,
     familias: familiasConsolidadas,
-    indice_geral: total.meta > 0 ? total.indice / total.meta : null,
-    atingimento_geral_ratio: total.realDen > 0 ? total.realNum / total.realDen : null,
+    metrics: { ...detalhado.metrics, weighted_farol_index: indiceGeralPonderado },
+    detalhado,
+    indice_geral: indiceGeralPonderado,
+    atingimento_geral_ratio: detalhado.metrics.real_achievement,
     erros,
   };
+
 }
 
 // ============================== Validação ===================================
