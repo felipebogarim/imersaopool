@@ -70,12 +70,15 @@ export function ContentBlockEditor({ block, index, onUpdate, onRemove }: Content
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      // Bucket privado: gera URL assinada (1 ano) em vez de URL pública.
+      const { data: signed, error: signedError } = await supabase.storage
         .from('app_update_assets')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+      if (signedError || !signed?.signedUrl) throw signedError ?? new Error("Não foi possível gerar o link do arquivo");
 
       onUpdate({ 
-        media_url: publicUrl, 
+        media_url: signed.signedUrl, 
         media_type: file.type.startsWith('video/') ? 'video' : 'image' 
       });
       toast.success("Arquivo enviado com sucesso");
