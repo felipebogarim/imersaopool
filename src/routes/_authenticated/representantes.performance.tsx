@@ -919,8 +919,9 @@ export function PerformancePageContent() {
                           onClick={() => {
                             setRepId(r.id);
                             setUploadId("");
-                            setTimeout(() => openUpload("new"), 0);
+                            openUpload("new", r.id);
                           }}
+
                         >
                           {r.nome}
                         </DropdownMenuItem>
