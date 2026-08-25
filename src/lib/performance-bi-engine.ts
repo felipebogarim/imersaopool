@@ -248,29 +248,25 @@ export function calculateClientBI(
 
   const indice_geral = somaMetas > 0 ? somaIndices / somaMetas : null;
 
-  // Atingimento real ponderado: apenas famílias com atingimento conhecido.
-  let numReal = 0;
-  let denReal = 0;
-  for (const f of itens) {
-    if (f.atingimento_ratio == null) continue;
-    numReal += f.meta_peso * f.atingimento_ratio;
-    denReal += f.meta_peso;
-  }
-  const totalRow = num(row.total_pct);
-  const atingimento_geral_ratio = totalRow != null ? totalRow : denReal > 0 ? numReal / denReal : null;
+  // Métricas oficiais do cliente (camada central).
+  const clientMetrics = calculateClientMetrics(
+    {
+      razao_social: row.razao_social,
+      categoria: row.categoria ?? null,
+      metas: row.metas ?? null,
+      realizado: row.realizado ?? null,
+      familia_pct: row.familia_pct ?? null,
+      metas_status: row.metas_status ?? null,
+      total_pct: row.total_pct ?? null,
+    },
+    familias,
+  );
+  const atingimento_geral_ratio = clientMetrics.metrics.real_achievement;
 
-  // Melhor / pior família — critério determinístico:
-  // 1) atingimento real, 2) meta_peso, 3) ordem original da família.
-  const order = new Map(familias.map((f, i) => [f, i]));
-  const comparable = itens.filter((f) => f.atingimento_ratio != null || f.farol != null);
-  const key = (f: FamiliaBI) => f.atingimento_ratio ?? (f.coeficiente_farol ?? 0);
-  const sorted = comparable.slice().sort((a, b) => {
-    if (key(b) !== key(a)) return key(b) - key(a);
-    if (b.meta_peso !== a.meta_peso) return b.meta_peso - a.meta_peso;
-    return (order.get(a.familia) ?? 0) - (order.get(b.familia) ?? 0);
-  });
-  const best = sorted[0] ?? null;
-  const worst = sorted.length ? sorted[sorted.length - 1] : null;
+  // Melhor / pior família — sempre por real_achievement, com empate explícito.
+  const extremos = extremesByRealAchievement(
+    itens.map((f) => ({ label: f.familia, real_achievement: f.atingimento_ratio })),
+  );
 
   // Distribuição do farol
   const counts = new Map<FarolStatus, number>();
@@ -294,14 +290,25 @@ export function calculateClientBI(
     cliente: row.razao_social,
     categoria: row.categoria ?? null,
     familias: itens,
+    metrics: { ...clientMetrics.metrics, weighted_farol_index: indice_geral },
     indice_geral,
     atingimento_geral_ratio,
-    melhor_familia: { label: best?.familia ?? null, atingimento_ratio: best?.atingimento_ratio ?? null },
-    pior_familia: { label: worst?.familia ?? null, atingimento_ratio: worst?.atingimento_ratio ?? null },
+    farol: clientMetrics.farol,
+    melhor_familia: {
+      label: extremos.best.labels[0] ?? null,
+      labels: extremos.best.labels,
+      atingimento_ratio: extremos.best.value,
+    },
+    pior_familia: {
+      label: extremos.worst.labels[0] ?? null,
+      labels: extremos.worst.labels,
+      atingimento_ratio: extremos.worst.value,
+    },
     distribuicao_farol,
     erros,
   };
 }
+
 
 // ========================= BI do representante ==============================
 
