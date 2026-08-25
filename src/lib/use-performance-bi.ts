@@ -85,3 +85,17 @@ export function useRecalcBI() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: [PERFORMANCE_BI_KEY] });
 }
+
+/** BIs de todos os clientes da versão de Performance (base para comparativos). */
+export function useAllClientBIs(repId: string, versionId?: string | null) {
+  return useQuery<{ version: PerformanceVersion; bis: ClientBIResult[] } | null>({
+    queryKey: [PERFORMANCE_BI_KEY, "clients", repId, versionId ?? "active"],
+    enabled: !!repId,
+    queryFn: async () => {
+      const version = await fetchVersion(repId, versionId);
+      if (!version) return null;
+      const rows = await fetchRows(version.id);
+      return { version, bis: rows.map((r) => calculateClientBI(version, r)) };
+    },
+  });
+}
