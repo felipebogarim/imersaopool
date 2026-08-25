@@ -257,10 +257,14 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
             BI — indicadores de performance {repName ? `· ${repName}` : ""}
           </p>
           {d?.geral != null && (
-            <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Atingimento real ponderado: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
+            <span
+              className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+              title={METRIC_DEFS.real_achievement.tooltip}
+            >
+              Atingimento real: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
             </span>
           )}
+
         </button>
         <div className="flex items-center gap-2">
           {version?.periodo_label && (
