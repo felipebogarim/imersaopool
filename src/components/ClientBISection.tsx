@@ -167,7 +167,7 @@ export function ClientBISection({
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">Atingimento real</div>
                     <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between gap-2">
-                      <span>Índice do farol: {fmtRatio(f.coeficiente_farol)}</span>
+                      <span>Coeficiente do farol: {fmtRatio(f.coeficiente_farol)}</span>
                       <span>Participação: {fmtRatio(f.participacao)}</span>
                     </div>
                   </div>
