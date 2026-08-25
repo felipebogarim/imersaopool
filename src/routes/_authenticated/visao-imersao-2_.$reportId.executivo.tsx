@@ -400,7 +400,9 @@ function RelatorioExecutivoPage() {
                 <ActionCard
                   key={a.id}
                   action={a}
+                  origin={originOf(a)}
                   readOnly={closed}
+
                   onValidate={() =>
                     void mutate(
                       a,
