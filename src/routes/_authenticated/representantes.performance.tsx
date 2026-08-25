@@ -1220,7 +1220,13 @@ export function PerformancePageContent() {
                   <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
                     Categoria
                   </th>
-                  <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Atingimento %</th>
+                  <th
+                    className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted"
+                    title="Atingimento real: soma(realizado) / soma(meta) do cliente."
+                  >
+                    Atingimento real
+                  </th>
+
                   {visibleFams.map((f) => (
                     <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
                       {famLabel(f)}
