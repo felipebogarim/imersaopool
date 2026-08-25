@@ -797,7 +797,7 @@ export function PerformancePageContent() {
   function editFromList(rid: string) {
     setRepId(rid);
     setUploadId("");
-    setTimeout(() => openUpload("replace"), 0);
+    openUpload("replace", rid);
   }
 
   // Exclui todas as versões (com senha do gestor master) de um representante
