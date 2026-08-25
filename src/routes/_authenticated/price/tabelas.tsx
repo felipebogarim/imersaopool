@@ -76,7 +76,15 @@ function TabelasPage() {
 
   async function uploadFile(file: File): Promise<{ path: string; name: string; size: number; mime: string }> {
     const ext = file.name.split(".").pop() ?? "bin";
-    const path = `${crypto.randomUUID()}.${ext}`;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user?.id ?? "")
+      .maybeSingle();
+    const companyId = (profile as any)?.company_id;
+    if (!companyId) throw new Error("Usuário não vinculado a uma empresa");
+    const path = `${companyId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from("price-tables").upload(path, file, {
       cacheControl: "3600",
       upsert: false,

@@ -30,9 +30,13 @@ export async function runAutomationsForMove(boardId: string, cardId: string, new
     } else if (action === "archive_card") {
       await supabase.from("kanban_cards").update({ archived_at: new Date().toISOString() }).eq("id", cardId);
     } else if (action === "send_notification" && acfg.user_id) {
-      await supabase.from("kanban_notifications").insert({
-        user_id: acfg.user_id, card_id: cardId, board_id: boardId,
-        type: "automation", title: a.name, body: acfg.message ?? "Automação disparada",
+      await (supabase as any).rpc("kanban_notify", {
+        _user_id: acfg.user_id,
+        _board_id: boardId,
+        _card_id: cardId,
+        _type: "automation",
+        _title: a.name,
+        _body: acfg.message ?? "Automação disparada",
       });
     }
     await logActivity(boardId, "automation_run", { automation_id: a.id, name: a.name }, cardId);
