@@ -90,14 +90,19 @@ export type ClientBIResult = {
   cliente: string;
   categoria: string | null;
   familias: FamiliaBI[];
+  /** Objeto padrão de métricas (governança única). */
+  metrics: MetricsObject;
   /** Índice analítico do cliente (ponderado pelo coeficiente do farol). */
   indice_geral: number | null;
   /** Atingimento REAL ponderado pelas metas. */
   atingimento_geral_ratio: number | null;
-  melhor_familia: { label: string | null; atingimento_ratio: number | null };
-  pior_familia: { label: string | null; atingimento_ratio: number | null };
+  /** Farol derivado do atingimento real do cliente. */
+  farol: FarolStatus | null;
+  melhor_familia: { label: string | null; labels: string[]; atingimento_ratio: number | null };
+  pior_familia: { label: string | null; labels: string[]; atingimento_ratio: number | null };
   distribuicao_farol: Array<{ grupo: string; status: FarolStatus; quantidade: number }>;
   erros: string[];
+
 };
 
 export type FamilyShare = {
