@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, FileText, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
 import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
+import { EnvioMassaDialog } from "@/components/performance/EnvioMassaDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook } from "@/lib/performance-parser";
