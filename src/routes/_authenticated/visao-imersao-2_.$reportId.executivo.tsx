@@ -323,11 +323,6 @@ function RelatorioExecutivoPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {data && (
-              <Badge variant={closed ? "default" : "secondary"}>
-                {closed ? `Finalizado · versão ${data.current_version}` : "Em revisão"}
-              </Badge>
-            )}
-            {data && closed && (
               <>
                 <Button size="sm" onClick={() => viewData && exportExecutiveReportPdf(viewData)}>
                   <FileDown className="mr-1 h-4 w-4" /> Exportar PDF
@@ -335,15 +330,42 @@ function RelatorioExecutivoPage() {
                 <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
                   <Mail className="mr-1 h-4 w-4" /> Enviar por e-mail
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => void handleNewVersion()}>
-                  <RefreshCw className="mr-1 h-4 w-4" /> Nova versão
+                {closed && (
+                  <Button size="sm" variant="outline" onClick={() => void handleRevisar()}>
+                    <RefreshCw className="mr-1 h-4 w-4" /> Revisar
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={importing}
+                >
+                  {importing ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-1 h-4 w-4" />
+                  )}
+                  Atualizar
                 </Button>
+                <Button size="sm" variant="destructive" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 className="mr-1 h-4 w-4" /> Excluir
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setHistoryOpen(true)}>
+                  <History className="mr-1 h-4 w-4" /> Histórico de envios
+                </Button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".txt,.md,.markdown,text/plain,text/markdown"
+                  className="hidden"
+                  aria-label="Selecionar novo arquivo do relatório executivo"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleFile(f);
+                  }}
+                />
               </>
-            )}
-            {data && (
-              <Button size="sm" variant="ghost" onClick={() => setHistoryOpen(true)}>
-                <History className="mr-1 h-4 w-4" /> Histórico de envios
-              </Button>
             )}
             <Button asChild size="sm" variant="ghost">
               <Link to="/visao-imersao-2">
@@ -351,6 +373,7 @@ function RelatorioExecutivoPage() {
               </Link>
             </Button>
           </div>
+
         }
       />
 
