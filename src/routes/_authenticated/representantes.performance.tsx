@@ -798,6 +798,7 @@ export function PerformancePageContent() {
       metas: r.metas ?? {},
       metas_status: r.metas_status ?? {},
       metas_cores: r.metas_cores ?? {},
+      realizado: r.realizado ?? {},
       familia_pct: r.familia_pct ?? {},
       total_pct: r.total_pct ?? null,
       total_pct_status: r.total_pct_status ?? null,
@@ -816,7 +817,10 @@ export function PerformancePageContent() {
       familias: fams,
       rows: rowsE.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, fams) })),
       totals: { perFamilia, grand },
+      participacao: (upload as any).participacao ?? undefined,
+      atingimento: (upload as any).atingimento ?? undefined,
     });
+
   }
 
   // Abre editar (substituir versão) a partir da lista
