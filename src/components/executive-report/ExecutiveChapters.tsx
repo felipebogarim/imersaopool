@@ -8,6 +8,8 @@ import {
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 import { ActionCard } from "./ActionCard";
+import { MarkdownView } from "@/components/MarkdownView";
+
 
 export function ChapterHeader({ num, title }: { num: string; title: string }) {
   return (
