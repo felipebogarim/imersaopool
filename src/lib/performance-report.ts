@@ -1,36 +1,45 @@
 // Relatório gerencial de performance do representante.
 // Gera um HTML visual (KPIs, barras, distribuição de farol) em nova aba,
 // pronto para leitura na tela ou "Salvar como PDF" pela impressão do navegador.
+//
+// GOVERNANÇA DE MÉTRICAS: todos os números vêm de src/lib/performance-metrics.ts.
+// Cada bloco declara explicitamente qual métrica está exibindo; número, faixa e
+// ordenação sempre derivam da MESMA métrica.
 // IMPORTANTE: nunca exibe valores monetários — apenas percentuais, faixas e faróis.
 import {
   FAROL_HEX,
   FAROL_LABEL,
-  FAROL_MIDPOINT,
   FAROL_ORDER,
   type FarolStatus,
 } from "./performance-farol";
+import {
+  METRIC_DEFS,
+  calculateRepresentativeMetrics,
+  clientesCriticos,
+  clientesNaMeta,
+  rankExpansionOpportunities,
+  rankLowestAchievement,
+  rankTopPerformers,
+  type ClientMetrics,
+} from "./performance-metrics";
 
 export type ReportRow = {
   razao_social: string;
   categoria: string | null;
+  metas?: Record<string, number> | null;
+  realizado?: Record<string, number> | null;
+  familia_pct?: Record<string, number> | null;
   metas_status?: Record<string, FarolStatus> | null;
-  total_pct_status?: FarolStatus | null;
+  total_pct?: number | null;
 };
 
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]!));
 
+/** Ratio (1 = 100%) → texto percentual. */
+const pctR = (n: number | null | undefined) =>
+  n == null || Number.isNaN(n) ? "—" : `${(n * 100).toFixed(1).replace(".", ",")}%`;
 const pct = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
-
-function statusOfRow(r: ReportRow, familias: string[]): FarolStatus | null {
-  if (r.total_pct_status) return r.total_pct_status;
-  const vals = familias.map((f) => r.metas_status?.[f]).filter(Boolean) as FarolStatus[];
-  if (!vals.length) return null;
-  if (vals.every((v) => v === "sem_compra")) return "sem_compra";
-  const counts: Record<string, number> = {};
-  for (const v of vals) counts[v] = (counts[v] ?? 0) + 1;
-  return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as FarolStatus) ?? null;
-}
 
 function distBar(counts: Record<FarolStatus, number>, total: number) {
   if (!total) return `<div class="bar empty"></div>`;
@@ -51,79 +60,45 @@ export function exportPerformanceReport(opts: {
 }) {
   const { representante, periodo, familias, rows } = opts;
 
-  const zero = () =>
-    FAROL_ORDER.reduce((a, s) => ((a[s] = 0), a), {} as Record<FarolStatus, number>);
+  // ---- CAMADA CENTRAL DE MÉTRICAS -----------------------------------------
+  const rep = calculateRepresentativeMetrics(
+    rows.map((r) => ({
+      razao_social: r.razao_social,
+      categoria: r.categoria,
+      metas: r.metas ?? null,
+      realizado: r.realizado ?? null,
+      familia_pct: r.familia_pct ?? null,
+      metas_status: r.metas_status ?? null,
+      total_pct: r.total_pct ?? null,
+    })),
+    familias,
+  );
 
-  // Distribuição geral por cliente
-  const geral = zero();
-  let comStatus = 0;
-  const rowScores: { nome: string; cat: string; score: number; status: FarolStatus | null; zeros: number }[] = [];
-  for (const r of rows) {
-    const st = statusOfRow(r, familias);
-    if (st) {
-      geral[st] += 1;
-      comStatus += 1;
-    }
-    const cells = familias.map((f) => r.metas_status?.[f]).filter(Boolean) as FarolStatus[];
-    const score = cells.length
-      ? cells.reduce((s, c) => s + FAROL_MIDPOINT[c], 0) / cells.length
-      : st
-        ? FAROL_MIDPOINT[st]
-        : 0;
-    rowScores.push({
-      nome: r.razao_social,
-      cat: r.categoria ?? "—",
-      score,
-      status: st,
-      zeros: cells.filter((c) => c === "sem_compra").length,
-    });
-  }
-
-  // Distribuição por família
-  const perFam = familias.map((f) => {
-    const c = zero();
-    let n = 0;
-    let compradores = 0;
-    let acc = 0;
-    for (const r of rows) {
-      const st = r.metas_status?.[f];
-      if (!st) continue;
-      c[st] += 1;
-      n += 1;
-      if (st !== "sem_compra") compradores += 1;
-      acc += FAROL_MIDPOINT[st];
-    }
-    return { familia: f, counts: c, total: n, compradores, media: n ? acc / n : 0 };
-  });
-
-  const famOrdenadas = [...perFam].sort((a, b) => b.media - a.media);
-
-  // Distribuição por categoria
-  const catMap = new Map<string, { counts: Record<FarolStatus, number>; total: number; acc: number }>();
-  for (const r of rowScores) {
-    const e = catMap.get(r.cat) ?? { counts: zero(), total: 0, acc: 0 };
-    if (r.status) e.counts[r.status] += 1;
-    e.total += 1;
-    e.acc += r.score;
-    catMap.set(r.cat, e);
-  }
-  const cats = [...catMap.entries()].sort((a, b) => b[1].total - a[1].total);
-
-  const mediaGeral = rowScores.length ? rowScores.reduce((s, r) => s + r.score, 0) / rowScores.length : 0;
-  const acimaMeta = geral.otimo + geral.excelente;
+  const geral = rep.distribuicao_clientes;
+  const comStatus = rep.universo_clientes;
+  const naMeta = clientesNaMeta(rep.clientes).length;
+  const criticos = clientesCriticos(rep.clientes).length;
   const semCompra = geral.sem_compra;
-  const criticos = geral.abaixo_meta + geral.sem_compra;
 
-  const destaques = [...rowScores].sort((a, b) => b.score - a.score).slice(0, 10);
-  const atencao = [...rowScores]
-    .sort((a, b) => b.zeros - a.zeros || a.score - b.score)
-    .slice(0, 10);
+  const famOrdenadas = [...rep.familias_metrics].sort(
+    (a, b) => (b.metrics.real_achievement ?? -1) - (a.metrics.real_achievement ?? -1),
+  );
+  const cats = rep.categorias;
 
-  // Clientes por faixa, agrupados por categoria (para kebab: visualizar / exportar)
+  const destaques = rankTopPerformers(rep.clientes, 10);
+  const piores = rankLowestAchievement(rep.clientes, 10);
+  const oportunidades = rankExpansionOpportunities(rep.clientes, 10);
+
+  // Clientes por faixa (farol derivado do real_achievement do cliente)
   const clientesPorFaixa: Record<string, { cat: string; nome: string; score: number }[]> = {};
   for (const s of FAROL_ORDER) clientesPorFaixa[s] = [];
-  for (const r of rowScores) {
-    if (r.status) clientesPorFaixa[r.status].push({ cat: r.cat, nome: r.nome, score: r.score });
+  for (const c of rep.clientes) {
+    if (c.farol)
+      clientesPorFaixa[c.farol].push({
+        cat: c.categoria ?? "—",
+        nome: c.razao_social,
+        score: (c.metrics.real_achievement ?? 0) * 100,
+      });
   }
   for (const s of FAROL_ORDER) {
     clientesPorFaixa[s].sort((a, b) => a.cat.localeCompare(b.cat) || a.nome.localeCompare(b.nome));
@@ -133,46 +108,58 @@ export function exportPerformanceReport(opts: {
     (s) => `<span class="lg"><i style="background:#${FAROL_HEX[s]}"></i>${FAROL_LABEL[s]}</span>`,
   ).join("");
 
-
-  const kpi = (label: string, value: string, sub: string) =>
-    `<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`;
+  const kpi = (label: string, value: string, sub: string, tip = "") =>
+    `<div class="kpi"${tip ? ` title="${esc(tip)}"` : ""}><div class="kpi-l">${label}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`;
 
   const famRows = famOrdenadas
     .map(
       (f) => `<tr>
       <td class="nm">${esc(f.familia)}</td>
-      <td class="num">${pct(f.media)}</td>
-      <td class="barcell">
-        <div class="hbar"><span style="width:${Math.min(100, f.media)}%"></span></div>
-      </td>
-      <td class="barcell">${distBar(f.counts, f.total)}</td>
-      <td class="num small">${f.compradores}</td>
+      <td class="num">${pctR(f.metrics.real_achievement)}</td>
+      <td class="num">${pctR(f.metrics.portfolio_balance_index)}</td>
+      <td class="barcell">${distBar(f.distribuicao, f.universo)}</td>
+      <td class="num small">${f.clientes_que_compraram}</td>
     </tr>`,
     )
     .join("");
 
   const catRows = cats
     .map(
-      ([nome, e]) => `<tr>
-      <td class="nm">${esc(nome)}</td>
-      <td class="num small">${e.total}</td>
-      <td class="num">${pct(e.total ? e.acc / e.total : 0)}</td>
-      <td class="barcell">${distBar(e.counts, e.total)}</td>
+      (c) => `<tr>
+      <td class="nm">${esc(c.categoria)}</td>
+      <td class="num small">${c.clientes}</td>
+      <td class="num">${pctR(c.metrics.real_achievement)}</td>
+      <td class="num">${pctR(c.metrics.portfolio_balance_index)}</td>
+      <td class="barcell">${distBar(c.distribuicao, c.universo)}</td>
     </tr>`,
     )
     .join("");
 
-  const listRows = (arr: typeof destaques) =>
+  // Rankings: número exibido e faixa derivam SEMPRE de real_achievement.
+  const listRows = (arr: ClientMetrics[]) =>
     arr
       .map(
         (r) => `<tr>
-        <td class="nm">${esc(r.nome)}</td>
-        <td class="small">${esc(r.cat)}</td>
-        <td class="num">${pct(r.score)}</td>
-        <td><span class="pill" style="background:#${r.status ? FAROL_HEX[r.status] : "E5E5E5"}">${r.status ? FAROL_LABEL[r.status] : "—"}</span></td>
+        <td class="nm">${esc(r.razao_social)}</td>
+        <td class="small">${esc(r.categoria ?? "—")}</td>
+        <td class="num">${pctR(r.metrics.real_achievement)}</td>
+        <td><span class="pill" style="background:#${r.farol ? FAROL_HEX[r.farol] : "E5E5E5"}">${r.farol ? FAROL_LABEL[r.farol] : "—"}</span></td>
       </tr>`,
       )
       .join("");
+
+  const oportunidadeRows = oportunidades
+    .map(
+      (r) => `<tr>
+      <td class="nm">${esc(r.razao_social)}</td>
+      <td class="small">${esc(r.categoria ?? "—")}</td>
+      <td class="num">${r.familias_sem_compra.length}</td>
+      <td class="num">${pctR(r.cobertura)}</td>
+      <td class="num">${pctR(r.metrics.real_achievement)}</td>
+    </tr>`,
+    )
+    .join("");
+
 
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>Relatório Gerencial — ${esc(representante)}</title>
