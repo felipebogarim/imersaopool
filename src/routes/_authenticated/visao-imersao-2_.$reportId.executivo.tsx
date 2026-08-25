@@ -138,12 +138,85 @@ function RelatorioExecutivoPage() {
 
   const data = loaded?.data ?? null;
   const versions = loaded?.versions ?? [];
-  const counts = useMemo(() => actionCounts(data?.actions ?? []), [data]);
   const closed = data?.status === "closed";
-  const viewData = useMemo<ExecutiveReportData | null>(
-    () => (data ? (closed ? toFinalData(data) : data) : null),
-    [data, closed],
-  );
+
+  // Dados comerciais do cliente (mesma fonte da Visão Imersão 2): categoria,
+  // atingimento geral e período de referência.
+  const parentClientName = parent?.client_name ?? null;
+  const parentResolvedClientId =
+    (parent?.structured_data as any)?.data?.resolved_client_id ??
+    (parent?.structured_data as any)?.resolved_client_id ??
+    null;
+
+  const { data: commercial } = useQuery({
+    queryKey: ["exec-commercial", parentResolvedClientId, parentClientName],
+    enabled: Boolean(parentResolvedClientId || parentClientName),
+    queryFn: async () => {
+      let clientRow: any = null;
+      if (parentResolvedClientId) {
+        const { data: c } = await supabase
+          .from("clients")
+          .select("id, razao_social, categoria, representative_id")
+          .eq("id", parentResolvedClientId)
+          .maybeSingle();
+        clientRow = c ?? null;
+      }
+      if (!clientRow && parentClientName) {
+        const term = parentClientName.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const { data: cands } = await supabase
+          .from("clients")
+          .select("id, razao_social, categoria, representative_id")
+          .or(`razao_social.ilike.%${term}%,nome_fantasia.ilike.%${term}%`)
+          .limit(2);
+        if (cands?.length === 1) clientRow = cands[0];
+      }
+      if (!clientRow) return null;
+
+      const { data: bi } = await (supabase as any)
+        .from("client_bi_uploads")
+        .select("data, representative_id, razao_social")
+        .eq("razao_social", clientRow.razao_social)
+        .eq("kind", "bi")
+        .is("substituida_em", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const payload = bi?.data as any;
+      const geralRaw = payload?.geral != null ? Number(payload.geral) : null;
+      const geralPct =
+        geralRaw == null ? null : Math.abs(geralRaw) <= 1.5 ? geralRaw * 100 : geralRaw;
+
+      return {
+        clientId: clientRow.id as string,
+        razaoSocial: (clientRow.razao_social ?? bi?.razao_social ?? null) as string | null,
+        representativeId: (clientRow.representative_id ?? bi?.representative_id ?? null) as
+          | string
+          | null,
+        categoria: (clientRow.categoria ?? payload?.categoria ?? null) as string | null,
+        geralPct,
+        periodoLabel: (payload?.periodo || "1º Semestre 2026") as string,
+      };
+    },
+  });
+
+  const viewData = useMemo<ExecutiveReportData | null>(() => {
+    if (!data) return null;
+    const base = closed ? toFinalData(data) : data;
+    const attainment =
+      commercial?.geralPct != null
+        ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
+        : base.client.attainment || null;
+    return {
+      ...base,
+      client: {
+        ...base.client,
+        attainment,
+        category: commercial?.categoria || base.client.category || null,
+      },
+    };
+  }, [data, closed, commercial]);
+
 
   const { data: emailLogs = [] } = useQuery({
     queryKey: ["exec-email-logs", data?.id, historyOpen],
