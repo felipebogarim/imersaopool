@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Monitor, Send, Smartphone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toFinalData, type ExecutiveReportData } from "@/lib/executive-report/types";
+import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
 
 type Person = { id: string; name: string; email: string };
