@@ -366,8 +366,9 @@ export function PerformancePageContent() {
     return { perCat, perStatus, hasRealizado };
   }, [view, familias]);
 
-  function openUpload(mode: "new" | "replace") {
-    if (!repId) {
+  function openUpload(mode: "new" | "replace", forcedRepId?: string) {
+    const rid = forcedRepId ?? repId;
+    if (!rid) {
       toast.error("Selecione um representante primeiro.");
       return;
     }
@@ -796,7 +797,7 @@ export function PerformancePageContent() {
   function editFromList(rid: string) {
     setRepId(rid);
     setUploadId("");
-    setTimeout(() => openUpload("replace"), 0);
+    openUpload("replace", rid);
   }
 
   // Exclui todas as versões (com senha do gestor master) de um representante
@@ -918,8 +919,9 @@ export function PerformancePageContent() {
                           onClick={() => {
                             setRepId(r.id);
                             setUploadId("");
-                            setTimeout(() => openUpload("new"), 0);
+                            openUpload("new", r.id);
                           }}
+
                         >
                           {r.nome}
                         </DropdownMenuItem>
