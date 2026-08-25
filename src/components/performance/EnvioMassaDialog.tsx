@@ -82,7 +82,7 @@ export function EnvioMassaDialog({
       const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
       familias = parsed.familias;
       targetsMatrix =
-        parsed.matriz?.matriz ?? ((cm.__family_metas_by_category__ ?? {}) as any) ?? {};
+        parsed.matriz?.matriz ?? ((cm.__family_metas_by_category__ ?? {}) as any);
       rows = parsed.rows.map((r) => ({
         razao_social: r.razao_social,
         categoria: r.categoria,
