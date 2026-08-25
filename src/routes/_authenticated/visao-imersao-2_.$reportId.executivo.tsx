@@ -240,6 +240,22 @@ function RelatorioExecutivoPage() {
 
   const clientName = parent?.client_name ?? data?.client.display_name ?? "Cliente";
 
+  // Distingue ações já previstas no relatório de imersão original (espelho da
+  // Gestão de Tarefas) das sugestões novas geradas com o relatório executivo.
+  const parentClientId = (parent?.structured_data as any)?.data?.metadata?.client_id ?? null;
+  const { data: existingActions = [] } = useExistingClientActions(parentClientId, clientName);
+  const originOf = useMemo(() => {
+    const cache = new Map<string, { existing: boolean; displayTitle: string }>();
+    return (a: ExecutiveAction) => {
+      if (!cache.has(a.id)) {
+        const r = resolveActionOrigin(a.title, existingActions);
+        cache.set(a.id, { existing: !!r.existing, displayTitle: r.displayTitle });
+      }
+      return cache.get(a.id)!;
+    };
+  }, [existingActions]);
+
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 pb-16">
       <PageHeader
