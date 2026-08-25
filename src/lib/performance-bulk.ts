@@ -9,6 +9,8 @@ export type BulkEntry = {
   name: string;
   kind: "xlsx" | "pdf";
   file: File;
+  /** Aba específica do arquivo (planilhas com uma aba por representante). */
+  sheetName?: string;
   repId: string;
   status: "pendente" | "processando" | "ok" | "erro";
   message?: string;
