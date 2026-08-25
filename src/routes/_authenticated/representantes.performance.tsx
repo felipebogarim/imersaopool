@@ -770,12 +770,16 @@ export function PerformancePageContent() {
       representante: rep,
       periodo: currentUpload.periodo_label,
       familias,
-      rows: view.map((r) => ({
+      rows: view.map((r: any) => ({
         razao_social: r.razao_social,
         categoria: r.categoria,
+        metas: r.metas ?? null,
+        realizado: r.realizado ?? null,
+        familia_pct: r.familia_pct ?? null,
         metas_status: r.metas_status,
-        total_pct_status: inferRowStatus(r, familias),
+        total_pct: r.total_pct ?? null,
       })),
+
     });
   }
 
