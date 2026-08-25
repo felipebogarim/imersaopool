@@ -31,10 +31,38 @@ const TEXT = "#0E1C28";
 const MUTED = "#5A6A76";
 const LINE = "#E1E9EF";
 
+/** Blocos da leitura executiva para e-mail: sem "O que isso gera", com espaçamento. */
+function readingBlocks(raw?: string): { kind: "h" | "p"; text: string }[] {
+  if (!raw) return [];
+  return raw
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .filter((b) => !/^\*\*o que isso gera/i.test(b))
+    .map((b) =>
+      /^#{1,6}\s/.test(b)
+        ? { kind: "h" as const, text: b.replace(/^#{1,6}\s*/, "").replace(/\*\*/g, "") }
+        : { kind: "p" as const, text: b.replace(/\*\*/g, "") },
+    );
+}
+
+function statusTag(status: string) {
+  return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
+}
+
 export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const actions = r?.actions ?? [];
+  const briefing: { label: string; value?: string | null }[] = [
+    { label: "Cliente", value: r?.client?.display_name },
+    { label: "Data da imersão", value: formatVisitDate(r?.client?.visit_date) },
+    { label: "Local", value: r?.client?.location },
+    { label: "Representante", value: r?.client?.representative },
+    { label: "Consultor", value: r?.client?.consultant },
+    { label: "Categoria comercial", value: r?.client?.category },
+    { label: "Atingimento geral", value: r?.client?.attainment },
+  ];
 
   return (
     <Html lang="pt-BR" dir="ltr">
@@ -51,17 +79,49 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
             </Text>
           </Section>
 
+          {message ? (
+            <Section style={card}>
+              <Text style={intro}>{message}</Text>
+            </Section>
+          ) : null}
+
+          <Section style={sectionTitleWrap}>
+            <Text style={sectionTitle}>BRIEFING EXECUTIVO</Text>
+          </Section>
           <Section style={card}>
-            {message ? <Text style={intro}>{message}</Text> : null}
-            <Text style={chapterLabel}>LEITURA EXECUTIVA</Text>
-            <Text style={paragraph}>{r?.executive_reading || "—"}</Text>
-            {r?.client?.representative || r?.client?.consultant ? (
-              <Text style={meta}>
-                {r?.client?.representative ? `Representante: ${r.client.representative}` : ""}
-                {r?.client?.representative && r?.client?.consultant ? " · " : ""}
-                {r?.client?.consultant ? `Consultor: ${r.client.consultant}` : ""}
-              </Text>
+            {briefing.map((b) => (
+              <Section key={b.label} style={planRow}>
+                <Text style={label}>{b.label.toUpperCase()}</Text>
+                <Text style={planTitle}>{b.value || "—"}</Text>
+              </Section>
+            ))}
+            {(r?.brands_observed ?? []).length ? (
+              <Section style={{ paddingTop: "10px" }}>
+                <Text style={label}>MARCAS OBSERVADAS</Text>
+                <Text style={paragraph}>{(r?.brands_observed ?? []).join(" · ")}</Text>
+              </Section>
             ) : null}
+          </Section>
+
+          <Section style={sectionTitleWrap}>
+            <Text style={sectionTitle}>LEITURA EXECUTIVA</Text>
+          </Section>
+          <Section style={card}>
+            {readingBlocks(r?.executive_reading).length ? (
+              readingBlocks(r?.executive_reading).map((b, i) =>
+                b.kind === "h" ? (
+                  <Text key={i} style={blockTitle}>
+                    {b.text}
+                  </Text>
+                ) : (
+                  <Text key={i} style={readingParagraph}>
+                    {b.text}
+                  </Text>
+                ),
+              )
+            ) : (
+              <Text style={paragraph}>—</Text>
+            )}
           </Section>
 
           <Section style={sectionTitleWrap}>
@@ -101,7 +161,15 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
                     <Text style={label}>AÇÕES</Text>
                     {acts.map((a) => (
                       <Text key={a.id} style={actionLine}>
+                        <span style={tag}>{statusTag(a.status)}</span>
+                        <br />
                         <strong>{a.title}</strong>
+                        {a.description ? (
+                          <>
+                            <br />
+                            <span style={{ color: MUTED, fontSize: "14px" }}>{a.description}</span>
+                          </>
+                        ) : null}
                         <br />
                         <span style={{ color: MUTED, fontSize: "13px" }}>
                           {AREA_LABEL[a.area]} · Prioridade {PRIORITY_LABEL[a.priority]}
@@ -113,6 +181,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
               </Section>
             );
           })}
+
 
           {(r?.do_not_prioritize ?? []).length ? (
             <>
@@ -147,14 +216,15 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
               actions.map((a) => (
                 <Section key={a.id} style={planRow}>
                   <Text style={planBadge}>
-                    {PRIORITY_LABEL[a.priority]} · {AREA_LABEL[a.area]}
+                    {statusTag(a.status)} · {PRIORITY_LABEL[a.priority]} · {AREA_LABEL[a.area]}
                   </Text>
                   <Text style={planTitle}>{a.title}</Text>
                   {a.description ? <Text style={planDesc}>{a.description}</Text> : null}
                 </Section>
               ))
             ) : (
-              <Text style={paragraph}>Nenhuma ação validada neste relatório.</Text>
+              <Text style={paragraph}>Nenhuma ação neste relatório.</Text>
+
             )}
           </Section>
 
@@ -246,3 +316,14 @@ const button = {
 };
 const hr = { borderColor: LINE, margin: "20px 0 12px" };
 const footer = { color: MUTED, fontSize: "12px", lineHeight: "18px", textAlign: "center" as const, margin: "0" };
+const readingParagraph = { color: TEXT, fontSize: "15px", lineHeight: "25px", margin: "0 0 18px" };
+const tag = {
+  backgroundColor: "#E6F4F8",
+  color: BRAND,
+  borderRadius: "4px",
+  fontSize: "11px",
+  fontWeight: "bold",
+  letterSpacing: "0.6px",
+  padding: "3px 8px",
+  textTransform: "uppercase" as const,
+};

@@ -113,10 +113,29 @@ export function actionCounts(actions: ExecutiveAction[]) {
   return c;
 }
 
-/** Somente ações validadas/editadas entram na versão final, PDF e e-mail. */
+/** Somente ações validadas/editadas entram na versão final e no PDF. */
 export function finalActions(actions: ExecutiveAction[]) {
   return actions.filter((a) => a.status === "validated" || a.status === "edited");
 }
+
+/** No e-mail mostramos também as ações ainda em validação (tudo menos rejeitadas). */
+export function emailActions(actions: ExecutiveAction[]) {
+  return actions.filter((a) => a.status !== "rejected");
+}
+
+/** Versão do relatório para e-mail: mantém ações sugeridas com tag "Em validação". */
+export function toEmailData(data: ExecutiveReportData): ExecutiveReportData {
+  const keep = new Set(emailActions(data.actions).map((a) => a.id));
+  return {
+    ...data,
+    actions: data.actions.filter((a) => keep.has(a.id)),
+    decision_blocks: data.decision_blocks.map((b) => ({
+      ...b,
+      action_ids: b.action_ids.filter((id) => keep.has(id)),
+    })),
+  };
+}
+
 
 export function canClose(actions: ExecutiveAction[]) {
   return actions.length > 0 && actions.every((a) => a.status !== "suggested");
