@@ -333,9 +333,15 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v);
+        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
+      }
+      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
+        if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+        stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
+        return fallback;
       }
       if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
       else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
@@ -432,9 +438,15 @@ function parsePercentual(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v);
+        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
+      }
+      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
+        if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+        stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
+        return fallback;
       }
       if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
       else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
