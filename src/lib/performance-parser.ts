@@ -16,17 +16,25 @@ import {
 } from "./performance-matriz";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
+import {
+  parsePerformanceWorkbookDeterministic,
+  type ImportDiagnostic,
+  type AutonomousPerformanceResult,
+} from "./performance-import-engine";
 
-export const PARSER_VERSION = "performance-parser@7";
+export const PARSER_VERSION = "performance-parser@8-deterministic";
 
 export type ParsedRow = {
   ordem: number;
   razao_social: string;
   categoria: string | null;
   metas: Record<string, number>;
+  realizado?: Record<string, number>;
+  familia_pct?: Record<string, number>;
   metas_status: Record<string, FarolStatus>;
   metas_cores: Record<string, string>; // hex sem "#"
   total_meta: number | null;
+  total_pct?: number | null;
   total_pct_status: FarolStatus | null;
 };
 
@@ -65,6 +73,8 @@ export type ParsedSheet = {
   conflitos: CellConflict[];
   /** Contagens de validação de células/cores. */
   stats: CellStats;
+  /** Diagnóstico técnico da leitura estrutural/autônoma, quando disponível. */
+  diagnostic?: ImportDiagnostic;
   parser_version: string;
 };
 
@@ -330,9 +340,13 @@ function findSheetByHeader(wb: XLSXStyle.WorkBook): string | undefined {
 
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
+  const deterministic = parsePerformanceWorkbookDeterministic(wb);
   const performanceSheetName = findPerformanceSheetName(wb.SheetNames) ?? findSheetByHeader(wb);
   const matriz = readMatriz(wb);
   const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
+  if (deterministic && deterministic.diagnostic.resultado.statusCells > 0) {
+    return deterministicToParsedSheet(deterministic, matriz, matriz_erros);
+  }
   const baseBI = parseBaseBISheet(wb);
   if (!performanceSheetName) {
     if (baseBI && statusCount(baseBI.stats) > 0) return { ...baseBI, matriz, matriz_erros };
@@ -378,6 +392,48 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   }
 
   return { ...base, matriz, matriz_erros };
+}
+
+function deterministicToParsedSheet(
+  result: AutonomousPerformanceResult,
+  matriz: MatrizParseResult | null,
+  matriz_erros: string[],
+): ParsedSheet {
+  const stats = emptyStats();
+  stats.celulas_familias = result.rows.length * result.familias.length;
+  stats.celulas_total_pct = result.rows.length;
+  stats.celulas_avaliadas = result.diagnostic.resultado.statusCells;
+  stats.cores_extraidas = result.diagnostic.validacao.colorFallbackCells;
+  stats.estilos_ausentes = result.diagnostic.validacao.emptyCells;
+  for (const row of result.rows) {
+    for (const status of Object.values(row.metas_status)) {
+      stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
+    }
+    if (row.total_pct_status) {
+      stats.por_status[row.total_pct_status] = (stats.por_status[row.total_pct_status] ?? 0) + 1;
+    }
+    for (const color of Object.values(row.metas_cores ?? {})) {
+      if (!stats.cores_distintas.includes(color)) stats.cores_distintas.push(color);
+    }
+  }
+  stats.cores_distintas.sort();
+
+  return {
+    familias: result.familias,
+    categoriaMetas: {},
+    escala: [],
+    rows: result.rows,
+    participacao: null,
+    atingimento: null,
+    ignoradas: result.ignoradas,
+    linhas_lidas: result.linhas_lidas,
+    matriz,
+    matriz_erros,
+    conflitos: [],
+    stats,
+    diagnostic: result.diagnostic,
+    parser_version: PARSER_VERSION,
+  };
 }
 
 

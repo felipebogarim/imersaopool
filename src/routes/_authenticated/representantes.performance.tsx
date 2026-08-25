@@ -100,6 +100,16 @@ function inferRowStatus(row: StatusCarrier, familias: string[]): FarolStatus | n
   return statusFromPercent(avg);
 }
 
+function performanceDiagnosticSummary(parsed: Awaited<ReturnType<typeof parseWorkbook>>): string {
+  const diag = parsed.diagnostic;
+  if (!diag) return "";
+  const found = `ESTRUTURA DETECTADA: aba ${diag.estrutura.sheetName}, cabeçalho nas linhas ${diag.estrutura.headerRows.join("/")}, ${diag.estrutura.groups.length} famílias.`;
+  const validation = `VALIDAÇÃO: confiança ${diag.confidence} (${diag.score}/100), ${diag.validacao.rowsAccepted} clientes, ${diag.validacao.numericPercentCells} percentuais explícitos, ${diag.validacao.calculatedPercentCells} percentuais calculados, ${diag.validacao.colorFallbackCells} faróis por cor.`;
+  const preservation = `PRESERVAÇÃO: ${diag.preservacao.ignoredRows.length} linhas ignoradas com motivo registrado; zeros preservados sem transformar ausência em zero.`;
+  const result = `RESULTADO: ${diag.resultado.statusCells} células de desempenho interpretadas.`;
+  return `${found}\n${validation}\n${preservation}\n${result}`;
+}
+
 export function PerformancePageContent() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -449,6 +459,7 @@ export function PerformancePageContent() {
       audit.divergencias_texto_cor = parsed.stats?.divergencias_texto_cor ?? 0;
       audit.conflitos_total = parsed.conflitos?.length ?? 0;
       audit.divergencias = (parsed.conflitos ?? []).slice(0, 50);
+      audit.diagnostico_importacao = parsed.diagnostic ?? null;
       audit.matriz_status = !parsed.matriz
         ? "ausente"
         : parsed.matriz_erros.length
@@ -497,11 +508,17 @@ export function PerformancePageContent() {
         filename: pendingFile.name,
         targets_matrix: targetsMatrix,
         conflitos: parsed.conflitos ?? [],
+        diagnostic_summary: performanceDiagnosticSummary(parsed),
         rows: parsed.rows.map((r) => ({
           razao_social: r.razao_social,
           categoria: r.categoria,
+          metas: r.metas ?? {},
+          realizado: r.realizado ?? {},
+          familia_pct: r.familia_pct ?? {},
           metas_status: r.metas_status ?? {},
           metas_cores: r.metas_cores ?? {},
+          total_meta: r.total_meta,
+          total_pct: r.total_pct ?? null,
           total_pct_status: r.total_pct_status,
         })),
       };
@@ -519,7 +536,8 @@ export function PerformancePageContent() {
       toast.success("Arquivo validado com sucesso.", {
         description:
           `${parsed.rows.length} clientes encontrados. ${parsed.familias.length} famílias reconhecidas. ` +
-          `${coverage.statusCells} células de farol reconhecidas. ` +
+          `${coverage.statusCells} células de desempenho reconhecidas. ` +
+          (parsed.diagnostic ? `Confiança ${parsed.diagnostic.confidence}. ` : "") +
           `Matriz Financeira ${parsed.matriz ? (parsed.matriz_erros.length ? "inválida" : "válida") : "ausente"}. ` +
           `Nenhuma divergência entre texto e cor.` +
           (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),

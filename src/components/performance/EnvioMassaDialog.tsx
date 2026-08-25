@@ -90,8 +90,13 @@ export function EnvioMassaDialog({
       rows = parsed.rows.map((r) => ({
         razao_social: r.razao_social,
         categoria: r.categoria,
+        metas: r.metas ?? {},
+        realizado: r.realizado ?? {},
+        familia_pct: r.familia_pct ?? {},
         metas_status: r.metas_status ?? {},
         metas_cores: r.metas_cores ?? {},
+        total_meta: r.total_meta,
+        total_pct: r.total_pct ?? null,
         total_pct_status: r.total_pct_status,
       }));
     } else {
@@ -111,7 +116,12 @@ export function EnvioMassaDialog({
       rows = result.rows.map((r: any) => ({
         razao_social: r.razao_social,
         categoria: r.categoria,
+        metas: r.metas ?? {},
+        realizado: r.realizado ?? {},
+        familia_pct: r.familia_pct ?? {},
         metas_status: r.metas_status ?? {},
+        total_meta: r.total_meta ?? null,
+        total_pct: r.total_pct ?? null,
         total_pct_status: r.total_pct_status,
       }));
     }
