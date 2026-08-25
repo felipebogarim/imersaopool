@@ -7,7 +7,7 @@
 // Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromFaixa, type FarolStatus } from "./performance-farol";
+import { statusFromPercent, type FarolStatus } from "./performance-farol";
 import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
 import {
   parseMatrizFinanceiraGrid,
@@ -15,6 +15,7 @@ import {
   type MatrizParseResult,
 } from "./performance-matriz";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
+import { normalizeFamilyName } from "./client-bi-parser";
 
 export const PARSER_VERSION = "performance-parser@3";
 
@@ -108,7 +109,7 @@ export function cellHex(cell: any): string | null {
 }
 
 
-function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "antigo" } | null {
+function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "antigo" | "percentual" } | null {
   for (let r = 0; r < Math.min(grid.length, 25); r++) {
     const row = grid[r] ?? [];
     const a = String(row[0]?.v ?? "").trim().toUpperCase();
@@ -118,6 +119,9 @@ function findHeaderRow(grid: { v: any }[][]): { row: number; layout: "novo" | "a
     if ((a === "RAZÃO SOCIAL" || a === "RAZAO SOCIAL" || a === "GRUPO") && b === "CATEGORIA") {
       if (c.startsWith("TOTAL META") && d.startsWith("TOTAL")) {
         return { row: r, layout: "novo" };
+      }
+      if (c.includes("ATINGIMENTO") || c.startsWith("TOTAL %") || c.includes("%")) {
+        return { row: r, layout: "percentual" };
       }
       return { row: r, layout: "antigo" };
     }
@@ -146,6 +150,36 @@ function readMatriz(wb: XLSXStyle.WorkBook): MatrizParseResult | null {
 }
 
 export type GridCell = { v: any; c: string | null; raw: string | null; hasStyle: boolean };
+
+function collectFamilyColumns(row: GridCell[], startCol: number): { familias: string[]; famCols: number[] } {
+  const familias: string[] = [];
+  const famCols: number[] = [];
+  const seen = new Set<string>();
+  for (let c = startCol; c < row.length; c++) {
+    const fam = normalizeFamilyName(row[c]?.v);
+    if (!fam || seen.has(fam)) continue;
+    seen.add(fam);
+    familias.push(fam);
+    famCols.push(c);
+  }
+  return { familias, famCols };
+}
+
+function statusFromPercentCellValue(v: unknown): FarolStatus | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return null;
+    return statusFromPercent(Math.abs(v) <= 1.5 ? v * 100 : v);
+  }
+  const raw = String(v).trim();
+  if (!raw) return null;
+  const compact = raw.toLowerCase().replace(/\s+/g, "");
+  if (compact.startsWith("<") || compact.startsWith(">") || /^\d+[-–a]\d+/.test(compact)) return null;
+  if (!/%/.test(raw) && !/^[-+]?\d+(?:[,.]\d+)?$/.test(raw)) return null;
+  const n = Number(raw.replace("%", "").replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  return statusFromPercent(Math.abs(n) <= 1.5 ? n * 100 : n);
+}
 
 export function findPerformanceSheetName(names: string[]): string | undefined {
   return names.find((n) => normSheet(n) === "PERFORMANCE");
@@ -180,7 +214,11 @@ export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
 
   const base =
-    head.layout === "novo" ? parseNovo(grid, head.row) : parseAntigo(grid, head.row);
+    head.layout === "novo"
+      ? parseNovo(grid, head.row)
+      : head.layout === "percentual"
+        ? parsePercentual(grid, head.row)
+        : parseAntigo(grid, head.row);
 
   return { ...base, matriz, matriz_erros };
 }
@@ -203,15 +241,7 @@ type BaseSheet = Omit<ParsedSheet, "matriz" | "matriz_erros">;
 function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
   const hdr = grid[headerRow] ?? [];
   // colunas: 0 Razão, 1 Categoria, 2 Total Meta, 3 Total %, 4.. famílias
-  const familias: string[] = [];
-  const famCols: number[] = [];
-  for (let c = 4; c < hdr.length; c++) {
-    const v = hdr[c]?.v;
-    if (v && String(v).trim()) {
-      familias.push(String(v).trim());
-      famCols.push(c);
-    }
-  }
+  const { familias, famCols } = collectFamilyColumns(hdr, 4);
 
   const rows: ParsedRow[] = [];
   let participacao: ResumoPct | null = null;
@@ -285,8 +315,9 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        if (res.status) stats.por_status[res.status] = (stats.por_status[res.status] ?? 0) + 1;
-        return res.status;
+        const status = res.status ?? statusFromPercentCellValue(cell?.v);
+        if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
+        return status;
       }
       if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
       else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
@@ -339,6 +370,101 @@ function parseNovo(grid: GridCell[][], headerRow: number): BaseSheet {
   };
 }
 
+// ---------- Formato percentual/exportado ----------
+// Colunas: RAZÃO SOCIAL | CATEGORIA | ATINGIMENTO % | <famílias canônicas...> | totais...
+// Usado por planilhas/exportações que trazem percentuais numéricos em vez das faixas textuais.
+function parsePercentual(grid: GridCell[][], headerRow: number): BaseSheet {
+  const hdr = grid[headerRow] ?? [];
+  const { familias, famCols } = collectFamilyColumns(hdr, 3);
+  const rows: ParsedRow[] = [];
+  const ignoradas: IgnoredRow[] = [];
+  const conflitos: CellConflict[] = [];
+  const stats: CellStats = emptyStats();
+  const distintas = new Set<string>();
+  let linhas_lidas = 0;
+  let ordem = 0;
+
+  for (let r = headerRow + 1; r < grid.length; r++) {
+    const row = grid[r] ?? [];
+    const razao = String(row[0]?.v ?? "").trim();
+    if (!razao) continue;
+    linhas_lidas++;
+
+    if (isTotalRowName(razao)) {
+      ignoradas.push({ razao_social: razao, motivo: "Linha de totalização/legenda" });
+      continue;
+    }
+
+    const categoria = String(row[1]?.v ?? "").trim();
+    if (!isClientRow({ razao_social: razao, categoria })) {
+      ignoradas.push({ razao_social: razao, motivo: "Categoria ausente ou inválida" });
+      continue;
+    }
+
+    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
+      stats.celulas_avaliadas++;
+      if (cell?.hasStyle) stats.estilos_carregados++;
+      else stats.estilos_ausentes++;
+      if (cell?.c) {
+        stats.cores_extraidas++;
+        distintas.add(cell.c);
+      }
+      const res = resolveCellStatus(cell?.v, cell?.c, {
+        hasStyle: Boolean(cell?.hasStyle),
+        rawColor: cell?.raw ?? null,
+      });
+      if (res.ok) {
+        const status = res.status ?? statusFromPercentCellValue(cell?.v);
+        if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
+        return status;
+      }
+      if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+      else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
+      else if (res.conflito.motivo === "divergencia_texto_cor") stats.divergencias_texto_cor++;
+      conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia });
+      return null;
+    };
+
+    stats.celulas_total_pct++;
+    const total_pct_status = avaliar(row[2], "ATINGIMENTO %");
+    const metas_status: Record<string, FarolStatus> = {};
+    const metas_cores: Record<string, string> = {};
+    familias.forEach((f, i) => {
+      const cell = row[famCols[i]];
+      stats.celulas_familias++;
+      const status = avaliar(cell, f);
+      if (status) metas_status[f] = status;
+      if (cell?.c) metas_cores[f] = cell.c;
+    });
+
+    rows.push({
+      ordem: ordem++,
+      razao_social: razao,
+      categoria: categoria || null,
+      metas: {},
+      metas_status,
+      metas_cores,
+      total_meta: null,
+      total_pct_status,
+    });
+  }
+
+  stats.cores_distintas = Array.from(distintas).sort();
+  return {
+    familias,
+    categoriaMetas: {},
+    escala: [],
+    rows,
+    participacao: null,
+    atingimento: null,
+    ignoradas,
+    linhas_lidas,
+    conflitos,
+    stats,
+    parser_version: PARSER_VERSION,
+  };
+}
+
 
 export function emptyStats(): CellStats {
   return {
@@ -359,15 +485,7 @@ export function emptyStats(): CellStats {
 // ---------- Formato antigo (mantido para compatibilidade) ----------
 function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
-  const familias: string[] = [];
-  const famCols: number[] = [];
-  for (let c = 2; c < famRow.length; c++) {
-    const v = famRow[c]?.v;
-    if (v && String(v).trim()) {
-      familias.push(String(v).trim());
-      famCols.push(c);
-    }
-  }
+  const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
 
   const categoriaMetas: Record<string, number> = {};
