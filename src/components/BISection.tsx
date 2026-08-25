@@ -16,6 +16,7 @@ import { GaugeAtingimento } from "@/components/visao-rep2/GaugeAtingimento";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
 import { useRecalcBI, useRepresentativeBI } from "@/lib/use-performance-bi";
 import type { FamilyShare } from "@/lib/performance-bi-engine";
+import { METRIC_DEFS } from "@/lib/performance-metrics";
 
 // Todos os indicadores do BI trafegam como ratio (1 = 100%).
 const fmtPct = (r: number | null | undefined) =>
