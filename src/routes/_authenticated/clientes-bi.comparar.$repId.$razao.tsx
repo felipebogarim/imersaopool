@@ -93,45 +93,33 @@ function CompararPerfilPage() {
       (await supabase.from("representatives").select("id, nome").eq("id", repId).single()).data,
   });
 
-  const { data: clienteRow, isLoading: loadingCliente } = useQuery({
-    queryKey: ["client-bi", repId, razaoSocial],
-    enabled: !!repId && !!razaoSocial,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("client_bi_uploads")
-        .select("data, periodo_label")
-        .eq("representative_id", repId)
-        .eq("razao_social", razaoSocial)
-        .eq("kind", "bi")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data ?? null;
-    },
-  });
+  // Base comparável derivada exclusivamente da versão ativa de Performance.
+  const { data: base = null, isLoading } = useAllClientBIs(repId);
 
-  const periodoLabel: string | null = clienteRow?.periodo_label ?? null;
-  const categoria: string = clienteRow?.data?.categoria ?? "";
+  const clienteBI = useMemo(() => {
+    const target = razaoSocial.trim().toUpperCase();
+    return (base?.bis ?? []).find((b) => b.cliente.trim().toUpperCase() === target) ?? null;
+  }, [base, razaoSocial]);
 
-  // Base comparável: nenhum nome de outro cliente é solicitado ao backend.
-  const { data: rows = [], isLoading: loadingBase } = useQuery({
-    queryKey: ["profile-comparison-base", repId, periodoLabel, categoria],
-    enabled: !!repId && !!clienteRow,
-    queryFn: async (): Promise<ComparableRecord[]> => {
-      let q = (supabase as any)
-        .from("client_bi_uploads")
-        .select("representative_id, periodo_label, substituida_em, kind, data")
-        .eq("representative_id", repId)
-        .eq("kind", "bi")
-        .is("substituida_em", null);
-      q = periodoLabel == null ? q.is("periodo_label", null) : q.eq("periodo_label", periodoLabel);
-      const { data } = await q;
-      return (data ?? []) as ComparableRecord[];
-    },
-  });
+  const periodoLabel: string | null = base?.version.periodo_label ?? null;
 
-  const isLoading = loadingCliente || loadingBase;
+  const clienteRow = useMemo(
+    () => (clienteBI ? { data: toLegacyClientBIData(clienteBI), periodo_label: periodoLabel } : null),
+    [clienteBI, periodoLabel],
+  );
+
+  const rows: ComparableRecord[] = useMemo(
+    () =>
+      (base?.bis ?? []).map((b) => ({
+        representative_id: repId,
+        periodo_label: periodoLabel,
+        substituida_em: null,
+        kind: "bi",
+        data: toLegacyClientBIData(b),
+      })) as ComparableRecord[],
+    [base, repId, periodoLabel],
+  );
+
 
   const result = useMemo(
     () =>
