@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_LABEL, catBadge } from "@/lib/performance-farol";
 import { useClientBI } from "@/lib/use-performance-bi";
 import { validateClientBIResult } from "@/lib/performance-bi-engine";
+import { METRIC_DEFS } from "@/lib/performance-metrics";
 
 const fmtRatio = (r: number | null | undefined) =>
   r == null || Number.isNaN(r) ? "—" : `${(r * 100).toFixed(1).replace(".", ",")}%`;
@@ -75,15 +76,27 @@ export function ClientBISection({
 
             {/* Destaques */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="rounded-xl border border-border p-4 bg-primary/5">
+              <div
+                className="rounded-xl border border-border p-4 bg-primary/5"
+                title={METRIC_DEFS.real_achievement.tooltip}
+              >
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Atingimento real
                 </div>
                 <div className="mt-1 text-3xl font-semibold tabular-nums">
                   {fmtRatio(bi.atingimento_geral_ratio)}
                 </div>
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  Índice do farol: {fmtRatio(bi.indice_geral)}
+                <div
+                  className="mt-1 text-[11px] text-muted-foreground"
+                  title={METRIC_DEFS.weighted_farol_index.tooltip}
+                >
+                  Índice ponderado do farol: {fmtRatio(bi.indice_geral)}
+                </div>
+                <div
+                  className="text-[11px] text-muted-foreground"
+                  title={METRIC_DEFS.portfolio_balance_index.tooltip}
+                >
+                  Índice de equilíbrio do portfólio: {fmtRatio(bi.metrics?.portfolio_balance_index)}
                 </div>
               </div>
               <div className="rounded-xl border border-border p-4">
@@ -101,24 +114,29 @@ export function ClientBISection({
                   </span>
                 </div>
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="rounded-xl border border-border p-4" title="Família com maior atingimento real.">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Melhor família
+                  Melhor família {(bi.melhor_familia.labels?.length ?? 0) > 1 ? "(empate)" : ""}
                 </div>
-                <div className="mt-1 text-sm truncate">{bi.melhor_familia.label ?? "—"}</div>
+                <div className="mt-1 text-sm truncate" title={(bi.melhor_familia.labels ?? []).join(" · ")}>
+                  {(bi.melhor_familia.labels ?? []).join(" · ") || bi.melhor_familia.label || "—"}
+                </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {fmtRatio(bi.melhor_familia.atingimento_ratio)}
                 </div>
               </div>
-              <div className="rounded-xl border border-border p-4">
+              <div className="rounded-xl border border-border p-4" title="Família com menor atingimento real.">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Pior família
+                  Pior família {(bi.pior_familia.labels?.length ?? 0) > 1 ? "(empate)" : ""}
                 </div>
-                <div className="mt-1 text-sm truncate">{bi.pior_familia.label ?? "—"}</div>
+                <div className="mt-1 text-sm truncate" title={(bi.pior_familia.labels ?? []).join(" · ")}>
+                  {(bi.pior_familia.labels ?? []).join(" · ") || bi.pior_familia.label || "—"}
+                </div>
                 <div className="text-lg font-semibold tabular-nums">
                   {fmtRatio(bi.pior_familia.atingimento_ratio)}
                 </div>
               </div>
+
             </div>
 
             {/* Famílias */}
@@ -149,7 +167,7 @@ export function ClientBISection({
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">Atingimento real</div>
                     <div className="mt-1 text-[11px] text-muted-foreground flex items-center justify-between gap-2">
-                      <span>Índice do farol: {fmtRatio(f.coeficiente_farol)}</span>
+                      <span>Coeficiente do farol: {fmtRatio(f.coeficiente_farol)}</span>
                       <span>Participação: {fmtRatio(f.participacao)}</span>
                     </div>
                   </div>

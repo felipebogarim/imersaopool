@@ -770,12 +770,16 @@ export function PerformancePageContent() {
       representante: rep,
       periodo: currentUpload.periodo_label,
       familias,
-      rows: view.map((r) => ({
+      rows: view.map((r: any) => ({
         razao_social: r.razao_social,
         categoria: r.categoria,
+        metas: r.metas ?? null,
+        realizado: r.realizado ?? null,
+        familia_pct: r.familia_pct ?? null,
         metas_status: r.metas_status,
-        total_pct_status: inferRowStatus(r, familias),
+        total_pct: r.total_pct ?? null,
       })),
+
     });
   }
 
@@ -1216,7 +1220,13 @@ export function PerformancePageContent() {
                   <th className="text-left px-3 py-3 sticky left-[240px] top-0 bg-muted z-30 min-w-[110px]">
                     Categoria
                   </th>
-                  <th className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted">Atingimento %</th>
+                  <th
+                    className="text-center px-3 py-3 whitespace-nowrap min-w-[100px] bg-muted"
+                    title="Atingimento real: soma(realizado) / soma(meta) do cliente."
+                  >
+                    Atingimento real
+                  </th>
+
                   {visibleFams.map((f) => (
                     <th key={f} className="text-center px-3 py-3 whitespace-nowrap min-w-[120px] bg-muted">
                       {famLabel(f)}

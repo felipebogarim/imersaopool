@@ -16,6 +16,7 @@ import { GaugeAtingimento } from "@/components/visao-rep2/GaugeAtingimento";
 import { askBIAssistant } from "@/lib/bi-assistant.functions";
 import { useRecalcBI, useRepresentativeBI } from "@/lib/use-performance-bi";
 import type { FamilyShare } from "@/lib/performance-bi-engine";
+import { METRIC_DEFS } from "@/lib/performance-metrics";
 
 // Todos os indicadores do BI trafegam como ratio (1 = 100%).
 const fmtPct = (r: number | null | undefined) =>
@@ -137,12 +138,14 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     return {
       geral: repBI.atingimento_geral_ratio,
       indice: repBI.indice_geral,
+      metrics: repBI.metrics,
       categorias: repBI.categorias,
       farol: repBI.farol,
       performance_version_id: repBI.performance_version_id,
       calculation_version: repBI.calculation_version,
     };
   }, [repBI]);
+
 
   const catsSorted = useMemo(
     () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
@@ -255,10 +258,14 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
             BI — indicadores de performance {repName ? `· ${repName}` : ""}
           </p>
           {d?.geral != null && (
-            <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Atingimento real ponderado: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
+            <span
+              className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+              title={METRIC_DEFS.real_achievement.tooltip}
+            >
+              Atingimento real: <strong className="tabular-nums">{fmtPct(d.geral)}</strong>
             </span>
           )}
+
         </button>
         <div className="flex items-center gap-2">
           {version?.periodo_label && (
@@ -286,10 +293,34 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
 
           ) : (
             <>
+              {/* Painel oficial de métricas — cada card declara sua fórmula */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                {(
+                  [
+                    ["real_achievement", d.metrics?.real_achievement],
+                    ["client_average_achievement", d.metrics?.client_average_achievement],
+                    ["weighted_farol_index", d.metrics?.weighted_farol_index],
+                    ["portfolio_balance_index", d.metrics?.portfolio_balance_index],
+                  ] as const
+                ).map(([id, value]) => {
+                  const def = METRIC_DEFS[id];
+                  return (
+                    <div key={id} className="rounded-xl border border-border p-4 bg-card" title={def.tooltip}>
+                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{def.label}</div>
+                      <div className="mt-1 text-2xl font-semibold tabular-nums">{fmtPct(value ?? null)}</div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">{def.formula}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Atingimento TOP6 Clientes */}
               {top6Clients.length > 0 && (
                 <div className="space-y-3">
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Atingimento TOP6 Clientes</div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    TOP 6 clientes por atingimento real
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {top6Clients.map((client) => (
                       <div key={client.name} className="rounded-xl border border-border p-4 bg-card">
@@ -305,10 +336,11 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
 
               {/* Destaques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-border p-4 bg-primary/5">
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Atingimento ponderado geral</div>
+                <div className="rounded-xl border border-border p-4 bg-primary/5" title={METRIC_DEFS.real_achievement.tooltip}>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Atingimento real geral</div>
                   <div className="mt-1 text-3xl font-semibold tabular-nums">{fmtPct(d.geral)}</div>
                 </div>
+
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por categoria</div>
                   <div className="mt-1 flex items-baseline gap-2">
@@ -350,9 +382,10 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
                         <span className="text-xs text-muted-foreground">participação</span>
                       </div>
                       <div className="mt-2 text-2xl font-semibold tabular-nums">{fmtPct(c.participacao)}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        Atingimento ponderado: <span className="tabular-nums text-foreground">{fmtPct(c.atingimento)}</span>
+                      <div className="mt-1 text-xs text-muted-foreground" title={METRIC_DEFS.real_achievement.tooltip}>
+                        Atingimento real: <span className="tabular-nums text-foreground">{fmtPct(c.atingimento)}</span>
                       </div>
+
                     </div>
                   ))}
                 </div>
