@@ -22,15 +22,36 @@ export function StatusBadge({ status }: { status: ExecutiveAction["status"] }) {
   );
 }
 
+export function OriginBadge({ existing }: { existing?: boolean }) {
+  return existing ? (
+    <Badge
+      variant="outline"
+      className="border-amber-500/40 bg-amber-500/10 text-[10px] uppercase tracking-wide text-amber-700"
+    >
+      Ação já sugerida
+    </Badge>
+  ) : (
+    <Badge
+      variant="outline"
+      className="border-emerald-500/40 bg-emerald-500/10 text-[10px] uppercase tracking-wide text-emerald-700"
+    >
+      Nova sugestão
+    </Badge>
+  );
+}
+
 export function ActionCard({
   action,
   readOnly,
+  origin,
   onValidate,
   onEdit,
   onReject,
 }: {
   action: ExecutiveAction;
   readOnly?: boolean;
+  /** Vínculo com a ação já existente na Gestão de Tarefas, quando houver. */
+  origin?: { existing: boolean; displayTitle: string };
   onValidate?: () => void;
   onEdit?: () => void;
   onReject?: () => void;
@@ -45,11 +66,13 @@ export function ActionCard({
           Prioridade {PRIORITY_LABEL[action.priority]}
         </Badge>
         <StatusBadge status={action.status} />
+        {origin && <OriginBadge existing={origin.existing} />}
       </div>
-      <p className="mt-2 font-medium leading-snug">{action.title}</p>
+      <p className="mt-2 font-medium leading-snug">{origin?.displayTitle || action.title}</p>
       {action.description ? (
         <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
       ) : null}
+
       {(action.owner || action.due_date || action.note) && (
         <p className="mt-2 text-xs text-muted-foreground">
           {action.owner ? `Responsável: ${action.owner}` : ""}
