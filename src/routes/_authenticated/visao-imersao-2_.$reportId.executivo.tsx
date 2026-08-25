@@ -199,6 +199,12 @@ function RelatorioExecutivoPage() {
     },
   });
 
+  // Leitura executiva = síntese estratégica na íntegra do relatório de imersão.
+  const fullReading = useMemo(
+    () => buildExecutiveReadingFromImmersion(parent?.structured_data),
+    [parent?.structured_data],
+  );
+
   const viewData = useMemo<ExecutiveReportData | null>(() => {
     if (!data) return null;
     const base = closed ? toFinalData(data) : data;
@@ -208,13 +214,15 @@ function RelatorioExecutivoPage() {
         : base.client.attainment || null;
     return {
       ...base,
+      executive_reading: fullReading || base.executive_reading,
       client: {
         ...base.client,
         attainment,
         category: commercial?.categoria || base.client.category || null,
       },
     };
-  }, [data, closed, commercial]);
+  }, [data, closed, commercial, fullReading]);
+
 
 
   const { data: emailLogs = [] } = useQuery({
