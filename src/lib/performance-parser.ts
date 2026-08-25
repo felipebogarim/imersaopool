@@ -17,7 +17,7 @@ import {
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
 
-export const PARSER_VERSION = "performance-parser@3";
+export const PARSER_VERSION = "performance-parser@4";
 
 export type ParsedRow = {
   ordem: number;
@@ -570,12 +570,12 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        const status = res.status ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
 
-      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      const fallback = statusFromFaixa(cell?.v == null ? null : String(cell.v));
       if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
         if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
         stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
