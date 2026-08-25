@@ -8,6 +8,8 @@ import {
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 import { ActionCard } from "./ActionCard";
+import { MarkdownView } from "@/components/MarkdownView";
+
 
 export function ChapterHeader({ num, title }: { num: string; title: string }) {
   return (
@@ -67,16 +69,13 @@ export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
       <ChapterHeader num="02" title="Leitura executiva" />
       <Card>
         <CardContent className="p-5">
-          {data.executive_reading.split(/\n{2,}/).map((p, i) => (
-            <p key={i} className="mb-3 text-[15px] leading-relaxed last:mb-0">
-              {p}
-            </p>
-          ))}
+          <MarkdownView markdown={data.executive_reading} className="text-[15px]" />
         </CardContent>
       </Card>
     </section>
   );
 }
+
 
 export function DiagnosticoChapter({
   data,

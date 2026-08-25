@@ -146,8 +146,19 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   // Capítulo 02 — Leitura executiva
   if (data.executive_reading) {
     chapter("02", "Leitura executiva");
-    text(data.executive_reading, { size: 11, gap: 10 });
+    for (const block of data.executive_reading.split(/\n{2,}/)) {
+      const line = block.trim();
+      if (!line) continue;
+      const head = line.match(/^#{2,5}\s+(.*)$/);
+      if (head) {
+        need(20);
+        text(head[1], { size: 11, style: "bold", gap: 3 });
+        continue;
+      }
+      text(line.replace(/\*\*/g, ""), { size: 11, gap: 8 });
+    }
   }
+
 
   // Capítulo 03 — Do diagnóstico à ação
   chapter("03", "Do diagnóstico à ação");
