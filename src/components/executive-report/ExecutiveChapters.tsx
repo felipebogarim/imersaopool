@@ -81,16 +81,19 @@ export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
 export function DiagnosticoChapter({
   data,
   readOnly,
+  originOf,
   onValidate,
   onEdit,
   onReject,
 }: {
   data: ExecutiveReportData;
   readOnly?: boolean;
+  originOf?: (a: ExecutiveAction) => { existing: boolean; displayTitle: string } | undefined;
   onValidate?: (a: ExecutiveAction) => void;
   onEdit?: (a: ExecutiveAction) => void;
   onReject?: (a: ExecutiveAction) => void;
 }) {
+
   return (
     <section>
       <ChapterHeader num="03" title="Do diagnóstico à ação" />
