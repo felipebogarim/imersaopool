@@ -30,11 +30,12 @@ async function fetchVersion(repId: string, versionId?: string | null) {
 }
 
 async function fetchRows(versionId: string): Promise<PerformanceRow[]> {
+  // ATENÇÃO: metas/realizado em R$ não existem nesta tabela (privacidade).
+  // O motor trabalha com percentuais e faróis.
   const { data, error } = await supabase
     .from("rep_performance_rows")
-    .select(
-      "razao_social, categoria, ordem, metas, realizado, familia_pct, metas_status, total_pct, total_pct_status",
-    )
+    .select("razao_social, categoria, ordem, familia_pct, metas_status, total_pct, total_pct_status")
+
     .eq("upload_id", versionId)
     .order("ordem", { ascending: true });
   if (error) throw error;
