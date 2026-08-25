@@ -143,11 +143,13 @@ export function DiagnosticoChapter({
                         key={a.id}
                         action={a}
                         readOnly={readOnly}
+                        origin={originOf?.(a)}
                         onValidate={() => onValidate?.(a)}
                         onEdit={() => onEdit?.(a)}
                         onReject={() => onReject?.(a)}
                       />
                     ))}
+
                   </div>
                 )}
               </CardContent>
