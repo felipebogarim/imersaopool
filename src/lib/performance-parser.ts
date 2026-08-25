@@ -363,7 +363,7 @@ export async function parseWorkbook(
   const full = XLSXStyle.read(buf, { type: "array", cellStyles: true });
   let wb = full;
   if (opts?.sheetName && full.SheetNames.includes(opts.sheetName)) {
-    const keep = full.SheetNames.filter((n) => n === opts.sheetName || isAuxSheet(n));
+    const keep = [opts.sheetName, ...full.SheetNames.filter((n) => n !== opts.sheetName && isAuxSheet(n))];
     const sheets: Record<string, any> = {};
     for (const n of keep) sheets[n] = full.Sheets[n];
     wb = { ...full, SheetNames: keep, Sheets: sheets } as XLSXStyle.WorkBook;
