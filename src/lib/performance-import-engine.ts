@@ -1,7 +1,7 @@
 import * as XLSXStyle from "xlsx-js-style";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
-import { statusFromFaixa, statusFromHex, statusFromPercent, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromHex, statusFromRatio, type FarolStatus } from "./performance-farol";
 
 export type RawCell = {
   v: unknown;
@@ -165,12 +165,13 @@ function parseAmount(v: unknown): number | null {
   return negative ? -n : n;
 }
 
-function parsePercent(v: unknown): number | null {
+/** Normaliza uma célula de coluna percentual para o ratio canônico (1 = 100%). */
+export function parsePercentRatio(cell: Pick<RawCell, "v" | "w" | "z"> | undefined): number | null {
+  const v = cell?.v;
   if (v == null || v === "") return null;
-  if (typeof v === "number") {
-    if (!Number.isFinite(v)) return null;
-    return Math.abs(v) <= 1.5 ? v : v / 100;
-  }
+  // Em uma coluna estruturalmente reconhecida como percentual, o valor numérico
+  // bruto do Excel já é o ratio. Sua magnitude nunca altera a unidade.
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
   const raw = String(v).trim();
   if (!raw || raw === "-") return null;
   if (/^>\s*100%?$/i.test(raw)) return null;
@@ -180,7 +181,9 @@ function parsePercent(v: unknown): number | null {
   if (!cleaned) return null;
   const n = Number(cleaned);
   if (!Number.isFinite(n)) return null;
-  return hasPct || Math.abs(n) > 1.5 ? n / 100 : n;
+  // Texto com símbolo é uma representação visual ("125%" = ratio 1,25).
+  // Texto numérico sem símbolo herda a semântica percentual da coluna.
+  return hasPct ? n / 100 : n;
 }
 
 function classifySubheader(v: unknown): DetectedSubcolumnKind {
@@ -210,7 +213,7 @@ function looksLikePercentCell(cell: RawCell | undefined): boolean {
   if (!cell) return false;
   if (typeof cell.z === "string" && cell.z.includes("%")) return true;
   const text = String(cell.w ?? cell.v ?? "");
-  return text.includes("%") && parsePercent(text) != null;
+  return text.includes("%") && parsePercentRatio(cell) != null;
 }
 
 function inferSingleDataColumnKind(grid: RawCell[][], dataStartRow: number, col: number): DetectedSubcolumnKind {
@@ -397,7 +400,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       metas_status: {},
       metas_cores: {},
       total_meta: structure.totalMetaCol != null ? parseAmount(line[structure.totalMetaCol]?.v) : null,
-      total_pct: structure.totalPctCol != null ? parsePercent(line[structure.totalPctCol]?.v) : null,
+      total_pct: structure.totalPctCol != null ? parsePercentRatio(line[structure.totalPctCol]) : null,
       total_pct_status: null,
     };
 
@@ -412,7 +415,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       const farolCell = group.subcolumns.farol != null ? line[group.subcolumns.farol] : undefined;
       const meta = parseAmount(metaCell?.v);
       const realizado = parseAmount(realCell?.v);
-      let pct = parsePercent(pctCell?.v);
+      let pct = parsePercentRatio(pctCell);
       const candidatesForStatus = [pctCell, farolCell, metaCell, realCell];
 
       if (meta != null) {
@@ -446,7 +449,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         }
       }
 
-      let status: FarolStatus | null = pct != null ? statusFromPercent(pct * 100) : null;
+      let status: FarolStatus | null = statusFromRatio(pct);
       if (!status) {
         status = [pctCell, farolCell, metaCell, realCell]
           .map((cell) => statusFromText(cell?.v))
@@ -484,7 +487,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
     if (row.total_pct == null && rowMetaSum > 0 && Object.keys(row.realizado).length > 0) {
       row.total_pct = rowRealSum / rowMetaSum;
     }
-    row.total_pct_status = row.total_pct != null ? statusFromPercent(row.total_pct * 100) : null;
+    row.total_pct_status = statusFromRatio(row.total_pct);
     if (row.total_meta == null && rowMetaSum > 0) row.total_meta = rowMetaSum;
     if (rowHasNumbers) rowsWithNumbers++;
     if (Object.keys(row.metas_status).length > 0 || row.total_pct_status) rowsWithStatus++;

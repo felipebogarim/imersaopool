@@ -7,7 +7,7 @@
 // Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromFaixa, statusFromHex, statusFromPercent, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromHex, statusFromPercent, statusFromRatio, type FarolStatus } from "./performance-farol";
 import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
 import {
   parseMatrizFinanceiraGrid,
@@ -301,7 +301,7 @@ function statusFromPercentCellValue(v: unknown): FarolStatus | null {
   if (v == null || v === "") return null;
   if (typeof v === "number") {
     if (!Number.isFinite(v)) return null;
-    return statusFromPercent(Math.abs(v) <= 1.5 ? v * 100 : v);
+    return statusFromRatio(v);
   }
   const raw = String(v).trim();
   if (!raw) return null;
@@ -310,7 +310,7 @@ function statusFromPercentCellValue(v: unknown): FarolStatus | null {
   if (!/%/.test(raw) && !/^[-+]?\d+(?:[,.]\d+)?$/.test(raw)) return null;
   const n = Number(raw.replace("%", "").replace(",", "."));
   if (!Number.isFinite(n)) return null;
-  return statusFromPercent(Math.abs(n) <= 1.5 ? n * 100 : n);
+  return raw.includes("%") ? statusFromPercent(n) : statusFromRatio(n);
 }
 
 function isExplicitPercentStatusHeader(v: unknown): boolean {
@@ -442,7 +442,7 @@ function toPct(v: any): number | null {
   if (v == null || v === "") return null;
   if (typeof v === "number") {
     if (!Number.isFinite(v)) return null;
-    return Math.abs(v) <= 1.5 ? v * 100 : v;
+    return v * 100;
   }
   const s = String(v).trim().replace("%", "").replace(",", ".");
   const n = parseFloat(s);

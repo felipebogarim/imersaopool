@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { parseWorkbook } from "./performance-parser";
+import { parsePercentRatio } from "./performance-import-engine";
 import * as XLSXStyle from "xlsx-js-style";
 
 const FABIO = "/mnt/user-uploads/file-15"; // DESEMPENHO_FABIO_BRISTOTTI_1_SEMESTRE_26_IMPORTACAO_FINAL_CORRIGIDA.xlsx
@@ -37,6 +38,52 @@ maybe(SALTON)("regressão — arquivo antigo Salton", () => {
 });
 
 describe("parser determinístico de performance", () => {
+  const ratios = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 5, 10];
+
+  it.each(ratios)("preserva o ratio numérico %s sem heurística por magnitude", (ratio) => {
+    expect(parsePercentRatio({ v: ratio, w: `${ratio * 100}%`, z: "0%" })).toBe(ratio);
+  });
+
+  it("converte somente a representação textual explícita em percentual", () => {
+    expect(parsePercentRatio({ v: "125%", w: null, z: null })).toBe(1.25);
+    expect(parsePercentRatio({ v: "1,25", w: null, z: null })).toBe(1.25);
+  });
+
+  it("valida ratios sintéticos pela relação realizado ÷ meta, inclusive acima de 100%", async () => {
+    const wb = XLSXStyle.utils.book_new();
+    const aoa = [
+      [null, null, "DECOR NEWLINE", null, null, "DECOR STUDIO", null, null],
+      ["RAZÃO SOCIAL", "CATEGORIA", "R$ MÉDIA", "R$ META", "% META", "R$ MÉDIA", "R$ META", "% META"],
+      ...ratios.map((ratio, index) => [
+        `CLIENTE ${index + 1}`,
+        "Gold",
+        ratio * 100,
+        100,
+        ratio,
+        ratio * 200,
+        200,
+        ratio,
+      ]),
+    ];
+    const ws = XLSXStyle.utils.aoa_to_sheet(aoa);
+    for (let row = 3; row <= ratios.length + 2; row++) {
+      ws[`E${row}`].z = "0.00%";
+      ws[`H${row}`].z = "0.00%";
+    }
+    XLSXStyle.utils.book_append_sheet(wb, ws, "Performance");
+    const buf = XLSXStyle.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
+
+    const parsed = await parseWorkbook(buf);
+
+    expect(parsed.rows).toHaveLength(ratios.length);
+    parsed.rows.forEach((row, index) => {
+      expect(row.familia_pct?.["DECOR NEWLINE"]).toBeCloseTo(ratios[index], 10);
+      expect(row.familia_pct?.["DECOR STUDIO"]).toBeCloseTo(ratios[index], 10);
+    });
+    expect(parsed.diagnostic?.validacao.mathChecks).toBe(ratios.length * 2);
+    expect(parsed.diagnostic?.validacao.mathMismatches).toBe(0);
+  });
+
   it("reconhece cabeçalho em duas linhas e preserva ausência sem converter em zero", async () => {
     const wb = XLSXStyle.utils.book_new();
     const aoa = [
