@@ -12,23 +12,26 @@
 import {
   FAROL_LABEL,
   FAROL_ORDER,
-  statusFromRatio,
   type FarolStatus,
 } from "./performance-farol";
 import { normalizeFamilyName } from "./client-bi-familias";
+import {
+  FAROL_COEFFICIENT,
+  METRICS_VERSION,
+  calculateClientMetrics,
+  calculateRepresentativeMetrics,
+  classifyFarol as classifyFarolMetric,
+  extremesByRealAchievement,
+  getFarolCoefficient as getFarolCoefficientMetric,
+  type MetricsObject,
+} from "./performance-metrics";
 
 /** Versão da metodologia de cálculo. Alterar quando as regras mudarem. */
-export const CALCULATION_VERSION = "performance_bi_v1";
+export const CALCULATION_VERSION = METRICS_VERSION;
 
 /** Coeficiente analítico do farol (índice do BI). NÃO é atingimento real. */
-export const FAROL_COEFFICIENT: Record<FarolStatus, number> = {
-  sem_compra: 0,
-  abaixo_meta: 0.25,
-  pode_melhorar: 0.6,
-  proximo: 0.8,
-  otimo: 0.95,
-  excelente: 1.1,
-};
+export { FAROL_COEFFICIENT };
+
 
 // ============================ Tipos de entrada ==============================
 
