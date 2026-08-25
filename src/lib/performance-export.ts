@@ -10,9 +10,22 @@ type ExportRow = {
   metas: Record<string, number>;
   metas_status?: Record<string, FarolStatus>;
   metas_cores?: Record<string, string>;
+  realizado?: Record<string, number> | null;
+  familia_pct?: Record<string, number> | null;
   total_meta: number | null;
+  total_pct?: number | null;
   total_pct_status?: FarolStatus | null;
 };
+
+/** Percentual armazenado em ratio (1 = 100%) → número em %. */
+const pctOf = (v: unknown): number | null => {
+  const n = Number(v);
+  if (v == null || Number.isNaN(n)) return null;
+  return n * 100;
+};
+
+const fmtPctCell = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
+
 
 const HEX = {
   headerBg: "1F2937",
@@ -55,23 +68,42 @@ export function exportPerformanceXlsx(opts: {
   ];
 
   for (const r of rows) {
+    const somaMetas = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+    const totalMeta = Number(r.total_meta) || somaMetas || null;
+    const totalPct = pctOf(r.total_pct);
     aoa.push([
       r.razao_social,
       r.categoria ?? "",
-      r.total_meta ?? null,
-      r.total_pct_status ? FAROL_FAIXA_TEXT[r.total_pct_status] : "",
-      ...familias.map((f) => (r.metas[f] ?? null) as any),
+      totalMeta,
+      totalPct != null
+        ? fmtPctCell(totalPct)
+        : r.total_pct_status
+          ? FAROL_FAIXA_TEXT[r.total_pct_status]
+          : "",
+      ...familias.map((f) => {
+        // Espelha exatamente o que o painel mostra na célula:
+        // valor monetário quando existe meta, senão percentual, senão faixa do farol.
+        const meta = Number(r.metas?.[f]) || 0;
+        const real = Number(r.realizado?.[f]) || 0;
+        const pct = meta > 0 && real > 0 ? (real / meta) * 100 : pctOf(r.familia_pct?.[f]);
+        if (meta > 0 && real === 0) return meta as any;
+        if (pct != null) return fmtPctCell(pct) as any;
+        const st = r.metas_status?.[f];
+        return st ? (FAROL_FAIXA_TEXT[st] as any) : (null as any);
+      }),
     ]);
   }
+
 
   // Rodapé — 3 linhas fixas
   const totalRow: any[] = [
     "TOTAL GERAL DA META",
     "",
-    totals.grand ?? 0,
+    totals.grand || "",
     "",
-    ...familias.map((f) => totals.perFamilia[f] ?? 0),
+    ...familias.map((f) => totals.perFamilia[f] || ""),
   ];
+
   const fmtPct = (n: number | null | undefined) => {
     if (n == null || Number.isNaN(n)) return "";
     const v = Math.abs(n) <= 1.5 ? n * 100 : n;
@@ -84,13 +116,30 @@ export function exportPerformanceXlsx(opts: {
     fmtPct(opts.participacao?.__total__ ?? null),
     ...familias.map((f) => fmtPct((opts.participacao?.[f] as number | null | undefined) ?? null)),
   ];
+  // Atingimento: usa o valor informado; na ausência, calcula a média dos
+  // percentuais reais das linhas (mesma base exibida no painel).
+  const mediaPct = (vals: (number | null)[]) => {
+    const ok = vals.filter((v): v is number => v != null && !Number.isNaN(v));
+    return ok.length ? ok.reduce((s, v) => s + v, 0) / ok.length : null;
+  };
+  const atingFam = (f: string) => {
+    const given = opts.atingimento?.[f] as number | null | undefined;
+    if (given != null) return fmtPct(given);
+    const calc = mediaPct(rows.map((r) => pctOf(r.familia_pct?.[f])));
+    return calc == null ? "" : fmtPctCell(calc);
+  };
+  const givenTotal = opts.atingimento?.__total__;
+  const calcTotal = mediaPct(rows.map((r) => pctOf(r.total_pct)));
+  const atingTotalTxt =
+    givenTotal != null ? fmtPct(givenTotal) : calcTotal == null ? "" : fmtPctCell(calcTotal);
   const atingimentoRow: any[] = [
     "ATINGIMENTO ESTIMADO DA META",
     "",
     "",
-    fmtPct(opts.atingimento?.__total__ ?? null),
-    ...familias.map((f) => fmtPct((opts.atingimento?.[f] as number | null | undefined) ?? null)),
+    atingTotalTxt,
+    ...familias.map((f) => atingFam(f)),
   ];
+
   aoa.push(totalRow, participacaoRow, atingimentoRow);
 
   const ws = XLSXStyle.utils.aoa_to_sheet(aoa);

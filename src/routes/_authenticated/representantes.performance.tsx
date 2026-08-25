@@ -162,7 +162,7 @@ export function PerformancePageContent() {
     queryFn: async () => {
       const { data: ups } = await supabase
         .from("rep_performance_uploads")
-        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename")
+        .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename, familias")
         .is("substituida_em", null)
         .order("created_at", { ascending: false });
       const byRep = new Map<string, any>();
@@ -760,6 +760,7 @@ export function PerformancePageContent() {
       rows: view.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, familias) })),
       totals,
     });
+
   }
 
   function doExportReport() {
@@ -795,6 +796,7 @@ export function PerformancePageContent() {
       metas: r.metas ?? {},
       metas_status: r.metas_status ?? {},
       metas_cores: r.metas_cores ?? {},
+      realizado: r.realizado ?? {},
       familia_pct: r.familia_pct ?? {},
       total_pct: r.total_pct ?? null,
       total_pct_status: r.total_pct_status ?? null,
@@ -814,6 +816,7 @@ export function PerformancePageContent() {
       rows: rowsE.map((r) => ({ ...r, total_pct_status: inferRowStatus(r, fams) })),
       totals: { perFamilia, grand },
     });
+
   }
 
   // Abre editar (substituir versão) a partir da lista
