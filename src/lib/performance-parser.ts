@@ -7,7 +7,7 @@
 // Os valores financeiros vêm EXCLUSIVAMENTE da aba "Matriz Financeira".
 
 import * as XLSXStyle from "xlsx-js-style";
-import { statusFromPercent, type FarolStatus } from "./performance-farol";
+import { statusFromFaixa, statusFromPercent, type FarolStatus } from "./performance-farol";
 import { resolveCellStatus, type CellConflict } from "./performance-cell-status";
 import {
   parseMatrizFinanceiraGrid,
@@ -524,6 +524,9 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
 
   const rows: ParsedRow[] = [];
   const ignoradas: IgnoredRow[] = [];
+  const conflitos: CellConflict[] = [];
+  const stats: CellStats = emptyStats();
+  const distintas = new Set<string>();
   let linhas_lidas = 0;
   let ordem = 0;
   for (let r = headerRow + 1; r < grid.length; r++) {
@@ -536,21 +539,58 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       ignoradas.push({ razao_social: razao, motivo: "Linha de totalização/legenda" });
       continue;
     }
-    if (!categoria && typeof row[2]?.v === "number") continue;
+    if (!isClientRow({ razao_social: razao, categoria })) {
+      ignoradas.push({ razao_social: razao, motivo: "Categoria ausente ou inválida" });
+      continue;
+    }
+
+    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
+      stats.celulas_avaliadas++;
+      if (cell?.hasStyle) stats.estilos_carregados++;
+      else stats.estilos_ausentes++;
+      if (cell?.c) {
+        stats.cores_extraidas++;
+        distintas.add(cell.c);
+      }
+
+      const res = resolveCellStatus(cell?.v, cell?.c, {
+        hasStyle: Boolean(cell?.hasStyle),
+        rawColor: cell?.raw ?? null,
+      });
+      if (res.ok) {
+        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
+        return status;
+      }
+
+      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
+        if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+        stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
+        return fallback;
+      }
+
+      if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
+      else if (res.conflito.motivo === "cor_nao_reconhecida") stats.cores_desconhecidas++;
+      else if (res.conflito.motivo === "divergencia_texto_cor") stats.divergencias_texto_cor++;
+      conflitos.push({ ...res.conflito, linha: r + 1, razao_social: razao, familia });
+      return null;
+    };
 
     const metas: Record<string, number> = {};
     const metas_status: Record<string, FarolStatus> = {};
     const metas_cores: Record<string, string> = {};
     familias.forEach((f, i) => {
       const cell = row[famCols[i]];
-      if (typeof cell?.v === "number") metas[f] = cell.v;
-      if (cell?.c) {
-        metas_cores[f] = cell.c;
-        const res = resolveCellStatus(null, cell.c);
-        if (res.ok && res.status) metas_status[f] = res.status;
-      }
+      if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
+      stats.celulas_familias++;
+      const status = avaliar(cell, f);
+      if (status) metas_status[f] = status;
+      if (cell?.c) metas_cores[f] = cell.c;
     });
     const total = typeof row[totalCol]?.v === "number" ? (row[totalCol].v as number) : null;
+    stats.celulas_total_pct++;
+    const total_pct_status = avaliar(row[totalCol], "TOTAL");
     rows.push({
       ordem: ordem++,
       razao_social: razao,
@@ -559,9 +599,11 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       metas_status,
       metas_cores,
       total_meta: total,
-      total_pct_status: null,
+      total_pct_status,
     });
   }
+
+  stats.cores_distintas = Array.from(distintas).sort();
 
   return {
     familias,
@@ -572,8 +614,8 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
     atingimento: null,
     ignoradas,
     linhas_lidas,
-    conflitos: [],
-    stats: emptyStats(),
+    conflitos,
+    stats,
     parser_version: PARSER_VERSION,
   };
 }
