@@ -17,7 +17,7 @@ import {
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
 
-export const PARSER_VERSION = "performance-parser@3";
+export const PARSER_VERSION = "performance-parser@4";
 
 export type ParsedRow = {
   ordem: number;
@@ -179,6 +179,12 @@ function statusFromPercentCellValue(v: unknown): FarolStatus | null {
   const n = Number(raw.replace("%", "").replace(",", "."));
   if (!Number.isFinite(n)) return null;
   return statusFromPercent(Math.abs(n) <= 1.5 ? n * 100 : n);
+}
+
+function isExplicitPercentStatusHeader(v: unknown): boolean {
+  const s = normSheet(String(v ?? ""));
+  if (!s) return false;
+  return s.includes("%") || s.includes("ATINGIMENTO") || s.includes("FAROL");
 }
 
 export function findPerformanceSheetName(names: string[]): string | undefined {
@@ -517,6 +523,7 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const famRow = grid[headerRow - 1] ?? [];
   const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
+  const hasTotalPctStatus = isExplicitPercentStatusHeader(grid[headerRow]?.[totalCol]?.v);
 
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
@@ -556,7 +563,7 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       continue;
     }
 
-    const avaliar = (cell: GridCell | undefined, familia: string): FarolStatus | null => {
+    const avaliar = (cell: GridCell | undefined, familia: string, blankMeansSemCompra = false): FarolStatus | null => {
       stats.celulas_avaliadas++;
       if (cell?.hasStyle) stats.estilos_carregados++;
       else stats.estilos_ausentes++;
@@ -570,12 +577,17 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status = res.status ?? statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+        const status =
+          res.status ??
+          statusFromFaixa(cell?.v == null ? null : String(cell.v)) ??
+          (blankMeansSemCompra && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
+            ? "sem_compra"
+            : null);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
 
-      const fallback = statusFromPercentCellValue(cell?.v) ?? statusFromFaixa(cell?.v == null ? null : String(cell.v));
+      const fallback = statusFromFaixa(cell?.v == null ? null : String(cell.v));
       if (fallback && (res.conflito.motivo === "estilo_ausente" || res.conflito.motivo === "cor_ausente")) {
         if (res.conflito.motivo === "cor_ausente") stats.cores_ausentes++;
         stats.por_status[fallback] = (stats.por_status[fallback] ?? 0) + 1;
@@ -596,13 +608,13 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       const cell = row[famCols[i]];
       if (typeof cell?.v === "number" && Number.isFinite(cell.v)) metas[f] = cell.v;
       stats.celulas_familias++;
-      const status = avaliar(cell, f);
+      const status = avaliar(cell, f, true);
       if (status) metas_status[f] = status;
       if (cell?.c) metas_cores[f] = cell.c;
     });
     const total = typeof row[totalCol]?.v === "number" ? (row[totalCol].v as number) : null;
-    stats.celulas_total_pct++;
-    const total_pct_status = avaliar(row[totalCol], "TOTAL");
+    const total_pct_status = hasTotalPctStatus ? avaliar(row[totalCol], "TOTAL") : null;
+    if (hasTotalPctStatus) stats.celulas_total_pct++;
     rows.push({
       ordem: ordem++,
       razao_social: razao,
