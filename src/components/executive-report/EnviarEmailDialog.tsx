@@ -35,7 +35,7 @@ export function EnviarEmailDialog({
   appUrl: string;
   onSent: (args: { recipients: string[]; subject: string; attachPdf: boolean; error?: string }) => void;
 }) {
-  const finalData = useMemo(() => toFinalData(data), [data]);
+  const finalData = useMemo(() => toEmailData(data), [data]);
   const [recipients, setRecipients] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
