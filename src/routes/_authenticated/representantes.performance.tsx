@@ -926,6 +926,9 @@ export function PerformancePageContent() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button size="sm" variant="outline" onClick={() => setMassaOpen(true)}>
+                  <Upload className="h-4 w-4 mr-1" /> Envio em massa
+                </Button>
               </div>
             </div>
             <div className="overflow-x-auto">
