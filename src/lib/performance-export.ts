@@ -68,14 +68,32 @@ export function exportPerformanceXlsx(opts: {
   ];
 
   for (const r of rows) {
+    const somaMetas = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
+    const totalMeta = Number(r.total_meta) || somaMetas || null;
+    const totalPct = pctOf(r.total_pct);
     aoa.push([
       r.razao_social,
       r.categoria ?? "",
-      r.total_meta ?? null,
-      r.total_pct_status ? FAROL_FAIXA_TEXT[r.total_pct_status] : "",
-      ...familias.map((f) => (r.metas[f] ?? null) as any),
+      totalMeta,
+      totalPct != null
+        ? fmtPctCell(totalPct)
+        : r.total_pct_status
+          ? FAROL_FAIXA_TEXT[r.total_pct_status]
+          : "",
+      ...familias.map((f) => {
+        // Espelha exatamente o que o painel mostra na célula:
+        // valor monetário quando existe meta, senão percentual, senão faixa do farol.
+        const meta = Number(r.metas?.[f]) || 0;
+        const real = Number(r.realizado?.[f]) || 0;
+        const pct = meta > 0 && real > 0 ? (real / meta) * 100 : pctOf(r.familia_pct?.[f]);
+        if (meta > 0 && real === 0) return meta as any;
+        if (pct != null) return fmtPctCell(pct) as any;
+        const st = r.metas_status?.[f];
+        return st ? (FAROL_FAIXA_TEXT[st] as any) : (null as any);
+      }),
     ]);
   }
+
 
   // Rodapé — 3 linhas fixas
   const totalRow: any[] = [
