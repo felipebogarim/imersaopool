@@ -1445,6 +1445,17 @@ export function PerformancePageContent() {
         uploadId={currentUpload?.id ?? null}
         repName={reps.find((r: any) => r.id === repId)?.nome}
       />
+
+      <EnvioMassaDialog
+        open={massaOpen}
+        onOpenChange={setMassaOpen}
+        reps={(reps as any[]).map((r) => ({ id: r.id, nome: r.nome }))}
+        onDone={() => {
+          qc.invalidateQueries({ queryKey: ["perf-uploads"] });
+          qc.invalidateQueries({ queryKey: ["perf-all-versions"] });
+          qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
+        }}
+      />
     </div>
   );
 }
