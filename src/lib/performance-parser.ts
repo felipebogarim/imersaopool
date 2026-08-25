@@ -182,17 +182,35 @@ function statusFromPercentCellValue(v: unknown): FarolStatus | null {
 }
 
 export function findPerformanceSheetName(names: string[]): string | undefined {
-  return names.find((n) => normSheet(n) === "PERFORMANCE");
+  return (
+    names.find((n) => normSheet(n) === "PERFORMANCE") ??
+    names.find((n) => normSheet(n).includes("PERFORMANC"))
+  );
+}
+
+/** Última tentativa: qualquer aba que contenha o cabeçalho canônico (RAZÃO SOCIAL + CATEGORIA). */
+function findSheetByHeader(wb: XLSXStyle.WorkBook): string | undefined {
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name];
+    if (!ws) continue;
+    const grid = XLSXStyle.utils.sheet_to_json<unknown[]>(ws, { header: 1, blankrows: false, raw: true }) as unknown[][];
+    const asCells = grid.slice(0, 25).map((r) => (r ?? []).map((v) => ({ v })));
+    if (findHeaderRow(asCells)) return name;
+  }
+  return undefined;
 }
 
 export async function parseWorkbook(buf: ArrayBuffer): Promise<ParsedSheet> {
   const wb = XLSXStyle.read(buf, { type: "array", cellStyles: true });
-  const performanceSheetName = findPerformanceSheetName(wb.SheetNames);
+  const performanceSheetName = findPerformanceSheetName(wb.SheetNames) ?? findSheetByHeader(wb);
   if (!performanceSheetName) {
-    throw new Error('A aba obrigatória "Performance" não foi encontrada no arquivo.');
+    throw new Error(
+      `Não encontramos a aba de Performance no arquivo. Abas disponíveis: ${wb.SheetNames.join(", ") || "nenhuma"}. Renomeie a aba com os dados para "Performance" ou garanta o cabeçalho RAZÃO SOCIAL + CATEGORIA.`,
+    );
   }
   const ws = wb.Sheets[performanceSheetName];
   if (!ws) throw new Error("Planilha vazia.");
+
   const range = XLSXStyle.utils.decode_range(ws["!ref"] || "A1");
 
   const grid: GridCell[][] = [];
