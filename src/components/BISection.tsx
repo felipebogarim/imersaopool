@@ -137,12 +137,14 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
     return {
       geral: repBI.atingimento_geral_ratio,
       indice: repBI.indice_geral,
+      metrics: repBI.metrics,
       categorias: repBI.categorias,
       farol: repBI.farol,
       performance_version_id: repBI.performance_version_id,
       calculation_version: repBI.calculation_version,
     };
   }, [repBI]);
+
 
   const catsSorted = useMemo(
     () => (d?.categorias ?? []).slice().sort((a, b) => (b.participacao ?? 0) - (a.participacao ?? 0)),
