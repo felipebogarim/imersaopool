@@ -10,9 +10,22 @@ type ExportRow = {
   metas: Record<string, number>;
   metas_status?: Record<string, FarolStatus>;
   metas_cores?: Record<string, string>;
+  realizado?: Record<string, number> | null;
+  familia_pct?: Record<string, number> | null;
   total_meta: number | null;
+  total_pct?: number | null;
   total_pct_status?: FarolStatus | null;
 };
+
+/** Percentual armazenado em ratio (1 = 100%) → número em %. */
+const pctOf = (v: unknown): number | null => {
+  const n = Number(v);
+  if (v == null || Number.isNaN(n)) return null;
+  return n * 100;
+};
+
+const fmtPctCell = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
+
 
 const HEX = {
   headerBg: "1F2937",
