@@ -299,9 +299,12 @@ export function calculateClientMetrics(row: MetricSourceRow, familias: string[])
       cells.map((c) => c.coeficiente_farol),
     ),
   };
-  const avaliadas = cells.filter((c) => c.real_achievement != null || c.farol != null);
-  const semCompra = avaliadas.filter((c) => c.farol === "sem_compra");
-  const comCompra = avaliadas.length - semCompra.length;
+  // Toda família avaliada faz parte do denominador (ex.: 7 famílias).
+  // Célula vazia (sem meta, sem realizado, sem % e sem farol) = sem compra.
+  const semCompra = cells.filter(
+    (c) => c.farol === "sem_compra" || (c.real_achievement == null && c.farol == null),
+  );
+  const comCompra = cells.length - semCompra.length;
   return {
     razao_social: row.razao_social,
     categoria: row.categoria ?? null,
@@ -309,8 +312,9 @@ export function calculateClientMetrics(row: MetricSourceRow, familias: string[])
     farol: classifyFarol(real),
     familias_sem_compra: semCompra.map((c) => c.familia),
     familias_com_compra: comCompra,
-    familias_avaliadas: avaliadas.length,
-    cobertura: avaliadas.length ? comCompra / avaliadas.length : null,
+    familias_avaliadas: cells.length,
+    cobertura: cells.length ? comCompra / cells.length : null,
+
     cells,
   };
 }
