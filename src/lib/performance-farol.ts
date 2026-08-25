@@ -109,6 +109,17 @@ export function statusFromPercent(p: number | null | undefined): FarolStatus | n
   return "excelente";
 }
 
+/** Deriva o farol diretamente do ratio canônico do Excel (1 = 100%). */
+export function statusFromRatio(ratio: number | null | undefined): FarolStatus | null {
+  if (ratio == null || Number.isNaN(ratio)) return null;
+  if (ratio <= 0) return "sem_compra";
+  if (ratio < 0.5) return "abaixo_meta";
+  if (ratio < 0.7) return "pode_melhorar";
+  if (ratio < 0.9) return "proximo";
+  if (ratio <= 1) return "otimo";
+  return "excelente";
+}
+
 /**
  * Paleta aceita na IMPORTAÇÃO (correspondência exata, sem aproximação).
  * Inclui a paleta canônica do sistema e a paleta original das planilhas.

@@ -87,7 +87,7 @@ type StatusCarrier = {
 
 function percentValue(v: number | null | undefined): number | null {
   if (v == null || Number.isNaN(v)) return null;
-  return Math.abs(v) <= 1.5 ? v * 100 : v;
+  return v * 100;
 }
 
 function inferRowStatus(row: StatusCarrier, familias: string[]): FarolStatus | null {
