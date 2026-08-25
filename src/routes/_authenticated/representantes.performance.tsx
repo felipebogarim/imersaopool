@@ -1497,7 +1497,7 @@ function MatrixCell({
   // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
   // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
   const isFaixaMode =
-    !!row.metas_status?.[familia] && real === 0 && (iaMode || meta === 0);
+    !!row.metas_status?.[familia] && real === 0;
 
   if (editing) {
     return (
