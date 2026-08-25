@@ -40,24 +40,64 @@ export function EnvioMassaDialog({
 
   async function onPick(fileList: FileList | null) {
     if (!fileList?.length) return;
+    setScanning(true);
     try {
       const files = await expandFiles(Array.from(fileList));
       if (!files.length) {
         toast.error("Nenhum arquivo aceito encontrado (.xlsx, .xls, .pdf ou .zip).");
         return;
       }
-      const novos: BulkEntry[] = files.map((f, i) => ({
-        id: `${Date.now()}-${i}-${f.name}`,
-        name: f.name,
-        kind: /\.pdf$/i.test(f.name) ? "pdf" : "xlsx",
-        file: f,
-        repId: guessRepId(f.name, reps),
-        status: "pendente",
-      }));
+      const novos: BulkEntry[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        await new Promise((r) => setTimeout(r, 0)); // mantém a interface responsiva
+        if (/\.pdf$/i.test(f.name)) {
+          novos.push({
+            id: `${Date.now()}-${i}-${f.name}`,
+            name: f.name,
+            kind: "pdf",
+            file: f,
+            repId: guessRepId(f.name, reps),
+            status: "pendente",
+          });
+          continue;
+        }
+        // Planilhas podem trazer uma aba por representante: gera uma entrada por aba.
+        let sheets: string[] = [];
+        try {
+          sheets = listPerformanceSheetNames(await f.arrayBuffer());
+        } catch {
+          sheets = [];
+        }
+        if (sheets.length > 1) {
+          sheets.forEach((sheet, j) => {
+            novos.push({
+              id: `${Date.now()}-${i}-${j}-${f.name}-${sheet}`,
+              name: `${f.name} · ${sheet}`,
+              kind: "xlsx",
+              file: f,
+              sheetName: sheet,
+              repId: guessRepId(sheet, reps) || guessRepId(f.name, reps),
+              status: "pendente",
+            });
+          });
+        } else {
+          novos.push({
+            id: `${Date.now()}-${i}-${f.name}`,
+            name: f.name,
+            kind: "xlsx",
+            file: f,
+            sheetName: sheets[0],
+            repId: guessRepId(sheets[0] ?? "", reps) || guessRepId(f.name, reps),
+            status: "pendente",
+          });
+        }
+      }
       setEntries((prev) => [...prev, ...novos]);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao ler os arquivos.");
     } finally {
+      setScanning(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -75,7 +115,9 @@ export function EnvioMassaDialog({
     let rows: any[];
 
     if (entry.kind === "xlsx") {
-      const parsed = await parseWorkbook(await entry.file.arrayBuffer());
+      const parsed = await parseWorkbook(await entry.file.arrayBuffer(), {
+        sheetName: entry.sheetName,
+      });
       if (parsed.conflitos?.length) throw new Error("Divergências entre texto e cor na planilha.");
       if (parsed.matriz && parsed.matriz_erros.length) throw new Error(parsed.matriz_erros[0]);
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada.");
