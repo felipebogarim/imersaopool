@@ -837,8 +837,17 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       ) {
         metas_status[f] = "sem_compra";
         stats.por_status.sem_compra = (stats.por_status.sem_compra ?? 0) + 1;
+      } else if (
+        // Célula totalmente vazia (sem texto, sem cor) = não houve venda → 0%.
+        (cell?.v == null || String(cell.v).trim() === "") &&
+        !cell?.c &&
+        !cell?.raw
+      ) {
+        metas_status[f] = "sem_compra";
+        stats.por_status.sem_compra = (stats.por_status.sem_compra ?? 0) + 1;
       }
       if (cell?.c) metas_cores[f] = cell.c;
+
     });
     const totalCell = row[totalCol];
     const total = typeof totalCell?.v === "number" ? (totalCell.v as number) : null;
