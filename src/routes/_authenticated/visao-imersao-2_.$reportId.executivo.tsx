@@ -42,6 +42,8 @@ import {
   useExistingClientActions,
 } from "@/lib/executive-report/match-existing";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
+import { buildExecutiveReadingFromImmersion } from "@/lib/executive-report/synthesis";
+
 
 import {
   createExecutiveReport,
