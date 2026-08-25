@@ -739,9 +739,11 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
       if (status) metas_status[f] = status;
       if (cell?.c) metas_cores[f] = cell.c;
     });
-    const total = typeof row[totalCol]?.v === "number" ? (row[totalCol].v as number) : null;
-    const total_pct_status = hasTotalPctStatus ? avaliar(row[totalCol], "TOTAL") : null;
-    if (hasTotalPctStatus) stats.celulas_total_pct++;
+    const totalCell = row[totalCol];
+    const total = typeof totalCell?.v === "number" ? (totalCell.v as number) : null;
+    const shouldReadTotalStatus = hasTotalPctStatus || Boolean(totalCell?.c);
+    const total_pct_status = shouldReadTotalStatus ? avaliar(totalCell, "TOTAL") : null;
+    if (shouldReadTotalStatus) stats.celulas_total_pct++;
     rows.push({
       ordem: ordem++,
       razao_social: razao,
