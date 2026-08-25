@@ -852,6 +852,9 @@ export function PerformancePageContent() {
               <Button onClick={() => openUpload("new")}>
                 <Upload className="h-4 w-4 mr-1" /> Nova planilha
               </Button>
+              <Button variant="outline" onClick={() => setMassaOpen(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Envio em massa
+              </Button>
             </>
           ) : (
             <>
