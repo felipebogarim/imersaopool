@@ -335,10 +335,11 @@ export function BISection({ repId, repName, defaultOpen = false }: { repId: stri
 
               {/* Destaques */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-border p-4 bg-primary/5">
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Atingimento ponderado geral</div>
+                <div className="rounded-xl border border-border p-4 bg-primary/5" title={METRIC_DEFS.real_achievement.tooltip}>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Atingimento real geral</div>
                   <div className="mt-1 text-3xl font-semibold tabular-nums">{fmtPct(d.geral)}</div>
                 </div>
+
                 <div className="rounded-xl border border-border p-4">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Maior participação por categoria</div>
                   <div className="mt-1 flex items-baseline gap-2">
