@@ -216,14 +216,15 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
               actions.map((a) => (
                 <Section key={a.id} style={planRow}>
                   <Text style={planBadge}>
-                    {PRIORITY_LABEL[a.priority]} · {AREA_LABEL[a.area]}
+                    {statusTag(a.status)} · {PRIORITY_LABEL[a.priority]} · {AREA_LABEL[a.area]}
                   </Text>
                   <Text style={planTitle}>{a.title}</Text>
                   {a.description ? <Text style={planDesc}>{a.description}</Text> : null}
                 </Section>
               ))
             ) : (
-              <Text style={paragraph}>Nenhuma ação validada neste relatório.</Text>
+              <Text style={paragraph}>Nenhuma ação neste relatório.</Text>
+
             )}
           </Section>
 
