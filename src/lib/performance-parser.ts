@@ -17,7 +17,7 @@ import {
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
 
-export const PARSER_VERSION = "performance-parser@5";
+export const PARSER_VERSION = "performance-parser@7";
 
 export type ParsedRow = {
   ordem: number;
@@ -165,8 +165,31 @@ function statusFromFarolText(v: unknown): FarolStatus | null {
   return null;
 }
 
-const statusCount = (stats: CellStats) =>
+export const statusCount = (stats: CellStats) =>
   Object.values(stats.por_status).reduce((sum, n) => sum + (Number(n) || 0), 0);
+
+export function validatePerformanceStatusCoverage(parsed: ParsedSheet): {
+  ok: boolean;
+  statusCells: number;
+  rowsWithStatus: number;
+  expectedCells: number;
+} {
+  const statusCells = parsed.rows.reduce(
+    (sum, row) => sum + Object.keys(row.metas_status ?? {}).length + (row.total_pct_status ? 1 : 0),
+    0,
+  );
+  const rowsWithStatus = parsed.rows.filter(
+    (row) => Object.keys(row.metas_status ?? {}).length > 0 || Boolean(row.total_pct_status),
+  ).length;
+  const expectedCells = parsed.rows.length * Math.max(parsed.familias.length, 1);
+
+  return {
+    ok: parsed.rows.length > 0 && parsed.familias.length > 0 && statusCells > 0 && rowsWithStatus > 0,
+    statusCells,
+    rowsWithStatus,
+    expectedCells,
+  };
+}
 
 function collectFamilyColumns(row: GridCell[], startCol: number): { familias: string[]; famCols: number[] } {
   const familias: string[] = [];
@@ -634,10 +657,6 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
   const { familias, famCols } = collectFamilyColumns(famRow, 2);
   const totalCol = famCols.length ? famCols[famCols.length - 1] + 1 : 2;
   const hasTotalPctStatus = isExplicitPercentStatusHeader(grid[headerRow]?.[totalCol]?.v);
-  const legacyUsesColorFarol = grid.slice(headerRow + 1).some((row) =>
-    famCols.some((col) => statusFromHex(row?.[col]?.c)),
-  );
-
   const categoriaMetas: Record<string, number> = {};
   const escala: { label: string; min: number | null; max: number | null }[] = [];
   const CATS = ["BLACK", "GOLD", "SILVER", "BRONZE", "DIAMOND", "PLATINUM"];
@@ -690,12 +709,7 @@ function parseAntigo(grid: GridCell[][], headerRow: number): BaseSheet {
         rawColor: cell?.raw ?? null,
       });
       if (res.ok) {
-        const status =
-          res.status ??
-          statusFromFarolText(cell?.v) ??
-          (legacyUsesColorFarol && typeof cell?.v === "number" && Number.isFinite(cell.v) && !cell.c && !cell.raw
-            ? "sem_compra"
-            : null);
+        const status = res.status ?? statusFromFarolText(cell?.v);
         if (status) stats.por_status[status] = (stats.por_status[status] ?? 0) + 1;
         return status;
       }
