@@ -83,13 +83,53 @@ function BoardPage() {
     },
   });
 
+  const [fStatus, setFStatus] = useState("all");
+  const [fClient, setFClient] = useState("all");
+  const [fRep, setFRep] = useState("all");
+  const [fPriority, setFPriority] = useState("all");
+
+  const clientOptions = useMemo(() => {
+    const s = new Set<string>();
+    cards.forEach((c) => {
+      const n = (c.metadata as any)?.client_name;
+      if (typeof n === "string" && n.trim()) s.add(n.trim());
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [cards]);
+
+  const repOptions = useMemo(() => {
+    const s = new Set<string>();
+    cards.forEach((c) => {
+      const n = (c.metadata as any)?.rep_name;
+      if (typeof n === "string" && n.trim()) s.add(n.trim());
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [cards]);
+
+  const hasFilters = fStatus !== "all" || fClient !== "all" || fRep !== "all" || fPriority !== "all";
+
+  const visibleCards = useMemo(() => {
+    return cards.filter((c) => {
+      const meta = (c.metadata ?? {}) as any;
+      if (fStatus !== "all") {
+        const s = getSuggested(c);
+        if (!s.suggested || s.status !== fStatus) return false;
+      }
+      if (fClient !== "all" && (meta.client_name ?? "") !== fClient) return false;
+      if (fRep !== "all" && (meta.rep_name ?? "") !== fRep) return false;
+      if (fPriority !== "all" && c.priority !== fPriority) return false;
+      return true;
+    });
+  }, [cards, fStatus, fClient, fRep, fPriority]);
+
   const cardsByList = useMemo(() => {
     const m: Record<string, KCard[]> = {};
     lists.forEach((l) => { m[l.id] = []; });
-    cards.forEach((c) => { (m[c.list_id] ??= []).push(c); });
+    visibleCards.forEach((c) => { (m[c.list_id] ??= []).push(c); });
     Object.values(m).forEach((arr) => arr.sort((a, b) => a.position - b.position));
     return m;
-  }, [lists, cards]);
+  }, [lists, visibleCards]);
+
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [activeCard, setActiveCard] = useState<KCard | null>(null);
