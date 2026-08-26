@@ -17,6 +17,8 @@ import { Loader2, Monitor, Send, Smartphone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
+import { useClientBI } from "@/lib/use-performance-bi";
+import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 
 type Person = { id: string; name: string; email: string };
 
