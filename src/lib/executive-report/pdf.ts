@@ -210,7 +210,7 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
     }
     const acts = data.actions.filter((a) => b.action_ids.includes(a.id));
     if (acts.length) {
-      text("AÇÕES", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
+      labelBlock("AÇÕES", { x: M + 14, gap: 1 });
       for (const a of acts) {
         text(`• ${a.title} — ${AREA_LABEL[a.area]} · ${PRIORITY_LABEL[a.priority]}`, {
           size: 10,
