@@ -199,6 +199,19 @@ function VisaoRep2Page() {
   const selected = useMemo(() => reports.find(r => r.id === selectedId) ?? null, [reports, selectedId]);
   const visao = useMemo(() => (selected ? normalizeVisaoRep2(selected.data) : null), [selected]);
 
+  /** Abre diretamente o relatório do representante quando a URL traz ?rep=<id>. */
+  useEffect(() => {
+    if (!repQuery) return;
+    if (reports.length) {
+      const match = reports.find(r => r.representative_id === repQuery);
+      if (match) {
+        setSelectedId(match.id);
+        if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+      }
+    }
+    setRepId(repQuery);
+  }, [repQuery, reports]);
+
   /**
    * Base comparativa da teia: apenas relatórios salvos, um por representante
    * (o mais recente), excluindo o relatório e o representante atualmente abertos.
