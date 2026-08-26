@@ -145,6 +145,16 @@ function VisaoImersao2Page() {
     },
   });
 
+  /** Abre diretamente o relatório salvo quando a URL traz ?report=<id>. */
+  useEffect(() => {
+    if (!reportQuery || !reports.length || avulso) return;
+    const match = (reports as any[]).find((r) => r.id === reportQuery);
+    if (match) {
+      abrirRelatorio(match);
+      if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+    }
+  }, [reportQuery, reports.length, avulso]);
+
   function abrirRelatorio(report: any) {
     try {
       const stored = report.structured_data as Record<string, unknown> | null;
