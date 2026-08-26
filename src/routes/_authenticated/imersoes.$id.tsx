@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/imersoes/$id")({
 
 function ImmersionDetail() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [exportOpen, setExportOpen] = useState(false);
   const { data: imm } = useQuery({
     queryKey: ["immersion", id],
@@ -31,6 +32,26 @@ function ImmersionDetail() {
       .select("*, client:clients(nome_fantasia, razao_social, grupo, categoria), representative:representatives(nome)")
       .eq("id", id).single()).data,
   });
+
+  // Fallback: se o ID for de um relatório Visão Imersão 2, redireciona para a visão executiva correspondente.
+  const { data: fieldImmersion } = useQuery({
+    queryKey: ["field-immersion-fallback", id],
+    enabled: imm === null,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+
+  useEffect(() => {
+    if (imm === null && fieldImmersion?.id) {
+      navigate({ to: "/visao-imersao-2/$reportId/executivo", params: { reportId: fieldImmersion.id } });
+    }
+  }, [imm, fieldImmersion, navigate]);
 
   // Fallback da categoria: alguns cadastros não têm categoria no cliente,
   // mas ela existe nos dados de performance (por razão social).

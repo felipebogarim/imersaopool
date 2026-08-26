@@ -1,7 +1,7 @@
 import { AcoesAtreladasRep } from "@/components/visao-rep2/AcoesAtreladasRep";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -60,6 +60,9 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-rep-2")({
+  validateSearch: (search: Record<string, unknown>): { rep?: string } => ({
+    rep: typeof search.rep === "string" ? search.rep : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Visão Rep — PoolFlux" },
@@ -155,6 +158,7 @@ function VisaoRep2Page() {
   const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [atualizandoComparativos, setAtualizandoComparativos] = useState(false);
+  const { rep: repQuery } = Route.useSearch();
 
   /** Recarrega todos os relatórios salvos para recalcular a base comparativa da teia. */
   async function onAtualizarComparativos() {
@@ -195,6 +199,19 @@ function VisaoRep2Page() {
 
   const selected = useMemo(() => reports.find(r => r.id === selectedId) ?? null, [reports, selectedId]);
   const visao = useMemo(() => (selected ? normalizeVisaoRep2(selected.data) : null), [selected]);
+
+  /** Abre diretamente o relatório do representante quando a URL traz ?rep=<id>. */
+  useEffect(() => {
+    if (!repQuery) return;
+    if (reports.length) {
+      const match = reports.find(r => r.representative_id === repQuery);
+      if (match) {
+        setSelectedId(match.id);
+        if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+      }
+    }
+    setRepId(repQuery);
+  }, [repQuery, reports]);
 
   /**
    * Base comparativa da teia: apenas relatórios salvos, um por representante

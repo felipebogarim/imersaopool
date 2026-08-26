@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Body,
-  Button,
   Container,
   Head,
   Heading,
@@ -31,6 +30,8 @@ export interface ExecutiveEmailProps {
   message?: string;
   appUrl?: string;
   families?: ExecutiveFamilyBar[];
+  immersionReportId?: string | null;
+  representativeId?: string | null;
 }
 
 const BRAND = "#062838";
@@ -58,7 +59,7 @@ function statusTag(status: string) {
   return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
 }
 
-export const ExecutiveReportEmail = ({ report, message, appUrl, families }: ExecutiveEmailProps) => {
+export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
@@ -270,10 +271,29 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
           ) : null}
 
           {appUrl ? (
-            <Section style={{ textAlign: "center", padding: "8px 0 4px" }}>
-              <Button href={appUrl} style={button}>
-                Abrir relatório no sistema
-              </Button>
+            <Section style={linksSection}>
+              <Text style={linksTitle}>ACESSE NO SISTEMA</Text>
+              {immersionReportId ? (
+                <>
+                  <Text style={linkLine}>
+                    <a href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}/executivo`} style={linkStyle}>
+                      Visão Imersão 2
+                    </a>
+                  </Text>
+                  <Text style={linkLine}>
+                    <a href={`${appUrl.split("/").slice(0, 3).join("/")}/imersoes/${immersionReportId}`} style={linkStyle}>
+                      Relatório de Imersão
+                    </a>
+                  </Text>
+                </>
+              ) : null}
+              {representativeId ? (
+                <Text style={linkLine}>
+                  <a href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-rep-2?rep=${representativeId}`} style={linkStyle}>
+                    Visão Rep
+                  </a>
+                </Text>
+              ) : null}
             </Section>
           ) : null}
 
@@ -350,18 +370,12 @@ const quoteBox = { borderLeft: `3px solid ${ACCENT}`, padding: "4px 0 4px 14px",
 const quote = { color: TEXT, fontSize: "15px", fontStyle: "italic", lineHeight: "23px", margin: "0" };
 const quoteWho = { color: MUTED, fontSize: "12px", margin: "6px 0 0" };
 const actionLine = { color: TEXT, fontSize: "15px", lineHeight: "22px", margin: "0 0 10px" };
-const button = {
-  backgroundColor: ACCENT,
-  color: "#ffffff",
-  borderRadius: "8px",
-  fontSize: "15px",
-  fontWeight: "bold",
-  padding: "14px 24px",
-  textDecoration: "none",
-  display: "inline-block",
-};
 const hr = { borderColor: LINE, margin: "20px 0 12px" };
 const footer = { color: MUTED, fontSize: "12px", lineHeight: "18px", textAlign: "center" as const, margin: "0" };
+const linksSection = { textAlign: "center" as const, padding: "8px 0 4px" };
+const linksTitle = { color: MUTED, fontSize: "11px", letterSpacing: "1px", fontWeight: "bold" as const, margin: "0 0 12px" };
+const linkLine = { margin: "0 0 10px" };
+const linkStyle = { color: ACCENT, fontSize: "15px", fontWeight: "bold" as const, textDecoration: "underline" };
 const readingParagraph = { color: TEXT, fontSize: "15px", lineHeight: "25px", margin: "0 0 18px" };
 const tag = {
   backgroundColor: "#E6F4F8",
