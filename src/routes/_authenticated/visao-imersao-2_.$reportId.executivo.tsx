@@ -237,6 +237,7 @@ function RelatorioExecutivoPage() {
         : base.client.attainment || null;
     return {
       ...base,
+      companyName: activeCompanyName || base.companyName || "PoolFlux",
       executive_reading: fullReading || base.executive_reading,
       client: {
         ...base.client,
@@ -244,7 +245,7 @@ function RelatorioExecutivoPage() {
         category: commercial?.categoria || base.client.category || null,
       },
     };
-  }, [data, closed, commercial, fullReading]);
+  }, [data, closed, commercial, fullReading, activeCompanyName]);
 
 
 
