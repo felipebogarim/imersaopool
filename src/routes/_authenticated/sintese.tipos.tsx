@@ -144,15 +144,19 @@ function SinteseTipos() {
     }
   }
 
-  async function atualizar() {
+  async function atualizar(args?: { titulo?: string; fonteIds?: string[] }) {
     if (!elegiveis.length) {
       toast.error("Nenhuma fonte processada para consolidar.");
       return;
     }
     setBusy(true);
     try {
-      const r = await gerar({ data: { tipos } });
-      toast.success(`Nova versão v${r.versao} gerada com ${r.fontes} fontes.`);
+      const r = await gerar({
+        data: { tipos, titulo: args?.titulo?.trim() || null, fonteIds: args?.fonteIds ?? null },
+      });
+      toast.success(`Consolidado v${r.versao} gerado com ${r.fontes} fontes.`);
+      setPainelId(r.id);
+      setNovoOpen(false);
       qc.invalidateQueries({ queryKey: ["painel-sintese"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar a síntese.");
@@ -160,6 +164,16 @@ function SinteseTipos() {
       setBusy(false);
     }
   }
+
+  async function excluirPainel(id: string) {
+    if (!confirm("Excluir este consolidado?")) return;
+    const { error } = await supabase.from("paineis_sintese").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    if (painelId === id) setPainelId(null);
+    toast.success("Consolidado excluído.");
+    qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+  }
+
 
   async function onImportFile(file: File | undefined) {
     if (!file) return;
