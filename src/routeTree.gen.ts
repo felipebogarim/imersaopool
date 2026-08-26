@@ -95,6 +95,7 @@ import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
+import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -584,6 +585,12 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedVisaoImersao2ReportIdIndexRoute =
+  AuthenticatedVisaoImersao2ReportIdIndexRouteImport.update({
+    id: '/visao-imersao-2_/$reportId/',
+    path: '/visao-imersao-2/$reportId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminCentralMensagensIndexRoute =
   AuthenticatedAdminCentralMensagensIndexRouteImport.update({
     id: '/',
@@ -791,6 +798,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/visao-imersao-2/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -894,6 +902,7 @@ export interface FileRoutesByTo {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/visao-imersao-2/$reportId': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -1001,6 +1010,7 @@ export interface FileRoutesById {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/_authenticated/visao-imersao-2_/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/_authenticated/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
   '/api/public/mp/test/create-preference': typeof ApiPublicMpTestCreatePreferenceRoute
@@ -1108,6 +1118,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens/'
+    | '/visao-imersao-2/$reportId/'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1211,6 +1222,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens'
+    | '/visao-imersao-2/$reportId'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1317,6 +1329,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/_authenticated/admin/central-mensagens/'
+    | '/_authenticated/visao-imersao-2_/$reportId/'
     | '/_authenticated/admin/central-mensagens/template/$id'
     | '/_authenticated/clientes-bi/comparar/$repId/$razao'
     | '/api/public/mp/test/create-preference'
@@ -1960,6 +1973,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/visao-imersao-2_/$reportId/': {
+      id: '/_authenticated/visao-imersao-2_/$reportId/'
+      path: '/visao-imersao-2/$reportId'
+      fullPath: '/visao-imersao-2/$reportId/'
+      preLoaderRoute: typeof AuthenticatedVisaoImersao2ReportIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/central-mensagens/': {
       id: '/_authenticated/admin/central-mensagens/'
       path: '/'
@@ -2250,6 +2270,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  AuthenticatedVisaoImersao2ReportIdIndexRoute: typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   AuthenticatedClientesBiCompararRepIdRazaoRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
 }
 
@@ -2312,6 +2333,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute:
     AuthenticatedVisaoImersao2ReportIdExecutivoRoute,
+  AuthenticatedVisaoImersao2ReportIdIndexRoute:
+    AuthenticatedVisaoImersao2ReportIdIndexRoute,
   AuthenticatedClientesBiCompararRepIdRazaoRoute:
     AuthenticatedClientesBiCompararRepIdRazaoRoute,
 }
