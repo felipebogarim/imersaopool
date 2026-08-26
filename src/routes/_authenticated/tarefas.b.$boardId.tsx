@@ -214,7 +214,7 @@ function BoardPage() {
 
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/tarefas"><ArrowLeft className="h-4 w-4" /></Link>
@@ -222,10 +222,59 @@ function BoardPage() {
           <div className="h-6 w-2 rounded" style={{ background: board?.color ?? "#3B82F6" }} />
           <h2 className="font-semibold">{board?.name ?? "Board"}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenExecutionMembers(true)}>
             <Users className="h-4 w-4" /> Membros
           </Button>
+
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger className="h-8 w-[190px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="aprovada">Aprovada</SelectItem>
+              <SelectItem value="pendente">Aguardando aprovação</SelectItem>
+              <SelectItem value="reprovada">Reprovada</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={fClient} onValueChange={setFClient}>
+            <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Cliente" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">Todos os clientes</SelectItem>
+              {clientOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select value={fRep} onValueChange={setFRep}>
+            <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Representante" /></SelectTrigger>
+            <SelectContent className="max-h-72">
+              <SelectItem value="all">Todos os representantes</SelectItem>
+              {repOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select value={fPriority} onValueChange={setFPriority}>
+            <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas prioridades</SelectItem>
+              <SelectItem value="urgente">Urgente</SelectItem>
+              <SelectItem value="alta">Alta</SelectItem>
+              <SelectItem value="media">Média</SelectItem>
+              <SelectItem value="baixa">Baixa</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasFilters && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs text-muted-foreground"
+              onClick={() => { setFStatus("all"); setFClient("all"); setFRep("all"); setFPriority("all"); }}
+            >
+              Limpar
+            </Button>
+          )}
+
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenSettingsMembers(true)}>
             <Users className="h-4 w-4" /> Workspace
           </Button>
@@ -234,6 +283,7 @@ function BoardPage() {
           </Button>
         </div>
       </div>
+
 
       <div className="flex-1 overflow-auto p-4">
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
