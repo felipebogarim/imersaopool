@@ -136,6 +136,54 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
             )}
           </Section>
 
+          {(families ?? []).length ? (
+            <>
+              <Section style={sectionTitleWrap}>
+                <Text style={sectionTitle}>RESULTADO POR FAMÍLIA</Text>
+              </Section>
+              <Section style={card}>
+                <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
+                  <tbody>
+                    {(families ?? []).map((f) => {
+                      const pct = Number.isFinite(f.atingimento) ? f.atingimento : 0;
+                      const width = Math.max(1, Math.min(100, (pct / 120) * 100));
+                      return (
+                        <tr key={f.familia}>
+                          <td style={barNameCell}>{f.familia}</td>
+                          <td style={{ padding: "6px 8px", width: "60%" }}>
+                            <table cellPadding={0} cellSpacing={0} width="100%" style={barTrack}>
+                              <tbody>
+                                <tr>
+                                  <td
+                                    style={{
+                                      width: `${width}%`,
+                                      backgroundColor: `#${f.fill ?? "E5E5E5"}`,
+                                      height: "14px",
+                                      borderRadius: "4px",
+                                      fontSize: "1px",
+                                      lineHeight: "14px",
+                                    }}
+                                  >
+                                    &nbsp;
+                                  </td>
+                                  <td>&nbsp;</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td style={barValueCell}>
+                            {`${pct.toFixed(1).replace(".", ",")}%`}
+                            {f.farol ? ` · ${f.farol}` : ""}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Section>
+            </>
+          ) : null}
+
           <Section style={sectionTitleWrap}>
             <Text style={sectionTitle}>DO DIAGNÓSTICO À AÇÃO</Text>
           </Section>
