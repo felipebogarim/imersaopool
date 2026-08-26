@@ -159,6 +159,9 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
 
 
               <div className="space-y-2 border-t pt-4">
+                <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => setDuplicating(true)}>
+                  <Copy className="h-4 w-4" /> Duplicar ação
+                </Button>
                 <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={archive}>
                   <Archive className="h-4 w-4" /> Arquivar
                 </Button>
@@ -166,6 +169,8 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
                   <Trash2 className="h-4 w-4" /> Excluir
                 </Button>
               </div>
+              <DuplicateCardDialog card={card} open={duplicating} onOpenChange={setDuplicating} />
+
             </div>
           </aside>
         </div>
