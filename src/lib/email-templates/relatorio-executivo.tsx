@@ -299,7 +299,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
 
           <Hr style={hr} />
           <Text style={footer}>
-            PoolFlux · Relatório Executivo de Imersão em Campo
+            {companyName} · Relatório Executivo de Imersão em Campo
             <br />
             Documento de uso interno e confidencial.
           </Text>
