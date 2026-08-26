@@ -1,7 +1,7 @@
 import { AcoesAtreladasRep } from "@/components/visao-rep2/AcoesAtreladasRep";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -60,6 +60,9 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/visao-rep-2")({
+  validateSearch: (search: Record<string, unknown>): { rep?: string } => ({
+    rep: typeof search.rep === "string" ? search.rep : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Visão Rep — PoolFlux" },

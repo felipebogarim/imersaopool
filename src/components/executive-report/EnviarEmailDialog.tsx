@@ -146,7 +146,15 @@ export function EnviarEmailDialog({
             templateName: "relatorio-executivo",
             recipientEmail: to,
             idempotencyKey: `exec-report-${data.id}-v${data.current_version}-${to}-${Date.now()}`,
-            templateData: { report: finalData, message, appUrl, subject, families },
+            templateData: {
+              report: finalData,
+              message,
+              appUrl,
+              subject,
+              families,
+              immersionReportId: data.immersion_report_id ?? null,
+              representativeId: repId ?? null,
+            },
           }),
         });
         if (!res.ok) {

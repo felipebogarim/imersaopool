@@ -31,6 +31,8 @@ export interface ExecutiveEmailProps {
   message?: string;
   appUrl?: string;
   families?: ExecutiveFamilyBar[];
+  immersionReportId?: string | null;
+  representativeId?: string | null;
 }
 
 const BRAND = "#062838";
