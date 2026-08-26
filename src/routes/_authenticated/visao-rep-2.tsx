@@ -158,6 +158,7 @@ function VisaoRep2Page() {
   const [draftSalvo, setDraftSalvo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [atualizandoComparativos, setAtualizandoComparativos] = useState(false);
+  const { rep: repQuery } = Route.useSearch();
 
   /** Recarrega todos os relatórios salvos para recalcular a base comparativa da teia. */
   async function onAtualizarComparativos() {
