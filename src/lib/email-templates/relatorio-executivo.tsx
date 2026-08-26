@@ -370,16 +370,6 @@ const quoteBox = { borderLeft: `3px solid ${ACCENT}`, padding: "4px 0 4px 14px",
 const quote = { color: TEXT, fontSize: "15px", fontStyle: "italic", lineHeight: "23px", margin: "0" };
 const quoteWho = { color: MUTED, fontSize: "12px", margin: "6px 0 0" };
 const actionLine = { color: TEXT, fontSize: "15px", lineHeight: "22px", margin: "0 0 10px" };
-const button = {
-  backgroundColor: ACCENT,
-  color: "#ffffff",
-  borderRadius: "8px",
-  fontSize: "15px",
-  fontWeight: "bold",
-  padding: "14px 24px",
-  textDecoration: "none",
-  display: "inline-block",
-};
 const hr = { borderColor: LINE, margin: "20px 0 12px" };
 const footer = { color: MUTED, fontSize: "12px", lineHeight: "18px", textAlign: "center" as const, margin: "0" };
 const linksSection = { textAlign: "center" as const, padding: "8px 0 4px" };
