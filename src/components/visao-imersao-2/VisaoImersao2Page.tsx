@@ -77,10 +77,15 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   const [duplicata, setDuplicata] = useState<any | null>(null);
   const [excluir, setExcluir] = useState<any | null>(null);
 
+  function linkRelatorio(r: any) {
+    return `${window.location.origin}/visao-imersao-2/${r.id}`;
+  }
+
   function resumoRelatorio(r: any) {
     const dt = r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—";
-    return `Visão Imersão 2 · ${r.client_name} · ${dt}\n${window.location.origin}/visao-imersao-2`;
+    return `Visão Imersão 2 · ${r.client_name} · ${dt}\n${linkRelatorio(r)}`;
   }
+
 
   function compartilharEmail(r: any) {
     const subject = `Visão Imersão 2 · ${r.client_name}`;
