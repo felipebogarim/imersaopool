@@ -202,7 +202,17 @@ function SinteseTipos() {
     }
   }
 
+  async function renomearPainel(id: string, atual: string | null) {
+    const novo = prompt("Título do consolidado:", atual ?? "");
+    if (novo === null) return;
+    const { error } = await supabase.from("paineis_sintese").update({ titulo: novo.trim() || null }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Título atualizado.");
+    qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+  }
+
   async function excluirPainel(id: string) {
+
     if (!confirm("Excluir este consolidado?")) return;
     const { error } = await supabase.from("paineis_sintese").delete().eq("id", id);
     if (error) return toast.error(error.message);
