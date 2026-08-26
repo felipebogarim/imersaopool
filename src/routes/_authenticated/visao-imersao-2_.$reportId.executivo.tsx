@@ -116,6 +116,27 @@ function RelatorioExecutivoPage() {
     },
   });
 
+  const { data: activeCompanyName } = useQuery({
+    queryKey: ["exec-active-company"],
+    queryFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id ?? null;
+      if (!uid) return null;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("active_company_id")
+        .eq("id", uid)
+        .maybeSingle();
+      if (!prof?.active_company_id) return null;
+      const { data: company } = await supabase
+        .from("companies")
+        .select("nome")
+        .eq("id", prof.active_company_id)
+        .maybeSingle();
+      return company?.nome ?? null;
+    },
+  });
+
   const { data: parent } = useQuery({
     queryKey: ["exec-parent", reportId],
     queryFn: async () => {
