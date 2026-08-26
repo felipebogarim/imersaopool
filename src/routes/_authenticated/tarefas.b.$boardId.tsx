@@ -29,6 +29,9 @@ import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getSuggested } from "@/lib/kanban-suggested";
+
 
 const searchSchema = z.object({ card: z.string().optional() });
 
