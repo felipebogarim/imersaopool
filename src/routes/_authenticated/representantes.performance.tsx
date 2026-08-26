@@ -1539,15 +1539,17 @@ function MatrixCell({
   const pct = meta > 0 && real > 0 ? (real / meta) * 100 : storedPct;
   const rawStatus: FarolStatus | null =
     pct != null ? statusFromPercent(pct) : row.metas_status?.[familia] ?? null;
-  // Célula sem farol, sem meta e sem realizado = não houve venda → 0% (Sem compra).
-  const isEmptyCell = !rawStatus && meta === 0 && real === 0 && pct == null;
+  // Sem compra = 0% válido (nunca célula em branco):
+  // qualquer célula sem farol e sem realizado é exibida como 0% / Sem compra.
+  const isEmptyCell = !rawStatus && real === 0 && (pct == null || pct <= 0);
   const status: FarolStatus | null = isEmptyCell ? "sem_compra" : rawStatus;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
   // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
   // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
   // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
-  const isFaixaMode = isEmptyCell || (!!row.metas_status?.[familia] && real === 0);
+  const isFaixaMode =
+    isEmptyCell || status === "sem_compra" || (!!row.metas_status?.[familia] && real === 0);
 
 
   if (editing) {
