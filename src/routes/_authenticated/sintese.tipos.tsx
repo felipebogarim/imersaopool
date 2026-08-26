@@ -232,7 +232,7 @@ function SinteseTipos() {
           title="Visões Consolidadas"
           subtitle={
             painel
-              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
+              ? `${painel.titulo ?? `Consolidado v${painel.versao}`} · ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
@@ -246,11 +246,12 @@ function SinteseTipos() {
               <Button variant="outline" onClick={reprocessar} disabled={busy}>
                 <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
               </Button>
-              <Button onClick={atualizar} disabled={busy || !elegiveis.length}>
+              <Button onClick={() => setNovoOpen(true)} disabled={busy || !elegiveis.length}>
                 <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
               </Button>
             </>
           }
+
         />
 
         <div className="p-4 sm:p-8 space-y-5">
