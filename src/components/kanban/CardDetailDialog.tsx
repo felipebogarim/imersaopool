@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
-  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check,
+  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check, Copy,
 
 } from "lucide-react";
 import { toast } from "sonner";
+import { DuplicateCardDialog } from "@/components/kanban/DuplicateCardDialog";
 import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, withSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
@@ -46,6 +47,8 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
   const qc = useQueryClient();
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
+  const [duplicating, setDuplicating] = useState(false);
+
 
   async function patch(data: Partial<KCard>) {
     const { error } = await supabase.from("kanban_cards").update(data as any).eq("id", card.id);
@@ -159,6 +162,9 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
 
 
               <div className="space-y-2 border-t pt-4">
+                <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => setDuplicating(true)}>
+                  <Copy className="h-4 w-4" /> Duplicar ação
+                </Button>
                 <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={archive}>
                   <Archive className="h-4 w-4" /> Arquivar
                 </Button>
@@ -166,6 +172,8 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
                   <Trash2 className="h-4 w-4" /> Excluir
                 </Button>
               </div>
+              <DuplicateCardDialog card={card} open={duplicating} onOpenChange={setDuplicating} />
+
             </div>
           </aside>
         </div>

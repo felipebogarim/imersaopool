@@ -458,7 +458,7 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
         <GripVertical className="h-3.5 w-3.5" />
       </button>
       {
-        <div className="absolute right-7 top-1.5 z-10 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute right-7 top-1.5 z-10 opacity-60 transition hover:opacity-100 group-hover:opacity-100">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
