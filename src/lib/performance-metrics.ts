@@ -155,9 +155,14 @@ export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricC
       const meta = num(r.metas?.[familia]);
       const realizado = num(r.realizado?.[familia]);
       const stored = num(r.familia_pct?.[familia] ?? null);
-      const real =
+      let real =
         meta != null && meta > 0 && realizado != null ? realizado / meta : stored;
-      const farol = classifyFarol(real) ?? asStatus(r.metas_status?.[familia]);
+      const statusOrigem = asStatus(r.metas_status?.[familia]);
+      let farol = classifyFarol(real) ?? statusOrigem;
+      // "Sem compra" é RESULTADO VÁLIDO (0%), nunca dado ausente:
+      // a família permanece no denominador com todo o peso da sua meta.
+      if (farol == null && real == null) farol = "sem_compra";
+      if (farol === "sem_compra" && real == null) real = 0;
       out.push({
         cliente: r.razao_social,
         categoria: r.categoria ?? null,
@@ -173,6 +178,7 @@ export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricC
   }
   return out;
 }
+
 
 // ============================ Fórmulas oficiais =============================
 
