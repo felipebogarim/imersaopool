@@ -387,3 +387,40 @@ const tag = {
   padding: "3px 8px",
   textTransform: "uppercase" as const,
 };
+const briefLabelCell = {
+  color: MUTED,
+  fontSize: "10px",
+  letterSpacing: "0.8px",
+  fontWeight: "bold" as const,
+  padding: "5px 10px 5px 0",
+  whiteSpace: "nowrap" as const,
+  verticalAlign: "top" as const,
+  width: "38%",
+};
+const briefValueCell = {
+  color: TEXT,
+  fontSize: "13px",
+  lineHeight: "18px",
+  padding: "5px 0",
+  verticalAlign: "top" as const,
+};
+const barNameCell = {
+  color: TEXT,
+  fontSize: "12px",
+  padding: "6px 8px 6px 0",
+  verticalAlign: "middle" as const,
+  width: "26%",
+};
+const barTrack = {
+  backgroundColor: "#EDF3F6",
+  borderRadius: "4px",
+  borderCollapse: "collapse" as const,
+};
+const barValueCell = {
+  color: MUTED,
+  fontSize: "11px",
+  padding: "6px 0 6px 8px",
+  textAlign: "right" as const,
+  verticalAlign: "middle" as const,
+  whiteSpace: "nowrap" as const,
+};
