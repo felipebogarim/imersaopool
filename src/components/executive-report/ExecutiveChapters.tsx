@@ -93,6 +93,8 @@ export function DiagnosticoChapter({
   onReject?: (a: ExecutiveAction) => void;
 }) {
 
+  const orphans = unassignedActions(data);
+
   return (
     <section>
       <ChapterHeader num="03" title="Do diagnóstico à ação" />
