@@ -472,8 +472,9 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      )}
+      }
       <KanbanCard card={card} onClick={onClick} />
+      <DuplicateCardDialog card={card} open={duplicating} onOpenChange={setDuplicating} />
     </div>
   );
 }
