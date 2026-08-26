@@ -66,7 +66,8 @@ import { useNavigate } from "@tanstack/react-router";
 
 export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   const queryClient = useQueryClient();
-  const { report: reportQuery } = Route.useSearch();
+  const navigate = useNavigate();
+
   const [avulso, setAvulso] = useState<VisaoImersao2Import | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
