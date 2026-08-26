@@ -316,14 +316,47 @@ function SinteseTipos() {
             </p>
           )}
 
+          {paineis.length > 0 && (
+            <div className="surface rounded-xl p-3 sm:p-4 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Consolidados gerados ({paineis.length})
+              </p>
+              <ul className="divide-y divide-border">
+                {paineis.map(p => {
+                  const aberto = painel?.id === p.id;
+                  return (
+                    <li key={p.id} className="flex items-center gap-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setPainelId(p.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span className={cn("block truncate text-sm", aberto && "font-semibold text-primary")}>
+                          {p.titulo ?? `Consolidado v${p.versao}`}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {new Date(p.gerado_em).toLocaleString("pt-BR")} · {(p.fontes_incluidas as string[]).length} fontes · v{p.versao}
+                        </span>
+                      </button>
+                      {aberto && <Badge variant="outline">Aberto</Badge>}
+                      <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => excluirPainel(p.id)}>
+                        Excluir
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           {elegiveis.length > 0 && novas.length > 0 ? (
             <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex flex-wrap items-center gap-3">
               <Sparkles className="h-4 w-4 text-primary" />
               <p className="text-sm">
                 {novas.length} {novas.length === 1 ? "nova fonte disponível" : "novas fontes disponíveis"}:{" "}
-                <span className="font-medium">{novas.map((f: any) => `${f.pessoa ?? f.titulo}${f.regiao ? ` — ${f.regiao}` : ""}`).join(", ")}</span>. Atualizar análise?
+                <span className="font-medium">{novas.map((f: any) => `${f.pessoa ?? f.titulo}${f.regiao ? ` — ${f.regiao}` : ""}`).join(", ")}</span>. Gerar novo consolidado?
               </p>
-              <Button size="sm" onClick={atualizar} disabled={busy}>Atualizar</Button>
+              <Button size="sm" onClick={() => setNovoOpen(true)} disabled={busy}>Novo consolidado</Button>
             </div>
           ) : painel ? (
             <p className="text-xs text-muted-foreground">
@@ -346,9 +379,10 @@ function SinteseTipos() {
             <EmptyState
               icon={Layers}
               title="Sem síntese para esta seleção"
-              description={`${elegiveis.length} fonte(s) pronta(s). Clique em Atualizar análise para consolidar as 8 lentes.`}
-              action={<Button onClick={atualizar} disabled={busy}>Atualizar análise</Button>}
+              description={`${elegiveis.length} fonte(s) pronta(s). Escolha os relatórios e gere o consolidado das 8 lentes.`}
+              action={<Button onClick={() => setNovoOpen(true)} disabled={busy}>Atualizar análise</Button>}
             />
+
           ) : (
             <>
               <div className="grid gap-4 sm:grid-cols-3">
