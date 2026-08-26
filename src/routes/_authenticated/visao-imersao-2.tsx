@@ -96,16 +96,6 @@ function VisaoImersao2Page() {
   const [duplicata, setDuplicata] = useState<any | null>(null);
   const [excluir, setExcluir] = useState<any | null>(null);
 
-  /** Abre diretamente o relatório salvo quando a URL traz ?report=<id>. */
-  useEffect(() => {
-    if (!reportQuery || !reports.length || avulso) return;
-    const match = (reports as any[]).find((r) => r.id === reportQuery);
-    if (match) {
-      abrirRelatorio(match);
-      if (typeof window !== "undefined") window.scrollTo({ top: 0 });
-    }
-  }, [reportQuery, reports.length, avulso]);
-
   function resumoRelatorio(r: any) {
     const dt = r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—";
     return `Visão Imersão 2 · ${r.client_name} · ${dt}\n${window.location.origin}/visao-imersao-2`;
