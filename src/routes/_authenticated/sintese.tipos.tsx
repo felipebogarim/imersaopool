@@ -386,9 +386,13 @@ function SinteseTipos() {
                         </span>
                       </button>
                       {aberto && <Badge variant="outline">Aberto</Badge>}
+                      <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => renomearPainel(p.id, p.titulo)}>
+                        Renomear
+                      </Button>
                       <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => excluirPainel(p.id)}>
                         Excluir
                       </Button>
+
                     </li>
                   );
                 })}
