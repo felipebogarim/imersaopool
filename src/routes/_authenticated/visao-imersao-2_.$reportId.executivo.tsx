@@ -64,13 +64,13 @@ import {
 export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId/executivo")({
   head: () => ({
     meta: [
-      { title: "Relatório Executivo de Imersão | PoolFlux" },
+      { title: "Relatório Executivo de Imersão" },
       {
         name: "description",
         content:
           "Camada de decisão da imersão em campo: causa, impacto e ação, com validação, PDF e envio por e-mail.",
       },
-      { property: "og:title", content: "Relatório Executivo de Imersão | PoolFlux" },
+      { property: "og:title", content: "Relatório Executivo de Imersão" },
       {
         property: "og:description",
         content: "Ambiente de decisão da imersão em campo: validar ações, fechar versão, exportar e enviar.",
