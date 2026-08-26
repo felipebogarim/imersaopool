@@ -46,6 +46,8 @@ function SinteseTipos() {
   const [ativa, setAtiva] = useState<Lente>("marca_preco");
   const [busy, setBusy] = useState(false);
   const [tarefa, setTarefa] = useState<{ title: string; description: string } | null>(null);
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [painelId, setPainelId] = useState<string | null>(null);
 
   const { data: fontes = [] } = useQuery({
     queryKey: ["insight-fontes-sintese"],
@@ -56,18 +58,23 @@ function SinteseTipos() {
         .neq("status_processamento", "pendente")).data ?? [],
   });
 
-  const { data: painel } = useQuery({
+  const { data: paineis = [] } = useQuery({
     queryKey: ["painel-sintese", tipos.slice().sort().join(",")],
     queryFn: async () => {
       const { data } = await supabase
         .from("paineis_sintese")
-        .select("id, versao, gerado_em, fontes_incluidas, tipos_incluidos, resultado, corte_convergencia")
+        .select("id, titulo, versao, gerado_em, fontes_incluidas, tipos_incluidos, resultado, corte_convergencia")
         .order("gerado_em", { ascending: false })
-        .limit(50);
+        .limit(200);
       const alvo = tipos.slice().sort().join(",");
-      return (data ?? []).find(p => (p.tipos_incluidos as string[]).slice().sort().join(",") === alvo) ?? null;
+      return (data ?? []).filter(p => (p.tipos_incluidos as string[]).slice().sort().join(",") === alvo);
     },
   });
+
+  const painel = useMemo(
+    () => paineis.find(p => p.id === painelId) ?? paineis[0] ?? null,
+    [paineis, painelId],
+  );
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
@@ -81,6 +88,7 @@ function SinteseTipos() {
     const inc = new Set((painel.fontes_incluidas as string[]) ?? []);
     return elegiveis.filter((f: any) => !inc.has(f.id) || new Date(f.updated_at) > new Date(painel.gerado_em));
   }, [elegiveis, painel]);
+
 
   const resultado = painel?.resultado as unknown as SinteseResultado | undefined;
   const fonteById = useMemo(() => new Map(fontes.map((f: any) => [f.id, f])), [fontes]);
