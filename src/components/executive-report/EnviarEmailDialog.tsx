@@ -113,7 +113,7 @@ export function EnviarEmailDialog({
         import("@/lib/email-templates/relatorio-executivo"),
       ]);
       const html = await render(
-        <ExecutiveReportEmail report={finalData} message={message} appUrl={appUrl} />,
+        <ExecutiveReportEmail report={finalData} message={message} appUrl={appUrl} families={families} />,
       );
       setPreviewHtml(html);
     } catch (err) {
@@ -146,7 +146,7 @@ export function EnviarEmailDialog({
             templateName: "relatorio-executivo",
             recipientEmail: to,
             idempotencyKey: `exec-report-${data.id}-v${data.current_version}-${to}-${Date.now()}`,
-            templateData: { report: finalData, message, appUrl, subject },
+            templateData: { report: finalData, message, appUrl, subject, families },
           }),
         });
         if (!res.ok) {
