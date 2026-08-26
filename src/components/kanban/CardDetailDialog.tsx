@@ -47,6 +47,8 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
   const qc = useQueryClient();
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
+  const [duplicating, setDuplicating] = useState(false);
+
 
   async function patch(data: Partial<KCard>) {
     const { error } = await supabase.from("kanban_cards").update(data as any).eq("id", card.id);
