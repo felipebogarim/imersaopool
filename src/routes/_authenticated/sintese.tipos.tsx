@@ -79,6 +79,42 @@ function SinteseTipos() {
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
+  // Metadados das imersões em campo (cliente, data e arquivo de origem) para rotular a seleção.
+  const { data: imersoes = [] } = useQuery({
+    queryKey: ["field-immersion-meta-sintese"],
+    queryFn: async () =>
+      (await supabase
+        .from("field_immersion_v2_reports")
+        .select("id, client_name, visit_date, source_filename")).data ?? [],
+  });
+
+  const imersaoById = useMemo(
+    () => new Map((imersoes as any[]).map(r => [r.id, r])),
+    [imersoes],
+  );
+
+  const opcoesConsolidado = useMemo(
+    () =>
+      elegiveis
+        .map((f: any) => {
+          const ref = typeof f.arquivo_relatorio === "string" && f.arquivo_relatorio.startsWith("field_immersion_v2:")
+            ? imersaoById.get(f.arquivo_relatorio.slice("field_immersion_v2:".length))
+            : null;
+          const cliente = ref?.client_name ?? (f.titulo ?? "").replace(/^Imersão em campo\s+—\s+/, "") ?? "Fonte";
+          const data = ref?.visit_date ? new Date(`${ref.visit_date}T12:00:00`).toLocaleDateString("pt-BR") : null;
+          const partes = [data, ref?.source_filename ?? null, f.regiao && f.regiao !== "Não informado" ? f.regiao : null].filter(Boolean);
+          return {
+            id: f.id as string,
+            label: cliente as string,
+            sub: partes.join(" · ") || null,
+            ordem: ref?.visit_date ?? f.updated_at ?? "",
+          };
+        })
+        .sort((a, b) => String(b.ordem).localeCompare(String(a.ordem))),
+    [elegiveis, imersaoById],
+  );
+
+
   const tiposVazios = useMemo<FonteTipo[]>(
     () => (tipos.length > 1 ? tipos.filter(t => !fontes.some((f: any) => f.tipo === t)) : []),
     [tipos, fontes],
@@ -166,7 +202,17 @@ function SinteseTipos() {
     }
   }
 
+  async function renomearPainel(id: string, atual: string | null) {
+    const novo = prompt("Título do consolidado:", atual ?? "");
+    if (novo === null) return;
+    const { error } = await supabase.from("paineis_sintese").update({ titulo: novo.trim() || null }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Título atualizado.");
+    qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+  }
+
   async function excluirPainel(id: string) {
+
     if (!confirm("Excluir este consolidado?")) return;
     const { error } = await supabase.from("paineis_sintese").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -340,9 +386,13 @@ function SinteseTipos() {
                         </span>
                       </button>
                       {aberto && <Badge variant="outline">Aberto</Badge>}
+                      <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => renomearPainel(p.id, p.titulo)}>
+                        Renomear
+                      </Button>
                       <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => excluirPainel(p.id)}>
                         Excluir
                       </Button>
+
                     </li>
                   );
                 })}
@@ -485,7 +535,7 @@ function SinteseTipos() {
         <NovoConsolidadoDialog
           open={novoOpen}
           onOpenChange={setNovoOpen}
-          fontes={elegiveis as any}
+          fontes={opcoesConsolidado}
           busy={busy}
           onGerar={({ titulo, fonteIds }) => atualizar({ titulo, fonteIds })}
         />
