@@ -3198,6 +3198,7 @@ export type Database = {
           id: string
           resultado: Json
           tipos_incluidos: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          titulo: string | null
           updated_at: string
           versao: number
         }
@@ -3211,6 +3212,7 @@ export type Database = {
           id?: string
           resultado?: Json
           tipos_incluidos: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          titulo?: string | null
           updated_at?: string
           versao?: number
         }
@@ -3224,6 +3226,7 @@ export type Database = {
           id?: string
           resultado?: Json
           tipos_incluidos?: Database["public"]["Enums"]["insight_fonte_tipo"][]
+          titulo?: string | null
           updated_at?: string
           versao?: number
         }
