@@ -17,6 +17,8 @@ import { Loader2, Monitor, Send, Smartphone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
+import { useClientBI } from "@/lib/use-performance-bi";
+import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 
 type Person = { id: string; name: string; email: string };
 
@@ -28,14 +30,29 @@ export function EnviarEmailDialog({
   data,
   appUrl,
   onSent,
+  repId,
+  razaoSocial,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   data: ExecutiveReportData;
   appUrl: string;
   onSent: (args: { recipients: string[]; subject: string; attachPdf: boolean; error?: string }) => void;
+  repId?: string | null;
+  razaoSocial?: string | null;
 }) {
   const finalData = useMemo(() => toEmailData(data), [data]);
+  const { data: bi = null } = useClientBI(repId ?? "", razaoSocial ?? "");
+  const families = useMemo(
+    () =>
+      (bi?.familias ?? []).map((f: any) => ({
+        familia: f.familia,
+        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : 0,
+        farol: f.farol ? FAROL_LABEL[f.farol as keyof typeof FAROL_LABEL] : undefined,
+        fill: FAROL_HEX[(f.farol ?? "sem_compra") as keyof typeof FAROL_HEX],
+      })),
+    [bi],
+  );
   const [recipients, setRecipients] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
@@ -96,7 +113,7 @@ export function EnviarEmailDialog({
         import("@/lib/email-templates/relatorio-executivo"),
       ]);
       const html = await render(
-        <ExecutiveReportEmail report={finalData} message={message} appUrl={appUrl} />,
+        <ExecutiveReportEmail report={finalData} message={message} appUrl={appUrl} families={families} />,
       );
       setPreviewHtml(html);
     } catch (err) {
@@ -129,7 +146,7 @@ export function EnviarEmailDialog({
             templateName: "relatorio-executivo",
             recipientEmail: to,
             idempotencyKey: `exec-report-${data.id}-v${data.current_version}-${to}-${Date.now()}`,
-            templateData: { report: finalData, message, appUrl, subject },
+            templateData: { report: finalData, message, appUrl, subject, families },
           }),
         });
         if (!res.ok) {

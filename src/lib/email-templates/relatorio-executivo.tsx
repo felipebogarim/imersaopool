@@ -19,10 +19,18 @@ import {
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 
+export interface ExecutiveFamilyBar {
+  familia: string;
+  atingimento: number;
+  farol?: string;
+  fill?: string;
+}
+
 export interface ExecutiveEmailProps {
   report?: ExecutiveReportData;
   message?: string;
   appUrl?: string;
+  families?: ExecutiveFamilyBar[];
 }
 
 const BRAND = "#062838";
@@ -50,7 +58,7 @@ function statusTag(status: string) {
   return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
 }
 
-export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmailProps) => {
+export const ExecutiveReportEmail = ({ report, message, appUrl, families }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const actions = r?.actions ?? [];
@@ -89,18 +97,22 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
             <Text style={sectionTitle}>BRIEFING EXECUTIVO</Text>
           </Section>
           <Section style={card}>
-            {briefing.map((b) => (
-              <Section key={b.label} style={planRow}>
-                <Text style={label}>{b.label.toUpperCase()}</Text>
-                <Text style={planTitle}>{b.value || "—"}</Text>
-              </Section>
-            ))}
-            {(r?.brands_observed ?? []).length ? (
-              <Section style={{ paddingTop: "10px" }}>
-                <Text style={label}>MARCAS OBSERVADAS</Text>
-                <Text style={paragraph}>{(r?.brands_observed ?? []).join(" · ")}</Text>
-              </Section>
-            ) : null}
+            <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
+              <tbody>
+                {briefing.map((b) => (
+                  <tr key={b.label}>
+                    <td style={briefLabelCell}>{b.label.toUpperCase()}</td>
+                    <td style={briefValueCell}>{b.value || "—"}</td>
+                  </tr>
+                ))}
+                {(r?.brands_observed ?? []).length ? (
+                  <tr>
+                    <td style={briefLabelCell}>MARCAS OBSERVADAS</td>
+                    <td style={briefValueCell}>{(r?.brands_observed ?? []).join(" · ")}</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </Section>
 
           <Section style={sectionTitleWrap}>
@@ -123,6 +135,54 @@ export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmail
               <Text style={paragraph}>—</Text>
             )}
           </Section>
+
+          {(families ?? []).length ? (
+            <>
+              <Section style={sectionTitleWrap}>
+                <Text style={sectionTitle}>RESULTADO POR FAMÍLIA</Text>
+              </Section>
+              <Section style={card}>
+                <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
+                  <tbody>
+                    {(families ?? []).map((f) => {
+                      const pct = Number.isFinite(f.atingimento) ? f.atingimento : 0;
+                      const width = Math.max(1, Math.min(100, (pct / 120) * 100));
+                      return (
+                        <tr key={f.familia}>
+                          <td style={barNameCell}>{f.familia}</td>
+                          <td style={{ padding: "6px 8px", width: "60%" }}>
+                            <table cellPadding={0} cellSpacing={0} width="100%" style={barTrack}>
+                              <tbody>
+                                <tr>
+                                  <td
+                                    style={{
+                                      width: `${width}%`,
+                                      backgroundColor: `#${f.fill ?? "E5E5E5"}`,
+                                      height: "14px",
+                                      borderRadius: "4px",
+                                      fontSize: "1px",
+                                      lineHeight: "14px",
+                                    }}
+                                  >
+                                    &nbsp;
+                                  </td>
+                                  <td>&nbsp;</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td style={barValueCell}>
+                            {`${pct.toFixed(1).replace(".", ",")}%`}
+                            {f.farol ? ` · ${f.farol}` : ""}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Section>
+            </>
+          ) : null}
 
           <Section style={sectionTitleWrap}>
             <Text style={sectionTitle}>DO DIAGNÓSTICO À AÇÃO</Text>
@@ -326,4 +386,41 @@ const tag = {
   letterSpacing: "0.6px",
   padding: "3px 8px",
   textTransform: "uppercase" as const,
+};
+const briefLabelCell = {
+  color: MUTED,
+  fontSize: "10px",
+  letterSpacing: "0.8px",
+  fontWeight: "bold" as const,
+  padding: "5px 10px 5px 0",
+  whiteSpace: "nowrap" as const,
+  verticalAlign: "top" as const,
+  width: "38%",
+};
+const briefValueCell = {
+  color: TEXT,
+  fontSize: "13px",
+  lineHeight: "18px",
+  padding: "5px 0",
+  verticalAlign: "top" as const,
+};
+const barNameCell = {
+  color: TEXT,
+  fontSize: "12px",
+  padding: "6px 8px 6px 0",
+  verticalAlign: "middle" as const,
+  width: "26%",
+};
+const barTrack = {
+  backgroundColor: "#EDF3F6",
+  borderRadius: "4px",
+  borderCollapse: "collapse" as const,
+};
+const barValueCell = {
+  color: MUTED,
+  fontSize: "11px",
+  padding: "6px 0 6px 8px",
+  textAlign: "right" as const,
+  verticalAlign: "middle" as const,
+  whiteSpace: "nowrap" as const,
 };
