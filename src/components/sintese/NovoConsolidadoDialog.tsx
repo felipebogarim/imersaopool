@@ -1,19 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type FonteElegivel = {
   id: string;
-  titulo: string | null;
-  pessoa: string | null;
-  regiao: string | null;
-  tipo: string;
-  updated_at: string;
+  /** Nome do cliente da imersão (ou título da fonte). */
+  label: string;
+  /** Data + arquivo de origem. */
+  sub?: string | null;
 };
 
 export function NovoConsolidadoDialog({
@@ -21,29 +20,30 @@ export function NovoConsolidadoDialog({
   onOpenChange,
   fontes,
   busy,
+  tituloInicial,
   onGerar,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   fontes: FonteElegivel[];
   busy?: boolean;
+  tituloInicial?: string | null;
   onGerar: (args: { titulo: string; fonteIds: string[] }) => void;
 }) {
   const [titulo, setTitulo] = useState("");
   const [sel, setSel] = useState<string[]>([]);
+  const [aberto, setAberto] = useState(true);
 
   useEffect(() => {
     if (open) {
       setSel(fontes.map(f => f.id));
-      setTitulo("");
+      setTitulo(tituloInicial ?? "");
+      setAberto(true);
     }
-  }, [open, fontes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const todos = sel.length === fontes.length && fontes.length > 0;
-  const nomes = useMemo(
-    () => new Map(fontes.map(f => [f.id, `${f.pessoa ?? f.titulo ?? "Fonte"}${f.regiao ? ` — ${f.regiao}` : ""}`])),
-    [fontes],
-  );
 
   function toggle(id: string) {
     setSel(cur => (cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]));
@@ -55,7 +55,7 @@ export function NovoConsolidadoDialog({
         <DialogHeader>
           <DialogTitle>Novo consolidado</DialogTitle>
           <DialogDescription>
-            Escolha quais relatórios entram nesta análise. Cada geração cria um consolidado novo na lista.
+            Escolha quais imersões por cliente entram nesta análise. Cada geração cria um consolidado novo na lista.
           </DialogDescription>
         </DialogHeader>
 
@@ -71,8 +71,15 @@ export function NovoConsolidadoDialog({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Relatórios considerados ({sel.length}/{fontes.length})</Label>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setAberto(v => !v)}
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <ChevronDown className={cn("h-4 w-4 transition-transform", !aberto && "-rotate-90")} />
+                Imersões consideradas ({sel.length}/{fontes.length})
+              </button>
               <Button
                 type="button"
                 size="sm"
@@ -83,24 +90,30 @@ export function NovoConsolidadoDialog({
                 {todos ? "Limpar seleção" : "Selecionar todos"}
               </Button>
             </div>
-            <div className="max-h-72 space-y-1 overflow-auto rounded-lg border p-2">
-              {fontes.length === 0 ? (
-                <p className="p-2 text-sm text-muted-foreground">Nenhuma fonte processada disponível.</p>
-              ) : (
-                fontes.map(f => (
-                  <label
-                    key={f.id}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted",
-                      sel.includes(f.id) && "bg-muted/60",
-                    )}
-                  >
-                    <Checkbox checked={sel.includes(f.id)} onCheckedChange={() => toggle(f.id)} />
-                    <span className="min-w-0 flex-1 truncate">{nomes.get(f.id)}</span>
-                  </label>
-                ))
-              )}
-            </div>
+
+            {aberto && (
+              <div className="max-h-72 space-y-1 overflow-auto rounded-lg border p-2">
+                {fontes.length === 0 ? (
+                  <p className="p-2 text-sm text-muted-foreground">Nenhuma fonte processada disponível.</p>
+                ) : (
+                  fontes.map(f => (
+                    <label
+                      key={f.id}
+                      className={cn(
+                        "flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted",
+                        sel.includes(f.id) && "bg-muted/60",
+                      )}
+                    >
+                      <Checkbox className="mt-0.5" checked={sel.includes(f.id)} onCheckedChange={() => toggle(f.id)} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">{f.label}</span>
+                        {f.sub && <span className="block truncate text-xs text-muted-foreground">{f.sub}</span>}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 
