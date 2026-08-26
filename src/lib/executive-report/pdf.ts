@@ -68,6 +68,25 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
     }
     y += opts.gap ?? 4;
   };
+  const labelBlock = (
+    s: string,
+    opts: { size?: number; x?: number; bg?: RGB; color?: RGB; gap?: number } = {},
+  ) => {
+    const size = opts.size ?? 8;
+    const x = opts.x ?? M;
+    const bg = opts.bg ?? ([254, 240, 138] as RGB);
+    const color = opts.color ?? C.foreground;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(size);
+    const w = doc.getTextWidth(s) + 10;
+    const h = size + 6;
+    need(h + 4);
+    doc.setFillColor(...bg);
+    doc.roundedRect(x, y, w, h, 3, 3, "F");
+    doc.setTextColor(...color);
+    doc.text(s, x + 5, y + h - 2);
+    y += h + (opts.gap ?? 4);
+  };
   const chapter = (num: string, title: string) => {
     need(46);
     doc.setFillColor(...C.primaryDeep);
