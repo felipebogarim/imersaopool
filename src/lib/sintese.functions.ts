@@ -5,18 +5,21 @@ import { LENTES, normalizeHighlights, normalizeSinteseCampos, type Lente } from 
 
 export const gerarPainelSintese = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { tipos: string[]; corte?: number | null }) => data)
+  .inputValidator((data: { tipos: string[]; corte?: number | null; fonteIds?: string[] | null; titulo?: string | null }) => data)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const tipos = (data.tipos ?? []).filter(Boolean);
     if (!tipos.length) throw new Error("Selecione ao menos um tipo de fonte.");
 
-    const { data: fontes, error } = await supabase
+    const selecionados = (data.fonteIds ?? []).filter(Boolean);
+    let fq = supabase
       .from("insight_fontes")
       .select("id, tipo, titulo, pessoa, regiao, perfil_carteira, company_id")
       .in("tipo", tipos as never)
       .neq("status_processamento", "pendente")
       .order("created_at", { ascending: true });
+    if (selecionados.length) fq = fq.in("id", selecionados as never);
+    const { data: fontes, error } = await fq;
     if (error) throw new Error(error.message);
     if (!fontes?.length) throw new Error("Nenhuma fonte processada para os tipos selecionados.");
 
@@ -72,6 +75,7 @@ export const gerarPainelSintese = createServerFn({ method: "POST" })
       .from("paineis_sintese")
       .insert({
         tipos_incluidos: tipos as never,
+        titulo: data.titulo?.trim() || null,
         fontes_incluidas: ids,
         corte_convergencia: resultado.meta.corte,
         versao,
