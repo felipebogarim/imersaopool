@@ -683,7 +683,7 @@ function GeradorPerformancePage() {
                       const totalRow =
                         r.total_meta ??
                         result.familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-                      const totalPctCls = r.total_pct_status ? FAROL_CELL_CLASS[r.total_pct_status] : "";
+                      const totalPctCls = FAROL_CELL_CLASS[r.total_pct_status ?? "sem_compra"];
                       return (
                         <tr key={i} className="border-t border-border">
                           <td
