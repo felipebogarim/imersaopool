@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ArrowLeft, MoreHorizontal, Users, Zap, GripVertical } from "lucide-react";
+import { Plus, ArrowLeft, MoreHorizontal, Users, Zap, GripVertical, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
@@ -18,6 +18,7 @@ import type { Board, KCard, KList } from "@/lib/kanban-types";
 import { midPosition } from "@/lib/kanban-types";
 import { KanbanCard } from "@/components/kanban/KanbanCard";
 import { NewCardDialog, type NewCardClient } from "@/components/kanban/NewCardDialog";
+import { DuplicateCardDialog } from "@/components/kanban/DuplicateCardDialog";
 import { CardDetailDialog } from "@/components/kanban/CardDetailDialog";
 import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
 import { BoardMembersListDialog } from "@/components/kanban/BoardMembersListDialog";
@@ -420,6 +421,7 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: "card" } });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const isMaster = useIsMasterAdmin();
+  const [duplicating, setDuplicating] = useState(false);
 
   async function editCard(e: React.MouseEvent) {
     e.stopPropagation();
@@ -455,7 +457,7 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
-      {isMaster && (
+      {
         <div className="absolute right-7 top-1.5 z-10 opacity-0 transition group-hover:opacity-100">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -464,13 +466,17 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={editCard}>Editar</DropdownMenuItem>
-              <DropdownMenuItem onClick={deleteCard} className="text-destructive">Excluir</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDuplicating(true); }}>
+                <Copy className="mr-2 h-3.5 w-3.5" /> Duplicar ação
+              </DropdownMenuItem>
+              {isMaster && <DropdownMenuItem onClick={editCard}>Editar</DropdownMenuItem>}
+              {isMaster && <DropdownMenuItem onClick={deleteCard} className="text-destructive">Excluir</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      )}
+      }
       <KanbanCard card={card} onClick={onClick} />
+      <DuplicateCardDialog card={card} open={duplicating} onOpenChange={setDuplicating} />
     </div>
   );
 }
