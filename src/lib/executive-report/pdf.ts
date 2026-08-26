@@ -266,7 +266,7 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...C.mutedFg);
-    doc.text("PoolFlux · Relatório Executivo de Imersão", M, PH - 24);
+    doc.text(`${companyName} · Relatório Executivo de Imersão`, M, PH - 24);
     doc.text(`${p}/${pages}`, PW - M - 20, PH - 24);
   }
 
