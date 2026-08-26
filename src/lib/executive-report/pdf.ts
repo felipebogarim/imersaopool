@@ -95,7 +95,8 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("RELATÓRIO EXECUTIVO DE IMERSÃO", M + 16, y + 24);
+  const companyName = data.companyName || "PoolFlux";
+  doc.text(`${companyName.toUpperCase()} · RELATÓRIO EXECUTIVO DE IMERSÃO`, M + 16, y + 24);
   doc.setFontSize(18);
   const nameLines = doc.splitTextToSize(data.client.display_name || data.report_title, W - 32) as string[];
   let ny = y + 48;
@@ -265,7 +266,7 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...C.mutedFg);
-    doc.text("PoolFlux · Relatório Executivo de Imersão", M, PH - 24);
+    doc.text(`${companyName} · Relatório Executivo de Imersão`, M, PH - 24);
     doc.text(`${p}/${pages}`, PW - M - 20, PH - 24);
   }
 

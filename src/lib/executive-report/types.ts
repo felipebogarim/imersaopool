@@ -97,6 +97,7 @@ export type ExecutiveReportData = {
   report_title: string;
   source_filename?: string | null;
   source_schema?: string | null;
+  companyName?: string | null;
   client: ExecutiveClient;
   executive_reading: string;
   brands_observed: string[];

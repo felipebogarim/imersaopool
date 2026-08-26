@@ -64,13 +64,13 @@ import {
 export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId/executivo")({
   head: () => ({
     meta: [
-      { title: "Relatório Executivo de Imersão | PoolFlux" },
+      { title: "Relatório Executivo de Imersão" },
       {
         name: "description",
         content:
           "Camada de decisão da imersão em campo: causa, impacto e ação, com validação, PDF e envio por e-mail.",
       },
-      { property: "og:title", content: "Relatório Executivo de Imersão | PoolFlux" },
+      { property: "og:title", content: "Relatório Executivo de Imersão" },
       {
         property: "og:description",
         content: "Ambiente de decisão da imersão em campo: validar ações, fechar versão, exportar e enviar.",
@@ -113,6 +113,27 @@ function RelatorioExecutivoPage() {
         companyId: prof?.company_id ?? null,
         name: prof?.full_name ?? auth.user?.email ?? null,
       };
+    },
+  });
+
+  const { data: activeCompanyName } = useQuery({
+    queryKey: ["exec-active-company"],
+    queryFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id ?? null;
+      if (!uid) return null;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("active_company_id")
+        .eq("id", uid)
+        .maybeSingle();
+      if (!prof?.active_company_id) return null;
+      const { data: company } = await supabase
+        .from("companies")
+        .select("nome")
+        .eq("id", prof.active_company_id)
+        .maybeSingle();
+      return company?.nome ?? null;
     },
   });
 
@@ -216,6 +237,7 @@ function RelatorioExecutivoPage() {
         : base.client.attainment || null;
     return {
       ...base,
+      companyName: activeCompanyName || base.companyName || "PoolFlux",
       executive_reading: fullReading || base.executive_reading,
       client: {
         ...base.client,
@@ -223,7 +245,7 @@ function RelatorioExecutivoPage() {
         category: commercial?.categoria || base.client.category || null,
       },
     };
-  }, [data, closed, commercial, fullReading]);
+  }, [data, closed, commercial, fullReading, activeCompanyName]);
 
 
 
