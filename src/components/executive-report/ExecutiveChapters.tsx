@@ -4,6 +4,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  unassignedActions,
   type ExecutiveAction,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
@@ -93,6 +94,8 @@ export function DiagnosticoChapter({
   onReject?: (a: ExecutiveAction) => void;
 }) {
 
+  const orphans = unassignedActions(data);
+
   return (
     <section>
       <ChapterHeader num="03" title="Do diagnóstico à ação" />
@@ -155,6 +158,33 @@ export function DiagnosticoChapter({
             </Card>
           );
         })}
+
+        {orphans.length > 0 && (
+          <Card>
+            <CardContent className="p-5">
+              <h3 className="text-lg font-semibold leading-snug">
+                Outras ações indicadas no relatório
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ações listadas ao final do relatório que não estavam vinculadas a um bloco de
+                decisão. Todas entram na validação.
+              </p>
+              <div className="mt-4 space-y-3">
+                {orphans.map((a) => (
+                  <ActionCard
+                    key={a.id}
+                    action={a}
+                    readOnly={readOnly}
+                    origin={originOf?.(a)}
+                    onValidate={() => onValidate?.(a)}
+                    onEdit={() => onEdit?.(a)}
+                    onReject={() => onReject?.(a)}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </section>
   );

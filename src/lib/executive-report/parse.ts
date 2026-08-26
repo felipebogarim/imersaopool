@@ -96,7 +96,8 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     const id = sanitize(b?.id) || `decisao-${i + 1}`;
     const declared = sanitizeList(b?.action_ids).filter((x) => knownIds.has(x));
     const derived = actions.filter((a) => a.source_decision_id === id).map((a) => a.id);
-    const action_ids = declared.length ? declared : derived;
+    // União: nenhuma ação do arquivo pode ficar de fora do relatório.
+    const action_ids = Array.from(new Set([...declared, ...derived]));
     const ev = b?.evidence;
     return {
       id,

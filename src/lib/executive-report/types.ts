@@ -107,6 +107,15 @@ export type ExecutiveReportData = {
   current_version: number;
 };
 
+/**
+ * Ações indicadas no relatório que não foram referenciadas por nenhum bloco de
+ * decisão. É mandatório exibi-las: 100% das ações do arquivo entram no relatório.
+ */
+export function unassignedActions(data: ExecutiveReportData): ExecutiveAction[] {
+  const used = new Set(data.decision_blocks.flatMap((b) => b.action_ids));
+  return data.actions.filter((a) => !used.has(a.id));
+}
+
 export function actionCounts(actions: ExecutiveAction[]) {
   const c = { total: actions.length, suggested: 0, validated: 0, edited: 0, rejected: 0 };
   for (const a of actions) c[a.status] += 1;
