@@ -703,13 +703,9 @@ function GeradorPerformancePage() {
                             </span>
                           </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
-                            {r.total_pct_status ? (
-                              <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
-                                {FAROL_FAIXA_TEXT[r.total_pct_status]}
-                              </span>
-                            ) : (
-                              ""
-                            )}
+                            <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
+                              {FAROL_FAIXA_TEXT[r.total_pct_status ?? "sem_compra"]}
+                            </span>
                           </td>
                           {result.familias.map((f) => {
                             const st = (r.metas_status?.[f] as FarolStatus | undefined) ?? "sem_compra";
