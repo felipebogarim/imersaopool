@@ -79,7 +79,7 @@ export function exportPerformancePdf(opts: {
         styles: { fontStyle: "bold", halign: "right", fillColor: HEX.totalMetaCol },
       },
       {
-        content: r.total_pct_status ? FAROL_FAIXA_TEXT[r.total_pct_status] : "",
+        content: FAROL_FAIXA_TEXT[r.total_pct_status ?? "sem_compra"],
         styles: {
           halign: "center",
           fontStyle: "bold",
