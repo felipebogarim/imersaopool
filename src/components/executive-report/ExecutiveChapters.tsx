@@ -4,6 +4,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  unassignedActions,
   type ExecutiveAction,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
