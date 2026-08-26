@@ -219,7 +219,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
                 ) : null}
                 {acts.length ? (
                   <>
-                    <Text style={label}>AÇÕES</Text>
+                    <Text style={labelHighlight}>AÇÕES</Text>
                     {acts.map((a) => (
                       <Text key={a.id} style={actionLine}>
                         <span style={tag}>{statusTag(a.status)}</span>
