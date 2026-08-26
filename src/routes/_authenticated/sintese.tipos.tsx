@@ -79,6 +79,42 @@ function SinteseTipos() {
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
+  // Metadados das imersões em campo (cliente, data e arquivo de origem) para rotular a seleção.
+  const { data: imersoes = [] } = useQuery({
+    queryKey: ["field-immersion-meta-sintese"],
+    queryFn: async () =>
+      (await supabase
+        .from("field_immersion_v2_reports")
+        .select("id, client_name, visit_date, source_filename")).data ?? [],
+  });
+
+  const imersaoById = useMemo(
+    () => new Map((imersoes as any[]).map(r => [r.id, r])),
+    [imersoes],
+  );
+
+  const opcoesConsolidado = useMemo(
+    () =>
+      elegiveis
+        .map((f: any) => {
+          const ref = typeof f.arquivo_relatorio === "string" && f.arquivo_relatorio.startsWith("field_immersion_v2:")
+            ? imersaoById.get(f.arquivo_relatorio.slice("field_immersion_v2:".length))
+            : null;
+          const cliente = ref?.client_name ?? (f.titulo ?? "").replace(/^Imersão em campo\s+—\s+/, "") ?? "Fonte";
+          const data = ref?.visit_date ? new Date(`${ref.visit_date}T12:00:00`).toLocaleDateString("pt-BR") : null;
+          const partes = [data, ref?.source_filename ?? null, f.regiao && f.regiao !== "Não informado" ? f.regiao : null].filter(Boolean);
+          return {
+            id: f.id as string,
+            label: cliente as string,
+            sub: partes.join(" · ") || null,
+            ordem: ref?.visit_date ?? f.updated_at ?? "",
+          };
+        })
+        .sort((a, b) => String(b.ordem).localeCompare(String(a.ordem))),
+    [elegiveis, imersaoById],
+  );
+
+
   const tiposVazios = useMemo<FonteTipo[]>(
     () => (tipos.length > 1 ? tipos.filter(t => !fontes.some((f: any) => f.tipo === t)) : []),
     [tipos, fontes],
