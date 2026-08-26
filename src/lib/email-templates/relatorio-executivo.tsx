@@ -97,18 +97,22 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
             <Text style={sectionTitle}>BRIEFING EXECUTIVO</Text>
           </Section>
           <Section style={card}>
-            {briefing.map((b) => (
-              <Section key={b.label} style={planRow}>
-                <Text style={label}>{b.label.toUpperCase()}</Text>
-                <Text style={planTitle}>{b.value || "—"}</Text>
-              </Section>
-            ))}
-            {(r?.brands_observed ?? []).length ? (
-              <Section style={{ paddingTop: "10px" }}>
-                <Text style={label}>MARCAS OBSERVADAS</Text>
-                <Text style={paragraph}>{(r?.brands_observed ?? []).join(" · ")}</Text>
-              </Section>
-            ) : null}
+            <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
+              <tbody>
+                {briefing.map((b) => (
+                  <tr key={b.label}>
+                    <td style={briefLabelCell}>{b.label.toUpperCase()}</td>
+                    <td style={briefValueCell}>{b.value || "—"}</td>
+                  </tr>
+                ))}
+                {(r?.brands_observed ?? []).length ? (
+                  <tr>
+                    <td style={briefLabelCell}>MARCAS OBSERVADAS</td>
+                    <td style={briefValueCell}>{(r?.brands_observed ?? []).join(" · ")}</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
           </Section>
 
           <Section style={sectionTitleWrap}>
