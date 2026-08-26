@@ -17,6 +17,7 @@ import { extractFileText } from "@/lib/sintese-file-text";
 import { exportSintesePdf } from "@/lib/sintese-pdf";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
+import { NovoConsolidadoDialog } from "@/components/sintese/NovoConsolidadoDialog";
 import { VisaoPorFamiliaCampo } from "@/components/sintese/VisaoPorFamiliaCampo";
 import { reprocessarImersoesCampo } from "@/lib/sintese-imersoes.functions";
 import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2, FileDown, Upload, ChevronDown } from "lucide-react";
@@ -480,6 +481,14 @@ function SinteseTipos() {
           {tipos.includes("entrevista") && <VisaoPorFamilia />}
           {tipos.includes("visita_campo") && <VisaoPorFamiliaCampo regiao={regiao} />}
         </div>
+
+        <NovoConsolidadoDialog
+          open={novoOpen}
+          onOpenChange={setNovoOpen}
+          fontes={elegiveis as any}
+          busy={busy}
+          onGerar={({ titulo, fonteIds }) => atualizar({ titulo, fonteIds })}
+        />
 
         <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
       </div>
