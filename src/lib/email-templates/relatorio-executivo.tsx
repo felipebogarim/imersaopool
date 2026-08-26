@@ -19,10 +19,18 @@ import {
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 
+export interface ExecutiveFamilyBar {
+  familia: string;
+  atingimento: number;
+  farol?: string;
+  fill?: string;
+}
+
 export interface ExecutiveEmailProps {
   report?: ExecutiveReportData;
   message?: string;
   appUrl?: string;
+  families?: ExecutiveFamilyBar[];
 }
 
 const BRAND = "#062838";
