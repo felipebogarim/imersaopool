@@ -567,6 +567,8 @@ function RelatorioExecutivoPage() {
           open={emailOpen}
           onOpenChange={setEmailOpen}
           data={viewData}
+          repId={commercial?.representativeId ?? null}
+          razaoSocial={commercial?.razaoSocial ?? null}
           appUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/visao-imersao-2/${reportId}/executivo`}
           onSent={async ({ recipients, subject, attachPdf, error }) => {
             await logEmail({
