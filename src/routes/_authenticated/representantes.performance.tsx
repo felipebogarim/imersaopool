@@ -1290,13 +1290,11 @@ export function PerformancePageContent() {
                                 <DropdownMenuContent align="start">
                                   <DropdownMenuItem
                                     onClick={() =>
-                                      navigate({
-                                        to: "/clientes-bi/$repId/$razao",
-                                        params: {
-                                          repId,
-                                          razao: encodeURIComponent(r.razao_social),
-                                        },
-                                      })
+                                      window.open(
+                                        `/clientes-bi/${encodeURIComponent(repId)}/${encodeURIComponent(r.razao_social)}`,
+                                        "_blank",
+                                        "noopener,noreferrer"
+                                      )
                                     }
                                   >
                                     <BarChart3 className="h-4 w-4 mr-2" /> BI do cliente
