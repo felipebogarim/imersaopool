@@ -38,6 +38,7 @@ import {
   MoreVertical,
   Mail,
   MessageCircle,
+  Link as LinkIcon,
   Pencil,
   Trash2
 } from "lucide-react";
@@ -648,6 +649,14 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                           <DropdownMenuItem onClick={() => compartilharEmail(r)}>
                             <Mail className="mr-2 h-4 w-4" /> Compartilhar por e-mail
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              void navigator.clipboard?.writeText(linkRelatorio(r));
+                              toast.success("Link da análise copiado.");
+                            }}
+                          >
+                            <LinkIcon className="mr-2 h-4 w-4" /> Copiar link da análise
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => compartilharWhats(r)}>
                             <MessageCircle className="mr-2 h-4 w-4" /> Compartilhar por WhatsApp
                           </DropdownMenuItem>
@@ -694,7 +703,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
               <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
-            <Button variant="ghost" onClick={() => { setAvulso(null); setDirty(false); }}>
+            <Button variant="ghost" onClick={voltarParaLista}>
               <ArrowLeft className="mr-1 h-4 w-4" /> Voltar à lista
             </Button>
           </div>
