@@ -61,6 +61,7 @@ function statusTag(status: string) {
 export const ExecutiveReportEmail = ({ report, message, appUrl, families }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
+  const companyName = (r?.companyName || "PoolFlux").toUpperCase();
   const actions = r?.actions ?? [];
   const briefing: { label: string; value?: string | null }[] = [
     { label: "Cliente", value: r?.client?.display_name },
@@ -79,7 +80,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={kicker}>POOLFLUX · RELATÓRIO EXECUTIVO DE IMERSÃO</Text>
+            <Text style={kicker}>{companyName} · RELATÓRIO EXECUTIVO DE IMERSÃO</Text>
             <Heading style={h1}>{client}</Heading>
             <Text style={headerMeta}>
               {formatVisitDate(r?.client?.visit_date)}
