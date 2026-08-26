@@ -61,7 +61,7 @@ function statusTag(status: string) {
 export const ExecutiveReportEmail = ({ report, message, appUrl, families }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
-  const companyName = (r?.companyName || "PoolFlux").toUpperCase();
+  const companyName = (r?.companyName || "Newline").toUpperCase();
   const actions = r?.actions ?? [];
   const briefing: { label: string; value?: string | null }[] = [
     { label: "Cliente", value: r?.client?.display_name },
@@ -269,26 +269,6 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families }: Exec
             </>
           ) : null}
 
-          <Section style={sectionTitleWrap}>
-            <Text style={sectionTitle}>PLANO DE AÇÃO</Text>
-          </Section>
-          <Section style={card}>
-            {actions.length ? (
-              actions.map((a) => (
-                <Section key={a.id} style={planRow}>
-                  <Text style={planBadge}>
-                    {statusTag(a.status)} · {PRIORITY_LABEL[a.priority]} · {AREA_LABEL[a.area]}
-                  </Text>
-                  <Text style={planTitle}>{a.title}</Text>
-                  {a.description ? <Text style={planDesc}>{a.description}</Text> : null}
-                </Section>
-              ))
-            ) : (
-              <Text style={paragraph}>Nenhuma ação neste relatório.</Text>
-
-            )}
-          </Section>
-
           {appUrl ? (
             <Section style={{ textAlign: "center", padding: "8px 0 4px" }}>
               <Button href={appUrl} style={button}>
@@ -350,10 +330,8 @@ const card = {
 };
 const sectionTitleWrap = { padding: "12px 4px 6px" };
 const sectionTitle = { color: BRAND, fontSize: "13px", letterSpacing: "1.4px", fontWeight: "bold", margin: "0" };
-const chapterLabel = { color: MUTED, fontSize: "11px", letterSpacing: "1px", margin: "0 0 8px" };
 const intro = { color: TEXT, fontSize: "15px", lineHeight: "24px", margin: "0 0 16px" };
 const paragraph = { color: TEXT, fontSize: "15px", lineHeight: "24px", margin: "0 0 12px" };
-const meta = { color: MUTED, fontSize: "13px", margin: "4px 0 0" };
 const label = { color: MUTED, fontSize: "11px", letterSpacing: "1px", margin: "12px 0 4px", fontWeight: "bold" };
 const blockIndex = { color: ACCENT, fontSize: "12px", fontWeight: "bold", margin: "0" };
 const blockTitle = { color: BRAND, fontSize: "18px", lineHeight: "24px", fontWeight: "bold", margin: "4px 0 10px" };
@@ -361,10 +339,6 @@ const quoteBox = { borderLeft: `3px solid ${ACCENT}`, padding: "4px 0 4px 14px",
 const quote = { color: TEXT, fontSize: "15px", fontStyle: "italic", lineHeight: "23px", margin: "0" };
 const quoteWho = { color: MUTED, fontSize: "12px", margin: "6px 0 0" };
 const actionLine = { color: TEXT, fontSize: "15px", lineHeight: "22px", margin: "0 0 10px" };
-const planRow = { borderBottom: `1px solid ${LINE}`, padding: "10px 0" };
-const planBadge = { color: ACCENT, fontSize: "11px", letterSpacing: "0.6px", fontWeight: "bold", margin: "0 0 4px" };
-const planTitle = { color: TEXT, fontSize: "15px", fontWeight: "bold", margin: "0" };
-const planDesc = { color: MUTED, fontSize: "13px", lineHeight: "20px", margin: "4px 0 0" };
 const button = {
   backgroundColor: ACCENT,
   color: "#ffffff",

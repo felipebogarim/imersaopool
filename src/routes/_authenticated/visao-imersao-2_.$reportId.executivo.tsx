@@ -102,38 +102,18 @@ function RelatorioExecutivoPage() {
     queryFn: async () => {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id ?? null;
-      if (!uid) return { userId: null, companyId: null, name: null };
+      if (!uid) return { userId: null, companyId: null, activeCompanyId: null, name: null };
       const { data: prof } = await supabase
         .from("profiles")
-        .select("company_id, full_name")
+        .select("company_id, active_company_id, full_name")
         .eq("id", uid)
         .maybeSingle();
       return {
         userId: uid,
         companyId: prof?.company_id ?? null,
+        activeCompanyId: prof?.active_company_id ?? null,
         name: prof?.full_name ?? auth.user?.email ?? null,
       };
-    },
-  });
-
-  const { data: activeCompanyName } = useQuery({
-    queryKey: ["exec-active-company"],
-    queryFn: async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const uid = auth.user?.id ?? null;
-      if (!uid) return null;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("active_company_id")
-        .eq("id", uid)
-        .maybeSingle();
-      if (!prof?.active_company_id) return null;
-      const { data: company } = await supabase
-        .from("companies")
-        .select("nome")
-        .eq("id", prof.active_company_id)
-        .maybeSingle();
-      return company?.nome ?? null;
     },
   });
 
@@ -146,6 +126,24 @@ function RelatorioExecutivoPage() {
         .eq("id", reportId)
         .maybeSingle();
       return data ?? null;
+    },
+  });
+
+  // O universo ativo da sessão prevalece. O vínculo do próprio relatório é o
+  // fallback seguro durante o carregamento, evitando reutilizar marca persistida.
+  const reportCompanyId = me?.activeCompanyId ?? parent?.company_id ?? me?.companyId ?? null;
+  const { data: activeCompanyName } = useQuery({
+    queryKey: ["exec-active-company", reportCompanyId],
+    enabled: Boolean(reportCompanyId),
+    queryFn: async () => {
+      if (!reportCompanyId) return null;
+      const { data: company, error } = await supabase
+        .from("companies")
+        .select("nome")
+        .eq("id", reportCompanyId)
+        .single();
+      if (error) throw error;
+      return company.nome;
     },
   });
 
@@ -237,7 +235,7 @@ function RelatorioExecutivoPage() {
         : base.client.attainment || null;
     return {
       ...base,
-      companyName: activeCompanyName || base.companyName || "PoolFlux",
+      companyName: activeCompanyName || "Newline",
       executive_reading: fullReading || base.executive_reading,
       client: {
         ...base.client,

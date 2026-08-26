@@ -3,7 +3,6 @@ import jsPDF from "jspdf";
 import {
   AREA_LABEL,
   PRIORITY_LABEL,
-  STATUS_LABEL,
   formatVisitDate,
   toFinalData,
   type ExecutiveReportData,
@@ -95,7 +94,7 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  const companyName = data.companyName || "PoolFlux";
+  const companyName = data.companyName || "Newline";
   doc.text(`${companyName.toUpperCase()} · RELATÓRIO EXECUTIVO DE IMERSÃO`, M + 16, y + 24);
   doc.setFontSize(18);
   const nameLines = doc.splitTextToSize(data.client.display_name || data.report_title, W - 32) as string[];
@@ -226,38 +225,6 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
       }
     }
   }
-
-  // Capítulo 05 — Plano de ação
-  chapter("05", "Plano de ação");
-  data.actions.forEach((a, i) => {
-    need(38);
-    doc.setFillColor(...(i % 2 === 0 ? C.card : C.muted));
-    const rowLines = wrap(a.title, 10, "bold", W - 200);
-    const descLines = a.description ? wrap(a.description, 9, "normal", W - 200) : [];
-    const h = 18 + rowLines.length * 12 + descLines.length * 11;
-    doc.rect(M, y, W, h, "F");
-    doc.setTextColor(...C.mutedFg);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text(PRIORITY_LABEL[a.priority].toUpperCase(), M + 10, y + 16);
-    doc.text(AREA_LABEL[a.area].toUpperCase(), M + 70, y + 16);
-    doc.text(STATUS_LABEL[a.status].toUpperCase(), W + M - 70, y + 16);
-    doc.setTextColor(...C.foreground);
-    doc.setFontSize(10);
-    let ry = y + 16;
-    for (const l of rowLines) {
-      doc.text(l, M + 170, ry);
-      ry += 12;
-    }
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...C.mutedFg);
-    for (const l of descLines) {
-      doc.text(l, M + 170, ry);
-      ry += 11;
-    }
-    y += h + 4;
-  });
 
   // Rodapé
   const pages = doc.getNumberOfPages();
