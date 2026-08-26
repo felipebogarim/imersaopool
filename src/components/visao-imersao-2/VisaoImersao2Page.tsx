@@ -131,17 +131,25 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
     },
   });
 
-  /** Abre diretamente o relatório salvo quando a URL traz ?report=<id>. */
+  /** Abre diretamente o relatório salvo quando a URL traz /visao-imersao-2/<id>. */
   useEffect(() => {
-    if (!reportQuery || !reports.length || avulso) return;
-    const match = (reports as any[]).find((r) => r.id === reportQuery);
+    if (!reportId || !reports.length) return;
+    if (avulso?.id === reportId) return;
+    const match = (reports as any[]).find((r) => r.id === reportId);
     if (match) {
-      abrirRelatorio(match);
+      abrirRelatorio(match, { navegar: false });
       if (typeof window !== "undefined") window.scrollTo({ top: 0 });
     }
-  }, [reportQuery, reports.length, avulso]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportId, reports.length, avulso?.id]);
 
-  function abrirRelatorio(report: any) {
+  function voltarParaLista() {
+    setAvulso(null);
+    setDirty(false);
+    if (reportId) void navigate({ to: "/visao-imersao-2" });
+  }
+
+  function abrirRelatorio(report: any, opts?: { navegar?: boolean }) {
     try {
       const stored = report.structured_data as Record<string, unknown> | null;
       const data = Immersion2DataSchema.parse((stored as any)?.data ?? stored);
@@ -153,10 +161,14 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         id: report.id,
       });
       setDirty(false);
+      if (opts?.navegar !== false && report.id) {
+        void navigate({ to: "/visao-imersao-2/$reportId", params: { reportId: String(report.id) } });
+      }
     } catch {
       toast.error("Relatório salvo não é compatível com o schema V2.");
     }
   }
+
 
   const visao = useMemo(() => {
     if (!avulso) return null;
