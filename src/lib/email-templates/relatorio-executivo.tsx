@@ -58,7 +58,7 @@ function statusTag(status: string) {
   return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
 }
 
-export const ExecutiveReportEmail = ({ report, message, appUrl }: ExecutiveEmailProps) => {
+export const ExecutiveReportEmail = ({ report, message, appUrl, families }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const actions = r?.actions ?? [];
