@@ -1,0 +1,1 @@
+ALTER TABLE public.paineis_sintese ADD COLUMN IF NOT EXISTS titulo text;

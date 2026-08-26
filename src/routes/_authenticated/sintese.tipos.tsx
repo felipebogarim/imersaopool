@@ -17,6 +17,7 @@ import { extractFileText } from "@/lib/sintese-file-text";
 import { exportSintesePdf } from "@/lib/sintese-pdf";
 import { GerarTarefaDialog } from "@/components/sintese/GerarTarefaDialog";
 import { VisaoPorFamilia } from "@/components/sintese/VisaoPorFamilia";
+import { NovoConsolidadoDialog } from "@/components/sintese/NovoConsolidadoDialog";
 import { VisaoPorFamiliaCampo } from "@/components/sintese/VisaoPorFamiliaCampo";
 import { reprocessarImersoesCampo } from "@/lib/sintese-imersoes.functions";
 import { RefreshCw, Sparkles, ArrowRightLeft, Layers, ListChecks, Quote, Wand2, FileDown, Upload, ChevronDown } from "lucide-react";
@@ -46,6 +47,8 @@ function SinteseTipos() {
   const [ativa, setAtiva] = useState<Lente>("marca_preco");
   const [busy, setBusy] = useState(false);
   const [tarefa, setTarefa] = useState<{ title: string; description: string } | null>(null);
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [painelId, setPainelId] = useState<string | null>(null);
 
   const { data: fontes = [] } = useQuery({
     queryKey: ["insight-fontes-sintese"],
@@ -56,18 +59,23 @@ function SinteseTipos() {
         .neq("status_processamento", "pendente")).data ?? [],
   });
 
-  const { data: painel } = useQuery({
+  const { data: paineis = [] } = useQuery({
     queryKey: ["painel-sintese", tipos.slice().sort().join(",")],
     queryFn: async () => {
       const { data } = await supabase
         .from("paineis_sintese")
-        .select("id, versao, gerado_em, fontes_incluidas, tipos_incluidos, resultado, corte_convergencia")
+        .select("id, titulo, versao, gerado_em, fontes_incluidas, tipos_incluidos, resultado, corte_convergencia")
         .order("gerado_em", { ascending: false })
-        .limit(50);
+        .limit(200);
       const alvo = tipos.slice().sort().join(",");
-      return (data ?? []).find(p => (p.tipos_incluidos as string[]).slice().sort().join(",") === alvo) ?? null;
+      return (data ?? []).filter(p => (p.tipos_incluidos as string[]).slice().sort().join(",") === alvo);
     },
   });
+
+  const painel = useMemo(
+    () => paineis.find(p => p.id === painelId) ?? paineis[0] ?? null,
+    [paineis, painelId],
+  );
 
   const elegiveis = useMemo(() => fontes.filter((f: any) => tipos.includes(f.tipo)), [fontes, tipos]);
 
@@ -81,6 +89,7 @@ function SinteseTipos() {
     const inc = new Set((painel.fontes_incluidas as string[]) ?? []);
     return elegiveis.filter((f: any) => !inc.has(f.id) || new Date(f.updated_at) > new Date(painel.gerado_em));
   }, [elegiveis, painel]);
+
 
   const resultado = painel?.resultado as unknown as SinteseResultado | undefined;
   const fonteById = useMemo(() => new Map(fontes.map((f: any) => [f.id, f])), [fontes]);
@@ -136,15 +145,19 @@ function SinteseTipos() {
     }
   }
 
-  async function atualizar() {
+  async function atualizar(args?: { titulo?: string; fonteIds?: string[] }) {
     if (!elegiveis.length) {
       toast.error("Nenhuma fonte processada para consolidar.");
       return;
     }
     setBusy(true);
     try {
-      const r = await gerar({ data: { tipos } });
-      toast.success(`Nova versão v${r.versao} gerada com ${r.fontes} fontes.`);
+      const r = await gerar({
+        data: { tipos, titulo: args?.titulo?.trim() || null, fonteIds: args?.fonteIds ?? null },
+      });
+      toast.success(`Consolidado v${r.versao} gerado com ${r.fontes} fontes.`);
+      setPainelId(r.id);
+      setNovoOpen(false);
       qc.invalidateQueries({ queryKey: ["painel-sintese"] });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar a síntese.");
@@ -152,6 +165,16 @@ function SinteseTipos() {
       setBusy(false);
     }
   }
+
+  async function excluirPainel(id: string) {
+    if (!confirm("Excluir este consolidado?")) return;
+    const { error } = await supabase.from("paineis_sintese").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    if (painelId === id) setPainelId(null);
+    toast.success("Consolidado excluído.");
+    qc.invalidateQueries({ queryKey: ["painel-sintese"] });
+  }
+
 
   async function onImportFile(file: File | undefined) {
     if (!file) return;
@@ -210,7 +233,7 @@ function SinteseTipos() {
           title="Visões Consolidadas"
           subtitle={
             painel
-              ? `Última análise: ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes · v${painel.versao}${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
+              ? `${painel.titulo ?? `Consolidado v${painel.versao}`} · ${new Date(painel.gerado_em).toLocaleString("pt-BR")} · ${(painel.fontes_incluidas as string[]).length} fontes${(painel.resultado as any)?.meta?.origem === "importada" ? " · análise importada" : ""}`
               : "Nenhuma análise gerada ainda para esta seleção."
           }
           actions={
@@ -224,11 +247,12 @@ function SinteseTipos() {
               <Button variant="outline" onClick={reprocessar} disabled={busy}>
                 <Wand2 className="h-4 w-4 mr-1" /> Reprocessar fontes existentes
               </Button>
-              <Button onClick={atualizar} disabled={busy || !elegiveis.length}>
+              <Button onClick={() => setNovoOpen(true)} disabled={busy || !elegiveis.length}>
                 <RefreshCw className={cn("h-4 w-4 mr-1", busy && "animate-spin")} /> Atualizar análise
               </Button>
             </>
           }
+
         />
 
         <div className="p-4 sm:p-8 space-y-5">
@@ -293,14 +317,47 @@ function SinteseTipos() {
             </p>
           )}
 
+          {paineis.length > 0 && (
+            <div className="surface rounded-xl p-3 sm:p-4 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Consolidados gerados ({paineis.length})
+              </p>
+              <ul className="divide-y divide-border">
+                {paineis.map(p => {
+                  const aberto = painel?.id === p.id;
+                  return (
+                    <li key={p.id} className="flex items-center gap-3 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setPainelId(p.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span className={cn("block truncate text-sm", aberto && "font-semibold text-primary")}>
+                          {p.titulo ?? `Consolidado v${p.versao}`}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {new Date(p.gerado_em).toLocaleString("pt-BR")} · {(p.fontes_incluidas as string[]).length} fontes · v{p.versao}
+                        </span>
+                      </button>
+                      {aberto && <Badge variant="outline">Aberto</Badge>}
+                      <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => excluirPainel(p.id)}>
+                        Excluir
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           {elegiveis.length > 0 && novas.length > 0 ? (
             <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex flex-wrap items-center gap-3">
               <Sparkles className="h-4 w-4 text-primary" />
               <p className="text-sm">
                 {novas.length} {novas.length === 1 ? "nova fonte disponível" : "novas fontes disponíveis"}:{" "}
-                <span className="font-medium">{novas.map((f: any) => `${f.pessoa ?? f.titulo}${f.regiao ? ` — ${f.regiao}` : ""}`).join(", ")}</span>. Atualizar análise?
+                <span className="font-medium">{novas.map((f: any) => `${f.pessoa ?? f.titulo}${f.regiao ? ` — ${f.regiao}` : ""}`).join(", ")}</span>. Gerar novo consolidado?
               </p>
-              <Button size="sm" onClick={atualizar} disabled={busy}>Atualizar</Button>
+              <Button size="sm" onClick={() => setNovoOpen(true)} disabled={busy}>Novo consolidado</Button>
             </div>
           ) : painel ? (
             <p className="text-xs text-muted-foreground">
@@ -323,9 +380,10 @@ function SinteseTipos() {
             <EmptyState
               icon={Layers}
               title="Sem síntese para esta seleção"
-              description={`${elegiveis.length} fonte(s) pronta(s). Clique em Atualizar análise para consolidar as 8 lentes.`}
-              action={<Button onClick={atualizar} disabled={busy}>Atualizar análise</Button>}
+              description={`${elegiveis.length} fonte(s) pronta(s). Escolha os relatórios e gere o consolidado das 8 lentes.`}
+              action={<Button onClick={() => setNovoOpen(true)} disabled={busy}>Atualizar análise</Button>}
             />
+
           ) : (
             <>
               <div className="grid gap-4 sm:grid-cols-3">
@@ -423,6 +481,14 @@ function SinteseTipos() {
           {tipos.includes("entrevista") && <VisaoPorFamilia />}
           {tipos.includes("visita_campo") && <VisaoPorFamiliaCampo regiao={regiao} />}
         </div>
+
+        <NovoConsolidadoDialog
+          open={novoOpen}
+          onOpenChange={setNovoOpen}
+          fontes={elegiveis as any}
+          busy={busy}
+          onGerar={({ titulo, fonteIds }) => atualizar({ titulo, fonteIds })}
+        />
 
         <GerarTarefaDialog tarefa={tarefa} onClose={() => setTarefa(null)} />
       </div>
