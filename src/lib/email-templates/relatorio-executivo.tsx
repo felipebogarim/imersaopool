@@ -333,6 +333,17 @@ const sectionTitle = { color: BRAND, fontSize: "13px", letterSpacing: "1.4px", f
 const intro = { color: TEXT, fontSize: "15px", lineHeight: "24px", margin: "0 0 16px" };
 const paragraph = { color: TEXT, fontSize: "15px", lineHeight: "24px", margin: "0 0 12px" };
 const label = { color: MUTED, fontSize: "11px", letterSpacing: "1px", margin: "12px 0 4px", fontWeight: "bold" };
+const labelHighlight = {
+  backgroundColor: "#FDE047",
+  color: "#0E1C28",
+  fontSize: "11px",
+  letterSpacing: "1px",
+  fontWeight: "bold" as const,
+  padding: "5px 10px",
+  borderRadius: "4px",
+  display: "inline-block" as const,
+  margin: "12px 0 8px",
+};
 const blockIndex = { color: ACCENT, fontSize: "12px", fontWeight: "bold", margin: "0" };
 const blockTitle = { color: BRAND, fontSize: "18px", lineHeight: "24px", fontWeight: "bold", margin: "4px 0 10px" };
 const quoteBox = { borderLeft: `3px solid ${ACCENT}`, padding: "4px 0 4px 14px", margin: "8px 0" };
