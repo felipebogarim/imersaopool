@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type PerfResumo } from "@/lib/visao-rep";
+import { z } from "zod";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,9 @@ import {
 
 
 export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
+  validateSearch: z.object({
+    report: z.string().optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Visão Imersão 2 | PoolFlux" },
@@ -82,6 +86,7 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2")({
 
 function VisaoImersao2Page() {
   const queryClient = useQueryClient();
+  const { report: reportQuery } = Route.useSearch();
   const [avulso, setAvulso] = useState<VisaoImersao2Import | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
@@ -90,6 +95,16 @@ function VisaoImersao2Page() {
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
   const [excluir, setExcluir] = useState<any | null>(null);
+
+  /** Abre diretamente o relatório salvo quando a URL traz ?report=<id>. */
+  useEffect(() => {
+    if (!reportQuery || !reports.length || avulso) return;
+    const match = (reports as any[]).find((r) => r.id === reportQuery);
+    if (match) {
+      abrirRelatorio(match);
+      if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+    }
+  }, [reportQuery, reports.length, avulso]);
 
   function resumoRelatorio(r: any) {
     const dt = r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—";
