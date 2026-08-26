@@ -455,7 +455,7 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
-      {isMaster && (
+      {(
         <div className="absolute right-7 top-1.5 z-10 opacity-0 transition group-hover:opacity-100">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -464,8 +464,11 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={editCard}>Editar</DropdownMenuItem>
-              <DropdownMenuItem onClick={deleteCard} className="text-destructive">Excluir</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDuplicating(true); }}>
+                <Copy className="mr-2 h-3.5 w-3.5" /> Duplicar ação
+              </DropdownMenuItem>
+              {isMaster && <DropdownMenuItem onClick={editCard}>Editar</DropdownMenuItem>}
+              {isMaster && <DropdownMenuItem onClick={deleteCard} className="text-destructive">Excluir</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
