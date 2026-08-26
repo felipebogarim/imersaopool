@@ -535,7 +535,7 @@ function SinteseTipos() {
         <NovoConsolidadoDialog
           open={novoOpen}
           onOpenChange={setNovoOpen}
-          fontes={elegiveis as any}
+          fontes={opcoesConsolidado}
           busy={busy}
           onGerar={({ titulo, fonteIds }) => atualizar({ titulo, fonteIds })}
         />
