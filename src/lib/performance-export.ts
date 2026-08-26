@@ -75,11 +75,7 @@ export function exportPerformanceXlsx(opts: {
       r.razao_social,
       r.categoria ?? "",
       totalMeta,
-      totalPct != null
-        ? fmtPctCell(totalPct)
-        : r.total_pct_status
-          ? FAROL_FAIXA_TEXT[r.total_pct_status]
-          : "",
+      totalPct != null ? fmtPctCell(totalPct) : FAROL_FAIXA_TEXT[r.total_pct_status ?? "sem_compra"],
       ...familias.map((f) => {
         // Espelha exatamente o que o painel mostra na célula:
         // valor monetário quando existe meta, senão percentual, senão faixa do farol.
