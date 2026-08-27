@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_MIDPOINT, type FarolStatus } from "@/lib/performance-farol";
+import { sanitizeRatio } from "@/lib/performance-metrics";
+
 
 export const Route = createFileRoute("/_authenticated/performance/bi-clientes")({
   head: () => ({ meta: [{ title: "BI Clientes Consolidado — PoolFlux" }] }),
