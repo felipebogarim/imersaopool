@@ -23,7 +23,9 @@ import {
   classifyFarol as classifyFarolMetric,
   extremesByRealAchievement,
   getFarolCoefficient as getFarolCoefficientMetric,
+  sanitizeRatio,
   type MetricsObject,
+
 } from "./performance-metrics";
 
 /** Versão da metodologia de cálculo. Alterar quando as regras mudarem. */
