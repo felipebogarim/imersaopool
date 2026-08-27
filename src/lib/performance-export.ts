@@ -19,10 +19,10 @@ type ExportRow = {
 
 /** Percentual armazenado em ratio (1 = 100%) → número em %. */
 const pctOf = (v: unknown): number | null => {
-  const n = Number(v);
-  if (v == null || Number.isNaN(n)) return null;
-  return n * 100;
+  const r = sanitizeRatio(v);
+  return r == null ? null : r * 100;
 };
+
 
 const fmtPctCell = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
 
