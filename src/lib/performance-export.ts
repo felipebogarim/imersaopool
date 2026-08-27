@@ -3,6 +3,8 @@
 // linhas de rodapé Total / Participação / Atingimento e mesma paleta do farol).
 import * as XLSXStyle from "xlsx-js-style";
 import { FAROL_HEX, FAROL_FAIXA_TEXT, type FarolStatus } from "./performance-farol";
+import { sanitizeRatio } from "./performance-metrics";
+
 
 type ExportRow = {
   razao_social: string;
