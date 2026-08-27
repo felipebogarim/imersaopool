@@ -23,7 +23,9 @@ import {
   classifyFarol as classifyFarolMetric,
   extremesByRealAchievement,
   getFarolCoefficient as getFarolCoefficientMetric,
+  sanitizeRatio,
   type MetricsObject,
+
 } from "./performance-metrics";
 
 /** Versão da metodologia de cálculo. Alterar quando as regras mudarem. */
@@ -226,7 +228,7 @@ export function calculateClientBI(
   const familias = familiasOverride?.length ? familiasOverride : versionFamilies(version, [row]);
 
   const itens: FamiliaBI[] = familias.map((familia) => {
-    let ratio = num(row.familia_pct?.[familia] ?? null);
+    let ratio = sanitizeRatio(row.familia_pct?.[familia] ?? null);
     let farol = classifyFarol(ratio) ?? asStatus(row.metas_status?.[familia]);
     // "Sem compra" é resultado válido = 0%, e permanece na ponderação com o peso da meta.
     if (farol == null && ratio == null) farol = "sem_compra";

@@ -44,6 +44,8 @@ import {
   statusFromPercent,
   type FarolStatus,
 } from "@/lib/performance-farol";
+import { sanitizeRatio } from "@/lib/performance-metrics";
+
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
   head: () => ({ meta: [{ title: "Performance — Representantes" }] }),
@@ -86,9 +88,12 @@ type StatusCarrier = {
 };
 
 function percentValue(v: number | null | undefined): number | null {
-  if (v == null || Number.isNaN(v)) return null;
-  return v * 100;
+  // Descarta valores implausíveis (uploads antigos gravaram meta em R$ no campo de %).
+  const r = sanitizeRatio(v);
+  if (r == null) return null;
+  return r * 100;
 }
+
 
 function inferRowStatus(row: StatusCarrier, familias: string[]): FarolStatus | null {
   const totalPct = percentValue(row.total_pct);

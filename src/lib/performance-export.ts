@@ -3,6 +3,8 @@
 // linhas de rodapé Total / Participação / Atingimento e mesma paleta do farol).
 import * as XLSXStyle from "xlsx-js-style";
 import { FAROL_HEX, FAROL_FAIXA_TEXT, type FarolStatus } from "./performance-farol";
+import { sanitizeRatio } from "./performance-metrics";
+
 
 type ExportRow = {
   razao_social: string;
@@ -19,10 +21,10 @@ type ExportRow = {
 
 /** Percentual armazenado em ratio (1 = 100%) → número em %. */
 const pctOf = (v: unknown): number | null => {
-  const n = Number(v);
-  if (v == null || Number.isNaN(n)) return null;
-  return n * 100;
+  const r = sanitizeRatio(v);
+  return r == null ? null : r * 100;
 };
+
 
 const fmtPctCell = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
 

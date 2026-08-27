@@ -147,6 +147,22 @@ const num = (v: unknown): number | null => {
 const asStatus = (v: unknown): FarolStatus | null =>
   typeof v === "string" && (FAROL_ORDER as string[]).includes(v) ? (v as FarolStatus) : null;
 
+/**
+ * Teto de plausibilidade do atingimento em ratio (1 = 100%).
+ * Uploads antigos gravaram valores monetários de meta no campo de percentual
+ * (ex.: 8000 = R$ 8.000). Esses valores NÃO são atingimento: são descartados
+ * para que o farol de origem (faixa da planilha) seja usado.
+ */
+export const MAX_PLAUSIBLE_RATIO = 10;
+
+/** Ratio de atingimento válido, ou null quando o valor não é um percentual plausível. */
+export function sanitizeRatio(v: unknown): number | null {
+  const n = num(v);
+  if (n == null) return null;
+  if (n < 0 || n > MAX_PLAUSIBLE_RATIO) return null;
+  return n;
+}
+
 /** Constrói as células atômicas de um conjunto de linhas de Performance. */
 export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricCell[] {
   const out: MetricCell[] = [];
@@ -154,9 +170,10 @@ export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricC
     for (const familia of familias) {
       const meta = num(r.metas?.[familia]);
       const realizado = num(r.realizado?.[familia]);
-      const stored = num(r.familia_pct?.[familia] ?? null);
+      const stored = sanitizeRatio(r.familia_pct?.[familia] ?? null);
       let real =
         meta != null && meta > 0 && realizado != null ? realizado / meta : stored;
+
       const statusOrigem = asStatus(r.metas_status?.[familia]);
       let farol = classifyFarol(real) ?? statusOrigem;
       // "Sem compra" é RESULTADO VÁLIDO (0%), nunca dado ausente:
@@ -295,7 +312,7 @@ export type RepresentativeMetrics = {
 
 export function calculateClientMetrics(row: MetricSourceRow, familias: string[]): ClientMetrics {
   const cells = buildCells([row], familias);
-  const informado = num(row.total_pct);
+  const informado = sanitizeRatio(row.total_pct);
   const real = informado != null ? informado : calculateRealAchievement(cells);
   const metrics: MetricsObject = {
     real_achievement: real,
