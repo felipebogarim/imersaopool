@@ -953,7 +953,7 @@ export function PerformancePageContent() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground">
-                  {repList.length} representante{repList.length === 1 ? "" : "s"}
+                  {fullRepList.length} representante{fullRepList.length === 1 ? "" : "s"}
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
