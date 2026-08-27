@@ -79,7 +79,7 @@ function BIClientesPage() {
         const rep = reps.find((rp) => rp.id === upload?.representative_id);
         
         // Se total_pct for 0 mas houver metas_status preenchido, calculamos via ponto médio do farol
-        let attainedPct = r.total_pct ? Number(r.total_pct) * 100 : 0;
+        let attainedPct = (sanitizeRatio(r.total_pct) ?? 0) * 100;
         
         if (attainedPct === 0 && r.metas_status && typeof r.metas_status === 'object') {
           const ms = r.metas_status as Record<string, FarolStatus>;
