@@ -44,6 +44,8 @@ import {
   statusFromPercent,
   type FarolStatus,
 } from "@/lib/performance-farol";
+import { sanitizeRatio } from "@/lib/performance-metrics";
+
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
   head: () => ({ meta: [{ title: "Performance — Representantes" }] }),
