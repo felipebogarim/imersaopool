@@ -312,7 +312,7 @@ export type RepresentativeMetrics = {
 
 export function calculateClientMetrics(row: MetricSourceRow, familias: string[]): ClientMetrics {
   const cells = buildCells([row], familias);
-  const informado = num(row.total_pct);
+  const informado = sanitizeRatio(row.total_pct);
   const real = informado != null ? informado : calculateRealAchievement(cells);
   const metrics: MetricsObject = {
     real_achievement: real,
