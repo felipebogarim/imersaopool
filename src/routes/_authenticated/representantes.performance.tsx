@@ -173,6 +173,17 @@ export function PerformancePageContent() {
     },
   });
 
+  // Todos os representantes aparecem na lista, mesmo sem performance carregada.
+  const fullRepList = useMemo(() => {
+    const byRep = new Map<string, any>(repList.map((i: any) => [i.rep_id, i.upload]));
+    return (reps as any[])
+      .map((r) => ({ rep_id: r.id, nome: r.nome, upload: byRep.get(r.id) ?? null }))
+      .sort((a, b) => {
+        if (!!a.upload !== !!b.upload) return a.upload ? -1 : 1;
+        return String(a.nome ?? "").localeCompare(String(b.nome ?? ""), "pt-BR");
+      });
+  }, [reps, repList]);
+
 
 
   const { data: uploads = [] } = useQuery({
