@@ -173,6 +173,17 @@ export function PerformancePageContent() {
     },
   });
 
+  // Todos os representantes aparecem na lista, mesmo sem performance carregada.
+  const fullRepList = useMemo(() => {
+    const byRep = new Map<string, any>(repList.map((i: any) => [i.rep_id, i.upload]));
+    return (reps as any[])
+      .map((r) => ({ rep_id: r.id, nome: r.nome, upload: byRep.get(r.id) ?? null }))
+      .sort((a, b) => {
+        if (!!a.upload !== !!b.upload) return a.upload ? -1 : 1;
+        return String(a.nome ?? "").localeCompare(String(b.nome ?? ""), "pt-BR");
+      });
+  }, [reps, repList]);
+
 
 
   const { data: uploads = [] } = useQuery({
@@ -942,7 +953,7 @@ export function PerformancePageContent() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground">
-                  {repList.length} representante{repList.length === 1 ? "" : "s"}
+                  {fullRepList.length} representante{fullRepList.length === 1 ? "" : "s"}
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -991,29 +1002,30 @@ export function PerformancePageContent() {
                     <tr>
                       <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td>
                     </tr>
-                  ) : repList.length === 0 ? (
+                  ) : fullRepList.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                        Nenhuma planilha de performance carregada ainda.
+                        Nenhum representante cadastrado.
                       </td>
                     </tr>
                   ) : (
-                    repList.map((item: any) => {
-                      const rep = reps.find((r: any) => r.id === item.rep_id);
+                    fullRepList.map((item: any) => {
                       const u = item.upload;
                       return (
                         <tr
                           key={item.rep_id}
                           className="border-t border-border hover:bg-muted/30 cursor-pointer"
-                          onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}
+                          onClick={() => { setRepId(item.rep_id); setUploadId(u?.id ?? ""); }}
                         >
-                          <td className="px-4 py-3 font-medium">{rep?.nome ?? "—"}</td>
-                          <td className="px-4 py-3">{u.periodo_label}</td>
+                          <td className="px-4 py-3 font-medium">{item.nome ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            {u ? u.periodo_label : <span className="text-muted-foreground">Sem performance</span>}
+                          </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                            {u ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground truncate max-w-[280px]">
-                            {u.filename ?? "—"}
+                            {u?.filename ?? "—"}
                           </td>
                           <td className="px-2 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
@@ -1023,22 +1035,32 @@ export function PerformancePageContent() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u.id ?? ""); }}>
+                                <DropdownMenuItem onClick={() => { setRepId(item.rep_id); setUploadId(u?.id ?? ""); }}>
                                   <ChevronRight className="h-4 w-4 mr-2" /> Abrir
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => exportFromList(item.rep_id, u)}>
-                                  <FileDown className="h-4 w-4 mr-2" /> Exportar planilha
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => editFromList(item.rep_id)}>
-                                  <Pencil className="h-4 w-4 mr-2" /> Editar (nova planilha)
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => { setPwdTargetRep(item.rep_id); setPwdOpen(true); }}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                                </DropdownMenuItem>
+                                {u ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => exportFromList(item.rep_id, u)}>
+                                      <FileDown className="h-4 w-4 mr-2" /> Exportar planilha
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => editFromList(item.rep_id)}>
+                                      <Pencil className="h-4 w-4 mr-2" /> Editar (nova planilha)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => { setPwdTargetRep(item.rep_id); setPwdOpen(true); }}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => { setRepId(item.rep_id); setUploadId(""); openUpload("new", item.rep_id); }}
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" /> Carregar planilha
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
