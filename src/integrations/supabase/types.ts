@@ -3867,6 +3867,36 @@ export type Database = {
           },
         ]
       }
+      price_mapa_dados: {
+        Row: {
+          anchors: Json
+          competitors: Json
+          created_at: string
+          familia: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          anchors?: Json
+          competitors?: Json
+          created_at?: string
+          familia: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          anchors?: Json
+          competitors?: Json
+          created_at?: string
+          familia?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       price_product_prices: {
         Row: {
           company_id: string
