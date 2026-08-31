@@ -345,17 +345,15 @@ function MapaPrecosPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(activeAnchors));
-      localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(activeCompetitors));
-      
-      await new Promise(resolve => setTimeout(resolve, 800));
-      toast.success("Resultados salvos com sucesso no repositório!");
-    } catch (error) {
-      toast.error("Erro ao salvar resultados.");
+      await persistir(activeAnchors, activeCompetitors);
+      toast.success("Dados salvos permanentemente no sistema.");
+    } catch (error: any) {
+      toast.error("Erro ao salvar os dados.", { description: error?.message });
     } finally {
       setIsSaving(false);
     }
   };
+
 
   const handleExportExcel = async () => {
     if (filteredItems.length === 0) {
