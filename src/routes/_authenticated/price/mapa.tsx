@@ -18,6 +18,8 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,17 +108,48 @@ function MapaPrecosPage() {
   const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
   const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
 
+  const [isLoadingDados, setIsLoadingDados] = useState(true);
+
   useEffect(() => {
-    try {
-      const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
-      const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
-      setImportedAnchors(a ? JSON.parse(a) : []);
-      setImportedCompetitors(c ? JSON.parse(c) : []);
-    } catch {
-      setImportedAnchors([]);
-      setImportedCompetitors([]);
-    }
+    let cancelado = false;
+    setIsLoadingDados(true);
+    (async () => {
+      let anchors: any[] = [];
+      let competitors: any[] = [];
+      try {
+        const { data } = await supabase
+          .from("price_mapa_dados")
+          .select("anchors, competitors")
+          .eq("familia", familia)
+          .maybeSingle();
+        if (data) {
+          anchors = (data.anchors as any[]) ?? [];
+          competitors = (data.competitors as any[]) ?? [];
+        }
+      } catch {
+        /* segue para o cache local */
+      }
+      if (!anchors.length && !competitors.length) {
+        try {
+          const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+          const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+          anchors = a ? JSON.parse(a) : [];
+          competitors = c ? JSON.parse(c) : [];
+        } catch {
+          anchors = [];
+          competitors = [];
+        }
+      }
+      if (cancelado) return;
+      setImportedAnchors(anchors);
+      setImportedCompetitors(competitors);
+      setIsLoadingDados(false);
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, [familia]);
+
 
   const familyCfg = getFamilyConfig(familia);
   const baseBrand = familyCfg.baseBrand;
@@ -176,20 +209,38 @@ function MapaPrecosPage() {
   };
 
 
-  const persist = (anchors: any[], competitors: any[]) => {
+  /** Grava de forma permanente no banco (e mantém cache local para leitura offline). */
+  const persistir = async (anchors: any[], competitors: any[]) => {
     try {
       localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(anchors));
       localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(competitors));
     } catch {
       /* noop */
     }
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("price_mapa_dados")
+      .upsert(
+        {
+          familia,
+          anchors: anchors as any,
+          competitors: competitors as any,
+          updated_by: userData.user?.id ?? null,
+        },
+        { onConflict: "familia" },
+      );
+    if (error) throw error;
   };
+
 
   const updateCompetitor = (id: string, patch: Record<string, any>) => {
     const next = activeCompetitors.map((c) => (c.id === id ? { ...c, ...patch } : c));
     setImportedCompetitors(next);
     setImportedAnchors(activeAnchors);
-    persist(activeAnchors, next);
+    void persistir(activeAnchors, next).catch(() =>
+      toast.error("Não foi possível gravar a alteração no banco."),
+    );
+
   };
 
   const salvarNota = () => {
@@ -296,17 +347,15 @@ function MapaPrecosPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(activeAnchors));
-      localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(activeCompetitors));
-      
-      await new Promise(resolve => setTimeout(resolve, 800));
-      toast.success("Resultados salvos com sucesso no repositório!");
-    } catch (error) {
-      toast.error("Erro ao salvar resultados.");
+      await persistir(activeAnchors, activeCompetitors);
+      toast.success("Dados salvos permanentemente no sistema.");
+    } catch (error: any) {
+      toast.error("Erro ao salvar os dados.", { description: error?.message });
     } finally {
       setIsSaving(false);
     }
   };
+
 
   const handleExportExcel = async () => {
     if (filteredItems.length === 0) {
