@@ -106,17 +106,48 @@ function MapaPrecosPage() {
   const [importedAnchors, setImportedAnchors] = useState<any[]>([]);
   const [importedCompetitors, setImportedCompetitors] = useState<any[]>([]);
 
+  const [isLoadingDados, setIsLoadingDados] = useState(true);
+
   useEffect(() => {
-    try {
-      const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
-      const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
-      setImportedAnchors(a ? JSON.parse(a) : []);
-      setImportedCompetitors(c ? JSON.parse(c) : []);
-    } catch {
-      setImportedAnchors([]);
-      setImportedCompetitors([]);
-    }
+    let cancelado = false;
+    setIsLoadingDados(true);
+    (async () => {
+      let anchors: any[] = [];
+      let competitors: any[] = [];
+      try {
+        const { data } = await supabase
+          .from("price_mapa_dados")
+          .select("anchors, competitors")
+          .eq("familia", familia)
+          .maybeSingle();
+        if (data) {
+          anchors = (data.anchors as any[]) ?? [];
+          competitors = (data.competitors as any[]) ?? [];
+        }
+      } catch {
+        /* segue para o cache local */
+      }
+      if (!anchors.length && !competitors.length) {
+        try {
+          const a = localStorage.getItem(`mapa_precos_anchors_${familia}`);
+          const c = localStorage.getItem(`mapa_precos_competitors_${familia}`);
+          anchors = a ? JSON.parse(a) : [];
+          competitors = c ? JSON.parse(c) : [];
+        } catch {
+          anchors = [];
+          competitors = [];
+        }
+      }
+      if (cancelado) return;
+      setImportedAnchors(anchors);
+      setImportedCompetitors(competitors);
+      setIsLoadingDados(false);
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, [familia]);
+
 
   const familyCfg = getFamilyConfig(familia);
   const baseBrand = familyCfg.baseBrand;
