@@ -235,7 +235,10 @@ function MapaPrecosPage() {
     const next = activeCompetitors.map((c) => (c.id === id ? { ...c, ...patch } : c));
     setImportedCompetitors(next);
     setImportedAnchors(activeAnchors);
-    persist(activeAnchors, next);
+    void persistir(activeAnchors, next).catch(() =>
+      toast.error("Não foi possível gravar a alteração no banco."),
+    );
+
   };
 
   const salvarNota = () => {
