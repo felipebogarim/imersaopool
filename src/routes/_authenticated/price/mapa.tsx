@@ -207,14 +207,29 @@ function MapaPrecosPage() {
   };
 
 
-  const persist = (anchors: any[], competitors: any[]) => {
+  /** Grava de forma permanente no banco (e mantém cache local para leitura offline). */
+  const persistir = async (anchors: any[], competitors: any[]) => {
     try {
       localStorage.setItem(`mapa_precos_anchors_${familia}`, JSON.stringify(anchors));
       localStorage.setItem(`mapa_precos_competitors_${familia}`, JSON.stringify(competitors));
     } catch {
       /* noop */
     }
+    const { data: userData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("price_mapa_dados")
+      .upsert(
+        {
+          familia,
+          anchors: anchors as any,
+          competitors: competitors as any,
+          updated_by: userData.user?.id ?? null,
+        },
+        { onConflict: "familia" },
+      );
+    if (error) throw error;
   };
+
 
   const updateCompetitor = (id: string, patch: Record<string, any>) => {
     const next = activeCompetitors.map((c) => (c.id === id ? { ...c, ...patch } : c));
