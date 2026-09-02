@@ -53,30 +53,45 @@ export async function runAutomations(
       await supabase.from("kanban_card_labels").upsert({ card_id: cardId, label_id: acfg.label_id });
     } else if (action === "archive_card") {
       await supabase.from("kanban_cards").update({ archived_at: new Date().toISOString() }).eq("id", cardId);
-    } else if (action === "send_notification" && (acfg.user_id || acfg.email)) {
-      if (acfg.user_id) {
-        await (supabase as any).rpc("kanban_notify", {
-          _user_id: acfg.user_id,
-          _board_id: boardId,
-          _card_id: cardId,
-          _type: "automation",
-          _title: a.name,
-          _body: acfg.message ?? "Automação disparada",
-        });
+    } else if (action === "send_notification") {
+      // suporta múltiplos destinatários (recipients) + formato legado (user_id/email)
+      const recipients: { user_id?: string | null; email?: string | null }[] = Array.isArray(acfg.recipients)
+        ? acfg.recipients
+        : [];
+      if (acfg.user_id || acfg.email) recipients.push({ user_id: acfg.user_id, email: acfg.email });
+
+      const seen = new Set<string>();
+      for (const r of recipients) {
+        const key = `${r.user_id ?? ""}|${(r.email ?? "").toLowerCase()}`;
+        if (!r.user_id && !r.email) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        if (r.user_id) {
+          await (supabase as any).rpc("kanban_notify", {
+            _user_id: r.user_id,
+            _board_id: boardId,
+            _card_id: cardId,
+            _type: "automation",
+            _title: a.name,
+            _body: acfg.message ?? "Automação disparada",
+          });
+        }
+        // e-mail notification (best effort)
+        await sendKanbanAutomationEmail({
+          data: {
+            userId: r.user_id ?? null,
+            email: r.email ?? null,
+            automationName: a.name,
+            cardTitle: cardTitle ?? "",
+            boardName: opts.boardName ?? null,
+            boardId,
+            message: acfg.message ?? null,
+          },
+        }).catch((e) => console.error("[kanban] automation email failed", e));
       }
-      // e-mail notification (best effort)
-      await sendKanbanAutomationEmail({
-        data: {
-          userId: acfg.user_id ?? null,
-          email: acfg.email ?? null,
-          automationName: a.name,
-          cardTitle: cardTitle ?? "",
-          boardName: opts.boardName ?? null,
-          boardId,
-          message: acfg.message ?? null,
-        },
-      }).catch((e) => console.error("[kanban] automation email failed", e));
     }
+
     await logActivity(boardId, "automation_run", { automation_id: a.id, name: a.name }, cardId);
   }
 }
