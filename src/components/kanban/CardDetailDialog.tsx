@@ -32,6 +32,7 @@ import type { Board, KCard, KList, KanbanPriority } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, withSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
 import { useIsMasterAdmin } from "@/hooks/use-is-admin";
+import { sendKanbanAssignmentEmail } from "@/lib/kanban-notify.functions";
 import { logActivity } from "@/lib/kanban-activity";
 import { fetchProfilesMap } from "@/lib/kanban-profiles";
 import { cn } from "@/lib/utils";
@@ -158,7 +159,7 @@ export function CardDetailDialog({ card, board, lists, open, onOpenChange }: Pro
               <RepLinkSection card={card} patch={patch} />
 
               <LabelsPicker cardId={card.id} boardId={card.board_id} />
-              <MembersPicker cardId={card.id} boardId={card.board_id} workspaceId={board.workspace_id} card={card} patch={patch} />
+              <MembersPicker cardId={card.id} boardId={card.board_id} boardName={board.name} workspaceId={board.workspace_id} card={card} patch={patch} />
               <SuggestedActionSection card={card} patch={patch} />
 
 
@@ -568,6 +569,26 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
     },
   });
 
+  async function notifyAssignment(userId: string, kind: "responsavel" | "membro") {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const actor = allUsers.find((p: any) => p.id === u.user?.id) as any;
+      await sendKanbanAssignmentEmail({
+        data: {
+          userId,
+          kind,
+          cardId,
+          cardTitle: card.title,
+          boardId,
+          boardName: boardName ?? null,
+          actorName: actor?.full_name ?? actor?.email ?? null,
+        },
+      });
+    } catch {
+      /* notificação por e-mail não bloqueia a ação */
+    }
+  }
+
   async function toggle(labelId: string, active: boolean) {
     if (active) {
       await supabase.from("kanban_card_labels").delete().eq("card_id", cardId).eq("label_id", labelId);
@@ -617,7 +638,7 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
 }
 
 // ============ MEMBERS ============
-function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: string; boardId: string; workspaceId: string; card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
+function MembersPicker({ cardId, boardId, boardName, workspaceId, card, patch }: { cardId: string; boardId: string; boardName?: string | null; workspaceId: string; card: KCard; patch: (d: Partial<KCard>) => Promise<void> }) {
   const qc = useQueryClient();
   const [memberTerm, setMemberTerm] = useState("");
   const [respTerm, setRespTerm] = useState("");
@@ -668,6 +689,7 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
     } else {
       await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: userId });
       await logActivity(boardId, "member_assigned", { user_id: userId }, cardId);
+      await notifyAssignment(userId, "membro");
     }
     qc.invalidateQueries({ queryKey: ["kanban-card-members", cardId] });
     qc.invalidateQueries({ queryKey: ["kanban-cards", boardId] });
@@ -678,11 +700,12 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
     if (id) {
       meta.responsible_id = id;
       meta.responsible_name = name;
-      const isUser = wsMembers.some((m: any) => m.user_id === id);
+      const isUser = allUsers.some((u: any) => u.id === id);
       if (isUser && !assigned.includes(id)) {
         await supabase.from("kanban_card_members").insert({ card_id: cardId, user_id: id });
         qc.invalidateQueries({ queryKey: ["kanban-card-members", cardId] });
       }
+      if (isUser) await notifyAssignment(id, "responsavel");
     } else {
       delete meta.responsible_id;
       delete meta.responsible_name;
