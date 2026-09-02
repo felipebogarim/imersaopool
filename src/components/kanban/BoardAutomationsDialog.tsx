@@ -64,12 +64,17 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     if (action === "move_to_list") action_config.list_id = actionListId;
     if (action === "assign_member" || action === "send_notification") {
       if (actionUserEmail.trim()) {
-        const { data: prof } = await supabase.from("profiles").select("id").eq("email", actionUserEmail.trim().toLowerCase()).maybeSingle();
-        if (!prof) return toast.error("Usuário não encontrado");
-        action_config.user_id = prof.id;
-        if (action === "send_notification") action_config.message = `Automação "${name}" disparada`;
+        const mail = actionUserEmail.trim().toLowerCase();
+        const { data: prof } = await supabase.from("profiles").select("id").eq("email", mail).maybeSingle();
+        if (!prof && action === "assign_member") return toast.error("Usuário não encontrado");
+        if (prof) action_config.user_id = prof.id;
+        if (action === "send_notification") {
+          action_config.email = mail;
+          action_config.message = `Automação "${name}" disparada`;
+        }
       }
     }
+
 
     const { error } = await supabase.from("kanban_automations").insert({
       board_id: board.id, name: name.trim(),

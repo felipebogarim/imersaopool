@@ -24,7 +24,7 @@ import { BoardMembersDialog } from "@/components/kanban/BoardMembersDialog";
 import { BoardMembersListDialog } from "@/components/kanban/BoardMembersListDialog";
 import { BoardAutomationsDialog } from "@/components/kanban/BoardAutomationsDialog";
 import { logActivity } from "@/lib/kanban-activity";
-import { runAutomationsForMove } from "@/lib/kanban-automations";
+import { runAutomationsForMove, runAutomationsForCreate } from "@/lib/kanban-automations";
 import { cn } from "@/lib/utils";
 import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import {
@@ -362,7 +362,10 @@ function ListColumn({ list, cards, onOpenCard }: { list: KList; cards: KCard[]; 
       metadata: metadata as any,
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
-    if (data) await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null, rep_id: rep?.id ?? null }, data.id);
+    if (data) {
+      await logActivity(list.board_id, "card_created", { title, list_id: list.id, client_id: client?.id ?? null, rep_id: rep?.id ?? null }, data.id);
+      await runAutomationsForCreate(list.board_id, data.id, list.id, title).catch(() => {});
+    }
     qc.invalidateQueries({ queryKey: ["kanban-cards", list.board_id] });
   }
 
