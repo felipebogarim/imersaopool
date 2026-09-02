@@ -10,6 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KList } from "@/lib/kanban-types";
