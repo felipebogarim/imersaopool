@@ -569,26 +569,6 @@ function LabelsPicker({ cardId, boardId }: { cardId: string; boardId: string }) 
     },
   });
 
-  async function notifyAssignment(userId: string, kind: "responsavel" | "membro") {
-    try {
-      const { data: u } = await supabase.auth.getUser();
-      const actor = allUsers.find((p: any) => p.id === u.user?.id) as any;
-      await sendKanbanAssignmentEmail({
-        data: {
-          userId,
-          kind,
-          cardId,
-          cardTitle: card.title,
-          boardId,
-          boardName: boardName ?? null,
-          actorName: actor?.full_name ?? actor?.email ?? null,
-        },
-      });
-    } catch {
-      /* notificação por e-mail não bloqueia a ação */
-    }
-  }
-
   async function toggle(labelId: string, active: boolean) {
     if (active) {
       await supabase.from("kanban_card_labels").delete().eq("card_id", cardId).eq("label_id", labelId);
@@ -681,6 +661,26 @@ function MembersPicker({ cardId, boardId, boardName, workspaceId, card, patch }:
 
   const cardMeta = (card.metadata ?? {}) as any;
   const responsibleId = cardMeta.responsible_id;
+
+  async function notifyAssignment(userId: string, kind: "responsavel" | "membro") {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const actor = allUsers.find((p: any) => p.id === u.user?.id) as any;
+      await sendKanbanAssignmentEmail({
+        data: {
+          userId,
+          kind,
+          cardId,
+          cardTitle: card.title,
+          boardId,
+          boardName: boardName ?? null,
+          actorName: actor?.full_name ?? actor?.email ?? null,
+        },
+      });
+    } catch {
+      /* notificação por e-mail não bloqueia a ação */
+    }
+  }
 
   async function toggle(userId: string, active: boolean) {
     if (active) {
