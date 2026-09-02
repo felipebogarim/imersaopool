@@ -967,11 +967,14 @@ function ActivitySection({ cardId }: { cardId: string }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_activities")
-        .select("*, profiles!kanban_activities_user_id_fkey(full_name, email)")
+        .select("*")
         .eq("card_id", cardId)
         .order("created_at", { ascending: false })
         .limit(20);
-      return data ?? [];
+      const rows = data ?? [];
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
+
     },
   });
   if (acts.length === 0) return null;
