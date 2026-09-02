@@ -701,9 +701,9 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
     ? reps.filter((r) => (r.nome ?? "").toLowerCase().includes(respTerm.toLowerCase()))
     : reps;
 
-  const filteredWsMembersMem = memberTerm.trim().toLowerCase()
-    ? wsMembers.filter((m: any) => (m.profiles?.full_name ?? "").toLowerCase().includes(memberTerm.toLowerCase()) || (m.profiles?.email ?? "").toLowerCase().includes(memberTerm.toLowerCase()))
-    : wsMembers;
+  const filteredAllUsersMem = memberTerm.trim().toLowerCase()
+    ? allUsers.filter((u: any) => (u.full_name ?? "").toLowerCase().includes(memberTerm.toLowerCase()) || (u.email ?? "").toLowerCase().includes(memberTerm.toLowerCase()))
+    : allUsers;
 
   return (
     <div className="space-y-4">
@@ -778,20 +778,23 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
       <div>
         <label className="text-xs font-medium text-muted-foreground">Membros / Acompanhadores</label>
         <div className="mt-1 space-y-1">
-          {wsMembers.filter((m: any) => assigned.includes(m.user_id)).map((m: any) => (
-            <div key={m.user_id} className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-sm">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <User className="h-3 w-3 shrink-0 opacity-50" />
-                <span className="truncate">{m.profiles?.full_name ?? m.profiles?.email ?? "—"}</span>
+          {assigned.map((uid: string) => {
+            const u = allUsers.find((x: any) => x.id === uid) as any;
+            return (
+              <div key={uid} className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-sm">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <User className="h-3 w-3 shrink-0 opacity-50" />
+                  <span className="truncate">{u?.full_name ?? u?.email ?? "—"}</span>
+                </div>
+                <button
+                  onClick={() => toggle(uid, true)}
+                  className="ml-2 rounded-full p-0.5 hover:bg-muted"
+                >
+                  <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                </button>
               </div>
-              <button 
-                onClick={() => toggle(m.user_id, true)}
-                className="ml-2 rounded-full p-0.5 hover:bg-muted"
-              >
-                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <Popover>
@@ -810,20 +813,23 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
               />
             </div>
             <div className="max-h-64 overflow-y-auto p-1">
-              {filteredWsMembersMem.map((m: any) => (
+              {filteredAllUsersMem.length === 0 && (
+                <div className="px-2 py-3 text-center text-[11px] text-muted-foreground">Nenhum usuário encontrado</div>
+              )}
+              {filteredAllUsersMem.map((u: any) => (
                 <button
-                  key={m.user_id}
-                  onClick={() => toggle(m.user_id, assigned.includes(m.user_id))}
+                  key={u.id}
+                  onClick={() => toggle(u.id, assigned.includes(u.id))}
                   className={cn(
                     "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1 text-left text-[13px] hover:bg-accent",
-                    assigned.includes(m.user_id) && "bg-accent"
+                    assigned.includes(u.id) && "bg-accent"
                   )}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <User className="h-3.5 w-3.5 opacity-50" />
-                    <span className="truncate">{m.profiles?.full_name || m.profiles?.email}</span>
+                    <span className="truncate">{u.full_name || u.email}</span>
                   </div>
-                  {assigned.includes(m.user_id) && <Check className="h-3.5 w-3.5 text-primary" />}
+                  {assigned.includes(u.id) && <Check className="h-3.5 w-3.5 text-primary" />}
                 </button>
               ))}
             </div>
