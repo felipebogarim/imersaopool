@@ -902,24 +902,42 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
   const { data: comments = [] } = useQuery({
     queryKey: ["kanban-comments", cardId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("kanban_comments")
-        .select("*, profiles!kanban_comments_user_id_fkey(full_name, email)")
+        .select("*")
         .eq("card_id", cardId)
         .order("created_at", { ascending: true });
-      return data ?? [];
+      if (error) throw error;
+      const rows = data ?? [];
+      const ids = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
+      let byId: Record<string, any> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", ids as string[]);
+        byId = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]));
+      }
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
     },
   });
 
   async function send() {
     if (!text.trim()) return;
     const { data: u } = await supabase.auth.getUser();
-    await supabase.from("kanban_comments").insert({ card_id: cardId, user_id: u.user!.id, content: text.trim() });
+    const { error } = await supabase
+      .from("kanban_comments")
+      .insert({ card_id: cardId, user_id: u.user!.id, content: text.trim() });
+    if (error) {
+      toast.error(error.message ?? "Falha ao enviar comentário.");
+      return;
+    }
     await logActivity(boardId, "comment_added", {}, cardId);
     setText("");
-    qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
+    await qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
     qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
   }
+
 
   return (
     <div className="mt-6">
