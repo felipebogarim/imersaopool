@@ -10,6 +10,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Board, KList } from "@/lib/kanban-types";
@@ -45,6 +47,9 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
   const [triggerListId, setTriggerListId] = useState("");
   const [actionListId, setActionListId] = useState("");
   const [actionUserEmail, setActionUserEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [extraEmails, setExtraEmails] = useState("");
 
   const { data: automations = [] } = useQuery({
     queryKey: ["kanban-automations", board.id],
@@ -55,6 +60,42 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     enabled: open,
   });
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["kanban-automation-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+      return (data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+    },
+    enabled: open,
+  });
+
+  const term = search.trim().toLowerCase();
+  const filteredUsers = term
+    ? allUsers.filter(
+        (u) =>
+          (u.full_name ?? "").toLowerCase().includes(term) ||
+          (u.email ?? "").toLowerCase().includes(term),
+      )
+    : allUsers;
+
+  function toggleUser(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function resetForm() {
+    setCreating(false);
+    setName("");
+    setTriggerListId("");
+    setActionListId("");
+    setActionUserEmail("");
+    setSelectedIds([]);
+    setExtraEmails("");
+    setSearch("");
+  }
+
   async function create() {
     if (!name.trim()) return toast.error("Dê um nome à automação");
     const { data: u } = await supabase.auth.getUser();
@@ -62,19 +103,30 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     const action_config: any = {};
     if (trigger === "card_moved_to_list") trigger_config.list_id = triggerListId || undefined;
     if (action === "move_to_list") action_config.list_id = actionListId;
-    if (action === "assign_member" || action === "send_notification") {
+    if (action === "assign_member") {
       if (actionUserEmail.trim()) {
         const mail = actionUserEmail.trim().toLowerCase();
         const { data: prof } = await supabase.from("profiles").select("id").eq("email", mail).maybeSingle();
-        if (!prof && action === "assign_member") return toast.error("Usuário não encontrado");
-        if (prof) action_config.user_id = prof.id;
-        if (action === "send_notification") {
-          action_config.email = mail;
-          action_config.message = `Automação "${name}" disparada`;
-        }
+        if (!prof) return toast.error("Usuário não encontrado");
+        action_config.user_id = prof.id;
       }
     }
-
+    if (action === "send_notification") {
+      const recipients: { user_id?: string; email?: string }[] = selectedIds.map((id) => {
+        const u2 = allUsers.find((x) => x.id === id);
+        return { user_id: id, email: u2?.email ?? undefined };
+      });
+      extraEmails
+        .split(/[,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.includes("@"))
+        .forEach((email) => {
+          if (!recipients.some((r) => r.email?.toLowerCase() === email)) recipients.push({ email });
+        });
+      if (recipients.length === 0) return toast.error("Selecione ao menos um destinatário");
+      action_config.recipients = recipients;
+      action_config.message = `Automação "${name}" disparada`;
+    }
 
     const { error } = await supabase.from("kanban_automations").insert({
       board_id: board.id, name: name.trim(),
@@ -84,9 +136,10 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     });
     if (error) return toast.error(error.message);
     toast.success("Automação criada");
-    setCreating(false); setName(""); setTriggerListId(""); setActionListId(""); setActionUserEmail("");
+    resetForm();
     qc.invalidateQueries({ queryKey: ["kanban-automations", board.id] });
   }
+
 
   async function toggle(a: any) {
     await supabase.from("kanban_automations").update({ enabled: !a.enabled }).eq("id", a.id);
@@ -152,16 +205,60 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
                       <SelectContent>{lists.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
-                  {(action === "assign_member" || action === "send_notification") && (
+                  {action === "assign_member" && (
                     <Input className="mt-1" placeholder="e-mail do usuário" value={actionUserEmail} onChange={(e) => setActionUserEmail(e.target.value)} />
                   )}
                 </div>
               </div>
+
+              {action === "send_notification" && (
+                <div className="rounded-lg border p-2">
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground">
+                      Destinatários {selectedIds.length > 0 && `(${selectedIds.length} selecionado${selectedIds.length > 1 ? "s" : ""})`}
+                    </label>
+                    {selectedIds.length > 0 && (
+                      <button className="text-xs text-muted-foreground hover:underline" onClick={() => setSelectedIds([])}>
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  <Input placeholder="Buscar usuário por nome ou e-mail" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    {filteredUsers.length === 0 && (
+                      <li className="p-2 text-xs text-muted-foreground">Nenhum usuário encontrado.</li>
+                    )}
+                    {filteredUsers.map((u) => (
+                      <li key={u.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleUser(u.id)}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent"
+                        >
+                          <Checkbox checked={selectedIds.includes(u.id)} className="pointer-events-none" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm">{u.full_name ?? u.email ?? "—"}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Input
+                    className="mt-2"
+                    placeholder="Outros e-mails (separados por vírgula)"
+                    value={extraEmails}
+                    onChange={(e) => setExtraEmails(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button size="sm" onClick={create}>Criar</Button>
-                <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
+                <Button size="sm" variant="ghost" onClick={resetForm}>Cancelar</Button>
               </div>
             </div>
+
           ) : (
             <Button variant="outline" onClick={() => setCreating(true)} className="w-full gap-2">
               <Plus className="h-4 w-4" /> Nova automação
