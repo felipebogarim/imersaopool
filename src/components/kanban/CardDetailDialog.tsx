@@ -33,6 +33,7 @@ import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, withSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
 import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import { logActivity } from "@/lib/kanban-activity";
+import { fetchProfilesMap } from "@/lib/kanban-profiles";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -909,15 +910,7 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
         .order("created_at", { ascending: true });
       if (error) throw error;
       const rows = data ?? [];
-      const ids = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))];
-      let byId: Record<string, any> = {};
-      if (ids.length) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", ids as string[]);
-        byId = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]));
-      }
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
       return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
     },
   });
