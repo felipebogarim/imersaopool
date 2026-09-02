@@ -40,7 +40,7 @@ const Email = ({ automationName, cardTitle, boardName, message, link }: Props) =
 export const template = {
   component: Email,
   subject: (d: Record<string, any>) =>
-    `🔔 ${d?.automationName ? `${d.automationName} · ` : ""}${d?.cardTitle ?? "Nova atividade no quadro"}`,
+    `${d?.automationName ? `${d.automationName} · ` : ""}${d?.cardTitle ?? "Nova atividade no quadro"}`,
   displayName: "Automação de tarefas",
   previewData: {
     automationName: "Novo card criado",
