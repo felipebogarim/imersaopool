@@ -32,7 +32,9 @@ export function BoardMembersDialog({ board, open, onOpenChange }: Props) {
         .from("kanban_workspace_members")
         .select("id, user_id, role")
         .eq("workspace_id", board.workspace_id);
-      return data ?? [];
+      const rows = data ?? [];
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
     },
     enabled: open,
   });
