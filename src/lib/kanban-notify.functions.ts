@@ -45,3 +45,45 @@ export const sendKanbanAutomationEmail = createServerFn({ method: "POST" })
     });
     return { sent: true as const };
   });
+
+type AssignInput = {
+  userId: string;
+  kind: "responsavel" | "membro";
+  cardId: string;
+  cardTitle: string;
+  boardId: string;
+  boardName?: string | null;
+  actorName?: string | null;
+};
+
+/** Automação nativa: avisa por e-mail quem foi definido responsável ou adicionado como membro. */
+export const sendKanbanAssignmentEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: AssignInput) => d)
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { sendTransactionalEmail } = await import("@/lib/email/send.server");
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    const email = prof?.email ?? null;
+    if (!email) return { sent: false, reason: "no_email" as const };
+
+    const origin = process.env.PUBLIC_SITE_URL || "https://poolflux.app";
+    await sendTransactionalEmail({
+      templateName: "kanban-atribuicao",
+      recipientEmail: email,
+      idempotencyKey: `kanban-${data.kind}-${data.cardId}-${data.userId}`,
+      templateData: {
+        kind: data.kind,
+        cardTitle: data.cardTitle,
+        boardName: data.boardName ?? undefined,
+        actorName: data.actorName ?? undefined,
+        link: `${origin}/tarefas/b/${data.boardId}?card=${data.cardId}`,
+      },
+    });
+    return { sent: true as const };
+  });

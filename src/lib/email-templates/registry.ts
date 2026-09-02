@@ -5,6 +5,7 @@ import { template as lgpdPurgeExecuted } from "./lgpd-purge-executed";
 import { template as primeiroAcesso } from "./primeiro-acesso";
 import { template as relatorioExecutivo } from "./relatorio-executivo";
 import { template as kanbanAutomacao } from "./kanban-automacao";
+import { template as kanbanAtribuicao } from "./kanban-atribuicao";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -22,4 +23,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "primeiro-acesso": primeiroAcesso,
   "relatorio-executivo": relatorioExecutivo,
   "kanban-automacao": kanbanAutomacao,
+  "kanban-atribuicao": kanbanAtribuicao,
 };

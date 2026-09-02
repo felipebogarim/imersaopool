@@ -3,32 +3,41 @@ import { Body, Container, Head, Heading, Html, Link, Preview, Section, Text } fr
 import type { TemplateEntry } from "./registry";
 
 interface Props {
-  automationName?: string;
+  kind?: "responsavel" | "membro";
   cardTitle?: string;
   boardName?: string;
-  message?: string;
+  actorName?: string;
   link?: string;
 }
 
-const Email = ({ automationName, cardTitle, boardName, message, link }: Props) => (
+function subjectFor(d: Record<string, any>) {
+  const title = d?.cardTitle ?? "Ação";
+  return d?.kind === "membro"
+    ? `Você foi convidado para uma ação: ${title}`
+    : `Nova tarefa atribuída a você: ${title}`;
+}
+
+const Email = ({ kind, cardTitle, boardName, actorName, link }: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>{`Automação disparada: ${automationName ?? "Gestão de Tarefas"}`}</Preview>
+    <Preview>{subjectFor({ kind, cardTitle })}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>Gestão de Tarefas</Heading>
         <Text style={text}>
-          A automação <strong>{automationName ?? "sem nome"}</strong> foi disparada
-          {boardName ? ` no quadro ${boardName}` : ""}.
+          {kind === "membro"
+            ? "Você foi adicionado como membro de uma ação"
+            : "Uma ação foi atribuída a você"}
+          {boardName ? ` no quadro ${boardName}` : ""}
+          {actorName ? ` por ${actorName}` : ""}.
         </Text>
         <Section style={box}>
-          <Text style={boxLabel}>Card</Text>
+          <Text style={boxLabel}>Ação</Text>
           <Text style={boxText}>{cardTitle ?? "—"}</Text>
         </Section>
-        {message && <Text style={text}>{message}</Text>}
         {link && (
           <Text style={text}>
-            <Link href={link} style={{ color: "#b8860b" }}>Abrir o quadro</Link>
+            <Link href={link} style={{ color: "#b8860b" }}>Abrir a ação</Link>
           </Text>
         )}
         <Text style={muted}>PoolFlux · Imersão Comercial</Text>
@@ -39,14 +48,13 @@ const Email = ({ automationName, cardTitle, boardName, message, link }: Props) =
 
 export const template = {
   component: Email,
-  subject: (d: Record<string, any>) =>
-    `${d?.automationName ? `${d.automationName} · ` : ""}${d?.cardTitle ?? "Nova atividade no quadro"}`,
-  displayName: "Automação de tarefas",
+  subject: subjectFor,
+  displayName: "Atribuição de tarefa",
   previewData: {
-    automationName: "Novo card criado",
+    kind: "responsavel",
     cardTitle: "Revisar mix da linha X",
     boardName: "Ações Comerciais",
-    message: "Automação disparada",
+    actorName: "Felipe",
     link: "https://poolflux.app",
   },
 } satisfies TemplateEntry;
