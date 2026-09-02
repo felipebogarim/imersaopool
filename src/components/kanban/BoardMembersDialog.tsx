@@ -30,7 +30,7 @@ export function BoardMembersDialog({ board, open, onOpenChange }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_workspace_members")
-        .select("id, user_id, role, profiles!kanban_workspace_members_user_id_fkey(full_name, email)")
+        .select("id, user_id, role")
         .eq("workspace_id", board.workspace_id);
       return data ?? [];
     },
