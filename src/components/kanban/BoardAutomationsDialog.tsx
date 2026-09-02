@@ -45,6 +45,9 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
   const [triggerListId, setTriggerListId] = useState("");
   const [actionListId, setActionListId] = useState("");
   const [actionUserEmail, setActionUserEmail] = useState("");
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [extraEmails, setExtraEmails] = useState("");
 
   const { data: automations = [] } = useQuery({
     queryKey: ["kanban-automations", board.id],
@@ -55,6 +58,42 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     enabled: open,
   });
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ["kanban-automation-users"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+      return (data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+    },
+    enabled: open,
+  });
+
+  const term = search.trim().toLowerCase();
+  const filteredUsers = term
+    ? allUsers.filter(
+        (u) =>
+          (u.full_name ?? "").toLowerCase().includes(term) ||
+          (u.email ?? "").toLowerCase().includes(term),
+      )
+    : allUsers;
+
+  function toggleUser(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function resetForm() {
+    setCreating(false);
+    setName("");
+    setTriggerListId("");
+    setActionListId("");
+    setActionUserEmail("");
+    setSelectedIds([]);
+    setExtraEmails("");
+    setSearch("");
+  }
+
   async function create() {
     if (!name.trim()) return toast.error("Dê um nome à automação");
     const { data: u } = await supabase.auth.getUser();
@@ -62,19 +101,30 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     const action_config: any = {};
     if (trigger === "card_moved_to_list") trigger_config.list_id = triggerListId || undefined;
     if (action === "move_to_list") action_config.list_id = actionListId;
-    if (action === "assign_member" || action === "send_notification") {
+    if (action === "assign_member") {
       if (actionUserEmail.trim()) {
         const mail = actionUserEmail.trim().toLowerCase();
         const { data: prof } = await supabase.from("profiles").select("id").eq("email", mail).maybeSingle();
-        if (!prof && action === "assign_member") return toast.error("Usuário não encontrado");
-        if (prof) action_config.user_id = prof.id;
-        if (action === "send_notification") {
-          action_config.email = mail;
-          action_config.message = `Automação "${name}" disparada`;
-        }
+        if (!prof) return toast.error("Usuário não encontrado");
+        action_config.user_id = prof.id;
       }
     }
-
+    if (action === "send_notification") {
+      const recipients: { user_id?: string; email?: string }[] = selectedIds.map((id) => {
+        const u2 = allUsers.find((x) => x.id === id);
+        return { user_id: id, email: u2?.email ?? undefined };
+      });
+      extraEmails
+        .split(/[,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.includes("@"))
+        .forEach((email) => {
+          if (!recipients.some((r) => r.email?.toLowerCase() === email)) recipients.push({ email });
+        });
+      if (recipients.length === 0) return toast.error("Selecione ao menos um destinatário");
+      action_config.recipients = recipients;
+      action_config.message = `Automação "${name}" disparada`;
+    }
 
     const { error } = await supabase.from("kanban_automations").insert({
       board_id: board.id, name: name.trim(),
@@ -84,9 +134,10 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
     });
     if (error) return toast.error(error.message);
     toast.success("Automação criada");
-    setCreating(false); setName(""); setTriggerListId(""); setActionListId(""); setActionUserEmail("");
+    resetForm();
     qc.invalidateQueries({ queryKey: ["kanban-automations", board.id] });
   }
+
 
   async function toggle(a: any) {
     await supabase.from("kanban_automations").update({ enabled: !a.enabled }).eq("id", a.id);
