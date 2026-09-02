@@ -203,16 +203,60 @@ export function BoardAutomationsDialog({ board, lists, open, onOpenChange }: Pro
                       <SelectContent>{lists.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
                     </Select>
                   )}
-                  {(action === "assign_member" || action === "send_notification") && (
+                  {action === "assign_member" && (
                     <Input className="mt-1" placeholder="e-mail do usuário" value={actionUserEmail} onChange={(e) => setActionUserEmail(e.target.value)} />
                   )}
                 </div>
               </div>
+
+              {action === "send_notification" && (
+                <div className="rounded-lg border p-2">
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground">
+                      Destinatários {selectedIds.length > 0 && `(${selectedIds.length} selecionado${selectedIds.length > 1 ? "s" : ""})`}
+                    </label>
+                    {selectedIds.length > 0 && (
+                      <button className="text-xs text-muted-foreground hover:underline" onClick={() => setSelectedIds([])}>
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  <Input placeholder="Buscar usuário por nome ou e-mail" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    {filteredUsers.length === 0 && (
+                      <li className="p-2 text-xs text-muted-foreground">Nenhum usuário encontrado.</li>
+                    )}
+                    {filteredUsers.map((u) => (
+                      <li key={u.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleUser(u.id)}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent"
+                        >
+                          <Checkbox checked={selectedIds.includes(u.id)} className="pointer-events-none" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm">{u.full_name ?? u.email ?? "—"}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Input
+                    className="mt-2"
+                    placeholder="Outros e-mails (separados por vírgula)"
+                    value={extraEmails}
+                    onChange={(e) => setExtraEmails(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button size="sm" onClick={create}>Criar</Button>
-                <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>Cancelar</Button>
+                <Button size="sm" variant="ghost" onClick={resetForm}>Cancelar</Button>
               </div>
             </div>
+
           ) : (
             <Button variant="outline" onClick={() => setCreating(true)} className="w-full gap-2">
               <Plus className="h-4 w-4" /> Nova automação
