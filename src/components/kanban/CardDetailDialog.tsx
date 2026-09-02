@@ -701,9 +701,9 @@ function MembersPicker({ cardId, boardId, workspaceId, card, patch }: { cardId: 
     ? reps.filter((r) => (r.nome ?? "").toLowerCase().includes(respTerm.toLowerCase()))
     : reps;
 
-  const filteredWsMembersMem = memberTerm.trim().toLowerCase()
-    ? wsMembers.filter((m: any) => (m.profiles?.full_name ?? "").toLowerCase().includes(memberTerm.toLowerCase()) || (m.profiles?.email ?? "").toLowerCase().includes(memberTerm.toLowerCase()))
-    : wsMembers;
+  const filteredAllUsersMem = memberTerm.trim().toLowerCase()
+    ? allUsers.filter((u: any) => (u.full_name ?? "").toLowerCase().includes(memberTerm.toLowerCase()) || (u.email ?? "").toLowerCase().includes(memberTerm.toLowerCase()))
+    : allUsers;
 
   return (
     <div className="space-y-4">
