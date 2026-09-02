@@ -5,6 +5,7 @@ import { Calendar, MessageSquare, CheckSquare, Paperclip, Building2, Sparkles, U
 import type { KCard } from "@/lib/kanban-types";
 import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
+import { fetchProfilesMap } from "@/lib/kanban-profiles";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -22,16 +23,18 @@ export function KanbanCard({ card, onClick, isDragging }: Props) {
         supabase.from("kanban_checklist_items").select("done, kanban_checklists!inner(card_id)").eq("kanban_checklists.card_id", card.id),
         supabase.from("kanban_comments").select("id", { count: "exact", head: true }).eq("card_id", card.id),
         supabase.from("kanban_attachments").select("id", { count: "exact", head: true }).eq("card_id", card.id),
-        supabase.from("kanban_card_members").select("user_id, profiles!kanban_card_members_user_id_fkey(full_name)").eq("card_id", card.id),
+        supabase.from("kanban_card_members").select("user_id").eq("card_id", card.id),
       ]);
       const items = (checklistItems.data ?? []) as any[];
+      const memberRows = (members.data ?? []) as any[];
+      const profMap = await fetchProfilesMap(memberRows.map((m) => m.user_id));
       return {
         labels: (labels.data ?? []).map((l: any) => l.kanban_labels).filter(Boolean),
         checklistTotal: items.length,
         checklistDone: items.filter((i) => i.done).length,
         comments: comments.count ?? 0,
         attachments: attachments.count ?? 0,
-        members: (members.data ?? []) as any[],
+        members: memberRows.map((m) => ({ ...m, profiles: profMap[m.user_id] ?? null })),
       };
     },
   });

@@ -33,6 +33,7 @@ import { PRIORITY_COLOR, PRIORITY_LABEL } from "@/lib/kanban-types";
 import { getSuggested, withSuggested, SUGGESTED_LABEL, SUGGESTED_COLOR } from "@/lib/kanban-suggested";
 import { useIsMasterAdmin } from "@/hooks/use-is-admin";
 import { logActivity } from "@/lib/kanban-activity";
+import { fetchProfilesMap } from "@/lib/kanban-profiles";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -902,24 +903,34 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
   const { data: comments = [] } = useQuery({
     queryKey: ["kanban-comments", cardId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("kanban_comments")
-        .select("*, profiles!kanban_comments_user_id_fkey(full_name, email)")
+        .select("*")
         .eq("card_id", cardId)
         .order("created_at", { ascending: true });
-      return data ?? [];
+      if (error) throw error;
+      const rows = data ?? [];
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
     },
   });
 
   async function send() {
     if (!text.trim()) return;
     const { data: u } = await supabase.auth.getUser();
-    await supabase.from("kanban_comments").insert({ card_id: cardId, user_id: u.user!.id, content: text.trim() });
+    const { error } = await supabase
+      .from("kanban_comments")
+      .insert({ card_id: cardId, user_id: u.user!.id, content: text.trim() });
+    if (error) {
+      toast.error(error.message ?? "Falha ao enviar comentário.");
+      return;
+    }
     await logActivity(boardId, "comment_added", {}, cardId);
     setText("");
-    qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
+    await qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
     qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
   }
+
 
   return (
     <div className="mt-6">
@@ -949,11 +960,14 @@ function ActivitySection({ cardId }: { cardId: string }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_activities")
-        .select("*, profiles!kanban_activities_user_id_fkey(full_name, email)")
+        .select("*")
         .eq("card_id", cardId)
         .order("created_at", { ascending: false })
         .limit(20);
-      return data ?? [];
+      const rows = data ?? [];
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
+
     },
   });
   if (acts.length === 0) return null;

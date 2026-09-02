@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchProfilesMap } from "@/lib/kanban-profiles";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -30,9 +31,11 @@ export function BoardMembersDialog({ board, open, onOpenChange }: Props) {
     queryFn: async () => {
       const { data } = await supabase
         .from("kanban_workspace_members")
-        .select("id, user_id, role, profiles!kanban_workspace_members_user_id_fkey(full_name, email)")
+        .select("id, user_id, role")
         .eq("workspace_id", board.workspace_id);
-      return data ?? [];
+      const rows = data ?? [];
+      const byId = await fetchProfilesMap(rows.map((r: any) => r.user_id));
+      return rows.map((r: any) => ({ ...r, profiles: byId[r.user_id] ?? null }));
     },
     enabled: open,
   });
