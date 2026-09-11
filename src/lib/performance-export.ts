@@ -189,7 +189,7 @@ export function exportPerformanceXlsx(opts: {
 
     // Total %
     const totalPctRef = XLSXStyle.utils.encode_cell({ r: rowIdx, c: 3 });
-    const totalPctHex = r.total_pct_status ? FAROL_HEX[r.total_pct_status] : null;
+    const totalPctHex = pctOf(r.total_pct) != null && r.total_pct_status ? FAROL_HEX[r.total_pct_status] : null;
     if (ws[totalPctRef])
       ws[totalPctRef].s = {
         font: { bold: true },
@@ -206,9 +206,8 @@ export function exportPerformanceXlsx(opts: {
       const cell = ws[cellRef];
       if (!cell) return;
 
-      const hex =
-        r.metas_cores?.[f] ??
-        (r.metas_status?.[f] ? FAROL_HEX[r.metas_status[f]] : null);
+      const hasNumericResult = pctOf(r.familia_pct?.[f]) != null;
+      const hex = hasNumericResult && r.metas_status?.[f] ? FAROL_HEX[r.metas_status[f]] : null;
 
       // Se o valor da célula for a faixa textual do farol, mantém como string; senão como número R$.
       const isFaixaText = typeof cell.v === "string";

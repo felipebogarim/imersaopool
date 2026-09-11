@@ -292,17 +292,15 @@ export function PerformancePageContent() {
         if (!filterCats.some((c) => c.toUpperCase() === cat)) return false;
       }
       if (filterZero) {
-        // Considera 0% apenas nas colunas de famílias (ignora coluna Total %).
-        // Mesma regra da célula: status sem_compra, ou célula vazia (sem meta, sem realizado e sem %).
+        // Considera 0% somente quando há um resultado numérico efetivamente igual a zero.
         const hasZero = famsToCheck.some((f) => {
-          const meta = Number(r.metas?.[f]) || 0;
-          const real = Number(r.realizado?.[f]) || 0;
+          const metaValue = r.metas?.[f];
+          const realValue = r.realizado?.[f];
+          const meta = typeof metaValue === "number" && Number.isFinite(metaValue) ? metaValue : null;
+          const real = typeof realValue === "number" && Number.isFinite(realValue) ? realValue : null;
           const storedPct = percentValue(r.familia_pct?.[f]);
-          const pct = meta > 0 && real > 0 ? (real / meta) * 100 : storedPct;
-          if (pct != null) return pct <= 0;
-          const st = r.metas_status?.[f];
-          if (st) return st === "sem_compra";
-          return meta === 0 && real === 0;
+          const pct = storedPct ?? (meta != null && meta > 0 && real != null ? (real / meta) * 100 : null);
+          return pct === 0;
         });
         if (!hasZero) return false;
       }
@@ -652,8 +650,6 @@ export function PerformancePageContent() {
       const r = { ...next[rowIdx], metas: { ...next[rowIdx].metas } };
       if (Number.isNaN(value) || value === 0) delete r.metas[familia];
       else r.metas[familia] = value;
-      // Se está editando manualmente e não há realizado, deriva status por presença de valor
-      // (não altera se existir realizado — % será calculado)
       next[rowIdx] = r;
       return next;
     });
@@ -1551,9 +1547,6 @@ function MatrixCell({
   const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : null;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
-  // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
-  // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
-  // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
   const isFaixaMode = status === "sem_compra";
 
 

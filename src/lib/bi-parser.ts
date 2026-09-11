@@ -221,9 +221,7 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     if (ating == null && hasReal && meta > 0) ating = (realizado / meta) * 100;
     if (ating == null && coef != null) ating = coef * 100;
     if (ating == null && indice != null && meta > 0) ating = (indice / meta) * 100;
-    if (ating == null && farolRaw) ating = coefFromFarol(farolRaw);
-
-    
+    // O farol importado é apenas um rótulo visual; nunca é convertido em percentual.
     const farolLabel = normalizeFarolLabel(farolRaw, ating);
 
     anyRow = true;
