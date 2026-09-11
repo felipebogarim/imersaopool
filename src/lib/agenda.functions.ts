@@ -29,12 +29,10 @@ const invitationInput = z.object({
   inviteeIds: z.array(z.string().uuid()).max(100),
 });
 
-export const sendAgendaInvitations = createServerFn({ method: "POST" })
+export const syncAgendaInvitees = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => invitationInput.parse(data))
   .handler(async ({ data, context }) => {
-    if (data.inviteeIds.length === 0) return { sent: 0 };
-
     const { data: event, error: eventError } = await context.supabase
       .from("agenda_events")
       .select("id, title, starts_at, duration_minutes, details, owner_id, company_id")
@@ -45,12 +43,31 @@ export const sendAgendaInvitations = createServerFn({ method: "POST" })
     if (!event) throw new Error("Compromisso não encontrado");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existingRows, error: existingError } = await supabaseAdmin
+      .from("agenda_event_invitees")
+      .select("invitee_id")
+      .eq("event_id", event.id);
+    if (existingError) throw existingError;
+    const existingIds = new Set((existingRows ?? []).map((row) => row.invitee_id));
+
+    const requestedIds = [...new Set(data.inviteeIds)].filter((id) => id !== context.userId);
+    const removeIds = [...existingIds].filter((id) => !requestedIds.includes(id));
+    if (removeIds.length > 0) {
+      const { error } = await supabaseAdmin
+        .from("agenda_event_invitees")
+        .delete()
+        .eq("event_id", event.id)
+        .in("invitee_id", removeIds);
+      if (error) throw error;
+    }
+    if (requestedIds.length === 0) return { sent: 0 };
+
     const [{ data: organizer }, { data: invitees, error: inviteesError }] = await Promise.all([
       supabaseAdmin.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, active_company_id, status")
-        .in("id", data.inviteeIds),
+        .in("id", requestedIds),
     ]);
     if (inviteesError) throw inviteesError;
 
@@ -58,6 +75,21 @@ export const sendAgendaInvitations = createServerFn({ method: "POST" })
       (invitee) => invitee.active_company_id === event.company_id && invitee.status === "ativo" && invitee.email,
     );
     if (validInvitees.length === 0) return { sent: 0 };
+
+    const { error: saveError } = await supabaseAdmin
+      .from("agenda_event_invitees")
+      .upsert(
+        validInvitees.map((invitee) => ({
+          event_id: event.id,
+          invitee_id: invitee.id,
+          owner_id: context.userId,
+        })),
+        { onConflict: "event_id,invitee_id" },
+      );
+    if (saveError) throw saveError;
+
+    const newInvitees = validInvitees.filter((invitee) => !existingIds.has(invitee.id));
+    if (newInvitees.length === 0) return { sent: 0 };
 
     const { sendTransactionalEmail } = await import("@/lib/email/send.server");
     const startsAt = new Date(event.starts_at);
@@ -74,7 +106,7 @@ export const sendAgendaInvitations = createServerFn({ method: "POST" })
     const origin = process.env.PUBLIC_SITE_URL || "https://poolflux.app";
 
     await Promise.all(
-      validInvitees.map((invitee) =>
+      newInvitees.map((invitee) =>
         sendTransactionalEmail({
           templateName: "agenda-convite",
           recipientEmail: invitee.email as string,
@@ -91,5 +123,5 @@ export const sendAgendaInvitations = createServerFn({ method: "POST" })
       ),
     );
 
-    return { sent: validInvitees.length };
+    return { sent: newInvitees.length };
   });
