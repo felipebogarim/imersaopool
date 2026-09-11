@@ -120,12 +120,11 @@ export function EnvioMassaDialog({
       const parsed = await parseWorkbook(await entry.file.arrayBuffer(), {
         sheetName: entry.sheetName,
       });
-      if (parsed.conflitos?.length) throw new Error("Divergências entre texto e cor na planilha.");
       if (parsed.matriz && parsed.matriz_erros.length) throw new Error(parsed.matriz_erros[0]);
       if (!parsed.rows.length) throw new Error("Nenhuma linha de cliente encontrada.");
       const coverage = validatePerformanceStatusCoverage(parsed);
       if (!coverage.ok) {
-        throw new Error("Nenhuma célula de farol foi reconhecida nas famílias. O arquivo não foi salvo para evitar performance vazia ou zerada.");
+        throw new Error("Nenhuma linha numérica válida foi reconhecida.");
       }
       const cm = (parsed.categoriaMetas ?? {}) as Record<string, any>;
       familias = parsed.familias;
@@ -136,9 +135,10 @@ export function EnvioMassaDialog({
         categoria: r.categoria,
         metas: r.metas ?? {},
         realizado: r.realizado ?? {},
+        media: r.media ?? {},
         familia_pct: r.familia_pct ?? {},
         metas_status: r.metas_status ?? {},
-        metas_cores: r.metas_cores ?? {},
+        metas_cores: {},
         total_meta: r.total_meta,
         total_pct: r.total_pct ?? null,
         total_pct_status: r.total_pct_status,

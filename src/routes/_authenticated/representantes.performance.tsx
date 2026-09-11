@@ -473,21 +473,7 @@ export function PerformancePageContent() {
           ? "invalida"
           : "valida";
 
-      // 1) Qualquer conflito de cor/texto interrompe a importação.
-      if (parsed.conflitos?.length) {
-        const porMotivo = parsed.conflitos.reduce<Record<string, number>>((acc, c) => {
-          acc[c.motivo] = (acc[c.motivo] ?? 0) + 1;
-          return acc;
-        }, {});
-        const resumo = Object.entries(porMotivo)
-          .map(([m, n]) => `${n} ${CONFLICT_LABEL[m as keyof typeof CONFLICT_LABEL] ?? m}`)
-          .join(" · ");
-        const head = parsed.conflitos.slice(0, 3).map(conflictMessage).join("\n");
-        throw new Error(
-          `Importação interrompida.\n${resumo}\n\n${head}${parsed.conflitos.length > 3 ? `\n(+${parsed.conflitos.length - 3} ocorrência(s))` : ""}`,
-        );
-      }
-      // 2) Matriz financeira presente porém inválida também interrompe.
+      // A matriz financeira presente, porém inválida, interrompe a importação.
       if (parsed.matriz && parsed.matriz_erros.length) {
         throw new Error(parsed.matriz_erros.slice(0, 3).join("\n"));
       }
@@ -497,7 +483,7 @@ export function PerformancePageContent() {
       audit.clientes_com_status = coverage.rowsWithStatus;
       if (!coverage.ok) {
         throw new Error(
-          "Importação interrompida: nenhuma célula de farol foi reconhecida nas famílias. O arquivo não será salvo para evitar performance vazia ou zerada.",
+          "Importação interrompida: nenhuma linha numérica válida foi encontrada.",
         );
       }
 
@@ -521,9 +507,10 @@ export function PerformancePageContent() {
           categoria: r.categoria,
           metas: r.metas ?? {},
           realizado: r.realizado ?? {},
+          media: r.media ?? {},
           familia_pct: r.familia_pct ?? {},
           metas_status: r.metas_status ?? {},
-          metas_cores: r.metas_cores ?? {},
+          metas_cores: {},
           total_meta: r.total_meta,
           total_pct: r.total_pct ?? null,
           total_pct_status: r.total_pct_status,
@@ -543,10 +530,10 @@ export function PerformancePageContent() {
       toast.success("Arquivo validado com sucesso.", {
         description:
           `${parsed.rows.length} clientes encontrados. ${parsed.familias.length} famílias reconhecidas. ` +
-          `${coverage.statusCells} células de desempenho reconhecidas. ` +
+          `${coverage.statusCells} percentuais numéricos reconhecidos. ` +
           (parsed.diagnostic ? `Confiança ${parsed.diagnostic.confidence}. ` : "") +
           `Matriz Financeira ${parsed.matriz ? (parsed.matriz_erros.length ? "inválida" : "válida") : "ausente"}. ` +
-          `Nenhuma divergência entre texto e cor.` +
+          `Cores e estilos foram ignorados.` +
           (ign ? ` ${ign} linha(s) ignorada(s) (totais/legendas).` : ""),
       });
       setDlgOpen(false);
