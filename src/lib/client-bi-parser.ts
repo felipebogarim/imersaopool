@@ -156,7 +156,7 @@ function parseBiClientSheet(ws: XLSX.WorkSheet): {
         familia: fam,
         atingimento: num(r[h.idx["RESULTADO"]]),
         participacao: num(r[h.idx["PARTICIPACAO"]]),
-        farol: normalizeTrafficLightGroup(r[h.idx["GRUPO DO FAROL"]]),
+        farol: statusToLabel(num(r[h.idx["RESULTADO"]])),
       });
       if (familias.length === 7) break;
     }
@@ -249,11 +249,6 @@ function parseGrafClientSheet(ws: XLSX.WorkSheet): {
   const familias: FamiliaResultado[] = [];
   let geral: number | null = null;
   if (h) {
-    const iFarol = h.idx["GRUPO DO FAROL"];
-    const iFarolCol =
-      iFarol != null
-        ? iFarol
-        : (rows[h.row] ?? []).findIndex((c) => normalize(c) === "GRUPO DO FAROL");
     for (let i = h.row + 1; i < rows.length; i++) {
       const r = rows[i] ?? [];
       const tipo = normalize(r[h.idx["TIPO"]]);
@@ -329,7 +324,6 @@ function parseDadosGraficoLong(
     const h = findHeaderRow(rows, ["CLIENTE", "TIPO", "INDICADOR", "RESULTADO"], 5);
     if (!h) continue;
     const iCat = (rows[h.row] ?? []).findIndex((c) => normalize(c) === "CATEGORIA");
-    const iFarol = (rows[h.row] ?? []).findIndex((c) => normalize(c) === "GRUPO DO FAROL");
     type Acc = {
       cliente: string;
       categoria: string | null;
@@ -416,11 +410,10 @@ function parseBaseLong(
       if (g.familias.some((x) => x.familia === fam)) continue;
       const coef = iCoef >= 0 ? num(r[iCoef]) : null;
       const meta = iMeta >= 0 ? num(r[iMeta]) : null;
-      const farolLabel = normalizeTrafficLightGroup(r[h.idx["FAROL"]]);
       g.familias.push({
         familia: fam,
         atingimento: coef,
-        farol: farolLabel,
+        farol: statusToLabel(coef),
       });
       // agregado para atingimento geral ponderado por meta
       if (meta != null && coef != null && meta > 0) {
