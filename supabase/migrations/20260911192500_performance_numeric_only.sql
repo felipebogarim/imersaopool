@@ -1,5 +1,22 @@
 ALTER TABLE performance_private.rep_row_values ADD COLUMN IF NOT EXISTS media jsonb;
 
+
+
+CREATE OR REPLACE FUNCTION performance_private.farol_from_ratio(_ratio numeric)
+RETURNS text LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
+  SELECT CASE
+    WHEN _ratio IS NULL THEN NULL
+    WHEN _ratio = 0 THEN 'sem_compra'
+    WHEN _ratio < 0.5 THEN 'abaixo_meta'
+    WHEN _ratio < 0.7 THEN 'pode_melhorar'
+    WHEN _ratio < 0.9 THEN 'proximo'
+    WHEN _ratio <= 1 THEN 'otimo'
+    ELSE 'excelente'
+  END
+$$;
+REVOKE ALL ON FUNCTION performance_private.farol_from_ratio(numeric) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION performance_private.farol_from_ratio(numeric) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.submit_performance_upload(_payload jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -53,13 +70,6 @@ BEGIN
 
   IF _company_id <> public.current_company_id() THEN
     RAISE EXCEPTION 'Acesso negado à empresa deste representante';
-  END IF;
-
-  IF jsonb_typeof(_conflitos) = 'array' AND jsonb_array_length(_conflitos) > 0 THEN
-    _c := _conflitos->0;
-    RAISE EXCEPTION 'Importação interrompida: divergência entre faixa e cor em % divergência(s). Primeira: linha %, cliente %, família %, texto %, cor %',
-      jsonb_array_length(_conflitos), COALESCE(_c->>'linha','?'), COALESCE(_c->>'razao_social','?'),
-      COALESCE(_c->>'familia','?'), COALESCE(_c->>'texto','(vazio)'), COALESCE(NULLIF(_c->>'cor',''),'(sem cor)');
   END IF;
 
   SELECT ARRAY(SELECT jsonb_array_elements_text(_payload->'familias')) INTO _familias;
@@ -206,6 +216,9 @@ BEGIN
       END IF;
     END LOOP;
 
+    SELECT COALESCE(jsonb_object_agg(key, performance_private.farol_from_ratio(value::text::numeric)), '{}'::jsonb)
+      INTO _metas FROM jsonb_each(_row_pct);
+
     INSERT INTO public.rep_performance_rows(
       company_id, upload_id, ordem, razao_social, categoria, metas_status, metas_cores, total_pct_status, familia_pct, total_pct
     ) VALUES (
@@ -306,7 +319,7 @@ BEGIN
     _row_meta_sum := 0;
     _row_real_sum := 0;
     DECLARE
-      _fpct jsonb := COALESCE(_row.stored_pct, '{}'::jsonb);
+      _fpct jsonb := '{}'::jsonb;
       _row_has_numeric boolean := false;
     BEGIN
       _cat := COALESCE(_row.categoria, '');
@@ -323,14 +336,9 @@ BEGIN
         END IF;
         _real_val := NULLIF(COALESCE(_row.realizado,'{}'::jsonb)->>_f,'')::numeric;
 
-        IF _meta_val IS NOT NULL THEN
-          _row_meta_sum := _row_meta_sum + _meta_val;
-        END IF;
-        IF _real_val IS NOT NULL THEN
-          _row_real_sum := _row_real_sum + _real_val;
-        END IF;
-
         IF _meta_val IS NOT NULL AND _meta_val > 0 AND _real_val IS NOT NULL THEN
+          _row_meta_sum := _row_meta_sum + _meta_val;
+          _row_real_sum := _row_real_sum + _real_val;
           _fpct := jsonb_set(_fpct, ARRAY[_f],
             to_jsonb(round((_real_val / _meta_val)::numeric, 4)), true);
           _row_has_numeric := true;
