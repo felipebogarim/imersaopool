@@ -22,7 +22,7 @@ import {
   type AutonomousPerformanceResult,
 } from "./performance-import-engine";
 
-export const PARSER_VERSION = "performance-parser@9-numeric-only";
+export const PARSER_VERSION = "performance-parser@8-deterministic";
 
 export type ParsedRow = {
   ordem: number;
@@ -361,7 +361,7 @@ export async function parseWorkbook(
   buf: ArrayBuffer,
   opts?: { sheetName?: string },
 ): Promise<ParsedSheet> {
-  const full = XLSXStyle.read(buf, { type: "array" });
+  const full = XLSXStyle.read(buf, { type: "array", cellStyles: true });
   let wb = full;
   if (opts?.sheetName && full.SheetNames.includes(opts.sheetName)) {
     const keep = [opts.sheetName, ...full.SheetNames.filter((n) => n !== opts.sheetName && isAuxSheet(n))];
@@ -395,7 +395,8 @@ export async function parseWorkbook(
     for (let c = range.s.c; c <= range.e.c; c++) {
       const addr = XLSXStyle.utils.encode_cell({ r, c });
       const cell = ws[addr];
-      row.push({ v: cell ? cell.v : null, c: null, raw: null, hasStyle: false });
+      const fill = cellFill(cell);
+      row.push({ v: cell ? cell.v : null, c: fill.hex, raw: fill.raw, hasStyle: fill.hasStyle });
     }
     grid.push(row);
   }
@@ -417,7 +418,7 @@ function deterministicToParsedSheet(
   stats.celulas_familias = result.rows.length * result.familias.length;
   stats.celulas_total_pct = result.rows.length;
   stats.celulas_avaliadas = result.diagnostic.resultado.statusCells;
-  stats.cores_extraidas = 0;
+  stats.cores_extraidas = result.diagnostic.validacao.colorFallbackCells;
   stats.estilos_ausentes = result.diagnostic.validacao.emptyCells;
   for (const row of result.rows) {
     for (const status of Object.values(row.metas_status)) {
@@ -425,6 +426,9 @@ function deterministicToParsedSheet(
     }
     if (row.total_pct_status) {
       stats.por_status[row.total_pct_status] = (stats.por_status[row.total_pct_status] ?? 0) + 1;
+    }
+    for (const color of Object.values(row.metas_cores ?? {})) {
+      if (!stats.cores_distintas.includes(color)) stats.cores_distintas.push(color);
     }
   }
   stats.cores_distintas.sort();

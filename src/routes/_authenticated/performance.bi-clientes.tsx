@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FAROL_CELL_CLASS, type FarolStatus } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_MIDPOINT, type FarolStatus } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
 
 
@@ -61,6 +61,16 @@ function BIClientesPage() {
 
   const consolidated = useMemo(() => {
     const SUMMARY_PREFIXES = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
+    const CANONICAL_FAMILIES = [
+      "DECOR NEWLINE",
+      "DECOR STUDIO",
+      "SISTEMAS E MÓDULOS",
+      "PRO LED",
+      "PRO LAMP",
+      "PERFIL",
+      "FITAS E FONTES",
+    ];
+
     return allRows
       .filter((r) => {
         const u = String(r.razao_social ?? "").trim().toUpperCase();
@@ -70,8 +80,26 @@ function BIClientesPage() {
         const upload = uploads.find((u) => u.id === r.upload_id);
         const rep = reps.find((rp) => rp.id === upload?.representative_id);
         
-        const totalRatio = sanitizeRatio(r.total_pct);
-        const attainedPct = totalRatio == null ? null : totalRatio * 100;
+        // Se total_pct for 0 mas houver metas_status preenchido, calculamos via ponto médio do farol
+        let attainedPct = (sanitizeRatio(r.total_pct) ?? 0) * 100;
+        
+        if (attainedPct === 0 && r.metas_status && typeof r.metas_status === 'object') {
+          const ms = r.metas_status as Record<string, FarolStatus>;
+          let totalWeight = 0;
+          let totalPoints = 0;
+          
+          CANONICAL_FAMILIES.forEach(f => {
+            const status = ms[f];
+            if (status && status !== 'sem_compra') {
+              totalPoints += FAROL_MIDPOINT[status];
+              totalWeight += 1;
+            }
+          });
+          
+          if (totalWeight > 0) {
+            attainedPct = totalPoints / totalWeight;
+          }
+        }
 
         return {
           ...r,
@@ -277,9 +305,9 @@ function BIClientesPage() {
                       </td>
                       <td className={cn(
                         "px-2 sm:px-4 py-2.5 text-center font-bold border-r border-border/50 tabular-nums whitespace-nowrap",
-                        row.computedAtainment != null && row.total_pct_status && FAROL_CELL_CLASS[row.total_pct_status as FarolStatus]
+                        row.total_pct_status && FAROL_CELL_CLASS[row.total_pct_status as FarolStatus]
                       )}>
-                        {row.computedAtainment != null ? `${row.computedAtainment.toFixed(1)}%` : "N/D"}
+                        {row.computedAtainment > 0 ? `${row.computedAtainment.toFixed(1)}%` : "0%"}
                       </td>
                       {columns.map((col) => {
                         const metasStatus = row.metas_status as Record<string, FarolStatus>;
@@ -295,12 +323,16 @@ function BIClientesPage() {
                             key={col} 
                             className={cn(
                               "px-3 py-2.5 text-center text-[10px] border-r border-border/50 last:border-r-0 tabular-nums font-bold",
-                              familyPct != null && status && FAROL_CELL_CLASS[status]
+                              status && FAROL_CELL_CLASS[status]
                             )}
                           >
-                            {familyPct !== null && familyPct !== undefined
+                            {familyPct !== null && familyPct !== undefined 
                               ? `${(Number(familyPct) * 100).toFixed(1)}%`
-                              : "N/D"}
+                              : status === "sem_compra" 
+                                ? "0%" 
+                                : status 
+                                  ? `${FAROL_MIDPOINT[status]}%` 
+                                  : "0%"}
                           </td>
                         );
                       })}

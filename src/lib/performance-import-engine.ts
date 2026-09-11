@@ -9,6 +9,9 @@ export type RawCell = {
   w: string | null;
   z: string | null;
   addr: string;
+  hex: string | null;
+  rawColor: string | null;
+  hasStyle: boolean;
 };
 
 export type DetectedSubcolumnKind = "realizado" | "media" | "meta" | "percentual" | "farol" | "desconhecida";
@@ -112,6 +115,22 @@ function cellText(c: RawCell | undefined): string {
   return strip(c.v ?? c.w ?? "");
 }
 
+function fillOf(cell: any): Pick<RawCell, "hex" | "rawColor" | "hasStyle"> {
+  const style = cell?.s;
+  if (!style) return { hex: null, rawColor: null, hasStyle: false };
+  const fg = style?.fgColor ?? style?.fill?.fgColor ?? null;
+  const rawRgb = fg?.rgb ?? null;
+  if (typeof rawRgb !== "string") {
+    if (fg?.theme != null) return { hex: null, rawColor: `theme:${fg.theme}`, hasStyle: true };
+    if (fg?.indexed != null) return { hex: null, rawColor: `indexed:${fg.indexed}`, hasStyle: true };
+    return { hex: null, rawColor: null, hasStyle: true };
+  }
+  let hex = rawRgb.trim().replace(/^#/, "").toUpperCase();
+  if (hex.length === 8) hex = hex.slice(2);
+  if (!/^[0-9A-F]{6}$/.test(hex) || hex === "000000") return { hex: null, rawColor: rawRgb, hasStyle: true };
+  return { hex, rawColor: rawRgb, hasStyle: true };
+}
+
 function sheetGrid(ws: XLSXStyle.WorkSheet): RawCell[][] {
   const range = XLSXStyle.utils.decode_range(ws["!ref"] || "A1");
   const out: RawCell[][] = [];
@@ -120,11 +139,13 @@ function sheetGrid(ws: XLSXStyle.WorkSheet): RawCell[][] {
     for (let c = range.s.c; c <= range.e.c; c++) {
       const addr = XLSXStyle.utils.encode_cell({ r, c });
       const cell = ws[addr];
+      const fill = fillOf(cell);
       row.push({
         v: cell ? cell.v : null,
         w: cell?.w ?? null,
         z: cell?.z ?? null,
         addr,
+        ...fill,
       });
     }
     out.push(row);
@@ -410,7 +431,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       if (status) row.metas_status[group.familia] = status;
     }
 
-    if (rowMetaSum > 0 && (Object.keys(row.realizado).length > 0 || Object.keys(row.media).length > 0)) {
+    if (row.total_pct == null && rowMetaSum > 0 && Object.keys(row.realizado).length > 0) {
       row.total_pct = rowRealSum / rowMetaSum;
     }
     row.total_pct_status = statusFromRatio(row.total_pct);

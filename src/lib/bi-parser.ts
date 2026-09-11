@@ -124,6 +124,18 @@ const farolFromPct = (p: number | null): string | null => {
   return FAROL_FAIXAS.find((f) => f.test(p))?.label ?? null;
 };
 
+/** Coeficiente gerencial (ponto médio da faixa) a partir do rótulo do farol, em %. */
+const coefFromFarol = (raw: string): number | null => {
+  const r = norm(raw);
+  if (r.includes("sem")) return 0;
+  if (r.includes("abaixo")) return 25;
+  if (r.includes("melhorar")) return 60;
+  if (r.includes("proximo")) return 80;
+  if (r.includes("otimo")) return 95;
+  if (r.includes("excelente")) return 110;
+  return null;
+};
+
 const normalizeFarolLabel = (raw: string | null, pct: number | null): string | null => {
 
   if (!raw) return farolFromPct(pct);
@@ -209,7 +221,9 @@ function parseBaseBI(ws: XLSX.WorkSheet): BIData {
     if (ating == null && hasReal && meta > 0) ating = (realizado / meta) * 100;
     if (ating == null && coef != null) ating = coef * 100;
     if (ating == null && indice != null && meta > 0) ating = (indice / meta) * 100;
-    // O farol importado é apenas um rótulo visual; nunca é convertido em percentual.
+    if (ating == null && farolRaw) ating = coefFromFarol(farolRaw);
+
+    
     const farolLabel = normalizeFarolLabel(farolRaw, ating);
 
     anyRow = true;

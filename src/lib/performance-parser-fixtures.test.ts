@@ -107,7 +107,7 @@ describe("parser determinístico de performance", () => {
 
     const parsed = await parseWorkbook(buf);
 
-    expect(parsed.parser_version).toBe("performance-parser@9-numeric-only");
+    expect(parsed.parser_version).toBe("performance-parser@8-deterministic");
     expect(parsed.familias).toEqual(["DECOR NEWLINE", "DECOR STUDIO", "SISTEMAS E MÓDULOS"]);
     expect(parsed.rows).toHaveLength(2);
     expect(parsed.rows[0].metas_status).toEqual({});
