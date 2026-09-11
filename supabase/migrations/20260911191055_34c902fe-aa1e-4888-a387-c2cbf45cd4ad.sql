@@ -1,0 +1,1 @@
+DROP FUNCTION public.agenda_list_invitable_users();

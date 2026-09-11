@@ -151,6 +151,71 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_event_invitees: {
+        Row: {
+          created_at: string
+          event_id: string
+          invitee_id: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          invitee_id: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          invitee_id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_event_invitees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_events: {
+        Row: {
+          company_id: string
+          created_at: string
+          details: string | null
+          duration_minutes: number
+          id: string
+          owner_id: string
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          details?: string | null
+          duration_minutes?: number
+          id?: string
+          owner_id?: string
+          starts_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          details?: string | null
+          duration_minutes?: number
+          id?: string
+          owner_id?: string
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_compilations: {
         Row: {
           company_id: string | null

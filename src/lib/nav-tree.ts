@@ -97,6 +97,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "ferramentas.gerador-performance", label: "Gerador de Performance", to: "/admin/gerador-performance" },
       { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
+      { key: "ferramentas.agenda", label: "Agenda", to: "/ferramentas/agenda" },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
       { key: "ferramentas.tabela-precos", label: "Tabela de Preços", to: "/price/tabelas" },
     ],
