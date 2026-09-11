@@ -108,7 +108,9 @@ export function exportClientBIPdf(input: ClientBIPdfInput) {
     .map(f => ({
       familia: f.familia,
       pct: toPct(f.atingimento),
-      status: farolKeyFromLabel(f.farol) ?? statusFromPercent(toPct(f.atingimento)),
+      status: toPct(f.atingimento) == null
+        ? null
+        : statusFromPercent(toPct(f.atingimento)),
     }))
     .sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
 
@@ -139,8 +141,8 @@ export function exportClientBIPdf(input: ClientBIPdfInput) {
     const barW = Math.min(48, slot * 0.6);
     fams.forEach((f, i) => {
       const cx = M + 12 + slot * i + slot / 2;
-      const h = Math.max(2, ((f.pct ?? 0) / maxPct) * plotH);
-      const [r, g, b] = hexToRgb(FAROL_HEX[f.status ?? "sem_compra"]);
+      const h = f.pct == null ? 0 : Math.max(2, (f.pct / maxPct) * plotH);
+      const [r, g, b] = f.status ? hexToRgb(FAROL_HEX[f.status]) : [229, 231, 235];
       doc.setFillColor(r, g, b);
       doc.roundedRect(cx - barW / 2, base - h, barW, h, 2, 2, "F");
       doc.setFontSize(7).setTextColor(...INK).setFont("helvetica", "bold");

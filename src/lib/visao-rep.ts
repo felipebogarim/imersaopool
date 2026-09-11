@@ -333,8 +333,8 @@ export function buildPerfResumo(params: {
   }
 
   const familiasFac = familiaMedias(upload.familia_atingimento_categoria, upload.familias);
-  const estimado = familiasFac.length === 0 && total > 0;
-  const familias = estimado ? familiaMediasPorFarol(rows, upload.familias) : familiasFac;
+  const estimado = false;
+  const familias = familiasFac;
 
   const geralInformado = toPct(upload.atingimento_geral);
   const mediaFamilias = familias.length

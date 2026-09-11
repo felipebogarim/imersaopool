@@ -71,7 +71,7 @@ export function exportPerformancePdf(opts: {
     const totalMeta =
       r.total_meta ??
       familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-    const totalPctHex = r.total_pct_status ? hexToRgb(FAROL_HEX[r.total_pct_status]) : null;
+    const totalPctHex = r.total_pct != null && r.total_pct_status ? hexToRgb(FAROL_HEX[r.total_pct_status]) : null;
 
     const cells: CellDef[] = [
       { content: r.razao_social, styles: { fontStyle: "bold", halign: "left" } },

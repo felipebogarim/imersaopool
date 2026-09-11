@@ -272,8 +272,7 @@ function parseGrafClientSheet(ws: XLSX.WorkSheet): {
       familias.push({
         familia: fam,
         atingimento: resultado,
-        farol:
-          iFarolCol >= 0 ? normalizeTrafficLightGroup(r[iFarolCol]) : statusToLabel(resultado),
+        farol: statusToLabel(resultado),
       });
       if (familias.length === 7) break;
     }
@@ -362,7 +361,7 @@ function parseDadosGraficoLong(
       g.familias.push({
         familia: fam,
         atingimento: resultado,
-        farol: iFarol >= 0 ? normalizeTrafficLightGroup(r[iFarol]) : statusToLabel(resultado),
+        farol: statusToLabel(resultado),
       });
     }
     if (groups.size === 0) continue;

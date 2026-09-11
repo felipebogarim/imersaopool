@@ -38,9 +38,9 @@ export function ClientFamiliasChart({
       .filter((f) => (filterFams.length === 0 ? true : wanted.has(f.familia)))
       .map((f) => ({
         familia: f.familia,
-        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : 0,
+        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : null,
         farol: f.farol ? FAROL_LABEL[f.farol] : "—",
-        fill: FAROL_HEX[f.farol ?? "sem_compra"],
+        fill: f.farol ? FAROL_HEX[f.farol] : "E5E7EB",
       }));
   }, [bi, filterFams]);
 

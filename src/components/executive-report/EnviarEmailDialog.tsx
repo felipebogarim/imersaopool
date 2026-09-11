@@ -47,9 +47,9 @@ export function EnviarEmailDialog({
     () =>
       (bi?.familias ?? []).map((f: any) => ({
         familia: f.familia,
-        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : 0,
+        atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : null,
         farol: f.farol ? FAROL_LABEL[f.farol as keyof typeof FAROL_LABEL] : undefined,
-        fill: FAROL_HEX[(f.farol ?? "sem_compra") as keyof typeof FAROL_HEX],
+        fill: f.farol ? FAROL_HEX[f.farol as keyof typeof FAROL_HEX] : "E5E7EB",
       })),
     [bi],
   );
