@@ -36,10 +36,6 @@ export function useNavAccess(): NavAccess {
 
       // 'home' deve estar sempre liberada por padrão
       base.add("home");
-      // Agenda é uma ferramenta pessoal disponível a todos os usuários autenticados.
-      base.add("ferramentas");
-      base.add("ferramentas.agenda");
-
       // override individual do usuário (libera ou bloqueia por pessoa)
       const { data: userPerms } = await supabase
         .from("user_nav_permissions")
@@ -49,6 +45,10 @@ export function useNavAccess(): NavAccess {
         if (p.allowed) base.add(p.nav_key as string);
         else base.delete(p.nav_key as string);
       }
+
+      // Agenda é uma ferramenta pessoal disponível a todos os usuários autenticados.
+      base.add("ferramentas");
+      base.add("ferramentas.agenda");
 
       return { isAdmin, keys: Array.from(base) };
     },
