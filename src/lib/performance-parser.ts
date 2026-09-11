@@ -30,6 +30,7 @@ export type ParsedRow = {
   categoria: string | null;
   metas: Record<string, number>;
   realizado?: Record<string, number>;
+  media?: Record<string, number>;
   familia_pct?: Record<string, number>;
   metas_status: Record<string, FarolStatus>;
   metas_cores: Record<string, string>; // hex sem "#"
@@ -185,16 +186,16 @@ export function validatePerformanceStatusCoverage(parsed: ParsedSheet): {
   expectedCells: number;
 } {
   const statusCells = parsed.rows.reduce(
-    (sum, row) => sum + Object.keys(row.metas_status ?? {}).length + (row.total_pct_status ? 1 : 0),
+    (sum, row) => sum + Object.keys(row.familia_pct ?? {}).length + (row.total_pct != null ? 1 : 0),
     0,
   );
   const rowsWithStatus = parsed.rows.filter(
-    (row) => Object.keys(row.metas_status ?? {}).length > 0 || Boolean(row.total_pct_status),
+    (row) => Object.keys(row.familia_pct ?? {}).length > 0 || row.total_pct != null,
   ).length;
   const expectedCells = parsed.rows.length * Math.max(parsed.familias.length, 1);
 
   return {
-    ok: parsed.rows.length > 0 && parsed.familias.length > 0 && statusCells > 0 && rowsWithStatus > 0,
+    ok: parsed.rows.length > 0 && parsed.familias.length > 0,
     statusCells,
     rowsWithStatus,
     expectedCells,
@@ -375,12 +376,10 @@ export async function parseWorkbook(
     findSheetByHeader(wb);
   const matriz = readMatriz(wb);
   const matriz_erros = matriz ? validateMatrizFinanceira(matriz) : [];
-  if (deterministic && deterministic.diagnostic.resultado.statusCells > 0) {
+  if (deterministic && deterministic.rows.length > 0 && deterministic.familias.length > 0) {
     return deterministicToParsedSheet(deterministic, matriz, matriz_erros);
   }
-  const baseBI = parseBaseBISheet(wb);
   if (!performanceSheetName) {
-    if (baseBI && statusCount(baseBI.stats) > 0) return { ...baseBI, matriz, matriz_erros };
     throw new Error(
       `Não encontramos a aba de Performance no arquivo. Abas disponíveis: ${wb.SheetNames.join(", ") || "nenhuma"}. Renomeie a aba com os dados para "Performance" ou garanta o cabeçalho RAZÃO SOCIAL + CATEGORIA.`,
     );
@@ -405,24 +404,9 @@ export async function parseWorkbook(
   const head = findHeaderRow(grid);
   if (!head) throw new Error("Cabeçalho não encontrado (linha com RAZÃO SOCIAL + CATEGORIA).");
 
-  const base =
-    head.layout === "novo"
-      ? parseNovo(grid, head.row)
-      : head.layout === "percentual"
-        ? parsePercentual(grid, head.row)
-        : parseAntigo(grid, head.row);
-
-  if (statusCount(base.stats) === 0 && baseBI && statusCount(baseBI.stats) > 0) {
-    return { ...baseBI, matriz, matriz_erros };
-  }
-
-  if (base.stats.celulas_familias > 0 && statusCount(base.stats) === 0) {
-    throw new Error(
-      "Não foi possível ler os faróis de desempenho da planilha. As células de família não trouxeram cores/faixas válidas, então a importação foi interrompida para evitar resultados zerados ou incorretos.",
-    );
-  }
-
-  return { ...base, matriz, matriz_erros };
+  throw new Error(
+    "A planilha não possui colunas numéricas reconhecíveis de percentual, realizado, R$ Média e meta. Cores, preenchimentos e faixas textuais não são usados como dados.",
+  );
 }
 
 function deterministicToParsedSheet(

@@ -228,11 +228,8 @@ export function calculateClientBI(
   const familias = familiasOverride?.length ? familiasOverride : versionFamilies(version, [row]);
 
   const itens: FamiliaBI[] = familias.map((familia) => {
-    let ratio = sanitizeRatio(row.familia_pct?.[familia] ?? null);
-    let farol = classifyFarol(ratio) ?? asStatus(row.metas_status?.[familia]);
-    // "Sem compra" é resultado válido = 0%, e permanece na ponderação com o peso da meta.
-    if (farol == null && ratio == null) farol = "sem_compra";
-    if (farol === "sem_compra" && ratio == null) ratio = 0;
+    const ratio = sanitizeRatio(row.familia_pct?.[familia] ?? null);
+    const farol = classifyFarol(ratio);
     const coef = getFarolCoefficient(farol);
     const meta = familyMetaWeight(version, row.categoria, familia, familias.length);
     if (farol == null) erros.push(`Família "${familia}" sem atingimento e sem farol.`);
@@ -262,7 +259,6 @@ export function calculateClientBI(
       metas: row.metas ?? null,
       realizado: row.realizado ?? null,
       familia_pct: row.familia_pct ?? null,
-      metas_status: row.metas_status ?? null,
       total_pct: row.total_pct ?? null,
     },
     familias,

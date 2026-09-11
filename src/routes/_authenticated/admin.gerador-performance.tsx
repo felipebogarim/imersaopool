@@ -43,10 +43,10 @@ import {
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
-  FAROL_MIDPOINT,
   catBadge,
   type FarolStatus,
 } from "@/lib/performance-farol";
+import { classifyFarol, resolveNumericAchievement } from "@/lib/performance-metrics";
 import { exportPerformanceXlsx } from "@/lib/performance-export";
 import { exportPerformancePdf } from "@/lib/performance-pdf";
 
@@ -195,44 +195,33 @@ function GeradorPerformancePage() {
     for (const f of result.familias) {
       participacao[f] = grand > 0 ? (perFamilia[f] / grand) * 100 : null;
     }
-    // Atingimento estimado (%) — média dos midpoints da faixa ponderada pela meta.
-    // Se a meta por família for 0 (comum quando a IA só extrai farol), usa média simples.
     const atingimento: { __total__: number | null } & Record<string, number | null> = {
       __total__: null,
     };
     for (const f of result.familias) {
       let num = 0;
       let den = 0;
-      let simpleSum = 0;
-      let simpleN = 0;
       for (const r of result.rows) {
-        const st = r.metas_status?.[f];
-        if (!st) continue;
+        const pct = resolveNumericAchievement({ percentual: r.familia_pct?.[f], realizado: r.realizado?.[f], media: r.media?.[f], meta: r.metas?.[f] });
+        if (pct == null) continue;
         const w = Number(r.metas?.[f]) || 0;
-        num += FAROL_MIDPOINT[st] * w;
-        den += w;
-        simpleSum += FAROL_MIDPOINT[st];
-        simpleN += 1;
+        num += pct * (w > 0 ? w : 1);
+        den += w > 0 ? w : 1;
       }
-      atingimento[f] = den > 0 ? num / den : simpleN > 0 ? simpleSum / simpleN : null;
+      atingimento[f] = den > 0 ? num / den : null;
     }
-    // Total: pondera pelo total_meta de cada cliente e status total_pct_status.
     let tnum = 0;
     let tden = 0;
-    let tSum = 0;
-    let tN = 0;
     for (const r of result.rows) {
-      const st = r.total_pct_status;
-      if (!st) continue;
+      const pct = r.total_pct;
+      if (pct == null) continue;
       const w =
         Number(r.total_meta) ||
         result.familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
-      tnum += FAROL_MIDPOINT[st] * w;
-      tden += w;
-      tSum += FAROL_MIDPOINT[st];
-      tN += 1;
+      tnum += pct * (w > 0 ? w : 1);
+      tden += w > 0 ? w : 1;
     }
-    atingimento.__total__ = tden > 0 ? tnum / tden : tN > 0 ? tSum / tN : null;
+    atingimento.__total__ = tden > 0 ? tnum / tden : null;
     return { perFamilia, grand, participacao, atingimento };
   }, [result]);
 
@@ -247,6 +236,9 @@ function GeradorPerformancePage() {
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas: r.metas,
+        realizado: r.realizado,
+        familia_pct: r.familia_pct,
+        total_pct: r.total_pct,
         metas_status: r.metas_status,
         total_meta: r.total_meta,
         total_pct_status: r.total_pct_status,
@@ -359,7 +351,6 @@ function GeradorPerformancePage() {
               familias.map((f) => [f, grand > 0 ? (perFamilia[f] / grand) * 100 : null]),
             ),
           }) as { __total__: number | null } & Record<string, number | null>;
-    // Atingimento estimado a partir dos midpoints do farol.
     const savedAtg = (row.atingimento && Object.keys(row.atingimento).length ? row.atingimento : null) as
       | ({ __total__: number | null } & Record<string, number | null>)
       | null;
@@ -371,25 +362,25 @@ function GeradorPerformancePage() {
       for (const f of familias) {
         let num = 0, den = 0, ss = 0, sn = 0;
         for (const r of rows) {
-          const st = r.metas_status?.[f] as FarolStatus | undefined;
-          if (!st) continue;
+          const pct = resolveNumericAchievement({ percentual: r.familia_pct?.[f], realizado: r.realizado?.[f], media: r.media?.[f], meta: r.metas?.[f] });
+          if (pct == null) continue;
           const w = Number(r.metas?.[f]) || 0;
-          num += FAROL_MIDPOINT[st] * w;
-          den += w;
-          ss += FAROL_MIDPOINT[st];
+          num += pct * (w > 0 ? w : 1);
+          den += w > 0 ? w : 1;
+          ss += pct;
           sn += 1;
         }
         atingimento[f] = den > 0 ? num / den : sn > 0 ? ss / sn : null;
       }
       let tn = 0, td = 0, ts = 0, tc = 0;
       for (const r of rows) {
-        const st = r.total_pct_status as FarolStatus | undefined;
-        if (!st) continue;
+        const pct = r.total_pct as number | null | undefined;
+        if (pct == null) continue;
         const w =
           Number(r.total_meta) || familias.reduce((a, f) => a + (Number(r.metas?.[f]) || 0), 0);
-        tn += FAROL_MIDPOINT[st] * w;
+        tn += pct * (w > 0 ? w : 1);
         td += w;
-        ts += FAROL_MIDPOINT[st];
+        ts += pct;
         tc += 1;
       }
       atingimento.__total__ = td > 0 ? tn / td : tc > 0 ? ts / tc : null;
@@ -501,7 +492,13 @@ function GeradorPerformancePage() {
         rows: result.rows.map((r) => ({
           razao_social: r.razao_social,
           categoria: r.categoria,
+          metas: r.metas ?? {},
+          realizado: r.realizado ?? {},
+          media: r.media ?? {},
+          familia_pct: r.familia_pct ?? {},
           metas_status: r.metas_status ?? {},
+          total_meta: r.total_meta,
+          total_pct: r.total_pct,
           total_pct_status: r.total_pct_status,
         })),
       };
@@ -683,7 +680,8 @@ function GeradorPerformancePage() {
                       const totalRow =
                         r.total_meta ??
                         result.familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
-                      const totalPctCls = FAROL_CELL_CLASS[r.total_pct_status ?? "sem_compra"];
+                       const totalStatus = classifyFarol(r.total_pct);
+                       const totalPctCls = totalStatus ? FAROL_CELL_CLASS[totalStatus] : "";
                       return (
                         <tr key={i} className="border-t border-border">
                           <td
@@ -704,20 +702,21 @@ function GeradorPerformancePage() {
                           </td>
                           <td className={cn("px-2 py-1 text-center", totalPctCls)}>
                             <span className="inline-block px-2 py-0.5 rounded font-semibold text-xs">
-                              {FAROL_FAIXA_TEXT[r.total_pct_status ?? "sem_compra"]}
+                              {r.total_pct == null ? "N/D" : fmtPct(r.total_pct)}
                             </span>
                           </td>
                           {result.familias.map((f) => {
-                            const st = (r.metas_status?.[f] as FarolStatus | undefined) ?? "sem_compra";
+                            const pct = resolveNumericAchievement({ percentual: r.familia_pct?.[f], realizado: r.realizado?.[f], media: r.media?.[f], meta: r.metas?.[f] });
+                            const st = classifyFarol(pct);
                             return (
                               <td
                                 key={f}
                                 className={cn(
                                   "px-2 py-1 text-center font-semibold text-xs tabular-nums",
-                                  FAROL_CELL_CLASS[st],
+                                  st ? FAROL_CELL_CLASS[st] : "",
                                 )}
                               >
-                                {FAROL_FAIXA_TEXT[st]}
+                                {pct == null ? "N/D" : fmtPct(pct)}
                               </td>
                             );
                           })}

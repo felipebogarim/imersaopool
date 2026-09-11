@@ -19,7 +19,7 @@ import {
 } from "./performance-farol";
 
 /** Versão da metodologia de métricas. */
-export const METRICS_VERSION = "performance_bi_v2";
+export const METRICS_VERSION = "performance_bi_v3_numeric_only";
 
 // ============================== Identificadores =============================
 
@@ -108,6 +108,8 @@ export type MetricSourceRow = {
   metas?: Record<string, number> | null;
   /** Realizado monetário por família (pode estar indisponível por sigilo). */
   realizado?: Record<string, number> | null;
+  /** R$ Média por família, usada somente quando não existe realizado. */
+  media?: Record<string, number> | null;
   /** Atingimento real por família em ratio canônico (1 = 100%). */
   familia_pct?: Record<string, number | null> | null;
   /** Farol por família quando não há percentual na origem. */
@@ -163,6 +165,26 @@ export function sanitizeRatio(v: unknown): number | null {
   return n;
 }
 
+/**
+ * Regra canônica de resolução do atingimento (1 = 100%).
+ * A presença de um percentual explícito sempre prevalece. Meta isolada é N/D.
+ */
+export function resolveNumericAchievement(input: {
+  percentual?: unknown;
+  realizado?: unknown;
+  media?: unknown;
+  meta?: unknown;
+}): number | null {
+  const percentual = sanitizeRatio(input.percentual);
+  if (percentual != null) return percentual;
+  const meta = num(input.meta);
+  if (meta == null || meta <= 0) return null;
+  const realizado = num(input.realizado);
+  if (realizado != null) return realizado / meta;
+  const media = num(input.media);
+  return media == null ? null : media / meta;
+}
+
 /** Constrói as células atômicas de um conjunto de linhas de Performance. */
 export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricCell[] {
   const out: MetricCell[] = [];
@@ -170,16 +192,15 @@ export function buildCells(rows: MetricSourceRow[], familias: string[]): MetricC
     for (const familia of familias) {
       const meta = num(r.metas?.[familia]);
       const realizado = num(r.realizado?.[familia]);
-      const stored = sanitizeRatio(r.familia_pct?.[familia] ?? null);
-      let real =
-        meta != null && meta > 0 && realizado != null ? realizado / meta : stored;
-
-      const statusOrigem = asStatus(r.metas_status?.[familia]);
-      let farol = classifyFarol(real) ?? statusOrigem;
-      // "Sem compra" é RESULTADO VÁLIDO (0%), nunca dado ausente:
-      // a família permanece no denominador com todo o peso da sua meta.
-      if (farol == null && real == null) farol = "sem_compra";
-      if (farol === "sem_compra" && real == null) real = 0;
+      const media = num(r.media?.[familia]);
+      const real = resolveNumericAchievement({
+        percentual: r.familia_pct?.[familia],
+        realizado,
+        media,
+        meta,
+      });
+      // O farol é sempre consequência do número. Status de origem não participa.
+      const farol = classifyFarol(real);
       out.push({
         cliente: r.razao_social,
         categoria: r.categoria ?? null,
@@ -322,12 +343,9 @@ export function calculateClientMetrics(row: MetricSourceRow, familias: string[])
       cells.map((c) => c.coeficiente_farol),
     ),
   };
-  // Toda família avaliada faz parte do denominador (ex.: 7 famílias).
-  // Célula vazia (sem meta, sem realizado, sem % e sem farol) = sem compra.
-  const semCompra = cells.filter(
-    (c) => c.farol === "sem_compra" || (c.real_achievement == null && c.farol == null),
-  );
-  const comCompra = cells.length - semCompra.length;
+  const avaliadas = cells.filter((c) => c.real_achievement != null);
+  const semCompra = avaliadas.filter((c) => c.real_achievement === 0);
+  const comCompra = avaliadas.length - semCompra.length;
   return {
     razao_social: row.razao_social,
     categoria: row.categoria ?? null,
@@ -335,8 +353,8 @@ export function calculateClientMetrics(row: MetricSourceRow, familias: string[])
     farol: classifyFarol(real),
     familias_sem_compra: semCompra.map((c) => c.familia),
     familias_com_compra: comCompra,
-    familias_avaliadas: cells.length,
-    cobertura: cells.length ? comCompra / cells.length : null,
+    familias_avaliadas: avaliadas.length,
+    cobertura: avaliadas.length ? comCompra / avaliadas.length : null,
 
     cells,
   };

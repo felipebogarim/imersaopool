@@ -22,8 +22,12 @@ export type GeneratedRow = {
   razao_social: string;
   categoria: string | null;
   total_meta: number | null;
+  total_pct: number | null;
   total_pct_status: FarolStatus | null;
   metas: Record<string, number>;
+  realizado: Record<string, number>;
+  media: Record<string, number>;
+  familia_pct: Record<string, number>;
   metas_status: Record<string, FarolStatus>;
 };
 
@@ -92,8 +96,12 @@ export const generatePerformanceFromRaw = createServerFn({ method: "POST" })
       "razao_social": string,
       "categoria": "Black"|"Gold"|"Silver"|"Bronze"|"Diamond"|"Platinum"|null,
       "total_meta": number|null,
+      "total_pct": number|null,
       "total_pct_status": "sem_compra"|"abaixo_meta"|"pode_melhorar"|"proximo"|"otimo"|"excelente"|null,
       "metas": { [familia: string]: number },
+      "realizado": { [familia: string]: number },
+      "media": { [familia: string]: number },
+      "familia_pct": { [familia: string]: number },
       "metas_status": { [familia: string]: "sem_compra"|"abaixo_meta"|"pode_melhorar"|"proximo"|"otimo"|"excelente" }
     }
   ],
@@ -107,17 +115,18 @@ Regras:
 - Para cada CLIENTE (razão social), extraia:
   - "categoria" (Black/Gold/Silver/Bronze/Diamond/Platinum), se existir; senão null.
   - "total_meta": meta total do cliente no período (número). Se não existir, null.
-  - Por família: "metas[fam]" = valor de META (numérico, absoluto em R$). Se não existir a meta, use 0.
-  - Por família: "metas_status[fam]" = FAROL calculado a partir do percentual de atingimento (realizado/meta):
+  - Por família, extraia somente números realmente presentes: meta em "metas", realizado em "realizado", R$ MÉDIA em "media" e percentual explícito em "familia_pct" (ratio: 1 = 100%). Não invente valores e não preencha ausências com zero.
+  - Calcule cada percentual nesta ordem: percentual explícito; realizado ÷ meta; R$ MÉDIA ÷ meta. Se existir somente meta, omita o percentual e o status (N/D). Retorne 0 somente quando realizado ou média for numericamente zero e meta for positiva.
+  - "metas_status[fam]" é apenas consequência do percentual numérico calculado:
      * exatamente 0% => "sem_compra"
      * <50% => "abaixo_meta"
      * 50-69% => "pode_melhorar"
      * 70-89% => "proximo"
      * 90-100% => "otimo"
      * >100% => "excelente"
-    Se a planilha já traz faixa textual ("<50", "50-69", ">100", "0%") ou cor semântica, use-a diretamente.
-  - "total_pct_status": mesmo cálculo para o total do cliente.
-- IMPORTANTE: NUNCA retorne valores realizados/faturados nem valores brutos além da META. Só META em R$ e status de farol.
+    Ignore completamente cores, preenchimentos, estilos, RGB, HEX e faixas textuais.
+  - "total_pct" segue a mesma precedência numérica e "total_pct_status" deriva exclusivamente dele.
+- IMPORTANTE: os valores brutos retornados serão mantidos em armazenamento privado e nunca exibidos ao usuário.
 - IMPORTANTE: preserve as metas financeiras originais por família. Se a planilha visual consolidada mostrar apenas faixas nas células, mas houver uma matriz/configuração de metas por categoria (ex.: Black/Gold/Silver) em outra aba ou área, preencha "categoria_metas.__family_metas_by_category__[categoria][familia]" com esses valores absolutos em R$.
 - "categoria_metas.Black/Gold/Silver" deve conter o total de meta da categoria, quando conhecido.
 - Não use participação global de famílias como substituto para metas financeiras por categoria.

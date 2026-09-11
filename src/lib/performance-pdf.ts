@@ -10,6 +10,8 @@ type PdfRow = {
   categoria: string | null;
   metas: Record<string, number>;
   metas_status?: Record<string, FarolStatus>;
+  familia_pct?: Record<string, number> | null;
+  total_pct?: number | null;
   total_meta: number | null;
   total_pct_status?: FarolStatus | null;
 };
@@ -79,7 +81,7 @@ export function exportPerformancePdf(opts: {
         styles: { fontStyle: "bold", halign: "right", fillColor: HEX.totalMetaCol },
       },
       {
-        content: FAROL_FAIXA_TEXT[r.total_pct_status ?? "sem_compra"],
+        content: r.total_pct == null ? "N/D" : fmtPct(r.total_pct),
         styles: {
           halign: "center",
           fontStyle: "bold",
@@ -87,10 +89,11 @@ export function exportPerformancePdf(opts: {
         },
       },
       ...familias.map<CellDef>((f) => {
-        const st = r.metas_status?.[f] ?? "sem_compra";
-        const bg = hexToRgb(FAROL_HEX[st]);
+        const pct = r.familia_pct?.[f];
+        const st = pct == null ? null : r.metas_status?.[f] ?? null;
+        const bg = st ? hexToRgb(FAROL_HEX[st]) : null;
         return {
-          content: FAROL_FAIXA_TEXT[st],
+          content: pct == null ? "N/D" : fmtPct(pct),
           styles: {
             halign: "center",
             fontStyle: "bold",
