@@ -23,7 +23,7 @@ maybe(FABIO)("integração — arquivo real Fabio Bristotti", () => {
     expect(r.rows.every((row) => row.razao_social.trim().length > 0)).toBe(true);
     expect(r.rows.every((row) => Object.keys(row.metas_status).every((f) => r.familias.includes(f)))).toBe(true);
     expect(r.conflitos).toHaveLength(0);
-    expect(r.rows.some((row) => Object.keys(row.familia_pct ?? {}).length > 0)).toBe(true);
+    expect(r.rows.every((row) => Object.keys(row.familia_pct ?? {}).length === 0)).toBe(true);
   });
 });
 

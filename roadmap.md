@@ -1,7 +1,7 @@
 # Roadmap
-- [ ] Centralizar precedência numérica e classificação do farol
-- [ ] Tornar o parser independente de cores e reconhecer R$ Média
-- [ ] Corrigir Gerador e importação em massa
-- [ ] Corrigir persistência e recálculo histórico
-- [ ] Exibir N/D em painéis e exportações
-- [ ] Adicionar testes e validar fluxos
+- [x] Centralizar precedência numérica e classificação do farol
+- [x] Tornar o parser independente de cores e reconhecer R$ Média
+- [x] Corrigir Gerador e importação em massa
+- [x] Corrigir persistência e recálculo histórico
+- [x] Exibir N/D em painéis e exportações
+- [x] Adicionar testes e validar fluxos
