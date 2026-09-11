@@ -1548,8 +1548,10 @@ function MatrixCell({
   const real = typeof realValue === "number" && Number.isFinite(realValue) ? realValue : null;
   const storedPct = percentValue(row.familia_pct?.[familia]);
   const pct = storedPct ?? (meta != null && meta > 0 && real != null ? (real / meta) * 100 : null);
-  const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : null;
-  const cls = status ? FAROL_CELL_CLASS[status] : "";
+  // Célula sem qualquer resultado numérico é tratada como 0% (Sem compra).
+  const status: FarolStatus = statusFromPercent(pct ?? 0);
+  const cls = FAROL_CELL_CLASS[status];
+
 
   if (editing) {
     return (
