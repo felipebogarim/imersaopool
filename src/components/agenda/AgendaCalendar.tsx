@@ -202,12 +202,11 @@ export function AgendaCalendar({ view, cursor, events, currentUserId, onSelectDa
         {days.map((day, index) => {
           const dayEvents = eventsForDay(events, day);
           return (
-            <button
-              type="button"
+            <div
               key={day.toISOString()}
               onClick={() => onSelectDay(day)}
               className={cn(
-                "min-h-32 border-b border-r p-2 text-left transition hover:bg-accent/40",
+                "min-h-32 cursor-pointer border-b border-r p-2 text-left transition hover:bg-accent/40",
                 index % 7 === 6 && "border-r-0",
                 !isSameMonth(day, cursor) && "bg-muted/25 text-muted-foreground",
               )}
@@ -217,7 +216,7 @@ export function AgendaCalendar({ view, cursor, events, currentUserId, onSelectDa
                 {dayEvents.slice(0, 3).map((event) => <EventButton key={event.id} event={event} currentUserId={currentUserId} compact onSelect={onSelectEvent} />)}
                 {dayEvents.length > 3 && <Badge variant="secondary" className="text-[10px]">+{dayEvents.length - 3} compromissos</Badge>}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
