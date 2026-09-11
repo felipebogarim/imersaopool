@@ -1,7 +1,8 @@
 import * as XLSXStyle from "xlsx-js-style";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
-import { statusFromFaixa, statusFromHex, statusFromRatio, type FarolStatus } from "./performance-farol";
+import { statusFromRatio, type FarolStatus } from "./performance-farol";
+import { resolveNumericAchievement } from "./performance-metrics";
 
 export type RawCell = {
   v: unknown;
@@ -13,7 +14,7 @@ export type RawCell = {
   hasStyle: boolean;
 };
 
-export type DetectedSubcolumnKind = "realizado" | "meta" | "percentual" | "farol" | "desconhecida";
+export type DetectedSubcolumnKind = "realizado" | "media" | "meta" | "percentual" | "farol" | "desconhecida";
 
 export type DetectedFamilyGroup = {
   familia: string;
@@ -77,6 +78,7 @@ export type NormalizedPerformanceRow = {
   categoria: string | null;
   metas: Record<string, number>;
   realizado: Record<string, number>;
+  media: Record<string, number>;
   familia_pct: Record<string, number>;
   metas_status: Record<string, FarolStatus>;
   metas_cores: Record<string, string>;
@@ -190,23 +192,11 @@ function classifySubheader(v: unknown): DetectedSubcolumnKind {
   const s = norm(v);
   if (!s) return "desconhecida";
   if (s.includes("%") || s.includes("ATING") || s.includes("RESULT")) return "percentual";
-  if (s.includes("FAROL") || s.includes("FAIXA") || s.includes("STATUS")) return "farol";
   if (s.includes("META")) return "meta";
-  if (s.includes("REAL") || s.includes("FATUR") || s.includes("VENDA") || s.includes("MEDIA") || s.includes("MÉDIA")) return "realizado";
+  if (s.includes("MEDIA") || s.includes("MÉDIA")) return "media";
+  if (s.includes("REAL") || s.includes("FATUR") || s.includes("VENDA")) return "realizado";
+  if (s.includes("FAROL") || s.includes("FAIXA") || s.includes("STATUS")) return "farol";
   return "desconhecida";
-}
-
-function looksLikeFarolText(v: unknown): boolean {
-  if (statusFromFaixa(v == null ? null : String(v))) return true;
-  const s = norm(v);
-  return Boolean(
-    s.includes("SEM COMPRA") ||
-      s.includes("ABAIXO") ||
-      s.includes("PODE MELHORAR") ||
-      s.includes("PROXIMO") ||
-      s.includes("OTIMO") ||
-      s.includes("EXCELENTE"),
-  );
 }
 
 function looksLikePercentCell(cell: RawCell | undefined): boolean {
@@ -217,17 +207,14 @@ function looksLikePercentCell(cell: RawCell | undefined): boolean {
 }
 
 function inferSingleDataColumnKind(grid: RawCell[][], dataStartRow: number, col: number): DetectedSubcolumnKind {
-  let farol = 0;
   let pct = 0;
   let numeric = 0;
   for (let r = dataStartRow; r < Math.min(grid.length, dataStartRow + 30); r++) {
     const cell = grid[r]?.[col];
     if (!cell || cell.v == null || String(cell.v).trim() === "") continue;
-    if (looksLikeFarolText(cell.v)) farol++;
-    else if (looksLikePercentCell(cell)) pct++;
+    if (looksLikePercentCell(cell)) pct++;
     else if (typeof parseAmount(cell.v) === "number") numeric++;
   }
-  if (farol > 0) return "farol";
   if (pct > 0) return "percentual";
   if (numeric > 0) return "meta";
   return "desconhecida";
@@ -307,28 +294,6 @@ function detectStructure(name: string, grid: RawCell[][]): StructureDiagnostic |
   return null;
 }
 
-function statusFromText(v: unknown): FarolStatus | null {
-  const faixa = statusFromFaixa(v == null ? null : String(v));
-  if (faixa) return faixa;
-  const s = norm(v);
-  if (!s) return null;
-  if (s.includes("SEM COMPRA") || s.includes("SEM VENDA")) return "sem_compra";
-  if (s.includes("ABAIXO")) return "abaixo_meta";
-  if (s.includes("PODE MELHORAR")) return "pode_melhorar";
-  if (s.includes("PROXIMO")) return "proximo";
-  if (s.includes("OTIMO")) return "otimo";
-  if (s.includes("EXCELENTE")) return "excelente";
-  return null;
-}
-
-function firstStatusByColor(cells: (RawCell | undefined)[]): { status: FarolStatus; hex: string } | null {
-  for (const c of cells) {
-    const status = statusFromHex(c?.hex);
-    if (status && c?.hex) return { status, hex: c.hex };
-  }
-  return null;
-}
-
 function scoreDiagnostic(d: ImportDiagnostic): ImportDiagnostic {
   let score = 0;
   if (d.validacao.rowsAccepted > 0) score += 25;
@@ -336,11 +301,10 @@ function scoreDiagnostic(d: ImportDiagnostic): ImportDiagnostic {
   if (d.validacao.numericPercentCells > 0 || d.validacao.calculatedPercentCells > 0) score += 30;
   if (d.validacao.mathChecks > 0 && d.validacao.mathMismatches === 0) score += 15;
   if (d.resultado.statusCells > 0) score += 10;
-  if (d.validacao.colorFallbackCells > 0 && d.validacao.numericPercentCells + d.validacao.calculatedPercentCells === 0) score = Math.min(score, 62);
   if (d.validacao.issues.some((i) => i.severity === "erro")) score = Math.min(score, 45);
   d.score = score;
   d.confidence = score >= 80 ? "alta" : score >= 55 ? "media" : "baixa";
-  d.mode = d.validacao.colorFallbackCells > 0 ? "deterministic_color_fallback" : "deterministic";
+  d.mode = "deterministic";
   return d;
 }
 
@@ -396,6 +360,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       categoria: categoria || null,
       metas: {},
       realizado: {},
+      media: {},
       familia_pct: {},
       metas_status: {},
       metas_cores: {},
@@ -411,12 +376,13 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
     for (const group of structure.groups) {
       const metaCell = group.subcolumns.meta != null ? line[group.subcolumns.meta] : undefined;
       const realCell = group.subcolumns.realizado != null ? line[group.subcolumns.realizado] : undefined;
+      const mediaCell = group.subcolumns.media != null ? line[group.subcolumns.media] : undefined;
       const pctCell = group.subcolumns.percentual != null ? line[group.subcolumns.percentual] : undefined;
-      const farolCell = group.subcolumns.farol != null ? line[group.subcolumns.farol] : undefined;
       const meta = parseAmount(metaCell?.v);
       const realizado = parseAmount(realCell?.v);
-      let pct = parsePercentRatio(pctCell);
-      const candidatesForStatus = [pctCell, farolCell, metaCell, realCell];
+      const media = parseAmount(mediaCell?.v);
+      const explicitPct = parsePercentRatio(pctCell);
+      const pct = resolveNumericAchievement({ percentual: explicitPct, realizado, media, meta });
 
       if (meta != null) {
         numericMetaCells++;
@@ -430,12 +396,8 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         numericPercentCells++;
         if (pct === 0) zeroCells++;
       }
-      if (meta == null && realizado == null && pct == null && !candidatesForStatus.some((c) => c?.v != null && String(c.v).trim() !== "")) emptyCells++;
-
-      if (pct == null && meta != null && meta > 0 && realizado != null) {
-        pct = realizado / meta;
-        calculatedPercentCells++;
-      }
+      if (meta == null && realizado == null && media == null && explicitPct == null) emptyCells++;
+      if (explicitPct == null && pct != null) calculatedPercentCells++;
       if (pct != null && meta != null && meta > 0 && realizado != null) {
         mathChecks++;
         const expected = realizado / meta;
@@ -449,24 +411,9 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         }
       }
 
-      let status: FarolStatus | null = statusFromRatio(pct);
-      if (!status) {
-        status = [pctCell, farolCell, metaCell, realCell]
-          .map((cell) => statusFromText(cell?.v))
-          .find(Boolean) ?? null;
-      }
-      const byColor = !status ? firstStatusByColor(candidatesForStatus) : null;
-      if (byColor) {
-        status = byColor.status;
-        row.metas_cores[group.familia] = byColor.hex;
-        colorFallbackCells++;
-      } else {
-        const hex = candidatesForStatus.find((c) => c?.hex)?.hex;
-        if (hex) row.metas_cores[group.familia] = hex;
-      }
+      const status: FarolStatus | null = statusFromRatio(pct);
 
-      const hasNumericPerformance = pct != null || realizado != null;
-      if (meta != null && (hasNumericPerformance || status)) {
+      if (meta != null) {
         row.metas[group.familia] = meta;
         rowMetaSum += meta;
         rowHasNumbers = true;
@@ -475,9 +422,9 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         row.realizado[group.familia] = realizado;
         rowRealSum += realizado;
         rowHasNumbers = true;
-      } else if (meta != null && pct != null) {
-        row.realizado[group.familia] = meta * pct;
-        rowRealSum += meta * pct;
+      } else if (media != null) {
+        row.media[group.familia] = media;
+        rowRealSum += media;
         rowHasNumbers = true;
       }
       if (pct != null) row.familia_pct[group.familia] = pct;
