@@ -5781,14 +5781,6 @@ export type Database = {
         Args: { _grace_days?: number }
         Returns: Json
       }
-      agenda_list_invitable_users: {
-        Args: never
-        Returns: {
-          email: string
-          full_name: string
-          id: string
-        }[]
-      }
       assert_aal2: { Args: never; Returns: boolean }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       current_company_id: { Args: never; Returns: string }
