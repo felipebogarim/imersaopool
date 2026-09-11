@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock, User, RefreshCw, LayoutGrid } from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock, User, RefreshCw, LayoutGrid, CalendarDays } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,7 @@ const ICONS: Record<string, typeof BarChart3> = {
   "ferramentas.gerador-performance": Sparkles,
   "ferramentas.transcricao": FileText,
   "ferramentas.tarefas": ListChecks,
+  "ferramentas.agenda": CalendarDays,
   "ferramentas.manuais": BookOpen,
   "ferramentas.tabela-precos": Tag,
   admin: Shield,
