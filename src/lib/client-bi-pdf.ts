@@ -197,7 +197,7 @@ export function exportClientBIPdf(input: ClientBIPdfInput) {
     const w = (W - M * 2 - 10 * (dist.length - 1)) / dist.length;
     dist.forEach((g, i) => {
       const x = M + i * (w + 10);
-      const [r, gg, b] = hexToRgb(FAROL_HEX[g.status ?? "sem_compra"]);
+      const [r, gg, b] = g.status ? hexToRgb(FAROL_HEX[g.status]) : [229, 231, 235];
       doc.setFillColor(r, gg, b);
       doc.setDrawColor(...LINE);
       doc.roundedRect(x, y, w, 56, 6, 6, "FD");
