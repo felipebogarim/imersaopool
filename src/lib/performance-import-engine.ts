@@ -153,7 +153,7 @@ function sheetGrid(ws: XLSXStyle.WorkSheet): RawCell[][] {
   return out;
 }
 
-function parseAmount(v: unknown): number | null {
+export function parseAmount(v: unknown): number | null {
   if (v == null || v === "") return null;
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
   let s = String(v).trim();
@@ -162,7 +162,11 @@ function parseAmount(v: unknown): number | null {
   s = s.replace(/[()R$\s\u00a0]/gi, "").replace(/^-/, "");
   if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
   else if (s.includes(",")) s = s.replace(",", ".");
-  const n = Number(s.replace(/[^0-9.-]/g, ""));
+  const numeric = s.replace(/[^0-9.-]/g, "");
+  // Number("") é zero em JavaScript. Sem esta proteção, textos como "N/D"
+  // viravam venda zero e recebiam indevidamente a faixa "Sem compra".
+  if (!numeric || !/[0-9]/.test(numeric)) return null;
+  const n = Number(numeric);
   if (!Number.isFinite(n)) return null;
   return negative ? -n : n;
 }
@@ -188,13 +192,16 @@ export function parsePercentRatio(cell: Pick<RawCell, "v" | "w" | "z"> | undefin
   return hasPct ? n / 100 : n;
 }
 
-function classifySubheader(v: unknown): DetectedSubcolumnKind {
+export function classifySubheader(v: unknown): DetectedSubcolumnKind {
   const s = norm(v);
   if (!s) return "desconhecida";
-  if (s.includes("%") || s.includes("ATING") || s.includes("RESULT")) return "percentual";
+  // "RESULTADO" é valor realizado. Só é percentual quando o próprio
+  // cabeçalho declara %/atingimento; assim a célula é dividida pela meta
+  // antes de gerar a faixa e o farol.
+  if (s.includes("%") || s.includes("ATING")) return "percentual";
   if (s.includes("META")) return "meta";
   if (s.includes("MEDIA") || s.includes("MÉDIA")) return "media";
-  if (s.includes("REAL") || s.includes("FATUR") || s.includes("VENDA")) return "realizado";
+  if (s.includes("RESULT") || s.includes("REAL") || s.includes("FATUR") || s.includes("VENDA")) return "realizado";
   if (s.includes("FAROL") || s.includes("FAIXA") || s.includes("STATUS")) return "farol";
   return "desconhecida";
 }

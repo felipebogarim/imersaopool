@@ -5,3 +5,4 @@
 - [x] Corrigir persistência e recálculo histórico
 - [x] Exibir N/D em painéis e exportações
 - [x] Adicionar testes e validar fluxos
+- [x] Corrigir leitura de RESULTADO por célula antes da faixa e da cor
