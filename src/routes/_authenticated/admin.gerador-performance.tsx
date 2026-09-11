@@ -531,7 +531,7 @@ function GeradorPerformancePage() {
     <div>
       <PageHeader
         title="Gerador de Performance"
-        subtitle="Faça upload de uma ou mais planilhas brutas — a IA extrai percentuais e faróis e gera a planilha padrão de Performance."
+        subtitle="Faça upload de planilhas brutas — os percentuais são calculados somente pelos valores numéricos."
       />
       <div className="p-4 sm:p-8 space-y-6 max-w-6xl">
         {/* Aviso de privacidade */}

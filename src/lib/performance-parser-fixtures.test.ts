@@ -23,7 +23,7 @@ maybe(FABIO)("integração — arquivo real Fabio Bristotti", () => {
     expect(r.rows.every((row) => row.razao_social.trim().length > 0)).toBe(true);
     expect(r.rows.every((row) => Object.keys(row.metas_status).every((f) => r.familias.includes(f)))).toBe(true);
     expect(r.conflitos).toHaveLength(0);
-    expect(r.diagnostic?.resultado.statusCells ?? r.stats.celulas_avaliadas).toBeGreaterThan(0);
+    expect(r.rows.some((row) => Object.keys(row.familia_pct ?? {}).length > 0)).toBe(true);
   });
 });
 
@@ -80,7 +80,7 @@ describe("parser determinístico de performance", () => {
       expect(row.familia_pct?.["DECOR NEWLINE"]).toBeCloseTo(ratios[index], 10);
       expect(row.familia_pct?.["DECOR STUDIO"]).toBeCloseTo(ratios[index], 10);
     });
-    expect(parsed.diagnostic?.validacao.mathChecks).toBe(ratios.length * 2);
+    expect(parsed.diagnostic?.validacao.numericPercentCells).toBe(ratios.length * 2);
     expect(parsed.diagnostic?.validacao.mathMismatches).toBe(0);
   });
 
