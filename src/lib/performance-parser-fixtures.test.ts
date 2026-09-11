@@ -23,7 +23,7 @@ maybe(FABIO)("integração — arquivo real Fabio Bristotti", () => {
     expect(r.rows.every((row) => row.razao_social.trim().length > 0)).toBe(true);
     expect(r.rows.every((row) => Object.keys(row.metas_status).every((f) => r.familias.includes(f)))).toBe(true);
     expect(r.conflitos).toHaveLength(0);
-    expect(r.diagnostic?.resultado.statusCells ?? r.stats.celulas_avaliadas).toBeGreaterThan(0);
+    expect(r.rows.every((row) => Object.keys(row.familia_pct ?? {}).length === 0)).toBe(true);
   });
 });
 
@@ -80,7 +80,7 @@ describe("parser determinístico de performance", () => {
       expect(row.familia_pct?.["DECOR NEWLINE"]).toBeCloseTo(ratios[index], 10);
       expect(row.familia_pct?.["DECOR STUDIO"]).toBeCloseTo(ratios[index], 10);
     });
-    expect(parsed.diagnostic?.validacao.mathChecks).toBe(ratios.length * 2);
+    expect(parsed.diagnostic?.validacao.numericPercentCells).toBe(ratios.length * 2);
     expect(parsed.diagnostic?.validacao.mathMismatches).toBe(0);
   });
 
@@ -110,14 +110,11 @@ describe("parser determinístico de performance", () => {
     expect(parsed.parser_version).toBe("performance-parser@8-deterministic");
     expect(parsed.familias).toEqual(["DECOR NEWLINE", "DECOR STUDIO", "SISTEMAS E MÓDULOS"]);
     expect(parsed.rows).toHaveLength(2);
-    expect(parsed.rows[0].metas_status).toEqual({
-      "DECOR NEWLINE": "excelente",
-      "DECOR STUDIO": "abaixo_meta",
-      "SISTEMAS E MÓDULOS": "pode_melhorar",
-    });
+    expect(parsed.rows[0].metas_status).toEqual({});
     expect(parsed.rows[1].metas_status).toEqual({});
     expect(parsed.rows[1].familia_pct).toEqual({});
     expect(parsed.rows[0].total_pct).toBeNull();
-    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(3);
+    expect(parsed.rows[0].familia_pct).toEqual({});
+    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(0);
   });
 });

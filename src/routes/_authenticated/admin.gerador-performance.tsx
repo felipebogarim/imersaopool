@@ -399,6 +399,9 @@ function GeradorPerformancePage() {
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas: r.metas,
+        realizado: r.realizado,
+        familia_pct: r.familia_pct,
+        total_pct: r.total_pct,
         metas_status: r.metas_status,
         total_meta: r.total_meta,
         total_pct_status: r.total_pct_status,
@@ -420,6 +423,8 @@ function GeradorPerformancePage() {
         razao_social: r.razao_social,
         categoria: r.categoria,
         metas: r.metas,
+        familia_pct: r.familia_pct,
+        total_pct: r.total_pct,
         metas_status: r.metas_status,
         total_meta: r.total_meta,
         total_pct_status: r.total_pct_status,
@@ -526,7 +531,7 @@ function GeradorPerformancePage() {
     <div>
       <PageHeader
         title="Gerador de Performance"
-        subtitle="Faça upload de uma ou mais planilhas brutas — a IA extrai percentuais e faróis e gera a planilha padrão de Performance."
+        subtitle="Faça upload de planilhas brutas — os percentuais são calculados somente pelos valores numéricos."
       />
       <div className="p-4 sm:p-8 space-y-6 max-w-6xl">
         {/* Aviso de privacidade */}
