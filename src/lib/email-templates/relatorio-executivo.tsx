@@ -20,7 +20,7 @@ import {
 
 export interface ExecutiveFamilyBar {
   familia: string;
-  atingimento: number;
+  atingimento: number | null;
   farol?: string;
   fill?: string;
 }
@@ -147,8 +147,8 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                 <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
                   <tbody>
                     {(families ?? []).map((f) => {
-                      const pct = Number.isFinite(f.atingimento) ? f.atingimento : 0;
-                      const width = Math.max(1, Math.min(100, (pct / 120) * 100));
+                      const pct = f.atingimento != null && Number.isFinite(f.atingimento) ? f.atingimento : null;
+                      const width = pct == null ? 0 : Math.max(1, Math.min(100, (pct / 120) * 100));
                       return (
                         <tr key={f.familia}>
                           <td style={barNameCell}>{f.familia}</td>
@@ -174,7 +174,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                             </table>
                           </td>
                           <td style={barValueCell}>
-                            {`${pct.toFixed(1).replace(".", ",")}%`}
+                            {pct == null ? "N/D" : `${pct.toFixed(1).replace(".", ",")}%`}
                             {f.farol ? ` · ${f.farol}` : ""}
                           </td>
                         </tr>
