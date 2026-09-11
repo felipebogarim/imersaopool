@@ -1571,19 +1571,22 @@ function MatrixCell({
   if (viewMode === "percentual") {
     return (
       <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>
-        {status ? FAROL_FAIXA_TEXT[status] : "N/D"}
+        {FAROL_FAIXA_TEXT[status]}
       </td>
     );
   }
 
+  // Valores monetários são privados: quando indisponíveis, a célula mostra a
+  // faixa calculada em vez de "N/D".
   const display = (() => {
-    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : "N/D";
-    if (viewMode === "realizado") return real != null ? fmtBRL(real) : "N/D";
+    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : FAROL_FAIXA_TEXT[status];
+    if (viewMode === "realizado") return real != null ? fmtBRL(real) : FAROL_FAIXA_TEXT[status];
     if (real != null && meta != null && meta > 0) return null;
-    return "N/D";
+    return FAROL_FAIXA_TEXT[status];
   })();
 
   return (
+
     <td className={cn("px-3 py-2 text-right tabular-nums", cls)}>
       {viewMode === "completo" && real != null && meta != null && meta > 0 ? (
         <div className="leading-tight">
