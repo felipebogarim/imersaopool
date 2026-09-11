@@ -1551,12 +1551,6 @@ function MatrixCell({
   const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : null;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
-  // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
-  // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
-  // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
-  const isFaixaMode = status === "sem_compra";
-
-
   if (editing) {
     return (
       <td className={cn("px-1.5 py-1 text-right", cls)}>
@@ -1570,10 +1564,12 @@ function MatrixCell({
     );
   }
 
-  if (isFaixaMode && status) {
+  // O valor numérico da célula define primeiro a faixa percentual; a cor é
+  // sempre consequência dessa faixa, inclusive para 0%.
+  if (viewMode === "percentual") {
     return (
       <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>
-        {FAROL_FAIXA_TEXT[status]}
+        {status ? FAROL_FAIXA_TEXT[status] : "N/D"}
       </td>
     );
   }
@@ -1581,7 +1577,6 @@ function MatrixCell({
   const display = (() => {
     if (viewMode === "meta") return meta != null ? fmtBRL(meta) : "N/D";
     if (viewMode === "realizado") return real != null ? fmtBRL(real) : "N/D";
-    if (viewMode === "percentual") return pct != null ? `${pct.toFixed(1)}%` : "N/D";
     if (real != null && meta != null && meta > 0) return null;
     return "N/D";
   })();
