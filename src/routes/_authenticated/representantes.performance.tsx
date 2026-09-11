@@ -1549,7 +1549,7 @@ function MatrixCell({
   const storedPct = percentValue(row.familia_pct?.[familia]);
   const pct = storedPct ?? (meta != null && meta > 0 && real != null ? (real / meta) * 100 : null);
   // Célula sem qualquer resultado numérico é tratada como 0% (Sem compra).
-  const status: FarolStatus = statusFromPercent(pct ?? 0);
+  const status: FarolStatus = statusFromPercent(pct ?? 0) ?? "sem_compra";
   const cls = FAROL_CELL_CLASS[status];
 
 
