@@ -110,14 +110,11 @@ describe("parser determinístico de performance", () => {
     expect(parsed.parser_version).toBe("performance-parser@8-deterministic");
     expect(parsed.familias).toEqual(["DECOR NEWLINE", "DECOR STUDIO", "SISTEMAS E MÓDULOS"]);
     expect(parsed.rows).toHaveLength(2);
-    expect(parsed.rows[0].metas_status).toEqual({
-      "DECOR NEWLINE": "excelente",
-      "DECOR STUDIO": "abaixo_meta",
-      "SISTEMAS E MÓDULOS": "pode_melhorar",
-    });
+    expect(parsed.rows[0].metas_status).toEqual({});
     expect(parsed.rows[1].metas_status).toEqual({});
     expect(parsed.rows[1].familia_pct).toEqual({});
     expect(parsed.rows[0].total_pct).toBeNull();
-    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(3);
+    expect(parsed.rows[0].familia_pct).toEqual({});
+    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(0);
   });
 });

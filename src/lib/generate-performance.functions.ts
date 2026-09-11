@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isClientRow } from "./client-row-filter";
+import { classifyFarol, resolveNumericAchievement } from "./performance-metrics";
 
 type SheetPayload = {
   filename: string;
@@ -173,6 +174,28 @@ ${JSON.stringify(compact).slice(0, 180000)}`;
       parsed.categoria_metas && typeof parsed.categoria_metas === "object" ? parsed.categoria_metas : {};
     parsed.rows = Array.isArray(parsed.rows) ? parsed.rows : [];
     // Descarta linhas de totalização/legenda e sem categoria — nunca são clientes.
-    parsed.rows = parsed.rows.filter((r: any) => isClientRow(r));
+    parsed.rows = parsed.rows.filter((r: any) => isClientRow(r)).map((row) => {
+      const familia_pct: Record<string, number> = {};
+      const metas_status: Record<string, FarolStatus> = {};
+      for (const familia of parsed.familias) {
+        const pct = resolveNumericAchievement({
+          percentual: row.familia_pct?.[familia],
+          realizado: row.realizado?.[familia],
+          media: row.media?.[familia],
+          meta: row.metas?.[familia],
+        });
+        const status = classifyFarol(pct);
+        if (pct != null) familia_pct[familia] = pct;
+        if (status) metas_status[familia] = status;
+      }
+      const total_pct = resolveNumericAchievement({ percentual: row.total_pct, meta: row.total_meta });
+      return {
+        ...row,
+        familia_pct,
+        metas_status,
+        total_pct,
+        total_pct_status: classifyFarol(total_pct),
+      };
+    });
     return parsed;
   });
