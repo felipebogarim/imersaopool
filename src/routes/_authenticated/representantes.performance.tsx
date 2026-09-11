@@ -38,7 +38,6 @@ import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
   FAROL_LABEL,
-  FAROL_MIDPOINT,
   FAROL_ORDER,
   catBadge,
   statusFromPercent,
@@ -98,11 +97,7 @@ function percentValue(v: number | null | undefined): number | null {
 function inferRowStatus(row: StatusCarrier, familias: string[]): FarolStatus | null {
   const totalPct = percentValue(row.total_pct);
   if (totalPct != null) return statusFromPercent(totalPct);
-  if (row.total_pct_status) return row.total_pct_status;
-  const statuses = familias.map((f) => row.metas_status?.[f]).filter(Boolean) as FarolStatus[];
-  if (!statuses.length) return null;
-  const avg = statuses.reduce((sum, status) => sum + FAROL_MIDPOINT[status], 0) / statuses.length;
-  return statusFromPercent(avg);
+  return null;
 }
 
 function performanceDiagnosticSummary(parsed: Awaited<ReturnType<typeof parseWorkbook>>): string {
@@ -1547,23 +1542,19 @@ function MatrixCell({
   iaMode?: boolean;
   onChange: (v: number) => void;
 }) {
-  const meta = Number(row.metas?.[familia]) || 0;
-  const real = Number(row.realizado?.[familia]) || 0;
+  const metaValue = row.metas?.[familia];
+  const realValue = row.realizado?.[familia];
+  const meta = typeof metaValue === "number" && Number.isFinite(metaValue) ? metaValue : null;
+  const real = typeof realValue === "number" && Number.isFinite(realValue) ? realValue : null;
   const storedPct = percentValue(row.familia_pct?.[familia]);
-  const pct = meta > 0 && real > 0 ? (real / meta) * 100 : storedPct;
-  const rawStatus: FarolStatus | null =
-    pct != null ? statusFromPercent(pct) : row.metas_status?.[familia] ?? null;
-  // Sem compra = 0% válido (nunca célula em branco):
-  // qualquer célula sem farol e sem realizado é exibida como 0% / Sem compra.
-  const isEmptyCell = !rawStatus && real === 0 && (pct == null || pct <= 0);
-  const status: FarolStatus | null = isEmptyCell ? "sem_compra" : rawStatus;
+  const pct = storedPct ?? (meta != null && meta > 0 && real != null ? (real / meta) * 100 : null);
+  const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : null;
   const cls = status ? FAROL_CELL_CLASS[status] : "";
 
   // Novo formato: célula mostra apenas a faixa (texto curto) com cor do farol.
   // - Uploads convencionais: quando não há meta nem realizado (planilha só com farol).
   // - Uploads gerados pela IA: sempre que houver farol e ainda não houver realizado.
-  const isFaixaMode =
-    isEmptyCell || status === "sem_compra" || (!!row.metas_status?.[familia] && real === 0);
+  const isFaixaMode = status === "sem_compra";
 
 
   if (editing) {
@@ -1572,7 +1563,7 @@ function MatrixCell({
         <input
           type="number"
           className="w-full bg-transparent border border-border/40 rounded px-1.5 py-1 text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
-          value={meta || ""}
+          value={meta ?? ""}
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         />
       </td>
@@ -1588,16 +1579,16 @@ function MatrixCell({
   }
 
   const display = (() => {
-    if (viewMode === "meta") return meta > 0 ? fmtBRL(meta) : "";
-    if (viewMode === "realizado") return real > 0 ? fmtBRL(real) : "";
-    if (viewMode === "percentual") return pct != null ? `${pct.toFixed(1)}%` : "";
-    if (real > 0 && meta > 0) return null;
-    return meta > 0 ? fmtBRL(meta) : "";
+    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : "N/D";
+    if (viewMode === "realizado") return real != null ? fmtBRL(real) : "N/D";
+    if (viewMode === "percentual") return pct != null ? `${pct.toFixed(1)}%` : "N/D";
+    if (real != null && meta != null && meta > 0) return null;
+    return "N/D";
   })();
 
   return (
     <td className={cn("px-3 py-2 text-right tabular-nums", cls)}>
-      {viewMode === "completo" && real > 0 && meta > 0 ? (
+      {viewMode === "completo" && real != null && meta != null && meta > 0 ? (
         <div className="leading-tight">
           <div className="text-[10px] opacity-70">Meta: {fmtNum(meta)}</div>
           <div className="text-[10px] opacity-70">Real: {fmtNum(real)}</div>
