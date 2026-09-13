@@ -1,7 +1,13 @@
 import * as XLSXStyle from "xlsx-js-style";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
-import { statusFromRatio, type FarolStatus } from "./performance-farol";
+import {
+  FAROL_MIDPOINT,
+  statusFromLegendText,
+  statusFromRatio,
+  type FarolLegend,
+  type FarolStatus,
+} from "./performance-farol";
 import { resolveNumericAchievement } from "./performance-metrics";
 
 export type RawCell = {
