@@ -1568,21 +1568,21 @@ function MatrixCell({
 
   // O valor numérico da célula define primeiro a faixa percentual; a cor é
   // sempre consequência dessa faixa, inclusive para 0%.
+  const faixa = status ? FAROL_FAIXA_TEXT[status] : "Sem dado";
+
   if (viewMode === "percentual") {
     return (
-      <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>
-        {FAROL_FAIXA_TEXT[status]}
-      </td>
+      <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>{faixa}</td>
     );
   }
 
-  // Valores monetários são privados: quando indisponíveis, a célula mostra a
-  // faixa calculada em vez de "N/D".
+  // Valores monetários são privados: quando indisponíveis, mostra a faixa
+  // calculada ou "Sem dado" quando não houver resultado numérico.
   const display = (() => {
-    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : FAROL_FAIXA_TEXT[status];
-    if (viewMode === "realizado") return real != null ? fmtBRL(real) : FAROL_FAIXA_TEXT[status];
+    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : faixa;
+    if (viewMode === "realizado") return real != null ? fmtBRL(real) : faixa;
     if (real != null && meta != null && meta > 0) return null;
-    return FAROL_FAIXA_TEXT[status];
+    return faixa;
   })();
 
   return (
