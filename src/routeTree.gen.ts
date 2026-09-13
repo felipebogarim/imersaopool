@@ -96,6 +96,7 @@ import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -592,6 +593,11 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVisaoImersao2ReportIdIndexRoute =
   AuthenticatedVisaoImersao2ReportIdIndexRouteImport.update({
     id: '/visao-imersao-2_/$reportId/',
@@ -740,6 +746,7 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -846,6 +853,7 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
@@ -954,6 +962,7 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -1063,6 +1072,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
+    | '/.lovable/oauth/consent'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/central-mensagens'
@@ -1169,6 +1179,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
+    | '/.lovable/oauth/consent'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/conformidade'
@@ -1276,6 +1287,7 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/central-mensagens'
@@ -1365,6 +1377,7 @@ export interface RootRouteChildren {
   FSlugRoute: typeof FSlugRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
@@ -1993,6 +2006,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/visao-imersao-2_/$reportId/': {
       id: '/_authenticated/visao-imersao-2_/$reportId/'
       path: '/visao-imersao-2/$reportId'
@@ -2380,6 +2400,7 @@ const rootRouteChildren: RootRouteChildren = {
   FSlugRoute: FSlugRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
