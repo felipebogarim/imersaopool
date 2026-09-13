@@ -143,6 +143,33 @@ export const IMPORT_FAROL_HEX: Record<string, FarolStatus> = {
   "9FC7E8": "excelente",
 };
 
+/**
+ * Legenda de cores lida da própria planilha.
+ * `byColor` mapeia o token de cor (hex ou "theme:N:tint") para a faixa.
+ * `uncolored` é a faixa atribuída à célula sem preenchimento, quando a
+ * legenda declara essa faixa sem cor (normalmente "Sem compra").
+ */
+export type FarolLegend = {
+  byColor: Record<string, FarolStatus>;
+  uncolored: FarolStatus | null;
+};
+
+/** Reconhece a faixa a partir do texto da legenda ("Ótimo = Entre 90% E 100%"). */
+export function statusFromLegendText(text: unknown): FarolStatus | null {
+  const s = String(text ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+  if (!s.includes("=")) return null;
+  if (s.includes("SEM COMPRA")) return "sem_compra";
+  if (s.includes("ABAIXO")) return "abaixo_meta";
+  if (s.includes("PODE MELHORAR")) return "pode_melhorar";
+  if (s.includes("PROXIMO")) return "proximo";
+  if (s.includes("OTIMO")) return "otimo";
+  if (s.includes("EXCELENTE")) return "excelente";
+  return null;
+}
+
 /** Normaliza uma cor para RRGGBB em caixa alta. Retorna null se inválida. */
 export function normalizeHex(input: string | null | undefined): string | null {
   if (!input) return null;

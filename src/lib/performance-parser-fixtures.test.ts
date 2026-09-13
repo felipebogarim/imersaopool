@@ -84,7 +84,7 @@ describe("parser determinístico de performance", () => {
     expect(parsed.diagnostic?.validacao.mathMismatches).toBe(0);
   });
 
-  it("reconhece cabeçalho em duas linhas e preserva ausência sem converter em zero", async () => {
+  it("reconhece cabeçalho em duas linhas e usa a cor apenas quando não há número", async () => {
     const wb = XLSXStyle.utils.book_new();
     const aoa = [
       [],
@@ -110,11 +110,15 @@ describe("parser determinístico de performance", () => {
     expect(parsed.parser_version).toBe("performance-parser@8-deterministic");
     expect(parsed.familias).toEqual(["DECOR NEWLINE", "DECOR STUDIO", "SISTEMAS E MÓDULOS"]);
     expect(parsed.rows).toHaveLength(2);
-    expect(parsed.rows[0].metas_status).toEqual({});
+    // Linha 6 tem cores da paleta conhecida: viram faixa (fallback por cor).
+    expect(parsed.rows[0].metas_status).toEqual({
+      "DECOR NEWLINE": "excelente",
+      "DECOR STUDIO": "abaixo_meta",
+      "SISTEMAS E MÓDULOS": "pode_melhorar",
+    });
+    // Linha 7 não tem cor reconhecida e nem número: permanece sem dado.
     expect(parsed.rows[1].metas_status).toEqual({});
     expect(parsed.rows[1].familia_pct).toEqual({});
-    expect(parsed.rows[0].total_pct).toBeNull();
-    expect(parsed.rows[0].familia_pct).toEqual({});
-    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(0);
+    expect(parsed.diagnostic?.validacao.colorFallbackCells).toBe(3);
   });
 });

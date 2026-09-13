@@ -1,7 +1,14 @@
 import * as XLSXStyle from "xlsx-js-style";
 import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filter";
 import { normalizeFamilyName } from "./client-bi-parser";
-import { statusFromRatio, type FarolStatus } from "./performance-farol";
+import {
+  FAROL_MIDPOINT,
+  statusFromHex,
+  statusFromLegendText,
+  statusFromRatio,
+  type FarolLegend,
+  type FarolStatus,
+} from "./performance-farol";
 import { resolveNumericAchievement } from "./performance-metrics";
 
 export type RawCell = {
@@ -119,16 +126,54 @@ function fillOf(cell: any): Pick<RawCell, "hex" | "rawColor" | "hasStyle"> {
   const style = cell?.s;
   if (!style) return { hex: null, rawColor: null, hasStyle: false };
   const fg = style?.fgColor ?? style?.fill?.fgColor ?? null;
+  const pattern = style?.patternType ?? style?.fill?.patternType ?? null;
+  if (pattern === "none") return { hex: null, rawColor: null, hasStyle: true };
   const rawRgb = fg?.rgb ?? null;
   if (typeof rawRgb !== "string") {
-    if (fg?.theme != null) return { hex: null, rawColor: `theme:${fg.theme}`, hasStyle: true };
+    // Cor de tema (ex.: "Ótimo") só é distinguível com o tint.
+    if (fg?.theme != null) {
+      const tint = typeof fg.tint === "number" ? fg.tint.toFixed(3) : "0.000";
+      return { hex: null, rawColor: `theme:${fg.theme}:${tint}`, hasStyle: true };
+    }
     if (fg?.indexed != null) return { hex: null, rawColor: `indexed:${fg.indexed}`, hasStyle: true };
     return { hex: null, rawColor: null, hasStyle: true };
   }
   let hex = rawRgb.trim().replace(/^#/, "").toUpperCase();
   if (hex.length === 8) hex = hex.slice(2);
-  if (!/^[0-9A-F]{6}$/.test(hex) || hex === "000000") return { hex: null, rawColor: rawRgb, hasStyle: true };
+  if (!/^[0-9A-F]{6}$/.test(hex) || hex === "000000") return { hex: null, rawColor: null, hasStyle: true };
   return { hex, rawColor: rawRgb, hasStyle: true };
+}
+
+/** Token estável de cor para casar célula com a legenda da própria planilha. */
+export function colorToken(cell: RawCell | undefined): string | null {
+  if (!cell) return null;
+  if (cell.hex) return cell.hex;
+  if (cell.rawColor && cell.rawColor.startsWith("theme:")) return cell.rawColor;
+  return null;
+}
+
+/**
+ * Lê a legenda de faróis presente na própria planilha (ex.: "Ótimo = Entre 90% E 100%")
+ * e monta o dicionário cor → faixa daquele arquivo.
+ */
+export function detectFarolLegend(grid: RawCell[][]): FarolLegend {
+  const byColor: Record<string, FarolStatus> = {};
+  let uncolored: FarolStatus | null = null;
+  for (let r = 0; r < Math.min(grid.length, 40); r++) {
+    for (const cell of grid[r] ?? []) {
+      const status = statusFromLegendText(cell?.v);
+      if (!status) continue;
+      const token = colorToken(cell);
+      if (token) {
+        if (!byColor[token]) byColor[token] = status;
+      } else if (uncolored == null) {
+        uncolored = status;
+      }
+    }
+  }
+  // Faixa sem cor só vale quando a legenda realmente traz cores.
+  if (!Object.keys(byColor).length) uncolored = null;
+  return { byColor, uncolored };
 }
 
 function sheetGrid(ws: XLSXStyle.WorkSheet): RawCell[][] {
@@ -311,7 +356,7 @@ function scoreDiagnostic(d: ImportDiagnostic): ImportDiagnostic {
   if (d.validacao.issues.some((i) => i.severity === "erro")) score = Math.min(score, 45);
   d.score = score;
   d.confidence = score >= 80 ? "alta" : score >= 55 ? "media" : "baixa";
-  d.mode = "deterministic";
+  d.mode = d.validacao.colorFallbackCells > 0 ? "deterministic_color_fallback" : "deterministic";
   return d;
 }
 
@@ -328,6 +373,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
 
   candidates.sort((a, b) => b.structure.groups.length - a.structure.groups.length);
   const { grid, structure } = candidates[0];
+  const legend = detectFarolLegend(grid);
   const rows: NormalizedPerformanceRow[] = [];
   const ignoradas: IgnoredRow[] = [];
   const issues: ValidationIssue[] = [];
@@ -389,7 +435,29 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       const realizado = parseAmount(realCell?.v);
       const media = parseAmount(mediaCell?.v);
       const explicitPct = parsePercentRatio(pctCell);
-      const pct = resolveNumericAchievement({ percentual: explicitPct, realizado, media, meta });
+      const numericPct = resolveNumericAchievement({ percentual: explicitPct, realizado, media, meta });
+
+      // Fallback por cor: SOMENTE quando não há nenhum número de desempenho.
+      let legendStatus: FarolStatus | null = null;
+      let legendToken: string | null = null;
+      if (numericPct == null) {
+        for (let c = group.startCol; c <= group.endCol; c++) {
+          const token = colorToken(line[c]);
+          if (!token) continue;
+          const fromLegend = legend.byColor[token] ?? statusFromHex(token);
+          if (fromLegend) {
+            legendStatus = fromLegend;
+            legendToken = token;
+            break;
+          }
+        }
+        if (!legendStatus && legend.uncolored && meta != null) legendStatus = legend.uncolored;
+      }
+      const pct = numericPct ?? (legendStatus ? FAROL_MIDPOINT[legendStatus] / 100 : null);
+      if (numericPct == null && legendStatus) {
+        colorFallbackCells++;
+        if (legendToken && /^[0-9A-F]{6}$/.test(legendToken)) row.metas_cores[group.familia] = legendToken;
+      }
 
       if (meta != null) {
         numericMetaCells++;
@@ -399,16 +467,16 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         numericRealizadoCells++;
         if (realizado === 0) zeroCells++;
       }
-      if (pct != null) {
+      if (numericPct != null) {
         numericPercentCells++;
-        if (pct === 0) zeroCells++;
+        if (numericPct === 0) zeroCells++;
       }
-      if (meta == null && realizado == null && media == null && explicitPct == null) emptyCells++;
-      if (explicitPct == null && pct != null) calculatedPercentCells++;
-      if (pct != null && meta != null && meta > 0 && realizado != null) {
+      if (meta == null && realizado == null && media == null && explicitPct == null && pct == null) emptyCells++;
+      if (explicitPct == null && numericPct != null) calculatedPercentCells++;
+      if (numericPct != null && meta != null && meta > 0 && realizado != null) {
         mathChecks++;
         const expected = realizado / meta;
-        if (Math.abs(expected - pct) > 0.015) {
+        if (Math.abs(expected - numericPct) > 0.015) {
           mathMismatches++;
           issues.push({
             severity: "alerta",
