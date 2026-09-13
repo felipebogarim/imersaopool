@@ -15,9 +15,13 @@ import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>): { e?: string; primeiro?: boolean } => ({
+  validateSearch: (search: Record<string, unknown>): { e?: string; primeiro?: boolean; next?: string } => ({
     e: search.e as string | undefined,
     primeiro: search.primeiro === "1" || search.primeiro === 1 || search.primeiro === true,
+    next:
+      typeof search.next === "string" && search.next.startsWith("/") && !search.next.startsWith("//")
+        ? search.next
+        : undefined,
   }),
   head: () => ({
     meta: [

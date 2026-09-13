@@ -20,6 +20,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    plugins: [mcpPlugin()],
     define: {
       __APP_BUILD_ID__: JSON.stringify(APP_BUILD_ID),
     },

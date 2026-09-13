@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -43,6 +44,7 @@ import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedPriceRouteRouteImport } from './routes/_authenticated/price/route'
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
@@ -125,6 +127,11 @@ const UnsubscribeRoute = UnsubscribeRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
@@ -291,6 +298,12 @@ const AuthenticatedAceiteTermosRoute =
     id: '/aceite-termos',
     path: '/aceite-termos',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedPriceRouteRoute = AuthenticatedPriceRouteRouteImport.update({
   id: '/price',
@@ -715,9 +728,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/price': typeof AuthenticatedPriceRouteRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -823,8 +838,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -931,9 +948,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
+  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/price': typeof AuthenticatedPriceRouteRouteWithChildren
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
@@ -1041,9 +1060,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/definir-senha'
+    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/price'
+    | '/.well-known/oauth-protected-resource'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -1149,8 +1170,10 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/definir-senha'
+    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
+    | '/.well-known/oauth-protected-resource'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -1256,9 +1279,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/definir-senha'
+    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/_authenticated/price'
+    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/aceite-termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
@@ -1366,8 +1391,10 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DefinirSenhaRoute: typeof DefinirSenhaRoute
+  McpRoute: typeof McpRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
@@ -1409,6 +1436,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/definir-senha': {
@@ -1634,6 +1668,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/aceite-termos'
       preLoaderRoute: typeof AuthenticatedAceiteTermosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/price': {
       id: '/_authenticated/price'
@@ -2389,8 +2430,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DefinirSenhaRoute: DefinirSenhaRoute,
+  McpRoute: McpRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
