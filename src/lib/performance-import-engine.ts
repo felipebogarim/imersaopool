@@ -353,7 +353,7 @@ function scoreDiagnostic(d: ImportDiagnostic): ImportDiagnostic {
   if (d.validacao.issues.some((i) => i.severity === "erro")) score = Math.min(score, 45);
   d.score = score;
   d.confidence = score >= 80 ? "alta" : score >= 55 ? "media" : "baixa";
-  d.mode = "deterministic";
+  d.mode = d.validacao.colorFallbackCells > 0 ? "deterministic_color_fallback" : "deterministic";
   return d;
 }
 
