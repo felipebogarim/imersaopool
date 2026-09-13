@@ -370,6 +370,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
 
   candidates.sort((a, b) => b.structure.groups.length - a.structure.groups.length);
   const { grid, structure } = candidates[0];
+  const legend = detectFarolLegend(grid);
   const rows: NormalizedPerformanceRow[] = [];
   const ignoradas: IgnoredRow[] = [];
   const issues: ValidationIssue[] = [];
