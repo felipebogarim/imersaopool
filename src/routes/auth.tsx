@@ -39,7 +39,14 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { e: emailConvite, primeiro } = Route.useSearch();
+  const { e: emailConvite, primeiro, next } = Route.useSearch();
+  const goAfterAuth = () => {
+    if (next) {
+      window.location.href = next;
+      return true;
+    }
+    return false;
+  };
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState(emailConvite ?? "");
   const [password, setPassword] = useState("");
