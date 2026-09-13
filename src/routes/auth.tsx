@@ -15,9 +15,13 @@ import { purgeAppCaches } from "@/lib/app-refresh";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>): { e?: string; primeiro?: boolean } => ({
+  validateSearch: (search: Record<string, unknown>): { e?: string; primeiro?: boolean; next?: string } => ({
     e: search.e as string | undefined,
     primeiro: search.primeiro === "1" || search.primeiro === 1 || search.primeiro === true,
+    next:
+      typeof search.next === "string" && search.next.startsWith("/") && !search.next.startsWith("//")
+        ? search.next
+        : undefined,
   }),
   head: () => ({
     meta: [
@@ -35,7 +39,14 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { e: emailConvite, primeiro } = Route.useSearch();
+  const { e: emailConvite, primeiro, next } = Route.useSearch();
+  const goAfterAuth = () => {
+    if (next) {
+      window.location.href = next;
+      return true;
+    }
+    return false;
+  };
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState(emailConvite ?? "");
   const [password, setPassword] = useState("");
@@ -63,7 +74,7 @@ function AuthPage() {
         return;
       }
 
-      if (data.session) navigate({ to: "/home" });
+      if (data.session) { if (goAfterAuth()) return; navigate({ to: "/home" }); }
     }
 
     prepareAuth();
@@ -99,6 +110,7 @@ function AuthPage() {
 
       toast.success("Bem-vindo!");
       setLoading(false);
+      if (goAfterAuth()) return;
       void navigate({ to: "/home", replace: true }).catch((navigationError) => {
         const message = navigationError instanceof Error
           ? navigationError.message
@@ -117,7 +129,7 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { emailRedirectTo: window.location.origin + "/home", data: { full_name: fullName } },
+      options: { emailRedirectTo: window.location.origin + (next ?? "/home"), data: { full_name: fullName } },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -126,12 +138,12 @@ function AuthPage() {
 
   async function signInGoogle() {
     try {
-      const result: any = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+      const result: any = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" + (next ? `?next=${encodeURIComponent(next)}` : "") });
       if (result?.redirected) return;
       // Some flows return an error shape even when session was set. Check session first.
       const { data: sess } = await supabase.auth.getSession();
       if (sess.session) {
-        navigate({ to: "/home" });
+        if (!goAfterAuth()) navigate({ to: "/home" });
         return;
       }
       if (result?.error) {
