@@ -451,7 +451,7 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       const pct = numericPct ?? (legendStatus ? FAROL_MIDPOINT[legendStatus] / 100 : null);
       if (numericPct == null && legendStatus) {
         colorFallbackCells++;
-        if (legendToken) row.metas_cores[group.familia] = legendToken;
+        if (legendToken && /^[0-9A-F]{6}$/.test(legendToken)) row.metas_cores[group.familia] = legendToken;
       }
 
       if (meta != null) {
