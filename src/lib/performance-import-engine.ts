@@ -461,16 +461,16 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
         numericRealizadoCells++;
         if (realizado === 0) zeroCells++;
       }
-      if (pct != null) {
+      if (numericPct != null) {
         numericPercentCells++;
-        if (pct === 0) zeroCells++;
+        if (numericPct === 0) zeroCells++;
       }
-      if (meta == null && realizado == null && media == null && explicitPct == null) emptyCells++;
-      if (explicitPct == null && pct != null) calculatedPercentCells++;
-      if (pct != null && meta != null && meta > 0 && realizado != null) {
+      if (meta == null && realizado == null && media == null && explicitPct == null && pct == null) emptyCells++;
+      if (explicitPct == null && numericPct != null) calculatedPercentCells++;
+      if (numericPct != null && meta != null && meta > 0 && realizado != null) {
         mathChecks++;
         const expected = realizado / meta;
-        if (Math.abs(expected - pct) > 0.015) {
+        if (Math.abs(expected - numericPct) > 0.015) {
           mathMismatches++;
           issues.push({
             severity: "alerta",
