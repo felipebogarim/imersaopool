@@ -1548,9 +1548,9 @@ function MatrixCell({
   const real = typeof realValue === "number" && Number.isFinite(realValue) ? realValue : null;
   const storedPct = percentValue(row.familia_pct?.[familia]);
   const pct = storedPct ?? (meta != null && meta > 0 && real != null ? (real / meta) * 100 : null);
-  // Célula sem qualquer resultado numérico é tratada como 0% (Sem compra).
-  const status: FarolStatus = statusFromPercent(pct ?? 0) ?? "sem_compra";
-  const cls = FAROL_CELL_CLASS[status];
+  // Sem resultado numérico = sem dado (nunca 0%). A cor só existe quando há faixa.
+  const status: FarolStatus | null = pct != null ? statusFromPercent(pct) : null;
+  const cls = status ? FAROL_CELL_CLASS[status] : "text-muted-foreground";
 
 
   if (editing) {
@@ -1568,21 +1568,21 @@ function MatrixCell({
 
   // O valor numérico da célula define primeiro a faixa percentual; a cor é
   // sempre consequência dessa faixa, inclusive para 0%.
+  const faixa = status ? FAROL_FAIXA_TEXT[status] : "Sem dado";
+
   if (viewMode === "percentual") {
     return (
-      <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>
-        {FAROL_FAIXA_TEXT[status]}
-      </td>
+      <td className={cn("px-2 py-1 text-center font-semibold text-xs", cls)}>{faixa}</td>
     );
   }
 
-  // Valores monetários são privados: quando indisponíveis, a célula mostra a
-  // faixa calculada em vez de "N/D".
+  // Valores monetários são privados: quando indisponíveis, mostra a faixa
+  // calculada ou "Sem dado" quando não houver resultado numérico.
   const display = (() => {
-    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : FAROL_FAIXA_TEXT[status];
-    if (viewMode === "realizado") return real != null ? fmtBRL(real) : FAROL_FAIXA_TEXT[status];
+    if (viewMode === "meta") return meta != null ? fmtBRL(meta) : faixa;
+    if (viewMode === "realizado") return real != null ? fmtBRL(real) : faixa;
     if (real != null && meta != null && meta > 0) return null;
-    return FAROL_FAIXA_TEXT[status];
+    return faixa;
   })();
 
   return (
