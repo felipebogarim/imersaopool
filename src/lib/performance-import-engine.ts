@@ -3,6 +3,7 @@ import { isClientRow, isTotalRowName, type IgnoredRow } from "./client-row-filte
 import { normalizeFamilyName } from "./client-bi-parser";
 import {
   FAROL_MIDPOINT,
+  statusFromHex,
   statusFromLegendText,
   statusFromRatio,
   type FarolLegend,
@@ -170,6 +171,8 @@ export function detectFarolLegend(grid: RawCell[][]): FarolLegend {
       }
     }
   }
+  // Faixa sem cor só vale quando a legenda realmente traz cores.
+  if (!Object.keys(byColor).length) uncolored = null;
   return { byColor, uncolored };
 }
 
@@ -440,8 +443,10 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       if (numericPct == null) {
         for (let c = group.startCol; c <= group.endCol; c++) {
           const token = colorToken(line[c]);
-          if (token && legend.byColor[token]) {
-            legendStatus = legend.byColor[token];
+          if (!token) continue;
+          const fromLegend = legend.byColor[token] ?? statusFromHex(token);
+          if (fromLegend) {
+            legendStatus = fromLegend;
             legendToken = token;
             break;
           }
