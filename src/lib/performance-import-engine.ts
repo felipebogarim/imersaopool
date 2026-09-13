@@ -431,7 +431,27 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       const realizado = parseAmount(realCell?.v);
       const media = parseAmount(mediaCell?.v);
       const explicitPct = parsePercentRatio(pctCell);
-      const pct = resolveNumericAchievement({ percentual: explicitPct, realizado, media, meta });
+      const numericPct = resolveNumericAchievement({ percentual: explicitPct, realizado, media, meta });
+
+      // Fallback por cor: SOMENTE quando não há nenhum número de desempenho.
+      let legendStatus: FarolStatus | null = null;
+      let legendToken: string | null = null;
+      if (numericPct == null) {
+        for (let c = group.startCol; c <= group.endCol; c++) {
+          const token = colorToken(line[c]);
+          if (token && legend.byColor[token]) {
+            legendStatus = legend.byColor[token];
+            legendToken = token;
+            break;
+          }
+        }
+        if (!legendStatus && legend.uncolored && meta != null) legendStatus = legend.uncolored;
+      }
+      const pct = numericPct ?? (legendStatus ? FAROL_MIDPOINT[legendStatus] / 100 : null);
+      if (numericPct == null && legendStatus) {
+        colorFallbackCells++;
+        if (legendToken) row.metas_cores[group.familia] = legendToken;
+      }
 
       if (meta != null) {
         numericMetaCells++;
