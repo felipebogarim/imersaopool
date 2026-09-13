@@ -125,16 +125,52 @@ function fillOf(cell: any): Pick<RawCell, "hex" | "rawColor" | "hasStyle"> {
   const style = cell?.s;
   if (!style) return { hex: null, rawColor: null, hasStyle: false };
   const fg = style?.fgColor ?? style?.fill?.fgColor ?? null;
+  const pattern = style?.patternType ?? style?.fill?.patternType ?? null;
+  if (pattern === "none") return { hex: null, rawColor: null, hasStyle: true };
   const rawRgb = fg?.rgb ?? null;
   if (typeof rawRgb !== "string") {
-    if (fg?.theme != null) return { hex: null, rawColor: `theme:${fg.theme}`, hasStyle: true };
+    // Cor de tema (ex.: "Ótimo") só é distinguível com o tint.
+    if (fg?.theme != null) {
+      const tint = typeof fg.tint === "number" ? fg.tint.toFixed(3) : "0.000";
+      return { hex: null, rawColor: `theme:${fg.theme}:${tint}`, hasStyle: true };
+    }
     if (fg?.indexed != null) return { hex: null, rawColor: `indexed:${fg.indexed}`, hasStyle: true };
     return { hex: null, rawColor: null, hasStyle: true };
   }
   let hex = rawRgb.trim().replace(/^#/, "").toUpperCase();
   if (hex.length === 8) hex = hex.slice(2);
-  if (!/^[0-9A-F]{6}$/.test(hex) || hex === "000000") return { hex: null, rawColor: rawRgb, hasStyle: true };
+  if (!/^[0-9A-F]{6}$/.test(hex) || hex === "000000") return { hex: null, rawColor: null, hasStyle: true };
   return { hex, rawColor: rawRgb, hasStyle: true };
+}
+
+/** Token estável de cor para casar célula com a legenda da própria planilha. */
+export function colorToken(cell: RawCell | undefined): string | null {
+  if (!cell) return null;
+  if (cell.hex) return cell.hex;
+  if (cell.rawColor && cell.rawColor.startsWith("theme:")) return cell.rawColor;
+  return null;
+}
+
+/**
+ * Lê a legenda de faróis presente na própria planilha (ex.: "Ótimo = Entre 90% E 100%")
+ * e monta o dicionário cor → faixa daquele arquivo.
+ */
+export function detectFarolLegend(grid: RawCell[][]): FarolLegend {
+  const byColor: Record<string, FarolStatus> = {};
+  let uncolored: FarolStatus | null = null;
+  for (let r = 0; r < Math.min(grid.length, 40); r++) {
+    for (const cell of grid[r] ?? []) {
+      const status = statusFromLegendText(cell?.v);
+      if (!status) continue;
+      const token = colorToken(cell);
+      if (token) {
+        if (!byColor[token]) byColor[token] = status;
+      } else if (uncolored == null) {
+        uncolored = status;
+      }
+    }
+  }
+  return { byColor, uncolored };
 }
 
 function sheetGrid(ws: XLSXStyle.WorkSheet): RawCell[][] {
