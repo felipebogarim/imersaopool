@@ -391,9 +391,13 @@ export function EnviarEmailDialog({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={() => void send()} disabled={sending}>
-            {sending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
-            Enviar
+          <Button onClick={() => void send()} disabled={sending || uploading}>
+            {sending || uploading ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-1 h-4 w-4" />
+            )}
+            {uploading ? "Enviando arquivos..." : "Enviar"}
           </Button>
         </DialogFooter>
       </DialogContent>
