@@ -75,6 +75,44 @@ export function EnviarEmailDialog({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [sending, setSending] = useState(false);
   const [rendering, setRendering] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  function addFiles(list: FileList | null) {
+    if (!list) return;
+    const picked = Array.from(list);
+    const tooBig = picked.filter((f) => f.size > MAX_FILE_BYTES);
+    if (tooBig.length) toast.error(`Arquivo acima de 25 MB: ${tooBig.map((f) => f.name).join(", ")}`);
+    const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES);
+    setFiles((cur) => [...cur, ...ok.filter((f) => !cur.some((c) => c.name === f.name && c.size === f.size))]);
+  }
+
+  async function uploadFiles(): Promise<EmailAttachment[]> {
+    if (!files.length) return [];
+    setUploading(true);
+    try {
+      const out: EmailAttachment[] = [];
+      for (const file of files) {
+        const safe = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${data.id}/${crypto.randomUUID()}-${safe}`;
+        const { error: upErr } = await supabase.storage
+          .from("email-anexos")
+          .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+        if (upErr) throw new Error(`${file.name}: ${upErr.message}`);
+        const { data: signed, error: signErr } = await supabase.storage
+          .from("email-anexos")
+          .createSignedUrl(path, LINK_TTL_SECONDS, { download: file.name });
+        if (signErr || !signed?.signedUrl) throw new Error(`${file.name}: não foi possível gerar o link`);
+        const url = signed.signedUrl.startsWith("http")
+          ? signed.signedUrl
+          : `${window.location.origin}${signed.signedUrl}`;
+        out.push({ name: file.name, url, size: file.size });
+      }
+      return out;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
