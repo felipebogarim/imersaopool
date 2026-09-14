@@ -6,7 +6,6 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import path from "node:path";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { loadEnv } from "vite";
 
 const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
@@ -20,7 +19,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mcpPlugin()],
     define: {
       __APP_BUILD_ID__: JSON.stringify(APP_BUILD_ID),
     },

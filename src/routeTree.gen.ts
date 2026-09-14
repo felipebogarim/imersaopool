@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -44,7 +43,6 @@ import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedPriceRouteRouteImport } from './routes/_authenticated/price/route'
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
@@ -98,7 +96,6 @@ import { Route as AuthenticatedAdminConformidadeRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
-import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -127,11 +124,6 @@ const UnsubscribeRoute = UnsubscribeRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
@@ -298,12 +290,6 @@ const AuthenticatedAceiteTermosRoute =
     id: '/aceite-termos',
     path: '/aceite-termos',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedPriceRouteRoute = AuthenticatedPriceRouteRouteImport.update({
   id: '/price',
@@ -606,11 +592,6 @@ const AuthenticatedAdminAuditoriaSegurancaRoute =
     path: '/auditoria-seguranca',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedVisaoImersao2ReportIdIndexRoute =
   AuthenticatedVisaoImersao2ReportIdIndexRouteImport.update({
     id: '/visao-imersao-2_/$reportId/',
@@ -728,11 +709,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
-  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/price': typeof AuthenticatedPriceRouteRouteWithChildren
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -761,7 +740,6 @@ export interface FileRoutesByFullPath {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -838,10 +816,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
-  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
@@ -870,7 +846,6 @@ export interface FileRoutesByTo {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
@@ -948,11 +923,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
-  '/mcp': typeof McpRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/price': typeof AuthenticatedPriceRouteRouteWithChildren
-  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
@@ -981,7 +954,6 @@ export interface FileRoutesById {
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
-  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -1060,11 +1032,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/definir-senha'
-    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/price'
-    | '/.well-known/oauth-protected-resource'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -1093,7 +1063,6 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
-    | '/.lovable/oauth/consent'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/central-mensagens'
@@ -1170,10 +1139,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/definir-senha'
-    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
-    | '/.well-known/oauth-protected-resource'
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
@@ -1202,7 +1169,6 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
-    | '/.lovable/oauth/consent'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/conformidade'
@@ -1279,11 +1245,9 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/definir-senha'
-    | '/mcp'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/_authenticated/price'
-    | '/.well-known/oauth-protected-resource'
     | '/_authenticated/aceite-termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
@@ -1312,7 +1276,6 @@ export interface FileRouteTypes {
     | '/f/$slug'
     | '/m/$slug'
     | '/r/$token'
-    | '/.lovable/oauth/consent'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/central-mensagens'
@@ -1391,10 +1354,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DefinirSenhaRoute: typeof DefinirSenhaRoute
-  McpRoute: typeof McpRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
-  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
@@ -1404,7 +1365,6 @@ export interface RootRouteChildren {
   FSlugRoute: typeof FSlugRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
-  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
@@ -1436,13 +1396,6 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/definir-senha': {
@@ -1668,13 +1621,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/aceite-termos'
       preLoaderRoute: typeof AuthenticatedAceiteTermosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/price': {
       id: '/_authenticated/price'
@@ -2046,13 +1992,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/auditoria-seguranca'
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaSegurancaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/visao-imersao-2_/$reportId/': {
       id: '/_authenticated/visao-imersao-2_/$reportId/'
@@ -2430,11 +2369,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DefinirSenhaRoute: DefinirSenhaRoute,
-  McpRoute: McpRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
-  Char91DotwellKnownChar93OauthProtectedResourceRoute:
-    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
@@ -2444,7 +2380,6 @@ const rootRouteChildren: RootRouteChildren = {
   FSlugRoute: FSlugRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
-  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,
