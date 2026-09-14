@@ -72,7 +72,7 @@ function statusTag(status: string) {
   return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
 }
 
-export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId }: ExecutiveEmailProps) => {
+export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId, attachments }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
