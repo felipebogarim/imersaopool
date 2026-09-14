@@ -203,6 +203,7 @@ export function EnviarEmailDialog({
               families,
               immersionReportId: data.immersion_report_id ?? null,
               representativeId: repId ?? null,
+              attachments,
             },
           }),
         });
