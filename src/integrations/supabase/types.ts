@@ -5586,6 +5586,363 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_action_clients: {
+        Row: {
+          action_id: string
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          action_id: string
+          client_id: string
+          company_id?: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          action_id?: string
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_action_clients_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "trade_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_action_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_actions: {
+        Row: {
+          cidade: string | null
+          company_id: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          horario: string | null
+          id: string
+          representative_id: string | null
+          responsavel_id: string | null
+          status: string
+          tipo_acao: string
+          tipo_acao_outro: string | null
+          trip_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cidade?: string | null
+          company_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          horario?: string | null
+          id?: string
+          representative_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tipo_acao: string
+          tipo_acao_outro?: string | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string | null
+          company_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          horario?: string | null
+          id?: string
+          representative_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tipo_acao?: string
+          tipo_acao_outro?: string | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_actions_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_actions_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_actions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trade_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_cost_centers: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trade_investment_allocations: {
+        Row: {
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          investment_id: string
+          valor_planejado: number
+          valor_realizado: number | null
+        }
+        Insert: {
+          client_id: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          investment_id: string
+          valor_planejado?: number
+          valor_realizado?: number | null
+        }
+        Update: {
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          investment_id?: string
+          valor_planejado?: number
+          valor_realizado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_investment_allocations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_investment_allocations_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "trade_investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_investment_categories: {
+        Row: {
+          ativo: boolean
+          company_id: string
+          created_at: string
+          id: string
+          nome: string
+          rateavel: boolean
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          nome: string
+          rateavel?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          rateavel?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trade_investments: {
+        Row: {
+          action_id: string | null
+          anexo_path: string | null
+          category_id: string | null
+          company_id: string
+          cost_center_id: string | null
+          created_at: string
+          created_by: string
+          data: string | null
+          descricao: string
+          id: string
+          observacao: string | null
+          rateado: boolean
+          status: string
+          trip_id: string | null
+          updated_at: string
+          valor_planejado: number
+          valor_realizado: number | null
+        }
+        Insert: {
+          action_id?: string | null
+          anexo_path?: string | null
+          category_id?: string | null
+          company_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          data?: string | null
+          descricao: string
+          id?: string
+          observacao?: string | null
+          rateado?: boolean
+          status?: string
+          trip_id?: string | null
+          updated_at?: string
+          valor_planejado?: number
+          valor_realizado?: number | null
+        }
+        Update: {
+          action_id?: string | null
+          anexo_path?: string | null
+          category_id?: string | null
+          company_id?: string
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string
+          data?: string | null
+          descricao?: string
+          id?: string
+          observacao?: string | null
+          rateado?: boolean
+          status?: string
+          trip_id?: string | null
+          updated_at?: string
+          valor_planejado?: number
+          valor_realizado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_investments_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "trade_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_investments_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "trade_investment_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_investments_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "trade_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_investments_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trade_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_trips: {
+        Row: {
+          cidade: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          data_fim: string | null
+          data_inicio: string
+          id: string
+          observacoes: string | null
+          responsavel_id: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          cidade?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          data_fim?: string | null
+          data_inicio: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          data_fim?: string | null
+          data_inicio?: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transcricoes: {
         Row: {
           created_at: string
