@@ -22,7 +22,17 @@ import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 
 type Person = { id: string; name: string; email: string };
 
+export type EmailAttachment = { name: string; url: string; size: number };
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const LINK_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 dias
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function EnviarEmailDialog({
   open,
