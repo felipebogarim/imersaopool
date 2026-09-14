@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Monitor, Send, Smartphone, X } from "lucide-react";
+import { Loader2, Monitor, Paperclip, Send, Smartphone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
