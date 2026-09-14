@@ -25,6 +25,12 @@ export interface ExecutiveFamilyBar {
   fill?: string;
 }
 
+export interface ExecutiveEmailAttachment {
+  name: string;
+  url: string;
+  size?: number;
+}
+
 export interface ExecutiveEmailProps {
   report?: ExecutiveReportData;
   message?: string;
@@ -32,6 +38,13 @@ export interface ExecutiveEmailProps {
   families?: ExecutiveFamilyBar[];
   immersionReportId?: string | null;
   representativeId?: string | null;
+  attachments?: ExecutiveEmailAttachment[];
+}
+
+function formatSize(n?: number) {
+  if (!n || n <= 0) return "";
+  if (n < 1024 * 1024) return ` (${Math.round(n / 1024)} KB)`;
+  return ` (${(n / (1024 * 1024)).toFixed(1)} MB)`;
 }
 
 const BRAND = "#062838";
