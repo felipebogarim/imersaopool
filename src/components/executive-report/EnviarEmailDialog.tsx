@@ -181,6 +181,7 @@ export function EnviarEmailDialog({
     let failed = 0;
     let lastError = "";
     try {
+      const attachments = await uploadFiles();
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
       for (const to of recipients) {
