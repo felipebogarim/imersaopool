@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Monitor, Send, Smartphone, X } from "lucide-react";
+import { Loader2, Monitor, Paperclip, Send, Smartphone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
@@ -22,7 +22,17 @@ import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 
 type Person = { id: string; name: string; email: string };
 
+export type EmailAttachment = { name: string; url: string; size: number };
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const LINK_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 dias
+
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function EnviarEmailDialog({
   open,
@@ -65,6 +75,44 @@ export function EnviarEmailDialog({
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [sending, setSending] = useState(false);
   const [rendering, setRendering] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  function addFiles(list: FileList | null) {
+    if (!list) return;
+    const picked = Array.from(list);
+    const tooBig = picked.filter((f) => f.size > MAX_FILE_BYTES);
+    if (tooBig.length) toast.error(`Arquivo acima de 25 MB: ${tooBig.map((f) => f.name).join(", ")}`);
+    const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES);
+    setFiles((cur) => [...cur, ...ok.filter((f) => !cur.some((c) => c.name === f.name && c.size === f.size))]);
+  }
+
+  async function uploadFiles(): Promise<EmailAttachment[]> {
+    if (!files.length) return [];
+    setUploading(true);
+    try {
+      const out: EmailAttachment[] = [];
+      for (const file of files) {
+        const safe = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${data.id}/${crypto.randomUUID()}-${safe}`;
+        const { error: upErr } = await supabase.storage
+          .from("email-anexos")
+          .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+        if (upErr) throw new Error(`${file.name}: ${upErr.message}`);
+        const { data: signed, error: signErr } = await supabase.storage
+          .from("email-anexos")
+          .createSignedUrl(path, LINK_TTL_SECONDS, { download: file.name });
+        if (signErr || !signed?.signedUrl) throw new Error(`${file.name}: não foi possível gerar o link`);
+        const url = signed.signedUrl.startsWith("http")
+          ? signed.signedUrl
+          : `${window.location.origin}${signed.signedUrl}`;
+        out.push({ name: file.name, url, size: file.size });
+      }
+      return out;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -133,6 +181,7 @@ export function EnviarEmailDialog({
     let failed = 0;
     let lastError = "";
     try {
+      const attachments = await uploadFiles();
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
       for (const to of recipients) {
@@ -154,6 +203,7 @@ export function EnviarEmailDialog({
               families,
               immersionReportId: data.immersion_report_id ?? null,
               representativeId: repId ?? null,
+              attachments,
             },
           }),
         });
@@ -241,12 +291,58 @@ export function EnviarEmailDialog({
             <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
 
+          <div className="rounded-md border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Anexos</p>
+                <p className="text-xs text-muted-foreground">
+                  Até 25 MB por arquivo. Os arquivos vão no e-mail como links seguros de download,
+                  válidos por 90 dias.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <label className="cursor-pointer">
+                  <Paperclip className="mr-1 h-4 w-4" /> Anexar arquivos
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </Button>
+            </div>
+            {files.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {files.map((f, i) => (
+                  <li
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between rounded bg-muted px-2 py-1 text-xs"
+                  >
+                    <span className="truncate">{f.name}</span>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      {formatBytes(f.size)}
+                      <button
+                        aria-label={`Remover ${f.name}`}
+                        onClick={() => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
               <p className="text-sm font-medium">Gerar PDF do relatório</p>
               <p className="text-xs text-muted-foreground">
-                O relatório completo vai no corpo do e-mail. O PDF é gerado para download local — o
-                envio de anexos não é suportado pela infraestrutura de e-mail do sistema.
+                O relatório completo vai no corpo do e-mail e o PDF é gerado para download local.
               </p>
             </div>
             <Switch checked={attachPdf} onCheckedChange={setAttachPdf} />
@@ -295,9 +391,13 @@ export function EnviarEmailDialog({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={() => void send()} disabled={sending}>
-            {sending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Send className="mr-1 h-4 w-4" />}
-            Enviar
+          <Button onClick={() => void send()} disabled={sending || uploading}>
+            {sending || uploading ? (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-1 h-4 w-4" />
+            )}
+            {uploading ? "Enviando arquivos..." : "Enviar"}
           </Button>
         </DialogFooter>
       </DialogContent>

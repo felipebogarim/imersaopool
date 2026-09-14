@@ -25,6 +25,12 @@ export interface ExecutiveFamilyBar {
   fill?: string;
 }
 
+export interface ExecutiveEmailAttachment {
+  name: string;
+  url: string;
+  size?: number;
+}
+
 export interface ExecutiveEmailProps {
   report?: ExecutiveReportData;
   message?: string;
@@ -32,6 +38,13 @@ export interface ExecutiveEmailProps {
   families?: ExecutiveFamilyBar[];
   immersionReportId?: string | null;
   representativeId?: string | null;
+  attachments?: ExecutiveEmailAttachment[];
+}
+
+function formatSize(n?: number) {
+  if (!n || n <= 0) return "";
+  if (n < 1024 * 1024) return ` (${Math.round(n / 1024)} KB)`;
+  return ` (${(n / (1024 * 1024)).toFixed(1)} MB)`;
 }
 
 const BRAND = "#062838";
@@ -59,7 +72,7 @@ function statusTag(status: string) {
   return status === "validated" || status === "edited" ? "Ação Sugerida" : "Em validação";
 }
 
-export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId }: ExecutiveEmailProps) => {
+export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId, attachments }: ExecutiveEmailProps) => {
   const r = report;
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
@@ -268,6 +281,23 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                 </Section>
               ))}
             </>
+          ) : null}
+
+          {(attachments ?? []).length ? (
+            <Section style={linksSection}>
+              <Text style={linksTitle}>ARQUIVOS ANEXOS</Text>
+              {(attachments ?? []).map((a, i) => (
+                <Text key={`${a.url}-${i}`} style={linkLine}>
+                  <a href={a.url} style={linkStyle}>
+                    {a.name}
+                  </a>
+                  <span style={{ color: MUTED, fontSize: "12px" }}>{formatSize(a.size)}</span>
+                </Text>
+              ))}
+              <Text style={{ color: MUTED, fontSize: "11px", margin: "0 0 8px" }}>
+                Links de download válidos por 90 dias.
+              </Text>
+            </Section>
           ) : null}
 
           {appUrl ? (
