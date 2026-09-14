@@ -291,12 +291,58 @@ export function EnviarEmailDialog({
             <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
 
+          <div className="rounded-md border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Anexos</p>
+                <p className="text-xs text-muted-foreground">
+                  Até 25 MB por arquivo. Os arquivos vão no e-mail como links seguros de download,
+                  válidos por 90 dias.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <label className="cursor-pointer">
+                  <Paperclip className="mr-1 h-4 w-4" /> Anexar arquivos
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      addFiles(e.target.files);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </Button>
+            </div>
+            {files.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {files.map((f, i) => (
+                  <li
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between rounded bg-muted px-2 py-1 text-xs"
+                  >
+                    <span className="truncate">{f.name}</span>
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      {formatBytes(f.size)}
+                      <button
+                        aria-label={`Remover ${f.name}`}
+                        onClick={() => setFiles((cur) => cur.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
               <p className="text-sm font-medium">Gerar PDF do relatório</p>
               <p className="text-xs text-muted-foreground">
-                O relatório completo vai no corpo do e-mail. O PDF é gerado para download local — o
-                envio de anexos não é suportado pela infraestrutura de e-mail do sistema.
+                O relatório completo vai no corpo do e-mail e o PDF é gerado para download local.
               </p>
             </div>
             <Switch checked={attachPdf} onCheckedChange={setAttachPdf} />
