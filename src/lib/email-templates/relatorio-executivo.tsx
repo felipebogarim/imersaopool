@@ -283,6 +283,23 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             </>
           ) : null}
 
+          {(attachments ?? []).length ? (
+            <Section style={linksSection}>
+              <Text style={linksTitle}>ARQUIVOS ANEXOS</Text>
+              {(attachments ?? []).map((a, i) => (
+                <Text key={`${a.url}-${i}`} style={linkLine}>
+                  <a href={a.url} style={linkStyle}>
+                    {a.name}
+                  </a>
+                  <span style={{ color: MUTED, fontSize: "12px" }}>{formatSize(a.size)}</span>
+                </Text>
+              ))}
+              <Text style={{ color: MUTED, fontSize: "11px", margin: "0 0 8px" }}>
+                Links de download válidos por 90 dias.
+              </Text>
+            </Section>
+          ) : null}
+
           {appUrl ? (
             <Section style={linksSection}>
               <Text style={linksTitle}>ACESSE NO SISTEMA</Text>
