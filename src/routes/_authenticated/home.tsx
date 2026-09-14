@@ -10,9 +10,9 @@ import newlineLogo from "@/assets/newline-logo.png.asset.json";
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
-      { title: "Dados e tomada de decisão. — PoolFlux" },
+      { title: "Dados e tomada de decisão — PoolFlux" },
       { name: "description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações em um único fluxo de decisão." },
-      { property: "og:title", content: "Dados e tomada de decisão. — PoolFlux" },
+      { property: "og:title", content: "Dados e tomada de decisão — PoolFlux" },
       { property: "og:description", content: "Painel executivo PoolFlux: performance, imersões, preços e mapa de ações." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -67,7 +67,7 @@ function HomeComponent() {
                   <span className="text-[11px] font-light uppercase tracking-[0.45em] text-white/45">Newline</span>
                 </div>
                 <h1 className="text-3xl font-light leading-[1.05] tracking-tight md:text-5xl">
-                  Dados e tomada de <span className="text-nl-gold">decisão.</span>
+                  Dados e tomada de <span className="text-nl-gold">decisão</span>
                 </h1>
                 <p className="max-w-xl text-base font-light text-white/55 md:text-lg">
                   Dados e indicadores para potencializar a operação comercial Newline.
