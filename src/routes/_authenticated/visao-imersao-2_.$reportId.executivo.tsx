@@ -54,6 +54,7 @@ import {
   logEmail,
   reopenReport,
   saveDecisionBlocks,
+  saveExecutiveTopics,
   updateAction,
 } from "@/lib/executive-report/store";
 import {
@@ -555,7 +556,19 @@ function RelatorioExecutivoPage() {
       {viewData && (
         <div className="mt-6 space-y-8">
           <BriefingChapter data={viewData} />
-          <LeituraChapter data={viewData} />
+          <LeituraChapter
+            data={viewData}
+            readOnly={closed}
+            onEditTopic={(i) => {
+              const t = (viewData.executive_topics ?? [])[i];
+              setTopicEditing(i);
+              setTopicForm({
+                title: t?.title ?? "",
+                bullets: (t?.bullets ?? []).join("\n"),
+              });
+            }}
+            onDeleteTopic={(i) => setTopicDeleting(i)}
+          />
           {commercial?.representativeId && commercial?.razaoSocial && (
             <ClientFamiliasChart
               repId={commercial.representativeId}
@@ -601,6 +614,55 @@ function RelatorioExecutivoPage() {
         </div>
 
       )}
+
+      <Dialog open={topicEditing !== null} onOpenChange={(v) => !v && setTopicEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar bloco</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              rows={2}
+              placeholder="Título do bloco"
+              value={topicForm.title}
+              onChange={(e) => setTopicForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              rows={6}
+              placeholder="Um item por linha"
+              value={topicForm.bullets}
+              onChange={(e) => setTopicForm((f) => ({ ...f, bullets: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTopicEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveTopic()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={topicDeleting !== null} onOpenChange={(v) => !v && setTopicDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco sai da leitura executiva, do PDF e do e-mail.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTopicDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteTopic()}>
+              Excluir bloco
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!blockEditing} onOpenChange={(v) => !v && setBlockEditing(null)}>
         <DialogContent>
