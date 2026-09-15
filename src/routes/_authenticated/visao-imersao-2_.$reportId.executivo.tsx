@@ -29,8 +29,10 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  AcoesSugeridasChapter,
   BriefingChapter,
   DiagnosticoChapter,
+  EvidenciasChapter,
   LeituraChapter,
   NaoPrioridadeChapter,
 } from "@/components/executive-report/ExecutiveChapters";
@@ -55,11 +57,14 @@ import {
   logEmail,
   reopenReport,
   saveDecisionBlocks,
+  saveEvidenceRecommendations,
   saveExecutiveTopics,
   saveDoNotPrioritize,
   updateAction,
 } from "@/lib/executive-report/store";
 import {
+  isCompactLayout,
+  isCompactV2,
   toFinalData,
   type ExecutiveAction,
   type ExecutiveReportData,
