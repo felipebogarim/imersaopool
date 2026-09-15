@@ -271,3 +271,14 @@ export async function deleteExecutiveReport(reportId: string) {
   const { error } = await supabase.from("executive_reports").delete().eq("id", reportId);
   if (error) throw new Error(error.message);
 }
+
+export async function saveDecisionBlocks(
+  reportId: string,
+  blocks: ExecutiveReportData["decision_blocks"],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ decision_blocks: blocks as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
