@@ -134,7 +134,23 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             <Text style={sectionTitle}>LEITURA EXECUTIVA</Text>
           </Section>
           <Section style={card}>
-            {readingBlocks(r?.executive_reading).length ? (
+            {compact ? (
+              <>
+                {r?.executive_summary ? (
+                  <Text style={readingParagraph}>{r.executive_summary}</Text>
+                ) : null}
+                {(r?.executive_topics ?? []).map((t, i) => (
+                  <React.Fragment key={`${t.title}-${i}`}>
+                    <Text style={blockTitle}>{t.title}</Text>
+                    {t.bullets.map((b, j) => (
+                      <Text key={j} style={bulletLine}>
+                        {`• ${b}`}
+                      </Text>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </>
+            ) : readingBlocks(r?.executive_reading).length ? (
               readingBlocks(r?.executive_reading).map((b, i) =>
                 b.kind === "h" ? (
                   <Text key={i} style={blockTitle}>
