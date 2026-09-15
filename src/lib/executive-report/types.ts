@@ -43,6 +43,8 @@ export type ExecutiveAction = {
   /** id interno (uuid) quando persistido */
   row_id?: string;
   source_decision_id?: string | null;
+  /** compact_v2: rastreabilidade com as oportunidades de origem (ER01, ER02...). */
+  source_opportunity_ids?: string[];
   area: ExecArea;
   priority: ExecPriority;
   title: string;
@@ -80,6 +82,16 @@ export type ExecutiveDecisionBlock = {
 export type ExecutiveTopic = {
   title: string;
   bullets: string[];
+};
+
+/** compact_v2: item do capítulo "Evidências e recomendações". */
+export type ExecutiveEvidenceRecommendation = {
+  id: string;
+  order?: number | null;
+  title: string;
+  perception?: string | null;
+  evidence?: ExecutiveEvidence | null;
+  opportunity?: string | null;
 };
 
 
