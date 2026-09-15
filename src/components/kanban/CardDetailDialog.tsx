@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload, Pencil,
-  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check, Copy,
+  Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check, Copy, ChevronDown,
 
 } from "lucide-react";
 import { toast } from "sonner";
@@ -1033,6 +1033,7 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
 
 // ============ ACTIVITY ============
 function ActivitySection({ cardId }: { cardId: string }) {
+  const [expanded, setExpanded] = useState(false);
   const { data: acts = [] } = useQuery({
     queryKey: ["kanban-activities", cardId],
     queryFn: async () => {
@@ -1049,11 +1050,27 @@ function ActivitySection({ cardId }: { cardId: string }) {
     },
   });
   if (acts.length === 0) return null;
+  const visible = expanded ? acts : acts.slice(0, 3);
+  const hidden = acts.length - visible.length;
   return (
     <div className="mt-6">
-      <div className="mb-2 text-sm font-medium">Atividade</div>
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-sm font-medium">Atividade</div>
+        {acts.length > 3 && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            onClick={() => setExpanded(e => !e)}
+          >
+            {expanded ? "Contrair" : `Expandir (${hidden})`}
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+          </Button>
+        )}
+      </div>
       <ul className="space-y-1 text-xs text-muted-foreground">
-        {acts.map((a: any) => (
+        {visible.map((a: any) => (
           <li key={a.id}>
             <span className="font-medium">{a.profiles?.full_name ?? a.profiles?.email ?? "—"}</span>
             {" · "}{a.type.replaceAll("_", " ")}
