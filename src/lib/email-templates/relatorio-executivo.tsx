@@ -93,7 +93,19 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
 
   return (
     <Html lang="pt-BR" dir="ltr">
-      <Head />
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>{`
+          @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; padding: 16px 12px !important; }
+            .header { padding: 20px 16px !important; }
+            .card { padding: 14px !important; }
+            h1 { font-size: 20px !important; line-height: 26px !important; }
+            td { word-break: break-word; }
+            img { max-width: 100% !important; height: auto !important; }
+          }
+        `}</style>
+      </Head>
       <Preview>{`Relatório Executivo de Imersão · ${client}`}</Preview>
       <Body style={main}>
         <Container style={container}>
