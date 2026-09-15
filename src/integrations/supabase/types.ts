@@ -1669,8 +1669,11 @@ export type Database = {
           do_not_prioritize: Json
           email: Json
           executive_reading: string | null
+          executive_summary: string | null
+          executive_topics: Json
           id: string
           immersion_report_id: string
+          layout_version: string | null
           report_title: string | null
           source_filename: string | null
           source_schema: string | null
@@ -1689,8 +1692,11 @@ export type Database = {
           do_not_prioritize?: Json
           email?: Json
           executive_reading?: string | null
+          executive_summary?: string | null
+          executive_topics?: Json
           id?: string
           immersion_report_id: string
+          layout_version?: string | null
           report_title?: string | null
           source_filename?: string | null
           source_schema?: string | null
@@ -1709,8 +1715,11 @@ export type Database = {
           do_not_prioritize?: Json
           email?: Json
           executive_reading?: string | null
+          executive_summary?: string | null
+          executive_topics?: Json
           id?: string
           immersion_report_id?: string
+          layout_version?: string | null
           report_title?: string | null
           source_filename?: string | null
           source_schema?: string | null
