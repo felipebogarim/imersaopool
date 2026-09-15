@@ -109,17 +109,52 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
       title: sanitize(b?.title) || `Decisão ${i + 1}`,
       cause: sanitize(b?.cause ?? b?.causa),
       impact: sanitize(b?.impact ?? b?.what_it_generates ?? b?.impacto),
+      fact: sanitize(b?.fact ?? b?.fato) || null,
+      order: Number.isFinite(Number(b?.order)) ? Number(b.order) : i + 1,
       evidence:
         ev && sanitize(ev.quote ?? ev.text)
           ? {
               quote: sanitize(ev.quote ?? ev.text),
               author: sanitize(ev.author) || null,
-              role: sanitize(ev.role) || null,
+              role: sanitize(ev.role ?? ev.author_role) || null,
             }
           : null,
       action_ids,
     };
   });
+
+  if (compact) {
+    decision_blocks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const invalid = decision_blocks.filter((b) => b.action_ids.length !== 1);
+    if (invalid.length) {
+      throw new ExecutiveParseError(
+        `No modelo compacto cada diagnóstico deve ter exatamente 1 ação vinculada. Verifique: ${invalid
+          .map((b) => b.id)
+          .join(", ")}.`,
+      );
+    }
+    const linked = new Set(decision_blocks.flatMap((b) => b.action_ids));
+    const orphans = actions.filter((a) => !linked.has(a.id));
+    if (orphans.length) {
+      throw new ExecutiveParseError(
+        `Todas as ações devem estar vinculadas a um diagnóstico. Sem vínculo: ${orphans
+          .map((a) => a.id)
+          .join(", ")}.`,
+      );
+    }
+  }
+
+  const executive_summary = sanitize(json.executive_summary) || null;
+  const rawTopics: any[] = Array.isArray(json.executive_topics) ? json.executive_topics : [];
+  const executive_topics: ExecutiveTopic[] = rawTopics
+    .map((t) => ({ title: sanitize(t?.title), bullets: sanitizeList(t?.bullets) }))
+    .filter((t) => t.title || t.bullets.length);
+
+  if (compact && !executive_summary) {
+    throw new ExecutiveParseError(
+      "No modelo compacto o campo `executive_summary` é obrigatório (até duas frases).",
+    );
+  }
 
   const rawNon: any[] = Array.isArray(json.do_not_prioritize) ? json.do_not_prioritize : [];
   const do_not_prioritize: ExecutiveNonPriority[] = rawNon.map((n, i) => ({
