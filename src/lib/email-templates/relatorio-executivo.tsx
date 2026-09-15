@@ -108,7 +108,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
       </Head>
       <Preview>{`Relatório Executivo de Imersão · ${client}`}</Preview>
       <Body style={main}>
-        <Container style={container}>
+        <Container className="container" style={container}>
           {appUrl && immersionReportId ? (
             <Section style={{ textAlign: "center", padding: "0 0 18px" }}>
               <a
@@ -120,7 +120,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             </Section>
           ) : null}
 
-          <Section style={header}>
+          <Section className="header" style={header}>
             <Text style={kicker}>{companyName} · RELATÓRIO EXECUTIVO DE IMERSÃO</Text>
             <Heading style={h1}>{client}</Heading>
             <Text style={headerMeta}>
@@ -130,7 +130,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
           </Section>
 
           {message ? (
-            <Section style={card}>
+            <Section className="card" style={card}>
               <Text style={intro}>{message}</Text>
             </Section>
           ) : null}
@@ -138,7 +138,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
           <Section style={sectionTitleWrap}>
             <Text style={sectionTitle}>BRIEFING EXECUTIVO</Text>
           </Section>
-          <Section style={card}>
+          <Section className="card" style={card}>
             <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
               <tbody>
                 {briefing.map((b) => (
@@ -160,7 +160,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
           <Section style={sectionTitleWrap}>
             <Text style={sectionTitle}>LEITURA EXECUTIVA</Text>
           </Section>
-          <Section style={card}>
+          <Section className="card" style={card}>
             {compact ? (
               <>
                 {r?.executive_summary ? (
@@ -199,7 +199,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
               <Section style={sectionTitleWrap}>
                 <Text style={sectionTitle}>RESULTADO POR FAMÍLIA</Text>
               </Section>
-              <Section style={card}>
+              <Section className="card" style={card}>
                 <table cellPadding={0} cellSpacing={0} width="100%" style={{ borderCollapse: "collapse" }}>
                   <tbody>
                     {(families ?? []).map((f) => {
@@ -250,7 +250,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                     <Text style={sectionTitle}>EVIDÊNCIAS E RECOMENDAÇÕES</Text>
                   </Section>
                   {(r?.evidence_recommendations ?? []).map((e, i) => (
-                    <Section key={e.id ?? i} style={card}>
+                    <Section key={e.id ?? i} className="card" style={card}>
                       <Text style={blockTitle}>{e.title}</Text>
                       {e.perception ? (
                         <>
@@ -288,7 +288,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                     <Text style={sectionTitle}>AÇÕES SUGERIDAS</Text>
                   </Section>
                   {actions.slice(0, 3).map((a) => (
-                    <Section key={a.id} style={card}>
+                    <Section key={a.id} className="card" style={card}>
                       <Text style={blockTitle}>{a.title}</Text>
                       {a.description ? <Text style={paragraph}>{a.description}</Text> : null}
                       <Text style={{ color: MUTED, fontSize: "13px", margin: "4px 0 0" }}>
@@ -310,7 +310,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
           {(v2 ? [] : r?.decision_blocks ?? []).map((b, i) => {
             const acts = actions.filter((a) => b.action_ids.includes(a.id));
             return (
-              <Section key={b.id} style={card}>
+              <Section key={b.id} className="card" style={card}>
                 <Text style={blockIndex}>{String(i + 1).padStart(2, "0")}</Text>
                 <Text style={blockTitle}>{b.title}</Text>
                 {compact ? (
@@ -379,7 +379,7 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
                 <Text style={sectionTitle}>ONDE NÃO CONCENTRAR ENERGIA AGORA</Text>
               </Section>
               {(r?.do_not_prioritize ?? []).map((n, i) => (
-                <Section key={n.id ?? i} style={card}>
+                <Section key={n.id ?? i} className="card" style={card}>
                   <Text style={blockTitle}>{n.title}</Text>
                   {n.cause ? (
                     <>
