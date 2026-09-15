@@ -929,6 +929,12 @@ function AttachmentsSection({ cardId, boardId }: { cardId: string; boardId: stri
 function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string }) {
   const qc = useQueryClient();
   const [text, setText] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const { data: currentUserId = null } = useQuery({
+    queryKey: ["current-user-id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+  });
   const { data: comments = [] } = useQuery({
     queryKey: ["kanban-comments", cardId],
     queryFn: async () => {
@@ -960,6 +966,18 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
     qc.invalidateQueries({ queryKey: ["kanban-card-meta", cardId] });
   }
 
+  async function saveEdit(commentId: string) {
+    const content = editText.trim();
+    if (!content) return;
+    const { error } = await supabase.from("kanban_comments").update({ content }).eq("id", commentId);
+    if (error) {
+      toast.error(error.message ?? "Falha ao editar comentário.");
+      return;
+    }
+    setEditingId(null);
+    setEditText("");
+    await qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
+  }
 
   return (
     <div className="mt-6">
@@ -967,10 +985,31 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
       <div className="space-y-3">
         {comments.map((c: any) => (
           <div key={c.id} className="rounded-lg border bg-muted/30 p-3">
-            <div className="text-xs font-medium">{c.profiles?.full_name ?? c.profiles?.email ?? "—"}
-              <span className="ml-2 text-muted-foreground">{new Date(c.created_at).toLocaleString("pt-BR")}</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-xs font-medium">{c.profiles?.full_name ?? c.profiles?.email ?? "—"}
+                <span className="ml-2 text-muted-foreground">{new Date(c.created_at).toLocaleString("pt-BR")}</span>
+              </div>
+              {currentUserId === c.user_id && editingId !== c.id && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => { setEditingId(c.id); setEditText(c.content ?? ""); }}
+                >
+                  Editar
+                </button>
+              )}
             </div>
-            <div className="mt-1 whitespace-pre-wrap text-sm">{c.content}</div>
+            {editingId === c.id ? (
+              <div className="mt-2 space-y-2">
+                <Textarea rows={3} value={editText} onChange={(e) => setEditText(e.target.value)} />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => saveEdit(c.id)} disabled={!editText.trim()}>Salvar</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setEditText(""); }}>Cancelar</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-1 whitespace-pre-wrap text-sm">{c.content}</div>
+            )}
           </div>
         ))}
       </div>
