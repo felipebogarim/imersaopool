@@ -72,7 +72,17 @@ export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
   );
 }
 
-export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
+export function LeituraChapter({
+  data,
+  readOnly,
+  onEditTopic,
+  onDeleteTopic,
+}: {
+  data: ExecutiveReportData;
+  readOnly?: boolean;
+  onEditTopic?: (index: number) => void;
+  onDeleteTopic?: (index: number) => void;
+}) {
   const compact = isCompactLayout(data);
   const topics = data.executive_topics ?? [];
 
@@ -90,9 +100,40 @@ export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
             )}
             {topics.map((t, i) => (
               <div key={`${t.title}-${i}`}>
-                <h3 className="text-sm font-bold uppercase tracking-wide text-primary">
-                  {t.title}
-                </h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-primary">
+                    {t.title}
+                  </h3>
+                  {!readOnly && (onEditTopic || onDeleteTopic) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground"
+                          aria-label="Opções do bloco"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onEditTopic && (
+                          <DropdownMenuItem onClick={() => onEditTopic(i)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                        )}
+                        {onDeleteTopic && (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onDeleteTopic(i)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir bloco
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
                 <ul className="mt-2 list-disc space-y-1.5 pl-5">
                   {t.bullets.map((b, j) => (
                     <li key={j} className="text-[15px] leading-relaxed">

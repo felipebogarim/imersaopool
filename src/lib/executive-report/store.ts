@@ -282,3 +282,14 @@ export async function saveDecisionBlocks(
     .eq("id", reportId);
   if (error) throw new Error(error.message);
 }
+
+export async function saveExecutiveTopics(
+  reportId: string,
+  topics: ExecutiveReportData["executive_topics"],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ executive_topics: (topics ?? []) as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
