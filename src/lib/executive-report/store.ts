@@ -40,6 +40,7 @@ function rowToAction(r: any): ExecutiveAction {
     id: r.external_id,
     row_id: r.id,
     source_decision_id: r.source_decision_id,
+    source_opportunity_ids: Array.isArray(r.source_opportunity_ids) ? r.source_opportunity_ids : [],
     area: pick<ExecArea>(r.area, AREAS, "commercial"),
     priority: pick<ExecPriority>(r.priority, PRIORITIES, "medium"),
     title: r.title,
@@ -94,6 +95,9 @@ export async function loadExecutiveReport(immersionReportId: string): Promise<{
     executive_summary: (rep as any).executive_summary ?? null,
     executive_topics: Array.isArray((rep as any).executive_topics)
       ? ((rep as any).executive_topics as any)
+      : [],
+    evidence_recommendations: Array.isArray((rep as any).evidence_recommendations)
+      ? ((rep as any).evidence_recommendations as any)
       : [],
     brands_observed: Array.isArray(rep.brands_observed) ? (rep.brands_observed as string[]) : [],
     decision_blocks: (rep.decision_blocks as any) ?? [],
