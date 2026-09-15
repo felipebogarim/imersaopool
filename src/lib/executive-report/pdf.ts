@@ -163,7 +163,21 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   y += 8;
 
   // Capítulo 02 — Leitura executiva
-  if (data.executive_reading) {
+  const compact = isCompactLayout(data);
+  const topics = data.executive_topics ?? [];
+  if (compact && (data.executive_summary || topics.length)) {
+    chapter("02", "Leitura executiva");
+    if (data.executive_summary) {
+      text(data.executive_summary, { size: 10, color: C.mutedFg, gap: 8 });
+    }
+    for (const t of topics) {
+      if (t.title) text(t.title.toUpperCase(), { size: 10, style: "bold", color: C.primaryDeep, gap: 3 });
+      for (const b of t.bullets) {
+        text(`• ${b}`, { size: 10, x: M + 10, width: W - 10, gap: 1 });
+      }
+      y += 8;
+    }
+  } else if (data.executive_reading) {
     chapter("02", "Leitura executiva");
     for (const block of data.executive_reading.split(/\n{2,}/)) {
       const line = block.trim();
