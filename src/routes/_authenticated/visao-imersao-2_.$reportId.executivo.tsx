@@ -352,6 +352,45 @@ function RelatorioExecutivoPage() {
     toast.success("Bloco atualizado.");
   }
 
+  async function persistTopics(topics: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveExecutiveTopics(data.id, topics as any);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveTopic() {
+    if (!data || topicEditing === null) return;
+    const list = (data.executive_topics ?? []).map((t, i) =>
+      i === topicEditing
+        ? {
+            title: topicForm.title,
+            bullets: topicForm.bullets
+              .split("\n")
+              .map((l) => l.replace(/^[-*\s]+/, "").trim())
+              .filter(Boolean),
+          }
+        : t,
+    );
+    setTopicEditing(null);
+    await persistTopics(list as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteTopic() {
+    if (!data || topicDeleting === null) return;
+    const list = (data.executive_topics ?? []).filter((_, i) => i !== topicDeleting);
+    setTopicDeleting(null);
+    await persistTopics(list as any[]);
+    toast.success("Bloco excluído.");
+  }
+
   async function handleDeleteBlock() {
     if (!data || !blockDeleting) return;
     const blocks = data.decision_blocks.filter((b) => b.id !== blockDeleting.id);
