@@ -436,6 +436,7 @@ const linksTitle = { color: MUTED, fontSize: "11px", letterSpacing: "1px", fontW
 const linkLine = { margin: "0 0 10px" };
 const linkStyle = { color: ACCENT, fontSize: "15px", fontWeight: "bold" as const, textDecoration: "underline" };
 const readingParagraph = { color: TEXT, fontSize: "15px", lineHeight: "25px", margin: "0 0 18px" };
+const bulletLine = { color: TEXT, fontSize: "15px", lineHeight: "23px", margin: "0 0 8px" };
 const tag = {
   backgroundColor: "#E6F4F8",
   color: BRAND,
