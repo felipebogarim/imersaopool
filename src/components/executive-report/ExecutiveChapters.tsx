@@ -146,10 +146,43 @@ export function DiagnosticoChapter({
           return (
             <Card key={b.id}>
               <CardContent className="p-5">
-                <p className="text-xs font-bold tracking-widest text-primary">
-                  {String(i + 1).padStart(2, "0")}
-                </p>
-                <h3 className="mt-1 text-lg font-semibold leading-snug">{b.title}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold tracking-widest text-primary">
+                      {String(i + 1).padStart(2, "0")}
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold leading-snug">{b.title}</h3>
+                  </div>
+                  {!readOnly && (onEditBlock || onDeleteBlock) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 text-muted-foreground"
+                          aria-label="Opções do bloco"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onEditBlock && (
+                          <DropdownMenuItem onClick={() => onEditBlock(b)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                        )}
+                        {onDeleteBlock && (
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onDeleteBlock(b)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir bloco
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
                 {compact ? (
                   (b.fact || b.cause) && (
                     <div className="mt-4">
