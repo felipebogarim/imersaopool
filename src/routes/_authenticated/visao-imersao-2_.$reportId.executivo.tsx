@@ -387,6 +387,39 @@ function RelatorioExecutivoPage() {
     toast.success("Bloco atualizado.");
   }
 
+  async function persistDnp(items: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveDoNotPrioritize(data.id, items as any);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveDnp() {
+    if (!data || dnpEditing === null) return;
+    const list = (data.do_not_prioritize ?? []).map((n, i) =>
+      i === dnpEditing
+        ? { ...(n as any), title: dnpForm.title, cause: dnpForm.cause, decision: dnpForm.decision }
+        : n,
+    );
+    setDnpEditing(null);
+    await persistDnp(list as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteDnp() {
+    if (!data || dnpDeleting === null) return;
+    const list = (data.do_not_prioritize ?? []).filter((_, i) => i !== dnpDeleting);
+    setDnpDeleting(null);
+    await persistDnp(list as any[]);
+    toast.success("Bloco excluído.");
+  }
+
   async function handleDeleteTopic() {
     if (!data || topicDeleting === null) return;
     const list = (data.executive_topics ?? []).filter((_, i) => i !== topicDeleting);
