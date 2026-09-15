@@ -93,6 +93,9 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
 
   const knownIds = new Set(actions.map((a) => a.id));
 
+  const layout_version = sanitize(json.layout_version) || null;
+  const compact = layout_version === COMPACT_LAYOUT;
+
   const rawBlocks: any[] = Array.isArray(json.decision_blocks) ? json.decision_blocks : [];
   const decision_blocks: ExecutiveDecisionBlock[] = rawBlocks.map((b, i) => {
     const id = sanitize(b?.id) || `decisao-${i + 1}`;
