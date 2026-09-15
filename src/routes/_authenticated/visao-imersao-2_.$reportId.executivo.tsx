@@ -316,6 +316,45 @@ function RelatorioExecutivoPage() {
     }
   }
 
+  async function persistBlocks(blocks: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveDecisionBlocks(data.id, blocks);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveBlock() {
+    if (!data || !blockEditing) return;
+    const blocks = data.decision_blocks.map((b) =>
+      b.id === blockEditing.id
+        ? {
+            ...b,
+            title: blockForm.title,
+            fact: blockForm.fact || null,
+            cause: blockForm.cause || null,
+            impact: blockForm.impact || null,
+          }
+        : b,
+    );
+    setBlockEditing(null);
+    await persistBlocks(blocks as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteBlock() {
+    if (!data || !blockDeleting) return;
+    const blocks = data.decision_blocks.filter((b) => b.id !== blockDeleting.id);
+    setBlockDeleting(null);
+    await persistBlocks(blocks as any[]);
+    toast.success("Bloco excluído.");
+  }
+
   async function handleRevisar() {
     if (!data?.id) return;
     await reopenReport(data.id);
