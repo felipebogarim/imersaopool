@@ -20,7 +20,18 @@ interface Props {
 
 const Email = ({ title, intro, blocks, farewell, recipientName }: Props) => (
   <Html lang="pt-BR" dir="ltr">
-    <Head />
+    <Head>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <style>{`
+        @media only screen and (max-width: 600px) {
+          .container { width: 100% !important; }
+          .header, .content { padding: 18px 16px !important; }
+          h1 { font-size: 18px !important; line-height: 24px !important; }
+          img { max-width: 100% !important; height: auto !important; }
+          td { word-break: break-word; }
+        }
+      `}</style>
+    </Head>
     <Preview>{title ?? "Novidades no sistema"}</Preview>
     <Body style={main}>
       <Container style={container}>
