@@ -211,10 +211,8 @@ export function ListenReportButton({
 
   return (
     <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
-      <Button variant="outline" size="icon" onClick={togglePause} disabled={state === "loading"}>
-        {state === "loading" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : state === "playing" ? (
+      <Button variant="outline" size="icon" onClick={togglePause}>
+        {state === "playing" ? (
           <Pause className="h-4 w-4" />
         ) : (
           <Play className="h-4 w-4" />
@@ -228,7 +226,7 @@ export function ListenReportButton({
           max={Math.max(total, 1)}
           step={1}
           value={[Math.min(value, total)]}
-          disabled={state === "loading" || total === 0}
+          disabled={total === 0}
           onValueChange={(v) => setSeeking(v[0])}
           onValueCommit={(v) => {
             setSeeking(null);
