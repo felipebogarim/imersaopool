@@ -64,6 +64,41 @@ export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
 }
 
 export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
+  const compact = isCompactLayout(data);
+  const topics = data.executive_topics ?? [];
+
+  if (compact) {
+    if (!data.executive_summary && !topics.length) return null;
+    return (
+      <section>
+        <ChapterHeader num="02" title="Leitura executiva" />
+        <Card>
+          <CardContent className="space-y-6 p-5">
+            {data.executive_summary && (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {data.executive_summary}
+              </p>
+            )}
+            {topics.map((t, i) => (
+              <div key={`${t.title}-${i}`}>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-primary">
+                  {t.title}
+                </h3>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                  {t.bullets.map((b, j) => (
+                    <li key={j} className="text-[15px] leading-relaxed">
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
   if (!data.executive_reading) return null;
   return (
     <section>
