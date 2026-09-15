@@ -188,7 +188,7 @@ export function DiagnosticoChapter({
                 {acts.length > 0 && (
                   <div className="mt-4 space-y-3">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Ações sugeridas
+                      {compact ? "Ação sugerida" : "Ações sugeridas"}
                     </p>
                     {acts.map((a) => (
                       <ActionCard
