@@ -7,6 +7,7 @@ import { template as relatorioExecutivo } from "./relatorio-executivo";
 import { template as kanbanAutomacao } from "./kanban-automacao";
 import { template as kanbanAtribuicao } from "./kanban-atribuicao";
 import { template as agendaConvite } from "./agenda-convite";
+import { template as centralMensagens } from "./central-mensagens";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -26,4 +27,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "kanban-automacao": kanbanAutomacao,
   "kanban-atribuicao": kanbanAtribuicao,
   "agenda-convite": agendaConvite,
+  "central-mensagens": centralMensagens,
 };
