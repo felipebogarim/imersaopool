@@ -188,7 +188,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     .map((t) => ({ title: sanitize(t?.title), bullets: sanitizeList(t?.bullets) }))
     .filter((t) => t.title || t.bullets.length);
 
-  if (compact && !executive_summary) {
+  if ((compact || compactV2) && !executive_summary) {
     throw new ExecutiveParseError(
       "No modelo compacto o campo `executive_summary` é obrigatório (até duas frases).",
     );
@@ -202,9 +202,9 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     decision: sanitize(n?.decision ?? n?.recommended_decision ?? n?.decisao) || null,
   }));
 
-  if (!decision_blocks.length && !actions.length) {
+  if (!decision_blocks.length && !actions.length && !evidence_recommendations.length) {
     throw new ExecutiveParseError(
-      "O arquivo foi reconhecido, mas não contém decisões nem ações. Verifique os campos `decision_blocks` e `actions`.",
+      "O arquivo foi reconhecido, mas não contém decisões nem ações. Verifique os campos `decision_blocks`, `evidence_recommendations` e `actions`.",
     );
   }
 
@@ -227,6 +227,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     layout_version,
     executive_summary,
     executive_topics,
+    evidence_recommendations,
     brands_observed: sanitizeList(json.brands_observed),
     decision_blocks,
     do_not_prioritize,
