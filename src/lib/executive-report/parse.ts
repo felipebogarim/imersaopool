@@ -5,6 +5,7 @@
 
 import {
   AREAS,
+  COMPACT_LAYOUT,
   PRIORITIES,
   STATUSES,
   type ExecArea,
@@ -14,6 +15,7 @@ import {
   type ExecutiveDecisionBlock,
   type ExecutiveNonPriority,
   type ExecutiveReportData,
+  type ExecutiveTopic,
 } from "./types";
 
 export const EXECUTIVE_BLOCK = "relatorio_executivo_imersao";
