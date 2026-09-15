@@ -99,6 +99,9 @@ function RelatorioExecutivoPage() {
   const [blockEditing, setBlockEditing] = useState<any | null>(null);
   const [blockForm, setBlockForm] = useState({ title: "", fact: "", cause: "", impact: "" });
   const [blockDeleting, setBlockDeleting] = useState<any | null>(null);
+  const [topicEditing, setTopicEditing] = useState<number | null>(null);
+  const [topicForm, setTopicForm] = useState({ title: "", bullets: "" });
+  const [topicDeleting, setTopicDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
 
