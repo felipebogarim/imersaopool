@@ -151,10 +151,10 @@ export function TradeActionDialog({
 
   const filteredClients = useMemo(() => {
     const term = clientSearch.trim().toLowerCase();
-    const base = term
-      ? clients.filter((client) => `${client.nome_fantasia ?? ""} ${client.razao_social ?? ""}`.toLowerCase().includes(term))
-      : clients;
-    return base.slice(0, 120);
+    if (!term) return clients;
+    return clients.filter((client) =>
+      `${client.nome_fantasia ?? ""} ${client.razao_social ?? ""}`.toLowerCase().includes(term),
+    );
   }, [clientSearch, clients]);
 
   const clientNameById = useMemo(() => new Map(clients.map((c) => [c.id, clientLabel(c)])), [clients]);
