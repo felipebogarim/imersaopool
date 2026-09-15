@@ -522,7 +522,7 @@ export function TradeActionDialog({
                         <>
                           <ScrollArea className="h-32 rounded-md border bg-background">
                             <div className="p-2">
-                              {(clientSearch ? filteredClients : clients.slice(0, 120)).map((client) => (
+                              {filteredClients.map((client) => (
                                 <label key={client.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent">
                                   <Checkbox
                                     checked={inv.rateio_client_ids.includes(client.id)}
