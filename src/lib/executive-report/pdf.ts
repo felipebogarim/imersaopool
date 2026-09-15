@@ -209,13 +209,28 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
       color: C.primaryDeep,
       gap: 6,
     });
-    if (b.cause) {
-      text("CAUSA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
-      text(b.cause, { size: 10, x: M + 14, width: W - 28, gap: 6 });
-    }
-    if (b.impact) {
-      text("O QUE ISSO GERA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
-      text(b.impact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+    if (compact) {
+      const fact = b.fact || b.cause;
+      if (fact) {
+        text("FATO / PERCEPÇÃO OBSERVADA", {
+          size: 8,
+          style: "bold",
+          color: C.mutedFg,
+          x: M + 14,
+          width: W - 28,
+          gap: 1,
+        });
+        text(fact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
+    } else {
+      if (b.cause) {
+        text("CAUSA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
+        text(b.cause, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
+      if (b.impact) {
+        text("O QUE ISSO GERA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
+        text(b.impact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
     }
     if (b.evidence?.quote) {
       text("EVIDÊNCIA ESSENCIAL", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
