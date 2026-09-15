@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Loader2, Pause, Play, Square } from "lucide-react";
 import { buildSpeechScript } from "@/lib/executive-report/speech";
 import type { ExecutiveReportData } from "@/lib/executive-report/types";
 
-/** Botão "Ouvir relatório": a IA lê o relatório em voz alta, por capítulos. */
+type Track = { url: string; duration: number; start: number };
+
+function fmt(s: number) {
+  if (!Number.isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${m}:${String(r).padStart(2, "0")}`;
+}
+
+/** Botão "Ouvir relatório": a IA lê o relatório em voz alta, com barra de progresso. */
 export function ListenReportButton({
   data,
   autoStart,
@@ -14,7 +24,12 @@ export function ListenReportButton({
   autoStart?: boolean;
 }) {
   const [state, setState] = useState<"idle" | "loading" | "playing" | "paused">("idle");
+  const [progress, setProgress] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [seeking, setSeeking] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const tracksRef = useRef<Track[]>([]);
+  const indexRef = useRef(0);
   const stopRef = useRef(false);
   const started = useRef(false);
 
@@ -22,6 +37,7 @@ export function ListenReportButton({
     return () => {
       stopRef.current = true;
       audioRef.current?.pause();
+      tracksRef.current.forEach((t) => URL.revokeObjectURL(t.url));
     };
   }, []);
 
@@ -38,31 +54,72 @@ export function ListenReportButton({
     return URL.createObjectURL(await res.blob());
   }
 
+  function durationOf(url: string): Promise<number> {
+    return new Promise((resolve) => {
+      const a = new Audio();
+      a.preload = "metadata";
+      a.onloadedmetadata = () => resolve(Number.isFinite(a.duration) ? a.duration : 0);
+      a.onerror = () => resolve(0);
+      a.src = url;
+    });
+  }
+
+  /** Toca a partir de um instante global (segundos). */
+  function playAt(seconds: number) {
+    const tracks = tracksRef.current;
+    if (!tracks.length) return;
+    let i = tracks.findIndex((t) => seconds < t.start + t.duration);
+    if (i < 0) i = tracks.length - 1;
+    const offset = Math.max(0, seconds - tracks[i].start);
+    indexRef.current = i;
+    audioRef.current?.pause();
+    const audio = new Audio(tracks[i].url);
+    audioRef.current = audio;
+    audio.ontimeupdate = () => {
+      const cur = tracksRef.current[indexRef.current];
+      if (cur) setProgress(cur.start + audio.currentTime);
+    };
+    audio.onended = () => {
+      if (stopRef.current) return;
+      const next = indexRef.current + 1;
+      if (next < tracksRef.current.length) {
+        setTimeout(() => {
+          if (!stopRef.current) playAt(tracksRef.current[next].start + 0.001);
+        }, 350);
+      } else {
+        setState("idle");
+        setProgress(0);
+      }
+    };
+    audio.onerror = () => toast.error("Não foi possível reproduzir o áudio.");
+    audio.currentTime = offset;
+    setProgress(tracks[i].start + offset);
+    setState("playing");
+    void audio.play().catch(() => setState("paused"));
+  }
+
   async function play() {
     stopRef.current = false;
     setState("loading");
-    const chunks = buildSpeechScript(data);
     try {
-      for (const chunk of chunks) {
-        if (stopRef.current) break;
-        const url = await fetchChunk(chunk);
-        if (stopRef.current) {
-          URL.revokeObjectURL(url);
-          break;
+      if (!tracksRef.current.length) {
+        const chunks = buildSpeechScript(data);
+        const urls: string[] = [];
+        for (const chunk of chunks) {
+          if (stopRef.current) return setState("idle");
+          urls.push(await fetchChunk(chunk));
         }
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        setState("playing");
-        await new Promise<void>((resolve, reject) => {
-          audio.onended = () => resolve();
-          audio.onerror = () => reject(new Error("Não foi possível reproduzir o áudio."));
-          void audio.play().catch(reject);
+        const durations = await Promise.all(urls.map(durationOf));
+        let acc = 0;
+        tracksRef.current = urls.map((url, i) => {
+          const t = { url, duration: durations[i] || 0, start: acc };
+          acc += t.duration;
+          return t;
         });
-        URL.revokeObjectURL(url);
-        // Pequena pausa entre trechos, respeitando a quebra de capítulos.
-        if (!stopRef.current) await new Promise((r) => setTimeout(r, 450));
+        setTotal(acc);
       }
-      if (!stopRef.current) setState("idle");
+      if (stopRef.current) return setState("idle");
+      playAt(0);
     } catch (err) {
       setState("idle");
       toast.error(err instanceof Error ? err.message : "Não foi possível ler o relatório.");
@@ -73,6 +130,7 @@ export function ListenReportButton({
     stopRef.current = true;
     audioRef.current?.pause();
     audioRef.current = null;
+    setProgress(0);
     setState("idle");
   }
 
@@ -88,14 +146,6 @@ export function ListenReportButton({
     }
   }
 
-  useEffect(() => {
-    if (autoStart && !started.current) {
-      started.current = true;
-      void play();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart]);
-
   if (state === "idle") {
     return (
       <Button variant="outline" size="sm" onClick={() => void play()}>
@@ -105,18 +155,38 @@ export function ListenReportButton({
     );
   }
 
+  const value = seeking ?? progress;
+
   return (
-    <div className="flex items-center gap-1">
-      <Button variant="outline" size="sm" onClick={togglePause} disabled={state === "loading"}>
+    <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
+      <Button variant="outline" size="icon" onClick={togglePause} disabled={state === "loading"}>
         {state === "loading" ? (
-          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
         ) : state === "playing" ? (
-          <Pause className="mr-1 h-4 w-4" />
+          <Pause className="h-4 w-4" />
         ) : (
-          <Play className="mr-1 h-4 w-4" />
+          <Play className="h-4 w-4" />
         )}
-        {state === "loading" ? "Preparando" : state === "playing" ? "Pausar" : "Continuar"}
       </Button>
+      <div className="flex flex-1 items-center gap-2">
+        <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{fmt(value)}</span>
+        <Slider
+          className="flex-1"
+          min={0}
+          max={Math.max(total, 1)}
+          step={1}
+          value={[Math.min(value, total)]}
+          disabled={state === "loading" || total === 0}
+          onValueChange={(v) => setSeeking(v[0])}
+          onValueCommit={(v) => {
+            setSeeking(null);
+            stopRef.current = false;
+            playAt(v[0]);
+          }}
+          aria-label="Progresso da leitura"
+        />
+        <span className="w-9 text-xs tabular-nums text-muted-foreground">{fmt(total)}</span>
+      </div>
       <Button variant="ghost" size="icon" aria-label="Parar leitura" onClick={stop}>
         <Square className="h-4 w-4" />
       </Button>
