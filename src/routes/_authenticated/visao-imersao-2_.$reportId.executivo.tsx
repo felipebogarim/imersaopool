@@ -695,6 +695,60 @@ function RelatorioExecutivoPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={dnpEditing !== null} onOpenChange={(v) => !v && setDnpEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar bloco</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Título"
+              value={dnpForm.title}
+              onChange={(e) => setDnpForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              placeholder="Causa"
+              rows={3}
+              value={dnpForm.cause}
+              onChange={(e) => setDnpForm((f) => ({ ...f, cause: e.target.value }))}
+            />
+            <Textarea
+              placeholder="Decisão recomendada"
+              rows={3}
+              value={dnpForm.decision}
+              onChange={(e) => setDnpForm((f) => ({ ...f, decision: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDnpEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveDnp()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dnpDeleting !== null} onOpenChange={(v) => !v && setDnpDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco será removido do relatório, do PDF e do e-mail.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDnpDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteDnp()}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={topicDeleting !== null} onOpenChange={(v) => !v && setTopicDeleting(null)}>
         <DialogContent>
           <DialogHeader>
