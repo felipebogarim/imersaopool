@@ -536,6 +536,16 @@ function RelatorioExecutivoPage() {
               setRejecting(a);
               setRejectReason("");
             }}
+            onEditBlock={(b) => {
+              setBlockEditing(b);
+              setBlockForm({
+                title: b.title ?? "",
+                fact: (b as any).fact ?? "",
+                cause: (b as any).cause ?? "",
+                impact: (b as any).impact ?? "",
+              });
+            }}
+            onDeleteBlock={(b) => setBlockDeleting(b)}
           />
           <NaoPrioridadeChapter data={viewData} />
         </div>
