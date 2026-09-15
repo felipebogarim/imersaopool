@@ -300,6 +300,18 @@ export async function saveExecutiveTopics(
   if (error) throw new Error(error.message);
 }
 
+/** compact_v2: capítulo Evidências e recomendações. */
+export async function saveEvidenceRecommendations(
+  reportId: string,
+  items: ExecutiveReportData["evidence_recommendations"],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ evidence_recommendations: (items ?? []) as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
+
 export async function saveDoNotPrioritize(
   reportId: string,
   items: ExecutiveReportData["do_not_prioritize"],
