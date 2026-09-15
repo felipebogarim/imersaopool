@@ -797,6 +797,76 @@ function RelatorioExecutivoPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={erEditing !== null} onOpenChange={(v) => !v && setErEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar evidência</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Título"
+              value={erForm.title}
+              onChange={(e) => setErForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              rows={3}
+              placeholder="Percepção"
+              value={erForm.perception}
+              onChange={(e) => setErForm((f) => ({ ...f, perception: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Citação (opcional)"
+              value={erForm.quote}
+              onChange={(e) => setErForm((f) => ({ ...f, quote: e.target.value }))}
+            />
+            <Input
+              placeholder="Autor"
+              value={erForm.author}
+              onChange={(e) => setErForm((f) => ({ ...f, author: e.target.value }))}
+            />
+            <Input
+              placeholder="Função"
+              value={erForm.role}
+              onChange={(e) => setErForm((f) => ({ ...f, role: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Oportunidade (frase curta)"
+              value={erForm.opportunity}
+              onChange={(e) => setErForm((f) => ({ ...f, opportunity: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setErEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveEr()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={erDeleting !== null} onOpenChange={(v) => !v && setErDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco será removido do relatório, do PDF e do e-mail.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setErDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteEr()}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={dnpEditing !== null} onOpenChange={(v) => !v && setDnpEditing(null)}>
         <DialogContent>
           <DialogHeader>
