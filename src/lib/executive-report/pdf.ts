@@ -301,10 +301,11 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
     if (y > startY) doc.roundedRect(M, startY, W, Math.min(y - startY, BOTTOM - startY), 5, 5, "S");
     y += 12;
   });
+  }
 
-  // Capítulo 04 — Não prioridade
+  // Não prioridade
   if (data.do_not_prioritize.length) {
-    chapter("04", "Onde não concentrar energia agora");
+    chapter(v2 ? "05" : "04", "Onde não concentrar energia agora");
     for (const n of data.do_not_prioritize) {
       need(40);
       text(n.title, { size: 11, style: "bold", color: C.primaryDeep, gap: 3 });
