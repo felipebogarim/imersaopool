@@ -326,7 +326,17 @@ export function DiagnosticoChapter({
   );
 }
 
-export function NaoPrioridadeChapter({ data }: { data: ExecutiveReportData }) {
+export function NaoPrioridadeChapter({
+  data,
+  readOnly,
+  onEditItem,
+  onDeleteItem,
+}: {
+  data: ExecutiveReportData;
+  readOnly?: boolean;
+  onEditItem?: (index: number) => void;
+  onDeleteItem?: (index: number) => void;
+}) {
   if (!data.do_not_prioritize.length) return null;
   return (
     <section>
@@ -335,7 +345,38 @@ export function NaoPrioridadeChapter({ data }: { data: ExecutiveReportData }) {
         {data.do_not_prioritize.map((n, i) => (
           <Card key={n.id ?? i}>
             <CardContent className="p-5">
-              <h3 className="text-base font-semibold">{n.title}</h3>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-base font-semibold">{n.title}</h3>
+                {!readOnly && (onEditItem || onDeleteItem) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground"
+                        aria-label="Opções do bloco"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {onEditItem && (
+                        <DropdownMenuItem onClick={() => onEditItem(i)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                      )}
+                      {onDeleteItem && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => onDeleteItem(i)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Excluir bloco
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
               {n.cause && (
                 <div className="mt-3">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
