@@ -103,6 +103,9 @@ function RelatorioExecutivoPage() {
   const [topicEditing, setTopicEditing] = useState<number | null>(null);
   const [topicForm, setTopicForm] = useState({ title: "", bullets: "" });
   const [topicDeleting, setTopicDeleting] = useState<number | null>(null);
+  const [dnpEditing, setDnpEditing] = useState<number | null>(null);
+  const [dnpForm, setDnpForm] = useState({ title: "", cause: "", decision: "" });
+  const [dnpDeleting, setDnpDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
 
