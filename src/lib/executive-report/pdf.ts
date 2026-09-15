@@ -5,6 +5,7 @@ import {
   PRIORITY_LABEL,
   formatVisitDate,
   isCompactLayout,
+  isCompactV2,
   toFinalData,
   type ExecutiveReportData,
 } from "./types";
