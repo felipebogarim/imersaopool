@@ -110,6 +110,10 @@ export type ExecutiveReportData = {
   companyName?: string | null;
   client: ExecutiveClient;
   executive_reading: string;
+  /** "compact_v1" ativa a renderização compacta; ausente = modelo atual. */
+  layout_version?: string | null;
+  executive_summary?: string | null;
+  executive_topics?: ExecutiveTopic[];
   brands_observed: string[];
   decision_blocks: ExecutiveDecisionBlock[];
   do_not_prioritize: ExecutiveNonPriority[];
