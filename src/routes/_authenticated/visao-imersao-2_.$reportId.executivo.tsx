@@ -623,41 +623,84 @@ function RelatorioExecutivoPage() {
             />
           )}
 
-          <DiagnosticoChapter
-            data={viewData}
-            readOnly={closed}
-            originOf={originOf}
-
-            onValidate={(a) =>
-              void mutate(
-                a,
-                {
-                  status: "validated",
-                  validated_at: new Date().toISOString(),
-                  validated_by: me?.userId ?? null,
-                },
-                "validou",
-              )
-            }
-            onEdit={(a) => setEditing(a)}
-            onReject={(a) => {
-              setRejecting(a);
-              setRejectReason("");
-            }}
-            onEditBlock={(b) => {
-              setBlockEditing(b);
-              setBlockForm({
-                title: b.title ?? "",
-                fact: (b as any).fact ?? "",
-                cause: (b as any).cause ?? "",
-                impact: (b as any).impact ?? "",
-              });
-            }}
-            onDeleteBlock={(b) => setBlockDeleting(b)}
-          />
+          {isCompactV2(viewData) ? (
+            <>
+              <EvidenciasChapter
+                data={viewData}
+                readOnly={closed}
+                onEditItem={(i) => {
+                  const e = (viewData.evidence_recommendations ?? [])[i];
+                  setErEditing(i);
+                  setErForm({
+                    title: e?.title ?? "",
+                    perception: e?.perception ?? "",
+                    quote: e?.evidence?.quote ?? "",
+                    author: e?.evidence?.author ?? "",
+                    role: e?.evidence?.role ?? "",
+                    opportunity: e?.opportunity ?? "",
+                  });
+                }}
+                onDeleteItem={(i) => setErDeleting(i)}
+              />
+              <AcoesSugeridasChapter
+                data={viewData}
+                readOnly={closed}
+                originOf={originOf}
+                onValidate={(a) =>
+                  void mutate(
+                    a,
+                    {
+                      status: "validated",
+                      validated_at: new Date().toISOString(),
+                      validated_by: me?.userId ?? null,
+                    },
+                    "validou",
+                  )
+                }
+                onEdit={(a) => setEditing(a)}
+                onReject={(a) => {
+                  setRejecting(a);
+                  setRejectReason("");
+                }}
+              />
+            </>
+          ) : (
+            <DiagnosticoChapter
+              data={viewData}
+              readOnly={closed}
+              originOf={originOf}
+              onValidate={(a) =>
+                void mutate(
+                  a,
+                  {
+                    status: "validated",
+                    validated_at: new Date().toISOString(),
+                    validated_by: me?.userId ?? null,
+                  },
+                  "validou",
+                )
+              }
+              onEdit={(a) => setEditing(a)}
+              onReject={(a) => {
+                setRejecting(a);
+                setRejectReason("");
+              }}
+              onEditBlock={(b) => {
+                setBlockEditing(b);
+                setBlockForm({
+                  title: b.title ?? "",
+                  fact: (b as any).fact ?? "",
+                  cause: (b as any).cause ?? "",
+                  impact: (b as any).impact ?? "",
+                });
+              }}
+              onDeleteBlock={(b) => setBlockDeleting(b)}
+            />
+          )}
           <NaoPrioridadeChapter
             data={viewData}
             readOnly={closed}
+            num={isCompactV2(viewData) ? "05" : "04"}
             onEditItem={(i) => {
               const n = (viewData.do_not_prioritize ?? [])[i] as any;
               setDnpEditing(i);
