@@ -6,6 +6,8 @@
 import {
   AREAS,
   COMPACT_LAYOUT,
+  COMPACT_LAYOUT_V2,
+  COMPACT_V2_MAX_ACTIONS,
   PRIORITIES,
   STATUSES,
   type ExecArea,
@@ -13,6 +15,7 @@ import {
   type ExecStatus,
   type ExecutiveAction,
   type ExecutiveDecisionBlock,
+  type ExecutiveEvidenceRecommendation,
   type ExecutiveNonPriority,
   type ExecutiveReportData,
   type ExecutiveTopic,
