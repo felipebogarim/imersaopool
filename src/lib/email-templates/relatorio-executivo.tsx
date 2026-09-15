@@ -110,6 +110,17 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             </Section>
           ) : null}
 
+          {appUrl && immersionReportId ? (
+            <Section style={{ textAlign: "center", padding: "4px 0 18px" }}>
+              <a
+                href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}/executivo?ouvir=1`}
+                style={listenButton}
+              >
+                ▶ Ouvir relatório (leitura em voz alta)
+              </a>
+            </Section>
+          ) : null}
+
           <Section style={sectionTitleWrap}>
             <Text style={sectionTitle}>BRIEFING EXECUTIVO</Text>
           </Section>
