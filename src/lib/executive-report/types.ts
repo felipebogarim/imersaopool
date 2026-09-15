@@ -43,6 +43,8 @@ export type ExecutiveAction = {
   /** id interno (uuid) quando persistido */
   row_id?: string;
   source_decision_id?: string | null;
+  /** compact_v2: rastreabilidade com as oportunidades de origem (ER01, ER02...). */
+  source_opportunity_ids?: string[];
   area: ExecArea;
   priority: ExecPriority;
   title: string;
@@ -82,6 +84,16 @@ export type ExecutiveTopic = {
   bullets: string[];
 };
 
+/** compact_v2: item do capítulo "Evidências e recomendações". */
+export type ExecutiveEvidenceRecommendation = {
+  id: string;
+  order?: number | null;
+  title: string;
+  perception?: string | null;
+  evidence?: ExecutiveEvidence | null;
+  opportunity?: string | null;
+};
+
 
 export type ExecutiveNonPriority = {
   id?: string;
@@ -114,6 +126,8 @@ export type ExecutiveReportData = {
   layout_version?: string | null;
   executive_summary?: string | null;
   executive_topics?: ExecutiveTopic[];
+  /** compact_v2: capítulo 03 — Evidências e recomendações. */
+  evidence_recommendations?: ExecutiveEvidenceRecommendation[];
   brands_observed: string[];
   decision_blocks: ExecutiveDecisionBlock[];
   do_not_prioritize: ExecutiveNonPriority[];
@@ -179,10 +193,18 @@ export function toFinalData(data: ExecutiveReportData): ExecutiveReportData {
 }
 
 export const COMPACT_LAYOUT = "compact_v1";
+export const COMPACT_LAYOUT_V2 = "compact_v2";
+/** compact_v2 aceita no máximo 3 ações sugeridas. */
+export const COMPACT_V2_MAX_ACTIONS = 3;
 
 /** Relatórios sem layout_version continuam no modelo antigo. */
 export function isCompactLayout(data?: Pick<ExecutiveReportData, "layout_version"> | null) {
-  return data?.layout_version === COMPACT_LAYOUT;
+  return data?.layout_version === COMPACT_LAYOUT || data?.layout_version === COMPACT_LAYOUT_V2;
+}
+
+/** Somente o novo layout de Evidências e Recomendações + Ações Sugeridas. */
+export function isCompactV2(data?: Pick<ExecutiveReportData, "layout_version"> | null) {
+  return data?.layout_version === COMPACT_LAYOUT_V2;
 }
 
 export function formatVisitDate(value?: string | null): string {

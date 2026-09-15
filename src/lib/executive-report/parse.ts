@@ -6,6 +6,8 @@
 import {
   AREAS,
   COMPACT_LAYOUT,
+  COMPACT_LAYOUT_V2,
+  COMPACT_V2_MAX_ACTIONS,
   PRIORITIES,
   STATUSES,
   type ExecArea,
@@ -13,6 +15,7 @@ import {
   type ExecStatus,
   type ExecutiveAction,
   type ExecutiveDecisionBlock,
+  type ExecutiveEvidenceRecommendation,
   type ExecutiveNonPriority,
   type ExecutiveReportData,
   type ExecutiveTopic,
@@ -85,6 +88,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
       owner: sanitize(a?.owner) || null,
       due_date: sanitize(a?.due_date) || null,
       note: sanitize(a?.note) || null,
+      source_opportunity_ids: sanitizeList(a?.source_opportunity_ids),
       reject_reason: null,
       history: [],
       ordem: i,
@@ -94,7 +98,41 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
   const knownIds = new Set(actions.map((a) => a.id));
 
   const layout_version = sanitize(json.layout_version) || null;
+  const compactV2 = layout_version === COMPACT_LAYOUT_V2;
   const compact = layout_version === COMPACT_LAYOUT;
+
+  const rawER: any[] = Array.isArray(json.evidence_recommendations)
+    ? json.evidence_recommendations
+    : [];
+  const evidence_recommendations: ExecutiveEvidenceRecommendation[] = rawER
+    .map((e, i) => {
+      const ev = e?.evidence;
+      const quote = sanitize(ev?.quote ?? ev?.text);
+      return {
+        id: sanitize(e?.id) || `ER${String(i + 1).padStart(2, "0")}`,
+        order: Number.isFinite(Number(e?.order)) ? Number(e.order) : i + 1,
+        title: sanitize(e?.title) || `Evidência ${i + 1}`,
+        perception: sanitize(e?.perception ?? e?.percepcao) || null,
+        evidence: quote
+          ? {
+              quote,
+              author: sanitize(ev?.author) || null,
+              role: sanitize(ev?.author_role ?? ev?.role) || null,
+            }
+          : null,
+        opportunity: sanitize(e?.opportunity ?? e?.oportunidade) || null,
+      };
+    })
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  if (compactV2) {
+    if (actions.length > COMPACT_V2_MAX_ACTIONS) {
+      throw new ExecutiveParseError(
+        `No modelo compact_v2 são aceitas no máximo ${COMPACT_V2_MAX_ACTIONS} ações sugeridas. O arquivo trouxe ${actions.length}.`,
+      );
+    }
+    for (const a of actions) a.status = "suggested";
+  }
 
   const rawBlocks: any[] = Array.isArray(json.decision_blocks) ? json.decision_blocks : [];
   const decision_blocks: ExecutiveDecisionBlock[] = rawBlocks.map((b, i) => {
@@ -150,7 +188,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     .map((t) => ({ title: sanitize(t?.title), bullets: sanitizeList(t?.bullets) }))
     .filter((t) => t.title || t.bullets.length);
 
-  if (compact && !executive_summary) {
+  if ((compact || compactV2) && !executive_summary) {
     throw new ExecutiveParseError(
       "No modelo compacto o campo `executive_summary` é obrigatório (até duas frases).",
     );
@@ -164,9 +202,9 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     decision: sanitize(n?.decision ?? n?.recommended_decision ?? n?.decisao) || null,
   }));
 
-  if (!decision_blocks.length && !actions.length) {
+  if (!decision_blocks.length && !actions.length && !evidence_recommendations.length) {
     throw new ExecutiveParseError(
-      "O arquivo foi reconhecido, mas não contém decisões nem ações. Verifique os campos `decision_blocks` e `actions`.",
+      "O arquivo foi reconhecido, mas não contém decisões nem ações. Verifique os campos `decision_blocks`, `evidence_recommendations` e `actions`.",
     );
   }
 
@@ -189,6 +227,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
     layout_version,
     executive_summary,
     executive_topics,
+    evidence_recommendations,
     brands_observed: sanitizeList(json.brands_observed),
     decision_blocks,
     do_not_prioritize,

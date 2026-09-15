@@ -326,7 +326,8 @@ export function DiagnosticoChapter({
   );
 }
 
-export function NaoPrioridadeChapter({
+/** compact_v2 — Capítulo 03: Evidências e recomendações (sem validação de ação). */
+export function EvidenciasChapter({
   data,
   readOnly,
   onEditItem,
@@ -337,10 +338,141 @@ export function NaoPrioridadeChapter({
   onEditItem?: (index: number) => void;
   onDeleteItem?: (index: number) => void;
 }) {
+  const items = data.evidence_recommendations ?? [];
+  if (!items.length) return null;
+  return (
+    <section>
+      <ChapterHeader num="03" title="Evidências e recomendações" />
+      <div className="space-y-3">
+        {items.map((e, i) => (
+          <Card key={e.id ?? i}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-base font-semibold leading-snug">{e.title}</h3>
+                {!readOnly && (onEditItem || onDeleteItem) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground"
+                        aria-label="Opções do bloco"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {onEditItem && (
+                        <DropdownMenuItem onClick={() => onEditItem(i)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                      )}
+                      {onDeleteItem && (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => onDeleteItem(i)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Excluir bloco
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+              {e.perception && (
+                <div className="mt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Percepção
+                  </p>
+                  <p className="text-sm leading-relaxed">{e.perception}</p>
+                </div>
+              )}
+              {e.evidence?.quote && (
+                <div className="mt-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Citação
+                  </p>
+                  <blockquote className="border-l-2 border-primary pl-3">
+                    <p className="text-sm italic leading-relaxed">“{e.evidence.quote}”</p>
+                    {(e.evidence.author || e.evidence.role) && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {[e.evidence.author, e.evidence.role].filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                  </blockquote>
+                </div>
+              )}
+              {e.opportunity && (
+                <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+                    Oportunidade
+                  </p>
+                  <p className="text-sm font-medium leading-snug">{e.opportunity}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** compact_v2 — Capítulo 04: Ações sugeridas (iniciativas da Newline). */
+export function AcoesSugeridasChapter({
+  data,
+  readOnly,
+  originOf,
+  onValidate,
+  onEdit,
+  onReject,
+}: {
+  data: ExecutiveReportData;
+  readOnly?: boolean;
+  originOf?: (a: ExecutiveAction) => { existing: boolean; displayTitle: string } | undefined;
+  onValidate?: (a: ExecutiveAction) => void;
+  onEdit?: (a: ExecutiveAction) => void;
+  onReject?: (a: ExecutiveAction) => void;
+}) {
+  const actions = data.actions.slice(0, 3);
+  if (!actions.length) return null;
+  return (
+    <section>
+      <ChapterHeader num="04" title="Ações sugeridas" />
+      <div className="space-y-3">
+        {actions.map((a) => (
+          <ActionCard
+            key={a.id}
+            action={a}
+            readOnly={readOnly}
+            origin={originOf?.(a)}
+            onValidate={() => onValidate?.(a)}
+            onEdit={() => onEdit?.(a)}
+            onReject={() => onReject?.(a)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function NaoPrioridadeChapter({
+  data,
+  readOnly,
+  num = "04",
+  onEditItem,
+  onDeleteItem,
+}: {
+  data: ExecutiveReportData;
+  readOnly?: boolean;
+  num?: string;
+  onEditItem?: (index: number) => void;
+  onDeleteItem?: (index: number) => void;
+}) {
   if (!data.do_not_prioritize.length) return null;
   return (
     <section>
-      <ChapterHeader num="04" title="Onde não concentrar energia agora" />
+      <ChapterHeader num={num} title="Onde não concentrar energia agora" />
       <div className="grid gap-4 md:grid-cols-2">
         {data.do_not_prioritize.map((n, i) => (
           <Card key={n.id ?? i}>

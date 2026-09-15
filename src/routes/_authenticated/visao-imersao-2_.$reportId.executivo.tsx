@@ -29,8 +29,10 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  AcoesSugeridasChapter,
   BriefingChapter,
   DiagnosticoChapter,
+  EvidenciasChapter,
   LeituraChapter,
   NaoPrioridadeChapter,
 } from "@/components/executive-report/ExecutiveChapters";
@@ -55,11 +57,14 @@ import {
   logEmail,
   reopenReport,
   saveDecisionBlocks,
+  saveEvidenceRecommendations,
   saveExecutiveTopics,
   saveDoNotPrioritize,
   updateAction,
 } from "@/lib/executive-report/store";
 import {
+  isCompactLayout,
+  isCompactV2,
   toFinalData,
   type ExecutiveAction,
   type ExecutiveReportData,
@@ -108,6 +113,16 @@ function RelatorioExecutivoPage() {
   const [dnpEditing, setDnpEditing] = useState<number | null>(null);
   const [dnpForm, setDnpForm] = useState({ title: "", cause: "", decision: "" });
   const [dnpDeleting, setDnpDeleting] = useState<number | null>(null);
+  const [erEditing, setErEditing] = useState<number | null>(null);
+  const [erForm, setErForm] = useState({
+    title: "",
+    perception: "",
+    quote: "",
+    author: "",
+    role: "",
+    opportunity: "",
+  });
+  const [erDeleting, setErDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
 
@@ -248,13 +263,15 @@ function RelatorioExecutivoPage() {
         ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
         : base.client.attainment || null;
     // No modelo compacto a leitura vem do próprio arquivo (resumo + tópicos).
-    const compact = base.layout_version === "compact_v1";
+    const compact = isCompactLayout(base);
     // Ação rejeitada sai do relatório, junto do bloco de diagnóstico que ficar sem ação.
     const actions = base.actions.filter((a) => a.status !== "rejected");
     const keptIds = new Set(actions.map((a) => a.id));
-    const decision_blocks = base.decision_blocks
-      .map((b) => ({ ...b, action_ids: b.action_ids.filter((id) => keptIds.has(id)) }))
-      .filter((b) => b.action_ids.length > 0);
+    const decision_blocks = isCompactV2(base)
+      ? base.decision_blocks
+      : base.decision_blocks
+          .map((b) => ({ ...b, action_ids: b.action_ids.filter((id) => keptIds.has(id)) }))
+          .filter((b) => b.action_ids.length > 0);
     return {
       ...base,
       actions,
@@ -419,6 +436,47 @@ function RelatorioExecutivoPage() {
     const list = (data.do_not_prioritize ?? []).filter((_, i) => i !== dnpDeleting);
     setDnpDeleting(null);
     await persistDnp(list as any[]);
+    toast.success("Bloco excluído.");
+  }
+
+  async function persistEr(items: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveEvidenceRecommendations(data.id, items as any);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveEr() {
+    if (!data || erEditing === null) return;
+    const list = (data.evidence_recommendations ?? []).map((e, i) =>
+      i === erEditing
+        ? {
+            ...e,
+            title: erForm.title,
+            perception: erForm.perception || null,
+            evidence: erForm.quote
+              ? { quote: erForm.quote, author: erForm.author || null, role: erForm.role || null }
+              : null,
+            opportunity: erForm.opportunity || null,
+          }
+        : e,
+    );
+    setErEditing(null);
+    await persistEr(list as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteEr() {
+    if (!data || erDeleting === null) return;
+    const list = (data.evidence_recommendations ?? []).filter((_, i) => i !== erDeleting);
+    setErDeleting(null);
+    await persistEr(list as any[]);
     toast.success("Bloco excluído.");
   }
 
@@ -616,41 +674,84 @@ function RelatorioExecutivoPage() {
             />
           )}
 
-          <DiagnosticoChapter
-            data={viewData}
-            readOnly={closed}
-            originOf={originOf}
-
-            onValidate={(a) =>
-              void mutate(
-                a,
-                {
-                  status: "validated",
-                  validated_at: new Date().toISOString(),
-                  validated_by: me?.userId ?? null,
-                },
-                "validou",
-              )
-            }
-            onEdit={(a) => setEditing(a)}
-            onReject={(a) => {
-              setRejecting(a);
-              setRejectReason("");
-            }}
-            onEditBlock={(b) => {
-              setBlockEditing(b);
-              setBlockForm({
-                title: b.title ?? "",
-                fact: (b as any).fact ?? "",
-                cause: (b as any).cause ?? "",
-                impact: (b as any).impact ?? "",
-              });
-            }}
-            onDeleteBlock={(b) => setBlockDeleting(b)}
-          />
+          {isCompactV2(viewData) ? (
+            <>
+              <EvidenciasChapter
+                data={viewData}
+                readOnly={closed}
+                onEditItem={(i) => {
+                  const e = (viewData.evidence_recommendations ?? [])[i];
+                  setErEditing(i);
+                  setErForm({
+                    title: e?.title ?? "",
+                    perception: e?.perception ?? "",
+                    quote: e?.evidence?.quote ?? "",
+                    author: e?.evidence?.author ?? "",
+                    role: e?.evidence?.role ?? "",
+                    opportunity: e?.opportunity ?? "",
+                  });
+                }}
+                onDeleteItem={(i) => setErDeleting(i)}
+              />
+              <AcoesSugeridasChapter
+                data={viewData}
+                readOnly={closed}
+                originOf={originOf}
+                onValidate={(a) =>
+                  void mutate(
+                    a,
+                    {
+                      status: "validated",
+                      validated_at: new Date().toISOString(),
+                      validated_by: me?.userId ?? null,
+                    },
+                    "validou",
+                  )
+                }
+                onEdit={(a) => setEditing(a)}
+                onReject={(a) => {
+                  setRejecting(a);
+                  setRejectReason("");
+                }}
+              />
+            </>
+          ) : (
+            <DiagnosticoChapter
+              data={viewData}
+              readOnly={closed}
+              originOf={originOf}
+              onValidate={(a) =>
+                void mutate(
+                  a,
+                  {
+                    status: "validated",
+                    validated_at: new Date().toISOString(),
+                    validated_by: me?.userId ?? null,
+                  },
+                  "validou",
+                )
+              }
+              onEdit={(a) => setEditing(a)}
+              onReject={(a) => {
+                setRejecting(a);
+                setRejectReason("");
+              }}
+              onEditBlock={(b) => {
+                setBlockEditing(b);
+                setBlockForm({
+                  title: b.title ?? "",
+                  fact: (b as any).fact ?? "",
+                  cause: (b as any).cause ?? "",
+                  impact: (b as any).impact ?? "",
+                });
+              }}
+              onDeleteBlock={(b) => setBlockDeleting(b)}
+            />
+          )}
           <NaoPrioridadeChapter
             data={viewData}
             readOnly={closed}
+            num={isCompactV2(viewData) ? "05" : "04"}
             onEditItem={(i) => {
               const n = (viewData.do_not_prioritize ?? [])[i] as any;
               setDnpEditing(i);
@@ -691,6 +792,76 @@ function RelatorioExecutivoPage() {
             </Button>
             <Button disabled={busy} onClick={() => void handleSaveTopic()}>
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={erEditing !== null} onOpenChange={(v) => !v && setErEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar evidência</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Título"
+              value={erForm.title}
+              onChange={(e) => setErForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              rows={3}
+              placeholder="Percepção"
+              value={erForm.perception}
+              onChange={(e) => setErForm((f) => ({ ...f, perception: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Citação (opcional)"
+              value={erForm.quote}
+              onChange={(e) => setErForm((f) => ({ ...f, quote: e.target.value }))}
+            />
+            <Input
+              placeholder="Autor"
+              value={erForm.author}
+              onChange={(e) => setErForm((f) => ({ ...f, author: e.target.value }))}
+            />
+            <Input
+              placeholder="Função"
+              value={erForm.role}
+              onChange={(e) => setErForm((f) => ({ ...f, role: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Oportunidade (frase curta)"
+              value={erForm.opportunity}
+              onChange={(e) => setErForm((f) => ({ ...f, opportunity: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setErEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveEr()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={erDeleting !== null} onOpenChange={(v) => !v && setErDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco será removido do relatório, do PDF e do e-mail.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setErDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteEr()}>
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

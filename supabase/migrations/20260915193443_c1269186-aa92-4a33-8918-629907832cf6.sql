@@ -1,0 +1,2 @@
+ALTER TABLE public.executive_reports ADD COLUMN IF NOT EXISTS evidence_recommendations jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.executive_report_actions ADD COLUMN IF NOT EXISTS source_opportunity_ids jsonb NOT NULL DEFAULT '[]'::jsonb;

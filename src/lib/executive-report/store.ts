@@ -40,6 +40,7 @@ function rowToAction(r: any): ExecutiveAction {
     id: r.external_id,
     row_id: r.id,
     source_decision_id: r.source_decision_id,
+    source_opportunity_ids: Array.isArray(r.source_opportunity_ids) ? r.source_opportunity_ids : [],
     area: pick<ExecArea>(r.area, AREAS, "commercial"),
     priority: pick<ExecPriority>(r.priority, PRIORITIES, "medium"),
     title: r.title,
@@ -95,6 +96,9 @@ export async function loadExecutiveReport(immersionReportId: string): Promise<{
     executive_topics: Array.isArray((rep as any).executive_topics)
       ? ((rep as any).executive_topics as any)
       : [],
+    evidence_recommendations: Array.isArray((rep as any).evidence_recommendations)
+      ? ((rep as any).evidence_recommendations as any)
+      : [],
     brands_observed: Array.isArray(rep.brands_observed) ? (rep.brands_observed as string[]) : [],
     decision_blocks: (rep.decision_blocks as any) ?? [],
     do_not_prioritize: (rep.do_not_prioritize as any) ?? [],
@@ -130,6 +134,7 @@ export async function createExecutiveReport(args: {
       layout_version: parsed.layout_version ?? null,
       executive_summary: parsed.executive_summary ?? null,
       executive_topics: (parsed.executive_topics ?? []) as any,
+      evidence_recommendations: (parsed.evidence_recommendations ?? []) as any,
       brands_observed: parsed.brands_observed as any,
       decision_blocks: parsed.decision_blocks as any,
       do_not_prioritize: parsed.do_not_prioritize as any,
@@ -147,6 +152,7 @@ export async function createExecutiveReport(args: {
         company_id: args.companyId,
         external_id: a.id,
         source_decision_id: a.source_decision_id,
+        source_opportunity_ids: (a.source_opportunity_ids ?? []) as any,
         area: a.area,
         priority: a.priority,
         title: a.title,
@@ -290,6 +296,18 @@ export async function saveExecutiveTopics(
   const { error } = await supabase
     .from("executive_reports")
     .update({ executive_topics: (topics ?? []) as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
+
+/** compact_v2: capítulo Evidências e recomendações. */
+export async function saveEvidenceRecommendations(
+  reportId: string,
+  items: ExecutiveReportData["evidence_recommendations"],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ evidence_recommendations: (items ?? []) as any })
     .eq("id", reportId);
   if (error) throw new Error(error.message);
 }
