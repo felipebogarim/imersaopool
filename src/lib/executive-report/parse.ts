@@ -88,6 +88,7 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
       owner: sanitize(a?.owner) || null,
       due_date: sanitize(a?.due_date) || null,
       note: sanitize(a?.note) || null,
+      source_opportunity_ids: sanitizeList(a?.source_opportunity_ids),
       reject_reason: null,
       history: [],
       ordem: i,
@@ -97,7 +98,41 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
   const knownIds = new Set(actions.map((a) => a.id));
 
   const layout_version = sanitize(json.layout_version) || null;
+  const compactV2 = layout_version === COMPACT_LAYOUT_V2;
   const compact = layout_version === COMPACT_LAYOUT;
+
+  const rawER: any[] = Array.isArray(json.evidence_recommendations)
+    ? json.evidence_recommendations
+    : [];
+  const evidence_recommendations: ExecutiveEvidenceRecommendation[] = rawER
+    .map((e, i) => {
+      const ev = e?.evidence;
+      const quote = sanitize(ev?.quote ?? ev?.text);
+      return {
+        id: sanitize(e?.id) || `ER${String(i + 1).padStart(2, "0")}`,
+        order: Number.isFinite(Number(e?.order)) ? Number(e.order) : i + 1,
+        title: sanitize(e?.title) || `Evidência ${i + 1}`,
+        perception: sanitize(e?.perception ?? e?.percepcao) || null,
+        evidence: quote
+          ? {
+              quote,
+              author: sanitize(ev?.author) || null,
+              role: sanitize(ev?.author_role ?? ev?.role) || null,
+            }
+          : null,
+        opportunity: sanitize(e?.opportunity ?? e?.oportunidade) || null,
+      };
+    })
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  if (compactV2) {
+    if (actions.length > COMPACT_V2_MAX_ACTIONS) {
+      throw new ExecutiveParseError(
+        `No modelo compact_v2 são aceitas no máximo ${COMPACT_V2_MAX_ACTIONS} ações sugeridas. O arquivo trouxe ${actions.length}.`,
+      );
+    }
+    for (const a of actions) a.status = "suggested";
+  }
 
   const rawBlocks: any[] = Array.isArray(json.decision_blocks) ? json.decision_blocks : [];
   const decision_blocks: ExecutiveDecisionBlock[] = rawBlocks.map((b, i) => {
