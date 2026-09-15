@@ -121,6 +121,8 @@ export function DiagnosticoChapter({
   onValidate,
   onEdit,
   onReject,
+  onEditBlock,
+  onDeleteBlock,
 }: {
   data: ExecutiveReportData;
   readOnly?: boolean;
@@ -128,6 +130,8 @@ export function DiagnosticoChapter({
   onValidate?: (a: ExecutiveAction) => void;
   onEdit?: (a: ExecutiveAction) => void;
   onReject?: (a: ExecutiveAction) => void;
+  onEditBlock?: (b: ExecutiveReportData["decision_blocks"][number]) => void;
+  onDeleteBlock?: (b: ExecutiveReportData["decision_blocks"][number]) => void;
 }) {
 
   const compact = isCompactLayout(data);
