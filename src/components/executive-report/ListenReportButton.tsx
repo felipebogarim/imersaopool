@@ -27,6 +27,7 @@ export function ListenReportButton({
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
   const [seeking, setSeeking] = useState<number | null>(null);
+  const [loadPct, setLoadPct] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const tracksRef = useRef<Track[]>([]);
   const indexRef = useRef(0);
@@ -192,6 +193,21 @@ export function ListenReportButton({
   }
 
   const value = seeking ?? progress;
+
+  if (state === "loading") {
+    return (
+      <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${loadPct}%` }} />
+        </div>
+        <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">{loadPct}%</span>
+        <Button variant="ghost" size="icon" aria-label="Cancelar preparação" onClick={stop}>
+          <Square className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
