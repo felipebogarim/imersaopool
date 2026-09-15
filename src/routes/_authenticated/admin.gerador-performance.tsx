@@ -40,6 +40,7 @@ import {
   generatePerformanceFromRaw,
   type GeneratedPerformance,
 } from "@/lib/generate-performance.functions";
+import { buildPerformanceFromWorkbooks } from "@/lib/gerador-performance-local";
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
@@ -157,18 +158,29 @@ function GeradorPerformancePage() {
     setBusy(true);
     setResult(null);
     try {
-      const payload = {
-        sheets: files.flatMap((f) =>
-          f.sheets.map((s) => ({
-            filename: f.file.name,
-            sheetName: s.sheetName,
-            aoa: s.aoa,
-          })),
-        ),
-        periodoLabel: periodo || null,
-        hint: hint || null,
-      };
-      const res = await runFn({ data: payload });
+      // 1) Leitura determinística da própria planilha (famílias pelo cabeçalho,
+      // número antes de cor, célula não interpretável fica ausente).
+      let res: GeneratedPerformance | null = null;
+      try {
+        res = await buildPerformanceFromWorkbooks(files.map((f) => f.file));
+      } catch {
+        res = null;
+      }
+      // 2) Só quando a estrutura não é reconhecida, recorre à leitura assistida.
+      if (!res) {
+        const payload = {
+          sheets: files.flatMap((f) =>
+            f.sheets.map((s) => ({
+              filename: f.file.name,
+              sheetName: s.sheetName,
+              aoa: s.aoa,
+            })),
+          ),
+          periodoLabel: periodo || null,
+          hint: hint || null,
+        };
+        res = await runFn({ data: payload });
+      }
       setResult(res);
       toast.success(`Performance gerada: ${res.rows.length} clientes, ${res.familias.length} famílias.`);
     } catch (err: any) {

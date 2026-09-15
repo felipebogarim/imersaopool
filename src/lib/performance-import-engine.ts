@@ -440,18 +440,32 @@ export function parsePerformanceWorkbookDeterministic(wb: XLSXStyle.WorkBook): A
       // Fallback por cor: SOMENTE quando não há nenhum número de desempenho.
       let legendStatus: FarolStatus | null = null;
       let legendToken: string | null = null;
+      let hasFill = false;
+      let unknownColor: string | null = null;
       if (numericPct == null) {
         for (let c = group.startCol; c <= group.endCol; c++) {
           const token = colorToken(line[c]);
           if (!token) continue;
+          hasFill = true;
           const fromLegend = legend.byColor[token] ?? statusFromHex(token);
           if (fromLegend) {
             legendStatus = fromLegend;
             legendToken = token;
             break;
           }
+          if (!unknownColor) unknownColor = token;
         }
-        if (!legendStatus && legend.uncolored && meta != null) legendStatus = legend.uncolored;
+        // Célula SEM preenchimento só vira "Sem compra" quando a própria legenda
+        // do arquivo declara essa faixa sem cor. Célula com cor não reconhecida
+        // fica como ausente (null) — nunca 0%.
+        if (!legendStatus && !hasFill && legend.uncolored && meta != null) legendStatus = legend.uncolored;
+        if (!legendStatus && hasFill) {
+          issues.push({
+            severity: "alerta",
+            scope: `${razao} / ${group.familia}`,
+            message: `Cor da célula não reconhecida (${unknownColor ?? "desconhecida"}); resultado gravado como ausente.`,
+          });
+        }
       }
       const pct = numericPct ?? (legendStatus ? FAROL_MIDPOINT[legendStatus] / 100 : null);
       if (numericPct == null && legendStatus) {
