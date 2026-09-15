@@ -136,10 +136,13 @@ export const IMPORT_FAROL_HEX: Record<string, FarolStatus> = {
   // Paleta original das planilhas
   E8A0A0: "abaixo_meta",
   F4D7BE: "pode_melhorar",
+  // Segundo padrão de cores das planilhas de desempenho (mesma faixa, tom diferente).
+  EFC0B1: "pode_melhorar",
   F3EFD9: "proximo",
   DFF0D0: "otimo",
   // Variação encontrada em planilhas legadas exportadas pelo Excel/Sheets.
   C2F1C8: "otimo",
+  C1F0C8: "otimo",
   "9FC7E8": "excelente",
 };
 
