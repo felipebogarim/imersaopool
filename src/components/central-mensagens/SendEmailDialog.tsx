@@ -15,6 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { sendCentralMensagensEmail } from "@/lib/central-mensagens.functions";
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -28,6 +30,7 @@ export function SendEmailDialog({ open, onOpenChange, template }: SendEmailDialo
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const sendEmailFn = useServerFn(sendCentralMensagensEmail);
 
   useEffect(() => {
     if (open) {
@@ -81,14 +84,17 @@ export function SendEmailDialog({ open, onOpenChange, template }: SendEmailDialo
 
     try {
       setSending(true);
-      // Simulação de envio
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success(`E-mail enviado com sucesso para ${selectedIds.length} destinatários`);
-      onOpenChange(false);
-      setSelectedIds([]);
-    } catch (error) {
-      toast.error("Erro ao enviar e-mail");
+      const res = await sendEmailFn({ data: { templateId: template.id, contactIds: selectedIds } });
+      if (res.sent > 0) {
+        toast.success(`E-mail enviado para ${res.sent} destinatário(s)${res.failed ? ` · ${res.failed} falha(s)` : ""}`);
+        onOpenChange(false);
+        setSelectedIds([]);
+      } else {
+        toast.error("Nenhum e-mail pôde ser enviado");
+      }
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      toast.error(error?.message || "Erro ao enviar e-mail");
     } finally {
       setSending(false);
     }
