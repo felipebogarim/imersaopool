@@ -291,6 +291,9 @@ export function TradeActionDialog({
                 {filteredClients.length === 0 && <p className="p-2 text-sm text-muted-foreground">Nenhum cliente encontrado.</p>}
               </div>
             </ScrollArea>
+            <p className="text-xs text-muted-foreground">
+              Mostrando {filteredClients.length} de {clients.length} clientes
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
