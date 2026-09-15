@@ -1475,6 +1475,7 @@ export type Database = {
           priority: string
           reject_reason: string | null
           source_decision_id: string | null
+          source_opportunity_ids: Json
           status: string
           title: string
           updated_at: string
@@ -1497,6 +1498,7 @@ export type Database = {
           priority?: string
           reject_reason?: string | null
           source_decision_id?: string | null
+          source_opportunity_ids?: Json
           status?: string
           title: string
           updated_at?: string
@@ -1519,6 +1521,7 @@ export type Database = {
           priority?: string
           reject_reason?: string | null
           source_decision_id?: string | null
+          source_opportunity_ids?: Json
           status?: string
           title?: string
           updated_at?: string
@@ -1668,6 +1671,7 @@ export type Database = {
           decision_blocks: Json
           do_not_prioritize: Json
           email: Json
+          evidence_recommendations: Json
           executive_reading: string | null
           executive_summary: string | null
           executive_topics: Json
@@ -1691,6 +1695,7 @@ export type Database = {
           decision_blocks?: Json
           do_not_prioritize?: Json
           email?: Json
+          evidence_recommendations?: Json
           executive_reading?: string | null
           executive_summary?: string | null
           executive_topics?: Json
@@ -1714,6 +1719,7 @@ export type Database = {
           decision_blocks?: Json
           do_not_prioritize?: Json
           email?: Json
+          evidence_recommendations?: Json
           executive_reading?: string | null
           executive_summary?: string | null
           executive_topics?: Json
