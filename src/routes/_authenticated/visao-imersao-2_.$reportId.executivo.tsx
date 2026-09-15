@@ -94,6 +94,9 @@ function RelatorioExecutivoPage() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [blockEditing, setBlockEditing] = useState<any | null>(null);
+  const [blockForm, setBlockForm] = useState({ title: "", fact: "", cause: "", impact: "" });
+  const [blockDeleting, setBlockDeleting] = useState<any | null>(null);
   const [busy, setBusy] = useState(false);
 
 
