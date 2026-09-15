@@ -178,6 +178,13 @@ export function toFinalData(data: ExecutiveReportData): ExecutiveReportData {
   };
 }
 
+export const COMPACT_LAYOUT = "compact_v1";
+
+/** Relatórios sem layout_version continuam no modelo antigo. */
+export function isCompactLayout(data?: Pick<ExecutiveReportData, "layout_version"> | null) {
+  return data?.layout_version === COMPACT_LAYOUT;
+}
+
 export function formatVisitDate(value?: string | null): string {
   if (!value) return "—";
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
