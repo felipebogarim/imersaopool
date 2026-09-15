@@ -146,21 +146,34 @@ export function DiagnosticoChapter({
                   {String(i + 1).padStart(2, "0")}
                 </p>
                 <h3 className="mt-1 text-lg font-semibold leading-snug">{b.title}</h3>
-                {b.cause && (
-                  <div className="mt-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Causa
-                    </p>
-                    <p className="text-sm leading-relaxed">{b.cause}</p>
-                  </div>
-                )}
-                {b.impact && (
-                  <div className="mt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      O que isso gera
-                    </p>
-                    <p className="text-sm leading-relaxed">{b.impact}</p>
-                  </div>
+                {compact ? (
+                  (b.fact || b.cause) && (
+                    <div className="mt-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Fato / percepção observada
+                      </p>
+                      <p className="text-sm leading-relaxed">{b.fact || b.cause}</p>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    {b.cause && (
+                      <div className="mt-4">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          Causa
+                        </p>
+                        <p className="text-sm leading-relaxed">{b.cause}</p>
+                      </div>
+                    )}
+                    {b.impact && (
+                      <div className="mt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          O que isso gera
+                        </p>
+                        <p className="text-sm leading-relaxed">{b.impact}</p>
+                      </div>
+                    )}
+                  </>
                 )}
                 {b.evidence?.quote && (
                   <blockquote className="mt-4 border-l-2 border-primary pl-4">
