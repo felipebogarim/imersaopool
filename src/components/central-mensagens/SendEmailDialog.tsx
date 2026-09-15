@@ -30,6 +30,7 @@ export function SendEmailDialog({ open, onOpenChange, template }: SendEmailDialo
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const sendEmailFn = useServerFn(sendCentralMensagensEmail);
 
   useEffect(() => {
     if (open) {

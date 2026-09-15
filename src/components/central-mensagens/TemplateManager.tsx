@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, Mail, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { SendEmailDialog } from "./SendEmailDialog";
+import { SendWhatsappDialog } from "./SendWhatsappDialog";
 
 export function TemplateManager() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function TemplateManager() {
   const [loading, setLoading] = useState(true);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [isWhatsOpen, setIsWhatsOpen] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -71,12 +73,9 @@ export function TemplateManager() {
   }
 
   function handleSendSimulation(type: "email" | "whatsapp", template: any) {
-    if (type === "email") {
-      setSelectedTemplate(template);
-      setIsSendDialogOpen(true);
-    } else {
-      toast.info(`Simulação de envio (${type}): ${template.name}`);
-    }
+    setSelectedTemplate(template);
+    if (type === "email") setIsSendDialogOpen(true);
+    else setIsWhatsOpen(true);
   }
 
   return (
