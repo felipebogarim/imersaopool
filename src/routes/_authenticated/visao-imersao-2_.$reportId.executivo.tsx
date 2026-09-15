@@ -36,6 +36,7 @@ import {
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
+import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
 import {
   resolveActionOrigin,
