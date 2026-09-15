@@ -69,9 +69,19 @@ export type ExecutiveDecisionBlock = {
   title: string;
   cause: string;
   impact: string;
+  /** Modelo compacto (compact_v1): fato/percepção observada, substitui causa+impacto. */
+  fact?: string | null;
+  order?: number | null;
   evidence?: ExecutiveEvidence | null;
   action_ids: string[];
 };
+
+/** Tópico da leitura executiva no modelo compacto. */
+export type ExecutiveTopic = {
+  title: string;
+  bullets: string[];
+};
+
 
 export type ExecutiveNonPriority = {
   id?: string;
