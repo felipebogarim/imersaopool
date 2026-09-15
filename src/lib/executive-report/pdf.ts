@@ -194,7 +194,51 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   }
 
 
+  const v2 = isCompactV2(data);
+
+  // compact_v2 — Capítulo 03 Evidências e recomendações + 04 Ações sugeridas
+  if (v2) {
+    const items = data.evidence_recommendations ?? [];
+    if (items.length) {
+      chapter("03", "Evidências e recomendações");
+      items.forEach((e) => {
+        need(50);
+        text(e.title, { size: 11, style: "bold", color: C.primaryDeep, gap: 4 });
+        if (e.perception) {
+          text("PERCEPÇÃO", { size: 8, style: "bold", color: C.mutedFg, gap: 1 });
+          text(e.perception, { size: 10, gap: 5 });
+        }
+        if (e.evidence?.quote) {
+          text("CITAÇÃO", { size: 8, style: "bold", color: C.mutedFg, gap: 1 });
+          text(`“${e.evidence.quote}”`, { size: 10, style: "italic", x: M + 10, width: W - 10, gap: 2 });
+          const who = [e.evidence.author, e.evidence.role].filter(Boolean).join(", ");
+          if (who) text(who, { size: 8, color: C.mutedFg, x: M + 10, width: W - 10, gap: 5 });
+        }
+        if (e.opportunity) {
+          text("OPORTUNIDADE", { size: 8, style: "bold", color: C.primary, gap: 1 });
+          text(e.opportunity, { size: 10, style: "bold", gap: 10 });
+        }
+      });
+    }
+
+    const acts = data.actions.slice(0, 3);
+    if (acts.length) {
+      chapter("04", "Ações sugeridas");
+      for (const a of acts) {
+        need(34);
+        text(a.title, { size: 11, style: "bold", color: C.primaryDeep, gap: 2 });
+        if (a.description) text(a.description, { size: 10, gap: 2 });
+        text(`${AREA_LABEL[a.area]} · ${PRIORITY_LABEL[a.priority]}`, {
+          size: 8,
+          color: C.mutedFg,
+          gap: 8,
+        });
+      }
+    }
+  }
+
   // Capítulo 03 — Do diagnóstico à ação
+  if (!v2) {
   chapter("03", "Do diagnóstico à ação");
   data.decision_blocks.forEach((b, i) => {
     need(70);
