@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,7 @@ import {
   reopenReport,
   saveDecisionBlocks,
   saveExecutiveTopics,
+  saveDoNotPrioritize,
   updateAction,
 } from "@/lib/executive-report/store";
 import {
@@ -103,6 +105,9 @@ function RelatorioExecutivoPage() {
   const [topicEditing, setTopicEditing] = useState<number | null>(null);
   const [topicForm, setTopicForm] = useState({ title: "", bullets: "" });
   const [topicDeleting, setTopicDeleting] = useState<number | null>(null);
+  const [dnpEditing, setDnpEditing] = useState<number | null>(null);
+  const [dnpForm, setDnpForm] = useState({ title: "", cause: "", decision: "" });
+  const [dnpDeleting, setDnpDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
 
@@ -384,6 +389,39 @@ function RelatorioExecutivoPage() {
     toast.success("Bloco atualizado.");
   }
 
+  async function persistDnp(items: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveDoNotPrioritize(data.id, items as any);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveDnp() {
+    if (!data || dnpEditing === null) return;
+    const list = (data.do_not_prioritize ?? []).map((n, i) =>
+      i === dnpEditing
+        ? { ...(n as any), title: dnpForm.title, cause: dnpForm.cause, decision: dnpForm.decision }
+        : n,
+    );
+    setDnpEditing(null);
+    await persistDnp(list as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteDnp() {
+    if (!data || dnpDeleting === null) return;
+    const list = (data.do_not_prioritize ?? []).filter((_, i) => i !== dnpDeleting);
+    setDnpDeleting(null);
+    await persistDnp(list as any[]);
+    toast.success("Bloco excluído.");
+  }
+
   async function handleDeleteTopic() {
     if (!data || topicDeleting === null) return;
     const list = (data.executive_topics ?? []).filter((_, i) => i !== topicDeleting);
@@ -610,7 +648,20 @@ function RelatorioExecutivoPage() {
             }}
             onDeleteBlock={(b) => setBlockDeleting(b)}
           />
-          <NaoPrioridadeChapter data={viewData} />
+          <NaoPrioridadeChapter
+            data={viewData}
+            readOnly={closed}
+            onEditItem={(i) => {
+              const n = (viewData.do_not_prioritize ?? [])[i] as any;
+              setDnpEditing(i);
+              setDnpForm({
+                title: n?.title ?? "",
+                cause: n?.cause ?? "",
+                decision: n?.decision ?? "",
+              });
+            }}
+            onDeleteItem={(i) => setDnpDeleting(i)}
+          />
         </div>
 
       )}
@@ -640,6 +691,60 @@ function RelatorioExecutivoPage() {
             </Button>
             <Button disabled={busy} onClick={() => void handleSaveTopic()}>
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dnpEditing !== null} onOpenChange={(v) => !v && setDnpEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar bloco</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Título"
+              value={dnpForm.title}
+              onChange={(e) => setDnpForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              placeholder="Causa"
+              rows={3}
+              value={dnpForm.cause}
+              onChange={(e) => setDnpForm((f) => ({ ...f, cause: e.target.value }))}
+            />
+            <Textarea
+              placeholder="Decisão recomendada"
+              rows={3}
+              value={dnpForm.decision}
+              onChange={(e) => setDnpForm((f) => ({ ...f, decision: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDnpEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveDnp()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dnpDeleting !== null} onOpenChange={(v) => !v && setDnpDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco será removido do relatório, do PDF e do e-mail.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDnpDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteDnp()}>
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

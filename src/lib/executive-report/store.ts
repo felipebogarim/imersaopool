@@ -293,3 +293,14 @@ export async function saveExecutiveTopics(
     .eq("id", reportId);
   if (error) throw new Error(error.message);
 }
+
+export async function saveDoNotPrioritize(
+  reportId: string,
+  items: ExecutiveReportData["do_not_prioritize"],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ do_not_prioritize: (items ?? []) as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
