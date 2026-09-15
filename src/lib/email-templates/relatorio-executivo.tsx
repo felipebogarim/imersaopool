@@ -15,6 +15,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  isCompactLayout,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 
