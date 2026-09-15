@@ -4,6 +4,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  isCompactLayout,
   unassignedActions,
   type ExecutiveAction,
   type ExecutiveReportData,
@@ -64,6 +65,41 @@ export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
 }
 
 export function LeituraChapter({ data }: { data: ExecutiveReportData }) {
+  const compact = isCompactLayout(data);
+  const topics = data.executive_topics ?? [];
+
+  if (compact) {
+    if (!data.executive_summary && !topics.length) return null;
+    return (
+      <section>
+        <ChapterHeader num="02" title="Leitura executiva" />
+        <Card>
+          <CardContent className="space-y-6 p-5">
+            {data.executive_summary && (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {data.executive_summary}
+              </p>
+            )}
+            {topics.map((t, i) => (
+              <div key={`${t.title}-${i}`}>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-primary">
+                  {t.title}
+                </h3>
+                <ul className="mt-2 list-disc space-y-1.5 pl-5">
+                  {t.bullets.map((b, j) => (
+                    <li key={j} className="text-[15px] leading-relaxed">
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
   if (!data.executive_reading) return null;
   return (
     <section>
@@ -94,7 +130,8 @@ export function DiagnosticoChapter({
   onReject?: (a: ExecutiveAction) => void;
 }) {
 
-  const orphans = unassignedActions(data);
+  const compact = isCompactLayout(data);
+  const orphans = compact ? [] : unassignedActions(data);
 
   return (
     <section>
@@ -109,21 +146,34 @@ export function DiagnosticoChapter({
                   {String(i + 1).padStart(2, "0")}
                 </p>
                 <h3 className="mt-1 text-lg font-semibold leading-snug">{b.title}</h3>
-                {b.cause && (
-                  <div className="mt-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Causa
-                    </p>
-                    <p className="text-sm leading-relaxed">{b.cause}</p>
-                  </div>
-                )}
-                {b.impact && (
-                  <div className="mt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      O que isso gera
-                    </p>
-                    <p className="text-sm leading-relaxed">{b.impact}</p>
-                  </div>
+                {compact ? (
+                  (b.fact || b.cause) && (
+                    <div className="mt-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Fato / percepção observada
+                      </p>
+                      <p className="text-sm leading-relaxed">{b.fact || b.cause}</p>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    {b.cause && (
+                      <div className="mt-4">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          Causa
+                        </p>
+                        <p className="text-sm leading-relaxed">{b.cause}</p>
+                      </div>
+                    )}
+                    {b.impact && (
+                      <div className="mt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          O que isso gera
+                        </p>
+                        <p className="text-sm leading-relaxed">{b.impact}</p>
+                      </div>
+                    )}
+                  </>
                 )}
                 {b.evidence?.quote && (
                   <blockquote className="mt-4 border-l-2 border-primary pl-4">
@@ -138,7 +188,7 @@ export function DiagnosticoChapter({
                 {acts.length > 0 && (
                   <div className="mt-4 space-y-3">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Ações sugeridas
+                      {compact ? "Ação sugerida" : "Ações sugeridas"}
                     </p>
                     {acts.map((a) => (
                       <ActionCard

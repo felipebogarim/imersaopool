@@ -90,6 +90,11 @@ export async function loadExecutiveReport(immersionReportId: string): Promise<{
     source_schema: rep.source_schema,
     client: (rep.client as any) ?? { display_name: "" },
     executive_reading: rep.executive_reading ?? "",
+    layout_version: (rep as any).layout_version ?? null,
+    executive_summary: (rep as any).executive_summary ?? null,
+    executive_topics: Array.isArray((rep as any).executive_topics)
+      ? ((rep as any).executive_topics as any)
+      : [],
     brands_observed: Array.isArray(rep.brands_observed) ? (rep.brands_observed as string[]) : [],
     decision_blocks: (rep.decision_blocks as any) ?? [],
     do_not_prioritize: (rep.do_not_prioritize as any) ?? [],
@@ -122,6 +127,9 @@ export async function createExecutiveReport(args: {
       source_schema: parsed.source_schema,
       client: { ...parsed.client, display_name: args.clientDisplayName } as any,
       executive_reading: parsed.executive_reading,
+      layout_version: parsed.layout_version ?? null,
+      executive_summary: parsed.executive_summary ?? null,
+      executive_topics: (parsed.executive_topics ?? []) as any,
       brands_observed: parsed.brands_observed as any,
       decision_blocks: parsed.decision_blocks as any,
       do_not_prioritize: parsed.do_not_prioritize as any,

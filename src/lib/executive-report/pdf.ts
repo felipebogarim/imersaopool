@@ -4,6 +4,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  isCompactLayout,
   toFinalData,
   type ExecutiveReportData,
 } from "./types";
@@ -163,7 +164,21 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   y += 8;
 
   // Capítulo 02 — Leitura executiva
-  if (data.executive_reading) {
+  const compact = isCompactLayout(data);
+  const topics = data.executive_topics ?? [];
+  if (compact && (data.executive_summary || topics.length)) {
+    chapter("02", "Leitura executiva");
+    if (data.executive_summary) {
+      text(data.executive_summary, { size: 10, color: C.mutedFg, gap: 8 });
+    }
+    for (const t of topics) {
+      if (t.title) text(t.title.toUpperCase(), { size: 10, style: "bold", color: C.primaryDeep, gap: 3 });
+      for (const b of t.bullets) {
+        text(`• ${b}`, { size: 10, x: M + 10, width: W - 10, gap: 1 });
+      }
+      y += 8;
+    }
+  } else if (data.executive_reading) {
     chapter("02", "Leitura executiva");
     for (const block of data.executive_reading.split(/\n{2,}/)) {
       const line = block.trim();
@@ -194,13 +209,28 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
       color: C.primaryDeep,
       gap: 6,
     });
-    if (b.cause) {
-      text("CAUSA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
-      text(b.cause, { size: 10, x: M + 14, width: W - 28, gap: 6 });
-    }
-    if (b.impact) {
-      text("O QUE ISSO GERA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
-      text(b.impact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+    if (compact) {
+      const fact = b.fact || b.cause;
+      if (fact) {
+        text("FATO / PERCEPÇÃO OBSERVADA", {
+          size: 8,
+          style: "bold",
+          color: C.mutedFg,
+          x: M + 14,
+          width: W - 28,
+          gap: 1,
+        });
+        text(fact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
+    } else {
+      if (b.cause) {
+        text("CAUSA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
+        text(b.cause, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
+      if (b.impact) {
+        text("O QUE ISSO GERA", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });
+        text(b.impact, { size: 10, x: M + 14, width: W - 28, gap: 6 });
+      }
     }
     if (b.evidence?.quote) {
       text("EVIDÊNCIA ESSENCIAL", { size: 8, style: "bold", color: C.mutedFg, x: M + 14, width: W - 28, gap: 1 });

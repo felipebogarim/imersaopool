@@ -69,9 +69,19 @@ export type ExecutiveDecisionBlock = {
   title: string;
   cause: string;
   impact: string;
+  /** Modelo compacto (compact_v1): fato/percepção observada, substitui causa+impacto. */
+  fact?: string | null;
+  order?: number | null;
   evidence?: ExecutiveEvidence | null;
   action_ids: string[];
 };
+
+/** Tópico da leitura executiva no modelo compacto. */
+export type ExecutiveTopic = {
+  title: string;
+  bullets: string[];
+};
+
 
 export type ExecutiveNonPriority = {
   id?: string;
@@ -100,6 +110,10 @@ export type ExecutiveReportData = {
   companyName?: string | null;
   client: ExecutiveClient;
   executive_reading: string;
+  /** "compact_v1" ativa a renderização compacta; ausente = modelo atual. */
+  layout_version?: string | null;
+  executive_summary?: string | null;
+  executive_topics?: ExecutiveTopic[];
   brands_observed: string[];
   decision_blocks: ExecutiveDecisionBlock[];
   do_not_prioritize: ExecutiveNonPriority[];
@@ -162,6 +176,13 @@ export function toFinalData(data: ExecutiveReportData): ExecutiveReportData {
       action_ids: b.action_ids.filter((id) => keep.has(id)),
     })),
   };
+}
+
+export const COMPACT_LAYOUT = "compact_v1";
+
+/** Relatórios sem layout_version continuam no modelo antigo. */
+export function isCompactLayout(data?: Pick<ExecutiveReportData, "layout_version"> | null) {
+  return data?.layout_version === COMPACT_LAYOUT;
 }
 
 export function formatVisitDate(value?: string | null): string {

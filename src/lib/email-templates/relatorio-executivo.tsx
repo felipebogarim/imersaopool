@@ -15,6 +15,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  isCompactLayout,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 
@@ -74,6 +75,7 @@ function statusTag(status: string) {
 
 export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId, attachments }: ExecutiveEmailProps) => {
   const r = report;
+  const compact = isCompactLayout(r);
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
   const actions = r?.actions ?? [];
@@ -134,7 +136,23 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             <Text style={sectionTitle}>LEITURA EXECUTIVA</Text>
           </Section>
           <Section style={card}>
-            {readingBlocks(r?.executive_reading).length ? (
+            {compact ? (
+              <>
+                {r?.executive_summary ? (
+                  <Text style={readingParagraph}>{r.executive_summary}</Text>
+                ) : null}
+                {(r?.executive_topics ?? []).map((t, i) => (
+                  <React.Fragment key={`${t.title}-${i}`}>
+                    <Text style={blockTitle}>{t.title}</Text>
+                    {t.bullets.map((b, j) => (
+                      <Text key={j} style={bulletLine}>
+                        {`• ${b}`}
+                      </Text>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </>
+            ) : readingBlocks(r?.executive_reading).length ? (
               readingBlocks(r?.executive_reading).map((b, i) =>
                 b.kind === "h" ? (
                   <Text key={i} style={blockTitle}>
@@ -209,18 +227,29 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
               <Section key={b.id} style={card}>
                 <Text style={blockIndex}>{String(i + 1).padStart(2, "0")}</Text>
                 <Text style={blockTitle}>{b.title}</Text>
-                {b.cause ? (
+                {compact ? (
+                  b.fact || b.cause ? (
+                    <>
+                      <Text style={label}>FATO / PERCEPÇÃO OBSERVADA</Text>
+                      <Text style={paragraph}>{b.fact || b.cause}</Text>
+                    </>
+                  ) : null
+                ) : (
                   <>
-                    <Text style={label}>CAUSA</Text>
-                    <Text style={paragraph}>{b.cause}</Text>
+                    {b.cause ? (
+                      <>
+                        <Text style={label}>CAUSA</Text>
+                        <Text style={paragraph}>{b.cause}</Text>
+                      </>
+                    ) : null}
+                    {b.impact ? (
+                      <>
+                        <Text style={label}>O QUE ISSO GERA</Text>
+                        <Text style={paragraph}>{b.impact}</Text>
+                      </>
+                    ) : null}
                   </>
-                ) : null}
-                {b.impact ? (
-                  <>
-                    <Text style={label}>O QUE ISSO GERA</Text>
-                    <Text style={paragraph}>{b.impact}</Text>
-                  </>
-                ) : null}
+                )}
                 {b.evidence?.quote ? (
                   <Section style={quoteBox}>
                     <Text style={quote}>{`“${b.evidence.quote}”`}</Text>
@@ -407,6 +436,7 @@ const linksTitle = { color: MUTED, fontSize: "11px", letterSpacing: "1px", fontW
 const linkLine = { margin: "0 0 10px" };
 const linkStyle = { color: ACCENT, fontSize: "15px", fontWeight: "bold" as const, textDecoration: "underline" };
 const readingParagraph = { color: TEXT, fontSize: "15px", lineHeight: "25px", margin: "0 0 18px" };
+const bulletLine = { color: TEXT, fontSize: "15px", lineHeight: "23px", margin: "0 0 8px" };
 const tag = {
   backgroundColor: "#E6F4F8",
   color: BRAND,
