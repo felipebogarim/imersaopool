@@ -40,6 +40,7 @@ import {
   generatePerformanceFromRaw,
   type GeneratedPerformance,
 } from "@/lib/generate-performance.functions";
+import { buildPerformanceFromWorkbooks } from "@/lib/gerador-performance-local";
 import {
   FAROL_CELL_CLASS,
   FAROL_FAIXA_TEXT,
