@@ -253,13 +253,15 @@ function RelatorioExecutivoPage() {
         ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
         : base.client.attainment || null;
     // No modelo compacto a leitura vem do próprio arquivo (resumo + tópicos).
-    const compact = base.layout_version === "compact_v1";
+    const compact = isCompactLayout(base);
     // Ação rejeitada sai do relatório, junto do bloco de diagnóstico que ficar sem ação.
     const actions = base.actions.filter((a) => a.status !== "rejected");
     const keptIds = new Set(actions.map((a) => a.id));
-    const decision_blocks = base.decision_blocks
-      .map((b) => ({ ...b, action_ids: b.action_ids.filter((id) => keptIds.has(id)) }))
-      .filter((b) => b.action_ids.length > 0);
+    const decision_blocks = isCompactV2(base)
+      ? base.decision_blocks
+      : base.decision_blocks
+          .map((b) => ({ ...b, action_ids: b.action_ids.filter((id) => keptIds.has(id)) }))
+          .filter((b) => b.action_ids.length > 0);
     return {
       ...base,
       actions,
