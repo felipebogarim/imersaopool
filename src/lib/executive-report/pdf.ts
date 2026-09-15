@@ -4,6 +4,7 @@ import {
   AREA_LABEL,
   PRIORITY_LABEL,
   formatVisitDate,
+  isCompactLayout,
   toFinalData,
   type ExecutiveReportData,
 } from "./types";
