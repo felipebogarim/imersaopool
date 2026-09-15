@@ -16,6 +16,7 @@ import {
   PRIORITY_LABEL,
   formatVisitDate,
   isCompactLayout,
+  isCompactV2,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
 
@@ -76,6 +77,7 @@ function statusTag(status: string) {
 export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId, attachments }: ExecutiveEmailProps) => {
   const r = report;
   const compact = isCompactLayout(r);
+  const v2 = isCompactV2(r);
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
   const actions = r?.actions ?? [];
