@@ -77,9 +77,10 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
       if (a) push(`Ação. ${a.title}.${a.description ? ` ${a.description}` : ""}`);
     }
   });
+  }
 
   if (data.do_not_prioritize?.length) {
-    push("Capítulo quatro. Onde não concentrar energia agora.");
+    push(`Capítulo ${v2 ? "cinco" : "quatro"}. Onde não concentrar energia agora.`);
     for (const n of data.do_not_prioritize) {
       push(n.title);
       if (n.cause) push(`Causa. ${n.cause}`);
