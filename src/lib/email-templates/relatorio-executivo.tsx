@@ -495,3 +495,13 @@ const barValueCell = {
   verticalAlign: "middle" as const,
   whiteSpace: "nowrap" as const,
 };
+const listenButton = {
+  backgroundColor: ACCENT,
+  color: "#ffffff",
+  display: "inline-block" as const,
+  fontSize: "14px",
+  fontWeight: "bold" as const,
+  padding: "12px 24px",
+  borderRadius: "8px",
+  textDecoration: "none",
+};
