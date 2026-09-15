@@ -23,6 +23,7 @@ import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeChunkRouteImport } from './routes/api/transcribe-chunk'
 import { Route as AuthenticatedVisaoRep2RouteImport } from './routes/_authenticated/visao-rep-2'
 import { Route as AuthenticatedVisaoRepRouteImport } from './routes/_authenticated/visao-rep'
@@ -184,6 +185,11 @@ const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTranscribeChunkRoute = ApiTranscribeChunkRouteImport.update({
@@ -739,6 +745,7 @@ export interface FileRoutesByFullPath {
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
+  '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -846,6 +853,7 @@ export interface FileRoutesByTo {
   '/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
+  '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -955,6 +963,7 @@ export interface FileRoutesById {
   '/_authenticated/visao-rep': typeof AuthenticatedVisaoRepRoute
   '/_authenticated/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
+  '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
@@ -1065,6 +1074,7 @@ export interface FileRouteTypes {
     | '/visao-rep'
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
+    | '/api/tts'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1172,6 +1182,7 @@ export interface FileRouteTypes {
     | '/visao-rep'
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
+    | '/api/tts'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1280,6 +1291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/visao-rep'
     | '/_authenticated/visao-rep-2'
     | '/api/transcribe-chunk'
+    | '/api/tts'
     | '/email/unsubscribe'
     | '/evento/checkout'
     | '/evento/falha'
@@ -1370,6 +1382,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
+  ApiTtsRoute: typeof ApiTtsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
   EventoFalhaRoute: typeof EventoFalhaRoute
@@ -1493,6 +1506,13 @@ declare module '@tanstack/react-router' {
       path: '/email/unsubscribe'
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/transcribe-chunk': {
@@ -2395,6 +2415,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
+  ApiTtsRoute: ApiTtsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
   EventoFalhaRoute: EventoFalhaRoute,
