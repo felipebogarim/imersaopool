@@ -233,10 +233,12 @@ function RelatorioExecutivoPage() {
       commercial?.geralPct != null
         ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
         : base.client.attainment || null;
+    // No modelo compacto a leitura vem do próprio arquivo (resumo + tópicos).
+    const compact = base.layout_version === "compact_v1";
     return {
       ...base,
       companyName: activeCompanyName || "Newline",
-      executive_reading: fullReading || base.executive_reading,
+      executive_reading: compact ? base.executive_reading : fullReading || base.executive_reading,
       client: {
         ...base.client,
         attainment,
