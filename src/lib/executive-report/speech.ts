@@ -73,7 +73,7 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
 }
 
 /** Agrupa os trechos respeitando o limite de caracteres por requisição. */
-function chunkScript(parts: string[], maxChars = 900): string[] {
+function chunkScript(parts: string[], maxChars = 1800): string[] {
   const out: string[] = [];
   let cur = "";
   for (const p of parts) {
