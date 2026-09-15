@@ -439,6 +439,47 @@ function RelatorioExecutivoPage() {
     toast.success("Bloco excluído.");
   }
 
+  async function persistEr(items: any[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveEvidenceRecommendations(data.id, items as any);
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveEr() {
+    if (!data || erEditing === null) return;
+    const list = (data.evidence_recommendations ?? []).map((e, i) =>
+      i === erEditing
+        ? {
+            ...e,
+            title: erForm.title,
+            perception: erForm.perception || null,
+            evidence: erForm.quote
+              ? { quote: erForm.quote, author: erForm.author || null, role: erForm.role || null }
+              : null,
+            opportunity: erForm.opportunity || null,
+          }
+        : e,
+    );
+    setErEditing(null);
+    await persistEr(list as any[]);
+    toast.success("Bloco atualizado.");
+  }
+
+  async function handleDeleteEr() {
+    if (!data || erDeleting === null) return;
+    const list = (data.evidence_recommendations ?? []).filter((_, i) => i !== erDeleting);
+    setErDeleting(null);
+    await persistEr(list as any[]);
+    toast.success("Bloco excluído.");
+  }
+
   async function handleDeleteTopic() {
     if (!data || topicDeleting === null) return;
     const list = (data.executive_topics ?? []).filter((_, i) => i !== topicDeleting);
