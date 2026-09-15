@@ -1,6 +1,7 @@
 import {
   formatVisitDate,
   isCompactLayout,
+  isCompactV2,
   type ExecutiveReportData,
 } from "./types";
 
