@@ -40,6 +40,25 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
     for (const p of String(data.executive_reading ?? "").split(/\n{2,}/)) push(p);
   }
 
+  const v2 = isCompactV2(data);
+  if (v2) {
+    push("Capítulo três. Evidências e recomendações.");
+    (data.evidence_recommendations ?? []).forEach((e) => {
+      push(`${e.title}.`);
+      if (e.perception) push(`Percepção. ${e.perception}`);
+      if (e.evidence?.quote) {
+        const autor = [e.evidence.author, e.evidence.role].filter(Boolean).join(", ");
+        push(`Citação${autor ? ` de ${autor}` : ""}. ${e.evidence.quote}`);
+      }
+      if (e.opportunity) push(`Oportunidade. ${e.opportunity}`);
+    });
+    push("Capítulo quatro. Ações sugeridas.");
+    for (const a of data.actions.slice(0, 3)) {
+      push(`${a.title}.${a.description ? ` ${a.description}` : ""}`);
+    }
+  }
+
+  if (!v2) {
   push("Capítulo três. Do diagnóstico à ação.");
   data.decision_blocks.forEach((b, i) => {
     push(`Diagnóstico ${i + 1}. ${b.title}.`);
