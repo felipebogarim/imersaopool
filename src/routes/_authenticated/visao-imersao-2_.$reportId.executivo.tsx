@@ -610,7 +610,20 @@ function RelatorioExecutivoPage() {
             }}
             onDeleteBlock={(b) => setBlockDeleting(b)}
           />
-          <NaoPrioridadeChapter data={viewData} />
+          <NaoPrioridadeChapter
+            data={viewData}
+            readOnly={closed}
+            onEditItem={(i) => {
+              const n = (viewData.do_not_prioritize ?? [])[i] as any;
+              setDnpEditing(i);
+              setDnpForm({
+                title: n?.title ?? "",
+                cause: n?.cause ?? "",
+                decision: n?.decision ?? "",
+              });
+            }}
+            onDeleteItem={(i) => setDnpDeleting(i)}
+          />
         </div>
 
       )}
