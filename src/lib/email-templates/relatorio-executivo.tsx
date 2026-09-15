@@ -230,11 +230,72 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
             </>
           ) : null}
 
-          <Section style={sectionTitleWrap}>
-            <Text style={sectionTitle}>DO DIAGNÓSTICO À AÇÃO</Text>
-          </Section>
+          {v2 ? (
+            <>
+              {(r?.evidence_recommendations ?? []).length ? (
+                <>
+                  <Section style={sectionTitleWrap}>
+                    <Text style={sectionTitle}>EVIDÊNCIAS E RECOMENDAÇÕES</Text>
+                  </Section>
+                  {(r?.evidence_recommendations ?? []).map((e, i) => (
+                    <Section key={e.id ?? i} style={card}>
+                      <Text style={blockTitle}>{e.title}</Text>
+                      {e.perception ? (
+                        <>
+                          <Text style={label}>PERCEPÇÃO</Text>
+                          <Text style={paragraph}>{e.perception}</Text>
+                        </>
+                      ) : null}
+                      {e.evidence?.quote ? (
+                        <>
+                          <Text style={label}>CITAÇÃO</Text>
+                          <Section style={quoteBox}>
+                            <Text style={quote}>{`“${e.evidence.quote}”`}</Text>
+                            {e.evidence.author || e.evidence.role ? (
+                              <Text style={quoteWho}>
+                                {[e.evidence.author, e.evidence.role].filter(Boolean).join(", ")}
+                              </Text>
+                            ) : null}
+                          </Section>
+                        </>
+                      ) : null}
+                      {e.opportunity ? (
+                        <>
+                          <Text style={labelHighlight}>OPORTUNIDADE</Text>
+                          <Text style={{ ...paragraph, fontWeight: 600 }}>{e.opportunity}</Text>
+                        </>
+                      ) : null}
+                    </Section>
+                  ))}
+                </>
+              ) : null}
 
-          {(r?.decision_blocks ?? []).map((b, i) => {
+              {actions.length ? (
+                <>
+                  <Section style={sectionTitleWrap}>
+                    <Text style={sectionTitle}>AÇÕES SUGERIDAS</Text>
+                  </Section>
+                  {actions.slice(0, 3).map((a) => (
+                    <Section key={a.id} style={card}>
+                      <Text style={blockTitle}>{a.title}</Text>
+                      {a.description ? <Text style={paragraph}>{a.description}</Text> : null}
+                      <Text style={{ color: MUTED, fontSize: "13px", margin: "4px 0 0" }}>
+                        {AREA_LABEL[a.area]} · Prioridade {PRIORITY_LABEL[a.priority]}
+                      </Text>
+                    </Section>
+                  ))}
+                </>
+              ) : null}
+            </>
+          ) : null}
+
+          {!v2 ? (
+            <Section style={sectionTitleWrap}>
+              <Text style={sectionTitle}>DO DIAGNÓSTICO À AÇÃO</Text>
+            </Section>
+          ) : null}
+
+          {(v2 ? [] : r?.decision_blocks ?? []).map((b, i) => {
             const acts = actions.filter((a) => b.action_ids.includes(a.id));
             return (
               <Section key={b.id} style={card}>
