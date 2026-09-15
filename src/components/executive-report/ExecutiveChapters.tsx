@@ -130,7 +130,8 @@ export function DiagnosticoChapter({
   onReject?: (a: ExecutiveAction) => void;
 }) {
 
-  const orphans = unassignedActions(data);
+  const compact = isCompactLayout(data);
+  const orphans = compact ? [] : unassignedActions(data);
 
   return (
     <section>
