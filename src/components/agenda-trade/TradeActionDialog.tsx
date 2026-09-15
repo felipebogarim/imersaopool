@@ -151,10 +151,10 @@ export function TradeActionDialog({
 
   const filteredClients = useMemo(() => {
     const term = clientSearch.trim().toLowerCase();
-    const base = term
-      ? clients.filter((client) => `${client.nome_fantasia ?? ""} ${client.razao_social ?? ""}`.toLowerCase().includes(term))
-      : clients;
-    return base.slice(0, 120);
+    if (!term) return clients;
+    return clients.filter((client) =>
+      `${client.nome_fantasia ?? ""} ${client.razao_social ?? ""}`.toLowerCase().includes(term),
+    );
   }, [clientSearch, clients]);
 
   const clientNameById = useMemo(() => new Map(clients.map((c) => [c.id, clientLabel(c)])), [clients]);
@@ -291,6 +291,9 @@ export function TradeActionDialog({
                 {filteredClients.length === 0 && <p className="p-2 text-sm text-muted-foreground">Nenhum cliente encontrado.</p>}
               </div>
             </ScrollArea>
+            <p className="text-xs text-muted-foreground">
+              Mostrando {filteredClients.length} de {clients.length} clientes
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -519,7 +522,7 @@ export function TradeActionDialog({
                         <>
                           <ScrollArea className="h-32 rounded-md border bg-background">
                             <div className="p-2">
-                              {(clientSearch ? filteredClients : clients.slice(0, 120)).map((client) => (
+                              {filteredClients.map((client) => (
                                 <label key={client.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent">
                                   <Checkbox
                                     checked={inv.rateio_client_ids.includes(client.id)}
