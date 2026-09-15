@@ -146,6 +146,14 @@ export function ListenReportButton({
     }
   }
 
+  useEffect(() => {
+    if (autoStart && !started.current) {
+      started.current = true;
+      void play();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
+
   if (state === "idle") {
     return (
       <Button variant="outline" size="sm" onClick={() => void play()}>
