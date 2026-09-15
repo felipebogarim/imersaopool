@@ -95,6 +95,17 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
       <Preview>{`Relatório Executivo de Imersão · ${client}`}</Preview>
       <Body style={main}>
         <Container style={container}>
+          {appUrl && immersionReportId ? (
+            <Section style={{ textAlign: "center", padding: "0 0 18px" }}>
+              <a
+                href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}/executivo?ouvir=1`}
+                style={listenButton}
+              >
+                ▶ Ouvir relatório (leitura em voz alta)
+              </a>
+            </Section>
+          ) : null}
+
           <Section style={header}>
             <Text style={kicker}>{companyName} · RELATÓRIO EXECUTIVO DE IMERSÃO</Text>
             <Heading style={h1}>{client}</Heading>
@@ -107,17 +118,6 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
           {message ? (
             <Section style={card}>
               <Text style={intro}>{message}</Text>
-            </Section>
-          ) : null}
-
-          {appUrl && immersionReportId ? (
-            <Section style={{ textAlign: "center", padding: "4px 0 18px" }}>
-              <a
-                href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}/executivo?ouvir=1`}
-                style={listenButton}
-              >
-                ▶ Ouvir relatório (leitura em voz alta)
-              </a>
             </Section>
           ) : null}
 
