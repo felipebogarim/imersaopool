@@ -227,18 +227,29 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
               <Section key={b.id} style={card}>
                 <Text style={blockIndex}>{String(i + 1).padStart(2, "0")}</Text>
                 <Text style={blockTitle}>{b.title}</Text>
-                {b.cause ? (
+                {compact ? (
+                  b.fact || b.cause ? (
+                    <>
+                      <Text style={label}>FATO / PERCEPÇÃO OBSERVADA</Text>
+                      <Text style={paragraph}>{b.fact || b.cause}</Text>
+                    </>
+                  ) : null
+                ) : (
                   <>
-                    <Text style={label}>CAUSA</Text>
-                    <Text style={paragraph}>{b.cause}</Text>
+                    {b.cause ? (
+                      <>
+                        <Text style={label}>CAUSA</Text>
+                        <Text style={paragraph}>{b.cause}</Text>
+                      </>
+                    ) : null}
+                    {b.impact ? (
+                      <>
+                        <Text style={label}>O QUE ISSO GERA</Text>
+                        <Text style={paragraph}>{b.impact}</Text>
+                      </>
+                    ) : null}
                   </>
-                ) : null}
-                {b.impact ? (
-                  <>
-                    <Text style={label}>O QUE ISSO GERA</Text>
-                    <Text style={paragraph}>{b.impact}</Text>
-                  </>
-                ) : null}
+                )}
                 {b.evidence?.quote ? (
                   <Section style={quoteBox}>
                     <Text style={quote}>{`“${b.evidence.quote}”`}</Text>
