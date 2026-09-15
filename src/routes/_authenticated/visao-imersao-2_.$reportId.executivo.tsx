@@ -552,6 +552,68 @@ function RelatorioExecutivoPage() {
 
       )}
 
+      <Dialog open={!!blockEditing} onOpenChange={(v) => !v && setBlockEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar bloco</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              rows={2}
+              placeholder="Título do diagnóstico"
+              value={blockForm.title}
+              onChange={(e) => setBlockForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <Textarea
+              rows={3}
+              placeholder="Fato / percepção observada"
+              value={blockForm.fact}
+              onChange={(e) => setBlockForm((f) => ({ ...f, fact: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Causa (opcional)"
+              value={blockForm.cause}
+              onChange={(e) => setBlockForm((f) => ({ ...f, cause: e.target.value }))}
+            />
+            <Textarea
+              rows={2}
+              placeholder="Impacto (opcional)"
+              value={blockForm.impact}
+              onChange={(e) => setBlockForm((f) => ({ ...f, impact: e.target.value }))}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBlockEditing(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveBlock()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!blockDeleting} onOpenChange={(v) => !v && setBlockDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir bloco</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            O bloco de diagnóstico sai do relatório, do PDF e do e-mail. As ações vinculadas
+            permanecem registradas no Plano de Ação.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBlockDeleting(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={() => void handleDeleteBlock()}>
+              Excluir bloco
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent>
           <DialogHeader>
