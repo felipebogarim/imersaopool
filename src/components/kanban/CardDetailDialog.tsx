@@ -22,7 +22,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
-  Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload,
+  Calendar as CalendarIcon, MessageSquare, CheckSquare, Paperclip, Users, Tag, Archive, Trash2, Plus, X, Upload, Pencil,
   Sparkles, ThumbsUp, ThumbsDown, Shield, User, UserRound, Check, Copy,
 
 } from "lucide-react";
@@ -931,10 +931,6 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
   const [text, setText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const { data: currentUserId = null } = useQuery({
-    queryKey: ["current-user-id"],
-    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
-  });
   const { data: comments = [] } = useQuery({
     queryKey: ["kanban-comments", cardId],
     queryFn: async () => {
@@ -969,14 +965,25 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
   async function saveEdit(commentId: string) {
     const content = editText.trim();
     if (!content) return;
-    const { error } = await supabase.from("kanban_comments").update({ content }).eq("id", commentId);
+    const { data, error } = await supabase
+      .from("kanban_comments")
+      .update({ content })
+      .eq("id", commentId)
+      .select("id")
+      .maybeSingle();
     if (error) {
       toast.error(error.message ?? "Falha ao editar comentário.");
       return;
     }
+    if (!data) {
+      toast.error("Não foi possível editar este comentário.");
+      return;
+    }
+    await logActivity(boardId, "comment_edited", {}, cardId);
     setEditingId(null);
     setEditText("");
     await qc.invalidateQueries({ queryKey: ["kanban-comments", cardId] });
+    toast.success("Comentário atualizado");
   }
 
   return (
@@ -989,14 +996,17 @@ function CommentsSection({ cardId, boardId }: { cardId: string; boardId: string 
               <div className="text-xs font-medium">{c.profiles?.full_name ?? c.profiles?.email ?? "—"}
                 <span className="ml-2 text-muted-foreground">{new Date(c.created_at).toLocaleString("pt-BR")}</span>
               </div>
-              {currentUserId === c.user_id && editingId !== c.id && (
-                <button
+              {editingId !== c.id && (
+                <Button
                   type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                   onClick={() => { setEditingId(c.id); setEditText(c.content ?? ""); }}
                 >
+                  <Pencil className="h-3 w-3" />
                   Editar
-                </button>
+                </Button>
               )}
             </div>
             {editingId === c.id ? (
