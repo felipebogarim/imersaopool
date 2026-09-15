@@ -34,11 +34,11 @@ const Email = ({ title, intro, blocks, farewell, recipientName }: Props) => (
     </Head>
     <Preview>{title ?? "Novidades no sistema"}</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Section style={header}>
+      <Container className="container" style={container}>
+        <Section className="header" style={header}>
           <Heading style={h1}>{title ?? "Novidades no sistema"}</Heading>
         </Section>
-        <Section style={content}>
+        <Section className="content" style={content}>
           {recipientName && <Text style={text}>Olá, {recipientName}!</Text>}
           {intro && <Text style={text}>{intro}</Text>}
           {(blocks ?? []).map((b, i) => (
