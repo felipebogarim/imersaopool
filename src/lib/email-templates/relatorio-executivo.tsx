@@ -335,6 +335,14 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
               {immersionReportId ? (
                 <>
                   <Text style={linkLine}>
+                    <a
+                      href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}/executivo?ouvir=1`}
+                      style={linkStyle}
+                    >
+                      Ouvir relatório (leitura em voz alta)
+                    </a>
+                  </Text>
+                  <Text style={linkLine}>
                     <a href={`${appUrl.split("/").slice(0, 3).join("/")}/visao-imersao-2/${immersionReportId}`} style={linkStyle}>
                       Visão Imersão 2
                     </a>

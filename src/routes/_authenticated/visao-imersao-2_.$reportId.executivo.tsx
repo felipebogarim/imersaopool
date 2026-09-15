@@ -36,6 +36,7 @@ import {
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
+import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
 import {
   resolveActionOrigin,
@@ -406,6 +407,12 @@ function RelatorioExecutivoPage() {
           <div className="flex flex-wrap items-center gap-2">
             {data && (
               <>
+                {viewData && (
+                  <ListenReportButton
+                    data={viewData}
+                    autoStart={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ouvir") === "1"}
+                  />
+                )}
                 <Button size="sm" onClick={() => viewData && exportExecutiveReportPdf(viewData)}>
                   <FileDown className="mr-1 h-4 w-4" /> Exportar PDF
                 </Button>
