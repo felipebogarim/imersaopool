@@ -164,6 +164,12 @@ export function TemplateManager() {
         onOpenChange={setIsSendDialogOpen}
         template={selectedTemplate}
       />
+
+      <SendWhatsappDialog
+        open={isWhatsOpen}
+        onOpenChange={setIsWhatsOpen}
+        template={selectedTemplate}
+      />
     </div>
   );
 }
