@@ -74,6 +74,7 @@ function statusTag(status: string) {
 
 export const ExecutiveReportEmail = ({ report, message, appUrl, families, immersionReportId, representativeId, attachments }: ExecutiveEmailProps) => {
   const r = report;
+  const compact = isCompactLayout(r);
   const client = r?.client?.display_name ?? "Cliente";
   const companyName = (r?.companyName || "Newline").toUpperCase();
   const actions = r?.actions ?? [];
