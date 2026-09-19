@@ -39,7 +39,7 @@ export function CenárioSimulador({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px] bg-[#0A0A0A] border-white/10 text-white overflow-y-auto">
+      <SheetContent className="w-full sm:w-[540px] sm:max-w-[540px] bg-[#0A0A0A] border-white/10 text-white overflow-y-auto">
         <SheetHeader className="space-y-4">
           <SheetTitle className="text-2xl font-light text-nl-gold">Simulador de Cenários</SheetTitle>
           <SheetDescription className="text-muted-foreground font-light">

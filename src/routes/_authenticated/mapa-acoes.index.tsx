@@ -147,7 +147,7 @@ function MapaAcoesResumoPage() {
         {/* Filtros */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
           <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[300px]">
+            <div className="relative min-w-0 basis-full sm:basis-[300px] flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por cliente, título ou palavra-chave..."
@@ -158,7 +158,7 @@ function MapaAcoesResumoPage() {
             </div>
             
             <Select value={filterBoard} onValueChange={setFilterBoard}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Board" />
               </SelectTrigger>
               <SelectContent>
@@ -170,7 +170,7 @@ function MapaAcoesResumoPage() {
             </Select>
 
             <Select value={filterTipo} onValueChange={setFilterTipo}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -181,7 +181,7 @@ function MapaAcoesResumoPage() {
             </Select>
 
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -193,7 +193,7 @@ function MapaAcoesResumoPage() {
             </Select>
 
             <Select value={filterEvolucao} onValueChange={setFilterEvolucao}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Evolução" />
               </SelectTrigger>
               <SelectContent>

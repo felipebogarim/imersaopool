@@ -195,7 +195,7 @@ function AgendaTradePage() {
 
           <TabsContent value="agenda" className="space-y-4">
             <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="icon" aria-label="Período anterior" onClick={() => setCursor((date) => moveCursor(view, date, -1))}>
                   <ChevronLeft />
                 </Button>
@@ -203,7 +203,7 @@ function AgendaTradePage() {
                 <Button variant="outline" size="icon" aria-label="Próximo período" onClick={() => setCursor((date) => moveCursor(view, date, 1))}>
                   <ChevronRight />
                 </Button>
-                <h2 className="ml-2 text-base font-semibold capitalize sm:text-lg">{periodTitle(view === "list" ? "month" : view, cursor)}</h2>
+                <h2 className="w-full text-base font-semibold capitalize sm:ml-2 sm:w-auto sm:text-lg">{periodTitle(view === "list" ? "month" : view, cursor)}</h2>
               </div>
               <div className="grid grid-cols-3 rounded-md border bg-muted/30 p-1">
                 {VIEWS.map((item) => (
