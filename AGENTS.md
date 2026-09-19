@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+For project work, read `ai/PROJECT_BRAIN.md` first and follow `ai/AGENT_INSTRUCTIONS.md` for progressive context loading and quality gates.
