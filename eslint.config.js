@@ -6,7 +6,14 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  { ignores: ["dist", "build", "coverage", "generated", "node_modules", ".output", ".vinxi", "src/routeTree.gen.ts", "src/integrations/supabase/types.ts", "**/*.gen.{ts,tsx,js,jsx,mjs,cjs}"] },
+  {
+    files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
+    rules: {
+      // Existing large files need deliberate review before any refactor.
+      "max-lines": ["warn", { max: 350, skipBlankLines: true, skipComments: true }],
+    },
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

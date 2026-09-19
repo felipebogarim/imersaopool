@@ -164,15 +164,15 @@ export function TradeCalendar({ view, cursor, actions, clientNames, userNames, o
   const days = eachDayOfInterval({ start, end });
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
-      <div className="grid grid-cols-7 border-b bg-muted/30 text-center text-[11px] font-medium uppercase text-muted-foreground">
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="grid min-w-[760px] grid-cols-7 border-b bg-muted/30 text-center text-[11px] font-medium uppercase text-muted-foreground">
         {WEEKDAYS.map((label) => (
           <div key={label} className="py-2">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid min-w-[760px] grid-cols-7">
         {days.map((day) => {
           const dayActions = actionsForDay(actions, day);
           const outside = view === "month" && !isSameMonth(day, cursor);
