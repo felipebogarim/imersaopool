@@ -67,7 +67,7 @@ function HomeComponent() {
                   <span className="text-[11px] font-light uppercase tracking-[0.45em] text-white/45">Newline</span>
                 </div>
                 <h1 className="text-3xl font-light leading-[1.05] tracking-tight md:text-5xl">
-                  Dados e tomada de <span className="text-nl-gold">decisão..</span>
+                  Dados e tomada de <span className="text-nl-gold">decisão</span>
                 </h1>
                 <p className="max-w-xl text-base font-light text-white/55 md:text-lg">
                   Dados e indicadores para potencializar a operação comercial Newline.
