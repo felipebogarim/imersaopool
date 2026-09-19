@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PoolFlowLogo, JornadaProdutosLogo } from "@/components/Brand";
+import { PoolFlowLogo } from "@/components/Brand";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
@@ -137,8 +137,7 @@ function BoardsView() {
                 ) : ws.name.toLowerCase().includes("flow") || ws.name.toLowerCase().includes("crm") ? (
                   <PoolFlowLogo className="h-8 w-auto grayscale brightness-200" />
                 ) : (ws.name.toLowerCase().includes("jornada") && ws.name.toLowerCase().includes("produtos")) || ws.name.toLowerCase().includes("produto") ? (
-                  <JornadaProdutosLogo className="h-8 w-auto grayscale brightness-200" />
-
+                  <div className="h-8 w-8 rounded bg-blue-600" />
                 ) : (
                   <div className="h-8 w-8 rounded" style={{ background: ws.color ?? "#3B82F6" }} />
                 )}
