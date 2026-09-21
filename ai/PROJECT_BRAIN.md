@@ -19,8 +19,12 @@
 
 ## 4. Current State
 - Implemented areas include immersions, interviews, clients, representatives, performance and BI, product/pricing views, tasks, forms, messaging, admin/security, and trade agendas.
-- `roadmap.md` marks the performance import, numeric precedence, status display, and related validation work complete. Treat that checklist as scoped history, not proof that all flows are currently passing.
-- No in-progress module is identified in the repository context reviewed for this brain.
+
+## Canonical Data Sources and Relationships
+- **Representative portfolio:** Derive a representative's client portfolio from Performance.
+- Canonical relationship: `representatives.id` → `rep_performance_uploads.representative_id` → latest active upload → `rep_performance_rows.upload_id` → `rep_performance_rows.razao_social`.
+- Use the latest active, non-superseded upload.
+- Do not infer the portfolio from `clients.representative_id` or `clients.nome_representante_erp` when the feature requires the portfolio defined by Performance.
 
 ## 5. Business Rules
 - The authenticated route gate requires a session and checks terms acceptance, NDA acceptance, active company, roles, and admin MFA enrollment.
@@ -42,7 +46,7 @@
 ## 8. Current Risks
 - The repository has both browser-authenticated flows and public/server routes, so authorization needs review at each boundary.
 - Lovable syncs pushed commits to its editor. Do not rewrite published branch history; keep pushed commits in a working state.
-- Existing source files exceed the 350-line review threshold; avoid mechanical splits. Lint, typecheck, tests, and build remain unverified for this context-only change.
+- Existing source files exceed the 350-line review threshold; avoid mechanical splits.
 
 ## 9. Frozen Decisions
 - Keep TanStack Start file-based routing and the generated route tree; do not hand-edit `routeTree.gen.ts`.
@@ -50,4 +54,4 @@
 - Preserve published git history on the Lovable-connected branch.
 
 ## 10. Next Step
-- Run the quality gates on the next code change and record any concrete failures before making broader architecture decisions.
+- Keep this brain limited to verified, durable architecture, rules, risks, and canonical data relationships.

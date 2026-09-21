@@ -7,3 +7,24 @@ Use `ai/TASK_TEMPLATE.md` to define scope for substantial tasks. Keep the brain 
 Run `npm run check:context` after context edits. For code changes, run relevant focused tests and `npm run lint`, `npx tsc --noEmit`, or `npm run build` as appropriate. Review ESLint `max-lines` warnings for manually maintained files over 350 effective lines; split only when cohesion permits. Existing warnings do not authorize mechanical refactors.
 
 Preserve the Lovable history rule in `AGENTS.md`. Do not hand-edit generated code or expose environment secrets.
+
+## Exploration Budget
+
+For broad audits, investigations, and repository-wide analysis:
+
+1. Start with static search and structural mapping before opening implementation files.
+2. Hard exploration limit: do not inspect more than 15 implementation files during the initial audit pass.
+3. Before opening a 16th implementation file:
+   - stop the investigation;
+   - summarize the findings obtained so far;
+   - state exactly why the current evidence is insufficient;
+   - list the additional files required and why each one is necessary;
+   - only then continue with the smallest possible additional set.
+4. Do not read the same implementation file more than once unless a specific unresolved question requires it.
+5. Targeted line-range reads used only to verify a previously identified finding do not count as a full reread.
+6. Prefer targeted searches (`rg`, `grep`, `git grep`, symbol search) before opening files.
+7. Rank findings by likely impact before expanding the investigation.
+8. Do not scan the entire `src`, historical docs, migrations, generated files, or unrelated tests by default.
+9. Stop exploration when there is enough evidence to answer the task reliably.
+10. For audits, separate discovery from deep inspection: map risks first, inspect only the highest-risk areas second.
+11. During read-only audits, do not run builds, type checks, tests, dependency installation, or other validation commands unless they are directly required to confirm a specific finding.
