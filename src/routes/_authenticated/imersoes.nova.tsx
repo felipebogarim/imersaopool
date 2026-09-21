@@ -67,7 +67,7 @@ function NewImmersion() {
       while (true) {
         let query = supabase
           .from("clients")
-          .select("id, nome_fantasia, razao_social, representative_id")
+          .select("id, nome_fantasia, razao_social")
           .order("nome_fantasia");
         if (form.representative_id) query = query.eq("representative_id", form.representative_id);
         const { data, error } = await query.range(from, from + limit - 1);
@@ -132,7 +132,7 @@ function NewImmersion() {
                   <CommandGroup>
                     {reps.map((r: any) => (
                       <CommandItem key={r.id} value={r.id} onSelect={() => {
-                        setForm(f => ({ ...f, representative_id: r.id, client_id: "", empresa_manual: "" }));
+                        setForm(f => ({ ...f, representative_id: r.id, client_id: "" }));
                         setRepOpen(false);
                       }}>
                         <Check className={form.representative_id === r.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
@@ -144,7 +144,6 @@ function NewImmersion() {
               </Command>
             </PopoverContent>
           </Popover>
-          {form.perfil === "cliente" && <p className="text-xs text-muted-foreground">A lista de clientes será filtrada pela carteira deste representante.</p>}
         </div>
       )}
     </>
@@ -153,7 +152,6 @@ function NewImmersion() {
   async function save() {
     if (!form.perfil) return toast.error("Selecione o perfil");
     if (form.perfil === "cliente" && !form.client_id && !form.empresa_manual) return toast.error("Informe o cliente ou empresa");
-    if (form.vinculado_rep && !form.representative_id) return toast.error("Selecione o representante");
     if (!form.roteiro_id) return toast.error("Selecione um roteiro");
     
     setSaving(true);
