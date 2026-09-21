@@ -59,17 +59,18 @@ function NewImmersion() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-select-all"],
+    queryKey: ["clients-select", form.representative_id || "all"],
     queryFn: async () => {
       const limit = 1000;
       const all: any[] = [];
       let from = 0;
       while (true) {
-        const { data, error } = await supabase
+        let query = supabase
           .from("clients")
-          .select("id, nome_fantasia, razao_social")
-          .order("nome_fantasia")
-          .range(from, from + limit - 1);
+          .select("id, nome_fantasia, razao_social, representative_id")
+          .order("nome_fantasia");
+        if (form.representative_id) query = query.eq("representative_id", form.representative_id);
+        const { data, error } = await query.range(from, from + limit - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
         all.push(...data);
@@ -102,9 +103,57 @@ function NewImmersion() {
     if (match) setForm(f => ({ ...f, roteiro_id: match.roteiro_id }));
   }, [roteiroPerfis, roteiroManual, form.roteiro_id]);
 
+  const representativeFields = (
+    <>
+      <div className="space-y-2">
+        <Label>Vinculado a um representante?</Label>
+        <div className="flex items-center gap-3 mt-1">
+          <Button type="button" variant={form.vinculado_rep ? "default" : "outline"} size="sm"
+            onClick={() => setForm(f => ({ ...f, vinculado_rep: true }))}>Sim</Button>
+          <Button type="button" variant={!form.vinculado_rep ? "default" : "outline"} size="sm"
+            onClick={() => setForm(f => ({ ...f, vinculado_rep: false, representative_id: "" }))}>Não</Button>
+        </div>
+      </div>
+      {form.vinculado_rep && (
+        <div className="md:col-span-2 space-y-2">
+          <Label>Representante *</Label>
+          <Popover open={repOpen} onOpenChange={setRepOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-10 px-3">
+                <span className="truncate">{reps.find((r: any) => r.id === form.representative_id)?.nome || "Selecione o representante"}</span>
+                <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Pesquisar representante..." />
+                <CommandList className="max-h-64">
+                  <CommandEmpty>Nenhum representante encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    {reps.map((r: any) => (
+                      <CommandItem key={r.id} value={r.id} onSelect={() => {
+                        setForm(f => ({ ...f, representative_id: r.id, client_id: "", empresa_manual: "" }));
+                        setRepOpen(false);
+                      }}>
+                        <Check className={form.representative_id === r.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
+                        <span className="truncate">{r.nome}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {form.perfil === "cliente" && <p className="text-xs text-muted-foreground">A lista de clientes será filtrada pela carteira deste representante.</p>}
+        </div>
+      )}
+    </>
+  );
+
   async function save() {
     if (!form.perfil) return toast.error("Selecione o perfil");
     if (form.perfil === "cliente" && !form.client_id && !form.empresa_manual) return toast.error("Informe o cliente ou empresa");
+    if (form.vinculado_rep && !form.representative_id) return toast.error("Selecione o representante");
     if (!form.roteiro_id) return toast.error("Selecione um roteiro");
     
     setSaving(true);
@@ -187,6 +236,8 @@ function NewImmersion() {
               <Input type="date" value={form.data_visita} onChange={e => setForm(f => ({ ...f, data_visita: e.target.value }))} />
             </div>
 
+            {form.perfil === "cliente" && representativeFields}
+
             {/* Empresa / Cliente */}
             <div className="md:col-span-2 space-y-2">
               {form.perfil === "cliente" ? (
@@ -261,63 +312,7 @@ function NewImmersion() {
               </Select>
             </div>
 
-            {/* Vinculado a Rep */}
-            <div className="space-y-2">
-              <Label>Vinculado a um representante?</Label>
-              <div className="flex items-center gap-3 mt-1">
-                <Button 
-                  type="button" 
-                  variant={form.vinculado_rep ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => setForm(f => ({ ...f, vinculado_rep: true }))}
-                >Sim</Button>
-                <Button 
-                  type="button" 
-                  variant={!form.vinculado_rep ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => setForm(f => ({ ...f, vinculado_rep: false, representative_id: "" }))}
-                >Não</Button>
-              </div>
-            </div>
-
-            {form.vinculado_rep && (
-              <div className="md:col-span-2 space-y-2">
-                <Label>Representante *</Label>
-                <Popover open={repOpen} onOpenChange={setRepOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-10 px-3">
-                      <span className="truncate">
-                        {reps.find((r: any) => r.id === form.representative_id)?.nome || "Selecione o representante"}
-                      </span>
-                      <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Pesquisar representante..." />
-                      <CommandList className="max-h-64">
-                        <CommandEmpty>Nenhum representante encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          {reps.map((r: any) => (
-                            <CommandItem
-                              key={r.id}
-                              value={r.id}
-                              onSelect={() => {
-                                setForm(f => ({ ...f, representative_id: r.id }));
-                                setRepOpen(false);
-                              }}
-                            >
-                              <Check className={form.representative_id === r.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
-                              <span className="truncate">{r.nome}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+            {form.perfil !== "cliente" && representativeFields}
 
             {/* Acompanhantes */}
             <div className="md:col-span-2 space-y-2">
