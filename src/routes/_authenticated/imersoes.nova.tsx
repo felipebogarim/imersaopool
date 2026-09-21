@@ -51,6 +51,7 @@ function NewImmersion() {
     tipo: "",
     vinculado_rep: false,
     representative_id: "",
+    representative_name: "",
     acompanhantes: "",
     titulo: "",
     roteiro_id: "",
@@ -59,7 +60,7 @@ function NewImmersion() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-select", form.representative_id || "all"],
+    queryKey: ["clients-select", form.representative_id || "all", form.representative_name],
     queryFn: async () => {
       const limit = 1000;
       const all: any[] = [];
@@ -69,7 +70,10 @@ function NewImmersion() {
           .from("clients")
           .select("id, nome_fantasia, razao_social")
           .order("nome_fantasia");
-        if (form.representative_id) query = query.eq("representative_id", form.representative_id);
+        if (form.representative_id) {
+          const repName = form.representative_name.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          query = query.or(`representative_id.eq.${form.representative_id},nome_representante_erp.ilike."${repName}"`);
+        }
         const { data, error } = await query.range(from, from + limit - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -111,7 +115,7 @@ function NewImmersion() {
           <Button type="button" variant={form.vinculado_rep ? "default" : "outline"} size="sm"
             onClick={() => setForm(f => ({ ...f, vinculado_rep: true }))}>Sim</Button>
           <Button type="button" variant={!form.vinculado_rep ? "default" : "outline"} size="sm"
-            onClick={() => setForm(f => ({ ...f, vinculado_rep: false, representative_id: "" }))}>Não</Button>
+            onClick={() => setForm(f => ({ ...f, vinculado_rep: false, representative_id: "", representative_name: "" }))}>Não</Button>
         </div>
       </div>
       {form.vinculado_rep && (
@@ -132,7 +136,7 @@ function NewImmersion() {
                   <CommandGroup>
                     {reps.map((r: any) => (
                       <CommandItem key={r.id} value={r.id} onSelect={() => {
-                        setForm(f => ({ ...f, representative_id: r.id, client_id: "" }));
+                        setForm(f => ({ ...f, representative_id: r.id, representative_name: r.nome, client_id: "" }));
                         setRepOpen(false);
                       }}>
                         <Check className={form.representative_id === r.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
