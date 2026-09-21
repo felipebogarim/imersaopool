@@ -40,6 +40,7 @@ import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
 import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
+import { ValidateActionKanbanDialog } from "@/components/executive-report/ValidateActionKanbanDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
 import {
   resolveActionOrigin,
@@ -100,6 +101,7 @@ function RelatorioExecutivoPage() {
   const [parseError, setParseError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ExecutiveAction | null>(null);
   const [rejecting, setRejecting] = useState<ExecutiveAction | null>(null);
+  const [validating, setValidating] = useState<ExecutiveAction | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -697,17 +699,7 @@ function RelatorioExecutivoPage() {
                 data={viewData}
                 readOnly={closed}
                 originOf={originOf}
-                onValidate={(a) =>
-                  void mutate(
-                    a,
-                    {
-                      status: "validated",
-                      validated_at: new Date().toISOString(),
-                      validated_by: me?.userId ?? null,
-                    },
-                    "validou",
-                  )
-                }
+                onValidate={setValidating}
                 onEdit={(a) => setEditing(a)}
                 onReject={(a) => {
                   setRejecting(a);
@@ -720,17 +712,7 @@ function RelatorioExecutivoPage() {
               data={viewData}
               readOnly={closed}
               originOf={originOf}
-              onValidate={(a) =>
-                void mutate(
-                  a,
-                  {
-                    status: "validated",
-                    validated_at: new Date().toISOString(),
-                    validated_by: me?.userId ?? null,
-                  },
-                  "validou",
-                )
-              }
+              onValidate={setValidating}
               onEdit={(a) => setEditing(a)}
               onReject={(a) => {
                 setRejecting(a);
@@ -1030,6 +1012,33 @@ function RelatorioExecutivoPage() {
         onSave={(patch) => {
           if (editing) void mutate(editing, { ...patch, status: "edited" }, "editou");
           setEditing(null);
+        }}
+      />
+
+      <ValidateActionKanbanDialog
+        action={validating}
+        client={
+          commercial?.clientId && commercial.razaoSocial
+            ? { id: commercial.clientId, name: commercial.razaoSocial }
+            : null
+        }
+        representative={
+          commercial?.representativeId && viewData?.client.representative
+            ? { id: commercial.representativeId, name: viewData.client.representative }
+            : null
+        }
+        onClose={() => setValidating(null)}
+        onCreated={async (action) => {
+          await updateAction(
+            action,
+            {
+              status: "validated",
+              validated_at: new Date().toISOString(),
+              validated_by: me?.userId ?? null,
+            },
+            { userId: me?.userId ?? null, label: "validou" },
+          );
+          await refetch();
         }}
       />
 
