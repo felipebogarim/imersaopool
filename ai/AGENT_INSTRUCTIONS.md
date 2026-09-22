@@ -1,12 +1,30 @@
 # Agent Instructions
 
-Read `ai/PROJECT_BRAIN.md` first. Search for task symbols and open only directly related files, then their immediate dependencies and focused tests. Consult historical documentation only when needed. Avoid loading the whole repository, migrations, build output, or unrelated tests.
+Use the global `pool-project-brain` skill as the first shared operating context.
+Use the global `project-context-budget` skill for context discovery and reading limits.
+Use the global `development-workflow` skill for diagnosis, implementation, validation, and Git handoff.
+
+Read `ai/PROJECT_BRAIN.md` after the Global Brain. Search for task symbols and open only directly related files, then their immediate dependencies and focused tests. Consult historical documentation only when needed. Avoid loading the whole repository, migrations, build output, or unrelated tests.
 
 Use `ai/TASK_TEMPLATE.md` to define scope for substantial tasks. Keep the brain current and under 300 lines; preserve active architecture, security rules, decisions, risks, and next step. Archive useful history instead of truncating it.
 
 Run `npm run check:context` after context edits. For code changes, run relevant focused tests and `npm run lint`, `npx tsc --noEmit`, or `npm run build` as appropriate. Review ESLint `max-lines` warnings for manually maintained files over 350 effective lines; split only when cohesion permits. Existing warnings do not authorize mechanical refactors.
 
 Preserve the Lovable history rule in `AGENTS.md`. Do not hand-edit generated code or expose environment secrets.
+
+## Git workflow
+
+Normal development work may commit and push to `orca-dev` or the active task branch without additional authorization.
+
+Explicit authorization is required for:
+
+- merge into `main`;
+- direct push to `main`;
+- force push;
+- rewriting published history;
+- destructive Git operations.
+
+Preserve all Lovable history constraints defined in `AGENTS.md`.
 
 ## Exploration Budget
 
