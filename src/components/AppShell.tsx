@@ -28,6 +28,7 @@ import {
 
 const ICONS: Record<string, typeof BarChart3> = {
   home: Inbox,
+  "bi-diretor": BarChart3,
   performance: TrendingUp,
   "performance.reps": TrendingUp,
   "performance.bi-clientes": BarChart3,

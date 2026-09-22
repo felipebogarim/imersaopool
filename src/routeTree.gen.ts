@@ -41,6 +41,7 @@ import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
+import { Route as AuthenticatedBiDiretorRouteImport } from './routes/_authenticated/bi-diretor'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
@@ -282,6 +283,11 @@ const AuthenticatedCompilacoesRoute =
     path: '/compilacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBiDiretorRoute = AuthenticatedBiDiretorRouteImport.update({
+  id: '/bi-diretor',
+  path: '/bi-diretor',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAgentesRoute = AuthenticatedAgentesRouteImport.update({
   id: '/agentes',
   path: '/agentes',
@@ -728,6 +734,7 @@ export interface FileRoutesByFullPath {
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
+  '/bi-diretor': typeof AuthenticatedBiDiretorRoute
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
@@ -836,6 +843,7 @@ export interface FileRoutesByTo {
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
+  '/bi-diretor': typeof AuthenticatedBiDiretorRoute
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
@@ -946,6 +954,7 @@ export interface FileRoutesById {
   '/_authenticated/aceite-termos': typeof AuthenticatedAceiteTermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
+  '/_authenticated/bi-diretor': typeof AuthenticatedBiDiretorRoute
   '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
@@ -1057,6 +1066,7 @@ export interface FileRouteTypes {
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
+    | '/bi-diretor'
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
@@ -1165,6 +1175,7 @@ export interface FileRouteTypes {
     | '/aceite-termos'
     | '/admin'
     | '/agentes'
+    | '/bi-diretor'
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
@@ -1274,6 +1285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/aceite-termos'
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
+    | '/_authenticated/bi-diretor'
     | '/_authenticated/compilacoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
@@ -1632,6 +1644,13 @@ declare module '@tanstack/react-router' {
       path: '/compilacoes'
       fullPath: '/compilacoes'
       preLoaderRoute: typeof AuthenticatedCompilacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bi-diretor': {
+      id: '/_authenticated/bi-diretor'
+      path: '/bi-diretor'
+      fullPath: '/bi-diretor'
+      preLoaderRoute: typeof AuthenticatedBiDiretorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/agentes': {
@@ -2283,6 +2302,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAceiteTermosRoute: typeof AuthenticatedAceiteTermosRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
+  AuthenticatedBiDiretorRoute: typeof AuthenticatedBiDiretorRoute
   AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
@@ -2341,6 +2361,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAceiteTermosRoute: AuthenticatedAceiteTermosRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
+  AuthenticatedBiDiretorRoute: AuthenticatedBiDiretorRoute,
   AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,

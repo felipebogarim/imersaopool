@@ -24,6 +24,7 @@ export type NavGroup = {
 
 export const NAV_TREE: NavGroup[] = [
   { key: "home", label: "Home", to: "/home", children: [] },
+  { key: "bi-diretor", label: "BI Diretor", to: "/bi-diretor", children: [] },
   {
     key: "performance",
     label: "Performance",
