@@ -1,3 +1,4 @@
+import { DirectorBIMenuItem } from "@/components/kanban/DirectorBIMenuItem";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -320,6 +321,7 @@ function MapaAcoesResumoPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DirectorBIMenuItem card={card} />
                             <DropdownMenuItem 
                               className="gap-2"
                               onClick={() => {

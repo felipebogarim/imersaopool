@@ -82,6 +82,7 @@ export function DuplicateCardDialog({ card, open, onOpenChange }: Props) {
     try {
       const { data: u } = await supabase.auth.getUser();
       const baseMeta = { ...((card.metadata ?? {}) as Record<string, unknown>) };
+      delete baseMeta.show_in_director_bi;
       delete baseMeta.client_id; delete baseMeta.client_name;
       delete baseMeta.rep_id; delete baseMeta.rep_name;
       if (hasClient && client) { baseMeta.client_id = client.id; baseMeta.client_name = client.name; }

@@ -19,6 +19,7 @@
 
 ## 4. Current State
 - Implemented areas include immersions, interviews, clients, representatives, performance and BI, product/pricing views, tasks, forms, messaging, admin/security, and trade agendas.
+- **BI Diretor / Principais Frentes:** A read-only executive view of existing `kanban_cards`, selected by `metadata.show_in_director_bi`; never copy actions into a separate store. Categories follow the existing Comercial, Governança, Marketing and Produto boards. Responsible/representative links remain in card metadata, stage comes from the Kanban list, and progress comes from checklists. Completion uses `completed_at` or the existing Concluído/Concluída list; when that list has no completion timestamp, sorting falls back to `updated_at`. Queries retain RLS and filter the active company's unarchived workspace/board/list/cards. The view refreshes on mount/focus and every 15 seconds; details open the original Kanban card. Duplicating a card does not inherit its executive selection.
 
 ## Canonical Data Sources and Relationships
 - **Representative portfolio:** Derive a representative's client portfolio from Performance.

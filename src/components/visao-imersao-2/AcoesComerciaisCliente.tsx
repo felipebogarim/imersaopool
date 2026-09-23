@@ -1,3 +1,4 @@
+import { DirectorBIMenuItem } from "@/components/kanban/DirectorBIMenuItem";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -262,6 +263,7 @@ export function AcoesComerciaisCliente({ clientId, clientName }: Props) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DirectorBIMenuItem card={c} />
                       <DropdownMenuItem
                         onClick={() =>
                           window.open(`/tarefas/b/${c.board_id}?card=${c.id}`, "_blank", "noopener,noreferrer")

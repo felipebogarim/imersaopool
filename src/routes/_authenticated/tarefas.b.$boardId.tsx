@@ -1,3 +1,4 @@
+import { DirectorBIMenuItem } from "@/components/kanban/DirectorBIMenuItem";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -469,6 +470,7 @@ function SortableCard({ card, onClick }: { card: KCard; onClick: () => void }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DirectorBIMenuItem card={card} />
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDuplicating(true); }}>
                 <Copy className="mr-2 h-3.5 w-3.5" /> Duplicar ação
               </DropdownMenuItem>
