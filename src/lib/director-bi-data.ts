@@ -34,7 +34,10 @@ export async function fetchDirectorBI() {
       .is("archived_at", null)
       .is("kanban_boards.archived_at", null)
       .is("kanban_boards.kanban_workspaces.archived_at", null)
-      .eq("kanban_boards.kanban_workspaces.company_id", profile.active_company_id)
+      // O Kanban permite workspaces sem empresa; o acesso continua sujeito ao RLS.
+      .or(`company_id.eq.${profile.active_company_id},company_id.is.null`, {
+        referencedTable: "kanban_boards.kanban_workspaces",
+      })
       .is("kanban_lists.archived_at", null)
       .order("id")
       .range(offset, offset + 499);
