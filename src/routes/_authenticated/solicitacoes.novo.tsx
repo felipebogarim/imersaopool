@@ -97,8 +97,9 @@ function NewTicketPage() {
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
+    let ticket: { id: string; ticket_number: string };
     try {
-      const ticket = await createInternalTicket({
+      ticket = await createInternalTicket({
         data: {
           title: title.trim(),
           description: description.trim(),
@@ -109,11 +110,24 @@ function NewTicketPage() {
           priority,
         },
       });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível criar a solicitação.");
+      setSubmitting(false);
+      return;
+    }
+    try {
       await sendInternalTicket({ data: { ticketId: ticket.id } });
       toast.success(`Ticket ${ticket.ticket_number} enviado`);
-      navigate({ to: "/solicitacoes" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao criar o ticket");
+      // Ticket já está consistente no banco; só o e-mail falhou (outbox registra o erro).
+      toast.error(
+        `Solicitação ${ticket.ticket_number} criada, mas o e-mail não pôde ser enviado. ${
+          err instanceof Error ? err.message : ""
+        }`.trim(),
+      );
+    }
+    try {
+      navigate({ to: "/solicitacoes" });
     } finally {
       setSubmitting(false);
     }

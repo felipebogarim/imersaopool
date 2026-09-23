@@ -108,3 +108,34 @@ describe("sendTicketOpenedEmail", () => {
     expect(recordOutboundAttempt).not.toHaveBeenCalled();
   });
 });
+
+describe("sendTicketOpenedEmail — modo mock e retry", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("mock sem RESEND_API_KEY nem domínio/segredo de reply: envia via Fake e marca sent", async () => {
+    vi.stubEnv("INTERNAL_TICKETS_EMAIL_MODE", "mock");
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("INTERNAL_TICKETS_REPLY_DOMAIN", "");
+    markOutboxSent.mockClear();
+    const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
+    const r = await sendTicketOpenedEmail(BASE_INPUT);
+    expect(r.providerMessageId).toMatch(/^fake-/);
+    expect(markOutboxSent).toHaveBeenCalled();
+  });
+
+  it("outbox já 'sent' → não reenvia", async () => {
+    recordOutboundAttempt.mockResolvedValueOnce({
+      id: "o",
+      status: "sent",
+      provider_message_id: "p1",
+      message_id: "m1",
+    });
+    vi.stubEnv("INTERNAL_TICKETS_REPLY_DOMAIN", "chamados.poolflux.app");
+    const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
+    const { FakeEmailProvider } = await import("./fake-provider");
+    const provider = new FakeEmailProvider();
+    const r = await sendTicketOpenedEmail(BASE_INPUT, provider);
+    expect(r.alreadySent).toBe(true);
+    expect(provider.sent).toHaveLength(0);
+  });
+});

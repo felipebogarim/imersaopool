@@ -1,5 +1,6 @@
 import { render } from "@react-email/render";
 import * as React from "react";
+import { getReplyEnv } from "./email-mode.server";
 import { generateMessageId } from "./message-id";
 import { markOutboxFailed, markOutboxSent, recordOutboundAttempt } from "./outbox.server";
 import { getEmailProvider } from "./provider-factory.server";
@@ -18,35 +19,50 @@ export type SendTicketOpenedEmailInput = TicketOpenedEmailProps & {
  * ticket) e envia via Resend. Alteração do ticket (status "enviado", etc.)
  * é responsabilidade de quem chama esta função — ela só cuida do e-mail.
  */
+export const TICKET_OPENED_KEY_PREFIX = "ticket-opened:";
+
+/** Identidade de saída do e-mail de abertura — usada também pela criação atômica (outbox pending). */
+export function buildTicketOpenedIdentity() {
+  const domain = getReplyEnv("INTERNAL_TICKETS_REPLY_DOMAIN");
+  return {
+    sender: `Solicitações Internas <chamados@${domain}>`,
+    messageId: generateMessageId(domain),
+  };
+}
+
 export async function sendTicketOpenedEmail(
   input: SendTicketOpenedEmailInput,
-  provider: EmailProvider = getEmailProvider(),
-): Promise<{ providerMessageId: string; messageId: string }> {
+  providerOverride?: EmailProvider,
+): Promise<{ providerMessageId: string; messageId: string; alreadySent: boolean }> {
   if (!input.to.length) {
     throw new Error(`Nenhum destinatário configurado para o setor ${input.sectorName}`);
   }
 
-  const domain = requireEnv("INTERNAL_TICKETS_REPLY_DOMAIN");
-  const idempotencyKey = `ticket-opened:${input.ticketId}`;
-  const messageId = generateMessageId(domain);
+  const idempotencyKey = `${TICKET_OPENED_KEY_PREFIX}${input.ticketId}`;
+  const { sender: from, messageId: generatedMessageId } = buildTicketOpenedIdentity();
   const replyTo = buildReplyAddressForTicket(input.ticketId);
-  const from = `Solicitações Internas <chamados@${domain}>`;
   const subject = `[${input.ticketNumber}] ${input.title}`;
 
   const element = React.createElement(TicketOpenedEmail, input);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
 
-  await recordOutboundAttempt({
+  const outboxRow = await recordOutboundAttempt({
     idempotencyKey,
     ticketId: input.ticketId,
     templateName: "ticket-opened",
     recipientEmail: [...input.to, ...(input.cc ?? [])].join(", "),
     senderEmail: from,
     subject,
-    messageId,
+    messageId: generatedMessageId,
   });
+  // Retry: reaproveita o Message-ID já registrado; se já saiu, não reenvia.
+  const messageId = outboxRow.message_id ?? generatedMessageId;
+  if (outboxRow.status === "sent" || outboxRow.status === "delivered") {
+    return { providerMessageId: outboxRow.provider_message_id ?? "", messageId, alreadySent: true };
+  }
 
   try {
+    const provider = providerOverride ?? (await getEmailProvider());
     const result = await provider.send({
       idempotencyKey,
       to: input.to,
@@ -61,15 +77,9 @@ export async function sendTicketOpenedEmail(
       templateName: "ticket-opened",
     });
     await markOutboxSent(idempotencyKey, result.providerMessageId);
-    return result;
+    return { ...result, alreadySent: false };
   } catch (err) {
     await markOutboxFailed(idempotencyKey, err instanceof Error ? err.message : String(err));
     throw err;
   }
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} não configurada`);
-  return value;
 }

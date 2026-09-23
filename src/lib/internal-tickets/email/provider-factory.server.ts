@@ -1,22 +1,20 @@
+import { getEmailMode } from "./email-mode.server";
 import { FakeEmailProvider } from "./fake-provider";
-import { ResendEmailProvider } from "./resend-provider.server";
 import type { EmailProvider } from "./types";
 
 /**
- * Fase 7 — ambiente de teste sem credencial real. Com
- * INTERNAL_TICKETS_EMAIL_MODE=mock, todo envio do módulo usa o provider em
- * memória (nenhuma chamada de rede, nenhuma chave necessária) — útil pra
- * exercitar o fluxo completo (criar → enviar → outbox) num ambiente de
- * staging antes de ter domínio/chave Resend configurados. Produção deve
- * deixar a env var ausente (default 'live').
+ * INTERNAL_TICKETS_EMAIL_MODE=mock   → FakeEmailProvider (sem rede, sem RESEND_API_KEY).
+ * INTERNAL_TICKETS_EMAIL_MODE=resend → ResendEmailProvider (exige RESEND_API_KEY).
+ * Ausente/inválido → erro explícito (sem fallback). O módulo do Resend só é
+ * carregado (import dinâmico) no modo resend, então nada dele é avaliado em mock.
  */
 let mockProviderSingleton: FakeEmailProvider | null = null;
 
-export function getEmailProvider(): EmailProvider {
-  const mode = process.env.INTERNAL_TICKETS_EMAIL_MODE;
-  if (mode === "mock") {
+export async function getEmailProvider(): Promise<EmailProvider> {
+  if (getEmailMode() === "mock") {
     if (!mockProviderSingleton) mockProviderSingleton = new FakeEmailProvider();
     return mockProviderSingleton;
   }
+  const { ResendEmailProvider } = await import("./resend-provider.server");
   return new ResendEmailProvider();
 }

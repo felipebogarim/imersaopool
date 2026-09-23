@@ -17,6 +17,7 @@ export type OutboxRow = {
   idempotency_key: string;
   status: OutboxStatus;
   provider_message_id: string | null;
+  message_id: string | null;
 };
 
 // internal_ticket_email_outbox e o RPC de incremento existem na migration
@@ -59,7 +60,7 @@ export async function recordOutboundAttempt(input: RecordOutboundAttemptInput): 
 
   const { data: row, error: readError } = await supabaseAdmin
     .from("internal_ticket_email_outbox")
-    .select("id, idempotency_key, status, provider_message_id")
+    .select("id, idempotency_key, status, provider_message_id, message_id")
     .eq("idempotency_key", input.idempotencyKey)
     .single();
 
