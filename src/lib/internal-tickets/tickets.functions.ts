@@ -3,13 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { TICKET_PRIORITIES } from "@/lib/internal-tickets/priority";
 import { computeSlaDueDates, resolveEffectiveSlaMinutes } from "@/lib/internal-tickets/sla";
-import {
-  canTransition,
-  timestampFieldsForStatus,
-  TICKET_STATUSES,
-  TICKET_STATUS_LABEL,
-  type TicketStatus,
-} from "@/lib/internal-tickets/status";
+import { requireCanManageTicket, type FnContext } from "@/lib/internal-tickets/ticket-permissions";
 
 // internal_ticket_* ainda não está no types.ts gerado — mesmo motivo e
 // mesma ressalva de admin.functions.ts.
@@ -17,8 +11,6 @@ import {
 function db(supabase: unknown): any {
   return supabase;
 }
-
-type FnContext = { supabase: unknown; userId: string };
 
 type SectorPersonRow = {
   id: string;
@@ -35,29 +27,6 @@ async function requireModuleRole(context: FnContext): Promise<void> {
   });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Acesso negado: sem papel no módulo de Solicitações Internas");
-}
-
-/**
- * Confere, antes de disparar qualquer e-mail, que quem chama tem permissão
- * de movimentar o ticket (mesma regra da policy internal_tickets_update).
- * RLS já barraria o UPDATE no fim do fluxo, mas silenciosamente (0 linhas
- * afetadas, sem erro) — sem este check, o e-mail sairia mesmo assim para um
- * usuário sem permissão de fato mover o ticket (ex.: papel diretoria).
- */
-async function requireCanManageTicket(
-  context: FnContext,
-  ticket: { requester_user_id: string; commercial_owner_user_id: string },
-): Promise<void> {
-  if (ticket.requester_user_id === context.userId) return;
-  if (ticket.commercial_owner_user_id === context.userId) return;
-  const supabase = db(context.supabase);
-  const [{ data: isGestorComercial }, { data: isAdmin }] = await Promise.all([
-    supabase.rpc("has_role", { _user_id: context.userId, _role: "gestor_comercial" }),
-    supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-  ]);
-  if (!isGestorComercial && !isAdmin) {
-    throw new Error("Acesso negado: você não pode enviar este ticket");
-  }
 }
 
 async function requireActiveCompanyId(context: FnContext): Promise<string> {
@@ -78,7 +47,7 @@ const createTicketSchema = z.object({
   title: z.string().trim().min(3),
   description: z.string().trim().min(1),
   clientId: z.string().uuid().nullable().optional(),
-  productId: z.string().uuid().nullable().optional(),
+  productIds: z.array(z.string().uuid()).optional().default([]),
   categoryId: z.string().uuid(),
   sectorId: z.string().uuid(),
   commercialOwnerUserId: z.string().uuid().nullable().optional(),
@@ -127,7 +96,6 @@ export const createInternalTicket = createServerFn({ method: "POST" })
         title: data.title,
         description: data.description,
         client_id: data.clientId ?? null,
-        product_id: data.productId ?? null,
         category_id: data.categoryId,
         sector_id: data.sectorId,
         requester_user_id: context.userId,
@@ -160,6 +128,15 @@ export const createInternalTicket = createServerFn({ method: "POST" })
       .from("internal_ticket_sector_stops")
       .insert({ ticket_id: ticket.id, sector_id: data.sectorId, moved_by: context.userId });
     if (stopError) throw new Error(stopError.message);
+
+    if (data.productIds.length) {
+      const { error: productsError } = await supabase
+        .from("internal_ticket_products")
+        .insert(
+          data.productIds.map((productId) => ({ ticket_id: ticket.id, product_id: productId })),
+        );
+      if (productsError) throw new Error(productsError.message);
+    }
 
     return ticket;
   });
@@ -292,171 +269,4 @@ export const sendInternalTicket = createServerFn({ method: "POST" })
     if (eventError) throw new Error(eventError.message);
 
     return { ok: true, ticketId: ticket.id, status: "enviado" as const };
-  });
-
-// ── Mudança manual de status (tela de Detalhe) ──────────────────────────
-//
-// Diferente das ações públicas do e-mail (que usam canReach e podem pular
-// etapas), a tela de Detalhe só oferece botões para os próximos status
-// válidos — por isso aqui a checagem é canTransition estrita, não canReach.
-// RLS (internal_tickets_update) já limita quem pode chegar a alterar a
-// linha; esta função valida a transição em si.
-
-const updateStatusSchema = z.object({
-  ticketId: z.string().uuid(),
-  toStatus: z.enum(TICKET_STATUSES),
-  observation: z.string().trim().max(2000).optional(),
-});
-
-export const updateInternalTicketStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => updateStatusSchema.parse(raw))
-  .handler(async ({ data, context }) => {
-    const supabase = db(context.supabase);
-
-    const { data: ticket, error: ticketError } = await supabase
-      .from("internal_tickets")
-      .select("id, status")
-      .eq("id", data.ticketId)
-      .single();
-    if (ticketError) throw new Error(ticketError.message);
-
-    const fromStatus: TicketStatus = ticket.status;
-    if (!canTransition(fromStatus, data.toStatus)) {
-      throw new Error(
-        `Não é possível mover de "${TICKET_STATUS_LABEL[fromStatus]}" para "${TICKET_STATUS_LABEL[data.toStatus]}"`,
-      );
-    }
-
-    const { error: updateError } = await supabase
-      .from("internal_tickets")
-      .update({ status: data.toStatus, ...timestampFieldsForStatus(data.toStatus) })
-      .eq("id", data.ticketId);
-    if (updateError) throw new Error(updateError.message);
-
-    const { error: eventError } = await supabase.from("internal_ticket_events").insert({
-      ticket_id: data.ticketId,
-      from_status: fromStatus,
-      to_status: data.toStatus,
-      origin: "comercial",
-      author_user_id: context.userId,
-      observation: data.observation ?? null,
-    });
-    if (eventError) throw new Error(eventError.message);
-
-    return { ok: true, status: data.toStatus };
-  });
-
-// ── Registro manual de interação (presencial ou por telefone) ──────────
-
-const manualInteractionSchema = z.object({
-  ticketId: z.string().uuid(),
-  channel: z.enum(["manual_presencial", "manual_telefone"]),
-  note: z.string().trim().min(1).max(5000),
-});
-
-export const logManualInteraction = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => manualInteractionSchema.parse(raw))
-  .handler(async ({ data, context }) => {
-    const supabase = db(context.supabase);
-
-    const { error: messageError } = await supabase.from("internal_ticket_messages").insert({
-      ticket_id: data.ticketId,
-      direction: "inbound",
-      origin: data.channel,
-      author_user_id: context.userId,
-      body_text: data.note,
-    });
-    if (messageError) throw new Error(messageError.message);
-
-    const { error: eventError } = await supabase.from("internal_ticket_events").insert({
-      ticket_id: data.ticketId,
-      origin: "comercial",
-      author_user_id: context.userId,
-      observation: `Interação registrada (${data.channel === "manual_presencial" ? "presencial" : "telefone"})`,
-    });
-    if (eventError) throw new Error(eventError.message);
-
-    return { ok: true };
-  });
-
-// ── Encaminhar para outro setor ─────────────────────────────────────────
-//
-// internal_tickets.sector_id é o setor atual (cache); internal_ticket_sector_stops
-// é o histórico completo (uma linha por parada, left_at NULL = onde está
-// agora). Fecha a parada aberta, abre uma nova, atualiza o cache e loga um
-// evento — nessa ordem, sem transação SQL explícita (mesma limitação já
-// aceita no resto do módulo, ver PROJECT_BRAIN).
-
-const reassignSectorSchema = z.object({
-  ticketId: z.string().uuid(),
-  toSectorId: z.string().uuid(),
-  reason: z.string().trim().max(500).optional(),
-});
-
-export const reassignInternalTicketSector = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((raw) => reassignSectorSchema.parse(raw))
-  .handler(async ({ data, context }) => {
-    const supabase = db(context.supabase);
-
-    const { data: ticket, error: ticketError } = await supabase
-      .from("internal_tickets")
-      .select("id, sector_id, requester_user_id, commercial_owner_user_id")
-      .eq("id", data.ticketId)
-      .single();
-    if (ticketError) throw new Error(ticketError.message);
-    await requireCanManageTicket(context, ticket);
-
-    if (ticket.sector_id === data.toSectorId) {
-      throw new Error("O ticket já está neste setor");
-    }
-
-    const [{ data: fromSector }, { data: toSector, error: toSectorError }] = await Promise.all([
-      supabase.from("internal_ticket_sectors").select("name").eq("id", ticket.sector_id).single(),
-      supabase
-        .from("internal_ticket_sectors")
-        .select("name, active")
-        .eq("id", data.toSectorId)
-        .single(),
-    ]);
-    if (toSectorError) throw new Error(toSectorError.message);
-    if (!toSector.active) throw new Error("Setor de destino está inativo");
-
-    const { error: updateError } = await supabase
-      .from("internal_tickets")
-      .update({ sector_id: data.toSectorId })
-      .eq("id", data.ticketId);
-    if (updateError) throw new Error(updateError.message);
-
-    // Sem policy de insert/update authenticated em internal_ticket_sector_stops
-    // (mesma razão da Fase 10) — grava via service role.
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = db(supabaseAdmin);
-
-    const { error: closeError } = await admin
-      .from("internal_ticket_sector_stops")
-      .update({ left_at: new Date().toISOString() })
-      .eq("ticket_id", data.ticketId)
-      .is("left_at", null);
-    if (closeError) throw new Error(closeError.message);
-
-    const { error: openError } = await admin.from("internal_ticket_sector_stops").insert({
-      ticket_id: data.ticketId,
-      sector_id: data.toSectorId,
-      moved_by: context.userId,
-      reason: data.reason ?? null,
-    });
-    if (openError) throw new Error(openError.message);
-
-    const { error: eventError } = await supabase.from("internal_ticket_events").insert({
-      ticket_id: data.ticketId,
-      origin: "comercial",
-      author_user_id: context.userId,
-      observation: `Encaminhado de ${fromSector?.name ?? "—"} para ${toSector.name}${data.reason ? `: ${data.reason}` : ""}`,
-    });
-    if (eventError) throw new Error(eventError.message);
-
-    return { ok: true, sectorId: data.toSectorId };
   });

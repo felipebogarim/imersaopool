@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { reassignInternalTicketSector } from "@/lib/internal-tickets/tickets.functions";
+import { reassignInternalTicketSector } from "@/lib/internal-tickets/ticket-actions.functions";
 import type { Sector } from "@/lib/internal-tickets/queries";
 
 export function ReassignSectorPanel({

@@ -13,8 +13,10 @@ import {
   listTicketAttachments,
   listTicketEvents,
   listTicketMessages,
+  listTicketProductIds,
   listTicketRecipients,
   listTicketSectorStops,
+  listProductsLite,
 } from "@/lib/internal-tickets/queries";
 import { TICKET_STATUS_LABEL } from "@/lib/internal-tickets/status";
 import { TICKET_PRIORITY_LABEL } from "@/lib/internal-tickets/priority";
@@ -62,6 +64,14 @@ function TicketDetailPage() {
   const sectorStopsQuery = useQuery({
     queryKey: ["internal-ticket-sector-stops", ticketId],
     queryFn: () => listTicketSectorStops(ticketId),
+  });
+  const productIdsQuery = useQuery({
+    queryKey: ["internal-ticket-product-ids", ticketId],
+    queryFn: () => listTicketProductIds(ticketId),
+  });
+  const productsQuery = useQuery({
+    queryKey: ["internal-ticket-products-lite"],
+    queryFn: listProductsLite,
   });
   const ticket = ticketQuery.data;
   const profilesQuery = useQuery({
@@ -148,6 +158,19 @@ function TicketDetailPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {productIdsQuery.data && productIdsQuery.data.length > 0 && (
+          <div className="rounded-lg border p-3 text-xs">
+            <p className="mb-1 font-medium text-muted-foreground">Produtos</p>
+            <div className="flex flex-wrap gap-1">
+              {productIdsQuery.data.map((id) => (
+                <Badge key={id} variant="outline">
+                  {productsQuery.data?.find((p) => p.id === id)?.nome ?? id}
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
 

@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { logManualInteraction } from "@/lib/internal-tickets/tickets.functions";
+import { logManualInteraction } from "@/lib/internal-tickets/ticket-actions.functions";
 
 type Channel = "manual_presencial" | "manual_telefone";
 

@@ -9,7 +9,7 @@ import {
   TICKET_STATUS_LABEL,
   type TicketStatus,
 } from "@/lib/internal-tickets/status";
-import { updateInternalTicketStatus } from "@/lib/internal-tickets/tickets.functions";
+import { updateInternalTicketStatus } from "@/lib/internal-tickets/ticket-actions.functions";
 
 export function StatusChangePanel({
   ticketId,

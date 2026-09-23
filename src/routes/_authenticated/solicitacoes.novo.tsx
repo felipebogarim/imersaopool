@@ -21,6 +21,7 @@ import {
   listProductsLite,
   listSectors,
 } from "@/lib/internal-tickets/queries";
+import { MultiSelectCombobox } from "@/components/internal-tickets/MultiSelectCombobox";
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABEL,
@@ -56,7 +57,7 @@ function NewTicketPage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [sectorId, setSectorId] = useState<string>("");
   const [clientId, setClientId] = useState<string>(NONE);
-  const [productId, setProductId] = useState<string>(NONE);
+  const [productIds, setProductIds] = useState<string[]>([]);
   const [priority, setPriority] = useState<TicketPriority>("normal");
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,7 +90,7 @@ function NewTicketPage() {
           categoryId,
           sectorId,
           clientId: clientId === NONE ? null : clientId,
-          productId: productId === NONE ? null : productId,
+          productIds,
           priority,
         },
       });
@@ -192,19 +193,13 @@ function NewTicketPage() {
           </div>
           <div className="space-y-1.5">
             <Label>Produto (opcional)</Label>
-            <Select value={productId} onValueChange={setProductId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhum" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>Nenhum</SelectItem>
-                {(productsQuery.data ?? []).map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectCombobox
+              options={(productsQuery.data ?? []).map((p) => ({ value: p.id, label: p.nome }))}
+              selected={productIds}
+              onChange={setProductIds}
+              placeholder="Nenhum"
+              searchPlaceholder="Buscar produto…"
+            />
           </div>
         </div>
 

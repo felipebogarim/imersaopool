@@ -234,6 +234,15 @@ export async function listProductsLite(): Promise<ProductLite[]> {
   return data;
 }
 
+export async function listTicketProductIds(ticketId: string): Promise<string[]> {
+  const { data, error } = await db()
+    .from("internal_ticket_products")
+    .select("product_id")
+    .eq("ticket_id", ticketId);
+  if (error) throw new Error(error.message);
+  return (data as { product_id: string }[]).map((r) => r.product_id);
+}
+
 export type ProfileLite = { id: string; full_name: string | null; email: string | null };
 
 export async function listProfilesByIds(ids: string[]): Promise<ProfileLite[]> {

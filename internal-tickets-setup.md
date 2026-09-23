@@ -20,6 +20,7 @@ Na ordem (todas em `supabase/migrations/`, prefixo `202609231`/`202609232`…):
 8. `20260923140000_internal_tickets_seed_categories.sql`
 9. `20260923150000_internal_tickets_person_phone.sql`
 10. `20260923160000_internal_tickets_sector_stops.sql`
+11. `20260923170000_internal_tickets_products.sql`
 
 Aplicar via `supabase db push` (CLI conectada ao projeto) ou colando o SQL no
 editor do Supabase Dashboard, nesta ordem exata — a migration 2 precisa
