@@ -22,6 +22,7 @@ import {
   listSectors,
 } from "@/lib/internal-tickets/queries";
 import { MultiSelectCombobox } from "@/components/internal-tickets/MultiSelectCombobox";
+import { SingleSelectCombobox } from "@/components/internal-tickets/SingleSelectCombobox";
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABEL,
@@ -33,8 +34,6 @@ export const Route = createFileRoute("/_authenticated/solicitacoes/novo")({
   head: () => ({ meta: [{ title: "Novo Ticket — Solicitações Internas — PoolFlux" }] }),
   component: NewTicketPage,
 });
-
-const NONE = "__none__";
 
 function NewTicketPage() {
   const navigate = useNavigate();
@@ -56,7 +55,7 @@ function NewTicketPage() {
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [sectorId, setSectorId] = useState<string>("");
-  const [clientId, setClientId] = useState<string>(NONE);
+  const [clientId, setClientId] = useState<string | null>(null);
   const [productIds, setProductIds] = useState<string[]>([]);
   const [priority, setPriority] = useState<TicketPriority>("normal");
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +88,7 @@ function NewTicketPage() {
           description: description.trim(),
           categoryId,
           sectorId,
-          clientId: clientId === NONE ? null : clientId,
+          clientId,
           productIds,
           priority,
         },
@@ -177,19 +176,16 @@ function NewTicketPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Cliente (opcional)</Label>
-            <Select value={clientId} onValueChange={setClientId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhum" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NONE}>Nenhum</SelectItem>
-                {(clientsQuery.data ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome_fantasia}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SingleSelectCombobox
+              options={(clientsQuery.data ?? []).map((c) => ({
+                value: c.id,
+                label: c.nome_fantasia,
+              }))}
+              value={clientId}
+              onChange={setClientId}
+              placeholder="Nenhum"
+              searchPlaceholder="Buscar cliente…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Produto (opcional)</Label>
