@@ -1,19 +1,38 @@
 import { Link } from "@tanstack/react-router";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
+  directorStatusBucket,
   dueState,
+  initials,
   isDirectorComplete,
   shortDescription,
   type DirectorAction,
+  type DirectorStatusBucket,
 } from "@/lib/director-bi";
+
+const STATUS_BADGE_CLASS: Record<DirectorStatusBucket, string> = {
+  in_progress: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400",
+  todo: "border-border bg-muted text-muted-foreground",
+  completed: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  overdue: "border-destructive/30 bg-destructive/10 text-destructive",
+};
 
 function Deadline({ action }: { action: DirectorAction }) {
   const hint = dueState(action.due_date, isDirectorComplete(action));
   const date = action.due_date?.slice(0, 10).split("-").reverse().join("/");
   return (
     <div className={cn("text-sm tabular-nums", hint === "Atrasada" && "text-destructive")}>
-      {date ? <time dateTime={action.due_date!}>{date}</time> : "Sem prazo"}
+      {date ? (
+        <span className="inline-flex items-center gap-1">
+          <time dateTime={action.due_date!}>{date}</time>
+          {hint === "Atrasada" && <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">Sem prazo</span>
+      )}
       {hint && <span className="mt-0.5 block text-xs">{hint}</span>}
     </div>
   );
@@ -59,7 +78,7 @@ export function ExecutiveTable({ actions }: { actions: DirectorAction[] }) {
                   to="/tarefas/b/$boardId"
                   params={{ boardId: action.board_id }}
                   search={{ card: action.id }}
-                  className="break-words text-primary underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2"
+                  className="break-words text-foreground underline-offset-4 hover:text-primary hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2"
                 >
                   {action.title}
                 </Link>
@@ -78,7 +97,14 @@ export function ExecutiveTable({ actions }: { actions: DirectorAction[] }) {
                 <span className="mb-1 block text-xs text-muted-foreground md:hidden">
                   Responsável
                 </span>
-                {action.responsible}
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-[10px] font-medium">
+                      {initials(action.responsible)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{action.responsible}</span>
+                </div>
               </td>
               <td className="min-w-0 align-top md:px-4 md:py-4">
                 <span className="mb-1 block text-xs text-muted-foreground md:hidden">Prazo</span>
@@ -89,15 +115,25 @@ export function ExecutiveTable({ actions }: { actions: DirectorAction[] }) {
                   variant="outline"
                   className={cn(
                     "max-w-full whitespace-normal font-normal",
-                    isDirectorComplete(action) && "text-muted-foreground",
+                    STATUS_BADGE_CLASS[directorStatusBucket(action)],
                   )}
                 >
                   {isDirectorComplete(action) ? "Concluída" : action.stage}
                 </Badge>
                 {action.checklistTotal > 0 && (
-                  <span className="mt-1.5 block text-xs text-muted-foreground">
-                    {action.checklistDone}/{action.checklistTotal} etapas concluídas
-                  </span>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-sky-500"
+                        style={{
+                          width: `${Math.round((action.checklistDone / action.checklistTotal) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round((action.checklistDone / action.checklistTotal) * 100)}%
+                    </span>
+                  </div>
                 )}
               </td>
             </tr>
