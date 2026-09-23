@@ -47,6 +47,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
 import { Route as AuthenticatedPriceRouteRouteImport } from './routes/_authenticated/price/route'
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
+import { Route as AuthenticatedSolicitacoesIndexRouteImport } from './routes/_authenticated/solicitacoes.index'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
 import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authenticated/price/index'
@@ -57,12 +58,16 @@ import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenticated/fontes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
 import { Route as AuthenticatedClientesIndexRouteImport } from './routes/_authenticated/clientes.index'
+import { Route as SolicitacoesAcaoTokenRouteImport } from './routes/solicitacoes.acao.$token'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
 import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
+import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_authenticated/solicitacoes.novo'
+import { Route as AuthenticatedSolicitacoesDashboardRouteImport } from './routes/_authenticated/solicitacoes.dashboard'
+import { Route as AuthenticatedSolicitacoesTicketIdRouteImport } from './routes/_authenticated/solicitacoes.$ticketId'
 import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price/tabelas'
@@ -87,6 +92,7 @@ import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedClientesBiBatchRepIdRouteImport } from './routes/_authenticated/clientes-bi-batch.$repId'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminSolicitacoesInternasRouteImport } from './routes/_authenticated/admin.solicitacoes-internas'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedAdminMfaRecuperacaoRouteImport } from './routes/_authenticated/admin.mfa-recuperacao'
 import { Route as AuthenticatedAdminMfaPoliticaRouteImport } from './routes/_authenticated/admin.mfa-politica'
@@ -106,6 +112,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
+import { Route as ApiPublicInternalTicketsResendWebhookRouteImport } from './routes/api/public/internal-tickets/resend-webhook'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
 import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
 import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
@@ -315,6 +322,12 @@ const AuthenticatedTarefasIndexRoute =
     path: '/tarefas/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSolicitacoesIndexRoute =
+  AuthenticatedSolicitacoesIndexRouteImport.update({
+    id: '/solicitacoes/',
+    path: '/solicitacoes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRepresentantesIndexRoute =
   AuthenticatedRepresentantesIndexRouteImport.update({
     id: '/representantes/',
@@ -373,6 +386,11 @@ const AuthenticatedClientesIndexRoute =
     path: '/clientes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const SolicitacoesAcaoTokenRoute = SolicitacoesAcaoTokenRouteImport.update({
+  id: '/solicitacoes/acao/$token',
+  path: '/solicitacoes/acao/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
@@ -403,6 +421,24 @@ const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
   path: '/api/public/backup-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSolicitacoesNovoRoute =
+  AuthenticatedSolicitacoesNovoRouteImport.update({
+    id: '/solicitacoes/novo',
+    path: '/solicitacoes/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSolicitacoesDashboardRoute =
+  AuthenticatedSolicitacoesDashboardRouteImport.update({
+    id: '/solicitacoes/dashboard',
+    path: '/solicitacoes/dashboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSolicitacoesTicketIdRoute =
+  AuthenticatedSolicitacoesTicketIdRouteImport.update({
+    id: '/solicitacoes/$ticketId',
+    path: '/solicitacoes/$ticketId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSinteseTiposRoute =
   AuthenticatedSinteseTiposRouteImport.update({
     id: '/sintese/tipos',
@@ -541,6 +577,12 @@ const AuthenticatedAdminUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminSolicitacoesInternasRoute =
+  AuthenticatedAdminSolicitacoesInternasRouteImport.update({
+    id: '/solicitacoes-internas',
+    path: '/solicitacoes-internas',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPermissoesRoute =
   AuthenticatedAdminPermissoesRouteImport.update({
     id: '/permissoes',
@@ -650,6 +692,12 @@ const ApiPublicMpCreatePreferenceRoute =
   ApiPublicMpCreatePreferenceRouteImport.update({
     id: '/api/public/mp/create-preference',
     path: '/api/public/mp/create-preference',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicInternalTicketsResendWebhookRoute =
+  ApiPublicInternalTicketsResendWebhookRouteImport.update({
+    id: '/api/public/internal-tickets/resend-webhook',
+    path: '/api/public/internal-tickets/resend-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksWeeklySecurityAuditRoute =
@@ -773,6 +821,7 @@ export interface FileRoutesByFullPath {
   '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -797,12 +846,16 @@ export interface FileRoutesByFullPath {
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
+  '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
+  '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/fontes/': typeof AuthenticatedFontesIndexRoute
@@ -813,6 +866,7 @@ export interface FileRoutesByFullPath {
   '/price/': typeof AuthenticatedPriceIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/solicitacoes/': typeof AuthenticatedSolicitacoesIndexRoute
   '/tarefas/': typeof AuthenticatedTarefasIndexRoute
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
@@ -822,6 +876,7 @@ export interface FileRoutesByFullPath {
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -881,6 +936,7 @@ export interface FileRoutesByTo {
   '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -905,12 +961,16 @@ export interface FileRoutesByTo {
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
+  '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
+  '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/fontes': typeof AuthenticatedFontesIndexRoute
@@ -921,6 +981,7 @@ export interface FileRoutesByTo {
   '/price': typeof AuthenticatedPriceIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
+  '/solicitacoes': typeof AuthenticatedSolicitacoesIndexRoute
   '/tarefas': typeof AuthenticatedTarefasIndexRoute
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
@@ -930,6 +991,7 @@ export interface FileRoutesByTo {
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -993,6 +1055,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/_authenticated/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
+  '/_authenticated/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -1017,12 +1080,16 @@ export interface FileRoutesById {
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
+  '/_authenticated/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/_authenticated/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
+  '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
@@ -1033,6 +1100,7 @@ export interface FileRoutesById {
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
+  '/_authenticated/solicitacoes/': typeof AuthenticatedSolicitacoesIndexRoute
   '/_authenticated/tarefas/': typeof AuthenticatedTarefasIndexRoute
   '/_authenticated/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
@@ -1042,6 +1110,7 @@ export interface FileRoutesById {
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -1105,6 +1174,7 @@ export interface FileRouteTypes {
     | '/admin/mfa-politica'
     | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
+    | '/admin/solicitacoes-internas'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
@@ -1129,12 +1199,16 @@ export interface FileRouteTypes {
     | '/price/tabelas'
     | '/representantes/performance'
     | '/sintese/tipos'
+    | '/solicitacoes/$ticketId'
+    | '/solicitacoes/dashboard'
+    | '/solicitacoes/novo'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/solicitacoes/acao/$token'
     | '/clientes/'
     | '/entrevistas/'
     | '/fontes/'
@@ -1145,6 +1219,7 @@ export interface FileRouteTypes {
     | '/price/'
     | '/produtos/'
     | '/representantes/'
+    | '/solicitacoes/'
     | '/tarefas/'
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
@@ -1154,6 +1229,7 @@ export interface FileRouteTypes {
     | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -1213,6 +1289,7 @@ export interface FileRouteTypes {
     | '/admin/mfa-politica'
     | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
+    | '/admin/solicitacoes-internas'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
@@ -1237,12 +1314,16 @@ export interface FileRouteTypes {
     | '/price/tabelas'
     | '/representantes/performance'
     | '/sintese/tipos'
+    | '/solicitacoes/$ticketId'
+    | '/solicitacoes/dashboard'
+    | '/solicitacoes/novo'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/solicitacoes/acao/$token'
     | '/clientes'
     | '/entrevistas'
     | '/fontes'
@@ -1253,6 +1334,7 @@ export interface FileRouteTypes {
     | '/price'
     | '/produtos'
     | '/representantes'
+    | '/solicitacoes'
     | '/tarefas'
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
@@ -1262,6 +1344,7 @@ export interface FileRouteTypes {
     | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -1324,6 +1407,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/mfa-politica'
     | '/_authenticated/admin/mfa-recuperacao'
     | '/_authenticated/admin/permissoes'
+    | '/_authenticated/admin/solicitacoes-internas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes-bi-batch/$repId'
     | '/_authenticated/clientes/$id'
@@ -1348,12 +1432,16 @@ export interface FileRouteTypes {
     | '/_authenticated/price/tabelas'
     | '/_authenticated/representantes/performance'
     | '/_authenticated/sintese/tipos'
+    | '/_authenticated/solicitacoes/$ticketId'
+    | '/_authenticated/solicitacoes/dashboard'
+    | '/_authenticated/solicitacoes/novo'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/solicitacoes/acao/$token'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
     | '/_authenticated/fontes/'
@@ -1364,6 +1452,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price/'
     | '/_authenticated/produtos/'
     | '/_authenticated/representantes/'
+    | '/_authenticated/solicitacoes/'
     | '/_authenticated/tarefas/'
     | '/_authenticated/clientes-bi/$repId/$razao'
     | '/_authenticated/clientes/$id/editar'
@@ -1373,6 +1462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
     | '/lovable/email/queue/process'
@@ -1409,8 +1499,10 @@ export interface RootRouteChildren {
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  SolicitacoesAcaoTokenRoute: typeof SolicitacoesAcaoTokenRoute
   ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
+  ApiPublicInternalTicketsResendWebhookRoute: typeof ApiPublicInternalTicketsResendWebhookRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -1688,6 +1780,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTarefasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/solicitacoes/': {
+      id: '/_authenticated/solicitacoes/'
+      path: '/solicitacoes'
+      fullPath: '/solicitacoes/'
+      preLoaderRoute: typeof AuthenticatedSolicitacoesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/representantes/': {
       id: '/_authenticated/representantes/'
       path: '/representantes'
@@ -1758,6 +1857,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/solicitacoes/acao/$token': {
+      id: '/solicitacoes/acao/$token'
+      path: '/solicitacoes/acao/$token'
+      fullPath: '/solicitacoes/acao/$token'
+      preLoaderRoute: typeof SolicitacoesAcaoTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
       path: '/lovable/email/suppression'
@@ -1799,6 +1905,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/backup-audit'
       preLoaderRoute: typeof ApiPublicBackupAuditRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/solicitacoes/novo': {
+      id: '/_authenticated/solicitacoes/novo'
+      path: '/solicitacoes/novo'
+      fullPath: '/solicitacoes/novo'
+      preLoaderRoute: typeof AuthenticatedSolicitacoesNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/solicitacoes/dashboard': {
+      id: '/_authenticated/solicitacoes/dashboard'
+      path: '/solicitacoes/dashboard'
+      fullPath: '/solicitacoes/dashboard'
+      preLoaderRoute: typeof AuthenticatedSolicitacoesDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/solicitacoes/$ticketId': {
+      id: '/_authenticated/solicitacoes/$ticketId'
+      path: '/solicitacoes/$ticketId'
+      fullPath: '/solicitacoes/$ticketId'
+      preLoaderRoute: typeof AuthenticatedSolicitacoesTicketIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sintese/tipos': {
       id: '/_authenticated/sintese/tipos'
@@ -1968,6 +2095,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/solicitacoes-internas': {
+      id: '/_authenticated/admin/solicitacoes-internas'
+      path: '/solicitacoes-internas'
+      fullPath: '/admin/solicitacoes-internas'
+      preLoaderRoute: typeof AuthenticatedAdminSolicitacoesInternasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/permissoes': {
       id: '/_authenticated/admin/permissoes'
       path: '/permissoes'
@@ -2099,6 +2233,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/mp/create-preference'
       fullPath: '/api/public/mp/create-preference'
       preLoaderRoute: typeof ApiPublicMpCreatePreferenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/internal-tickets/resend-webhook': {
+      id: '/api/public/internal-tickets/resend-webhook'
+      path: '/api/public/internal-tickets/resend-webhook'
+      fullPath: '/api/public/internal-tickets/resend-webhook'
+      preLoaderRoute: typeof ApiPublicInternalTicketsResendWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/weekly-security-audit': {
@@ -2241,6 +2382,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMfaPoliticaRoute: typeof AuthenticatedAdminMfaPoliticaRoute
   AuthenticatedAdminMfaRecuperacaoRoute: typeof AuthenticatedAdminMfaRecuperacaoRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
+  AuthenticatedAdminSolicitacoesInternasRoute: typeof AuthenticatedAdminSolicitacoesInternasRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
@@ -2262,6 +2404,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminMfaPoliticaRoute: AuthenticatedAdminMfaPoliticaRoute,
   AuthenticatedAdminMfaRecuperacaoRoute: AuthenticatedAdminMfaRecuperacaoRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
+  AuthenticatedAdminSolicitacoesInternasRoute:
+    AuthenticatedAdminSolicitacoesInternasRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
 
@@ -2338,6 +2482,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrecosSimuladorRoute: typeof AuthenticatedPrecosSimuladorRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
+  AuthenticatedSolicitacoesTicketIdRoute: typeof AuthenticatedSolicitacoesTicketIdRoute
+  AuthenticatedSolicitacoesDashboardRoute: typeof AuthenticatedSolicitacoesDashboardRoute
+  AuthenticatedSolicitacoesNovoRoute: typeof AuthenticatedSolicitacoesNovoRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
   AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
@@ -2347,6 +2494,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMapaAcoesIndexRoute: typeof AuthenticatedMapaAcoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
+  AuthenticatedSolicitacoesIndexRoute: typeof AuthenticatedSolicitacoesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
@@ -2403,6 +2551,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
+  AuthenticatedSolicitacoesTicketIdRoute:
+    AuthenticatedSolicitacoesTicketIdRoute,
+  AuthenticatedSolicitacoesDashboardRoute:
+    AuthenticatedSolicitacoesDashboardRoute,
+  AuthenticatedSolicitacoesNovoRoute: AuthenticatedSolicitacoesNovoRoute,
   AuthenticatedClientesIndexRoute: AuthenticatedClientesIndexRoute,
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
   AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
@@ -2412,6 +2565,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMapaAcoesIndexRoute: AuthenticatedMapaAcoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
+  AuthenticatedSolicitacoesIndexRoute: AuthenticatedSolicitacoesIndexRoute,
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
   AuthenticatedClientesBiRepIdRazaoRoute:
     AuthenticatedClientesBiRepIdRazaoRoute,
@@ -2451,9 +2605,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  SolicitacoesAcaoTokenRoute: SolicitacoesAcaoTokenRoute,
   ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
     ApiPublicHooksWeeklySecurityAuditRoute,
+  ApiPublicInternalTicketsResendWebhookRoute:
+    ApiPublicInternalTicketsResendWebhookRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,

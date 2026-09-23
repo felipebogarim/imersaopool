@@ -11,7 +11,6 @@ export type NavLeaf = {
   masterOnly?: boolean;
 };
 
-
 export type NavGroup = {
   key: string;
   label: string;
@@ -92,14 +91,31 @@ export const NAV_TREE: NavGroup[] = [
     ],
   },
   {
+    key: "solicitacoes-internas",
+    label: "Solicitações Internas",
+    children: [
+      { key: "solicitacoes-internas.dashboard", label: "Dashboard", to: "/solicitacoes/dashboard" },
+      { key: "solicitacoes-internas.lista", label: "Tickets", to: "/solicitacoes" },
+      { key: "solicitacoes-internas.novo", label: "Novo Ticket", to: "/solicitacoes/novo" },
+    ],
+  },
+  {
     key: "ferramentas",
     label: "Ferramentas",
     children: [
-      { key: "ferramentas.gerador-performance", label: "Gerador de Performance", to: "/admin/gerador-performance" },
+      {
+        key: "ferramentas.gerador-performance",
+        label: "Gerador de Performance",
+        to: "/admin/gerador-performance",
+      },
       { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
       { key: "ferramentas.agenda", label: "Agenda", to: "/ferramentas/agenda" },
-      { key: "ferramentas.agenda-trade", label: "Agenda de Trade", to: "/ferramentas/agenda-trade" },
+      {
+        key: "ferramentas.agenda-trade",
+        label: "Agenda de Trade",
+        to: "/ferramentas/agenda-trade",
+      },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
       { key: "ferramentas.tabela-precos", label: "Tabela de Preços", to: "/price/tabelas" },
     ],
@@ -109,15 +125,32 @@ export const NAV_TREE: NavGroup[] = [
     label: "Admin",
     adminOnly: true,
     children: [
-      { key: "admin.auditoria-seguranca", label: "Auditoria de Segurança", to: "/admin/auditoria-seguranca" },
+      {
+        key: "admin.auditoria-seguranca",
+        label: "Auditoria de Segurança",
+        to: "/admin/auditoria-seguranca",
+      },
       { key: "admin.conformidade", label: "Conformidade e Aceites", to: "/admin/conformidade" },
       { key: "admin.mfa", label: "Meu MFA", to: "/admin/mfa" },
       { key: "admin.mfa-politica", label: "Política de MFA", to: "/admin/mfa-politica" },
       { key: "admin.mfa-recuperacao", label: "Recuperação de MFA", to: "/admin/mfa-recuperacao" },
       { key: "admin.lgpd", label: "LGPD e Expurgo", to: "/admin/lgpd" },
-      { key: "admin.criterios-seguranca", label: "Critérios de Segurança", to: "/admin/criterios-seguranca" },
+      {
+        key: "admin.criterios-seguranca",
+        label: "Critérios de Segurança",
+        to: "/admin/criterios-seguranca",
+      },
       { key: "admin.backup", label: "Backup", to: "/admin/backup" },
-      { key: "admin.central-mensagens", label: "Central de Mensagens", to: "/admin/central-mensagens" },
+      {
+        key: "admin.central-mensagens",
+        label: "Central de Mensagens",
+        to: "/admin/central-mensagens",
+      },
+      {
+        key: "admin.solicitacoes-internas",
+        label: "Solicitações Internas",
+        to: "/admin/solicitacoes-internas",
+      },
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
       { key: "admin.agentes", label: "Agentes", to: "/agentes" },
       { key: "admin.permissoes", label: "Permissões", to: "/admin/permissoes" },
@@ -135,24 +168,30 @@ export const ALWAYS_ALLOWED = [
   "/admin/mfa",
 ];
 
-export const ALL_NAV_KEYS: string[] = NAV_TREE.flatMap(g => [g.key, ...g.children.map(c => c.key)]);
+export const ALL_NAV_KEYS: string[] = NAV_TREE.flatMap((g) => [
+  g.key,
+  ...g.children.map((c) => c.key),
+]);
 
 function matchesPath(pathname: string, to: string, extra?: string[]) {
   const candidates = [to, ...(extra ?? [])];
-  return candidates.some(p => pathname === p || pathname.startsWith(p + "/"));
+  return candidates.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
 /**
  * Resolve o nav_key exigido para uma rota.
  * Retorna null quando a rota não é controlada por permissão.
  */
-export function navKeyForPath(pathname: string): { groupKey: string; itemKey: string | null } | null {
-  if (ALWAYS_ALLOWED.some(p => pathname === p || pathname.startsWith(p + "/"))) return null;
+export function navKeyForPath(
+  pathname: string,
+): { groupKey: string; itemKey: string | null } | null {
+  if (ALWAYS_ALLOWED.some((p) => pathname === p || pathname.startsWith(p + "/"))) return null;
 
   let best: { groupKey: string; itemKey: string | null; len: number } | null = null;
   for (const g of NAV_TREE) {
     if (g.to && matchesPath(pathname, g.to, g.match)) {
-      if (!best || g.to.length > best.len) best = { groupKey: g.key, itemKey: null, len: g.to.length };
+      if (!best || g.to.length > best.len)
+        best = { groupKey: g.key, itemKey: null, len: g.to.length };
     }
     for (const c of g.children) {
       const all = [c.to, ...(c.match ?? [])];
