@@ -250,6 +250,12 @@ export function PeopleTab() {
                   </label>
                 ))}
               </div>
+              {form.isPrimaryRecipient && (
+                <p className="text-xs text-muted-foreground">
+                  Só pode haver um destinatário principal ativo por setor — marcar aqui desmarca
+                  automaticamente quem era o principal antes.
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button

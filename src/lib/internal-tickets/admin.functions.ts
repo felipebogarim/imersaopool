@@ -128,25 +128,52 @@ export const upsertInternalTicketSectorPerson = createServerFn({ method: "POST" 
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const supabase = db(context.supabase);
+    const isPrimaryRecipient = data.isPrimaryRecipient ?? false;
+    const active = data.active ?? true;
+
+    // Só um principal ativo por setor (decisão: opção B) — marcar esta
+    // pessoa como principal desmarca automaticamente quem tinha a flag
+    // antes, em vez de exigir que o admin faça isso manualmente primeiro.
+    // O índice único parcial (migration 20260923180000) é a rede de
+    // segurança contra corrida, não o caminho normal.
+    if (isPrimaryRecipient && active) {
+      let clearQuery = supabase
+        .from("internal_ticket_sector_people")
+        .update({ is_primary_recipient: false })
+        .eq("sector_id", data.sectorId)
+        .eq("is_primary_recipient", true)
+        .eq("active", true);
+      if (data.id) clearQuery = clearQuery.neq("id", data.id);
+      const { error: clearError } = await clearQuery;
+      if (clearError) throw new Error(clearError.message);
+    }
+
     const row = {
       sector_id: data.sectorId,
       name: data.name,
       role_title: data.roleTitle ?? null,
       email: data.email.toLowerCase(),
       phone: data.phone?.trim() || null,
-      is_primary_recipient: data.isPrimaryRecipient ?? false,
+      is_primary_recipient: isPrimaryRecipient,
       is_cc: data.isCc ?? false,
       is_escalation_contact: data.isEscalationContact ?? false,
       receives_new_tickets: data.receivesNewTickets ?? true,
       receives_reminders: data.receivesReminders ?? true,
       receives_escalations: data.receivesEscalations ?? false,
-      active: data.active ?? true,
+      active,
     };
     const query = data.id
       ? supabase.from("internal_ticket_sector_people").update(row).eq("id", data.id)
       : supabase.from("internal_ticket_sector_people").insert(row);
     const { data: result, error } = await query.select().single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error(
+          "Já existe um destinatário principal ativo para este setor. Tente salvar novamente.",
+        );
+      }
+      throw new Error(error.message);
+    }
     return result;
   });
 
@@ -162,7 +189,17 @@ export const setInternalTicketSectorPersonActive = createServerFn({ method: "POS
       .from("internal_ticket_sector_people")
       .update({ active: data.active })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Reativar alguém marcado como principal enquanto outra pessoa ativa
+      // do mesmo setor já é a principal — o índice único parcial barra
+      // isso (o swap automático só roda no caminho de editar/salvar).
+      if (error.code === "23505") {
+        throw new Error(
+          'Não é possível reativar: já existe um destinatário principal ativo para este setor. Edite esta pessoa e desmarque "Destinatário principal" antes de reativar, ou troque o principal primeiro.',
+        );
+      }
+      throw new Error(error.message);
+    }
     return { ok: true };
   });
 
