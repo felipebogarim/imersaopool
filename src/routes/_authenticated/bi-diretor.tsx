@@ -57,7 +57,7 @@ function BIDiretorPage() {
       />
       <div className="mx-auto max-w-[1600px] space-y-2 bg-muted/30 px-3 py-2 sm:px-6 lg:px-8">
         <Tabs value={area} onValueChange={(value) => setArea(value as ExecArea)}>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[220px_1fr]">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[220px_minmax(0,28rem)]">
             <div className="rounded-xl border bg-card p-2">
               <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 Selecione
