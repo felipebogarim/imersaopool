@@ -192,9 +192,8 @@ export const reassignInternalTicketSector = createServerFn({ method: "POST" })
 // supabaseAdmin mesmo depois de confirmado o e-mail master. Todas as
 // tabelas filhas (eventos, mensagens, anexos, produtos, paradas de setor,
 // destinatários, tokens de ação) têm ON DELETE CASCADE em ticket_id, então
-// um DELETE aqui já limpa tudo — exceto os arquivos físicos no bucket de
-// anexos, que ficam órfãos no Storage (limpeza não implementada nesta
-// rodada).
+// a exclusão usa internal_ticket_delete_atomic (ticket + outbox sem FK) e
+// remove os arquivos do bucket depois do commit.
 
 async function assertMasterUser(context: FnContext): Promise<void> {
   const supabase = db(context.supabase);
@@ -218,7 +217,28 @@ export const deleteInternalTicket = createServerFn({ method: "POST" })
     await assertMasterUser(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = db(supabaseAdmin);
-    const { error } = await admin.from("internal_tickets").delete().eq("id", data.ticketId);
+    // Caminhos dos anexos ANTES de apagar (as linhas somem na cascata).
+    const { data: attachments, error: attachmentsError } = await admin
+      .from("internal_ticket_attachments")
+      .select("storage_path")
+      .eq("ticket_id", data.ticketId);
+    if (attachmentsError) throw new Error(attachmentsError.message);
+
+    // Ticket + outbox (sem FK) numa transação; filhos com FK saem por CASCADE.
+    const { error } = await admin.rpc("internal_ticket_delete_atomic", {
+      p_ticket_id: data.ticketId,
+    });
     if (error) throw new Error(error.message);
-    return { ok: true };
+
+    // Depois do commit: remove os arquivos físicos. Falha aqui não desfaz a
+    // exclusão (já commitada) — é reportada para limpeza manual.
+    const paths = ((attachments ?? []) as { storage_path: string }[]).map((a) => a.storage_path);
+    let storageCleanupFailed = false;
+    if (paths.length) {
+      const { error: storageError } = await admin.storage
+        .from("internal-ticket-attachments")
+        .remove(paths);
+      storageCleanupFailed = Boolean(storageError);
+    }
+    return { ok: true, storageCleanupFailed };
   });

@@ -80,8 +80,12 @@ function TicketsListPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (ticketId: string) => deleteInternalTicket({ data: { ticketId } }),
-    onSuccess: () => {
-      toast.success("Ticket excluído");
+    onSuccess: (result) => {
+      if (result.storageCleanupFailed) {
+        toast.warning("Ticket excluído, mas alguns anexos não foram removidos do Storage.");
+      } else {
+        toast.success("Ticket excluído");
+      }
       qc.invalidateQueries({ queryKey: ["internal-tickets"] });
     },
     onError: (e: unknown) =>
