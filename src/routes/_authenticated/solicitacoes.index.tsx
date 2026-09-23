@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Plus } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { AlertTriangle, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { listCategories, listInternalTickets, listSectors } from "@/lib/internal-tickets/queries";
 import {
   TICKET_STATUS_LABEL,
@@ -29,6 +36,8 @@ import {
 } from "@/lib/internal-tickets/status";
 import { TICKET_PRIORITY_LABEL } from "@/lib/internal-tickets/priority";
 import { isOverdue } from "@/lib/internal-tickets/sla";
+import { deleteInternalTicket } from "@/lib/internal-tickets/ticket-actions.functions";
+import { useIsMasterUser } from "@/hooks/use-is-master-user";
 
 export const Route = createFileRoute("/_authenticated/solicitacoes/")({
   head: () => ({ meta: [{ title: "Solicitações Internas — PoolFlux" }] }),
@@ -44,6 +53,8 @@ const PRIORITY_BADGE: Record<string, string> = {
 
 function TicketsListPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const isMasterUser = useIsMasterUser();
   const ticketsQuery = useQuery({ queryKey: ["internal-tickets"], queryFn: listInternalTickets });
   const sectorsQuery = useQuery({ queryKey: ["internal-ticket-sectors"], queryFn: listSectors });
   const categoriesQuery = useQuery({
@@ -66,6 +77,27 @@ function TicketsListPage() {
       return true;
     });
   }, [ticketsQuery.data, search, statusFilter]);
+
+  const deleteMutation = useMutation({
+    mutationFn: (ticketId: string) => deleteInternalTicket({ data: { ticketId } }),
+    onSuccess: () => {
+      toast.success("Ticket excluído");
+      qc.invalidateQueries({ queryKey: ["internal-tickets"] });
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir ticket"),
+  });
+
+  function handleDelete(ticket: { id: string; ticket_number: string; title: string }) {
+    if (
+      !confirm(
+        `Excluir definitivamente o ticket ${ticket.ticket_number} — "${ticket.title}"? Esta ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
+    deleteMutation.mutate(ticket.id);
+  }
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -116,13 +148,14 @@ function TicketsListPage() {
                 <TableHead>Prioridade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criado em</TableHead>
+                {isMasterUser && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={isMasterUser ? 7 : 6}
                     className="py-10 text-center text-sm text-muted-foreground"
                   >
                     Nenhum ticket encontrado.
@@ -173,6 +206,25 @@ function TicketsListPage() {
                     <TableCell className="text-xs text-muted-foreground">
                       {new Date(ticket.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
+                    {isMasterUser && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDelete(ticket)}
+                            >
+                              <Trash2 className="h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

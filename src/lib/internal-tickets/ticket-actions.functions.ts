@@ -8,7 +8,8 @@ import {
   TICKET_STATUS_LABEL,
   type TicketStatus,
 } from "@/lib/internal-tickets/status";
-import { requireCanManageTicket } from "@/lib/internal-tickets/ticket-permissions";
+import { requireCanManageTicket, type FnContext } from "@/lib/internal-tickets/ticket-permissions";
+import { MASTER_EMAIL } from "@/lib/nav-tree";
 
 // internal_ticket_* ainda não está no types.ts gerado — mesma ressalva do
 // resto do módulo.
@@ -182,4 +183,42 @@ export const reassignInternalTicketSector = createServerFn({ method: "POST" })
     if (eventError) throw new Error(eventError.message);
 
     return { ok: true, sectorId: data.toSectorId };
+  });
+
+// ── Excluir ticket (só gestor master) ───────────────────────────────────
+//
+// Sem policy de DELETE para authenticated em internal_tickets (decisão da
+// Fase 1: tickets não se apagam, se cancelam) — por isso passa por
+// supabaseAdmin mesmo depois de confirmado o e-mail master. Todas as
+// tabelas filhas (eventos, mensagens, anexos, produtos, paradas de setor,
+// destinatários, tokens de ação) têm ON DELETE CASCADE em ticket_id, então
+// um DELETE aqui já limpa tudo — exceto os arquivos físicos no bucket de
+// anexos, que ficam órfãos no Storage (limpeza não implementada nesta
+// rodada).
+
+async function assertMasterUser(context: FnContext): Promise<void> {
+  const supabase = db(context.supabase);
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", context.userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if ((data?.email ?? "").toLowerCase() !== MASTER_EMAIL) {
+    throw new Error("Acesso negado: apenas o gestor master pode excluir tickets");
+  }
+}
+
+const deleteTicketSchema = z.object({ ticketId: z.string().uuid() });
+
+export const deleteInternalTicket = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => deleteTicketSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertMasterUser(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = db(supabaseAdmin);
+    const { error } = await admin.from("internal_tickets").delete().eq("id", data.ticketId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
