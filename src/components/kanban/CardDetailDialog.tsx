@@ -876,7 +876,12 @@ function AttachmentsSection({ cardId, boardId }: { cardId: string; boardId: stri
 
   async function upload(f: File) {
     const { data: u } = await supabase.auth.getUser();
-    const path = `${u.user!.id}/${cardId}/${Date.now()}-${f.name}`;
+    // Storage keys reject accents/special spaces (e.g. macOS "Captura de Tela ... às ...png")
+    const safeName = f.name
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^\w.-]/g, "_");
+    const path = `${u.user!.id}/${cardId}/${Date.now()}-${safeName}`;
     const { error: upErr } = await supabase.storage.from("kanban-attachments").upload(path, f);
     if (upErr) return toast.error(upErr.message);
     const { data: signed } = await supabase.storage.from("kanban-attachments").createSignedUrl(path, 60 * 60 * 24 * 7);
