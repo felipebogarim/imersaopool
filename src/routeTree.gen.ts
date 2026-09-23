@@ -67,6 +67,7 @@ import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/b
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
 import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_authenticated/solicitacoes.novo'
 import { Route as AuthenticatedSolicitacoesDashboardRouteImport } from './routes/_authenticated/solicitacoes.dashboard'
+import { Route as AuthenticatedSolicitacoesAdminRouteImport } from './routes/_authenticated/solicitacoes.admin'
 import { Route as AuthenticatedSolicitacoesTicketIdRouteImport } from './routes/_authenticated/solicitacoes.$ticketId'
 import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
@@ -92,7 +93,6 @@ import { Route as AuthenticatedClientesNovoRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientesIdRouteImport } from './routes/_authenticated/clientes.$id'
 import { Route as AuthenticatedClientesBiBatchRepIdRouteImport } from './routes/_authenticated/clientes-bi-batch.$repId'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
-import { Route as AuthenticatedAdminSolicitacoesInternasRouteImport } from './routes/_authenticated/admin.solicitacoes-internas'
 import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
 import { Route as AuthenticatedAdminMfaRecuperacaoRouteImport } from './routes/_authenticated/admin.mfa-recuperacao'
 import { Route as AuthenticatedAdminMfaPoliticaRouteImport } from './routes/_authenticated/admin.mfa-politica'
@@ -433,6 +433,12 @@ const AuthenticatedSolicitacoesDashboardRoute =
     path: '/solicitacoes/dashboard',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSolicitacoesAdminRoute =
+  AuthenticatedSolicitacoesAdminRouteImport.update({
+    id: '/solicitacoes/admin',
+    path: '/solicitacoes/admin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSolicitacoesTicketIdRoute =
   AuthenticatedSolicitacoesTicketIdRouteImport.update({
     id: '/solicitacoes/$ticketId',
@@ -575,12 +581,6 @@ const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/usuarios',
     path: '/usuarios',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminSolicitacoesInternasRoute =
-  AuthenticatedAdminSolicitacoesInternasRouteImport.update({
-    id: '/solicitacoes-internas',
-    path: '/solicitacoes-internas',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminPermissoesRoute =
@@ -821,7 +821,6 @@ export interface FileRoutesByFullPath {
   '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
-  '/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -847,6 +846,7 @@ export interface FileRoutesByFullPath {
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
@@ -936,7 +936,6 @@ export interface FileRoutesByTo {
   '/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
-  '/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -962,6 +961,7 @@ export interface FileRoutesByTo {
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
@@ -1055,7 +1055,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/mfa-politica': typeof AuthenticatedAdminMfaPoliticaRoute
   '/_authenticated/admin/mfa-recuperacao': typeof AuthenticatedAdminMfaRecuperacaoRoute
   '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
-  '/_authenticated/admin/solicitacoes-internas': typeof AuthenticatedAdminSolicitacoesInternasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/clientes-bi-batch/$repId': typeof AuthenticatedClientesBiBatchRepIdRoute
   '/_authenticated/clientes/$id': typeof AuthenticatedClientesIdRouteWithChildren
@@ -1081,6 +1080,7 @@ export interface FileRoutesById {
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/_authenticated/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
+  '/_authenticated/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/_authenticated/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
@@ -1174,7 +1174,6 @@ export interface FileRouteTypes {
     | '/admin/mfa-politica'
     | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
-    | '/admin/solicitacoes-internas'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
@@ -1200,6 +1199,7 @@ export interface FileRouteTypes {
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
+    | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
     | '/api/public/backup-audit'
@@ -1289,7 +1289,6 @@ export interface FileRouteTypes {
     | '/admin/mfa-politica'
     | '/admin/mfa-recuperacao'
     | '/admin/permissoes'
-    | '/admin/solicitacoes-internas'
     | '/admin/usuarios'
     | '/clientes-bi-batch/$repId'
     | '/clientes/$id'
@@ -1315,6 +1314,7 @@ export interface FileRouteTypes {
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
+    | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
     | '/api/public/backup-audit'
@@ -1407,7 +1407,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/mfa-politica'
     | '/_authenticated/admin/mfa-recuperacao'
     | '/_authenticated/admin/permissoes'
-    | '/_authenticated/admin/solicitacoes-internas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/clientes-bi-batch/$repId'
     | '/_authenticated/clientes/$id'
@@ -1433,6 +1432,7 @@ export interface FileRouteTypes {
     | '/_authenticated/representantes/performance'
     | '/_authenticated/sintese/tipos'
     | '/_authenticated/solicitacoes/$ticketId'
+    | '/_authenticated/solicitacoes/admin'
     | '/_authenticated/solicitacoes/dashboard'
     | '/_authenticated/solicitacoes/novo'
     | '/api/public/backup-audit'
@@ -1920,6 +1920,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSolicitacoesDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/solicitacoes/admin': {
+      id: '/_authenticated/solicitacoes/admin'
+      path: '/solicitacoes/admin'
+      fullPath: '/solicitacoes/admin'
+      preLoaderRoute: typeof AuthenticatedSolicitacoesAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/solicitacoes/$ticketId': {
       id: '/_authenticated/solicitacoes/$ticketId'
       path: '/solicitacoes/$ticketId'
@@ -2093,13 +2100,6 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/admin/usuarios'
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/solicitacoes-internas': {
-      id: '/_authenticated/admin/solicitacoes-internas'
-      path: '/solicitacoes-internas'
-      fullPath: '/admin/solicitacoes-internas'
-      preLoaderRoute: typeof AuthenticatedAdminSolicitacoesInternasRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/permissoes': {
@@ -2382,7 +2382,6 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMfaPoliticaRoute: typeof AuthenticatedAdminMfaPoliticaRoute
   AuthenticatedAdminMfaRecuperacaoRoute: typeof AuthenticatedAdminMfaRecuperacaoRoute
   AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
-  AuthenticatedAdminSolicitacoesInternasRoute: typeof AuthenticatedAdminSolicitacoesInternasRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
@@ -2404,8 +2403,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminMfaPoliticaRoute: AuthenticatedAdminMfaPoliticaRoute,
   AuthenticatedAdminMfaRecuperacaoRoute: AuthenticatedAdminMfaRecuperacaoRoute,
   AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
-  AuthenticatedAdminSolicitacoesInternasRoute:
-    AuthenticatedAdminSolicitacoesInternasRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
 
@@ -2483,6 +2480,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
   AuthenticatedSolicitacoesTicketIdRoute: typeof AuthenticatedSolicitacoesTicketIdRoute
+  AuthenticatedSolicitacoesAdminRoute: typeof AuthenticatedSolicitacoesAdminRoute
   AuthenticatedSolicitacoesDashboardRoute: typeof AuthenticatedSolicitacoesDashboardRoute
   AuthenticatedSolicitacoesNovoRoute: typeof AuthenticatedSolicitacoesNovoRoute
   AuthenticatedClientesIndexRoute: typeof AuthenticatedClientesIndexRoute
@@ -2553,6 +2551,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
   AuthenticatedSolicitacoesTicketIdRoute:
     AuthenticatedSolicitacoesTicketIdRoute,
+  AuthenticatedSolicitacoesAdminRoute: AuthenticatedSolicitacoesAdminRoute,
   AuthenticatedSolicitacoesDashboardRoute:
     AuthenticatedSolicitacoesDashboardRoute,
   AuthenticatedSolicitacoesNovoRoute: AuthenticatedSolicitacoesNovoRoute,

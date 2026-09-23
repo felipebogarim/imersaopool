@@ -35,6 +35,7 @@ export type SectorPerson = {
   name: string;
   role_title: string | null;
   email: string;
+  phone: string | null;
   is_primary_recipient: boolean;
   is_cc: boolean;
   is_escalation_contact: boolean;
@@ -48,7 +49,7 @@ export async function listSectorPeople(): Promise<SectorPerson[]> {
   const { data, error } = await db()
     .from("internal_ticket_sector_people")
     .select(
-      "id, sector_id, name, role_title, email, is_primary_recipient, is_cc, is_escalation_contact, receives_new_tickets, receives_reminders, receives_escalations, active",
+      "id, sector_id, name, role_title, email, phone, is_primary_recipient, is_cc, is_escalation_contact, receives_new_tickets, receives_reminders, receives_escalations, active",
     )
     .order("name");
   if (error) throw new Error(error.message);
@@ -160,6 +161,23 @@ export async function listTicketMessages(ticketId: string): Promise<TicketMessag
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   return data as TicketMessageRow[];
+}
+
+export type TicketSectorStopRow = {
+  id: string;
+  sector_id: string;
+  entered_at: string;
+  left_at: string | null;
+};
+
+export async function listTicketSectorStops(ticketId: string): Promise<TicketSectorStopRow[]> {
+  const { data, error } = await db()
+    .from("internal_ticket_sector_stops")
+    .select("id, sector_id, entered_at, left_at")
+    .eq("ticket_id", ticketId)
+    .order("entered_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data as TicketSectorStopRow[];
 }
 
 export type TicketRecipientRow = {

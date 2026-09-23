@@ -36,6 +36,7 @@ type FormState = {
   name: string;
   roleTitle: string;
   email: string;
+  phone: string;
   isPrimaryRecipient: boolean;
   isCc: boolean;
   isEscalationContact: boolean;
@@ -50,6 +51,7 @@ function emptyForm(sectorId: string): FormState {
     name: "",
     roleTitle: "",
     email: "",
+    phone: "",
     isPrimaryRecipient: true,
     isCc: false,
     isEscalationContact: false,
@@ -80,6 +82,7 @@ export function PeopleTab() {
           name: data.name.trim(),
           roleTitle: data.roleTitle.trim() || null,
           email: data.email.trim(),
+          phone: data.phone.trim() || null,
           isPrimaryRecipient: data.isPrimaryRecipient,
           isCc: data.isCc,
           isEscalationContact: data.isEscalationContact,
@@ -117,6 +120,7 @@ export function PeopleTab() {
       name: person.name,
       roleTitle: person.role_title ?? "",
       email: person.email,
+      phone: person.phone ?? "",
       isPrimaryRecipient: person.is_primary_recipient,
       isCc: person.is_cc,
       isEscalationContact: person.is_escalation_contact,
@@ -189,13 +193,24 @@ export function PeopleTab() {
                   />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>E-mail</Label>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>E-mail</Label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Telefone</Label>
+                  <Input
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={form.phone}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 text-sm">
                 {(
@@ -244,7 +259,7 @@ export function PeopleTab() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>Setor</TableHead>
-              <TableHead>E-mail</TableHead>
+              <TableHead>Contato</TableHead>
               <TableHead>Papel</TableHead>
               <TableHead>Ativo</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -260,7 +275,10 @@ export function PeopleTab() {
                   )}
                 </TableCell>
                 <TableCell>{sectorName(person.sector_id)}</TableCell>
-                <TableCell className="text-muted-foreground">{person.email}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <span className="block">{person.email}</span>
+                  {person.phone && <span className="block text-xs">{person.phone}</span>}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {person.is_primary_recipient && <Badge variant="outline">Principal</Badge>}

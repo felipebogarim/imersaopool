@@ -1,19 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { ArrowLeft, Download, Loader2, Paperclip } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   getInternalTicket,
   listCategories,
@@ -23,46 +14,25 @@ import {
   listTicketEvents,
   listTicketMessages,
   listTicketRecipients,
-  type TicketAttachmentRow,
-  type TicketEventRow,
-  type TicketMessageRow,
+  listTicketSectorStops,
 } from "@/lib/internal-tickets/queries";
-import {
-  getAttachmentDownloadUrl,
-  uploadTicketAttachment,
-} from "@/lib/internal-tickets/attachments";
-import {
-  allowedNextStatuses,
-  TICKET_STATUS_LABEL,
-  type TicketStatus,
-} from "@/lib/internal-tickets/status";
+import { TICKET_STATUS_LABEL } from "@/lib/internal-tickets/status";
 import { TICKET_PRIORITY_LABEL } from "@/lib/internal-tickets/priority";
-import {
-  updateInternalTicketStatus,
-  logManualInteraction,
-} from "@/lib/internal-tickets/tickets.functions";
+import { buildSectorTimeline } from "@/lib/internal-tickets/sector-timeline";
+import { SectorTimeline } from "@/components/internal-tickets/SectorTimeline";
+import { StatusChangePanel } from "@/components/internal-tickets/detail/StatusChangePanel";
+import { ReassignSectorPanel } from "@/components/internal-tickets/detail/ReassignSectorPanel";
+import { ManualInteractionPanel } from "@/components/internal-tickets/detail/ManualInteractionPanel";
+import { AttachmentsPanel } from "@/components/internal-tickets/detail/AttachmentsPanel";
+import { TicketTimelineFeed } from "@/components/internal-tickets/detail/TicketTimelineFeed";
 
 export const Route = createFileRoute("/_authenticated/solicitacoes/$ticketId")({
   head: () => ({ meta: [{ title: "Ticket — Solicitações Internas — PoolFlux" }] }),
   component: TicketDetailPage,
 });
 
-type TimelineEntry =
-  | ({ kind: "event" } & TicketEventRow)
-  | ({ kind: "message" } & TicketMessageRow)
-  | ({ kind: "attachment" } & TicketAttachmentRow);
-
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function TicketDetailPage() {
   const { ticketId } = Route.useParams();
-  const qc = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ticketQuery = useQuery({
     queryKey: ["internal-ticket", ticketId],
@@ -89,6 +59,10 @@ function TicketDetailPage() {
     queryKey: ["internal-ticket-attachments", ticketId],
     queryFn: () => listTicketAttachments(ticketId),
   });
+  const sectorStopsQuery = useQuery({
+    queryKey: ["internal-ticket-sector-stops", ticketId],
+    queryFn: () => listTicketSectorStops(ticketId),
+  });
   const ticket = ticketQuery.data;
   const profilesQuery = useQuery({
     queryKey: [
@@ -100,98 +74,29 @@ function TicketDetailPage() {
     enabled: Boolean(ticket),
   });
 
-  const [statusTarget, setStatusTarget] = useState<TicketStatus | "">("");
-  const [statusObservation, setStatusObservation] = useState("");
-  const [interactionChannel, setInteractionChannel] = useState<
-    "manual_presencial" | "manual_telefone"
-  >("manual_presencial");
-  const [interactionNote, setInteractionNote] = useState("");
-  const [uploading, setUploading] = useState(false);
-
-  function invalidateTicket() {
-    qc.invalidateQueries({ queryKey: ["internal-ticket", ticketId] });
-    qc.invalidateQueries({ queryKey: ["internal-ticket-events", ticketId] });
-    qc.invalidateQueries({ queryKey: ["internal-tickets"] });
-  }
-
-  const statusMutation = useMutation({
-    mutationFn: () =>
-      updateInternalTicketStatus({
-        data: {
-          ticketId,
-          toStatus: statusTarget as TicketStatus,
-          observation: statusObservation.trim() || undefined,
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Status atualizado");
-      setStatusTarget("");
-      setStatusObservation("");
-      invalidateTicket();
-    },
-    onError: (e: unknown) =>
-      toast.error(e instanceof Error ? e.message : "Falha ao atualizar status"),
-  });
-
-  const interactionMutation = useMutation({
-    mutationFn: () =>
-      logManualInteraction({
-        data: { ticketId, channel: interactionChannel, note: interactionNote.trim() },
-      }),
-    onSuccess: () => {
-      toast.success("Interação registrada");
-      setInteractionNote("");
-      qc.invalidateQueries({ queryKey: ["internal-ticket-messages", ticketId] });
-      qc.invalidateQueries({ queryKey: ["internal-ticket-events", ticketId] });
-    },
-    onError: (e: unknown) =>
-      toast.error(e instanceof Error ? e.message : "Falha ao registrar interação"),
-  });
-
-  async function handleUpload(file: File) {
-    setUploading(true);
-    try {
-      await uploadTicketAttachment(ticketId, file);
-      toast.success("Anexo enviado");
-      qc.invalidateQueries({ queryKey: ["internal-ticket-attachments", ticketId] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao enviar anexo");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function handleDownload(attachment: TicketAttachmentRow) {
-    try {
-      const url = await getAttachmentDownloadUrl(attachment.storage_path);
-      window.open(url, "_blank", "noopener,noreferrer");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao gerar link do anexo");
-    }
-  }
-
-  const timeline = useMemo<TimelineEntry[]>(() => {
-    const events: TimelineEntry[] = (eventsQuery.data ?? []).map((e) => ({ kind: "event", ...e }));
-    const messages: TimelineEntry[] = (messagesQuery.data ?? []).map((m) => ({
-      kind: "message",
-      ...m,
-    }));
-    const attachments: TimelineEntry[] = (attachmentsQuery.data ?? []).map((a) => ({
-      kind: "attachment",
-      ...a,
-    }));
-    return [...events, ...messages, ...attachments].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-  }, [eventsQuery.data, messagesQuery.data, attachmentsQuery.data]);
-
-  const sectorName = sectorsQuery.data?.find((s) => s.id === ticket?.sector_id)?.name ?? "—";
+  const sectorNameById = (id: string) => sectorsQuery.data?.find((s) => s.id === id)?.name ?? "—";
+  const sectorName = ticket ? sectorNameById(ticket.sector_id) : "—";
   const categoryName = categoriesQuery.data?.find((c) => c.id === ticket?.category_id)?.name ?? "—";
   const requesterName =
     profilesQuery.data?.find((p) => p.id === ticket?.requester_user_id)?.full_name ?? "—";
   const ownerName =
     profilesQuery.data?.find((p) => p.id === ticket?.commercial_owner_user_id)?.full_name ?? "—";
+
+  const sectorTimeline = useMemo(
+    () =>
+      buildSectorTimeline(
+        (sectorStopsQuery.data ?? []).map((s) => ({
+          sectorId: s.sector_id,
+          enteredAt: new Date(s.entered_at),
+          leftAt: s.left_at ? new Date(s.left_at) : null,
+        })),
+        (eventsQuery.data ?? []).map((e) => ({
+          toStatus: e.to_status,
+          createdAt: new Date(e.created_at),
+        })),
+      ),
+    [sectorStopsQuery.data, eventsQuery.data],
+  );
 
   if (ticketQuery.isLoading || !ticket) {
     return (
@@ -200,8 +105,6 @@ function TicketDetailPage() {
       </div>
     );
   }
-
-  const nextStatuses = allowedNextStatuses(ticket.status);
 
   return (
     <div className="min-h-screen bg-background pb-10">
@@ -248,147 +151,31 @@ function TicketDetailPage() {
           </div>
         )}
 
-        {nextStatuses.length > 0 && (
-          <div className="space-y-2 rounded-lg border p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Mudar status
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {nextStatuses.map((s) => (
-                <Button
-                  key={s}
-                  size="sm"
-                  variant={statusTarget === s ? "default" : "outline"}
-                  onClick={() => setStatusTarget(s)}
-                >
-                  {TICKET_STATUS_LABEL[s]}
-                </Button>
-              ))}
-            </div>
-            {statusTarget && (
-              <div className="space-y-2">
-                <Textarea
-                  value={statusObservation}
-                  onChange={(e) => setStatusObservation(e.target.value)}
-                  placeholder="Observação (opcional)"
-                  rows={2}
-                />
-                <Button
-                  size="sm"
-                  disabled={statusMutation.isPending}
-                  onClick={() => statusMutation.mutate()}
-                >
-                  {statusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Confirmar {TICKET_STATUS_LABEL[statusTarget]}
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+        <StatusChangePanel ticketId={ticketId} currentStatus={ticket.status} />
+
+        <ReassignSectorPanel
+          ticketId={ticketId}
+          currentSectorId={ticket.sector_id}
+          currentSectorName={sectorName}
+          sectors={sectorsQuery.data ?? []}
+        />
 
         <div className="space-y-2 rounded-lg border p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Registrar interação manual
+            Timeline de setores
           </p>
-          <Select
-            value={interactionChannel}
-            onValueChange={(v) => setInteractionChannel(v as typeof interactionChannel)}
-          >
-            <SelectTrigger className="h-8 w-48 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="manual_presencial">Presencial</SelectItem>
-              <SelectItem value="manual_telefone">Telefone</SelectItem>
-            </SelectContent>
-          </Select>
-          <Textarea
-            value={interactionNote}
-            onChange={(e) => setInteractionNote(e.target.value)}
-            placeholder="O que foi conversado?"
-            rows={3}
-          />
-          <Button
-            size="sm"
-            disabled={!interactionNote.trim() || interactionMutation.isPending}
-            onClick={() => interactionMutation.mutate()}
-          >
-            {interactionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Registrar
-          </Button>
+          <SectorTimeline entries={sectorTimeline} sectorName={sectorNameById} />
         </div>
 
-        <div className="space-y-2 rounded-lg border p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Anexos
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="text-xs"
-            disabled={uploading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleUpload(file);
-            }}
-          />
-          {uploading && <p className="text-xs text-muted-foreground">Enviando…</p>}
-        </div>
+        <ManualInteractionPanel ticketId={ticketId} />
 
-        <div className="space-y-3 border-t pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Linha do tempo
-          </p>
-          <ul className="space-y-2">
-            {timeline.map((entry) => {
-              if (entry.kind === "event") {
-                return (
-                  <li key={`event-${entry.id}`} className="text-xs">
-                    <span className="text-muted-foreground">
-                      {new Date(entry.created_at).toLocaleString("pt-BR")} ·{" "}
-                    </span>
-                    {entry.to_status ? TICKET_STATUS_LABEL[entry.to_status] : "Evento"}
-                    {entry.observation && (
-                      <span className="block text-muted-foreground">{entry.observation}</span>
-                    )}
-                  </li>
-                );
-              }
-              if (entry.kind === "message") {
-                return (
-                  <li key={`message-${entry.id}`} className="rounded-md bg-muted/40 p-2 text-xs">
-                    <span className="text-muted-foreground">
-                      {new Date(entry.created_at).toLocaleString("pt-BR")}
-                      {entry.sender_email ? ` · ${entry.sender_email}` : ""}
-                    </span>
-                    <p className="mt-1 whitespace-pre-wrap">{entry.body_text ?? "(sem texto)"}</p>
-                  </li>
-                );
-              }
-              return (
-                <li key={`attachment-${entry.id}`} className="flex items-center gap-2 text-xs">
-                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {new Date(entry.created_at).toLocaleString("pt-BR")} ·{" "}
-                  </span>
-                  <span>{entry.file_name}</span>
-                  <span className="text-muted-foreground">{formatBytes(entry.size_bytes)}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => handleDownload(entry)}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                </li>
-              );
-            })}
-            {!timeline.length && (
-              <li className="text-xs text-muted-foreground">Sem eventos ainda.</li>
-            )}
-          </ul>
-        </div>
+        <AttachmentsPanel ticketId={ticketId} />
+
+        <TicketTimelineFeed
+          events={eventsQuery.data ?? []}
+          messages={messagesQuery.data ?? []}
+          attachments={attachmentsQuery.data ?? []}
+        />
       </div>
     </div>
   );

@@ -97,6 +97,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "solicitacoes-internas.dashboard", label: "Dashboard", to: "/solicitacoes/dashboard" },
       { key: "solicitacoes-internas.lista", label: "Tickets", to: "/solicitacoes" },
       { key: "solicitacoes-internas.novo", label: "Novo Ticket", to: "/solicitacoes/novo" },
+      { key: "solicitacoes-internas.admin", label: "Adm", to: "/solicitacoes/admin" },
     ],
   },
   {
@@ -145,11 +146,6 @@ export const NAV_TREE: NavGroup[] = [
         key: "admin.central-mensagens",
         label: "Central de Mensagens",
         to: "/admin/central-mensagens",
-      },
-      {
-        key: "admin.solicitacoes-internas",
-        label: "Solicitações Internas",
-        to: "/admin/solicitacoes-internas",
       },
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
       { key: "admin.agentes", label: "Agentes", to: "/agentes" },

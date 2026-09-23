@@ -153,6 +153,14 @@ export const createInternalTicket = createServerFn({ method: "POST" })
     });
     if (eventError) throw new Error(eventError.message);
 
+    // Primeira parada do histórico de setor — sem policy de insert
+    // authenticated na tabela (mesma razão da Fase 10), grava via service role.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: stopError } = await db(supabaseAdmin)
+      .from("internal_ticket_sector_stops")
+      .insert({ ticket_id: ticket.id, sector_id: data.sectorId, moved_by: context.userId });
+    if (stopError) throw new Error(stopError.message);
+
     return ticket;
   });
 
@@ -371,4 +379,84 @@ export const logManualInteraction = createServerFn({ method: "POST" })
     if (eventError) throw new Error(eventError.message);
 
     return { ok: true };
+  });
+
+// ── Encaminhar para outro setor ─────────────────────────────────────────
+//
+// internal_tickets.sector_id é o setor atual (cache); internal_ticket_sector_stops
+// é o histórico completo (uma linha por parada, left_at NULL = onde está
+// agora). Fecha a parada aberta, abre uma nova, atualiza o cache e loga um
+// evento — nessa ordem, sem transação SQL explícita (mesma limitação já
+// aceita no resto do módulo, ver PROJECT_BRAIN).
+
+const reassignSectorSchema = z.object({
+  ticketId: z.string().uuid(),
+  toSectorId: z.string().uuid(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const reassignInternalTicketSector = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => reassignSectorSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    const supabase = db(context.supabase);
+
+    const { data: ticket, error: ticketError } = await supabase
+      .from("internal_tickets")
+      .select("id, sector_id, requester_user_id, commercial_owner_user_id")
+      .eq("id", data.ticketId)
+      .single();
+    if (ticketError) throw new Error(ticketError.message);
+    await requireCanManageTicket(context, ticket);
+
+    if (ticket.sector_id === data.toSectorId) {
+      throw new Error("O ticket já está neste setor");
+    }
+
+    const [{ data: fromSector }, { data: toSector, error: toSectorError }] = await Promise.all([
+      supabase.from("internal_ticket_sectors").select("name").eq("id", ticket.sector_id).single(),
+      supabase
+        .from("internal_ticket_sectors")
+        .select("name, active")
+        .eq("id", data.toSectorId)
+        .single(),
+    ]);
+    if (toSectorError) throw new Error(toSectorError.message);
+    if (!toSector.active) throw new Error("Setor de destino está inativo");
+
+    const { error: updateError } = await supabase
+      .from("internal_tickets")
+      .update({ sector_id: data.toSectorId })
+      .eq("id", data.ticketId);
+    if (updateError) throw new Error(updateError.message);
+
+    // Sem policy de insert/update authenticated em internal_ticket_sector_stops
+    // (mesma razão da Fase 10) — grava via service role.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = db(supabaseAdmin);
+
+    const { error: closeError } = await admin
+      .from("internal_ticket_sector_stops")
+      .update({ left_at: new Date().toISOString() })
+      .eq("ticket_id", data.ticketId)
+      .is("left_at", null);
+    if (closeError) throw new Error(closeError.message);
+
+    const { error: openError } = await admin.from("internal_ticket_sector_stops").insert({
+      ticket_id: data.ticketId,
+      sector_id: data.toSectorId,
+      moved_by: context.userId,
+      reason: data.reason ?? null,
+    });
+    if (openError) throw new Error(openError.message);
+
+    const { error: eventError } = await supabase.from("internal_ticket_events").insert({
+      ticket_id: data.ticketId,
+      origin: "comercial",
+      author_user_id: context.userId,
+      observation: `Encaminhado de ${fromSector?.name ?? "—"} para ${toSector.name}${data.reason ? `: ${data.reason}` : ""}`,
+    });
+    if (eventError) throw new Error(eventError.message);
+
+    return { ok: true, sectorId: data.toSectorId };
   });

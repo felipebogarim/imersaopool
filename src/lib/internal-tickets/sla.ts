@@ -44,3 +44,13 @@ export function isOverdue(
   const comparisonPoint = reachedAt ?? now;
   return comparisonPoint.getTime() > dueAt.getTime();
 }
+
+/** Formata uma duração em minutos de forma legível (min/h/dias). Compartilhado
+ * entre o dashboard (SLA médio) e a timeline de setor do Detalhe do ticket. */
+export function formatDurationMinutes(minutes: number | null): string {
+  if (minutes == null) return "—";
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const hours = minutes / 60;
+  if (hours < 24) return `${hours.toFixed(1)} h`;
+  return `${(hours / 24).toFixed(1)} dias`;
+}
