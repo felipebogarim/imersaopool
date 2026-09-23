@@ -95,11 +95,12 @@ BEGIN
 
   INSERT INTO public.internal_ticket_email_outbox (
     idempotency_key, direction, ticket_id, template_name,
-    recipient_email, sender_email, subject, message_id, status
+    recipient_email, sender_email, subject, message_id, status, raw_payload
   ) VALUES (
     p_outbox_idempotency_key_prefix || v_ticket.id, 'outbound', v_ticket.id, 'ticket-opened',
     v_all_emails, p_outbox_sender, '[' || v_ticket.ticket_number || '] ' || v_ticket.title,
-    p_outbox_message_id, 'pending'
+    p_outbox_message_id, 'pending',
+    jsonb_build_object('to', v_to, 'cc', v_cc)
   );
 
   RETURN jsonb_build_object('ticket', to_jsonb(v_ticket), 'to', v_to, 'cc', v_cc);
