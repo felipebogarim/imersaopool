@@ -20,6 +20,25 @@ async function assertAdmin(context: { supabase: unknown; userId: string }) {
   if (!isAdmin) throw new Error("Acesso negado: apenas administradores");
 }
 
+const deleteByIdSchema = z.object({ id: z.string().uuid() });
+
+// 23503 = foreign_key_violation — algo ainda referencia essa linha (ex.: um
+// ticket usa este setor/categoria). Convertido numa mensagem que orienta a
+// inativar em vez de excluir, em vez de vazar o erro cru do Postgres.
+async function deleteRow(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  table: string,
+  id: string,
+  blockedMessage: string,
+): Promise<void> {
+  const { error } = await supabase.from(table).delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") throw new Error(blockedMessage);
+    throw new Error(error.message);
+  }
+}
+
 // ── Setores ──────────────────────────────────────────────────────────────
 
 const sectorSchema = z.object({
@@ -65,6 +84,23 @@ export const setInternalTicketSectorActive = createServerFn({ method: "POST" })
       .update({ active: data.active })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteInternalTicketSector = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => deleteByIdSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const supabase = db(context.supabase);
+    // Exclui em cascata as pessoas cadastradas neste setor (FK ON DELETE
+    // CASCADE) — a confirmação no client já avisa disso antes de chamar.
+    await deleteRow(
+      supabase,
+      "internal_ticket_sectors",
+      data.id,
+      "Não é possível excluir: há tickets vinculados a este setor (atuais ou no histórico). Inative o setor em vez de excluir.",
+    );
     return { ok: true };
   });
 
@@ -130,6 +166,24 @@ export const setInternalTicketSectorPersonActive = createServerFn({ method: "POS
     return { ok: true };
   });
 
+export const deleteInternalTicketSectorPerson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => deleteByIdSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const supabase = db(context.supabase);
+    // Sem risco de perder histórico: internal_ticket_recipients guarda um
+    // snapshot (nome/e-mail) e só perde o vínculo com esta linha (ON DELETE
+    // SET NULL); internal_ticket_sectors.manager_person_id idem.
+    await deleteRow(
+      supabase,
+      "internal_ticket_sector_people",
+      data.id,
+      "Não foi possível excluir esta pessoa.",
+    );
+    return { ok: true };
+  });
+
 // ── Categorias ───────────────────────────────────────────────────────────
 
 const categorySchema = z.object({
@@ -175,5 +229,20 @@ export const setInternalTicketCategoryActive = createServerFn({ method: "POST" }
       .update({ active: data.active })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteInternalTicketCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => deleteByIdSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const supabase = db(context.supabase);
+    await deleteRow(
+      supabase,
+      "internal_ticket_categories",
+      data.id,
+      "Não é possível excluir: há tickets vinculados a esta categoria. Inative a categoria em vez de excluir.",
+    );
     return { ok: true };
   });

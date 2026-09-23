@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ import {
 import {
   upsertInternalTicketCategory,
   setInternalTicketCategoryActive,
+  deleteInternalTicketCategory,
 } from "@/lib/internal-tickets/admin.functions";
 import { listSectors, listCategories, type Category } from "@/lib/internal-tickets/queries";
 
@@ -88,6 +89,21 @@ export function CategoriesTab() {
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : "Falha ao atualizar categoria"),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteInternalTicketCategory({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Categoria excluída");
+      qc.invalidateQueries({ queryKey: ["internal-ticket-categories"] });
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir categoria"),
+  });
+
+  function handleDelete(category: Category) {
+    if (!confirm(`Excluir a categoria "${category.name}"?`)) return;
+    deleteMutation.mutate(category.id);
+  }
 
   function openCreate() {
     setForm(EMPTY_FORM);
@@ -226,6 +242,14 @@ export function CategoriesTab() {
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(category)}>
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => handleDelete(category)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>

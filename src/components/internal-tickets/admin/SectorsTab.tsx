@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import {
 import {
   upsertInternalTicketSector,
   setInternalTicketSectorActive,
+  deleteInternalTicketSector,
 } from "@/lib/internal-tickets/admin.functions";
 import { listSectors, listSectorPeople, type Sector } from "@/lib/internal-tickets/queries";
 
@@ -91,6 +92,27 @@ export function SectorsTab() {
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : "Falha ao atualizar setor"),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteInternalTicketSector({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Setor excluído");
+      qc.invalidateQueries({ queryKey: ["internal-ticket-sectors"] });
+      qc.invalidateQueries({ queryKey: ["internal-ticket-sector-people"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao excluir setor"),
+  });
+
+  function handleDelete(sector: Sector) {
+    if (
+      !confirm(
+        `Excluir o setor "${sector.name}"? Isso também exclui todas as pessoas cadastradas nele. Setores com tickets vinculados (atuais ou no histórico) não podem ser excluídos.`,
+      )
+    ) {
+      return;
+    }
+    deleteMutation.mutate(sector.id);
+  }
 
   function openEdit(sector: Sector) {
     setForm({
@@ -231,6 +253,14 @@ export function SectorsTab() {
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(sector)}>
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => handleDelete(sector)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>

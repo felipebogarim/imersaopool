@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ import {
 import {
   upsertInternalTicketSectorPerson,
   setInternalTicketSectorPersonActive,
+  deleteInternalTicketSectorPerson,
 } from "@/lib/internal-tickets/admin.functions";
 import { listSectors, listSectorPeople, type SectorPerson } from "@/lib/internal-tickets/queries";
 
@@ -106,6 +107,21 @@ export function PeopleTab() {
     onError: (e: unknown) =>
       toast.error(e instanceof Error ? e.message : "Falha ao atualizar pessoa"),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteInternalTicketSectorPerson({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pessoa excluída");
+      qc.invalidateQueries({ queryKey: ["internal-ticket-sector-people"] });
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir pessoa"),
+  });
+
+  function handleDelete(person: SectorPerson) {
+    if (!confirm(`Excluir "${person.name}"?`)) return;
+    deleteMutation.mutate(person.id);
+  }
 
   function openCreate() {
     const sectorId = sectorFilter !== "all" ? sectorFilter : (sectorsQuery.data?.[0]?.id ?? "");
@@ -297,6 +313,14 @@ export function PeopleTab() {
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(person)}>
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => handleDelete(person)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
               </TableRow>
