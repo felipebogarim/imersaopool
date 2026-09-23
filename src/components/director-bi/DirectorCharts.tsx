@@ -28,32 +28,34 @@ function pct(value: number, total: number) {
 export function StatusDonutChart({ data }: { data: DirectorStatusCount[] }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   return (
-    <div className="rounded-xl border bg-card p-3">
+    <div className="rounded-xl border bg-card p-2.5">
       <h3 className="text-sm font-semibold">Status das ações</h3>
       <p className="text-xs text-muted-foreground">Distribuição das ações por status</p>
-      <div className="mt-2 flex flex-col items-center gap-2 sm:flex-row">
-        <ChartContainer config={statusConfig} className="mx-auto aspect-square h-[130px] w-[130px]">
-          <PieChart>
-            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={38}
-              outerRadius={60}
-              strokeWidth={2}
-            >
-              {data.map((item) => (
-                <Cell key={item.bucket} fill={STATUS_COLOR[item.bucket]} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-        <div className="relative -mt-[90px] flex flex-col items-center sm:absolute sm:left-[65px] sm:mt-0">
-          <span className="text-lg font-bold tabular-nums">{total}</span>
-          <span className="text-[10px] text-muted-foreground">ações</span>
+      <div className="mt-1.5 flex items-center gap-2">
+        <div className="relative h-[92px] w-[92px] shrink-0">
+          <ChartContainer config={statusConfig} className="aspect-auto h-full w-full">
+            <PieChart>
+              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="label"
+                innerRadius={32}
+                outerRadius={46}
+                strokeWidth={2}
+              >
+                {data.map((item) => (
+                  <Cell key={item.bucket} fill={STATUS_COLOR[item.bucket]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-base font-bold tabular-nums">{total}</span>
+            <span className="text-[9px] text-muted-foreground">ações</span>
+          </div>
         </div>
-        <ul className="w-full flex-1 space-y-1 text-sm">
+        <ul className="min-w-0 flex-1 space-y-1 text-sm">
           {data.map((item) => (
             <li key={item.bucket} className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-2">
