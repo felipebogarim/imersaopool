@@ -24,15 +24,15 @@ function Kpi({
   percent?: number;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-3">
-      <div className="flex items-start gap-2.5">
+    <div className="rounded-xl border bg-card p-2.5">
+      <div className="flex items-start gap-2">
         <div
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
             iconClassName,
           )}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
@@ -41,7 +41,7 @@ function Kpi({
               <span className="text-[10px] text-muted-foreground">{percent}%</span>
             )}
           </div>
-          <div className="text-3xl font-bold leading-tight tabular-nums">{value}</div>
+          <div className="text-2xl font-bold leading-tight tabular-nums">{value}</div>
           <div className="text-[10px] text-muted-foreground">{hint}</div>
           {barClassName !== undefined && percent !== undefined && (
             <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
@@ -60,7 +60,7 @@ function Kpi({
 export function DirectorKpiRow({ kpis }: { kpis: DirectorKpis }) {
   const { total, inProgress, overdue, completed, activeResponsibles } = kpis;
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2">
       <Kpi
         icon={PlayCircle}
         label="Em andamento"
@@ -71,15 +71,6 @@ export function DirectorKpiRow({ kpis }: { kpis: DirectorKpis }) {
         percent={pct(inProgress, total)}
       />
       <Kpi
-        icon={AlertTriangle}
-        label="Atrasadas"
-        value={overdue}
-        hint={`de ${total} ações no total`}
-        iconClassName="bg-destructive/15 text-destructive"
-        barClassName="bg-destructive"
-        percent={pct(overdue, total)}
-      />
-      <Kpi
         icon={CheckCircle2}
         label="Concluídas"
         value={completed}
@@ -87,6 +78,15 @@ export function DirectorKpiRow({ kpis }: { kpis: DirectorKpis }) {
         iconClassName="bg-emerald-500/15 text-emerald-600"
         barClassName="bg-emerald-500"
         percent={pct(completed, total)}
+      />
+      <Kpi
+        icon={AlertTriangle}
+        label="Atrasadas"
+        value={overdue}
+        hint={`de ${total} ações no total`}
+        iconClassName="bg-destructive/15 text-destructive"
+        barClassName="bg-destructive"
+        percent={pct(overdue, total)}
       />
       <Kpi
         icon={Users}

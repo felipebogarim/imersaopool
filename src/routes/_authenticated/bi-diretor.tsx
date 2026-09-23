@@ -14,11 +14,10 @@ import {
 } from "@/components/ui/select";
 import { ExecutiveTable } from "@/components/director-bi/ExecutiveTable";
 import { DirectorKpiRow } from "@/components/director-bi/DirectorKpis";
-import { StatusDonutChart, ResponsibleBarChart } from "@/components/director-bi/DirectorCharts";
+import { StatusDonutChart } from "@/components/director-bi/DirectorCharts";
 import { useDirectorBI } from "@/hooks/useDirectorBI";
 import {
   DIRECTOR_AREAS,
-  computeActionsByResponsible,
   computeDirectorKpis,
   computeStatusBreakdown,
   filterDirectorActions,
@@ -52,7 +51,6 @@ function BIDiretorPage() {
   );
   const kpis = useMemo(() => computeDirectorKpis(areaActions), [areaActions]);
   const statusBreakdown = useMemo(() => computeStatusBreakdown(areaActions), [areaActions]);
-  const byResponsible = useMemo(() => computeActionsByResponsible(areaActions), [areaActions]);
   const filteredByStatus = filterDirectorActions(actions, area, status, representative);
   const searchTerm = normalize(search.trim());
   const filtered = searchTerm
@@ -96,28 +94,32 @@ function BIDiretorPage() {
         }
       />
       <div className="mx-auto max-w-[1600px] space-y-3 bg-muted/30 px-3 py-3 sm:px-6 lg:px-8">
-        {!query.isPending && !query.isError && (
-          <>
-            <DirectorKpiRow kpis={kpis} />
-            <div className="grid gap-3 lg:grid-cols-2">
-              <StatusDonutChart data={statusBreakdown} />
-              <ResponsibleBarChart data={byResponsible} />
-            </div>
-          </>
-        )}
         <Tabs value={area} onValueChange={(value) => setArea(value as ExecArea)}>
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:w-fit sm:grid-cols-4">
-            {DIRECTOR_AREAS.map((key) => (
-              <TabsTrigger
-                key={key}
-                value={key}
-                className="rounded-md px-4 py-2 text-xs font-medium uppercase tracking-wide data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                {AREA_LABEL[key]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <div className="my-3 flex flex-wrap items-end gap-4">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_1fr_1fr]">
+            <div className="rounded-xl border bg-card p-2">
+              <p className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Área
+              </p>
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-transparent p-0 lg:grid-cols-1">
+                {DIRECTOR_AREAS.map((key) => (
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    className="justify-start rounded-lg border px-3 py-2 text-xs font-medium uppercase tracking-wide data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                  >
+                    {AREA_LABEL[key]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            {!query.isPending && !query.isError && (
+              <>
+                <StatusDonutChart data={statusBreakdown} />
+                <DirectorKpiRow kpis={kpis} />
+              </>
+            )}
+          </div>
+          <div className="my-3 flex flex-wrap items-end gap-3">
             <fieldset>
               <legend className="mb-2 text-xs font-medium text-muted-foreground">Status</legend>
               <div className="flex flex-wrap gap-1">
@@ -152,38 +154,37 @@ function BIDiretorPage() {
                 })}
               </div>
             </fieldset>
-            <div className="relative w-full sm:ml-auto sm:w-72">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar ação, responsável ou palavra-chave…"
-                className="pl-8"
-              />
-            </div>
-            {area === "commercial" && (
-              <div className="w-full sm:w-64">
-                <label
-                  htmlFor="director-representative"
-                  className="mb-2 block text-xs font-medium text-muted-foreground"
-                >
-                  Representante Comercial
-                </label>
-                <Select value={representative} onValueChange={setRepresentative}>
-                  <SelectTrigger id="director-representative">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os representantes</SelectItem>
-                    {query.data?.reps.map((rep) => (
-                      <SelectItem key={rep.id} value={rep.id}>
-                        {rep.nome || "Representante sem nome"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-1 flex-wrap items-end justify-end gap-2">
+              {area === "commercial" && (
+                <div className="w-full sm:w-52">
+                  <label htmlFor="director-representative" className="sr-only">
+                    Representante Comercial
+                  </label>
+                  <Select value={representative} onValueChange={setRepresentative}>
+                    <SelectTrigger id="director-representative" className="h-9 text-xs">
+                      <SelectValue placeholder="Representante" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os representantes</SelectItem>
+                      {query.data?.reps.map((rep) => (
+                        <SelectItem key={rep.id} value={rep.id}>
+                          {rep.nome || "Representante sem nome"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar ação, responsável ou palavra-chave…"
+                  className="pl-8"
+                />
               </div>
-            )}
+            </div>
           </div>
           {DIRECTOR_AREAS.map((key) => (
             <TabsContent key={key} value={key}>
