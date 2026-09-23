@@ -19,10 +19,13 @@ import {
   listCategories,
   listClientsLite,
   listProductsLite,
+  listSectorPeople,
   listSectors,
 } from "@/lib/internal-tickets/queries";
 import { MultiSelectCombobox } from "@/components/internal-tickets/MultiSelectCombobox";
 import { SingleSelectCombobox } from "@/components/internal-tickets/SingleSelectCombobox";
+import { RecipientsPreview } from "@/components/internal-tickets/RecipientsPreview";
+import { resolveSectorRecipients } from "@/lib/internal-tickets/recipients";
 import {
   TICKET_PRIORITIES,
   TICKET_PRIORITY_LABEL,
@@ -50,6 +53,10 @@ function NewTicketPage() {
     queryKey: ["internal-ticket-products-lite"],
     queryFn: listProductsLite,
   });
+  const sectorPeopleQuery = useQuery({
+    queryKey: ["internal-ticket-sector-people"],
+    queryFn: listSectorPeople,
+  });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -75,8 +82,17 @@ function NewTicketPage() {
     if (category?.default_sector_id) setSectorId(category.default_sector_id);
   }
 
+  const { principal, cc } = useMemo(
+    () => resolveSectorRecipients(sectorPeopleQuery.data ?? [], sectorId),
+    [sectorPeopleQuery.data, sectorId],
+  );
+
   const canSubmit =
-    title.trim().length >= 3 && description.trim().length > 0 && categoryId && sectorId;
+    title.trim().length >= 3 &&
+    description.trim().length > 0 &&
+    categoryId &&
+    sectorId &&
+    Boolean(principal);
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -172,6 +188,8 @@ function NewTicketPage() {
             </Select>
           </div>
         </div>
+
+        {sectorId && <RecipientsPreview principal={principal} cc={cc} />}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">

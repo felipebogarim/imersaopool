@@ -78,6 +78,26 @@ export const createInternalTicket = createServerFn({ method: "POST" })
     if (categoryError) throw new Error(categoryError.message);
     if (sectorError) throw new Error(sectorError.message);
 
+    // Mesmo filtro (setor + active + receives_new_tickets + is_primary_recipient)
+    // usado em sendInternalTicket — checado aqui também pra não criar o
+    // ticket quando o envio, na sequência, com certeza vai falhar. Evita
+    // deixar um ticket "aberto" órfão (criado mas nunca de fato enviado).
+    const { data: sectorPeoplePreview, error: sectorPeopleError } = await supabase
+      .from("internal_ticket_sector_people")
+      .select("is_primary_recipient")
+      .eq("sector_id", data.sectorId)
+      .eq("active", true)
+      .eq("receives_new_tickets", true);
+    if (sectorPeopleError) throw new Error(sectorPeopleError.message);
+    const hasPrincipalRecipient = (sectorPeoplePreview ?? []).some(
+      (p: { is_primary_recipient: boolean }) => p.is_primary_recipient,
+    );
+    if (!hasPrincipalRecipient) {
+      throw new Error(
+        "Este setor não possui um destinatário principal configurado para receber novos tickets. Configure um responsável antes de enviar a solicitação.",
+      );
+    }
+
     const firstResponseMinutes = resolveEffectiveSlaMinutes(
       sector.default_sla_first_response_minutes,
       category.sla_first_response_minutes,
@@ -198,7 +218,7 @@ export const sendInternalTicket = createServerFn({ method: "POST" })
     const ccPeople = sectorPeople.filter((p) => p.is_cc && !p.is_primary_recipient);
     if (toPeople.length === 0) {
       throw new Error(
-        `Nenhum destinatário principal configurado para o setor ${sector.name}. Cadastre pessoas em Admin → Solicitações Internas.`,
+        "Este setor não possui um destinatário principal configurado para receber novos tickets. Configure um responsável antes de enviar a solicitação.",
       );
     }
 

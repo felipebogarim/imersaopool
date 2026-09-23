@@ -149,15 +149,31 @@ function TicketDetailPage() {
         </div>
 
         {recipientsQuery.data && recipientsQuery.data.length > 0 && (
-          <div className="rounded-lg border p-3 text-xs">
-            <p className="mb-1 font-medium text-muted-foreground">Destinatários</p>
-            <ul className="space-y-0.5">
-              {recipientsQuery.data.map((r) => (
-                <li key={r.id}>
-                  {r.name_snapshot ?? r.email} ({r.email}) — {r.role}
-                </li>
+          <div className="space-y-2 rounded-lg border p-3 text-xs">
+            {recipientsQuery.data
+              .filter((r) => r.role === "principal")
+              .map((r) => (
+                <div key={r.id}>
+                  <p className="mb-0.5 font-medium text-muted-foreground">Enviado para</p>
+                  <p>
+                    {r.name_snapshot ?? r.email} ({r.email})
+                  </p>
+                </div>
               ))}
-            </ul>
+            {recipientsQuery.data.some((r) => r.role === "copia") && (
+              <div>
+                <p className="mb-0.5 font-medium text-muted-foreground">Em cópia</p>
+                <ul className="space-y-0.5">
+                  {recipientsQuery.data
+                    .filter((r) => r.role === "copia")
+                    .map((r) => (
+                      <li key={r.id}>
+                        {r.name_snapshot ?? r.email} ({r.email})
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
