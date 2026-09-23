@@ -17,6 +17,7 @@ Na ordem (todas em `supabase/migrations/`, prefixo `202609231`/`202609232`…):
 5. `20260923110000_internal_tickets_dashboard_nav_permission.sql`
 6. `20260923120000_internal_tickets_attachments_storage.sql`
 7. `20260923130000_internal_tickets_security_hardening.sql`
+8. `20260923140000_internal_tickets_seed_categories.sql`
 
 Aplicar via `supabase db push` (CLI conectada ao projeto) ou colando o SQL no
 editor do Supabase Dashboard, nesta ordem exata — a migration 2 precisa
@@ -36,6 +37,11 @@ Cadastro, Financeiro, Trade, Diretoria) **sem nenhuma pessoa vinculada**, por
 instrução explícita do briefing original. Sem isso, `sendInternalTicket`
 falha com "Nenhum destinatário principal configurado" para qualquer setor.
 Cadastrar em **Admin → Solicitações Internas → Pessoas**.
+
+As 7 categorias iniciais (migration 8, sourced dos exemplos do briefing
+original) já vêm com `default_sector_id` preenchido — revisar/editar/
+desativar/adicionar em **Admin → Solicitações Internas → Categorias**
+conforme a necessidade real do time.
 
 ## 3. Conta Resend
 

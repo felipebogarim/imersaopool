@@ -129,9 +129,17 @@ function NewTicketPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Categoria</Label>
-            <Select value={categoryId} onValueChange={onCategoryChange}>
+            <Select
+              value={categoryId}
+              onValueChange={onCategoryChange}
+              disabled={activeCategories.length === 0}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
+                <SelectValue
+                  placeholder={
+                    activeCategories.length === 0 ? "Nenhuma categoria cadastrada" : "Selecione"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {activeCategories.map((c) => (
@@ -141,6 +149,12 @@ function NewTicketPage() {
                 ))}
               </SelectContent>
             </Select>
+            {categoriesQuery.isSuccess && activeCategories.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma categoria ativa. Peça a um admin para cadastrar em Admin → Solicitações
+                Internas.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Setor responsável</Label>
