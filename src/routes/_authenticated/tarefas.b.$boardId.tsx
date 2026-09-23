@@ -224,47 +224,49 @@ function BoardPage() {
           <div className="h-6 w-2 rounded" style={{ background: board?.color ?? "#3B82F6" }} />
           <h2 className="font-semibold">{board?.name ?? "Board"}</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none sm:justify-end">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpenExecutionMembers(true)}>
             <Users className="h-4 w-4" /> Membros
           </Button>
 
-          <Select value={fStatus} onValueChange={setFStatus}>
-            <SelectTrigger className="h-8 w-[190px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="aprovada">Aprovada</SelectItem>
-              <SelectItem value="pendente">Aguardando aprovação</SelectItem>
-              <SelectItem value="reprovada">Reprovada</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <Select value={fStatus} onValueChange={setFStatus}>
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[190px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="aprovada">Aprovada</SelectItem>
+                <SelectItem value="pendente">Aguardando aprovação</SelectItem>
+                <SelectItem value="reprovada">Reprovada</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={fClient} onValueChange={setFClient}>
-            <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Cliente" /></SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value="all">Todos os clientes</SelectItem>
-              {clientOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+            <Select value={fClient} onValueChange={setFClient}>
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[170px]"><SelectValue placeholder="Cliente" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">Todos os clientes</SelectItem>
+                {clientOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-          <Select value={fRep} onValueChange={setFRep}>
-            <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue placeholder="Representante" /></SelectTrigger>
-            <SelectContent className="max-h-72">
-              <SelectItem value="all">Todos os representantes</SelectItem>
-              {repOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
+            <Select value={fRep} onValueChange={setFRep}>
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[170px]"><SelectValue placeholder="Representante" /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">Todos os representantes</SelectItem>
+                {repOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-          <Select value={fPriority} onValueChange={setFPriority}>
-            <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas prioridades</SelectItem>
-              <SelectItem value="urgente">Urgente</SelectItem>
-              <SelectItem value="alta">Alta</SelectItem>
-              <SelectItem value="media">Média</SelectItem>
-              <SelectItem value="baixa">Baixa</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={fPriority} onValueChange={setFPriority}>
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[140px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas prioridades</SelectItem>
+                <SelectItem value="urgente">Urgente</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="baixa">Baixa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {hasFilters && (
             <Button
