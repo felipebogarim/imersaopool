@@ -51,10 +51,10 @@ export function TicketOpenedEmail({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Img src="cid:newline-logo" alt="Newline" width="154" style={logo} />
+            <Img src="cid:newline-logo" alt="Newline" width="108" style={logo} />
           </Section>
           <Section style={content}>
-            <Img src="cid:newline-icon" alt="" width="48" height="48" style={systemIcon} />
+            <Img src="cid:newline-icon" alt="" width="7" height="7" style={systemIcon} />
             <Text style={eyebrow}>SOLICITAÇÕES INTERNAS</Text>
             <Heading style={h1}>
               Eu sou o Sistema de solicitações internas Newline. Há uma nova solicitação destinada a
@@ -127,9 +127,9 @@ const container = {
   overflow: "hidden",
 };
 const header = { backgroundColor: "#071a2b", padding: "22px 28px" };
-const logo = { display: "block", maxWidth: "154px" };
+const logo = { display: "block", width: "108px", maxWidth: "108px", height: "auto" };
 const content = { padding: "30px 28px 10px" };
-const systemIcon = { display: "block", margin: "0 0 16px" };
+const systemIcon = { display: "block", margin: "0 0 16px", width: "7px", height: "7px" };
 const eyebrow = {
   color: "#177f8f",
   fontSize: "11px",
