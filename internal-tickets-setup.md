@@ -131,13 +131,13 @@ ficam com `provider_reconciliation_required` para conferência manual.
 
 ## 4.1 Assets inline do e-mail de abertura
 
-Antes do deploy real, colocar os PNGs oficiais em:
+Os PNGs oficiais ficam versionados no repositório em:
 
-- `public/email-assets/logo-newline.png`
-- `public/email-assets/icon-newline.png`
+- `src/lib/internal-tickets/email/assets/logo-newline.png`
+- `src/lib/internal-tickets/email/assets/icon-newline.png`
 
-O envio falha explicitamente se algum arquivo estiver ausente. As imagens são
-enviadas inline com CID; não há fallback para URL pública.
+Eles são incorporados diretamente ao bundle do servidor via Vite (`?inline`), garantindo compatibilidade com o runtime Cloudflare Worker sem nenhuma dependência do sistema de arquivos (`node:fs` / `process.cwd()`). As imagens são enviadas inline com CID; não há fallback para URL pública.
+
 
 ## 5. Checklist de validação ponta-a-ponta (fazer manualmente após os passos acima)
 

@@ -1,10 +1,9 @@
 # Assets inline do e-mail Newline
 
-Antes de publicar o envio real, colocar nesta pasta os PNGs oficiais:
+Os PNGs oficiais do e-mail Newline agora ficam versionados em:
 
-- `logo-newline.png`
-- `icon-newline.png`
+- `src/lib/internal-tickets/email/assets/logo-newline.png`
+- `src/lib/internal-tickets/email/assets/icon-newline.png`
 
-O servidor lê estes arquivos e os envia ao Resend como anexos inline com os
-Content-IDs `newline-logo` e `newline-icon`. Não substituir por imagens
-geradas ou URLs públicas.
+Eles são incorporados diretamente ao bundle server via Vite (`?inline`) sem dependência de filesystem local.
+Content-IDs: `newline-logo` e `newline-icon`. Não substituir por imagens geradas ou URLs públicas.

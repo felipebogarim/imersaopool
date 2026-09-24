@@ -1,35 +1,24 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import iconNewlineDataUrl from "./assets/icon-newline.png?inline";
+import logoNewlineDataUrl from "./assets/logo-newline.png?inline";
 import type { EmailAttachment } from "./types";
 
-const ASSETS = [
-  {
-    filename: "logo-newline.png",
-    contentId: "newline-logo",
-  },
-  {
-    filename: "icon-newline.png",
-    contentId: "newline-icon",
-  },
-] as const;
+function cleanBase64(dataUrl: string): string {
+  return dataUrl.replace(/^data:image\/png;base64,/, "");
+}
 
 export async function loadNewlineInlineAssets(): Promise<EmailAttachment[]> {
-  return Promise.all(
-    ASSETS.map(async (asset) => {
-      const filePath = resolve(process.cwd(), "public", "email-assets", asset.filename);
-      try {
-        const content = await readFile(filePath);
-        return {
-          filename: asset.filename,
-          content: content.toString("base64"),
-          contentType: "image/png",
-          contentId: asset.contentId,
-        };
-      } catch (error) {
-        throw new Error(`Asset Newline ausente: public/email-assets/${asset.filename}`, {
-          cause: error,
-        });
-      }
-    }),
-  );
+  return [
+    {
+      filename: "logo-newline.png",
+      content: cleanBase64(logoNewlineDataUrl),
+      contentType: "image/png",
+      contentId: "newline-logo",
+    },
+    {
+      filename: "icon-newline.png",
+      content: cleanBase64(iconNewlineDataUrl),
+      contentType: "image/png",
+      contentId: "newline-icon",
+    },
+  ];
 }
