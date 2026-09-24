@@ -104,3 +104,13 @@ export async function saveDirectorRepNote(input: DirectorRepNoteInput): Promise<
     throw error;
   }
 }
+
+export async function clearDirectorRepNote(representativeId: string): Promise<void> {
+  return saveDirectorRepNote({
+    representative_id: representativeId,
+    last_immersion: null,
+    general_perception: null,
+    perceived_opportunities: null,
+    notes: null,
+  });
+}

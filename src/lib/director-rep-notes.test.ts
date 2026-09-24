@@ -9,7 +9,11 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: mocks.from, auth: { getUser: mocks.getUser } },
 }));
 
-import { fetchDirectorRepNotes, saveDirectorRepNote } from "./director-rep-notes";
+import {
+  clearDirectorRepNote,
+  fetchDirectorRepNotes,
+  saveDirectorRepNote,
+} from "./director-rep-notes";
 
 function result(data: unknown, error: unknown = null) {
   const query: Record<string, ReturnType<typeof vi.fn>> = {};
@@ -67,6 +71,27 @@ describe("acompanhamento de representantes do BI Diretor", () => {
         general_perception: "Percepção",
         perceived_opportunities: "Oportunidade",
         notes: "Nota",
+        company_id: "company",
+        updated_by: "master",
+      },
+      { onConflict: "representative_id" },
+    );
+  });
+
+  it("limpa todos os campos de acompanhamento sem excluir o representante", async () => {
+    const profile = result({ active_company_id: "company" });
+    const write = result(null);
+    mocks.from.mockReturnValueOnce(profile).mockReturnValueOnce(write);
+
+    await clearDirectorRepNote("rep");
+
+    expect(write.upsert).toHaveBeenCalledWith(
+      {
+        representative_id: "rep",
+        last_immersion: null,
+        general_perception: null,
+        perceived_opportunities: null,
+        notes: null,
         company_id: "company",
         updated_by: "master",
       },
