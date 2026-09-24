@@ -47,6 +47,7 @@ export async function sendTicketAuthenticated(
 
   let result: { providerMessageId: string; messageId: string };
   try {
+    requirePreparedValue(prepared.requester_email, "requester_email");
     const { sendTicketOpenedEmail } =
       await import("@/lib/internal-tickets/email/send-ticket-email.server");
     result = await sendTicketOpenedEmail(

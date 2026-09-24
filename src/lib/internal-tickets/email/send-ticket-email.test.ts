@@ -36,6 +36,7 @@ describe("sendTicketOpenedEmail", () => {
     expect(provider.sent[0]).toMatchObject({
       idempotencyKey: BASE_INPUT.idempotencyKey,
       messageId: BASE_INPUT.messageId,
+      from: "Solicitações Internas <chamados@chamados.poolflux.app>",
       to: ["setor@fornecedor.com"],
       subject: "Solicitação interna Newline",
       replyTo: "r+11111111111141118111111111111111.ca7f5bbf73c0fa729b246b6d@chamados.poolflux.app",
@@ -55,7 +56,9 @@ describe("sendTicketOpenedEmail", () => {
     expect(provider.sent[0]?.html).toContain("logo-newline.png");
     expect(provider.sent[0]?.html).toContain("icon-newline.png");
     expect(provider.sent[0]?.html).toContain("Quem solicita:");
+    expect(provider.sent[0]?.html).toContain("Felipe");
     expect(provider.sent[0]?.html).toContain("Destinatário:");
+    expect(provider.sent[0]?.html).toContain("Marina");
     expect(provider.sent[0]?.html).toContain("Newline · Solicitações Internas");
   });
 

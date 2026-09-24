@@ -18,9 +18,10 @@ const prepared = {
   sector_name: "Engenharia",
   category_name: "Produto",
   requester_name: "Comercial",
+  requester_email: "solicitante@newline.com.br",
   recipient_name: "Destinatário",
   to: ["destinatario@example.com"],
-  cc: ["solicitante@newline.com.br"],
+  cc: ["copia@newline.com.br", "solicitante@newline.com.br"],
 };
 
 type RpcResult = { data: unknown; error: { message: string } | null };
@@ -59,7 +60,10 @@ describe("sendTicketAuthenticated", () => {
     );
 
     expect(provider.sent).toHaveLength(1);
-    expect(provider.sent[0]?.cc).toEqual(["solicitante@newline.com.br"]);
+    expect(provider.sent[0]?.to).toEqual(["destinatario@example.com"]);
+    expect(provider.sent[0]?.cc).toEqual(["copia@newline.com.br", "solicitante@newline.com.br"]);
+    expect(provider.sent[0]?.cc).not.toContain("destinatario@example.com");
+    expect(provider.sent[0]?.html).toContain("Destinatário");
     expect(client.calls.map((call) => call.name)).toEqual([
       "internal_ticket_prepare_send_authenticated",
       "internal_ticket_mark_send_success_authenticated",
@@ -76,6 +80,25 @@ describe("sendTicketAuthenticated", () => {
       sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
     ).rejects.toThrow("Falha simulada");
 
+    expect(client.calls.map((call) => call.name)).toEqual([
+      "internal_ticket_prepare_send_authenticated",
+      "internal_ticket_mark_send_failure_authenticated",
+    ]);
+  });
+
+  it("contrato sem requester_email falha e libera a tentativa pela RPC de failure", async () => {
+    const client = authenticatedClient({
+      data: { ...prepared, requester_email: undefined },
+      error: null,
+    });
+    const provider = new FakeEmailProvider();
+    const { sendTicketAuthenticated } = await import("./send-ticket.server");
+
+    await expect(
+      sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
+    ).rejects.toThrow("Preparação de envio retornou requester_email inválido");
+
+    expect(provider.sent).toHaveLength(0);
     expect(client.calls.map((call) => call.name)).toEqual([
       "internal_ticket_prepare_send_authenticated",
       "internal_ticket_mark_send_failure_authenticated",
@@ -167,6 +190,52 @@ describe("migration requester CC", () => {
   it("expõe somente o wrapper autenticado e preserva a base interna", () => {
     expect(sql).toMatch(
       /REVOKE ALL ON FUNCTION public\.internal_ticket_prepare_send_authenticated_base\(uuid\)[\s\S]*authenticated/,
+    );
+    expect(sql).toMatch(
+      /GRANT EXECUTE ON FUNCTION public\.internal_ticket_prepare_send_authenticated\(uuid\)[\s\S]*TO authenticated/,
+    );
+  });
+});
+
+describe("migration prepare delivery contract", () => {
+  const sql = readFileSync(
+    resolve(
+      __dirname,
+      "../../../supabase/migrations/20260924150000_internal_ticket_prepare_delivery_contract.sql",
+    ),
+    "utf8",
+  );
+
+  it("deriva recipient_name exclusivamente do snapshot do destinatário principal", () => {
+    expect(sql).toMatch(/SELECT NULLIF\(btrim\(r\.name_snapshot\), ''\)/);
+    expect(sql).toMatch(/r\.ticket_id = p_ticket_id[\s\S]*r\.role = 'principal'/);
+    expect(sql).not.toMatch(/internal_ticket_sector_people/);
+    expect(sql).toContain("'recipient_name', v_recipient_name");
+  });
+
+  it("retorna o e-mail canônico do solicitante derivado no banco", () => {
+    expect(sql).toMatch(
+      /COALESCE\(NULLIF\(btrim\(u\.email\), ''\), NULLIF\(btrim\(p\.email\), ''\)\)/,
+    );
+    expect(sql).toMatch(/t\.requester_user_id/);
+    expect(sql).toContain("'requester_email', v_requester_email");
+  });
+
+  it("preserva CCs, inclui o solicitante e deduplica sem diferenciar caixa", () => {
+    expect(sql).toContain("jsonb_array_elements_text(COALESCE(v_payload->'cc'");
+    expect(sql).toContain("SELECT v_requester_email");
+    expect(sql).toContain("GROUP BY lower(btrim(source.email))");
+  });
+
+  it("não mantém em CC endereço que já esteja em TO", () => {
+    expect(sql).toMatch(
+      /NOT EXISTS[\s\S]*jsonb_array_elements_text\(COALESCE\(v_payload->'to'[\s\S]*lower\(btrim\(recipient\.value\)\) = lower\(btrim\(source\.email\)\)/,
+    );
+  });
+
+  it("mantém a RPC restrita a authenticated", () => {
+    expect(sql).toMatch(
+      /REVOKE ALL ON FUNCTION public\.internal_ticket_prepare_send_authenticated\(uuid\)[\s\S]*FROM public, anon, service_role/,
     );
     expect(sql).toMatch(
       /GRANT EXECUTE ON FUNCTION public\.internal_ticket_prepare_send_authenticated\(uuid\)[\s\S]*TO authenticated/,
