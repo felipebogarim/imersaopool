@@ -18,8 +18,9 @@ const prepared = {
   sector_name: "Engenharia",
   category_name: "Produto",
   requester_name: "Comercial",
+  recipient_name: "Destinatário",
   to: ["destinatario@example.com"],
-  cc: [],
+  cc: ["solicitante@newline.com.br"],
 };
 
 type RpcResult = { data: unknown; error: { message: string } | null };
@@ -58,6 +59,7 @@ describe("sendTicketAuthenticated", () => {
     );
 
     expect(provider.sent).toHaveLength(1);
+    expect(provider.sent[0]?.cc).toEqual(["solicitante@newline.com.br"]);
     expect(client.calls.map((call) => call.name)).toEqual([
       "internal_ticket_prepare_send_authenticated",
       "internal_ticket_mark_send_success_authenticated",
@@ -137,6 +139,38 @@ describe("sendTicketAuthenticated", () => {
       "internal_ticket_mark_send_success_authenticated",
       "internal_ticket_mark_send_success_authenticated",
     ]);
+  });
+});
+
+describe("migration requester CC", () => {
+  const sql = readFileSync(
+    resolve(
+      __dirname,
+      "../../../supabase/migrations/20260924140000_internal_ticket_requester_cc.sql",
+    ),
+    "utf8",
+  );
+
+  it("mantém as cópias existentes e inclui profiles.email com fallback para auth.users.email", () => {
+    expect(sql).toContain("jsonb_array_elements_text(COALESCE(v_payload->'cc'");
+    expect(sql).toContain("NULLIF(btrim(p.email), '')");
+    expect(sql).toContain("NULLIF(btrim(u.email), '')");
+    expect(sql).toContain("SELECT v_requester_email");
+    expect(sql).toContain("GROUP BY lower(btrim(source.email))");
+  });
+
+  it("impede o envio quando não existe e-mail do solicitante", () => {
+    expect(sql).toContain("IF v_requester_email IS NULL THEN");
+    expect(sql).toContain("E-mail corporativo do solicitante não cadastrado");
+  });
+
+  it("expõe somente o wrapper autenticado e preserva a base interna", () => {
+    expect(sql).toMatch(
+      /REVOKE ALL ON FUNCTION public\.internal_ticket_prepare_send_authenticated_base\(uuid\)[\s\S]*authenticated/,
+    );
+    expect(sql).toMatch(
+      /GRANT EXECUTE ON FUNCTION public\.internal_ticket_prepare_send_authenticated\(uuid\)[\s\S]*TO authenticated/,
+    );
   });
 });
 

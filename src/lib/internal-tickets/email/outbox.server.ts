@@ -21,6 +21,7 @@ export type PreparedTicketSend = {
   sector_name?: string;
   category_name?: string;
   requester_name?: string;
+  recipient_name?: string;
   to?: string[];
   cc?: string[];
 };

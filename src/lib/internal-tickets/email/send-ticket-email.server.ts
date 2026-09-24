@@ -7,7 +7,7 @@ import { buildReplyAddressForTicket } from "./reply-address.server";
 import { TicketOpenedEmail, type TicketOpenedEmailProps } from "./templates/ticket-opened";
 import type { EmailProvider } from "./types";
 
-export type SendTicketOpenedEmailInput = TicketOpenedEmailProps & {
+export type SendTicketOpenedEmailInput = Omit<TicketOpenedEmailProps, "logoUrl" | "iconUrl"> & {
   ticketId: string;
   idempotencyKey?: string;
   messageId?: string | null;
@@ -20,6 +20,15 @@ export type SendTicketOpenedEmailInput = TicketOpenedEmailProps & {
  * e transição do ticket pertencem ao orquestrador autenticado.
  */
 export const TICKET_OPENED_KEY_PREFIX = "ticket-opened:";
+export const TICKET_OPENED_SUBJECT = "Solicitação interna Newline";
+
+function getNewlineAssetUrls() {
+  const baseUrl = (process.env.PUBLIC_SITE_URL || "https://poolflux.app").replace(/\/+$/, "");
+  return {
+    logoUrl: `${baseUrl}/email-assets/logo-newline.png`,
+    iconUrl: `${baseUrl}/email-assets/icon-newline.png`,
+  };
+}
 
 /** Identidade de saída do e-mail de abertura — usada também pela criação atômica (outbox pending). */
 export function buildTicketOpenedIdentity() {
@@ -42,9 +51,12 @@ export async function sendTicketOpenedEmail(
   const { sender: from, messageId: generatedMessageId } = buildTicketOpenedIdentity();
   const messageId = input.messageId ?? generatedMessageId;
   const replyTo = buildReplyAddressForTicket(input.ticketId);
-  const subject = `[${input.ticketNumber}] ${input.title}`;
+  const subject = TICKET_OPENED_SUBJECT;
 
-  const element = React.createElement(TicketOpenedEmail, input);
+  const element = React.createElement(TicketOpenedEmail, {
+    ...input,
+    ...getNewlineAssetUrls(),
+  });
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
 
   const provider = providerOverride ?? (await getEmailProvider());

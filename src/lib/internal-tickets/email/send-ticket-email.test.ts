@@ -9,6 +9,7 @@ const BASE_INPUT = {
   categoryName: "Customização de produto",
   priorityLabel: "Alta",
   requesterName: "Felipe",
+  recipientName: "Marina",
   dueAtLabel: null,
   idempotencyKey: "ticket-opened:11111111-1111-1111-1111-111111111111",
   messageId: "<persisted@internal-tickets.local>",
@@ -36,9 +37,26 @@ describe("sendTicketOpenedEmail", () => {
       idempotencyKey: BASE_INPUT.idempotencyKey,
       messageId: BASE_INPUT.messageId,
       to: ["setor@fornecedor.com"],
+      subject: "Solicitação interna Newline",
       replyTo: "r+11111111111141118111111111111111.ca7f5bbf73c0fa729b246b6d@chamados.poolflux.app",
     });
     expect(result.providerMessageId).toBe(`fake-${BASE_INPUT.idempotencyKey}`);
+  });
+
+  it("renderiza a identidade e os textos Newline no HTML", async () => {
+    stubReplyEnv();
+    vi.stubEnv("PUBLIC_SITE_URL", "https://app.newline.example");
+    const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
+    const { FakeEmailProvider } = await import("./fake-provider");
+    const provider = new FakeEmailProvider();
+
+    await sendTicketOpenedEmail(BASE_INPUT, provider);
+
+    expect(provider.sent[0]?.html).toContain("logo-newline.png");
+    expect(provider.sent[0]?.html).toContain("icon-newline.png");
+    expect(provider.sent[0]?.html).toContain("Quem solicita:");
+    expect(provider.sent[0]?.html).toContain("Destinatário:");
+    expect(provider.sent[0]?.html).toContain("Newline · Solicitações Internas");
   });
 
   it("propaga falha do provider para o orquestrador registrar", async () => {

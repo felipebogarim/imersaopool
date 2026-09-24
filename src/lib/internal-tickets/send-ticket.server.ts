@@ -57,8 +57,9 @@ export async function sendTicketAuthenticated(
         description: requirePreparedValue(prepared.description, "description"),
         sectorName: requirePreparedValue(prepared.sector_name, "sector_name"),
         categoryName: prepared.category_name ?? "—",
-        priorityLabel: TICKET_PRIORITY_LABEL[priority],
+        priorityLabel: priority === "normal" ? "Média" : TICKET_PRIORITY_LABEL[priority],
         requesterName: prepared.requester_name ?? "Comercial",
+        recipientName: requirePreparedValue(prepared.recipient_name, "recipient_name"),
         dueAtLabel: prepared.sla_first_response_due_at
           ? new Date(prepared.sla_first_response_due_at).toLocaleString("pt-BR")
           : null,
