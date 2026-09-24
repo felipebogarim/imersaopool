@@ -44,6 +44,21 @@ Aplicar via `supabase db push` (CLI conectada ao projeto) ou colando o SQL no
 editor do Supabase Dashboard, nesta ordem exata — a migration `160000` precisa
 commitar antes das demais usarem os valores de enum novos.
 
+### Rollout em duas fases (compatibilidade com o runtime antigo)
+
+**Fase de compatibilidade:** runtime antigo (main) + banco novo (170000–190000)
+convivem temporariamente. A `170000` **não** revoga `UPDATE` de `authenticated`
+em `internal_tickets`, pois o runtime antigo ainda atualiza `status` e
+`sector_id` diretamente. Os INSERTs técnicos de mensagens e anexos já ficam
+protegidos por grants de coluna.
+
+**Hardening final:** `REVOKE UPDATE ON public.internal_tickets FROM authenticated`
+somente depois de 170000–190000 aplicadas, runtime novo publicado e
+status/reatribuição validados em produção via
+`internal_ticket_update_status_authenticated` e
+`internal_ticket_reassign_authenticated`. Essa migration ainda **não existe**
+(criar só então, para que um `db push` não a aplique cedo demais).
+
 Depois de aplicar, **regenerar `src/integrations/supabase/types.ts`** (`supabase
 gen types typescript`). Isso elimina a necessidade dos `as any` espalhados
 pelo módulo (documentados inline com o motivo, buscar por

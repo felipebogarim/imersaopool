@@ -6,9 +6,9 @@ const migration = (name: string) =>
   readFileSync(resolve(process.cwd(), "supabase/migrations", name), "utf8");
 
 describe("contrato SQL de hardening EMAIL-FIRST", () => {
-  it("impede authenticated de falsificar SLA, provider e scan", () => {
+  it("protege INSERT técnico de mensagens e anexos sem revogar UPDATE de tickets (compatibilidade)", () => {
     const sql = migration("20260924170000_internal_ticket_email_first_schema.sql");
-    expect(sql).toContain("REVOKE UPDATE ON public.internal_tickets FROM authenticated");
+    expect(sql).not.toMatch(/^\s*REVOKE\s+UPDATE\s+ON\s+(TABLE\s+)?public\.internal_tickets\b/im);
     expect(sql).toContain("REVOKE INSERT ON public.internal_ticket_messages FROM authenticated");
     expect(sql).toContain("REVOKE INSERT ON public.internal_ticket_attachments FROM authenticated");
     expect(sql).not.toMatch(/GRANT INSERT \([^)]*scan_status/is);
@@ -24,6 +24,19 @@ describe("contrato SQL de hardening EMAIL-FIRST", () => {
     expect(stale).toBeGreaterThan(update);
     expect(outbound).toBeGreaterThan(stale);
     expect(sql).toContain("provider_reconciliation_required");
+  });
+
+  it("expõe RPCs autenticadas de status e reatribuição e o código novo não faz UPDATE direto", () => {
+    const sql = migration("20260924180000_internal_ticket_email_first_rpcs.sql");
+    const application = readFileSync(
+      resolve(process.cwd(), "src/lib/internal-tickets/ticket-actions.functions.ts"),
+      "utf8",
+    );
+    expect(sql).toContain("internal_ticket_update_status_authenticated");
+    expect(sql).toContain("internal_ticket_reassign_authenticated");
+    expect(application).toContain('"internal_ticket_update_status_authenticated"');
+    expect(application).toContain('"internal_ticket_reassign_authenticated"');
+    expect(application).not.toMatch(/\.from\("internal_tickets"\)\s*\.update\(/);
   });
 
   it("reatribui setor e participantes em uma RPC autenticada", () => {

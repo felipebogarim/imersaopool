@@ -190,11 +190,18 @@ GRANT ALL ON public.internal_ticket_webhook_events TO service_role;
 GRANT ALL ON public.internal_ticket_relay_deliveries TO service_role;
 GRANT ALL ON public.internal_ticket_message_signals TO service_role;
 
--- Campos operacionais são escritos exclusivamente pelas RPCs SECURITY DEFINER
--- e pelo service_role. RLS limita linhas, mas não limita colunas: sem estes
--- grants um usuário com acesso ao ticket poderia falsificar SLA, provider ou
--- estado de scan por chamadas diretas ao PostgREST.
-REVOKE UPDATE ON public.internal_tickets FROM authenticated;
+-- Campos técnicos de mensagens e anexos (provider, scan_status etc.) são
+-- escritos exclusivamente pelas RPCs SECURITY DEFINER e pelo service_role. RLS
+-- limita linhas, não colunas: sem os grants por coluna abaixo, um usuário com
+-- acesso ao ticket poderia falsificá-los por chamadas diretas ao PostgREST.
+-- Esses INSERTs técnicos já ficam protegidos nesta migration.
+--
+-- FASE DE COMPATIBILIDADE: o UPDATE de authenticated em internal_tickets
+-- permanece TEMPORARIAMENTE disponível porque o runtime antigo (main) ainda
+-- atualiza status e sector_id diretamente. O REVOKE UPDATE só deve ser aplicado,
+-- em migration própria, depois que o runtime novo estiver publicado e validado
+-- usando internal_ticket_update_status_authenticated e
+-- internal_ticket_reassign_authenticated.
 
 REVOKE INSERT ON public.internal_ticket_messages FROM authenticated;
 GRANT INSERT (
