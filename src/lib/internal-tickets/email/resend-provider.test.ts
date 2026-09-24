@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildReplyAddress } from "./reply-address";
 import { ResendEmailProvider } from "./resend-provider.server";
 import type { SendEmailInput } from "./types";
 
@@ -7,7 +8,11 @@ const INPUT: SendEmailInput = {
   from: "Solicitações Internas <chamados@chamados.poolflux.app>",
   to: ["principal@example.com"],
   cc: ["copia@example.com"],
-  replyTo: "reply+token@chamados.poolflux.app",
+  replyTo: buildReplyAddress(
+    "11111111-1111-4111-8111-111111111111",
+    "test-secret",
+    "chamados.poolflux.app",
+  ),
   subject: "[SOL-000009] Teste",
   html: "<p>Teste</p>",
   text: "Teste",

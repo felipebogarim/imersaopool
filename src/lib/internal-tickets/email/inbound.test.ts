@@ -23,7 +23,7 @@ describe("parseInboundEmailData", () => {
   it("lê headers no formato array [{name, value}]", () => {
     const parsed = parseInboundEmailData({
       from: "setor@fornecedor.com",
-      to: ["reply+abc.def@chamados.poolflux.app"],
+      to: ["r+11111111111141118111111111111111.0123456789abcdef01234567@chamados.poolflux.app"],
       subject: "Re: [SOL-000001] título",
       text: "corpo",
       headers: [
@@ -32,7 +32,9 @@ describe("parseInboundEmailData", () => {
       ],
     });
     expect(parsed.from).toBe("setor@fornecedor.com");
-    expect(parsed.to).toEqual(["reply+abc.def@chamados.poolflux.app"]);
+    expect(parsed.to).toEqual([
+      "r+11111111111141118111111111111111.0123456789abcdef01234567@chamados.poolflux.app",
+    ]);
     expect(parsed.messageId).toBe("<reply-1@fornecedor.com>");
     expect(parsed.inReplyTo).toBe("<orig@chamados.poolflux.app>");
     expect(parsed.references).toEqual(["<orig@chamados.poolflux.app>"]);
@@ -41,10 +43,12 @@ describe("parseInboundEmailData", () => {
   it("lê headers no formato objeto {nome: valor}", () => {
     const parsed = parseInboundEmailData({
       from: "a@b.com",
-      to: "reply+x.y@chamados.poolflux.app",
+      to: "r+22222222222242228222222222222222.89abcdef0123456789abcdef@chamados.poolflux.app",
       headers: { "Message-ID": "<m1@b.com>", References: "<r1@x> <r2@x>" },
     });
-    expect(parsed.to).toEqual(["reply+x.y@chamados.poolflux.app"]);
+    expect(parsed.to).toEqual([
+      "r+22222222222242228222222222222222.89abcdef0123456789abcdef@chamados.poolflux.app",
+    ]);
     expect(parsed.messageId).toBe("<m1@b.com>");
     expect(parsed.references).toEqual(["<r1@x>", "<r2@x>"]);
   });

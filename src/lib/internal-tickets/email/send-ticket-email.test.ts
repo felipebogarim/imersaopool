@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./reply-address.server", () => ({
-  buildReplyAddressForTicket: (ticketId: string) => `reply+${ticketId}.fake@chamados.poolflux.app`,
-}));
-
 const BASE_INPUT = {
-  ticketId: "11111111-1111-1111-1111-111111111111",
+  ticketId: "11111111-1111-4111-8111-111111111111",
   ticketNumber: "SOL-000001",
   title: "Pintura especial",
   description: "Cliente pediu pintura customizada",
@@ -22,8 +18,13 @@ const BASE_INPUT = {
 describe("sendTicketOpenedEmail", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("envia pelo provider recebido sem acessar banco ou outbox", async () => {
+  function stubReplyEnv() {
     vi.stubEnv("INTERNAL_TICKETS_REPLY_DOMAIN", "chamados.poolflux.app");
+    vi.stubEnv("INTERNAL_TICKETS_REPLY_SECRET", "test-secret");
+  }
+
+  it("envia ao provider o replyTo real sem mockar o builder", async () => {
+    stubReplyEnv();
     const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider();
@@ -35,13 +36,13 @@ describe("sendTicketOpenedEmail", () => {
       idempotencyKey: BASE_INPUT.idempotencyKey,
       messageId: BASE_INPUT.messageId,
       to: ["setor@fornecedor.com"],
-      replyTo: `reply+${BASE_INPUT.ticketId}.fake@chamados.poolflux.app`,
+      replyTo: "r+11111111111141118111111111111111.ca7f5bbf73c0fa729b246b6d@chamados.poolflux.app",
     });
     expect(result.providerMessageId).toBe(`fake-${BASE_INPUT.idempotencyKey}`);
   });
 
   it("propaga falha do provider para o orquestrador registrar", async () => {
-    vi.stubEnv("INTERNAL_TICKETS_REPLY_DOMAIN", "chamados.poolflux.app");
+    stubReplyEnv();
     const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider({ failNextWith: new Error("Provider indisponível") });
@@ -52,7 +53,7 @@ describe("sendTicketOpenedEmail", () => {
   });
 
   it("rejeita antes do provider quando não há destinatário", async () => {
-    vi.stubEnv("INTERNAL_TICKETS_REPLY_DOMAIN", "chamados.poolflux.app");
+    stubReplyEnv();
     const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider();
