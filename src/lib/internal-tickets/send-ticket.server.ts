@@ -9,6 +9,19 @@ function requirePreparedValue<T>(value: T | null | undefined, name: string): T {
   return value;
 }
 
+async function confirmSendSuccess(confirm: () => Promise<void>, maxAttempts = 3): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await confirm();
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 export async function sendTicketAuthenticated(
   context: FnContext,
   ticketId: string,
@@ -70,7 +83,11 @@ export async function sendTicketAuthenticated(
 
   // O provider já aceitou o envio. Se a confirmação transacional falhar,
   // não marque a outbox como failed (isso mentiria sobre o resultado externo).
-  await markTicketSendSuccess(context.supabase, ticketId, attemptToken, result.providerMessageId);
+  // A RPC é idempotente; retries curtos reduzem a janela em que o provider
+  // aceitou o e-mail mas a outbox ainda não recebeu a confirmação.
+  await confirmSendSuccess(() =>
+    markTicketSendSuccess(context.supabase, ticketId, attemptToken, result.providerMessageId),
+  );
   console.info(`[INTERNAL_TICKETS_EMAIL] send success ticket=${ticketId}`);
   return { ok: true, ticketId, status: "enviado", alreadySent: false };
 }

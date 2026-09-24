@@ -105,6 +105,39 @@ describe("sendTicketAuthenticated", () => {
     ]);
     expect(result.alreadySent).toBe(true);
   });
+
+  it("repete somente a confirmação local quando o provider já aceitou o envio", async () => {
+    const calls: string[] = [];
+    let successAttempts = 0;
+    const client = {
+      rpc: async (name: string): Promise<RpcResult> => {
+        calls.push(name);
+        if (name === "internal_ticket_prepare_send_authenticated") {
+          return { data: prepared, error: null };
+        }
+        if (name === "internal_ticket_mark_send_success_authenticated") {
+          successAttempts += 1;
+          return successAttempts === 1
+            ? { data: null, error: { message: "conexão interrompida" } }
+            : { data: { ok: true }, error: null };
+        }
+        return { data: { ok: true }, error: null };
+      },
+    };
+    const provider = new FakeEmailProvider();
+    const { sendTicketAuthenticated } = await import("./send-ticket.server");
+
+    await expect(
+      sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
+    ).resolves.toMatchObject({ ok: true, status: "enviado" });
+
+    expect(provider.sent).toHaveLength(1);
+    expect(calls).toEqual([
+      "internal_ticket_prepare_send_authenticated",
+      "internal_ticket_mark_send_success_authenticated",
+      "internal_ticket_mark_send_success_authenticated",
+    ]);
+  });
 });
 
 describe("migration authenticated send", () => {
