@@ -25,10 +25,10 @@ BEGIN
     RETURN v_payload;
   END IF;
 
-  -- auth.users.email é a identidade de login usada pela aplicação. profiles.email
-  -- é uma cópia sincronizada pelo cadastro/admin e serve de fallback legado.
+  -- profiles.email é a fonte preferencial do e-mail corporativo cadastrado na
+  -- plataforma. auth.users.email serve como fallback.
   SELECT
-    COALESCE(NULLIF(btrim(u.email), ''), NULLIF(btrim(p.email), '')),
+    COALESCE(NULLIF(btrim(p.email), ''), NULLIF(btrim(u.email), '')),
     COALESCE(
       NULLIF(btrim(p.full_name), ''),
       NULLIF(btrim(u.email), ''),
