@@ -61,14 +61,47 @@ describe("parseInboundEmailData", () => {
   it("tolera payload sem headers/campos opcionais", () => {
     const parsed = parseInboundEmailData({});
     expect(parsed).toEqual({
+      emailId: "",
+      receivedAt: null,
       from: "",
       to: [],
+      cc: [],
       subject: null,
       text: null,
       html: null,
       messageId: null,
       inReplyTo: null,
       references: [],
+      headers: {},
+      attachments: [],
+      authentication: {},
+    });
+  });
+
+  it("lê o contrato oficial do email.received e metadados de anexos", () => {
+    const parsed = parseInboundEmailData({
+      email_id: "received-1",
+      from: "Felipe <felipe@example.com>",
+      to: ["ticket@example.com"],
+      cc: ["angelica@example.com"],
+      message_id: "<message@example.com>",
+      attachments: [
+        {
+          id: "attachment-1",
+          filename: "brief.pdf",
+          content_type: "application/pdf",
+          size: 42,
+        },
+      ],
+    });
+    expect(parsed.emailId).toBe("received-1");
+    expect(parsed.cc).toEqual(["angelica@example.com"]);
+    expect(parsed.messageId).toBe("<message@example.com>");
+    expect(parsed.attachments[0]).toMatchObject({
+      id: "attachment-1",
+      filename: "brief.pdf",
+      contentType: "application/pdf",
+      size: 42,
     });
   });
 });

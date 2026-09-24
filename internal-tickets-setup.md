@@ -1,32 +1,24 @@
 # Solicitações Internas — configuração manual pendente
 
-Este módulo (schema, e-mail, webhook, admin, dashboard) está implementado e
-validado por `npm run build` + `npx tsc --noEmit` + testes unitários, mas
-**nada foi aplicado a um banco real nem a uma conta Resend real**. Este
-documento lista exatamente o que falta configurar manualmente antes de usar
-em produção — ninguém deve fazer isso automaticamente sem revisão humana.
+Este documento lista as ações externas que continuam manuais. As migrations
+`20260924140000` e `20260924150000` já foram aplicadas no Lovable Cloud. O
+Receiving EMAIL-FIRST permanece desativado e suas novas migrations ainda não
+foram aplicadas.
 
 ## 1. Aplicar as migrations
 
-Na ordem (todas em `supabase/migrations/`, prefixo `202609231`/`202609232`…):
+Para publicar a arquitetura EMAIL-FIRST, aplicar somente estas novas migrations,
+na ordem, depois de confirmar que o histórico anterior até `20260924150000`
+consta no banco:
 
-1. `20260923080000_internal_ticket_email_outbox.sql`
-2. `20260923090000_internal_tickets_app_role_values.sql`
-3. `20260923090100_internal_tickets_core_schema.sql`
-4. `20260923100000_internal_tickets_nav_permissions.sql`
-5. `20260923110000_internal_tickets_dashboard_nav_permission.sql`
-6. `20260923120000_internal_tickets_attachments_storage.sql`
-7. `20260923130000_internal_tickets_security_hardening.sql`
-8. `20260923140000_internal_tickets_seed_categories.sql`
-9. `20260923150000_internal_tickets_person_phone.sql`
-10. `20260923160000_internal_tickets_sector_stops.sql`
-11. `20260923170000_internal_tickets_products.sql`
-12. `20260923180000_internal_tickets_single_principal.sql`
+1. `20260924160000_internal_ticket_email_first_enums.sql`
+2. `20260924170000_internal_ticket_email_first_schema.sql`
+3. `20260924180000_internal_ticket_email_first_rpcs.sql`
+4. `20260924190000_internal_ticket_email_first_opening_message.sql`
 
 Aplicar via `supabase db push` (CLI conectada ao projeto) ou colando o SQL no
-editor do Supabase Dashboard, nesta ordem exata — a migration 2 precisa
-commitar antes da 3 usar os valores de enum que ela cria (não dá pra rodar as
-duas na mesma transação).
+editor do Supabase Dashboard, nesta ordem exata — a migration `160000` precisa
+commitar antes das demais usarem os valores de enum novos.
 
 Depois de aplicar, **regenerar `src/integrations/supabase/types.ts`** (`supabase
 gen types typescript`). Isso elimina a necessidade dos `as any` espalhados
@@ -63,18 +55,11 @@ conforme a necessidade real do time.
    `https://<seu-domínio>/api/public/internal-tickets/resend-webhook`,
    assinando os eventos: `email.sent`, `email.delivered`,
    `email.delivery_delayed`, `email.bounced`, `email.complained`,
-   `email.failed`, e o evento de inbound (ver aviso abaixo). Copiar o
+   `email.failed` e `email.received`. Copiar o
    **signing secret** (`whsec_...`) gerado pela Resend/Svix.
-
-   ⚠️ **O nome do evento inbound (`email.received`) e o formato do payload
-   inbound usados em `src/lib/internal-tickets/email/inbound.ts` foram
-   assumidos com base em conhecimento geral da Resend, sem uma chamada real
-   de API para confirmar** — a conta usada neste projeto não tem inbound
-   configurado. Antes de habilitar em produção: configurar o inbound de
-   teste na Resend, mandar um e-mail de teste, capturar o payload real do
-   webhook e comparar com `parseInboundEmailData()`. Ajustar nomes de campo
-   se necessário — a lógica de correlação (reply-address → Message-ID/
-   References) não muda, só a extração dos campos do payload.
+5. Não habilitar Receiving até o runtime com as quatro migrations estar
+   publicado. O webhook traz metadados; o runtime recupera corpo, headers e
+   anexos em `GET /emails/receiving/:email_id` e endpoints de attachments.
 
 ## 4. Variáveis de ambiente
 
@@ -82,25 +67,34 @@ Nenhuma tem valor real configurado hoje. Definir no ambiente de execução
 (Lovable Cloud / Supabase secrets, conforme o projeto já usa para as outras
 `process.env.*` deste repositório):
 
-| Variável | Valor |
-|---|---|
-| `RESEND_API_KEY` | API key gerada no passo 3.3 |
-| `RESEND_WEBHOOK_SECRET` | signing secret (`whsec_...`) do passo 3.4 |
-| `INTERNAL_TICKETS_REPLY_DOMAIN` | o subdomínio verificado no passo 3.2 |
+| Variável                        | Valor                                                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`                | API key gerada no passo 3.3                                                                                                                  |
+| `RESEND_WEBHOOK_SECRET`         | signing secret (`whsec_...`) do passo 3.4                                                                                                    |
+| `INTERNAL_TICKETS_REPLY_DOMAIN` | o subdomínio verificado no passo 3.2                                                                                                         |
 | `INTERNAL_TICKETS_REPLY_SECRET` | um segredo aleatório novo (ex. `openssl rand -hex 32`) — assina o token do endereço de resposta; nunca reaproveitar outro segredo do projeto |
-| `INTERNAL_TICKETS_EMAIL_MODE` | deixar **ausente** em produção (usa Resend real). Definir como `mock` em ambiente de teste/staging para usar o provider em memória (`FakeEmailProvider`) sem custo nem credencial — ver Fase 7 |
+| `INTERNAL_TICKETS_EMAIL_MODE`   | definir explicitamente `resend` em produção; `mock` usa o provider em memória em teste/staging                                               |
+
+`SUPABASE_SERVICE_ROLE_KEY` não deve ser criada, copiada para o cliente ou
+inventada na VPS. O endpoint importa o cliente privilegiado somente no servidor;
+o deploy deve usar a credencial gerenciada pelo Lovable Cloud. Se o runtime
+publicado não a receber, Receiving deve permanecer desativado até a integração
+de infraestrutura ser corrigida.
 
 ## 5. Checklist de validação ponta-a-ponta (fazer manualmente após os passos acima)
 
 - [ ] Logar como usuário com role `comercial`, criar um ticket em
       `/solicitacoes/novo`, confirmar que o e-mail chega ao destinatário
       cadastrado no setor.
-- [ ] Responder o e-mail recebido e confirmar que a resposta aparece na
-      timeline do ticket em `/solicitacoes/$ticketId`.
-- [ ] Clicar em cada uma das 5 ações do link público (se os botões de ação
-      forem adicionados ao template depois — hoje o e-mail só orienta a
-      responder diretamente) e confirmar transição de status + registro de
-      evento.
+- [ ] Usar **Responder** como principal: solicitante recebe exatamente um relay.
+- [ ] Usar **Responder a todos** com solicitante em CC: solicitante não recebe relay duplicado.
+- [ ] Adicionar pessoa externa em TO e em CC; confirmar participação futura.
+- [ ] Repetir o mesmo webhook e confirmar uma mensagem e um relay por destinatário.
+- [ ] Testar HMAC inválido, remetente desconhecido e autoresposta: todos sem relay.
+- [ ] Confirmar threading em Gmail, Outlook e Apple Mail.
+- [ ] Confirmar que somente a resposta do principal encerra o SLA de primeira resposta.
+- [ ] Indicar conclusão, testar ambos os magic links, expiração e reuso.
+- [ ] Enviar anexo seguro e um arquivo acima de 20 MB; o texto deve ser processado nos dois casos.
 - [ ] Confirmar que um clique duplo/reload no link de ação não duplica o
       efeito (token já usado).
 - [ ] Verificar `internal_ticket_email_outbox` no banco: status "sent" após
@@ -113,7 +107,7 @@ Nenhuma tem valor real configurado hoje. Definir no ambiente de execução
       usuário sem acesso àquele ticket não consegue baixar o arquivo pela
       URL assinada (RLS do Storage).
 
-## 6. Riscos residuais conhecidos (revisados, aceitos por ora — ver PROJECT_BRAIN)
+## 6. Riscos residuais conhecidos
 
 - RLS garante **quem** pode alterar a linha de um ticket, mas não impede um
   usuário autorizado de fazer um `PATCH` direto via API REST do Supabase
@@ -122,6 +116,8 @@ Nenhuma tem valor real configurado hoje. Definir no ambiente de execução
   aplicação (`tickets.functions.ts`, `public-actions.functions.ts`), não em
   um trigger SQL. Mitigação possível futura: trigger `BEFORE UPDATE` em
   `internal_tickets` espelhando `TRANSITIONS` de `status.ts`.
-- O e-mail de abertura de ticket ainda não tem os 5 botões de ação —
-  destinatários respondem via reply-to normal. Os links de ação pública já
-  funcionam (`/solicitacoes/acao/$token`), só faltam entrar no template.
+- Anexos inbound ficam privados e têm hash/metadata, mas `scan_status` começa
+  como `not_scanned`; antivírus/quarentena de conteúdo é uma integração futura.
+- Relays com falha são retomados por retry do webhook e por lease/idempotência.
+  Antes de alto volume, adicionar um job operacional para varrer relays `failed`
+  após o fim da janela de retries do Resend.

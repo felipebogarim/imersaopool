@@ -34,7 +34,7 @@ function getNewlineAssetUrls() {
 export function buildTicketOpenedIdentity() {
   const domain = getReplyEnv("INTERNAL_TICKETS_REPLY_DOMAIN");
   return {
-    sender: `Solicitações Internas <chamados@${domain}>`,
+    sender: `Solicitações Internas Newline <chamados@${domain}>`,
     messageId: generateMessageId(domain),
   };
 }

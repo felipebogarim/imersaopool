@@ -17,6 +17,9 @@ export const TICKET_ACTIONS = [
   "solicitar_informacao",
   "responder",
   "marcar_concluido",
+  "indicar_conclusao",
+  "confirmar_conclusao",
+  "nao_resolvido",
 ] as const;
 
 export type TicketAction = (typeof TICKET_ACTIONS)[number];
@@ -26,7 +29,10 @@ export const TICKET_ACTION_LABEL: Record<TicketAction, string> = {
   marcar_em_analise: "Marcar como em análise",
   solicitar_informacao: "Solicitar informação ao Comercial",
   responder: "Responder",
-  marcar_concluido: "Informar conclusão",
+  marcar_concluido: "Indicar conclusão",
+  indicar_conclusao: "Indicar conclusão",
+  confirmar_conclusao: "Confirmar conclusão",
+  nao_resolvido: "Ainda não foi resolvido",
 };
 
 /** Ações cujo botão exige um texto (pedido de informação / resposta em si). */
@@ -36,6 +42,9 @@ export const TICKET_ACTION_REQUIRES_TEXT: Record<TicketAction, boolean> = {
   solicitar_informacao: true,
   responder: true,
   marcar_concluido: false,
+  indicar_conclusao: false,
+  confirmar_conclusao: false,
+  nao_resolvido: false,
 };
 
 export function hashActionToken(rawToken: string): string {

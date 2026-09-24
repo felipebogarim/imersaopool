@@ -7,5 +7,8 @@ export const ACTION_TARGET_STATUS: Record<TicketAction, TicketStatus> = {
   marcar_em_analise: "em_analise",
   solicitar_informacao: "aguardando_info_comercial",
   responder: "respondido",
-  marcar_concluido: "concluido",
+  marcar_concluido: "aguardando_validacao",
+  indicar_conclusao: "aguardando_validacao",
+  confirmar_conclusao: "concluido",
+  nao_resolvido: "reaberto",
 };

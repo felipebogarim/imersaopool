@@ -11,7 +11,9 @@ export const TICKET_STATUSES = [
   "em_analise",
   "aguardando_info_comercial",
   "respondido",
+  "aguardando_validacao",
   "concluido",
+  "reaberto",
   "cancelado",
 ] as const;
 
@@ -22,10 +24,12 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
   aberto: "Aberto",
   enviado: "Enviado",
   recebido_pelo_setor: "Recebido pelo setor",
-  em_analise: "Em análise",
+  em_analise: "Em andamento",
   aguardando_info_comercial: "Aguardando informações do Comercial",
   respondido: "Respondido",
+  aguardando_validacao: "Aguardando validação",
   concluido: "Concluído",
+  reaberto: "Reaberto",
   cancelado: "Cancelado",
 };
 
@@ -36,10 +40,12 @@ const TRANSITIONS: Record<TicketStatus, readonly TicketStatus[]> = {
   aberto: ["enviado", "cancelado"],
   enviado: ["recebido_pelo_setor", "cancelado"],
   recebido_pelo_setor: ["em_analise", "cancelado"],
-  em_analise: ["aguardando_info_comercial", "respondido", "concluido", "cancelado"],
+  em_analise: ["aguardando_info_comercial", "respondido", "aguardando_validacao", "cancelado"],
   aguardando_info_comercial: ["em_analise", "cancelado"],
-  respondido: ["em_analise", "concluido", "cancelado"],
-  concluido: ["em_analise", "cancelado"], // reabertura
+  respondido: ["em_analise", "aguardando_validacao", "cancelado"],
+  aguardando_validacao: ["concluido", "reaberto", "cancelado"],
+  concluido: ["reaberto", "cancelado"],
+  reaberto: ["em_analise", "aguardando_validacao", "cancelado"],
   cancelado: [],
 };
 
@@ -93,7 +99,10 @@ export function timestampFieldsForStatus(
 ): Record<string, string> {
   const iso = now.toISOString();
   if (status === "recebido_pelo_setor") return { received_by_sector_at: iso };
-  if (status === "respondido") return { first_response_at: iso };
+  if (status === "aguardando_validacao") {
+    return { resolution_proposed_at: iso, validation_started_at: iso };
+  }
   if (status === "concluido") return { resolved_at: iso };
+  if (status === "reaberto") return { reopened_at: iso };
   return {};
 }

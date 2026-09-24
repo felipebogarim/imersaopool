@@ -20,6 +20,9 @@ export function buildReplyAddressForTicket(ticketId: string): string {
 }
 
 export function parseReplyAddress(address: string): ReplyTokenParseResult {
+  const domain = getReplyEnv("INTERNAL_TICKETS_REPLY_DOMAIN").toLowerCase();
+  const addressDomain = address.trim().toLowerCase().split("@").at(-1);
+  if (addressDomain !== domain) return { valid: false, ticketId: null };
   const token = extractReplyToken(address);
   if (!token) return { valid: false, ticketId: null };
   return parseReplyToken(token, getReplyEnv("INTERNAL_TICKETS_REPLY_SECRET"));

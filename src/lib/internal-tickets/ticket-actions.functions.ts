@@ -68,6 +68,13 @@ export const updateInternalTicketStatus = createServerFn({ method: "POST" })
     });
     if (eventError) throw new Error(eventError.message);
 
+    if (data.toStatus === "aguardando_validacao") {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { sendRequesterValidationEmail } =
+        await import("@/lib/internal-tickets/email/validation-email.server");
+      await sendRequesterValidationEmail(db(supabaseAdmin), data.ticketId);
+    }
+
     return { ok: true, status: data.toStatus };
   });
 
@@ -158,6 +165,12 @@ export const reassignInternalTicketSector = createServerFn({ method: "POST" })
     // (mesma razão da Fase 10) — grava via service role.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = db(supabaseAdmin);
+
+    const { error: participantError } = await admin.rpc(
+      "internal_ticket_sync_sector_participants",
+      { p_ticket_id: data.ticketId, p_sector_id: data.toSectorId },
+    );
+    if (participantError) throw new Error(participantError.message);
 
     const { error: closeError } = await admin
       .from("internal_ticket_sector_stops")

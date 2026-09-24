@@ -5,10 +5,9 @@ import { createHmac, timingSafeEqual } from "crypto";
  * consulta ao banco: o token é o id do ticket + uma assinatura HMAC do
  * próprio id, recomputável a partir do segredo do módulo.
  *
- * Correlação secundária por Message-ID / In-Reply-To / References vive em
- * message-id.ts — o inbound (Fase 4) deve tentar o token primeiro e cair
- * para a correlação por cabeçalho quando o endereço de resposta não puder
- * ser lido (encaminhamentos, clientes de e-mail que reescrevem o From/To).
+ * Message-ID / In-Reply-To / References servem somente ao threading. O
+ * inbound identifica o ticket exclusivamente por este endereço assinado e
+ * nunca aceita subject, header de correlação ou ticket_id livre como prova.
  */
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

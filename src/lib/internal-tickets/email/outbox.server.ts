@@ -65,3 +65,10 @@ export async function markTicketSendFailure(
   });
   if (error) throw new Error(`Falha ao registrar erro de envio: ${error.message}`);
 }
+
+export async function recordOpeningMessage(supabase: unknown, ticketId: string): Promise<void> {
+  const { error } = await db(supabase).rpc("internal_ticket_record_opening_message_authenticated", {
+    p_ticket_id: ticketId,
+  });
+  if (error) throw new Error(`Falha ao registrar mensagem de abertura: ${error.message}`);
+}

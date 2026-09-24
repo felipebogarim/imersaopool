@@ -15,7 +15,7 @@ export const Route = createFileRoute("/solicitacoes/acao/$token")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Confirmar ação — Solicitações Internas PoolFlux" },
+      { title: "Confirmar ação — Solicitações Internas Newline" },
       { name: "robots", content: "noindex" },
     ],
   }),

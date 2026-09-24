@@ -67,6 +67,7 @@ describe("sendTicketAuthenticated", () => {
     expect(client.calls.map((call) => call.name)).toEqual([
       "internal_ticket_prepare_send_authenticated",
       "internal_ticket_mark_send_success_authenticated",
+      "internal_ticket_record_opening_message_authenticated",
     ]);
     expect(result).toEqual({ ok: true, ticketId, status: "enviado", alreadySent: false });
   });
@@ -161,6 +162,7 @@ describe("sendTicketAuthenticated", () => {
       "internal_ticket_prepare_send_authenticated",
       "internal_ticket_mark_send_success_authenticated",
       "internal_ticket_mark_send_success_authenticated",
+      "internal_ticket_record_opening_message_authenticated",
     ]);
   });
 });
@@ -215,7 +217,7 @@ describe("migration prepare delivery contract", () => {
 
   it("retorna o e-mail canônico do solicitante derivado no banco", () => {
     expect(sql).toMatch(
-      /COALESCE\(NULLIF\(btrim\(u\.email\), ''\), NULLIF\(btrim\(p\.email\), ''\)\)/,
+      /COALESCE\(NULLIF\(btrim\(p\.email\), ''\), NULLIF\(btrim\(u\.email\), ''\)\)/,
     );
     expect(sql).toMatch(/t\.requester_user_id/);
     expect(sql).toContain("'requester_email', v_requester_email");

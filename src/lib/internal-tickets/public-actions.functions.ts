@@ -56,7 +56,7 @@ export const getInternalTicketActionInfo = createServerFn({ method: "POST" })
     const tokenHash = hashActionToken(data.token);
     const { data: tokenRow, error: tokenError } = await supabase
       .from("internal_ticket_action_tokens")
-      .select("id, ticket_id, action, expires_at, used_at")
+      .select("id, ticket_id, action, expires_at, used_at, intended_user_id, intended_email")
       .eq("token_hash", tokenHash)
       .maybeSingle();
     if (tokenError) throw new Error(tokenError.message);
@@ -82,6 +82,8 @@ export const getInternalTicketActionInfo = createServerFn({ method: "POST" })
     const currentStatus = ticket.status as TicketStatus;
     const targetStatus = ACTION_TARGET_STATUS[action];
     const alreadyInTargetStatus = currentStatus === targetStatus;
+    const requesterValidationAction =
+      action === "confirmar_conclusao" || action === "nao_resolvido";
 
     return {
       valid: true,
@@ -93,10 +95,11 @@ export const getInternalTicketActionInfo = createServerFn({ method: "POST" })
       sectorName: sector?.name ?? "—",
       currentStatusLabel: TICKET_STATUS_LABEL[currentStatus],
       alreadyInTargetStatus,
-      applicable:
-        alreadyInTargetStatus ||
-        canTransition(currentStatus, targetStatus) ||
-        canReach(currentStatus, targetStatus),
+      applicable: requesterValidationAction
+        ? currentStatus === "aguardando_validacao"
+        : alreadyInTargetStatus ||
+          canTransition(currentStatus, targetStatus) ||
+          canReach(currentStatus, targetStatus),
     };
   });
 
@@ -114,7 +117,7 @@ export const confirmInternalTicketAction = createServerFn({ method: "POST" })
     const tokenHash = hashActionToken(data.token);
     const { data: tokenRow, error: tokenError } = await supabase
       .from("internal_ticket_action_tokens")
-      .select("id, ticket_id, action, expires_at, used_at")
+      .select("id, ticket_id, action, expires_at, used_at, intended_user_id, intended_email")
       .eq("token_hash", tokenHash)
       .maybeSingle();
     if (tokenError) throw new Error(tokenError.message);
@@ -127,18 +130,18 @@ export const confirmInternalTicketAction = createServerFn({ method: "POST" })
       throw new Error("Este campo é obrigatório para esta ação");
     }
 
-    // Reivindica o token atomicamente (WHERE used_at IS NULL) antes de
-    // aplicar qualquer efeito — protege contra duplo clique/corrida sem
-    // precisar de uma transação SQL explícita.
-    const { data: claimed, error: claimError } = await supabase
-      .from("internal_ticket_action_tokens")
-      .update({ used_at: new Date().toISOString() })
-      .eq("id", tokenRow.id)
-      .is("used_at", null)
-      .select("id")
-      .maybeSingle();
-    if (claimError) throw new Error(claimError.message);
-    if (!claimed) throw new Error("Este link já foi usado");
+    if (action === "confirmar_conclusao" || action === "nao_resolvido") {
+      const { data: applied, error: applyError } = await supabase.rpc(
+        "internal_ticket_apply_requester_validation",
+        { p_token_hash: tokenHash },
+      );
+      if (applyError) throw new Error(applyError.message);
+      return {
+        ok: true,
+        ticketNumber: applied.ticket_number as string,
+        status: applied.status as TicketStatus,
+      };
+    }
 
     const { data: ticket, error: ticketError } = await supabase
       .from("internal_tickets")
@@ -160,10 +163,25 @@ export const confirmInternalTicketAction = createServerFn({ method: "POST" })
       );
     }
 
+    // Reivindica o token atomicamente somente depois de validar escopo,
+    // aplicabilidade e expiração. A validação do solicitante usa a RPC acima.
+    const { data: claimed, error: claimError } = await supabase
+      .from("internal_ticket_action_tokens")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", tokenRow.id)
+      .is("used_at", null)
+      .select("id")
+      .maybeSingle();
+    if (claimError) throw new Error(claimError.message);
+    if (!claimed) throw new Error("Este link já foi usado");
+
     if (!alreadyThere) {
       const { error: updateError } = await supabase
         .from("internal_tickets")
-        .update({ status: targetStatus, ...timestampFieldsForStatus(targetStatus) })
+        .update({
+          status: targetStatus,
+          ...timestampFieldsForStatus(targetStatus),
+        })
         .eq("id", ticket.id);
       if (updateError) throw new Error(updateError.message);
     }
@@ -186,6 +204,12 @@ export const confirmInternalTicketAction = createServerFn({ method: "POST" })
       observation: data.note ?? `Ação "${TICKET_ACTION_LABEL[action]}" confirmada via link público`,
     });
     if (eventError) throw new Error(eventError.message);
+
+    if (targetStatus === "aguardando_validacao") {
+      const { sendRequesterValidationEmail } =
+        await import("@/lib/internal-tickets/email/validation-email.server");
+      await sendRequesterValidationEmail(supabase, ticket.id);
+    }
 
     return { ok: true, ticketNumber: ticket.ticket_number as string, status: targetStatus };
   });

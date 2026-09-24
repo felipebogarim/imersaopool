@@ -31,7 +31,7 @@ export async function sendTicketAuthenticated(
   const mode = getEmailMode();
   console.info(`[INTERNAL_TICKETS_EMAIL] provider=${mode}`);
 
-  const { markTicketSendFailure, markTicketSendSuccess, prepareTicketSend } =
+  const { markTicketSendFailure, markTicketSendSuccess, prepareTicketSend, recordOpeningMessage } =
     await import("@/lib/internal-tickets/email/outbox.server");
   const prepared = await prepareTicketSend(context.supabase, ticketId);
 
@@ -90,6 +90,13 @@ export async function sendTicketAuthenticated(
   await confirmSendSuccess(() =>
     markTicketSendSuccess(context.supabase, ticketId, attemptToken, result.providerMessageId),
   );
+  try {
+    await recordOpeningMessage(context.supabase, ticketId);
+  } catch (error) {
+    // Provider + outbox are already confirmed. Never report a false send
+    // failure because only the secondary conversation projection failed.
+    console.error("[INTERNAL_TICKETS_EMAIL] opening message projection failed", error);
+  }
   console.info(`[INTERNAL_TICKETS_EMAIL] send success ticket=${ticketId}`);
   return { ok: true, ticketId, status: "enviado", alreadySent: false };
 }

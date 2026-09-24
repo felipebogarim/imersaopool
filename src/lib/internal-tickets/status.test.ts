@@ -8,11 +8,13 @@ describe("internal-tickets status", () => {
     expect(canTransition("enviado", "recebido_pelo_setor")).toBe(true);
     expect(canTransition("recebido_pelo_setor", "em_analise")).toBe(true);
     expect(canTransition("em_analise", "respondido")).toBe(true);
-    expect(canTransition("respondido", "concluido")).toBe(true);
+    expect(canTransition("respondido", "aguardando_validacao")).toBe(true);
+    expect(canTransition("aguardando_validacao", "concluido")).toBe(true);
   });
 
   it("permite reabrir um ticket concluído", () => {
-    expect(canTransition("concluido", "em_analise")).toBe(true);
+    expect(canTransition("concluido", "reaberto")).toBe(true);
+    expect(canTransition("reaberto", "em_analise")).toBe(true);
   });
 
   it("permite cancelar de qualquer status não terminal", () => {
