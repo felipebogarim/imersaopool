@@ -16,6 +16,21 @@ const BASE_INPUT = {
   to: ["setor@fornecedor.com"],
 };
 
+const INLINE_ASSETS = [
+  {
+    filename: "logo-newline.png",
+    content: "bG9nbw==",
+    contentType: "image/png",
+    contentId: "newline-logo",
+  },
+  {
+    filename: "icon-newline.png",
+    content: "aWNvbg==",
+    contentType: "image/png",
+    contentId: "newline-icon",
+  },
+];
+
 describe("sendTicketOpenedEmail", () => {
   afterEach(() => vi.unstubAllEnvs());
 
@@ -30,7 +45,7 @@ describe("sendTicketOpenedEmail", () => {
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider();
 
-    const result = await sendTicketOpenedEmail(BASE_INPUT, provider);
+    const result = await sendTicketOpenedEmail(BASE_INPUT, provider, INLINE_ASSETS);
 
     expect(provider.sent).toHaveLength(1);
     expect(provider.sent[0]).toMatchObject({
@@ -46,15 +61,15 @@ describe("sendTicketOpenedEmail", () => {
 
   it("renderiza a identidade e os textos Newline no HTML", async () => {
     stubReplyEnv();
-    vi.stubEnv("PUBLIC_SITE_URL", "https://app.newline.example");
     const { sendTicketOpenedEmail } = await import("./send-ticket-email.server");
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider();
 
-    await sendTicketOpenedEmail(BASE_INPUT, provider);
+    await sendTicketOpenedEmail(BASE_INPUT, provider, INLINE_ASSETS);
 
-    expect(provider.sent[0]?.html).toContain("logo-newline.png");
-    expect(provider.sent[0]?.html).toContain("icon-newline.png");
+    expect(provider.sent[0]?.html).toContain("cid:newline-logo");
+    expect(provider.sent[0]?.html).toContain("cid:newline-icon");
+    expect(provider.sent[0]?.attachments).toEqual(INLINE_ASSETS);
     expect(provider.sent[0]?.html).toContain("Quem solicita:");
     expect(provider.sent[0]?.html).toContain("Felipe");
     expect(provider.sent[0]?.html).toContain("Destinatário:");
@@ -68,7 +83,7 @@ describe("sendTicketOpenedEmail", () => {
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider({ failNextWith: new Error("Provider indisponível") });
 
-    await expect(sendTicketOpenedEmail(BASE_INPUT, provider)).rejects.toThrow(
+    await expect(sendTicketOpenedEmail(BASE_INPUT, provider, INLINE_ASSETS)).rejects.toThrow(
       "Provider indisponível",
     );
   });
@@ -79,9 +94,9 @@ describe("sendTicketOpenedEmail", () => {
     const { FakeEmailProvider } = await import("./fake-provider");
     const provider = new FakeEmailProvider();
 
-    await expect(sendTicketOpenedEmail({ ...BASE_INPUT, to: [] }, provider)).rejects.toThrow(
-      "Nenhum destinatário configurado",
-    );
+    await expect(
+      sendTicketOpenedEmail({ ...BASE_INPUT, to: [] }, provider, INLINE_ASSETS),
+    ).rejects.toThrow("Nenhum destinatário configurado");
     expect(provider.sent).toHaveLength(0);
   });
 });

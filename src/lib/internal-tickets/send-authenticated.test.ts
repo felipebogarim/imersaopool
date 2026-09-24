@@ -23,6 +23,20 @@ const prepared = {
   to: ["destinatario@example.com"],
   cc: ["copia@newline.com.br", "solicitante@newline.com.br"],
 };
+const inlineAssets = [
+  {
+    filename: "logo-newline.png",
+    content: "bG9nbw==",
+    contentType: "image/png",
+    contentId: "newline-logo",
+  },
+  {
+    filename: "icon-newline.png",
+    content: "aWNvbg==",
+    contentType: "image/png",
+    contentId: "newline-icon",
+  },
+];
 
 type RpcResult = { data: unknown; error: { message: string } | null };
 
@@ -57,6 +71,7 @@ describe("sendTicketAuthenticated", () => {
       { supabase: client, userId: "user-1" },
       ticketId,
       provider,
+      inlineAssets,
     );
 
     expect(provider.sent).toHaveLength(1);
@@ -78,7 +93,12 @@ describe("sendTicketAuthenticated", () => {
     const { sendTicketAuthenticated } = await import("./send-ticket.server");
 
     await expect(
-      sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
+      sendTicketAuthenticated(
+        { supabase: client, userId: "user-1" },
+        ticketId,
+        provider,
+        inlineAssets,
+      ),
     ).rejects.toThrow("Falha simulada");
 
     expect(client.calls.map((call) => call.name)).toEqual([
@@ -96,7 +116,12 @@ describe("sendTicketAuthenticated", () => {
     const { sendTicketAuthenticated } = await import("./send-ticket.server");
 
     await expect(
-      sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
+      sendTicketAuthenticated(
+        { supabase: client, userId: "user-1" },
+        ticketId,
+        provider,
+        inlineAssets,
+      ),
     ).rejects.toThrow("Preparação de envio retornou requester_email inválido");
 
     expect(provider.sent).toHaveLength(0);
@@ -123,6 +148,7 @@ describe("sendTicketAuthenticated", () => {
       { supabase: client, userId: "user-1" },
       ticketId,
       provider,
+      inlineAssets,
     );
 
     expect(provider.sent).toHaveLength(0);
@@ -154,7 +180,12 @@ describe("sendTicketAuthenticated", () => {
     const { sendTicketAuthenticated } = await import("./send-ticket.server");
 
     await expect(
-      sendTicketAuthenticated({ supabase: client, userId: "user-1" }, ticketId, provider),
+      sendTicketAuthenticated(
+        { supabase: client, userId: "user-1" },
+        ticketId,
+        provider,
+        inlineAssets,
+      ),
     ).resolves.toMatchObject({ ok: true, status: "enviado" });
 
     expect(provider.sent).toHaveLength(1);

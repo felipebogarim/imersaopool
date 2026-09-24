@@ -98,6 +98,7 @@ CREATE TABLE public.internal_ticket_relay_deliveries (
   lease_expires_at timestamptz NULL,
   provider_message_id text NULL,
   message_id text NOT NULL,
+  first_attempt_at timestamptz NULL,
   last_error text NULL,
   sent_at timestamptz NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -148,6 +149,8 @@ ALTER TABLE public.internal_ticket_attachments
   ADD COLUMN content_disposition text NULL,
   ADD COLUMN content_id text NULL,
   ADD COLUMN sha256 text NULL,
+  ADD COLUMN detected_mime_type text NULL,
+  ADD COLUMN mime_mismatch boolean NOT NULL DEFAULT false,
   ADD COLUMN scan_status text NOT NULL DEFAULT 'not_scanned' CHECK (scan_status IN (
     'not_scanned', 'pending', 'clean', 'blocked', 'failed'
   )),
@@ -186,6 +189,24 @@ GRANT ALL ON public.internal_ticket_participants TO service_role;
 GRANT ALL ON public.internal_ticket_webhook_events TO service_role;
 GRANT ALL ON public.internal_ticket_relay_deliveries TO service_role;
 GRANT ALL ON public.internal_ticket_message_signals TO service_role;
+
+-- Campos operacionais são escritos exclusivamente pelas RPCs SECURITY DEFINER
+-- e pelo service_role. RLS limita linhas, mas não limita colunas: sem estes
+-- grants um usuário com acesso ao ticket poderia falsificar SLA, provider ou
+-- estado de scan por chamadas diretas ao PostgREST.
+REVOKE UPDATE ON public.internal_tickets FROM authenticated;
+
+REVOKE INSERT ON public.internal_ticket_messages FROM authenticated;
+GRANT INSERT (
+  ticket_id, direction, origin, author_user_id, sender_email,
+  subject, body_html, body_text
+) ON public.internal_ticket_messages TO authenticated;
+
+REVOKE INSERT ON public.internal_ticket_attachments FROM authenticated;
+GRANT INSERT (
+  ticket_id, message_id, storage_path, file_name, mime_type,
+  size_bytes, uploaded_by
+) ON public.internal_ticket_attachments TO authenticated;
 
 -- Participantes históricos existentes: solicitante (profiles.email preferencial)
 -- e snapshots imutáveis dos destinatários da abertura.

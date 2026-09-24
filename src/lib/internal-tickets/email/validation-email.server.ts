@@ -22,55 +22,27 @@ function escapeHtml(value: string): string {
 }
 
 export async function sendRequesterValidationEmail(supabase: Db, ticketId: string): Promise<void> {
-  const [{ data: ticket, error: ticketError }, { data: requester, error: requesterError }] =
-    await Promise.all([
-      supabase
-        .from("internal_tickets")
-        .select("id, ticket_number, requester_user_id")
-        .eq("id", ticketId)
-        .single(),
-      supabase
-        .from("internal_ticket_participants")
-        .select("email, display_name, user_id")
-        .eq("ticket_id", ticketId)
-        .eq("is_requester", true)
-        .eq("active", true)
-        .limit(1)
-        .single(),
-    ]);
+  const { data: ticket, error: ticketError } = await supabase
+    .from("internal_tickets")
+    .select("id, ticket_number")
+    .eq("id", ticketId)
+    .single();
   if (ticketError) throw new Error(ticketError.message);
-  if (requesterError) throw new Error(requesterError.message);
 
   const confirm = generateActionToken();
   const unresolved = generateActionToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { error: invalidateError } = await supabase
-    .from("internal_ticket_action_tokens")
-    .update({ used_at: new Date().toISOString() })
-    .eq("ticket_id", ticketId)
-    .in("action", ["confirmar_conclusao", "nao_resolvido"])
-    .is("used_at", null);
-  if (invalidateError) throw new Error(invalidateError.message);
-
-  const { error: tokenError } = await supabase.from("internal_ticket_action_tokens").insert([
+  const { data: requester, error: tokenError } = await supabase.rpc(
+    "internal_ticket_issue_requester_validation_tokens",
     {
-      ticket_id: ticketId,
-      action: "confirmar_conclusao",
-      token_hash: confirm.tokenHash,
-      expires_at: expiresAt,
-      intended_user_id: ticket.requester_user_id,
-      intended_email: requester.email,
+      p_ticket_id: ticketId,
+      p_confirm_token_hash: confirm.tokenHash,
+      p_unresolved_token_hash: unresolved.tokenHash,
+      p_expires_at: expiresAt,
     },
-    {
-      ticket_id: ticketId,
-      action: "nao_resolvido",
-      token_hash: unresolved.tokenHash,
-      expires_at: expiresAt,
-      intended_user_id: ticket.requester_user_id,
-      intended_email: requester.email,
-    },
-  ]);
+  );
   if (tokenError) throw new Error(tokenError.message);
+  if (!requester?.requester_email) throw new Error("Solicitante sem e-mail para validação");
 
   const siteUrl = (process.env.PUBLIC_SITE_URL || "https://poolflux.app").replace(/\/+$/, "");
   const confirmUrl = `${siteUrl}/solicitacoes/acao/${confirm.rawToken}`;
@@ -78,7 +50,7 @@ export async function sendRequesterValidationEmail(supabase: Db, ticketId: strin
   const domain = getReplyEnv("INTERNAL_TICKETS_REPLY_DOMAIN");
   const messageId = generateMessageId(domain);
   const subject = `Valide a conclusão da solicitação ${ticket.ticket_number}`;
-  const html = `<p>Olá${requester.display_name ? `, ${escapeHtml(requester.display_name)}` : ""}.</p>
+  const html = `<p>Olá${requester.requester_name ? `, ${escapeHtml(requester.requester_name)}` : ""}.</p>
 <p>A solicitação <strong>${ticket.ticket_number}</strong> foi indicada como resolvida.</p>
 <p><a href="${confirmUrl}">Confirmar conclusão</a></p>
 <p><a href="${unresolvedUrl}">Ainda não foi resolvido</a></p>
@@ -89,7 +61,7 @@ export async function sendRequesterValidationEmail(supabase: Db, ticketId: strin
   const provider = await getEmailProvider();
   const result = await provider.send({
     idempotencyKey,
-    to: [requester.email],
+    to: [requester.requester_email],
     from: `Solicitações Internas Newline <chamados@${domain}>`,
     replyTo: buildReplyAddressForTicket(ticketId),
     subject,
@@ -110,7 +82,7 @@ export async function sendRequesterValidationEmail(supabase: Db, ticketId: strin
       provider_message_id: result.providerMessageId,
       message_id: messageId,
       template_name: "ticket-resolution-validation",
-      recipient_email: requester.email,
+      recipient_email: requester.requester_email,
       sender_email: `chamados@${domain}`,
       subject,
       status: "sent",

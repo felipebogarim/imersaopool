@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import { Download, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAttachmentDownloadUrl } from "@/lib/internal-tickets/attachments";
+import {
+  getAttachmentDownloadUrl,
+  isAttachmentDownloadable,
+} from "@/lib/internal-tickets/attachments";
 import { TICKET_STATUS_LABEL } from "@/lib/internal-tickets/status";
 import type {
   TicketAttachmentRow,
@@ -24,7 +27,7 @@ function formatBytes(bytes: number | null): string {
 
 async function handleDownload(attachment: TicketAttachmentRow) {
   try {
-    const url = await getAttachmentDownloadUrl(attachment.storage_path);
+    const url = await getAttachmentDownloadUrl(attachment.id);
     window.open(url, "_blank", "noopener,noreferrer");
   } catch (err) {
     toast.error(err instanceof Error ? err.message : "Falha ao gerar link do anexo");
@@ -80,6 +83,10 @@ export function TicketTimelineFeed({
               </li>
             );
           }
+          const attachmentAvailable = isAttachmentDownloadable(
+            entry.scan_status,
+            entry.storage_path,
+          );
           return (
             <li key={`attachment-${entry.id}`} className="flex items-center gap-2 text-xs">
               <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
@@ -88,10 +95,16 @@ export function TicketTimelineFeed({
               </span>
               <span>{entry.file_name}</span>
               <span className="text-muted-foreground">{formatBytes(entry.size_bytes)}</span>
+              {!attachmentAvailable && (
+                <span className="text-amber-700">
+                  {entry.scan_status === "blocked" ? "Bloqueado" : "Verificação pendente"}
+                </span>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
+                disabled={!attachmentAvailable}
                 onClick={() => handleDownload(entry)}
               >
                 <Download className="h-3.5 w-3.5" />

@@ -16,6 +16,30 @@ consta no banco:
 3. `20260924180000_internal_ticket_email_first_rpcs.sql`
 4. `20260924190000_internal_ticket_email_first_opening_message.sql`
 
+Antes da `170000`, o resultado desta consulta precisa ser vazio:
+
+```sql
+SELECT ticket_id, message_id, count(*)
+FROM public.internal_ticket_messages
+WHERE message_id IS NOT NULL
+GROUP BY ticket_id, message_id
+HAVING count(*) > 1;
+```
+
+Confirmar também as dependências:
+
+```sql
+SELECT
+  to_regtype('public.internal_ticket_status') AS status_enum,
+  to_regtype('public.internal_ticket_action') AS action_enum,
+  to_regclass('public.internal_tickets') AS tickets,
+  to_regclass('public.internal_ticket_messages') AS messages,
+  to_regclass('public.internal_ticket_attachments') AS attachments,
+  to_regclass('public.internal_ticket_action_tokens') AS action_tokens,
+  to_regprocedure('public.touch_updated_at()') AS touch_updated_at,
+  to_regprocedure('public.internal_ticket_can_access(uuid,uuid)') AS can_access;
+```
+
 Aplicar via `supabase db push` (CLI conectada ao projeto) ou colando o SQL no
 editor do Supabase Dashboard, nesta ordem exata — a migration `160000` precisa
 commitar antes das demais usarem os valores de enum novos.
@@ -67,19 +91,38 @@ Nenhuma tem valor real configurado hoje. Definir no ambiente de execução
 (Lovable Cloud / Supabase secrets, conforme o projeto já usa para as outras
 `process.env.*` deste repositório):
 
-| Variável                        | Valor                                                                                                                                        |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY`                | API key gerada no passo 3.3                                                                                                                  |
-| `RESEND_WEBHOOK_SECRET`         | signing secret (`whsec_...`) do passo 3.4                                                                                                    |
-| `INTERNAL_TICKETS_REPLY_DOMAIN` | o subdomínio verificado no passo 3.2                                                                                                         |
-| `INTERNAL_TICKETS_REPLY_SECRET` | um segredo aleatório novo (ex. `openssl rand -hex 32`) — assina o token do endereço de resposta; nunca reaproveitar outro segredo do projeto |
-| `INTERNAL_TICKETS_EMAIL_MODE`   | definir explicitamente `resend` em produção; `mock` usa o provider em memória em teste/staging                                               |
+| Variável                          | Valor                                                                                                                                        |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RESEND_API_KEY`                  | API key gerada no passo 3.3                                                                                                                  |
+| `RESEND_WEBHOOK_SECRET`           | signing secret (`whsec_...`) do passo 3.4                                                                                                    |
+| `INTERNAL_TICKETS_REPLY_DOMAIN`   | o subdomínio verificado no passo 3.2                                                                                                         |
+| `INTERNAL_TICKETS_REPLY_SECRET`   | um segredo aleatório novo (ex. `openssl rand -hex 32`) — assina o token do endereço de resposta; nunca reaproveitar outro segredo do projeto |
+| `INTERNAL_TICKETS_EMAIL_MODE`     | definir explicitamente `resend` em produção; `mock` usa o provider em memória em teste/staging                                               |
+| `INTERNAL_TICKETS_SWEEPER_SECRET` | segredo aleatório exclusivo usado como Bearer pelo agendador do sweeper de relays; nunca reutilizar API key ou reply secret                  |
 
 `SUPABASE_SERVICE_ROLE_KEY` não deve ser criada, copiada para o cliente ou
 inventada na VPS. O endpoint importa o cliente privilegiado somente no servidor;
 o deploy deve usar a credencial gerenciada pelo Lovable Cloud. Se o runtime
 publicado não a receber, Receiving deve permanecer desativado até a integração
 de infraestrutura ser corrigida.
+
+O endpoint protegido `POST /api/public/internal-tickets/relay-sweeper` faz
+uma leitura administrativa inofensiva e executa a recuperação de relays. Uma
+resposta `200` com `ok: true` comprova, sem expor a chave, que o runtime
+publicado recebeu uma service role funcional. Agendar chamadas com
+`Authorization: Bearer <INTERNAL_TICKETS_SWEEPER_SECRET>`; nunca registrar o
+header. Relays com resultado ambíguo há 23 horas ou mais não são reenviados:
+ficam com `provider_reconciliation_required` para conferência manual.
+
+## 4.1 Assets inline do e-mail de abertura
+
+Antes do deploy real, colocar os PNGs oficiais em:
+
+- `public/email-assets/logo-newline.png`
+- `public/email-assets/icon-newline.png`
+
+O envio falha explicitamente se algum arquivo estiver ausente. As imagens são
+enviadas inline com CID; não há fallback para URL pública.
 
 ## 5. Checklist de validação ponta-a-ponta (fazer manualmente após os passos acima)
 
@@ -95,6 +138,8 @@ de infraestrutura ser corrigida.
 - [ ] Confirmar que somente a resposta do principal encerra o SLA de primeira resposta.
 - [ ] Indicar conclusão, testar ambos os magic links, expiração e reuso.
 - [ ] Enviar anexo seguro e um arquivo acima de 20 MB; o texto deve ser processado nos dois casos.
+- [ ] Confirmar que anexo `not_scanned`, `pending`, `blocked` ou `failed` não gera URL de download; somente `clean` pode ser baixado após integração real de antivírus.
+- [ ] Executar o sweeper autenticado no runtime publicado e confirmar `ok: true` sem qualquer conteúdo de secret na resposta ou nos logs.
 - [ ] Confirmar que um clique duplo/reload no link de ação não duplica o
       efeito (token já usado).
 - [ ] Verificar `internal_ticket_email_outbox` no banco: status "sent" após
@@ -116,8 +161,9 @@ de infraestrutura ser corrigida.
   aplicação (`tickets.functions.ts`, `public-actions.functions.ts`), não em
   um trigger SQL. Mitigação possível futura: trigger `BEFORE UPDATE` em
   `internal_tickets` espelhando `TRANSITIONS` de `status.ts`.
-- Anexos inbound ficam privados e têm hash/metadata, mas `scan_status` começa
-  como `not_scanned`; antivírus/quarentena de conteúdo é uma integração futura.
-- Relays com falha são retomados por retry do webhook e por lease/idempotência.
-  Antes de alto volume, adicionar um job operacional para varrer relays `failed`
-  após o fim da janela de retries do Resend.
+- Anexos inbound ficam privados, têm hash e validação mínima de magic bytes,
+  mas `scan_status` começa como `not_scanned`; enquanto não existir antivírus,
+  nenhum deles fica disponível para download.
+- O sweeper recupera `pending`, `failed` e `sending` com lease expirada dentro
+  da janela segura do provider. Resultados ambíguos fora dela exigem
+  reconciliação manual para evitar envio duplicado.

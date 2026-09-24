@@ -2,6 +2,13 @@ export type EmailDirection = "outbound" | "inbound";
 
 export type OutboxStatus = "pending" | "sent" | "delivered" | "failed" | "bounced" | "received";
 
+export type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType: string;
+  contentId?: string;
+};
+
 export type SendEmailInput = {
   /** Chave estável por tentativa lógica de envio — usada tanto no outbox quanto no header do provider. */
   idempotencyKey: string;
@@ -17,6 +24,7 @@ export type SendEmailInput = {
   inReplyTo?: string;
   references?: string[];
   headers?: Record<string, string>;
+  attachments?: EmailAttachment[];
   ticketId?: string | null;
   templateName?: string;
 };

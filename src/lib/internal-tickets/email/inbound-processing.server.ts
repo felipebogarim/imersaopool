@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import { collectReferences } from "./message-id";
 import { getReplyEnv } from "./email-mode.server";
 import { getEmailProvider } from "./provider-factory.server";
@@ -9,13 +8,11 @@ import { isTechnicalAddress, parseMailbox, uniqueMailboxes } from "./mailbox";
 import { sanitizeInboundHtml } from "../sanitize-html";
 import type { ParsedInboundEmail, ResendWebhookEvent } from "./inbound";
 import { deriveMessageSignals } from "./message-signals";
+import { persistInboundAttachments } from "./inbound-attachments.server";
 
 // Generated Supabase types do not yet include the incremental EMAIL-FIRST schema.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
-
-const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
-const ATTACHMENT_BUCKET = "internal-ticket-attachments";
 
 type ClaimResult = {
   claimed: boolean;
@@ -92,12 +89,15 @@ async function quarantineWithoutTicket(
   if (error) throw new Error(error.message);
 }
 
-async function relayOne(supabase: Db, relayId: string): Promise<void> {
+export async function relayOne(supabase: Db, relayId: string): Promise<"sent" | "skipped"> {
   const { data: claim, error: claimError } = await supabase.rpc("internal_ticket_claim_relay", {
     p_relay_id: relayId,
   });
   if (claimError) throw new Error(claimError.message);
-  if (!claim?.claimed) throw new Error("relay_busy");
+  if (!claim?.claimed) {
+    if (claim?.reason === "provider_reconciliation_required") return "skipped";
+    throw new Error(`relay_not_claimed:${claim?.reason ?? "unknown"}`);
+  }
 
   const { data: source, error: sourceError } = await supabase
     .from("internal_ticket_messages")
@@ -140,21 +140,31 @@ async function relayOne(supabase: Db, relayId: string): Promise<void> {
         "X-Newline-System-Message": "relay",
       },
     });
-    const { error } = await supabase.rpc("internal_ticket_finish_relay", {
+    const { data: finished, error } = await supabase.rpc("internal_ticket_finish_relay", {
       p_relay_id: relayId,
       p_lease_token: claim.lease_token,
       p_provider_message_id: result.providerMessageId,
       p_error: null,
     });
     if (error) throw new Error(error.message);
+    if (!finished?.finished) throw new Error(`relay_finish_${finished?.reason ?? "failed"}`);
+    return "sent";
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await supabase.rpc("internal_ticket_finish_relay", {
-      p_relay_id: relayId,
-      p_lease_token: claim.lease_token,
-      p_provider_message_id: null,
-      p_error: message,
-    });
+    const { data: failed, error: finishError } = await supabase.rpc(
+      "internal_ticket_finish_relay",
+      {
+        p_relay_id: relayId,
+        p_lease_token: claim.lease_token,
+        p_provider_message_id: null,
+        p_error: message,
+      },
+    );
+    if (finishError)
+      console.error("[internal-tickets/inbound] falha ao finalizar relay", finishError);
+    if (failed && !failed.finished && failed.reason !== "stale_lease") {
+      console.error("[internal-tickets/inbound] finalização de relay rejeitada", failed);
+    }
     throw error;
   }
 }
@@ -188,67 +198,38 @@ async function resumeRelays(supabase: Db, providerEmailId: string): Promise<void
   if (data?.id) await relayPendingForMessage(supabase, data.id);
 }
 
-function safeStorageName(value: string): string {
-  return value.replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(-120) || "attachment";
-}
-
-async function persistAttachments(
+export async function sweepRecoverableRelays(
   supabase: Db,
-  client: ResendReceivingClient,
-  message: ParsedInboundEmail,
-  ticketId: string,
-  internalMessageId: string,
-): Promise<void> {
-  for (const attachment of message.attachments) {
-    const base = {
-      ticket_id: ticketId,
-      message_id: internalMessageId,
-      provider: "resend",
-      provider_attachment_id: attachment.id,
-      file_name: attachment.filename,
-      mime_type: attachment.contentType,
-      size_bytes: attachment.size,
-      content_disposition: attachment.contentDisposition,
-      content_id: attachment.contentId,
-      scan_status: "not_scanned",
-    };
+  limit = 50,
+): Promise<{ attempted: number; sent: number; skipped: number; failed: number }> {
+  const { data, error } = await supabase
+    .from("internal_ticket_relay_deliveries")
+    .select("id")
+    .or(
+      `status.in.(pending,failed),and(status.eq.sending,lease_expires_at.lt.${new Date().toISOString()})`,
+    )
+    .or("last_error.is.null,last_error.neq.provider_reconciliation_required")
+    .order("created_at", { ascending: true })
+    .limit(Math.max(1, Math.min(limit, 100)));
+  if (error) throw new Error(error.message);
+
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const row of data ?? []) {
     try {
-      const remote = await client.retrieveAttachment(message.emailId, attachment.id);
-      const size = remote.size ?? attachment.size;
-      if (size != null && size > MAX_ATTACHMENT_BYTES) throw new Error("attachment_too_large");
-      const response = await fetch(remote.downloadUrl);
-      if (!response.ok) throw new Error(`attachment_download_${response.status}`);
-      const bytes = await response.arrayBuffer();
-      if (bytes.byteLength > MAX_ATTACHMENT_BYTES) throw new Error("attachment_too_large");
-      const path = `${ticketId}/inbound/${internalMessageId}/${attachment.id}-${safeStorageName(attachment.filename)}`;
-      const { error: uploadError } = await supabase.storage
-        .from(ATTACHMENT_BUCKET)
-        .upload(path, bytes, {
-          contentType: attachment.contentType || "application/octet-stream",
-          upsert: false,
-        });
-      if (uploadError && uploadError.statusCode !== "409") throw new Error(uploadError.message);
-      const sha256 = createHash("sha256").update(Buffer.from(bytes)).digest("hex");
-      await supabase
-        .from("internal_ticket_attachments")
-        .upsert(
-          { ...base, storage_path: path, size_bytes: bytes.byteLength, sha256 },
-          { onConflict: "provider,provider_attachment_id", ignoreDuplicates: true },
-        );
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      await supabase
-        .from("internal_ticket_attachments")
-        .upsert(
-          { ...base, storage_path: null, download_error: detail.slice(0, 1000) },
-          { onConflict: "provider,provider_attachment_id", ignoreDuplicates: true },
-        );
-      console.error("[internal-tickets/inbound] anexo não bloqueou mensagem", {
-        attachmentId: attachment.id,
-        error: detail,
+      const outcome = await relayOne(supabase, row.id);
+      if (outcome === "sent") sent += 1;
+      else skipped += 1;
+    } catch (sweepError) {
+      failed += 1;
+      console.error("[internal-tickets/sweeper] relay pendente", {
+        relayId: row.id,
+        error: sweepError instanceof Error ? sweepError.message : String(sweepError),
       });
     }
   }
+  return { attempted: (data ?? []).length, sent, skipped, failed };
 }
 
 export async function processResendInboundEvent(
@@ -330,7 +311,7 @@ export async function processResendInboundEvent(
     if (processError) throw new Error(processError.message);
     const processed = result as ProcessResult;
     if (processed.message_id && message.attachments.length) {
-      await persistAttachments(supabase, client, message, ticketId, processed.message_id);
+      await persistInboundAttachments(supabase, client, message, ticketId, processed.message_id);
     }
     if (!processed.quarantined && processed.message_id) {
       const signals = deriveMessageSignals(deriveCleanText(message.text));

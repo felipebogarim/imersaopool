@@ -275,13 +275,34 @@ CREATE OR REPLACE FUNCTION public.internal_ticket_claim_relay(p_relay_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE v_row public.internal_ticket_relay_deliveries; v_lease uuid := gen_random_uuid();
 BEGIN
+  -- O Resend preserva a idempotency key por 24 horas. Depois de 23 horas a
+  -- entrega fica para reconciliação manual: reenviar automaticamente já não
+  -- oferece garantia contra duplicidade após um crash de resultado ambíguo.
+  UPDATE public.internal_ticket_relay_deliveries
+  SET status = 'failed', last_error = 'provider_reconciliation_required',
+      lease_token = NULL, lease_expires_at = NULL
+  WHERE id = p_relay_id AND status <> 'sent' AND status <> 'delivered'
+    AND first_attempt_at IS NOT NULL
+    AND first_attempt_at <= now() - interval '23 hours';
+
   UPDATE public.internal_ticket_relay_deliveries
   SET status = 'sending', lease_token = v_lease, lease_expires_at = now() + interval '5 minutes',
-      attempt_count = attempt_count + 1, last_error = NULL
+      attempt_count = attempt_count + 1, first_attempt_at = COALESCE(first_attempt_at, now()),
+      last_error = NULL
   WHERE id = p_relay_id
+    AND (first_attempt_at IS NULL OR first_attempt_at > now() - interval '23 hours')
     AND (status IN ('pending', 'failed') OR (status = 'sending' AND lease_expires_at < now()))
   RETURNING * INTO v_row;
-  IF NOT FOUND THEN RETURN jsonb_build_object('claimed', false); END IF;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'claimed', false,
+      'reason', COALESCE((
+        SELECT CASE WHEN last_error = 'provider_reconciliation_required'
+          THEN 'provider_reconciliation_required' ELSE 'busy_or_finished' END
+        FROM public.internal_ticket_relay_deliveries WHERE id = p_relay_id
+      ), 'not_found')
+    );
+  END IF;
   RETURN jsonb_build_object('claimed', true, 'lease_token', v_lease,
     'target_email', v_row.target_email, 'idempotency_key', v_row.idempotency_key,
     'message_id', v_row.message_id, 'source_message_id', v_row.source_message_id,
@@ -290,7 +311,8 @@ END; $$;
 
 CREATE OR REPLACE FUNCTION public.internal_ticket_finish_relay(
   p_relay_id uuid, p_lease_token uuid, p_provider_message_id text, p_error text DEFAULT NULL
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_row public.internal_ticket_relay_deliveries;
 BEGIN
   UPDATE public.internal_ticket_relay_deliveries SET
     status = CASE WHEN p_error IS NULL THEN 'sent' ELSE 'failed' END,
@@ -299,6 +321,12 @@ BEGIN
     last_error = CASE WHEN p_error IS NULL THEN NULL ELSE left(p_error, 1000) END,
     lease_token = NULL, lease_expires_at = NULL
   WHERE id = p_relay_id AND lease_token = p_lease_token AND status = 'sending';
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('finished', false, 'reason', 'stale_lease');
+  END IF;
+
+  SELECT * INTO v_row FROM public.internal_ticket_relay_deliveries WHERE id = p_relay_id;
 
   IF p_error IS NULL THEN
     INSERT INTO public.internal_ticket_messages (
@@ -316,6 +344,110 @@ BEGIN
     WHERE r.id = p_relay_id
     ON CONFLICT DO NOTHING;
   END IF;
+  RETURN jsonb_build_object(
+    'finished', true,
+    'status', CASE WHEN p_error IS NULL THEN 'sent' ELSE 'failed' END,
+    'relay_id', v_row.id
+  );
+END; $$;
+
+-- Mudança manual de status sem liberar UPDATE direto nas colunas operacionais.
+CREATE OR REPLACE FUNCTION public.internal_ticket_update_status_authenticated(
+  p_ticket_id uuid,
+  p_to_status public.internal_ticket_status,
+  p_observation text DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_ticket public.internal_tickets;
+  v_allowed boolean := false;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Autenticação obrigatória' USING ERRCODE = '42501'; END IF;
+  SELECT * INTO v_ticket FROM public.internal_tickets
+  WHERE id = p_ticket_id AND company_id = public.current_company_id() FOR UPDATE;
+  IF NOT FOUND OR NOT (
+    v_ticket.requester_user_id = v_user_id
+    OR v_ticket.commercial_owner_user_id = v_user_id
+    OR public.has_role(v_user_id, 'gestor_comercial')
+    OR public.has_role(v_user_id, 'admin')
+  ) THEN RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501'; END IF;
+
+  v_allowed := CASE v_ticket.status
+    WHEN 'rascunho' THEN p_to_status IN ('aberto', 'cancelado')
+    WHEN 'aberto' THEN p_to_status IN ('enviado', 'cancelado')
+    WHEN 'enviado' THEN p_to_status IN ('recebido_pelo_setor', 'cancelado')
+    WHEN 'recebido_pelo_setor' THEN p_to_status IN ('em_analise', 'cancelado')
+    WHEN 'em_analise' THEN p_to_status IN ('aguardando_info_comercial', 'respondido', 'aguardando_validacao', 'cancelado')
+    WHEN 'aguardando_info_comercial' THEN p_to_status IN ('em_analise', 'cancelado')
+    WHEN 'respondido' THEN p_to_status IN ('em_analise', 'aguardando_validacao', 'cancelado')
+    WHEN 'aguardando_validacao' THEN p_to_status IN ('concluido', 'reaberto', 'cancelado')
+    WHEN 'concluido' THEN p_to_status IN ('reaberto', 'cancelado')
+    WHEN 'reaberto' THEN p_to_status IN ('em_analise', 'aguardando_validacao', 'cancelado')
+    ELSE false
+  END;
+  IF NOT v_allowed THEN RAISE EXCEPTION 'Transição de status inválida' USING ERRCODE = '23514'; END IF;
+
+  UPDATE public.internal_tickets SET
+    status = p_to_status,
+    received_by_sector_at = CASE WHEN p_to_status = 'recebido_pelo_setor' THEN now() ELSE received_by_sector_at END,
+    resolution_proposed_at = CASE WHEN p_to_status = 'aguardando_validacao' THEN now() ELSE resolution_proposed_at END,
+    validation_started_at = CASE WHEN p_to_status = 'aguardando_validacao' THEN now() ELSE validation_started_at END,
+    resolved_at = CASE WHEN p_to_status = 'concluido' THEN now() ELSE resolved_at END,
+    reopened_at = CASE WHEN p_to_status = 'reaberto' THEN now() ELSE reopened_at END,
+    reopen_count = reopen_count + CASE WHEN p_to_status = 'reaberto' THEN 1 ELSE 0 END,
+    cancelled_at = CASE WHEN p_to_status = 'cancelado' THEN now() ELSE cancelled_at END
+  WHERE id = p_ticket_id;
+
+  INSERT INTO public.internal_ticket_events (
+    ticket_id, from_status, to_status, origin, author_user_id, observation
+  ) VALUES (p_ticket_id, v_ticket.status, p_to_status, 'comercial', v_user_id, left(p_observation, 2000));
+  RETURN jsonb_build_object('ok', true, 'status', p_to_status);
+END; $$;
+
+-- Reatribuição completa: cache do setor, participantes automáticos, parada
+-- histórica e evento são confirmados na mesma transação.
+CREATE OR REPLACE FUNCTION public.internal_ticket_reassign_authenticated(
+  p_ticket_id uuid,
+  p_to_sector_id uuid,
+  p_reason text DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_ticket public.internal_tickets;
+  v_from_name text;
+  v_to_name text;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Autenticação obrigatória' USING ERRCODE = '42501'; END IF;
+  SELECT * INTO v_ticket FROM public.internal_tickets
+  WHERE id = p_ticket_id AND company_id = public.current_company_id() FOR UPDATE;
+  IF NOT FOUND OR NOT (
+    v_ticket.requester_user_id = v_user_id
+    OR v_ticket.commercial_owner_user_id = v_user_id
+    OR public.has_role(v_user_id, 'gestor_comercial')
+    OR public.has_role(v_user_id, 'admin')
+  ) THEN RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501'; END IF;
+  IF v_ticket.sector_id = p_to_sector_id THEN
+    RAISE EXCEPTION 'O ticket já está neste setor' USING ERRCODE = '23514';
+  END IF;
+  SELECT name INTO v_from_name FROM public.internal_ticket_sectors WHERE id = v_ticket.sector_id;
+  SELECT name INTO v_to_name FROM public.internal_ticket_sectors
+  WHERE id = p_to_sector_id AND active FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Setor de destino inválido ou inativo' USING ERRCODE = '23514'; END IF;
+
+  UPDATE public.internal_tickets SET sector_id = p_to_sector_id WHERE id = p_ticket_id;
+  PERFORM public.internal_ticket_sync_sector_participants(p_ticket_id, p_to_sector_id);
+  UPDATE public.internal_ticket_sector_stops SET left_at = now()
+  WHERE ticket_id = p_ticket_id AND left_at IS NULL;
+  INSERT INTO public.internal_ticket_sector_stops (ticket_id, sector_id, moved_by, reason)
+  VALUES (p_ticket_id, p_to_sector_id, v_user_id, left(p_reason, 500));
+  INSERT INTO public.internal_ticket_events (
+    ticket_id, origin, author_user_id, observation
+  ) VALUES (
+    p_ticket_id, 'comercial', v_user_id,
+    'Encaminhado de ' || COALESCE(v_from_name, '—') || ' para ' || v_to_name ||
+      CASE WHEN NULLIF(btrim(p_reason), '') IS NULL THEN '' ELSE ': ' || left(btrim(p_reason), 500) END
+  );
+  RETURN jsonb_build_object('ok', true, 'sector_id', p_to_sector_id);
 END; $$;
 
 CREATE OR REPLACE FUNCTION public.internal_ticket_sync_sector_participants(
@@ -398,6 +530,8 @@ REVOKE ALL ON FUNCTION public.internal_ticket_claim_relay(uuid) FROM PUBLIC, ano
 REVOKE ALL ON FUNCTION public.internal_ticket_finish_relay(uuid,uuid,text,text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.internal_ticket_sync_sector_participants(uuid,uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.internal_ticket_seed_participants() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.internal_ticket_update_status_authenticated(uuid,public.internal_ticket_status,text) FROM PUBLIC, anon, service_role;
+REVOKE ALL ON FUNCTION public.internal_ticket_reassign_authenticated(uuid,uuid,text) FROM PUBLIC, anon, service_role;
 
 GRANT EXECUTE ON FUNCTION public.internal_ticket_claim_webhook(text,text,text,jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.internal_ticket_fail_webhook(uuid,uuid,text) TO service_role;
@@ -406,5 +540,7 @@ GRANT EXECUTE ON FUNCTION public.internal_ticket_process_inbound(uuid,uuid,uuid,
 GRANT EXECUTE ON FUNCTION public.internal_ticket_claim_relay(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.internal_ticket_finish_relay(uuid,uuid,text,text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.internal_ticket_sync_sector_participants(uuid,uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.internal_ticket_update_status_authenticated(uuid,public.internal_ticket_status,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.internal_ticket_reassign_authenticated(uuid,uuid,text) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';

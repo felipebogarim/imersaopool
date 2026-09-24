@@ -198,17 +198,22 @@ export async function listTicketRecipients(ticketId: string): Promise<TicketReci
 
 export type TicketAttachmentRow = {
   id: string;
-  storage_path: string;
+  storage_path: string | null;
   file_name: string;
   mime_type: string | null;
   size_bytes: number | null;
+  scan_status: "not_scanned" | "pending" | "clean" | "blocked" | "failed";
+  mime_mismatch: boolean;
+  download_error: string | null;
   created_at: string;
 };
 
 export async function listTicketAttachments(ticketId: string): Promise<TicketAttachmentRow[]> {
   const { data, error } = await db()
     .from("internal_ticket_attachments")
-    .select("id, storage_path, file_name, mime_type, size_bytes, created_at")
+    .select(
+      "id, storage_path, file_name, mime_type, size_bytes, scan_status, mime_mismatch, download_error, created_at",
+    )
     .eq("ticket_id", ticketId)
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);

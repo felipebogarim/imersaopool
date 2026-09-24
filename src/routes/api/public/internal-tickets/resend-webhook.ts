@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Webhook } from "svix";
 import {
   parseResendWebhookEvent,
   type ResendWebhookEvent,
 } from "@/lib/internal-tickets/email/inbound";
+import { verifyAndParseResendWebhook } from "@/lib/internal-tickets/email/resend-webhook-security";
 
 // internal_ticket_* ainda não está no types.ts gerado — mesma ressalva do
 // resto do módulo.
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/public/internal-tickets/resend-webhoo
 
         let payload: unknown;
         try {
-          payload = new Webhook(secret).verify(rawBody, svixHeaders);
+          payload = verifyAndParseResendWebhook(rawBody, svixHeaders, secret);
         } catch (err) {
           console.warn("[internal-tickets/resend-webhook] assinatura inválida", err);
           return new Response("Invalid signature", { status: 401 });

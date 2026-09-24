@@ -16,6 +16,13 @@ export class AttachmentTooLargeError extends Error {
   }
 }
 
+export function isAttachmentDownloadable(
+  scanStatus: string | null | undefined,
+  storagePath: string | null | undefined,
+): boolean {
+  return scanStatus === "clean" && Boolean(storagePath);
+}
+
 function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.-]+/g, "_").slice(-120);
 }
@@ -57,8 +64,21 @@ export async function uploadTicketAttachment(
   return data;
 }
 
-export async function getAttachmentDownloadUrl(storagePath: string): Promise<string> {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 60 * 5); // 5 minutos — link é gerado sob demanda, não persistido
+export async function getAttachmentDownloadUrl(attachmentId: string): Promise<string> {
+  const { data: attachment, error: attachmentError } = await db()
+    .from("internal_ticket_attachments")
+    .select("storage_path, scan_status")
+    .eq("id", attachmentId)
+    .eq("scan_status", "clean")
+    .not("storage_path", "is", null)
+    .maybeSingle();
+  if (attachmentError) throw new Error(attachmentError.message);
+  if (!attachment?.storage_path) {
+    throw new Error("Anexo indisponível: verificação de segurança pendente ou bloqueada");
+  }
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(attachment.storage_path, 60 * 5); // 5 minutos — link é gerado sob demanda, não persistido
   if (error) throw new Error(error.message);
   return data.signedUrl;
 }

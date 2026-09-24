@@ -17,6 +17,14 @@ const INPUT: SendEmailInput = {
   html: "<p>Teste</p>",
   text: "Teste",
   messageId: "<message@internal-tickets.local>",
+  attachments: [
+    {
+      filename: "logo-newline.png",
+      content: "bG9nbw==",
+      contentType: "image/png",
+      contentId: "newline-logo",
+    },
+  ],
 };
 
 function response(status: number, body: unknown): Response {
@@ -51,6 +59,14 @@ describe("ResendEmailProvider", () => {
       cc: INPUT.cc,
       reply_to: INPUT.replyTo,
       headers: { "Message-ID": INPUT.messageId },
+      attachments: [
+        {
+          filename: "logo-newline.png",
+          content: "bG9nbw==",
+          content_type: "image/png",
+          content_id: "newline-logo",
+        },
+      ],
     });
   });
 

@@ -6,8 +6,10 @@ import { getEmailProvider } from "./provider-factory.server";
 import { buildReplyAddressForTicket } from "./reply-address.server";
 import { TicketOpenedEmail, type TicketOpenedEmailProps } from "./templates/ticket-opened";
 import type { EmailProvider } from "./types";
+import type { EmailAttachment } from "./types";
+import { loadNewlineInlineAssets } from "./newline-inline-assets.server";
 
-export type SendTicketOpenedEmailInput = Omit<TicketOpenedEmailProps, "logoUrl" | "iconUrl"> & {
+export type SendTicketOpenedEmailInput = TicketOpenedEmailProps & {
   ticketId: string;
   idempotencyKey?: string;
   messageId?: string | null;
@@ -22,14 +24,6 @@ export type SendTicketOpenedEmailInput = Omit<TicketOpenedEmailProps, "logoUrl" 
 export const TICKET_OPENED_KEY_PREFIX = "ticket-opened:";
 export const TICKET_OPENED_SUBJECT = "Solicitação interna Newline";
 
-function getNewlineAssetUrls() {
-  const baseUrl = (process.env.PUBLIC_SITE_URL || "https://poolflux.app").replace(/\/+$/, "");
-  return {
-    logoUrl: `${baseUrl}/email-assets/logo-newline.png`,
-    iconUrl: `${baseUrl}/email-assets/icon-newline.png`,
-  };
-}
-
 /** Identidade de saída do e-mail de abertura — usada também pela criação atômica (outbox pending). */
 export function buildTicketOpenedIdentity() {
   const domain = getReplyEnv("INTERNAL_TICKETS_REPLY_DOMAIN");
@@ -42,6 +36,7 @@ export function buildTicketOpenedIdentity() {
 export async function sendTicketOpenedEmail(
   input: SendTicketOpenedEmailInput,
   providerOverride?: EmailProvider,
+  inlineAssetsOverride?: EmailAttachment[],
 ): Promise<{ providerMessageId: string; messageId: string; alreadySent: boolean }> {
   if (!input.to.length) {
     throw new Error(`Nenhum destinatário configurado para o setor ${input.sectorName}`);
@@ -53,11 +48,9 @@ export async function sendTicketOpenedEmail(
   const replyTo = buildReplyAddressForTicket(input.ticketId);
   const subject = TICKET_OPENED_SUBJECT;
 
-  const element = React.createElement(TicketOpenedEmail, {
-    ...input,
-    ...getNewlineAssetUrls(),
-  });
+  const element = React.createElement(TicketOpenedEmail, input);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
+  const attachments = inlineAssetsOverride ?? (await loadNewlineInlineAssets());
 
   const provider = providerOverride ?? (await getEmailProvider());
   const result = await provider.send({
@@ -72,6 +65,7 @@ export async function sendTicketOpenedEmail(
     messageId,
     ticketId: input.ticketId,
     templateName: "ticket-opened",
+    attachments,
   });
   return { ...result, alreadySent: false };
 }

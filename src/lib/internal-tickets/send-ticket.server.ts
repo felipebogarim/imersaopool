@@ -1,5 +1,5 @@
 import type { FnContext } from "@/lib/internal-tickets/ticket-permissions";
-import type { EmailProvider } from "@/lib/internal-tickets/email/types";
+import type { EmailAttachment, EmailProvider } from "@/lib/internal-tickets/email/types";
 import { TICKET_PRIORITY_LABEL } from "@/lib/internal-tickets/priority";
 
 function requirePreparedValue<T>(value: T | null | undefined, name: string): T {
@@ -26,6 +26,7 @@ export async function sendTicketAuthenticated(
   context: FnContext,
   ticketId: string,
   providerOverride?: EmailProvider,
+  inlineAssetsOverride?: EmailAttachment[],
 ): Promise<{ ok: true; ticketId: string; status: "enviado"; alreadySent: boolean }> {
   const { getEmailMode } = await import("@/lib/internal-tickets/email/email-mode.server");
   const mode = getEmailMode();
@@ -70,6 +71,7 @@ export async function sendTicketAuthenticated(
         cc: prepared.cc ?? [],
       },
       providerOverride,
+      inlineAssetsOverride,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

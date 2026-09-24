@@ -59,6 +59,16 @@ export class ResendEmailProvider implements EmailProvider {
       ...(input.cc?.length ? { cc: input.cc } : {}),
       ...(input.replyTo ? { reply_to: input.replyTo } : {}),
       ...(Object.keys(headers).length ? { headers } : {}),
+      ...(input.attachments?.length
+        ? {
+            attachments: input.attachments.map((attachment) => ({
+              filename: attachment.filename,
+              content: attachment.content,
+              content_type: attachment.contentType,
+              ...(attachment.contentId ? { content_id: attachment.contentId } : {}),
+            })),
+          }
+        : {}),
     });
 
     let lastError: Error = new Error("Resend send falhou sem resposta");

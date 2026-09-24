@@ -113,6 +113,7 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp/webhook'
 import { Route as ApiPublicMpCreatePreferenceRouteImport } from './routes/api/public/mp/create-preference'
 import { Route as ApiPublicInternalTicketsResendWebhookRouteImport } from './routes/api/public/internal-tickets/resend-webhook'
+import { Route as ApiPublicInternalTicketsRelaySweeperRouteImport } from './routes/api/public/internal-tickets/relay-sweeper'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
 import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
 import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
@@ -700,6 +701,12 @@ const ApiPublicInternalTicketsResendWebhookRoute =
     path: '/api/public/internal-tickets/resend-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicInternalTicketsRelaySweeperRoute =
+  ApiPublicInternalTicketsRelaySweeperRouteImport.update({
+    id: '/api/public/internal-tickets/relay-sweeper',
+    path: '/api/public/internal-tickets/relay-sweeper',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksWeeklySecurityAuditRoute =
   ApiPublicHooksWeeklySecurityAuditRouteImport.update({
     id: '/api/public/hooks/weekly-security-audit',
@@ -876,6 +883,7 @@ export interface FileRoutesByFullPath {
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
   '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -991,6 +999,7 @@ export interface FileRoutesByTo {
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
   '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -1110,6 +1119,7 @@ export interface FileRoutesById {
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
+  '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
   '/api/public/internal-tickets/resend-webhook': typeof ApiPublicInternalTicketsResendWebhookRoute
   '/api/public/mp/create-preference': typeof ApiPublicMpCreatePreferenceRoute
   '/api/public/mp/webhook': typeof ApiPublicMpWebhookRoute
@@ -1229,6 +1239,7 @@ export interface FileRouteTypes {
     | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/relay-sweeper'
     | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -1344,6 +1355,7 @@ export interface FileRouteTypes {
     | '/visao-imersao-2/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/relay-sweeper'
     | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -1462,6 +1474,7 @@ export interface FileRouteTypes {
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
+    | '/api/public/internal-tickets/relay-sweeper'
     | '/api/public/internal-tickets/resend-webhook'
     | '/api/public/mp/create-preference'
     | '/api/public/mp/webhook'
@@ -1502,6 +1515,7 @@ export interface RootRouteChildren {
   SolicitacoesAcaoTokenRoute: typeof SolicitacoesAcaoTokenRoute
   ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
+  ApiPublicInternalTicketsRelaySweeperRoute: typeof ApiPublicInternalTicketsRelaySweeperRoute
   ApiPublicInternalTicketsResendWebhookRoute: typeof ApiPublicInternalTicketsResendWebhookRoute
   ApiPublicMpCreatePreferenceRoute: typeof ApiPublicMpCreatePreferenceRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -2242,6 +2256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicInternalTicketsResendWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/internal-tickets/relay-sweeper': {
+      id: '/api/public/internal-tickets/relay-sweeper'
+      path: '/api/public/internal-tickets/relay-sweeper'
+      fullPath: '/api/public/internal-tickets/relay-sweeper'
+      preLoaderRoute: typeof ApiPublicInternalTicketsRelaySweeperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/weekly-security-audit': {
       id: '/api/public/hooks/weekly-security-audit'
       path: '/api/public/hooks/weekly-security-audit'
@@ -2608,6 +2629,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
     ApiPublicHooksWeeklySecurityAuditRoute,
+  ApiPublicInternalTicketsRelaySweeperRoute:
+    ApiPublicInternalTicketsRelaySweeperRoute,
   ApiPublicInternalTicketsResendWebhookRoute:
     ApiPublicInternalTicketsResendWebhookRoute,
   ApiPublicMpCreatePreferenceRoute: ApiPublicMpCreatePreferenceRoute,

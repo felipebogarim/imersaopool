@@ -48,6 +48,55 @@ NOTIFY pgrst, 'reload schema';
 
 -- Consumo transacional dos dois magic links do solicitante. O lock do ticket
 -- garante que Confirmar e Não resolvido não possam vencer simultaneamente.
+CREATE OR REPLACE FUNCTION public.internal_ticket_issue_requester_validation_tokens(
+  p_ticket_id uuid,
+  p_confirm_token_hash text,
+  p_unresolved_token_hash text,
+  p_expires_at timestamptz
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_ticket public.internal_tickets;
+  v_requester public.internal_ticket_participants;
+BEGIN
+  SELECT * INTO v_ticket FROM public.internal_tickets
+  WHERE id = p_ticket_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Ticket não encontrado' USING ERRCODE = '22023'; END IF;
+
+  -- Todas as operações do par obedecem ticket -> tokens por id. Emissões
+  -- concorrentes ficam serializadas e deixam somente o par mais novo ativo.
+  PERFORM 1 FROM public.internal_ticket_action_tokens
+  WHERE ticket_id = p_ticket_id
+    AND action IN ('confirmar_conclusao', 'nao_resolvido')
+  ORDER BY id FOR UPDATE;
+
+  SELECT * INTO v_requester FROM public.internal_ticket_participants
+  WHERE ticket_id = p_ticket_id AND is_requester AND active
+  ORDER BY id LIMIT 1;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Solicitante ativo não encontrado' USING ERRCODE = '23514'; END IF;
+
+  UPDATE public.internal_ticket_action_tokens SET used_at = now()
+  WHERE ticket_id = p_ticket_id
+    AND action IN ('confirmar_conclusao', 'nao_resolvido')
+    AND used_at IS NULL;
+
+  INSERT INTO public.internal_ticket_action_tokens (
+    ticket_id, action, token_hash, expires_at, intended_user_id, intended_email
+  ) VALUES
+    (p_ticket_id, 'confirmar_conclusao', p_confirm_token_hash, p_expires_at,
+      v_ticket.requester_user_id, v_requester.email),
+    (p_ticket_id, 'nao_resolvido', p_unresolved_token_hash, p_expires_at,
+      v_ticket.requester_user_id, v_requester.email);
+
+  RETURN jsonb_build_object(
+    'requester_email', v_requester.email,
+    'requester_name', v_requester.display_name,
+    'requester_user_id', v_ticket.requester_user_id
+  );
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.internal_ticket_apply_requester_validation(
   p_token_hash text
 ) RETURNS jsonb
@@ -57,9 +106,25 @@ DECLARE
   v_token public.internal_ticket_action_tokens;
   v_ticket public.internal_tickets;
   v_target public.internal_ticket_status;
+  v_ticket_id uuid;
 BEGIN
+  -- Descobre o ticket sem lock; em seguida todas as emissões/decisões usam a
+  -- mesma ordem determinística: ticket -> tokens por id.
+  SELECT ticket_id INTO v_ticket_id FROM public.internal_ticket_action_tokens
+  WHERE token_hash = p_token_hash;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Link inválido' USING ERRCODE = '22023'; END IF;
+
+  SELECT * INTO v_ticket FROM public.internal_tickets
+  WHERE id = v_ticket_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Ticket não encontrado' USING ERRCODE = '22023'; END IF;
+
+  PERFORM 1 FROM public.internal_ticket_action_tokens
+  WHERE ticket_id = v_ticket_id
+    AND action IN ('confirmar_conclusao', 'nao_resolvido')
+  ORDER BY id FOR UPDATE;
+
   SELECT * INTO v_token FROM public.internal_ticket_action_tokens
-  WHERE token_hash = p_token_hash FOR UPDATE;
+  WHERE token_hash = p_token_hash;
   IF NOT FOUND THEN RAISE EXCEPTION 'Link inválido' USING ERRCODE = '22023'; END IF;
   IF v_token.used_at IS NOT NULL THEN RAISE EXCEPTION 'Este link já foi usado' USING ERRCODE = '23514'; END IF;
   IF v_token.expires_at < now() THEN RAISE EXCEPTION 'Este link expirou' USING ERRCODE = '23514'; END IF;
@@ -67,9 +132,7 @@ BEGIN
     RAISE EXCEPTION 'Ação incompatível com validação do solicitante' USING ERRCODE = '23514';
   END IF;
 
-  SELECT * INTO v_ticket FROM public.internal_tickets
-  WHERE id = v_token.ticket_id FOR UPDATE;
-  IF NOT FOUND OR v_token.intended_user_id IS DISTINCT FROM v_ticket.requester_user_id THEN
+  IF v_token.intended_user_id IS DISTINCT FROM v_ticket.requester_user_id THEN
     RAISE EXCEPTION 'Este link não pertence ao solicitante deste ticket' USING ERRCODE = '42501';
   END IF;
   IF v_ticket.status <> 'aguardando_validacao' THEN
@@ -106,7 +169,11 @@ $$;
 
 REVOKE ALL ON FUNCTION public.internal_ticket_apply_requester_validation(text)
   FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.internal_ticket_issue_requester_validation_tokens(uuid,text,text,timestamptz)
+  FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.internal_ticket_apply_requester_validation(text)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.internal_ticket_issue_requester_validation_tokens(uuid,text,text,timestamptz)
   TO service_role;
 
 NOTIFY pgrst, 'reload schema';
