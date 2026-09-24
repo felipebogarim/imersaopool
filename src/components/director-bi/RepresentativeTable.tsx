@@ -117,7 +117,9 @@ export function RepresentativeTable({ representatives }: { representatives: Kanb
   });
 
   const rows = useMemo(() => {
-    const notes = new Map((notesQuery.data ?? []).map((note) => [note.representative_id, note]));
+    const notes = new Map(
+      (notesQuery.data?.notes ?? []).map((note) => [note.representative_id, note]),
+    );
     let result: RepresentativeRow[] = representatives.map((rep) => {
       const note = notes.get(rep.id);
       return {
@@ -185,6 +187,15 @@ export function RepresentativeTable({ representatives }: { representatives: Kanb
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-border bg-card">
+        {!notesQuery.data.schemaAvailable && (
+          <div
+            role="status"
+            className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
+          >
+            Os representantes foram carregados, mas os campos de acompanhamento estão
+            temporariamente indisponíveis porque a atualização do banco ainda não foi aplicada.
+          </div>
+        )}
         {hasFilters && (
           <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground">
             <span>
@@ -249,7 +260,7 @@ export function RepresentativeTable({ representatives }: { representatives: Kanb
                       {cellText(row.notes)}
                     </td>
                     <td className="px-2 py-2 text-right">
-                      {isMaster && (
+                      {isMaster && notesQuery.data.schemaAvailable && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

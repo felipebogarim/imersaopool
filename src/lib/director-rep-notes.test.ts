@@ -44,7 +44,7 @@ describe("acompanhamento de representantes do BI Diretor", () => {
 
     expect(mocks.from.mock.calls).toEqual([["profiles"], ["director_rep_notes"]]);
     expect(notes.eq).toHaveBeenCalledWith("company_id", "company");
-    expect(data).toHaveLength(1);
+    expect(data).toMatchObject({ schemaAvailable: true, notes: [{ representative_id: "rep" }] });
   });
 
   it("faz upsert por representante com empresa e autor derivados da sessão", async () => {
@@ -78,5 +78,19 @@ describe("acompanhamento de representantes do BI Diretor", () => {
     mocks.from.mockReturnValueOnce(result({ active_company_id: null }));
     await expect(fetchDirectorRepNotes()).rejects.toThrow("Selecione uma empresa");
     expect(mocks.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("mantém a lista disponível enquanto a migration ainda não foi aplicada", async () => {
+    const profile = result({ active_company_id: "company" });
+    const notes = result(null, {
+      code: "PGRST205",
+      message: "Could not find the table 'public.director_rep_notes' in the schema cache",
+    });
+    mocks.from.mockReturnValueOnce(profile).mockReturnValueOnce(notes);
+
+    await expect(fetchDirectorRepNotes()).resolves.toEqual({
+      notes: [],
+      schemaAvailable: false,
+    });
   });
 });

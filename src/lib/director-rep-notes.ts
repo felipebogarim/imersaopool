@@ -20,6 +20,11 @@ export type DirectorRepNoteInput = Pick<
   | "notes"
 >;
 
+export type DirectorRepNotesSnapshot = {
+  notes: DirectorRepNote[];
+  schemaAvailable: boolean;
+};
+
 type DirectorRepNotesDatabase = {
   public: {
     Tables: {
@@ -42,6 +47,14 @@ type DirectorRepNotesDatabase = {
 
 const notesClient = supabase as unknown as SupabaseClient<DirectorRepNotesDatabase>;
 
+function isMissingNotesTable(error: { code?: string; message?: string }) {
+  return (
+    error.code === "PGRST205" ||
+    error.code === "42P01" ||
+    error.message?.includes("public.director_rep_notes") === true
+  );
+}
+
 async function currentContext() {
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError) throw authError;
@@ -59,7 +72,7 @@ async function currentContext() {
   return { userId: auth.user.id, companyId: profile.active_company_id };
 }
 
-export async function fetchDirectorRepNotes(): Promise<DirectorRepNote[]> {
+export async function fetchDirectorRepNotes(): Promise<DirectorRepNotesSnapshot> {
   const { companyId } = await currentContext();
   const { data, error } = await notesClient
     .from("director_rep_notes")
@@ -67,8 +80,11 @@ export async function fetchDirectorRepNotes(): Promise<DirectorRepNote[]> {
       "representative_id, company_id, last_immersion, general_perception, perceived_opportunities, notes, updated_at",
     )
     .eq("company_id", companyId);
-  if (error) throw error;
-  return data ?? [];
+  if (error) {
+    if (isMissingNotesTable(error)) return { notes: [], schemaAvailable: false };
+    throw error;
+  }
+  return { notes: data ?? [], schemaAvailable: true };
 }
 
 export async function saveDirectorRepNote(input: DirectorRepNoteInput): Promise<void> {
@@ -81,5 +97,10 @@ export async function saveDirectorRepNote(input: DirectorRepNoteInput): Promise<
   const { error } = await notesClient
     .from("director_rep_notes")
     .upsert(payload, { onConflict: "representative_id" });
-  if (error) throw error;
+  if (error) {
+    if (isMissingNotesTable(error)) {
+      throw new Error("A estrutura de acompanhamento de representantes ainda não foi aplicada.");
+    }
+    throw error;
+  }
 }
