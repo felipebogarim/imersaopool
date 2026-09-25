@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ExecutiveTable } from "@/components/director-bi/ExecutiveTable";
 import { RepresentativeTable } from "@/components/director-bi/RepresentativeTable";
+import { ImmersionModule } from "@/components/director-bi/immersions/ImmersionModule";
 import { StatusDonutChart } from "@/components/director-bi/DirectorCharts";
 import { useDirectorBI } from "@/hooks/useDirectorBI";
 import { DIRECTOR_AREAS, computeStatusBreakdown, filterDirectorActions } from "@/lib/director-bi";
@@ -18,8 +19,8 @@ export const Route = createFileRoute("/_authenticated/bi-diretor")({
 });
 
 function BIDiretorPage() {
-  type DirectorTab = ExecArea | "reps";
-  const tabs: DirectorTab[] = [...DIRECTOR_AREAS, "reps"];
+  type DirectorTab = ExecArea | "reps" | "immersions";
+  const tabs: DirectorTab[] = [...DIRECTOR_AREAS, "reps", "immersions"];
   const [area, setArea] = useState<DirectorTab>("commercial");
   const queryClient = useQueryClient();
   const repNotesFetching = useIsFetching({ queryKey: ["director-rep-notes"] });
@@ -29,7 +30,8 @@ function BIDiretorPage() {
   // Todas as ações da área selecionada, em qualquer status — contexto executivo geral.
   // Os filtros de coluna da tabela atuam depois, só sobre a lista já mostrada.
   const areaActions = useMemo(
-    () => (area === "reps" ? [] : filterDirectorActions(actions, area, "all")),
+    () =>
+      area === "reps" || area === "immersions" ? [] : filterDirectorActions(actions, area, "all"),
     [actions, area],
   );
   const statusBreakdown = useMemo(() => computeStatusBreakdown(areaActions), [areaActions]);
@@ -73,24 +75,24 @@ function BIDiretorPage() {
       />
       <div className="mx-auto max-w-[1600px] space-y-2 bg-muted/30 px-3 py-2 sm:px-6 lg:px-8">
         <Tabs value={area} onValueChange={(value) => setArea(value as DirectorTab)}>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[220px_minmax(0,28rem)]">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[280px_minmax(0,28rem)]">
             <div className="rounded-xl border bg-card p-2">
               <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 Selecione
               </p>
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-transparent p-0">
+              <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-transparent p-0">
                 {tabs.map((key) => (
                   <TabsTrigger
                     key={key}
                     value={key}
                     className="justify-center rounded-lg border px-2 py-1.5 text-[10px] font-medium uppercase leading-tight data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                   >
-                    {key === "reps" ? "Reps" : AREA_LABEL[key]}
+                    {key === "reps" ? "Reps" : key === "immersions" ? "Imersão" : AREA_LABEL[key]}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </div>
-            {area !== "reps" && !query.isPending && !query.isError && (
+            {area !== "reps" && area !== "immersions" && !query.isPending && !query.isError && (
               <StatusDonutChart data={statusBreakdown} />
             )}
           </div>
@@ -117,6 +119,8 @@ function BIDiretorPage() {
                 </div>
               ) : key === "reps" ? (
                 <RepresentativeTable representatives={query.data?.reps ?? []} />
+              ) : key === "immersions" ? (
+                <ImmersionModule />
               ) : (
                 <ExecutiveTable key={area} actions={areaActions} />
               )}

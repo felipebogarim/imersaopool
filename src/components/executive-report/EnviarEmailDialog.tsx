@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Monitor, Paperclip, Send, Smartphone, X } from "lucide-react";
+import { Loader2, Monitor, Paperclip, Send, Smartphone, Users, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
@@ -25,6 +25,13 @@ type Person = { id: string; name: string; email: string };
 export type EmailAttachment = { name: string; url: string; size: number };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const GRUPO_DIRETORIA = [
+  "felipebogarim@gmail.com",
+  "marcos@newline.ind.br",
+  "angelica.galan@newline.ind.br",
+  "sergio@newline.ind.br",
+  "filipe@newline.ind.br",
+];
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const LINK_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 dias
 
@@ -153,6 +160,11 @@ export function EnviarEmailDialog({
     setQuery("");
   }
 
+  function addGrupoDiretoria() {
+    setRecipients((cur) => [...cur, ...GRUPO_DIRETORIA.filter((e) => !cur.includes(e))]);
+    setQuery("");
+  }
+
   async function buildPreview() {
     setRendering(true);
     try {
@@ -239,7 +251,12 @@ export function EnviarEmailDialog({
 
         <div className="space-y-4">
           <div>
-            <Label>Destinatários</Label>
+            <div className="flex items-center justify-between">
+              <Label>Destinatários</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addGrupoDiretoria}>
+                <Users className="mr-1 h-4 w-4" /> Enviar para grupo diretoria
+              </Button>
+            </div>
             <div className="mt-1 flex flex-wrap gap-2">
               {recipients.map((r) => (
                 <Badge key={r} variant="secondary" className="gap-1">
