@@ -530,11 +530,13 @@ function RelatorioExecutivoPage() {
   const originOf = useMemo(() => {
     const cache = new Map<string, { existing: boolean; displayTitle: string }>();
     return (a: ExecutiveAction) => {
-      if (!cache.has(a.id)) {
+      // chave inclui o título: editar a ação invalida o resultado em cache
+      const key = `${a.id}::${a.title}`;
+      if (!cache.has(key)) {
         const r = resolveActionOrigin(a.title, existingActions);
-        cache.set(a.id, { existing: !!r.existing, displayTitle: r.displayTitle });
+        cache.set(key, { existing: !!r.existing, displayTitle: r.displayTitle });
       }
-      return cache.get(a.id)!;
+      return cache.get(key)!;
     };
   }, [existingActions]);
 
