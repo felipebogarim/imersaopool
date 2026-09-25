@@ -5,6 +5,8 @@ import {
 } from "@/lib/internal-tickets/email/inbound";
 import { verifyAndParseResendWebhook } from "@/lib/internal-tickets/email/resend-webhook-security";
 
+// Redeploy marker: refresh runtime secrets 2026-09-25
+
 // internal_ticket_* ainda não está no types.ts gerado — mesma ressalva do
 // resto do módulo.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
