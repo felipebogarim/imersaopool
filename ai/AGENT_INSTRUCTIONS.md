@@ -14,15 +14,14 @@ Preserve the Lovable history rule in `AGENTS.md`. Do not hand-edit generated cod
 
 ## Git workflow
 
-Normal development work may commit and push to `orca-dev` or the active task branch without additional authorization.
+`main` is the only operational and canonical branch. Orca, GitHub and Lovable work on the same `main`.
 
-Explicit authorization is required for:
-
-- merge into `main`;
-- direct push to `main`;
-- force push;
-- rewriting published history;
-- destructive Git operations.
+- Orca changes are committed and pushed directly to `main`; Lovable changes stay in `main`.
+- `orca-dev` is a legacy branch only, no longer operational. Do not use it for new work.
+- Before relevant work: fetch/pull `origin/main` and inspect the working tree.
+- Before push: fetch the remote again to avoid overwriting work from Lovable, another agent or another developer; resolve conflicts preserving remote work.
+- Create task branches only when there is a concrete need for isolation.
+- Forbidden without explicit authorization: force push, destructive `reset`, rebase/amend of published history, deleting remote branches and other destructive rewrites.
 
 Preserve all Lovable history constraints defined in `AGENTS.md`.
 

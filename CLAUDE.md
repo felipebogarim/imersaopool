@@ -160,3 +160,14 @@ the registry, not just the component file.
   aliasing) — don't re-add any of those plugins manually; extend via the `vite: {...}` passthrough only.
 - Avoid rewriting published git history (force-push, rebase/amend/squash of pushed commits) on the
   branch connected to Lovable — it desyncs the Lovable editor's project history (see `AGENTS.md`).
+
+## Git governance
+
+`main` is the only operational and canonical branch. Orca, GitHub and Lovable work on the same `main`.
+
+- Orca changes are committed and pushed directly to `main`; Lovable changes stay in `main`.
+- `orca-dev` is a legacy branch only, no longer operational. Do not use it for new work.
+- Before relevant work: fetch/pull `origin/main` and inspect the working tree.
+- Before push: fetch the remote again to avoid overwriting work from Lovable, another agent or another developer; resolve conflicts preserving remote work.
+- Create task branches only when there is a concrete need for isolation.
+- Forbidden without explicit authorization: force push, destructive `reset`, rebase/amend of published history, deleting remote branches and other destructive rewrites.
