@@ -53,6 +53,12 @@ export const NAV_TREE: NavGroup[] = [
       { key: "price.mapa", label: "Mapa de Preços", to: "/price/mapa" },
       { key: "price.simulador", label: "Simulador, R$ + Características", to: "/price/simulador" },
       { key: "price.comparativos", label: "Comparativos", to: "/price/comparativos" },
+      { key: "price.validacao", label: "Validação de Comparáveis", to: "/price/validacao" },
+      {
+        key: "price.comparativos-especificos",
+        label: "Comparativos Específicos",
+        to: "/price/comparativos-especificos",
+      },
     ],
   },
   {

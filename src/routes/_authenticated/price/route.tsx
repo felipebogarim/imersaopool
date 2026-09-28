@@ -16,6 +16,8 @@ const TABS = [
   { to: "/price/competidores", label: "Competidores" },
   { to: "/price/tabelas", label: "Tabelas" },
   { to: "/price/comparativos", label: "Comparativos" },
+  { to: "/price/validacao", label: "Validação de Comparáveis" },
+  { to: "/price/comparativos-especificos", label: "Comparativos Específicos" },
 ] as const;
 
 function PriceLayout() {

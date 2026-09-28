@@ -71,9 +71,11 @@ import { Route as AuthenticatedSolicitacoesAdminRouteImport } from './routes/_au
 import { Route as AuthenticatedSolicitacoesTicketIdRouteImport } from './routes/_authenticated/solicitacoes.$ticketId'
 import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
+import { Route as AuthenticatedPriceValidacaoRouteImport } from './routes/_authenticated/price/validacao'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price/tabelas'
 import { Route as AuthenticatedPriceMapaRouteImport } from './routes/_authenticated/price/mapa'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price/competidores'
+import { Route as AuthenticatedPriceComparativosEspecificosRouteImport } from './routes/_authenticated/price/comparativos-especificos'
 import { Route as AuthenticatedPriceComparativosRouteImport } from './routes/_authenticated/price/comparativos'
 import { Route as AuthenticatedPrecosSimuladorRouteImport } from './routes/_authenticated/precos/simulador'
 import { Route as AuthenticatedPrecosMapaRouteImport } from './routes/_authenticated/precos/mapa'
@@ -458,6 +460,12 @@ const AuthenticatedRepresentantesPerformanceRoute =
     path: '/representantes/performance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPriceValidacaoRoute =
+  AuthenticatedPriceValidacaoRouteImport.update({
+    id: '/validacao',
+    path: '/validacao',
+    getParentRoute: () => AuthenticatedPriceRouteRoute,
+  } as any)
 const AuthenticatedPriceTabelasRoute =
   AuthenticatedPriceTabelasRouteImport.update({
     id: '/tabelas',
@@ -473,6 +481,12 @@ const AuthenticatedPriceCompetidoresRoute =
   AuthenticatedPriceCompetidoresRouteImport.update({
     id: '/competidores',
     path: '/competidores',
+    getParentRoute: () => AuthenticatedPriceRouteRoute,
+  } as any)
+const AuthenticatedPriceComparativosEspecificosRoute =
+  AuthenticatedPriceComparativosEspecificosRouteImport.update({
+    id: '/comparativos-especificos',
+    path: '/comparativos-especificos',
     getParentRoute: () => AuthenticatedPriceRouteRoute,
   } as any)
 const AuthenticatedPriceComparativosRoute =
@@ -847,9 +861,11 @@ export interface FileRoutesByFullPath {
   '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
   '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
+  '/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
+  '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -963,9 +979,11 @@ export interface FileRoutesByTo {
   '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
   '/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/price/comparativos': typeof AuthenticatedPriceComparativosRoute
+  '/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
+  '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -1083,9 +1101,11 @@ export interface FileRoutesById {
   '/_authenticated/precos/mapa': typeof AuthenticatedPrecosMapaRoute
   '/_authenticated/precos/simulador': typeof AuthenticatedPrecosSimuladorRoute
   '/_authenticated/price/comparativos': typeof AuthenticatedPriceComparativosRoute
+  '/_authenticated/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/_authenticated/price/mapa': typeof AuthenticatedPriceMapaRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
+  '/_authenticated/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/_authenticated/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -1203,9 +1223,11 @@ export interface FileRouteTypes {
     | '/precos/mapa'
     | '/precos/simulador'
     | '/price/comparativos'
+    | '/price/comparativos-especificos'
     | '/price/competidores'
     | '/price/mapa'
     | '/price/tabelas'
+    | '/price/validacao'
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
@@ -1319,9 +1341,11 @@ export interface FileRouteTypes {
     | '/precos/mapa'
     | '/precos/simulador'
     | '/price/comparativos'
+    | '/price/comparativos-especificos'
     | '/price/competidores'
     | '/price/mapa'
     | '/price/tabelas'
+    | '/price/validacao'
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
@@ -1438,9 +1462,11 @@ export interface FileRouteTypes {
     | '/_authenticated/precos/mapa'
     | '/_authenticated/precos/simulador'
     | '/_authenticated/price/comparativos'
+    | '/_authenticated/price/comparativos-especificos'
     | '/_authenticated/price/competidores'
     | '/_authenticated/price/mapa'
     | '/_authenticated/price/tabelas'
+    | '/_authenticated/price/validacao'
     | '/_authenticated/representantes/performance'
     | '/_authenticated/sintese/tipos'
     | '/_authenticated/solicitacoes/$ticketId'
@@ -1962,6 +1988,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRepresentantesPerformanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/price/validacao': {
+      id: '/_authenticated/price/validacao'
+      path: '/validacao'
+      fullPath: '/price/validacao'
+      preLoaderRoute: typeof AuthenticatedPriceValidacaoRouteImport
+      parentRoute: typeof AuthenticatedPriceRouteRoute
+    }
     '/_authenticated/price/tabelas': {
       id: '/_authenticated/price/tabelas'
       path: '/tabelas'
@@ -1981,6 +2014,13 @@ declare module '@tanstack/react-router' {
       path: '/competidores'
       fullPath: '/price/competidores'
       preLoaderRoute: typeof AuthenticatedPriceCompetidoresRouteImport
+      parentRoute: typeof AuthenticatedPriceRouteRoute
+    }
+    '/_authenticated/price/comparativos-especificos': {
+      id: '/_authenticated/price/comparativos-especificos'
+      path: '/comparativos-especificos'
+      fullPath: '/price/comparativos-especificos'
+      preLoaderRoute: typeof AuthenticatedPriceComparativosEspecificosRouteImport
       parentRoute: typeof AuthenticatedPriceRouteRoute
     }
     '/_authenticated/price/comparativos': {
@@ -2352,18 +2392,23 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedPriceRouteRouteChildren {
   AuthenticatedPriceComparativosRoute: typeof AuthenticatedPriceComparativosRoute
+  AuthenticatedPriceComparativosEspecificosRoute: typeof AuthenticatedPriceComparativosEspecificosRoute
   AuthenticatedPriceCompetidoresRoute: typeof AuthenticatedPriceCompetidoresRoute
   AuthenticatedPriceMapaRoute: typeof AuthenticatedPriceMapaRoute
   AuthenticatedPriceTabelasRoute: typeof AuthenticatedPriceTabelasRoute
+  AuthenticatedPriceValidacaoRoute: typeof AuthenticatedPriceValidacaoRoute
   AuthenticatedPriceIndexRoute: typeof AuthenticatedPriceIndexRoute
 }
 
 const AuthenticatedPriceRouteRouteChildren: AuthenticatedPriceRouteRouteChildren =
   {
     AuthenticatedPriceComparativosRoute: AuthenticatedPriceComparativosRoute,
+    AuthenticatedPriceComparativosEspecificosRoute:
+      AuthenticatedPriceComparativosEspecificosRoute,
     AuthenticatedPriceCompetidoresRoute: AuthenticatedPriceCompetidoresRoute,
     AuthenticatedPriceMapaRoute: AuthenticatedPriceMapaRoute,
     AuthenticatedPriceTabelasRoute: AuthenticatedPriceTabelasRoute,
+    AuthenticatedPriceValidacaoRoute: AuthenticatedPriceValidacaoRoute,
     AuthenticatedPriceIndexRoute: AuthenticatedPriceIndexRoute,
   }
 
