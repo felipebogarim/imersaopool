@@ -1,4 +1,4 @@
-import { EquivalenceLevel, EquivalenceStatus, SpecValue, Confidence, PriceAvailability } from "../price-comparativos-core";
+import { FAMILIAS, EquivalenceLevel, EquivalenceStatus, SpecValue, Confidence, PriceAvailability } from "../price-comparativos-core";
 
 export type PriceTable = "Black Brasil" | "Black SP";
 
@@ -57,12 +57,5 @@ export type MapaCalculatedItem = MapaProduct & {
   farol: "verde" | "amarelo" | "vermelho" | "cinza";
 };
 
-export const FAMILIAS_MAPA = [
-  "Perfis",
-  "Fitas e Fontes",
-  "Lâmpadas",
-  "Luminárias Técnicas",
-  "Luminárias Decorativas",
-  "Jardim",
-  "Sistemas Lineares"
-];
+// Alias da lista canônica de famílias do Price (definida em price-comparativos-core).
+export const FAMILIAS_MAPA: readonly string[] = FAMILIAS;

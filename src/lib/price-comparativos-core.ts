@@ -207,15 +207,16 @@ export const PRICE_AVAILABILITY_LABEL: Record<PriceAvailability, string> = {
 
 // ============ Hierarquia de produtos ============
 
+// Fonte única de famílias do Price (nomenclatura e ordem do Mapa de Preços).
+// Consumida por Mapa, Validação de Comparáveis, Comparativos e Comparativos Específicos.
 export const FAMILIAS = [
+  "Perfis",
   "Fitas e Fontes",
   "Lâmpadas",
   "Luminárias Técnicas",
   "Luminárias Decorativas",
-  "Perfis",
   "Jardim",
   "Sistemas Lineares",
-  "Controles e Automação",
 ] as const;
 
 export const CATEGORIAS: Record<string, string[]> = {
