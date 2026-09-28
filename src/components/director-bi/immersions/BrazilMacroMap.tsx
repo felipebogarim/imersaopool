@@ -1,17 +1,9 @@
-import { useState } from "react";
-import {
-  Compass,
-  MapPin,
-  ZoomIn,
-  ZoomOut,
-  RefreshCw,
-  Calendar,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Compass, ZoomIn, ZoomOut, RefreshCw, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BRAZIL_STATE_PATHS } from "./brazil-svg-paths";
+import { BrazilMapSummary } from "./BrazilMapSummary";
 import { latLngToXY } from "@/lib/director-immersion-data";
 import type { ImmersionItem } from "@/lib/director-immersion-types";
 
@@ -28,7 +20,11 @@ export function BrazilMacroMap({
 }: BrazilMacroMapProps) {
   const [hoveredImmersionId, setHoveredImmersionId] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const coveredStates = useMemo(
+    () => new Set(immersions.flatMap((immersion) => immersion.cityStops.map((stop) => stop.state))),
+    [immersions],
+  );
 
   const handleZoom = (delta: number) => {
     setZoomLevel((prev) => Math.min(Math.max(prev + delta, 0.9), 2.2));
@@ -36,7 +32,6 @@ export function BrazilMacroMap({
 
   const handleResetZoom = () => {
     setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
   };
 
   const hoveredImmersion = immersions.find((i) => i.id === hoveredImmersionId);
@@ -71,7 +66,7 @@ export function BrazilMacroMap({
       </div>
 
       {/* Map Canvas Container */}
-      <div className="relative aspect-[4/3] min-h-[420px] w-full overflow-hidden rounded-lg border bg-muted/15 sm:min-h-[520px]">
+      <div className="relative h-[clamp(460px,62vh,720px)] w-full overflow-hidden rounded-xl border bg-gradient-to-br from-sky-50/80 via-background to-cyan-50/50 dark:from-slate-950 dark:via-background dark:to-cyan-950/20">
         {/* Controls Overlay */}
         <div className="absolute right-3 top-3 z-20 flex flex-col gap-1.5 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur">
           <Button
@@ -79,6 +74,8 @@ export function BrazilMacroMap({
             variant="ghost"
             className="h-8 w-8"
             title="Aumentar zoom"
+            aria-label="Aumentar zoom do mapa"
+            disabled={zoomLevel >= 2.2}
             onClick={() => handleZoom(0.2)}
           >
             <ZoomIn className="h-4 w-4" />
@@ -88,6 +85,8 @@ export function BrazilMacroMap({
             variant="ghost"
             className="h-8 w-8"
             title="Diminuir zoom"
+            aria-label="Diminuir zoom do mapa"
+            disabled={zoomLevel <= 0.9}
             onClick={() => handleZoom(-0.2)}
           >
             <ZoomOut className="h-4 w-4" />
@@ -97,6 +96,7 @@ export function BrazilMacroMap({
             variant="ghost"
             className="h-8 w-8"
             title="Restaurar visão"
+            aria-label="Restaurar visão do mapa"
             onClick={handleResetZoom}
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -143,38 +143,61 @@ export function BrazilMacroMap({
         {/* Interactive SVG Brasil Map */}
         <svg
           viewBox="0 0 800 800"
-          className="h-full w-full select-none transition-transform duration-200 ease-out"
+          role="img"
+          aria-label="Mapa do Brasil com jornadas comerciais realizadas e planejadas"
+          className="h-full w-full select-none transition-transform duration-300 ease-out"
+          preserveAspectRatio="xMidYMid meet"
           style={{
-            transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: "center",
           }}
         >
           <defs>
-            {/* Soft Glow filter for Realized territorial coverage */}
             <filter id="glow-realized" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feGaussianBlur stdDeviation="4" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
-            {/* Pattern for planned percurso */}
-            <pattern id="dotted-pattern" width="8" height="8" patternUnits="userSpaceOnUse">
-              <circle cx="4" cy="4" r="1.5" className="fill-amber-500/80" />
+            <filter id="map-shadow" x="-15%" y="-15%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="8" stdDeviation="10" floodOpacity="0.12" />
+            </filter>
+            <pattern id="map-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path
+                d="M 32 0 L 0 0 0 32"
+                fill="none"
+                className="stroke-sky-900/[0.035] dark:stroke-white/[0.025]"
+                strokeWidth="1"
+              />
             </pattern>
           </defs>
 
-          {/* 1. Base Layer: 27 Brazilian State Vector Polygons */}
-          <g id="brazil-states" className="stroke-border/50 fill-card/60">
+          <rect width="800" height="800" fill="url(#map-grid)" />
+
+          {/* Base territorial contínua: as divisas compartilham a mesma malha geográfica. */}
+          <g id="brazil-states" filter="url(#map-shadow)">
             {BRAZIL_STATE_PATHS.map((state) => (
               <g key={state.id} className="group">
                 <path
                   d={state.d}
-                  className="transition-colors duration-150 hover:fill-muted/70 hover:stroke-border"
-                  strokeWidth="1.2"
+                  className={`transition-colors duration-200 hover:fill-primary/10 ${
+                    coveredStates.has(state.id)
+                      ? "fill-primary/[0.065] stroke-primary/25"
+                      : "fill-card/95 stroke-border"
+                  }`}
+                  strokeWidth="1"
+                  vectorEffect="non-scaling-stroke"
                 />
+                <title>{state.name}</title>
                 <text
                   x={state.centroid.x}
                   y={state.centroid.y}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="pointer-events-none text-[10px] font-bold fill-muted-foreground/30 uppercase tracking-widest"
+                  className={`pointer-events-none font-bold uppercase tracking-wider ${
+                    coveredStates.has(state.id)
+                      ? "fill-primary text-[11px]"
+                      : "fill-muted-foreground/55 text-[10px]"
+                  }`}
+                  style={{ paintOrder: "stroke", stroke: "var(--background)", strokeWidth: 3 }}
                 >
                   {state.id}
                 </text>
@@ -182,7 +205,7 @@ export function BrazilMacroMap({
             ))}
           </g>
 
-          {/* 2. Layer: Immersion Routes & Territorial Bubbles */}
+          {/* Percursos: uma faixa leve de cobertura e a linha principal da jornada. */}
           <g id="immersion-territories">
             {immersions.map((immersion) => {
               if (!immersion.cityStops || immersion.cityStops.length === 0) return null;
@@ -191,14 +214,10 @@ export function BrazilMacroMap({
               const isHovered = hoveredImmersionId === immersion.id;
               const isRealized = immersion.status === "realizada";
 
-              // Calculate bounding polygon / smooth hull for territory bubble
-              const pathD =
-                points.length === 1
-                  ? `M ${points[0].x - 18} ${points[0].y} A 18 18 0 1 0 ${points[0].x + 18} ${points[0].y} A 18 18 0 1 0 ${points[0].x - 18} ${points[0].y}`
-                  : points.reduce(
-                      (acc, p, idx) => `${acc} ${idx === 0 ? "M" : "L"} ${p.x} ${p.y}`,
-                      "",
-                    ) + " Z";
+              const routePath = points.reduce(
+                (acc, point, index) => `${acc} ${index === 0 ? "M" : "L"} ${point.x} ${point.y}`,
+                "",
+              );
 
               return (
                 <g
@@ -210,50 +229,34 @@ export function BrazilMacroMap({
                     isRealized ? onSelectRealized(immersion) : onSelectPlanned(immersion)
                   }
                 >
-                  {/* Subtle coverage zone bubble ("Já estivemos aqui" vs "Vamos estar aqui") */}
-                  {isRealized ? (
-                    <path
-                      d={pathD}
-                      className={`transition-all duration-200 ${
-                        isHovered
-                          ? "fill-emerald-500/35 stroke-emerald-600 stroke-[2.5]"
-                          : "fill-emerald-500/18 stroke-emerald-500/50 stroke-[1.5]"
-                      }`}
-                      strokeDasharray="none"
-                      filter={isHovered ? "url(#glow-realized)" : undefined}
+                  {points.length === 1 ? (
+                    <circle
+                      cx={points[0].x}
+                      cy={points[0].y}
+                      r={isHovered ? 24 : 18}
+                      className={isRealized ? "fill-emerald-500/15" : "fill-amber-500/15"}
                     />
                   ) : (
-                    <path
-                      d={pathD}
-                      className={`transition-all duration-200 ${
-                        isHovered
-                          ? "fill-amber-500/25 stroke-amber-500 stroke-[2.5]"
-                          : "fill-amber-500/10 stroke-amber-500/60 stroke-[1.8]"
-                      }`}
-                      strokeDasharray="4 4"
-                    />
-                  )}
-
-                  {/* Route lines connecting city stops in journey sequence */}
-                  {points.length > 1 && (
-                    <path
-                      d={points.reduce(
-                        (acc, p, idx) => `${acc} ${idx === 0 ? "M" : "L"} ${p.x} ${p.y}`,
-                        "",
-                      )}
-                      fill="none"
-                      className={
-                        isRealized
-                          ? isHovered
-                            ? "stroke-emerald-600 stroke-[3]"
-                            : "stroke-emerald-500 stroke-[2]"
-                          : isHovered
-                            ? "stroke-amber-500 stroke-[3]"
-                            : "stroke-amber-500/80 stroke-[2]"
-                      }
-                      strokeDasharray={isRealized ? "none" : "5 5"}
-                      strokeLinecap="round"
-                    />
+                    <>
+                      <path
+                        d={routePath}
+                        fill="none"
+                        className={isRealized ? "stroke-emerald-500/15" : "stroke-amber-500/15"}
+                        strokeWidth={isHovered ? 16 : 12}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d={routePath}
+                        fill="none"
+                        className={isRealized ? "stroke-emerald-600" : "stroke-amber-500"}
+                        strokeWidth={isHovered ? 3.5 : 2.5}
+                        strokeDasharray={isRealized ? undefined : "7 6"}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        filter={isHovered && isRealized ? "url(#glow-realized)" : undefined}
+                      />
+                    </>
                   )}
                 </g>
               );
@@ -282,10 +285,9 @@ export function BrazilMacroMap({
                       isRealized ? onSelectRealized(immersion) : onSelectPlanned(immersion)
                     }
                   >
-                    {/* Ripple/Pulse effect for primary node or on hover */}
                     {isHovered && (
                       <circle
-                        r="14"
+                        r="13"
                         className={
                           isRealized
                             ? "fill-emerald-500/30 animate-ping"
@@ -294,9 +296,8 @@ export function BrazilMacroMap({
                       />
                     )}
 
-                    {/* Outer ring */}
                     <circle
-                      r={isHovered ? "9" : "7"}
+                      r={isHovered ? "8" : "6.5"}
                       className={`transition-all duration-150 ${
                         isRealized
                           ? "fill-emerald-600 stroke-background stroke-2"
@@ -304,23 +305,31 @@ export function BrazilMacroMap({
                       }`}
                     />
 
-                    {/* Inner core dot */}
                     <circle r={isHovered ? "3" : "2"} className="fill-white" />
 
-                    {/* City label text tag */}
-                    <text
-                      x="0"
-                      y={idx % 2 === 0 ? "-12" : "18"}
-                      textAnchor="middle"
-                      className={`pointer-events-none text-[10px] font-semibold transition-all duration-150 ${
-                        isHovered
-                          ? "fill-foreground text-[11px] font-bold"
-                          : "fill-muted-foreground"
-                      }`}
-                      style={{ textShadow: "0px 1px 2px rgba(0,0,0,0.6)" }}
-                    >
-                      {stop.cityName}
-                    </text>
+                    {isHovered && (
+                      <g
+                        transform={`translate(0, ${idx % 2 === 0 ? -25 : 25})`}
+                        className="pointer-events-none"
+                      >
+                        <rect
+                          x={-(stop.cityName.length * 3.2 + 8)}
+                          y="-9"
+                          width={stop.cityName.length * 6.4 + 16}
+                          height="18"
+                          rx="6"
+                          className="fill-background stroke-border"
+                          strokeWidth="1"
+                        />
+                        <text
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="fill-foreground text-[10px] font-semibold"
+                        >
+                          {stop.cityName}
+                        </text>
+                      </g>
+                    )}
                   </g>
                 );
               });
@@ -329,45 +338,7 @@ export function BrazilMacroMap({
         </svg>
       </div>
 
-      {/* Summary Footer Bar */}
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Imersões Realizadas</p>
-            <p className="text-sm font-semibold">
-              {immersions.filter((i) => i.status === "realizada").length} jornadas
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Clock className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Imersões Planejadas</p>
-            <p className="text-sm font-semibold">
-              {immersions.filter((i) => i.status === "planejada").length} mapeadas
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <MapPin className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Clientes & Reps Mapeados</p>
-            <p className="text-sm font-semibold">
-              {immersions.reduce((acc, i) => acc + i.clients.length, 0)} clientes /{" "}
-              {immersions.reduce((acc, i) => acc + i.representatives.length, 0)} reps
-            </p>
-          </div>
-        </div>
-      </div>
+      <BrazilMapSummary immersions={immersions} />
     </div>
   );
 }
