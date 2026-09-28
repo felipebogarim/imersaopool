@@ -51,9 +51,19 @@ import {
 } from "@/lib/price-comparison-groups";
 import { exportComparisonGroupPdf } from "@/lib/price-comparison-groups-pdf";
 import { ComparisonRowCard } from "@/components/price-comparison-groups/ComparisonRowCard";
-import { CodeAutocompleteInput } from "@/components/price-comparison-groups/CodeAutocompleteInput";
+import {
+  ComparisonSidePicker,
+  EMPTY_SIDE,
+  useResolvedSide,
+  type SideSelection,
+} from "@/components/price-comparison-groups/ComparisonSidePicker";
+import { productCode } from "@/components/price-comparison-groups/ProductCombobox";
+import {
+  fetchBrandOptions,
+  fetchBrandPriceTables,
+  resolveTableKey,
+} from "@/lib/price-comparison-lookup";
 import { SpecificComparativesPanel } from "@/components/price-comparison-groups/SpecificComparativesPanel";
-import type { LoadedProduct } from "@/lib/price-comparativos-data";
 
 export const Route = createFileRoute("/_authenticated/price/validacao")({
   head: () => ({ meta: [{ title: "Validação de Comparáveis — PoolFlux" }] }),
@@ -75,39 +85,7 @@ function emptyGroupDraft(familia: string): GroupDraft {
     familia,
     categoria: CATEGORIAS[familia]?.[0] ?? null,
     base_brand: cfg.baseBrand,
-    base_price_table: cfg.tabelasBase?.[0] ?? null,
-  };
-}
-
-type NewComparisonForm = {
-  baseCode: string;
-  baseBrand: string;
-  basePrice: string;
-  competitorABrand: string;
-  competitorACode: string;
-  competitorAPrice: string;
-  competitorATable: string;
-  twoCompetitors: boolean;
-  competitorBBrand: string;
-  competitorBCode: string;
-  competitorBPrice: string;
-  competitorBTable: string;
-};
-
-function emptyComparisonForm(baseBrand: string): NewComparisonForm {
-  return {
-    baseCode: "",
-    baseBrand,
-    basePrice: "",
-    competitorABrand: "",
-    competitorACode: "",
-    competitorAPrice: "",
-    competitorATable: "",
-    twoCompetitors: false,
-    competitorBBrand: "",
-    competitorBCode: "",
-    competitorBPrice: "",
-    competitorBTable: "",
+    base_price_table: null,
   };
 }
 
@@ -119,10 +97,13 @@ function ValidacaoComparaveisPage() {
   const [group, setGroup] = useState<ComparisonGroup | null>(null);
   const [draft, setDraft] = useState(emptyGroupDraft(FAMILIAS[0]));
   const [items, setItems] = useState<ComparisonGroupItem[]>([]);
-  const [form, setForm] = useState<NewComparisonForm>(emptyComparisonForm(draft.base_brand));
-  const [selectedBase, setSelectedBase] = useState<LoadedProduct | null>(null);
-  const [selectedCompA, setSelectedCompA] = useState<LoadedProduct | null>(null);
-  const [selectedCompB, setSelectedCompB] = useState<LoadedProduct | null>(null);
+  const [baseSide, setBaseSide] = useState<SideSelection>({
+    ...EMPTY_SIDE,
+    brand: draft.base_brand,
+  });
+  const [compA, setCompA] = useState<SideSelection>(EMPTY_SIDE);
+  const [compB, setCompB] = useState<SideSelection>(EMPTY_SIDE);
+  const [twoCompetitors, setTwoCompetitors] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -141,7 +122,34 @@ function ValidacaoComparaveisPage() {
   const [substituteScope, setSubstituteScope] = useState<"item" | "group">("group");
   const [substituteItemId, setSubstituteItemId] = useState<string | null>(null);
 
-  const cfg = useMemo(() => getFamilyConfig(draft.familia), [draft.familia]);
+  const brandsQuery = useQuery({
+    queryKey: ["price-comparison-brands", draft.familia],
+    queryFn: () => fetchBrandOptions(draft.familia),
+  });
+  const baseBrandOptions = useMemo(() => {
+    const opts = brandsQuery.data?.base ?? [];
+    return opts.includes(draft.base_brand) || !draft.base_brand
+      ? opts
+      : [draft.base_brand, ...opts];
+  }, [brandsQuery.data, draft.base_brand]);
+
+  const baseTablesQuery = useQuery({
+    queryKey: ["price-comparison-brand-tables", draft.base_brand, draft.familia],
+    queryFn: () => fetchBrandPriceTables(draft.base_brand, draft.familia),
+    enabled: !!draft.base_brand,
+  });
+  const baseTables = baseTablesQuery.data ?? [];
+  const effectiveBaseTable = resolveTableKey(baseTables, draft.base_price_table);
+
+  const baseResolved = useResolvedSide(baseSide, draft.familia, effectiveBaseTable);
+  const compAResolved = useResolvedSide(compA, draft.familia);
+  const compBResolved = useResolvedSide(compB, draft.familia);
+
+  function resetSides(baseBrand: string) {
+    setBaseSide({ ...EMPTY_SIDE, brand: baseBrand });
+    setCompA(EMPTY_SIDE);
+    setCompB(EMPTY_SIDE);
+  }
 
   const groupsQuery = useQuery({
     queryKey: ["price-comparison-groups-panel", draft.familia],
@@ -150,8 +158,9 @@ function ValidacaoComparaveisPage() {
   });
 
   useEffect(() => {
-    setDraft(emptyGroupDraft(familia));
-    setForm(emptyComparisonForm(getFamilyConfig(familia).baseBrand));
+    const next = emptyGroupDraft(familia);
+    setDraft(next);
+    resetSides(next.base_brand);
   }, [familia]);
 
   const canManage = !!isAdmin;
@@ -167,47 +176,58 @@ function ValidacaoComparaveisPage() {
       familia: draft.familia,
       categoria: draft.categoria,
       base_brand: draft.base_brand,
-      base_price_table: draft.base_price_table,
+      base_price_table: effectiveBaseTable,
     });
     setGroup(created);
     return created;
   }
 
   async function handleAddComparison() {
-    if (!form.baseCode.trim() || !form.competitorACode.trim()) {
-      toast.error("Informe pelo menos o código base e o código do concorrente.");
+    if (!baseSide.product || !compA.product) {
+      toast.error("Selecione o produto base e o produto do concorrente.");
       return;
     }
+    if (twoCompetitors && !compB.product) {
+      toast.error("Selecione o produto do 2º concorrente ou desative a comparação com 2.");
+      return;
+    }
+    const baseP = baseSide.product;
+    const aP = compA.product;
+    const bP = twoCompetitors ? compB.product : null;
     try {
       const g = await ensureGroup();
       const newItem = await addItem(g.id, {
-        base_code: form.baseCode.trim(),
-        base_brand: form.baseBrand.trim() || draft.base_brand,
-        base_price: form.basePrice ? Number(form.basePrice) : null,
-        base_product_id: selectedBase?.id ?? null,
-        two_competitors: form.twoCompetitors,
-        competitor_a_brand: form.competitorABrand.trim(),
-        competitor_a_code: form.competitorACode.trim(),
-        competitor_a_price: form.competitorAPrice ? Number(form.competitorAPrice) : null,
-        competitor_a_price_table: form.competitorATable.trim() || null,
-        competitor_a_product_id: selectedCompA?.id ?? null,
-        competitor_b_brand: form.twoCompetitors ? form.competitorBBrand.trim() || null : null,
-        competitor_b_code: form.twoCompetitors ? form.competitorBCode.trim() || null : null,
-        competitor_b_price:
-          form.twoCompetitors && form.competitorBPrice ? Number(form.competitorBPrice) : null,
-        competitor_b_price_table: form.twoCompetitors ? form.competitorBTable.trim() || null : null,
-        competitor_b_product_id: form.twoCompetitors ? (selectedCompB?.id ?? null) : null,
+        base_code: productCode(baseP),
+        base_brand: baseP.marca,
+        base_price: baseResolved.price,
+        base_product_id: baseP.id,
+        two_competitors: twoCompetitors,
+        competitor_a_brand: aP.marca,
+        competitor_a_code: productCode(aP),
+        competitor_a_price: compAResolved.price,
+        competitor_a_price_table: compAResolved.table,
+        competitor_a_price_date: compAResolved.priceRow?.effective_date ?? null,
+        competitor_a_region: compAResolved.priceRow?.region ?? null,
+        competitor_a_source: compAResolved.priceRow?.source_file ?? null,
+        competitor_a_product_id: aP.id,
+        competitor_b_brand: bP ? bP.marca : null,
+        competitor_b_code: bP ? productCode(bP) : null,
+        competitor_b_price: bP ? compBResolved.price : null,
+        competitor_b_price_table: bP ? compBResolved.table : null,
+        competitor_b_price_date: bP ? (compBResolved.priceRow?.effective_date ?? null) : null,
+        competitor_b_region: bP ? (compBResolved.priceRow?.region ?? null) : null,
+        competitor_b_source: bP ? (compBResolved.priceRow?.source_file ?? null) : null,
+        competitor_b_product_id: bP ? bP.id : null,
         specs_snapshot: {
-          base: selectedBase?.product.specs,
-          competitor_a: selectedCompA?.product.specs,
-          competitor_b: form.twoCompetitors ? selectedCompB?.product.specs : undefined,
+          base: baseP.product.specs,
+          competitor_a: aP.product.specs,
+          competitor_b: bP ? bP.product.specs : undefined,
         },
       } as never);
       setItems((prev) => [...prev, newItem]);
-      setForm(emptyComparisonForm(draft.base_brand));
-      setSelectedBase(null);
-      setSelectedCompA(null);
-      setSelectedCompB(null);
+      setBaseSide((s) => ({ ...EMPTY_SIDE, brand: s.brand }));
+      setCompA((s) => ({ ...EMPTY_SIDE, brand: s.brand }));
+      setCompB((s) => ({ ...EMPTY_SIDE, brand: s.brand }));
       toast.success("Comparação adicionada ao grupo.");
     } catch (e) {
       if ((e as Error).message !== "missing-name") {
@@ -323,8 +343,9 @@ function ValidacaoComparaveisPage() {
   function handleNewGroup() {
     setGroup(null);
     setItems([]);
-    setDraft(emptyGroupDraft(familia));
-    setForm(emptyComparisonForm(getFamilyConfig(familia).baseBrand));
+    const next = emptyGroupDraft(familia);
+    setDraft(next);
+    resetSides(next.base_brand);
   }
 
   async function handleOpenSaved(g: ComparisonGroup) {
@@ -456,43 +477,52 @@ function ValidacaoComparaveisPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Marca base</Label>
-                  <Input
-                    value={draft.base_brand}
-                    onChange={(e) => setDraft((d) => ({ ...d, base_brand: e.target.value }))}
+                  <Select
+                    value={draft.base_brand || undefined}
+                    onValueChange={(v) => {
+                      setDraft((d) => ({ ...d, base_brand: v, base_price_table: null }));
+                      setBaseSide({ ...EMPTY_SIDE, brand: v });
+                    }}
                     disabled={!!group}
-                    className="h-9"
-                  />
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Marca base" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {baseBrandOptions.map((b) => (
+                        <SelectItem key={b} value={b}>
+                          {b}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Tabela base da marca</Label>
-                  {cfg.tabelasBase?.length ? (
-                    <Select
-                      value={draft.base_price_table ?? undefined}
-                      onValueChange={(v) => setDraft((d) => ({ ...d, base_price_table: v }))}
-                      disabled={!!group}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Tabela" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cfg.tabelasBase.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      value={draft.base_price_table ?? ""}
-                      onChange={(e) =>
-                        setDraft((d) => ({ ...d, base_price_table: e.target.value }))
-                      }
-                      disabled={!!group}
-                      className="h-9"
-                      placeholder="Tabela base"
-                    />
-                  )}
+                  <Select
+                    value={effectiveBaseTable ?? undefined}
+                    onValueChange={(v) => setDraft((d) => ({ ...d, base_price_table: v }))}
+                    disabled={!!group || baseTables.length === 0}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue
+                        placeholder={
+                          baseTables.length === 0 ? "Sem tabela cadastrada" : "Selecione a tabela"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {baseTables.map((t) => (
+                        <SelectItem key={t.key} value={t.key}>
+                          {t.label}
+                          {t.date
+                            ? ` · ${new Date(t.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })}`
+                            : ""}
+                          {t.categoria ? ` · ${t.categoria}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Nome do estudo comparativo</Label>
@@ -528,149 +558,42 @@ function ValidacaoComparaveisPage() {
                   </Label>
                   <Switch
                     id="two-competitors"
-                    checked={form.twoCompetitors}
-                    onCheckedChange={(v) => setForm((f) => ({ ...f, twoCompetitors: v }))}
+                    checked={twoCompetitors}
+                    onCheckedChange={setTwoCompetitors}
                   />
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-1">
-                  <Label className="text-xs">Seu código</Label>
-                  <CodeAutocompleteInput
-                    value={form.baseCode}
-                    onChange={(v) => setForm((f) => ({ ...f, baseCode: v }))}
-                    onSelectProduct={(p) => {
-                      setSelectedBase(p);
-                      setForm((f) => ({
-                        ...f,
-                        baseBrand: p.marca,
-                        basePrice:
-                          p.priceRow?.price != null ? String(p.priceRow.price) : f.basePrice,
-                      }));
-                    }}
+              <div className={`grid gap-3 ${twoCompetitors ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+                <ComparisonSidePicker
+                  title="Produto base"
+                  familia={draft.familia}
+                  categoria={draft.categoria}
+                  brandOptions={baseBrandOptions}
+                  brandLocked
+                  fixedTable={effectiveBaseTable}
+                  value={baseSide}
+                  resolved={baseResolved}
+                  onChange={setBaseSide}
+                />
+                <ComparisonSidePicker
+                  title="Produto concorrente"
+                  familia={draft.familia}
+                  categoria={draft.categoria}
+                  brandOptions={brandsQuery.data?.competitors ?? []}
+                  value={compA}
+                  resolved={compAResolved}
+                  onChange={setCompA}
+                />
+                {twoCompetitors && (
+                  <ComparisonSidePicker
+                    title="2º concorrente"
                     familia={draft.familia}
                     categoria={draft.categoria}
-                    marca={draft.base_brand}
-                    placeholder={`Código ${draft.base_brand}`}
+                    brandOptions={brandsQuery.data?.competitors ?? []}
+                    value={compB}
+                    resolved={compBResolved}
+                    onChange={setCompB}
                   />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Preço base</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.basePrice}
-                    onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
-                    placeholder="R$/m"
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Marca do competidor</Label>
-                  <Input
-                    value={form.competitorABrand}
-                    onChange={(e) => setForm((f) => ({ ...f, competitorABrand: e.target.value }))}
-                    placeholder="Ex.: Stella"
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Código do competidor</Label>
-                  <CodeAutocompleteInput
-                    value={form.competitorACode}
-                    onChange={(v) => setForm((f) => ({ ...f, competitorACode: v }))}
-                    onSelectProduct={(p) => {
-                      setSelectedCompA(p);
-                      setForm((f) => ({
-                        ...f,
-                        competitorABrand: p.marca,
-                        competitorAPrice:
-                          p.priceRow?.price != null ? String(p.priceRow.price) : f.competitorAPrice,
-                      }));
-                    }}
-                    familia={draft.familia}
-                    categoria={draft.categoria}
-                    marca={form.competitorABrand || undefined}
-                    placeholder="Código concorrente"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Preço concorrente</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.competitorAPrice}
-                    onChange={(e) => setForm((f) => ({ ...f, competitorAPrice: e.target.value }))}
-                    placeholder="R$/m"
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Tabela do competidor</Label>
-                  <Input
-                    value={form.competitorATable}
-                    onChange={(e) => setForm((f) => ({ ...f, competitorATable: e.target.value }))}
-                    placeholder="Ex.: Stella Abril/2026"
-                    className="h-9"
-                  />
-                </div>
-                {form.twoCompetitors && (
-                  <>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Marca do 2º competidor</Label>
-                      <Input
-                        value={form.competitorBBrand}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, competitorBBrand: e.target.value }))
-                        }
-                        className="h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Código do 2º competidor</Label>
-                      <CodeAutocompleteInput
-                        value={form.competitorBCode}
-                        onChange={(v) => setForm((f) => ({ ...f, competitorBCode: v }))}
-                        onSelectProduct={(p) => {
-                          setSelectedCompB(p);
-                          setForm((f) => ({
-                            ...f,
-                            competitorBBrand: p.marca,
-                            competitorBPrice:
-                              p.priceRow?.price != null
-                                ? String(p.priceRow.price)
-                                : f.competitorBPrice,
-                          }));
-                        }}
-                        familia={draft.familia}
-                        categoria={draft.categoria}
-                        marca={form.competitorBBrand || undefined}
-                        placeholder="Código do 2º concorrente"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Preço do 2º competidor</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={form.competitorBPrice}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, competitorBPrice: e.target.value }))
-                        }
-                        className="h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Tabela do 2º competidor</Label>
-                      <Input
-                        value={form.competitorBTable}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, competitorBTable: e.target.value }))
-                        }
-                        className="h-9"
-                      />
-                    </div>
-                  </>
                 )}
               </div>
               <Button onClick={handleAddComparison} size="sm" className="gap-1.5">
