@@ -6,6 +6,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+/** Marcas base permitidas na Validação de Comparáveis. */
+export const BASE_BRANDS = ["Studio", "Newline", "Standard"] as const;
+
 export const PRICE_NOT_FOUND_LABEL = "Preço não encontrado";
 const NO_TABLE_LABEL = "Tabela sem identificação";
 
@@ -78,7 +81,11 @@ export async function fetchBrandOptions(
     supabase.from("price_competitors").select("nome").order("nome"),
   ]);
   if (competitors.error) throw competitors.error;
-  const base = uniqueCI(products.filter((p) => p.is_base).map((p) => p.marca as string));
+  // Marca base: só as permitidas, usando a grafia cadastrada nos produtos quando existir.
+  const cadastradas = new Map(
+    products.map((p) => [(p.marca as string).trim().toLowerCase(), (p.marca as string).trim()]),
+  );
+  const base = BASE_BRANDS.map((b) => cadastradas.get(b.toLowerCase()) ?? b);
   const baseSet = new Set(base.map((b) => b.toLowerCase()));
   const comp = uniqueCI([
     ...products.filter((p) => !p.is_base).map((p) => p.marca as string),

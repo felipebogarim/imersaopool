@@ -49,7 +49,20 @@ export function ProductCombobox({
     setLoading(true);
     const t = setTimeout(() => {
       searchProducts({ familia, categoria: categoria ?? undefined, marca, busca: query })
-        .then((r) => active && setResults(r))
+        .then((r) => {
+          if (!active) return;
+          setResults(r);
+          // Código digitado por completo: seleciona o produto sem precisar clicar.
+          const code = query.trim().toLowerCase();
+          if (!code) return;
+          const exact = r.filter(
+            (p) => p.sku?.toLowerCase() === code || p.referencia?.toLowerCase() === code,
+          );
+          if (exact.length === 1) {
+            onSelect(exact[0]);
+            setOpen(false);
+          }
+        })
         .catch(() => active && setResults([]))
         .finally(() => active && setLoading(false));
     }, 250);
@@ -57,6 +70,7 @@ export function ProductCombobox({
       active = false;
       clearTimeout(t);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, query, familia, categoria, marca]);
 
   return (

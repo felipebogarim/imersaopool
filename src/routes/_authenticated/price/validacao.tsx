@@ -59,6 +59,7 @@ import {
 } from "@/components/price-comparison-groups/ComparisonSidePicker";
 import { productCode } from "@/components/price-comparison-groups/ProductCombobox";
 import {
+  BASE_BRANDS,
   fetchBrandOptions,
   fetchBrandPriceTables,
   resolveTableKey,
@@ -84,7 +85,8 @@ function emptyGroupDraft(familia: string): GroupDraft {
     name: "",
     familia,
     categoria: CATEGORIAS[familia]?.[0] ?? null,
-    base_brand: cfg.baseBrand,
+    base_brand:
+      BASE_BRANDS.find((b) => b.toLowerCase() === cfg.baseBrand.toLowerCase()) ?? BASE_BRANDS[0],
     base_price_table: null,
   };
 }
@@ -127,11 +129,23 @@ function ValidacaoComparaveisPage() {
     queryFn: () => fetchBrandOptions(draft.familia),
   });
   const baseBrandOptions = useMemo(() => {
-    const opts = brandsQuery.data?.base ?? [];
-    return opts.includes(draft.base_brand) || !draft.base_brand
+    const opts = brandsQuery.data?.base ?? [...BASE_BRANDS];
+    return !draft.base_brand || opts.some((o) => o.toLowerCase() === draft.base_brand.toLowerCase())
       ? opts
       : [draft.base_brand, ...opts];
   }, [brandsQuery.data, draft.base_brand]);
+
+  // Alinha a grafia da marca base com a cadastrada nos produtos (filtro por marca é exato).
+  useEffect(() => {
+    if (group) return;
+    const match = baseBrandOptions.find(
+      (o) => o.toLowerCase() === draft.base_brand.toLowerCase() && o !== draft.base_brand,
+    );
+    if (match) {
+      setDraft((d) => ({ ...d, base_brand: match }));
+      setBaseSide((s) => ({ ...s, brand: match }));
+    }
+  }, [baseBrandOptions, draft.base_brand, group]);
 
   const baseTablesQuery = useQuery({
     queryKey: ["price-comparison-brand-tables", draft.base_brand, draft.familia],
