@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ExecutiveTable } from "@/components/director-bi/ExecutiveTable";
-import { RepresentativeTable } from "@/components/director-bi/RepresentativeTable";
 import { ImmersionModule } from "@/components/director-bi/immersions/ImmersionModule";
 import { StatusDonutChart } from "@/components/director-bi/DirectorCharts";
 import { useDirectorBI } from "@/hooks/useDirectorBI";
@@ -19,19 +17,16 @@ export const Route = createFileRoute("/_authenticated/bi-diretor")({
 });
 
 function BIDiretorPage() {
-  type DirectorTab = ExecArea | "reps" | "immersions";
-  const tabs: DirectorTab[] = [...DIRECTOR_AREAS, "reps", "immersions"];
+  type DirectorTab = ExecArea | "immersions";
+  const tabs: DirectorTab[] = [...DIRECTOR_AREAS, "immersions"];
   const [area, setArea] = useState<DirectorTab>("commercial");
-  const queryClient = useQueryClient();
-  const repNotesFetching = useIsFetching({ queryKey: ["director-rep-notes"] });
   const query = useDirectorBI();
-  const isRefreshing = query.isFetching || repNotesFetching > 0;
+  const isRefreshing = query.isFetching;
   const actions = useMemo(() => query.data?.actions ?? [], [query.data]);
   // Todas as ações da área selecionada, em qualquer status — contexto executivo geral.
   // Os filtros de coluna da tabela atuam depois, só sobre a lista já mostrada.
   const areaActions = useMemo(
-    () =>
-      area === "reps" || area === "immersions" ? [] : filterDirectorActions(actions, area, "all"),
+    () => (area === "immersions" ? [] : filterDirectorActions(actions, area, "all")),
     [actions, area],
   );
   const statusBreakdown = useMemo(() => computeStatusBreakdown(areaActions), [areaActions]);
@@ -58,15 +53,7 @@ function BIDiretorPage() {
                 Última atualização {lastUpdated}
               </span>
             )}
-            <Button
-              disabled={isRefreshing}
-              onClick={() =>
-                void Promise.all([
-                  query.refetch(),
-                  queryClient.refetchQueries({ queryKey: ["director-rep-notes"], type: "active" }),
-                ])
-              }
-            >
+            <Button disabled={isRefreshing} onClick={() => void query.refetch()}>
               <RefreshCw className={isRefreshing ? "mr-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4"} />{" "}
               Atualizar
             </Button>
@@ -87,12 +74,12 @@ function BIDiretorPage() {
                     value={key}
                     className="justify-center rounded-lg border px-2 py-1.5 text-[10px] font-medium uppercase leading-tight data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                   >
-                    {key === "reps" ? "Reps" : key === "immersions" ? "Imersão" : AREA_LABEL[key]}
+                    {key === "immersions" ? "Imersão" : AREA_LABEL[key]}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </div>
-            {area !== "reps" && area !== "immersions" && !query.isPending && !query.isError && (
+            {area !== "immersions" && !query.isPending && !query.isError && (
               <StatusDonutChart data={statusBreakdown} />
             )}
           </div>
@@ -117,8 +104,6 @@ function BIDiretorPage() {
                     Tentar novamente
                   </Button>
                 </div>
-              ) : key === "reps" ? (
-                <RepresentativeTable representatives={query.data?.reps ?? []} />
               ) : key === "immersions" ? (
                 <ImmersionModule />
               ) : (
