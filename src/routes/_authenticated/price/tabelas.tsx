@@ -12,6 +12,7 @@ import { Upload, FileSpreadsheet, MoreVertical, Download, Trash2, RefreshCw } fr
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { relinkReplacedTable } from "@/lib/price-table-replace";
 
 export const Route = createFileRoute("/_authenticated/price/tabelas")({
   head: () => ({
@@ -57,6 +58,9 @@ function TabelasPage() {
   const [saving, setSaving] = useState(false);
   const [replaceTargetId, setReplaceTargetId] = useState<string | null>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replaceFile, setReplaceFile] = useState<File | null>(null);
+  const [replaceTitle, setReplaceTitle] = useState("");
+  const [replacing, setReplacing] = useState(false);
 
   const { data: competitors = [] } = useQuery({
     queryKey: ["price-competitors"],
@@ -162,18 +166,35 @@ function TabelasPage() {
     replaceInputRef.current?.click();
   }
 
-  async function onReplaceChosen(e: React.ChangeEvent<HTMLInputElement>) {
+  function onReplaceChosen(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !replaceTargetId) return;
     const row = tabelas.find((r: any) => r.id === replaceTargetId);
     if (!row) return;
+    setReplaceFile(file);
+    setReplaceTitle(row.titulo ?? "");
+  }
+
+  function cancelReplace() {
+    setReplaceFile(null);
+    setReplaceTitle("");
+    setReplaceTargetId(null);
+  }
+
+  async function confirmReplace() {
+    const row = tabelas.find((r: any) => r.id === replaceTargetId);
+    const title = replaceTitle.trim();
+    if (!row || !replaceFile) return;
+    if (!title) return toast.error("Título obrigatório");
+    setReplacing(true);
     try {
-      const up = await uploadFile(file);
+      const up = await uploadFile(replaceFile);
       const oldPath = row.file_path;
       const { error } = await supabase
         .from("price_tables")
         .update({
+          titulo: title,
           file_path: up.path,
           file_name: up.name,
           file_size: up.size,
@@ -183,12 +204,30 @@ function TabelasPage() {
         .eq("id", row.id);
       if (error) throw error;
       if (oldPath) await supabase.storage.from("price-tables").remove([oldPath]);
-      toast.success("Tabela atualizada");
-      qc.invalidateQueries({ queryKey: ["price-tables"] });
+
+      let msg = "Tabela atualizada";
+      try {
+        const rep = await relinkReplacedTable({
+          competitorName: row.competitor?.nome ?? null,
+          oldTitle: row.titulo,
+          oldFileName: row.file_name ?? null,
+          newTitle: title,
+          newFileName: up.name,
+        });
+        msg += ` — ${rep.priceRows} preço(s) e ${rep.groups + rep.items} vínculo(s) de comparação religados`;
+      } catch (err: any) {
+        toast.warning(`Arquivo trocado, mas a religação dos preços falhou: ${err?.message ?? err}`);
+      }
+      toast.success(msg);
+      for (const k of ["price-tables", "price-comparison-groups"]) {
+        qc.invalidateQueries({ queryKey: [k] });
+      }
+      qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("price") });
+      cancelReplace();
     } catch (err: any) {
       toast.error(err?.message ?? "Falha ao substituir arquivo");
     } finally {
-      setReplaceTargetId(null);
+      setReplacing(false);
     }
   }
 
@@ -200,6 +239,36 @@ function TabelasPage() {
   return (
     <div className="space-y-4">
       <input ref={replaceInputRef} type="file" className="hidden" onChange={onReplaceChosen} />
+
+      <Dialog open={!!replaceFile} onOpenChange={(o) => { if (!o && !replacing) cancelReplace(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Atualizar tabela</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Novo arquivo</Label>
+              <p className="text-sm text-muted-foreground truncate">{replaceFile?.name}</p>
+            </div>
+            <div>
+              <Label>Título da tabela</Label>
+              <Input value={replaceTitle} onChange={(e) => setReplaceTitle(e.target.value)} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A tabela anterior será considerada substituída: os preços e comparações vinculados a
+              ela passam a apontar para este título e arquivo.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" disabled={replacing} onClick={cancelReplace}>
+                Cancelar
+              </Button>
+              <Button disabled={replacing} onClick={confirmReplace}>
+                {replacing ? "Atualizando…" : "Atualizar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
