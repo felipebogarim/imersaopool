@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { SpecValue } from "./price-comparativos-core";
-import { hydrateCatalogProducts, type ProductRow } from "./price-comparativos-data";
+import {
+  hydrateCatalogProducts,
+  matchesProductClassification,
+  type ProductRow,
+} from "./price-comparativos-data";
 
 const STELLA_SKUS = ["STL21834/27", "STL21836/27", "STL21837/27"];
 
@@ -43,5 +47,18 @@ describe("catálogo da Validação de Comparáveis", () => {
     expect(loaded.every((row) => row.priceRow === null)).toBe(true);
     expect(loaded.every((row) => row.product.preco === null)).toBe(true);
     expect(loaded.every((row) => row.product.specs.fluxo_m?.value_numeric === 1500)).toBe(true);
+  });
+
+  it("aceita o tipo selecionado vindo de categoria ou de tipo", () => {
+    const byCategory = stellaProduct("STL21834/27", 1);
+    const byType = {
+      ...stellaProduct("STL21837/27", 2),
+      categoria: "Iluminação",
+      tipo: "Fitas LED",
+    };
+
+    expect(matchesProductClassification(byCategory, "Fitas LED")).toBe(true);
+    expect(matchesProductClassification(byType, "fitas led")).toBe(true);
+    expect(matchesProductClassification(byType, "Perfis")).toBe(false);
   });
 });

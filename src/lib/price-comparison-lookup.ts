@@ -204,6 +204,25 @@ export function tablesFromPriceRows(rows: ProductPriceRow[]): PriceTableOption[]
   return Array.from(byKey.values());
 }
 
+/**
+ * A marca base usa a tabela fixada no estudo. Concorrentes só exibem tabelas do produto
+ * selecionado; uma origem de preço de outro SKU da mesma marca nunca é oferecida como aplicável.
+ */
+export function tablesForComparisonSide({
+  productSelected,
+  productTables,
+  brandTables,
+  useBrandTables,
+}: {
+  productSelected: boolean;
+  productTables: PriceTableOption[];
+  brandTables: PriceTableOption[];
+  useBrandTables: boolean;
+}): PriceTableOption[] {
+  if (useBrandTables) return brandTables;
+  return productSelected ? productTables : [];
+}
+
 /** Anexa categoria/data cadastradas na aba Tabelas (`price_tables`) quando o nome coincide. */
 async function enrichWithRegisteredTables(
   marca: string,

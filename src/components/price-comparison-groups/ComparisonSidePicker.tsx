@@ -20,6 +20,7 @@ import {
   fetchProductPriceRows,
   pickPriceRow,
   tablesFromPriceRows,
+  tablesForComparisonSide,
   resolveTableKey,
   type PriceTableOption,
   type ProductPriceRow,
@@ -58,10 +59,11 @@ export function useResolvedSide(
   fixedTable?: string | null,
 ): ResolvedSide {
   const productId = sel.product?.id ?? null;
+  const useBrandTables = fixedTable !== undefined;
   const tablesQ = useQuery({
     queryKey: ["price-comparison-brand-tables", sel.brand, familia],
     queryFn: () => fetchBrandPriceTables(sel.brand, familia),
-    enabled: !!sel.brand,
+    enabled: !!sel.brand && useBrandTables,
   });
   const rowsQ = useQuery({
     queryKey: ["price-comparison-product-prices", productId],
@@ -70,10 +72,13 @@ export function useResolvedSide(
   });
   return useMemo(() => {
     const rows = rowsQ.data ?? [];
-    // Com produto selecionado, as tabelas vêm dos registros de preço dele (não dependem de
-    // price_list_name); sem registros, cai para as tabelas da marca.
     const productTables = tablesFromPriceRows(rows);
-    const tables = productTables.length > 0 ? productTables : (tablesQ.data ?? []);
+    const tables = tablesForComparisonSide({
+      productSelected: productId != null,
+      productTables,
+      brandTables: tablesQ.data ?? [],
+      useBrandTables,
+    });
     const table = resolveTableKey(tables, sel.table ?? fixedTable);
     const picked = pickPriceRow(rows, table, getFamilyConfig(familia).unidade);
     return {
@@ -84,7 +89,7 @@ export function useResolvedSide(
       originalPrice: picked.originalPrice,
       originalUnit: picked.originalUnit,
       comparableUnit: picked.comparableUnit,
-      loading: !!productId && (rowsQ.isLoading || tablesQ.isLoading),
+      loading: !!productId && (rowsQ.isLoading || (useBrandTables && tablesQ.isLoading)),
     };
   }, [
     tablesQ.data,
@@ -92,6 +97,7 @@ export function useResolvedSide(
     rowsQ.data,
     rowsQ.isLoading,
     productId,
+    useBrandTables,
     fixedTable,
     sel.table,
     familia,
@@ -186,16 +192,18 @@ export function ComparisonSidePicker({
           <Select
             value={resolved.table ?? undefined}
             onValueChange={(v) => onChange({ ...value, table: v })}
-            disabled={!value.brand || resolved.tables.length === 0}
+            disabled={!value.brand || !product || resolved.tables.length === 0}
           >
             <SelectTrigger className="h-9">
               <SelectValue
                 placeholder={
                   !value.brand
                     ? "Escolha a marca"
-                    : resolved.tables.length === 0
-                      ? "Definida pelo preço do produto"
-                      : "Selecione a tabela"
+                    : !product
+                      ? "Selecione um produto"
+                      : resolved.tables.length === 0
+                        ? "Sem preço/tabela cadastrados"
+                        : "Selecione a tabela"
                 }
               />
             </SelectTrigger>
@@ -216,7 +224,7 @@ export function ComparisonSidePicker({
         <Label className="text-xs">Produto / código</Label>
         <ProductCombobox
           value={product}
-          onSelect={(p) => onChange({ ...value, product: p })}
+          onSelect={(p) => onChange({ ...value, product: p, table: null })}
           familia={familia}
           categoria={categoria}
           marca={value.brand}
@@ -231,7 +239,7 @@ export function ComparisonSidePicker({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Preço original (tabela)</Label>
+        <Label className="text-xs">Preço comparável</Label>
         <div
           className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm"
           aria-readonly="true"

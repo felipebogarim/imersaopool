@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SpecValue } from "@/lib/price-comparativos-core";
 import {
   fetchProducts,
+  matchesProductClassification,
   type ProductRow,
   type LoadedProduct,
   loadCatalogProducts,
@@ -564,8 +565,13 @@ export async function searchProducts(params: {
   busca?: string;
 }): Promise<LoadedProduct[]> {
   // A RLS de price_products limita à empresa atual. Preço/tabela não participam desta busca.
-  const rows: ProductRow[] = await fetchProducts({ ...params, limit: null });
-  return loadCatalogProducts(rows);
+  // "Tipo" pode estar em `categoria` ou `tipo`, conforme a origem da importação.
+  const { categoria, ...catalogParams } = params;
+  const rows: ProductRow[] = await fetchProducts({ ...catalogParams, limit: null });
+  const matchingRows = categoria
+    ? rows.filter((row) => matchesProductClassification(row, categoria))
+    : rows;
+  return loadCatalogProducts(matchingRows);
 }
 
 // ============ Conflito com comparação oficial existente ============

@@ -35,6 +35,23 @@ export type ProductRow = {
   updated_at: string;
 };
 
+function normalizedClassification(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/** A seleção "Tipo" aceita o valor cadastrado em `categoria` ou em `tipo`. */
+export function matchesProductClassification(product: ProductRow, classification: string): boolean {
+  const expected = normalizedClassification(classification);
+  return (
+    normalizedClassification(product.categoria) === expected ||
+    normalizedClassification(product.tipo) === expected
+  );
+}
+
 export type EquivalenceRow = {
   id: string;
   base_product_id: string;
@@ -129,7 +146,9 @@ export async function fetchMarcas(): Promise<string[]> {
   return Array.from(new Set((data ?? []).map((r) => r.marca as string))).sort();
 }
 
-async function fetchSpecs(productIds: string[]): Promise<Record<string, Record<string, SpecValue>>> {
+async function fetchSpecs(
+  productIds: string[],
+): Promise<Record<string, Record<string, SpecValue>>> {
   if (!productIds.length) return {};
   const out: Record<string, Record<string, SpecValue>> = {};
   for (let i = 0; i < productIds.length; i += 200) {
@@ -304,7 +323,9 @@ export async function fetchEquivalences(baseProductId: string): Promise<Equivale
 export async function fetchAuditLogs(equivalenceId: string) {
   const { data, error } = await supabase
     .from("price_audit_logs")
-    .select("id, action, field_name, previous_value, new_value, change_reason, created_at, changed_by")
+    .select(
+      "id, action, field_name, previous_value, new_value, change_reason, created_at, changed_by",
+    )
     .eq("equivalence_id", equivalenceId)
     .order("created_at", { ascending: false })
     .limit(100);

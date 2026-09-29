@@ -3,6 +3,7 @@ import {
   pickPriceRow,
   priceTableKey,
   resolveTableKey,
+  tablesForComparisonSide,
   tablesFromPriceRows,
   type ProductPriceRow,
 } from "./price-comparison-lookup";
@@ -74,5 +75,33 @@ describe("preço legado sem price_list_name", () => {
     expect(resolveTableKey(tablesFromPriceRows([legacy, other]), null)).toBeNull();
     const semPreco = { ...legacy, price: null, price_per_meter: null };
     expect(pickPriceRow([semPreco], semPreco.tableKey, "R$/m").price).toBeNull();
+  });
+
+  it("não oferece ao concorrente uma tabela de outro produto da mesma marca", () => {
+    const brandTables = tablesFromPriceRows([legacy]);
+    expect(
+      tablesForComparisonSide({
+        productSelected: false,
+        productTables: [],
+        brandTables,
+        useBrandTables: false,
+      }),
+    ).toEqual([]);
+    expect(
+      tablesForComparisonSide({
+        productSelected: true,
+        productTables: [],
+        brandTables,
+        useBrandTables: false,
+      }),
+    ).toEqual([]);
+    expect(
+      tablesForComparisonSide({
+        productSelected: true,
+        productTables: brandTables,
+        brandTables: [],
+        useBrandTables: false,
+      }),
+    ).toEqual(brandTables);
   });
 });
