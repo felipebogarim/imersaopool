@@ -42,6 +42,8 @@ export type EffectivePricingSide = {
   effectiveDate: string | null;
   source: string | null;
   missingFields: string[];
+  priceTableId: string | null;
+  priceOrigin: "table" | "legacy" | "none";
 };
 
 export function emptyPricingSide(): PricingSideDraft {
@@ -149,6 +151,8 @@ export function effectivePricingSide(side: PricingSideDraft): EffectivePricingSi
     effectiveDate: side.manualPrice.effectiveDate || found?.effectiveDate || null,
     source: side.manualPrice.source.trim() || found?.source || null,
     missingFields: found?.missingFields ?? [],
+    priceTableId: found?.selectedTable?.id ?? null,
+    priceOrigin: found?.priceOrigin ?? "none",
   };
 }
 
@@ -173,6 +177,8 @@ export function pricingSnapshot(side: EffectivePricingSide) {
       original_price: side.originalPrice,
       original_unit: side.originalUnit,
       price_list_name: side.priceListName,
+      price_table_id: side.priceTableId,
+      price_origin: side.priceOrigin,
       effective_date: side.effectiveDate,
       source: side.source,
     },

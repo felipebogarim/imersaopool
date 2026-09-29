@@ -402,12 +402,16 @@ export async function importParseResult(
   parsed: ParseResult,
   opts: {
     fileName: string;
+    /** price_tables.id de origem; única associação confiável preço→tabela. Sem ele o preço é legado. */
+    priceTableId?: string | null;
     familia: string;
     categoria: string;
     conflito: ImportConflictMode;
     onProgress?: (pct: number, msg: string) => void;
   },
 ): Promise<ImportReport> {
+  // price_table_id ainda ausente em types.ts (gerado): inserts abaixo usam `as never` até regenerar.
+  const tableLink = { price_table_id: opts.priceTableId ?? null };
   const report: ImportReport = {
     arquivos: 1,
     linhasLidas: parsed.linhas.length,
@@ -556,9 +560,10 @@ export async function importParseResult(
             price_availability: "informado",
             effective_date: new Date().toISOString().slice(0, 10),
             source_file: opts.fileName,
+            ...tableLink,
             confidence_level: "tabela_precos",
             status: "atual",
-          });
+          } as never);
           if (error) throw error;
           report.precosImportados += 1;
         } else if (p.precoOriginal) {
@@ -568,9 +573,10 @@ export async function importParseResult(
               ? "sob_consulta"
               : "nao_informado",
             source_file: opts.fileName,
+            ...tableLink,
             confidence_level: "tabela_precos",
             status: "atual",
-          });
+          } as never);
         }
       }
 

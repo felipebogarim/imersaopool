@@ -3,6 +3,8 @@ import type { ProductRow } from "./price-comparativos-data";
 import type { SpecValue } from "./price-comparativos-core";
 import {
   buildPricingResolvedProduct,
+  selectPricingTable,
+  type PricingTableInfo,
   isPricingFieldMissing,
   pricingMissingFields,
   type PricingPriceRow,
@@ -100,5 +102,105 @@ describe("Pricing lookup code-first", () => {
     expect(isPricingFieldMissing("")).toBe(true);
     expect(isPricingFieldMissing("NÃO INFORMADO")).toBe(true);
     expect(isPricingFieldMissing("24 V")).toBe(false);
+  });
+
+  describe("tabelas de preço (price_tables)", () => {
+    const table = (id: string, titulo: string, date: string): PricingTableInfo => ({
+      id,
+      titulo,
+      competitor_id: "stella",
+      data_referencia: date,
+      file_name: "STELLA - 17.04.2026.pdf",
+      hasPrice: false,
+    });
+    const stella = table("t1", "Stella - Tabela 17/04/2026", "2026-04-17");
+
+    it("STL21834/27 sem preço mostra a tabela Stella disponível e não some", () => {
+      const r = buildPricingResolvedProduct(
+        product("STL21834/27", "STELLA"),
+        completeSpecs,
+        [],
+        [stella],
+      );
+      expect(r.availableTables).toHaveLength(1);
+      expect(r.selectedTable?.id).toBe("t1");
+      expect(r.comparablePrice).toBeNull();
+      expect(r.priceOrigin).toBe("table");
+      expect(r.state).toBe("FOUND_NO_PRICE");
+    });
+
+    it("preço vinculado aparece na tabela e troca de tabela recarrega o preço", () => {
+      const other = table("t2", "Stella - 01/01/2026", "2026-01-01");
+      const row: PricingPriceRow = {
+        id: "p1",
+        product_id: "STELLA-X",
+        price: 100,
+        price_unit: "bobina",
+        price_per_meter: 20,
+        price_list_name: null,
+        effective_date: "2026-04-17",
+        source_file: "STELLA - 17.04.2026.pdf",
+        region: null,
+        price_availability: "informado",
+        price_table_id: "t1",
+      };
+      const r = buildPricingResolvedProduct(
+        product("X", "STELLA"),
+        completeSpecs,
+        [row],
+        [other, stella],
+      );
+      expect(r.selectedTable?.id).toBe("t1");
+      expect(r.comparablePrice).toBe(20);
+      const switched = selectPricingTable(r, "t2");
+      expect(switched.comparablePrice).toBeNull();
+      expect(switched.state).toBe("FOUND_NO_PRICE");
+    });
+
+    it("preço legado sem vínculo fica como origem legada, sem inventar tabela", () => {
+      const legacy: PricingPriceRow = {
+        id: "p2",
+        product_id: "Studio-FT2307",
+        price: 59.9,
+        price_unit: "bobina",
+        price_per_meter: 11.98,
+        price_list_name: null,
+        effective_date: "2026-08-03",
+        source_file: "modelo_comparativo_preenchido_v2.xlsx",
+        region: null,
+        price_availability: "informado",
+      };
+      const r = buildPricingResolvedProduct(product("FT2307", "Studio"), completeSpecs, [legacy]);
+      expect(r.priceOrigin).toBe("legacy");
+      expect(r.selectedTable).toBeNull();
+      expect(r.priceListName).toBeNull();
+      expect(r.comparablePrice).toBe(11.98);
+    });
+
+    it("com tabelas oficiais, preço legado não vira preço da tabela e aparece à parte", () => {
+      const legacy: PricingPriceRow = {
+        id: "p3",
+        product_id: "STELLA-X",
+        price: 59.9,
+        price_unit: "bobina",
+        price_per_meter: 11.98,
+        price_list_name: null,
+        effective_date: "2026-08-03",
+        source_file: "modelo_comparativo_preenchido_v2.xlsx",
+        region: null,
+        price_availability: "informado",
+      };
+      const r = buildPricingResolvedProduct(
+        product("STL21834/27", "STELLA"),
+        completeSpecs,
+        [legacy],
+        [stella],
+      );
+      expect(r.priceOrigin).toBe("table");
+      expect(r.comparablePrice).toBeNull();
+      expect(r.legacy?.comparablePrice).toBe(11.98);
+      expect(r.legacy?.sourceFile).toBe("modelo_comparativo_preenchido_v2.xlsx");
+      expect(selectPricingTable(r, "legacy").selectedTableKey).toBe("t1");
+    });
   });
 });

@@ -148,6 +148,11 @@ export function PricingCodeSelector({
           Produto não encontrado na base. Preencha os dados abaixo.
         </p>
       )}
+      {resolution?.state === "QUERY_ERROR" && (
+        <p className="text-sm text-destructive">
+          Erro ao consultar o catálogo: {resolution.message}. Tente novamente.
+        </p>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );

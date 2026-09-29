@@ -27,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/price/pricing")({
   component: PricingPage,
 });
 
+const showCard = (r: { state: string } | null) => r != null && r.state !== "QUERY_ERROR";
+
 function PricingPage() {
   const isAdmin = useIsMasterAdmin();
   const pricing = usePricingStudy();
@@ -142,9 +144,9 @@ function PricingPage() {
         />
       )}
 
-      {(base.resolution || competitorA.resolution) && (
+      {(showCard(base.resolution) || showCard(competitorA.resolution)) && (
         <div className={twoCompetitors ? "grid gap-4 xl:grid-cols-3" : "grid gap-4 lg:grid-cols-2"}>
-          {base.resolution && (
+          {showCard(base.resolution) && (
             <PricingProductCard
               title="Produto base"
               side={base}
@@ -153,7 +155,7 @@ function PricingPage() {
               onSaveMaster={(update) => saveMaster(base, setBase, update)}
             />
           )}
-          {competitorA.resolution && (
+          {showCard(competitorA.resolution) && (
             <PricingProductCard
               title="Concorrente"
               side={competitorA}
@@ -162,7 +164,7 @@ function PricingPage() {
               onSaveMaster={(update) => saveMaster(competitorA, setCompetitorA, update)}
             />
           )}
-          {twoCompetitors && competitorB.resolution && (
+          {twoCompetitors && showCard(competitorB.resolution) && (
             <PricingProductCard
               title="Segundo concorrente"
               side={competitorB}

@@ -29,6 +29,7 @@ const STATE_LABEL = {
   FOUND_NO_PRICE: "Sem preço comparável",
   NOT_FOUND: "Produto manual",
   AMBIGUOUS: "Escolha a marca",
+  QUERY_ERROR: "Erro de consulta",
 } as const;
 
 const IDENTITY_MISSING_KEY: Record<keyof PricingIdentity, string> = {
