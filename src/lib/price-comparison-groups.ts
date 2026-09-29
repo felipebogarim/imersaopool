@@ -78,6 +78,26 @@ export type ItemSpecsSnapshot = {
       }
     >
   >;
+  /** Snapshot completo usado pela área Pricing code-first. */
+  pricing_snapshot?: Partial<
+    Record<
+      "base" | "competitor_a" | "competitor_b",
+      {
+        product_id: string | null;
+        identity: Record<string, string>;
+        specs: Record<string, SpecValue>;
+        price: {
+          comparable_price: number | null;
+          comparable_unit: string | null;
+          original_price: number | null;
+          original_unit: string | null;
+          price_list_name: string | null;
+          effective_date: string | null;
+          source: string | null;
+        };
+      }
+    >
+  >;
 };
 
 export type ComparisonGroupItem = {

@@ -73,6 +73,7 @@ import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authent
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedPriceValidacaoRouteImport } from './routes/_authenticated/price/validacao'
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price/tabelas'
+import { Route as AuthenticatedPricePricingRouteImport } from './routes/_authenticated/price/pricing'
 import { Route as AuthenticatedPriceMapaRouteImport } from './routes/_authenticated/price/mapa'
 import { Route as AuthenticatedPriceCompetidoresRouteImport } from './routes/_authenticated/price/competidores'
 import { Route as AuthenticatedPriceComparativosEspecificosRouteImport } from './routes/_authenticated/price/comparativos-especificos'
@@ -472,6 +473,12 @@ const AuthenticatedPriceTabelasRoute =
     path: '/tabelas',
     getParentRoute: () => AuthenticatedPriceRouteRoute,
   } as any)
+const AuthenticatedPricePricingRoute =
+  AuthenticatedPricePricingRouteImport.update({
+    id: '/pricing',
+    path: '/pricing',
+    getParentRoute: () => AuthenticatedPriceRouteRoute,
+  } as any)
 const AuthenticatedPriceMapaRoute = AuthenticatedPriceMapaRouteImport.update({
   id: '/mapa',
   path: '/mapa',
@@ -864,6 +871,7 @@ export interface FileRoutesByFullPath {
   '/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/mapa': typeof AuthenticatedPriceMapaRoute
+  '/price/pricing': typeof AuthenticatedPricePricingRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -982,6 +990,7 @@ export interface FileRoutesByTo {
   '/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/price/mapa': typeof AuthenticatedPriceMapaRoute
+  '/price/pricing': typeof AuthenticatedPricePricingRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -1104,6 +1113,7 @@ export interface FileRoutesById {
   '/_authenticated/price/comparativos-especificos': typeof AuthenticatedPriceComparativosEspecificosRoute
   '/_authenticated/price/competidores': typeof AuthenticatedPriceCompetidoresRoute
   '/_authenticated/price/mapa': typeof AuthenticatedPriceMapaRoute
+  '/_authenticated/price/pricing': typeof AuthenticatedPricePricingRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/price/validacao': typeof AuthenticatedPriceValidacaoRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
@@ -1226,6 +1236,7 @@ export interface FileRouteTypes {
     | '/price/comparativos-especificos'
     | '/price/competidores'
     | '/price/mapa'
+    | '/price/pricing'
     | '/price/tabelas'
     | '/price/validacao'
     | '/representantes/performance'
@@ -1344,6 +1355,7 @@ export interface FileRouteTypes {
     | '/price/comparativos-especificos'
     | '/price/competidores'
     | '/price/mapa'
+    | '/price/pricing'
     | '/price/tabelas'
     | '/price/validacao'
     | '/representantes/performance'
@@ -1465,6 +1477,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price/comparativos-especificos'
     | '/_authenticated/price/competidores'
     | '/_authenticated/price/mapa'
+    | '/_authenticated/price/pricing'
     | '/_authenticated/price/tabelas'
     | '/_authenticated/price/validacao'
     | '/_authenticated/representantes/performance'
@@ -2002,6 +2015,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPriceTabelasRouteImport
       parentRoute: typeof AuthenticatedPriceRouteRoute
     }
+    '/_authenticated/price/pricing': {
+      id: '/_authenticated/price/pricing'
+      path: '/pricing'
+      fullPath: '/price/pricing'
+      preLoaderRoute: typeof AuthenticatedPricePricingRouteImport
+      parentRoute: typeof AuthenticatedPriceRouteRoute
+    }
     '/_authenticated/price/mapa': {
       id: '/_authenticated/price/mapa'
       path: '/mapa'
@@ -2395,6 +2415,7 @@ interface AuthenticatedPriceRouteRouteChildren {
   AuthenticatedPriceComparativosEspecificosRoute: typeof AuthenticatedPriceComparativosEspecificosRoute
   AuthenticatedPriceCompetidoresRoute: typeof AuthenticatedPriceCompetidoresRoute
   AuthenticatedPriceMapaRoute: typeof AuthenticatedPriceMapaRoute
+  AuthenticatedPricePricingRoute: typeof AuthenticatedPricePricingRoute
   AuthenticatedPriceTabelasRoute: typeof AuthenticatedPriceTabelasRoute
   AuthenticatedPriceValidacaoRoute: typeof AuthenticatedPriceValidacaoRoute
   AuthenticatedPriceIndexRoute: typeof AuthenticatedPriceIndexRoute
@@ -2407,6 +2428,7 @@ const AuthenticatedPriceRouteRouteChildren: AuthenticatedPriceRouteRouteChildren
       AuthenticatedPriceComparativosEspecificosRoute,
     AuthenticatedPriceCompetidoresRoute: AuthenticatedPriceCompetidoresRoute,
     AuthenticatedPriceMapaRoute: AuthenticatedPriceMapaRoute,
+    AuthenticatedPricePricingRoute: AuthenticatedPricePricingRoute,
     AuthenticatedPriceTabelasRoute: AuthenticatedPriceTabelasRoute,
     AuthenticatedPriceValidacaoRoute: AuthenticatedPriceValidacaoRoute,
     AuthenticatedPriceIndexRoute: AuthenticatedPriceIndexRoute,

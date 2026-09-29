@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/price")({
 });
 
 const TABS = [
+  { to: "/price/pricing", label: "Pricing" },
   { to: "/price/competidores", label: "Competidores" },
   { to: "/price/tabelas", label: "Tabelas" },
   { to: "/price/comparativos", label: "Comparativos" },
