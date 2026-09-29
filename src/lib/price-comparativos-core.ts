@@ -74,6 +74,11 @@ export type ProductLike = {
   specs: Record<string, SpecValue>;
   preco: number | null;
   precoDisponibilidade?: PriceAvailability;
+  /** Unidade do `preco` comparável: "m" (R$/m) ou a unidade original do registro. */
+  precoUnidade?: string | null;
+  /** Preço original do registro (ex.: bobina), preservado quando `preco` é o R$/m. */
+  precoOriginal?: number | null;
+  precoOriginalUnidade?: string | null;
   precoPorMetro?: number | null;
   precoPorWatt?: number | null;
   precoPor1000lm?: number | null;
@@ -549,6 +554,66 @@ export function priceFarol(base: number | null, comp: number | null): PriceFarol
   if (diff <= 3) return "proximo";
   if (diff <= 25) return "superior";
   return "muito_superior";
+}
+
+export type ComparablePrice = {
+  /** Preço comparável; null quando não há preço válido — nunca 0. */
+  price: number | null;
+  originalPrice: number | null;
+  originalUnit: string | null;
+  /** Unidade do preço comparável ("m" quando por metro). */
+  comparableUnit: string | null;
+};
+
+/**
+ * Regra única de preço comparável (Comparativos, Validação de Comparáveis). Nunca mistura unidades.
+ * - Família em R$/m: só `price_per_meter` é comparável. Sem ele, o preço comparável é null (o
+ *   preço da bobina NÃO substitui) e o preço original fica apenas como metadado.
+ * - Demais famílias: vale o preço do registro na unidade dele.
+ * Nunca usa 0 como fallback.
+ */
+export function comparablePrice(
+  row: { price: number | null; price_per_meter: number | null; price_unit: string | null },
+  analysisUnit: string,
+): ComparablePrice {
+  const valid = (v: number | null) => (v != null && Number.isFinite(v) && v > 0 ? v : null);
+  const original = valid(row.price);
+  if (/\/m$/i.test(analysisUnit.trim())) {
+    const perMeter = valid(row.price_per_meter);
+    return {
+      price: perMeter,
+      originalPrice: original,
+      originalUnit: row.price_unit,
+      comparableUnit: perMeter != null ? "m" : null,
+    };
+  }
+  return {
+    price: original,
+    originalPrice: original,
+    originalUnit: row.price_unit,
+    comparableUnit: original != null ? row.price_unit : null,
+  };
+}
+
+export const PRICE_NOT_COMPARABLE_LABEL = "Preço comparável não disponível";
+
+/** Há preço original, mas nenhum na unidade de comparação da família. */
+export function hasNoComparablePrice(p: {
+  preco: number | null;
+  precoOriginal?: number | null;
+}): boolean {
+  return p.preco == null && p.precoOriginal != null;
+}
+
+/** "R$ 11,98/m" quando o preço comparável é por metro; "—" sem preço. */
+export function formatPreco(p: {
+  preco: number | null;
+  precoUnidade?: string | null;
+  precoOriginal?: number | null;
+}): string {
+  if (hasNoComparablePrice(p)) return PRICE_NOT_COMPARABLE_LABEL;
+  const base = formatBRL(p.preco);
+  return p.preco != null && p.precoUnidade === "m" ? `${base}/m` : base;
 }
 
 export function formatBRL(v: number | null | undefined): string {

@@ -12,7 +12,8 @@ import type {
   ProductLike,
   SpecValue,
 } from "./price-comparativos-core";
-import { attributesFor } from "./price-comparativos-core";
+import { attributesFor, comparablePrice } from "./price-comparativos-core";
+import { getFamilyConfig } from "./price-mapa/family-config";
 import type { ParseResult, ParsedProduct } from "./price-comparativos-parser";
 
 export type ProductRow = {
@@ -203,6 +204,7 @@ export async function loadProducts(rows: ProductRow[]): Promise<LoadedProduct[]>
   const [specs, prices] = await Promise.all([fetchSpecs(ids), fetchPrices(ids)]);
   return rows.map((r) => {
     const priceRow = prices[r.id] ?? null;
+    const cmp = priceRow ? comparablePrice(priceRow, getFamilyConfig(r.familia).unidade) : null;
     return {
       ...r,
       priceRow,
@@ -216,7 +218,10 @@ export async function loadProducts(rows: ProductRow[]): Promise<LoadedProduct[]>
         categoria: r.categoria,
         tipo: r.tipo,
         specs: specs[r.id] ?? {},
-        preco: priceRow?.price ?? null,
+        preco: cmp?.price ?? null,
+        precoUnidade: cmp?.comparableUnit ?? null,
+        precoOriginal: cmp?.originalPrice ?? null,
+        precoOriginalUnidade: cmp?.originalUnit ?? null,
         precoDisponibilidade: priceRow?.price_availability ?? "nao_informado",
         precoPorMetro: priceRow?.price_per_meter ?? null,
         precoPorWatt: priceRow?.price_per_watt ?? null,

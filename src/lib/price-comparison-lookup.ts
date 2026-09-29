@@ -5,6 +5,7 @@
 // nas linhas de `price_product_prices`, que é como as importações de preços gravam a origem.
 
 import { supabase } from "@/integrations/supabase/client";
+import { comparablePrice } from "@/lib/price-comparativos-core";
 
 /** Marcas base permitidas na Validação de Comparáveis. */
 export const BASE_BRANDS = ["Studio", "Newline", "Standard"] as const;
@@ -280,21 +281,12 @@ export function pickPriceRow(
     (b.effective_date ?? "").localeCompare(a.effective_date ?? ""),
   )[0];
   if (row.price_availability !== "informado") return { ...empty, row };
-  const perMeter = /\/m$/i.test(analysisUnit.trim()) ? row.price_per_meter : null;
-  if (perMeter != null && perMeter > 0) {
-    return {
-      row,
-      price: perMeter,
-      originalPrice: row.price,
-      originalUnit: row.price_unit,
-      comparableUnit: "m",
-    };
-  }
+  const c = comparablePrice(row, analysisUnit);
   return {
     row,
-    price: row.price,
-    originalPrice: row.price,
-    originalUnit: row.price_unit,
-    comparableUnit: row.price != null ? row.price_unit : null,
+    price: c.price,
+    originalPrice: c.originalPrice,
+    originalUnit: c.originalUnit,
+    comparableUnit: c.comparableUnit,
   };
 }

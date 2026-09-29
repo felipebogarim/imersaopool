@@ -42,6 +42,14 @@ describe("preço legado sem price_list_name", () => {
     expect(p.comparableUnit).toBe("m");
   });
 
+  it("bobina sem price_per_meter não vira preço comparável em R$/m", () => {
+    const semMetro = { ...legacy, price_per_meter: null };
+    const p = pickPriceRow([semMetro], semMetro.tableKey, "R$/m");
+    expect(p.price).toBeNull();
+    expect(p.comparableUnit).toBeNull();
+    expect(p.originalPrice).toBe(59.9);
+  });
+
   it("mantém o preço original quando a unidade de análise não é por metro", () => {
     expect(pickPriceRow([legacy], legacy.tableKey, "R$/un").price).toBe(59.9);
   });

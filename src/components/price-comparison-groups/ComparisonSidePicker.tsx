@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { ProductCombobox, productCode } from "./ProductCombobox";
 import type { LoadedProduct } from "@/lib/price-comparativos-data";
-import { formatBRL } from "@/lib/price-comparativos-core";
+import { PRICE_NOT_COMPARABLE_LABEL, formatBRL } from "@/lib/price-comparativos-core";
 import { getFamilyConfig } from "@/lib/price-mapa/family-config";
 import { top6For } from "@/lib/price-comparison-groups-attributes";
 import {
@@ -143,8 +143,7 @@ export function ComparisonSidePicker({
   const product = value.product;
   const meta = resolved.tables.find((t) => t.key === resolved.table);
   const unit = resolved.comparableUnit;
-  const perMeterBasis =
-    resolved.comparableUnit === "m" && resolved.originalPrice !== resolved.price;
+  const perMeterBasis = resolved.originalPrice != null && resolved.originalPrice !== resolved.price;
   const dateText = monthYear(resolved.priceRow?.effective_date ?? meta?.date);
   const priceText = !product
     ? "—"
@@ -152,7 +151,9 @@ export function ComparisonSidePicker({
       ? "Buscando…"
       : resolved.price != null
         ? formatBRL(resolved.price)
-        : PRICE_NOT_FOUND_LABEL;
+        : resolved.originalPrice != null
+          ? PRICE_NOT_COMPARABLE_LABEL
+          : PRICE_NOT_FOUND_LABEL;
 
   return (
     <div className="space-y-3 rounded-lg border p-3">

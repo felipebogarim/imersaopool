@@ -65,6 +65,8 @@ import {
   CELL_FAROL_LABEL,
   DEFAULT_CB_WEIGHTS,
   FAMILIAS,
+  formatPreco,
+  hasNoComparablePrice,
   LEVEL_CLASS,
   LEVEL_DESCRIPTION,
   LEVEL_LABEL,
@@ -633,12 +635,17 @@ function ComparativosPage() {
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Preço de referência</div>
                       <div className="text-lg font-semibold">
-                        {base.product.preco != null
-                          ? formatBRL(base.product.preco)
+                        {base.product.preco != null || hasNoComparablePrice(base.product)
+                          ? formatPreco(base.product)
                           : PRICE_AVAILABILITY_LABEL[
                               base.product.precoDisponibilidade ?? "nao_informado"
                             ]}
                       </div>
+                      {originalPriceNote(base.product) && (
+                        <div className="text-[11px] text-muted-foreground">
+                          Preço original — {originalPriceNote(base.product)}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Separator />
@@ -697,7 +704,7 @@ function ComparativosPage() {
                 <div className="grid gap-3 md:grid-cols-3">
                   {[
                     { label: "Tecnicamente mais próximo", l: indicadores.maisProximo, extra: (x: LinhaRanking) => `${x.score?.toFixed(1) ?? "—"} de 100` },
-                    { label: "Mais barato", l: indicadores.maisBarato, extra: (x: LinhaRanking) => formatBRL(x.produto.product.preco) },
+                    { label: "Mais barato", l: indicadores.maisBarato, extra: (x: LinhaRanking) => formatPreco(x.produto.product) },
                     { label: "Melhor custo-benefício", l: indicadores.melhorCb, extra: (x: LinhaRanking) => cbCategoria(x.custoBeneficio) },
                   ].map((c) => (
                     <div key={c.label} className="surface rounded-xl p-4">
@@ -976,8 +983,8 @@ function RankingTabela({
                   </TableCell>
                   <TableCell className="text-right">
                     <span className={cn("px-2 py-0.5 rounded text-xs", PRICE_FAROL_CLASS[pf])}>
-                      {l.produto.product.preco != null
-                        ? formatBRL(l.produto.product.preco)
+                      {l.produto.product.preco != null || hasNoComparablePrice(l.produto.product)
+                        ? formatPreco(l.produto.product)
                         : PRICE_AVAILABILITY_LABEL[
                             l.produto.product.precoDisponibilidade ?? "nao_informado"
                           ]}
@@ -1060,7 +1067,7 @@ function CardProduto({
       </div>
       <ProximidadeCelula score={linha.score} />
       <div className="flex items-center justify-between text-sm">
-        <span className="font-semibold">{formatBRL(linha.produto.product.preco)}</span>
+        <span className="font-semibold">{formatPreco(linha.produto.product)}</span>
         <span className="text-muted-foreground">{formatPctDiff(linha.precoDiffPct)}</span>
       </div>
       <div className="text-xs space-y-1">
@@ -1170,13 +1177,13 @@ function TabelaTecnica({
               <TableCell className="sticky left-0 bg-card text-sm text-muted-foreground">
                 Preço
               </TableCell>
-              <TableCell className="text-sm font-medium">{formatBRL(base.product.preco)}</TableCell>
+              <TableCell className="text-sm font-medium">{formatPreco(base.product)}</TableCell>
               {linhas.map((l) => {
                 const pf = priceFarol(base.product.preco, l.produto.product.preco);
                 return (
                   <TableCell key={l.produto.id}>
                     <span className={cn("px-2 py-0.5 rounded text-sm", PRICE_FAROL_CLASS[pf])}>
-                      {formatBRL(l.produto.product.preco)}
+                      {formatPreco(l.produto.product)}
                     </span>
                     <span className="block text-[11px] text-muted-foreground">
                       {PRICE_FAROL_LABEL[pf]}
@@ -1192,22 +1199,28 @@ function TabelaTecnica({
   );
 }
 
+/** Preço original (ex.: bobina) como metadado quando difere do preço comparável. */
+function originalPriceNote(p: LoadedProduct["product"]): string | null {
+  if (p.precoOriginal == null || p.precoOriginal === p.preco) return null;
+  return `${p.precoOriginalUnidade ?? "original"}: ${formatBRL(p.precoOriginal)}`;
+}
+
 function ComparacaoPrecos({ base, linhas }: { base: LoadedProduct; linhas: LinhaRanking[] }) {
   const dados = [
-    { nome: `${base.marca} (ref.)`, preco: base.product.preco, ref: true, porMetro: base.product.precoPorMetro },
+    { nome: `${base.marca} (ref.)`, produto: base.product, preco: base.product.preco, ref: true },
     ...linhas
       .slice(0, 12)
       .map((l) => ({
         nome: l.produto.marca,
+        produto: l.produto.product,
         preco: l.produto.product.preco,
         ref: false,
-        porMetro: l.produto.product.precoPorMetro,
       })),
   ].filter((d) => d.preco != null) as {
     nome: string;
+    produto: LoadedProduct["product"];
     preco: number;
     ref: boolean;
-    porMetro: number | null;
   }[];
 
   if (dados.length < 2) {
@@ -1236,10 +1249,10 @@ function ComparacaoPrecos({ base, linhas }: { base: LoadedProduct; linhas: Linha
                 />
               </div>
               <span className="w-28 shrink-0 text-right text-xs font-medium">
-                {formatBRL(d.preco)}
+                {formatPreco(d.produto)}
               </span>
               <span className="w-28 shrink-0 text-right text-[11px] text-muted-foreground">
-                {d.porMetro != null ? `${formatBRL(d.porMetro)}/m` : "—"}
+                {originalPriceNote(d.produto) ?? "—"}
               </span>
             </div>
           );
