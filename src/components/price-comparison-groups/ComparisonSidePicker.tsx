@@ -13,12 +13,14 @@ import {
 import { ProductCombobox, productCode } from "./ProductCombobox";
 import type { LoadedProduct } from "@/lib/price-comparativos-data";
 import { formatBRL } from "@/lib/price-comparativos-core";
+import { getFamilyConfig } from "@/lib/price-mapa/family-config";
 import { top6For } from "@/lib/price-comparison-groups-attributes";
 import {
   PRICE_NOT_FOUND_LABEL,
   fetchBrandPriceTables,
   fetchProductPriceRows,
   pickPriceRow,
+  tablesFromPriceRows,
   resolveTableKey,
   type PriceTableOption,
   type ProductPriceRow,
@@ -38,8 +40,12 @@ export type ResolvedSide = {
   tables: PriceTableOption[];
   table: string | null;
   priceRow: ProductPriceRow | null;
-  /** null quando não há preço cadastrado — nunca 0. */
+  /** Preço comparável (R$/m quando aplicável); null quando não há preço cadastrado — nunca 0. */
   price: number | null;
+  /** Preço original do registro (ex.: bobina), como metadado. */
+  originalPrice: number | null;
+  originalUnit: string | null;
+  comparableUnit: string | null;
   loading: boolean;
 };
 
@@ -64,14 +70,21 @@ export function useResolvedSide(
     enabled: !!productId,
   });
   return useMemo(() => {
-    const tables = tablesQ.data ?? [];
-    const table = resolveTableKey(tables, fixedTable ?? sel.table);
-    const { row, price } = pickPriceRow(rowsQ.data ?? [], table);
+    const rows = rowsQ.data ?? [];
+    // Com produto selecionado, as tabelas vêm dos registros de preço dele (não dependem de
+    // price_list_name); sem registros, cai para as tabelas da marca.
+    const productTables = tablesFromPriceRows(rows);
+    const tables = productTables.length > 0 ? productTables : (tablesQ.data ?? []);
+    const table = resolveTableKey(tables, sel.table ?? fixedTable);
+    const picked = pickPriceRow(rows, table, getFamilyConfig(familia).unidade);
     return {
       tables,
       table,
-      priceRow: row,
-      price,
+      priceRow: picked.row,
+      price: picked.price,
+      originalPrice: picked.originalPrice,
+      originalUnit: picked.originalUnit,
+      comparableUnit: picked.comparableUnit,
       loading: !!productId && (rowsQ.isLoading || tablesQ.isLoading),
     };
   }, [
@@ -82,6 +95,7 @@ export function useResolvedSide(
     productId,
     fixedTable,
     sel.table,
+    familia,
   ]);
 }
 
@@ -128,7 +142,9 @@ export function ComparisonSidePicker({
 }) {
   const product = value.product;
   const meta = resolved.tables.find((t) => t.key === resolved.table);
-  const unit = resolved.priceRow?.price_unit;
+  const unit = resolved.comparableUnit;
+  const perMeterBasis =
+    resolved.comparableUnit === "m" && resolved.originalPrice !== resolved.price;
   const dateText = monthYear(resolved.priceRow?.effective_date ?? meta?.date);
   const priceText = !product
     ? "—"
@@ -180,7 +196,7 @@ export function ComparisonSidePicker({
                   !value.brand
                     ? "Escolha a marca"
                     : resolved.tables.length === 0
-                      ? "Sem tabela cadastrada"
+                      ? "Definida pelo preço do produto"
                       : "Selecione a tabela"
                 }
               />
@@ -229,6 +245,12 @@ export function ComparisonSidePicker({
             <span className="ml-0.5 text-xs text-muted-foreground">/{unit}</span>
           )}
         </div>
+        {perMeterBasis && resolved.originalPrice != null && (
+          <p className="text-[11px] text-muted-foreground">
+            Preço original ({resolved.originalUnit ?? "unidade"}):{" "}
+            {formatBRL(resolved.originalPrice)}
+          </p>
+        )}
         {product && resolved.table && (
           <p className="text-[11px] text-muted-foreground">
             Tabela {resolved.table}

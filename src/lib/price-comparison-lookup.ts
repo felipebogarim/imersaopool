@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 export const BASE_BRANDS = ["Studio", "Newline", "Standard"] as const;
 
 export const PRICE_NOT_FOUND_LABEL = "Preço não encontrado";
-const NO_TABLE_LABEL = "Tabela sem identificação";
 
 export type PriceTableOption = {
   /** Identificador estável da tabela (nome da lista ou arquivo de origem). */
@@ -35,11 +34,28 @@ export type ProductPriceRow = {
   region: string | null;
 };
 
+function formatDateBR(d: string | null | undefined): string | null {
+  if (!d) return null;
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
+/**
+ * Identificação da tabela de uma linha de preço: `price_list_name` quando existe; para registros
+ * legados/importados sem nome, "arquivo de origem — data" (ou "Importado — data"). Não inventa
+ * uma tabela comercial: é só a origem registrada.
+ */
 export function priceTableKey(r: {
   price_list_name?: string | null;
   source_file?: string | null;
+  effective_date?: string | null;
 }): string {
-  return r.price_list_name?.trim() || r.source_file?.trim() || NO_TABLE_LABEL;
+  const name = r.price_list_name?.trim();
+  if (name) return name;
+  const origin = r.source_file?.trim() || "Importado";
+  const date = formatDateBR(r.effective_date);
+  return date ? `${origin} — ${date}` : origin;
 }
 
 async function fetchAllPages<T>(
@@ -125,7 +141,10 @@ function toPriceRow(r: RawPriceRow): ProductPriceRow {
   };
 }
 
-/** Todas as linhas de preço vigentes de um produto (uma ou mais tabelas). */
+/**
+ * Registros de preço vigentes (`status = 'atual'`) de um produto, direto de `price_product_prices`
+ * por `product_id`. Não exige `price_list_name`.
+ */
 export async function fetchProductPriceRows(productId: string): Promise<ProductPriceRow[]> {
   const { data, error } = await supabase
     .from("price_product_prices")
@@ -137,52 +156,52 @@ export async function fetchProductPriceRows(productId: string): Promise<ProductP
   return ((data ?? []) as RawPriceRow[]).map(toPriceRow);
 }
 
-/** Tabelas de preço (distintas) disponíveis para uma marca numa família. */
+function mergeTable(byKey: Map<string, PriceTableOption>, r: ProductPriceRow) {
+  const prev = byKey.get(r.tableKey);
+  if (!prev) {
+    byKey.set(r.tableKey, {
+      key: r.tableKey,
+      label: r.tableKey,
+      date: r.effective_date,
+      source: r.source_file,
+    });
+  } else if (r.effective_date && (!prev.date || r.effective_date > prev.date)) {
+    prev.date = r.effective_date;
+  }
+}
+
+/** Tabelas (distintas) com preço vigente para uma marca numa família, a partir dos preços. */
 export async function fetchBrandPriceTables(
   marca: string,
   familia: string,
 ): Promise<PriceTableOption[]> {
-  const rows = await fetchAllPages((from, to) =>
+  const products = await fetchAllPages((from, to) =>
     supabase
-      .from("price_product_prices")
-      .select(
-        "price_list_name, source_file, effective_date, price_products!inner(marca, familia, is_deleted)",
-      )
-      .eq("status", "atual")
-      .eq("price_products.marca", marca)
-      .eq("price_products.familia", familia)
-      .eq("price_products.is_deleted", false)
+      .from("price_products")
+      .select("id")
+      .eq("is_deleted", false)
+      .eq("familia", familia)
+      .eq("marca", marca)
       .range(from, to),
   );
+  const ids = products.map((p) => p.id as string);
   const byKey = new Map<string, PriceTableOption>();
-  for (const r of rows) {
-    const key = priceTableKey(r);
-    const prev = byKey.get(key);
-    if (!prev) {
-      byKey.set(key, { key, label: key, date: r.effective_date, source: r.source_file });
-    } else if (r.effective_date && (!prev.date || r.effective_date > prev.date)) {
-      prev.date = r.effective_date;
-    }
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await supabase
+      .from("price_product_prices")
+      .select(PRICE_COLS)
+      .in("product_id", ids.slice(i, i + 200))
+      .eq("status", "atual");
+    if (error) throw error;
+    for (const r of (data ?? []) as RawPriceRow[]) mergeTable(byKey, toPriceRow(r));
   }
   return enrichWithRegisteredTables(marca, Array.from(byKey.values()));
 }
 
-/** Tabelas de um produto específico, derivadas das linhas de preço dele. */
+/** Tabelas de um produto específico, derivadas dos registros de preço dele. */
 export function tablesFromPriceRows(rows: ProductPriceRow[]): PriceTableOption[] {
   const byKey = new Map<string, PriceTableOption>();
-  for (const r of rows) {
-    const prev = byKey.get(r.tableKey);
-    if (!prev) {
-      byKey.set(r.tableKey, {
-        key: r.tableKey,
-        label: r.tableKey,
-        date: r.effective_date,
-        source: r.source_file,
-      });
-    } else if (r.effective_date && (!prev.date || r.effective_date > prev.date)) {
-      prev.date = r.effective_date;
-    }
-  }
+  for (const r of rows) mergeTable(byKey, r);
   return Array.from(byKey.values());
 }
 
@@ -208,15 +227,16 @@ async function enrichWithRegisteredTables(
     const hit = registered.find(
       (t) =>
         t.titulo?.trim().toLowerCase() === o.key.toLowerCase() ||
-        t.file_name?.trim().toLowerCase() === o.key.toLowerCase(),
+        (!!o.source && t.file_name?.trim().toLowerCase() === o.source.toLowerCase()),
     );
-    return hit
-      ? { ...o, categoria: hit.categoria as string, date: o.date ?? hit.data_referencia }
-      : o;
+    return hit ? { ...o, categoria: hit.categoria as string } : o;
   });
 }
 
-/** Tabela efetiva: a escolhida (se válida) ou a única disponível; nunca um chute entre várias. */
+/**
+ * Tabela efetiva: a escolhida (se válida) ou, havendo apenas um registro/tabela, essa única.
+ * Nunca escolhe entre várias.
+ */
 export function resolveTableKey(
   options: PriceTableOption[],
   chosen: string | null | undefined,
@@ -225,17 +245,56 @@ export function resolveTableKey(
   return options.length === 1 ? options[0].key : null;
 }
 
-/** Linha de preço do produto na tabela indicada (a mais recente). Preço ausente => null, nunca 0. */
+export type PickedPrice = {
+  row: ProductPriceRow | null;
+  /** Preço comparável (R$/m quando a família compara por metro e há `price_per_meter`). */
+  price: number | null;
+  /** Preço original do registro (ex.: bobina), mantido como metadado. */
+  originalPrice: number | null;
+  originalUnit: string | null;
+  /** Unidade do preço comparável exibido (ex.: "m", "bobina"); null se sem preço. */
+  comparableUnit: string | null;
+};
+
+/**
+ * Registro de preço do produto na tabela indicada (o mais recente). Preço ausente => null, nunca 0.
+ * Se a unidade de análise da família for R$/m e existir `price_per_meter`, ele é o preço
+ * comparável; o preço original (bobina) permanece disponível como metadado.
+ */
 export function pickPriceRow(
   rows: ProductPriceRow[],
   tableKey: string | null,
-): { row: ProductPriceRow | null; price: number | null } {
-  if (!tableKey) return { row: null, price: null };
+  analysisUnit: string,
+): PickedPrice {
+  const empty: PickedPrice = {
+    row: null,
+    price: null,
+    originalPrice: null,
+    originalUnit: null,
+    comparableUnit: null,
+  };
+  if (!tableKey) return empty;
   const matches = rows.filter((r) => r.tableKey === tableKey);
-  if (matches.length === 0) return { row: null, price: null };
+  if (matches.length === 0) return empty;
   const row = [...matches].sort((a, b) =>
     (b.effective_date ?? "").localeCompare(a.effective_date ?? ""),
   )[0];
-  const price = row.price_availability === "informado" && row.price != null ? row.price : null;
-  return { row, price };
+  if (row.price_availability !== "informado") return { ...empty, row };
+  const perMeter = /\/m$/i.test(analysisUnit.trim()) ? row.price_per_meter : null;
+  if (perMeter != null && perMeter > 0) {
+    return {
+      row,
+      price: perMeter,
+      originalPrice: row.price,
+      originalUnit: row.price_unit,
+      comparableUnit: "m",
+    };
+  }
+  return {
+    row,
+    price: row.price,
+    originalPrice: row.price,
+    originalUnit: row.price_unit,
+    comparableUnit: row.price != null ? row.price_unit : null,
+  };
 }

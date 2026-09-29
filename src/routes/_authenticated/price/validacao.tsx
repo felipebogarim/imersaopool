@@ -55,6 +55,7 @@ import {
   ComparisonSidePicker,
   EMPTY_SIDE,
   useResolvedSide,
+  type ResolvedSide,
   type SideSelection,
 } from "@/components/price-comparison-groups/ComparisonSidePicker";
 import { productCode } from "@/components/price-comparison-groups/ProductCombobox";
@@ -88,6 +89,14 @@ function emptyGroupDraft(familia: string): GroupDraft {
     base_brand:
       BASE_BRANDS.find((b) => b.toLowerCase() === cfg.baseBrand.toLowerCase()) ?? BASE_BRANDS[0],
     base_price_table: null,
+  };
+}
+
+function metaOf(r: ResolvedSide) {
+  return {
+    original_price: r.originalPrice,
+    original_unit: r.originalUnit,
+    comparable_unit: r.comparableUnit,
   };
 }
 
@@ -236,6 +245,11 @@ function ValidacaoComparaveisPage() {
           base: baseP.product.specs,
           competitor_a: aP.product.specs,
           competitor_b: bP ? bP.product.specs : undefined,
+          price_meta: {
+            base: metaOf(baseResolved),
+            competitor_a: metaOf(compAResolved),
+            ...(bP ? { competitor_b: metaOf(compBResolved) } : {}),
+          },
         },
       } as never);
       setItems((prev) => [...prev, newItem]);
@@ -521,7 +535,9 @@ function ValidacaoComparaveisPage() {
                     <SelectTrigger className="h-9">
                       <SelectValue
                         placeholder={
-                          baseTables.length === 0 ? "Sem tabela cadastrada" : "Selecione a tabela"
+                          baseTables.length === 0
+                            ? "Definida pelo preço do produto"
+                            : "Selecione a tabela"
                         }
                       />
                     </SelectTrigger>

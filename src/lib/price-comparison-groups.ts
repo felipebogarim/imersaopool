@@ -67,6 +67,17 @@ export type ItemSpecsSnapshot = {
   base?: Record<string, SpecValue>;
   competitor_a?: Record<string, SpecValue>;
   competitor_b?: Record<string, SpecValue>;
+  /** Preço original (ex.: bobina) e unidade do preço comparável gravado, por lado. */
+  price_meta?: Partial<
+    Record<
+      "base" | "competitor_a" | "competitor_b",
+      {
+        original_price: number | null;
+        original_unit: string | null;
+        comparable_unit: string | null;
+      }
+    >
+  >;
 };
 
 export type ComparisonGroupItem = {
