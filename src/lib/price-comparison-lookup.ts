@@ -10,8 +10,6 @@ import { comparablePrice } from "@/lib/price-comparativos-core";
 /** Marcas base permitidas na Validação de Comparáveis. */
 export const BASE_BRANDS = ["Studio", "Newline", "Standard"] as const;
 
-export const PRICE_NOT_FOUND_LABEL = "Preço não encontrado";
-
 export type PriceTableOption = {
   /** Identificador estável da tabela (nome da lista ou arquivo de origem). */
   key: string;

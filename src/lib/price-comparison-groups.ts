@@ -12,7 +12,7 @@ import {
   fetchProducts,
   type ProductRow,
   type LoadedProduct,
-  loadProducts,
+  loadCatalogProducts,
 } from "@/lib/price-comparativos-data";
 
 // ============ Tipos ============
@@ -543,8 +543,9 @@ export async function searchProducts(params: {
   marca?: string;
   busca?: string;
 }): Promise<LoadedProduct[]> {
-  const rows: ProductRow[] = await fetchProducts({ ...params, limit: 30 });
-  return loadProducts(rows);
+  // A RLS de price_products limita à empresa atual. Preço/tabela não participam desta busca.
+  const rows: ProductRow[] = await fetchProducts({ ...params, limit: null });
+  return loadCatalogProducts(rows);
 }
 
 // ============ Conflito com comparação oficial existente ============

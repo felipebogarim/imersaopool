@@ -79,28 +79,45 @@ export async function fetchProducts(params: {
   marca?: string;
   busca?: string;
   onlyBase?: boolean;
-  limit?: number;
+  /** `null` percorre todas as páginas do catálogo que correspondem aos filtros. */
+  limit?: number | null;
 }): Promise<ProductRow[]> {
-  let q = supabase
-    .from("price_products")
-    .select(PRODUCT_FIELDS)
-    .eq("is_deleted", false)
-    .order("marca")
-    .order("nome")
-    .limit(params.limit ?? 300);
-  if (params.familia) q = q.eq("familia", params.familia);
-  if (params.categoria) q = q.eq("categoria", params.categoria);
-  if (params.marca) q = q.eq("marca", params.marca);
-  if (params.onlyBase) q = q.eq("is_base", true);
-  if (params.busca && params.busca.trim()) {
-    const t = `%${params.busca.trim()}%`;
-    q = q.or(
-      `nome.ilike.${t},descricao.ilike.${t},sku.ilike.${t},referencia.ilike.${t},marca.ilike.${t}`,
-    );
+  const buildQuery = () => {
+    let q = supabase
+      .from("price_products")
+      .select(PRODUCT_FIELDS)
+      .eq("is_deleted", false)
+      .order("marca")
+      .order("nome")
+      .order("id");
+    if (params.familia) q = q.eq("familia", params.familia);
+    if (params.categoria) q = q.eq("categoria", params.categoria);
+    if (params.marca) q = q.eq("marca", params.marca);
+    if (params.onlyBase) q = q.eq("is_base", true);
+    if (params.busca && params.busca.trim()) {
+      const t = `%${params.busca.trim()}%`;
+      q = q.or(
+        `nome.ilike.${t},descricao.ilike.${t},sku.ilike.${t},referencia.ilike.${t},marca.ilike.${t}`,
+      );
+    }
+    return q;
+  };
+
+  if (params.limit !== null) {
+    const { data, error } = await buildQuery().limit(params.limit ?? 300);
+    if (error) throw error;
+    return (data ?? []) as ProductRow[];
   }
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data ?? []) as ProductRow[];
+
+  const rows: ProductRow[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as ProductRow[]));
+    if (!data || data.length < pageSize) break;
+  }
+  return rows;
 }
 
 export async function fetchMarcas(): Promise<string[]> {
@@ -198,6 +215,41 @@ async function fetchPrices(productIds: string[]): Promise<Record<string, PriceRo
 }
 
 export type LoadedProduct = ProductRow & { product: ProductLike; priceRow: PriceRow | null };
+
+export function hydrateCatalogProducts(
+  rows: ProductRow[],
+  specs: Record<string, Record<string, SpecValue>>,
+): LoadedProduct[] {
+  return rows.map((r) => ({
+    ...r,
+    priceRow: null,
+    product: {
+      id: r.id,
+      marca: r.marca,
+      nome: r.nome,
+      sku: r.sku,
+      referencia: r.referencia,
+      familia: r.familia,
+      categoria: r.categoria,
+      tipo: r.tipo,
+      specs: specs[r.id] ?? {},
+      preco: null,
+      precoUnidade: null,
+      precoOriginal: null,
+      precoOriginalUnidade: null,
+      precoDisponibilidade: "nao_informado",
+      precoPorMetro: null,
+      precoPorWatt: null,
+      precoPor1000lm: null,
+    },
+  }));
+}
+
+/** Catálogo técnico para seletores: consulta specs, mas nunca exige nem consulta preço. */
+export async function loadCatalogProducts(rows: ProductRow[]): Promise<LoadedProduct[]> {
+  const specs = await fetchSpecs(rows.map((r) => r.id));
+  return hydrateCatalogProducts(rows, specs);
+}
 
 export async function loadProducts(rows: ProductRow[]): Promise<LoadedProduct[]> {
   const ids = rows.map((r) => r.id);

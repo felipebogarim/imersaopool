@@ -16,7 +16,6 @@ import { PRICE_NOT_COMPARABLE_LABEL, formatBRL } from "@/lib/price-comparativos-
 import { getFamilyConfig } from "@/lib/price-mapa/family-config";
 import { top6For } from "@/lib/price-comparison-groups-attributes";
 import {
-  PRICE_NOT_FOUND_LABEL,
   fetchBrandPriceTables,
   fetchProductPriceRows,
   pickPriceRow,
@@ -151,9 +150,7 @@ export function ComparisonSidePicker({
       ? "Buscando…"
       : resolved.price != null
         ? formatBRL(resolved.price)
-        : resolved.originalPrice != null
-          ? PRICE_NOT_COMPARABLE_LABEL
-          : PRICE_NOT_FOUND_LABEL;
+        : PRICE_NOT_COMPARABLE_LABEL;
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
