@@ -6,6 +6,7 @@ import {
   tablesFromPriceRows,
   type ProductPriceRow,
 } from "./price-comparison-lookup";
+import { formatPreco } from "./price-comparativos-core";
 
 const legacy: ProductPriceRow = {
   id: "1",
@@ -40,6 +41,13 @@ describe("preço legado sem price_list_name", () => {
     expect(p.originalPrice).toBe(59.9);
     expect(p.originalUnit).toBe("bobina");
     expect(p.comparableUnit).toBe("m");
+    expect(
+      formatPreco({
+        preco: p.price,
+        precoUnidade: p.comparableUnit,
+        precoOriginal: p.originalPrice,
+      }),
+    ).toBe("R$ 11,98/m");
   });
 
   it("bobina sem price_per_meter não vira preço comparável em R$/m", () => {
@@ -48,6 +56,13 @@ describe("preço legado sem price_list_name", () => {
     expect(p.price).toBeNull();
     expect(p.comparableUnit).toBeNull();
     expect(p.originalPrice).toBe(59.9);
+    expect(
+      formatPreco({
+        preco: p.price,
+        precoUnidade: p.comparableUnit,
+        precoOriginal: p.originalPrice,
+      }),
+    ).toBe("Preço comparável não disponível");
   });
 
   it("mantém o preço original quando a unidade de análise não é por metro", () => {

@@ -201,7 +201,10 @@ function ComparativosPage() {
         const stored = equivMap.get(p.id);
         const precoBase = base.product.preco;
         const preco = p.product.preco;
-        const cb = costBenefit(base.product, p.product, r.score, r.cobertura, DEFAULT_CB_WEIGHTS);
+        const cb =
+          precoBase != null && preco != null
+            ? costBenefit(base.product, p.product, r.score, r.cobertura, DEFAULT_CB_WEIGHTS)
+            : { valor: null, categoria: "Sem dados" };
         return {
           produto: p,
           score: r.score,
@@ -260,13 +263,17 @@ function ComparativosPage() {
     const precos = linhas
       .map((l) => l.produto.product.preco)
       .filter((p): p is number => p != null && p > 0);
-    const maisProximo = [...linhas].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0] ?? null;
+    const ranqueaveis =
+      base?.product.preco == null ? [] : linhas.filter((l) => l.produto.product.preco != null);
+    const maisProximo =
+      [...ranqueaveis].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0] ?? null;
     const maisBarato =
-      [...linhas]
-        .filter((l) => l.produto.product.preco != null)
-        .sort((a, b) => (a.produto.product.preco ?? 0) - (b.produto.product.preco ?? 0))[0] ?? null;
+      [...ranqueaveis].sort(
+        (a, b) => (a.produto.product.preco ?? 0) - (b.produto.product.preco ?? 0),
+      )[0] ?? null;
     const melhorCb =
-      [...linhas].sort((a, b) => (b.custoBeneficio ?? -1) - (a.custoBeneficio ?? -1))[0] ?? null;
+      [...ranqueaveis].sort((a, b) => (b.custoBeneficio ?? -1) - (a.custoBeneficio ?? -1))[0] ??
+      null;
     return {
       total: linhas.length,
       diretos: linhas.filter((l) => l.level === "direto").length,
@@ -284,7 +291,7 @@ function ComparativosPage() {
       maisBarato,
       melhorCb,
     };
-  }, [linhas]);
+  }, [base, linhas]);
 
   const comparados = filtradas.filter((l) => selecionados.includes(l.produto.id)).slice(0, 4);
 
@@ -927,6 +934,11 @@ function RankingTabela({
       </div>
     );
   }
+  const ranqueaveis =
+    base.product.preco == null ? [] : linhas.filter((l) => l.produto.product.preco != null);
+  const semPrecoComparavel = linhas.filter(
+    (l) => base.product.preco == null || l.produto.product.preco == null,
+  );
   return (
     <div className="surface rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
@@ -949,7 +961,7 @@ function RankingTabela({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {linhas.map((l, i) => {
+            {ranqueaveis.map((l, i) => {
               const pf = priceFarol(base.product.preco, l.produto.product.preco);
               return (
                 <TableRow key={l.produto.id}>
@@ -1038,6 +1050,29 @@ function RankingTabela({
           </TableBody>
         </Table>
       </div>
+      {ranqueaveis.length === 0 && (
+        <div className="p-6 text-center text-sm text-muted-foreground">
+          Nenhum item possui preço comparável na mesma unidade da referência.
+        </div>
+      )}
+      {semPrecoComparavel.length > 0 && (
+        <div className="border-t bg-muted/30 p-4 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Fora do ranking por unidade de preço incompatível ou ausente
+          </p>
+          {semPrecoComparavel.map((l) => (
+            <div
+              key={l.produto.id}
+              className="flex flex-wrap items-center justify-between gap-2 text-xs"
+            >
+              <span>
+                {l.produto.marca} · {l.produto.referencia ?? l.produto.sku ?? l.produto.nome}
+              </span>
+              <span className="font-medium">{formatPreco(l.produto.product)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

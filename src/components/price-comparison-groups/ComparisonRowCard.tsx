@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatBRL } from "@/lib/price-comparativos-core";
+import { PRICE_NOT_COMPARABLE_LABEL, formatBRL } from "@/lib/price-comparativos-core";
 import {
   ITEM_CLASSIFICATION_LABEL,
   ITEM_STATUS_LABEL,
@@ -49,6 +49,12 @@ const TONE_CLASS: Record<string, string> = {
   sem_dado: "text-muted-foreground italic",
 };
 
+type StoredPriceMeta = {
+  original_price: number | null;
+  original_unit: string | null;
+  comparable_unit: string | null;
+};
+
 function CompetitorPriceBlock({
   brand,
   code,
@@ -57,6 +63,7 @@ function CompetitorPriceBlock({
   priceDate,
   region,
   source,
+  priceMeta,
   adjustmentPercent,
   onAdjustmentChange,
   onSubstitute,
@@ -69,12 +76,15 @@ function CompetitorPriceBlock({
   priceDate: string | null;
   region: string | null;
   source: string | null;
+  priceMeta?: StoredPriceMeta;
   adjustmentPercent: number | null;
   onAdjustmentChange: (v: number | null) => void;
   onSubstitute?: () => void;
   readOnly: boolean;
 }) {
   const simulated = simulatePrice(price, adjustmentPercent);
+  const originalPrice = priceMeta?.original_price ?? null;
+  const hasOriginalMetadata = originalPrice != null && originalPrice !== price;
   return (
     <div className="flex-1 min-w-[220px] rounded-lg border p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -98,7 +108,9 @@ function CompetitorPriceBlock({
       </div>
       <Tooltip>
         <TooltipTrigger asChild>
-          <p className="text-lg font-semibold cursor-help">{formatBRL(price)}</p>
+          <p className="text-lg font-semibold cursor-help">
+            {price == null && originalPrice != null ? PRICE_NOT_COMPARABLE_LABEL : formatBRL(price)}
+          </p>
         </TooltipTrigger>
         <TooltipContent className="text-xs">
           <p className="font-medium">Tabela utilizada: {priceTable || "não informada"}</p>
@@ -107,6 +119,11 @@ function CompetitorPriceBlock({
           {source && <p>Fonte: {source}</p>}
         </TooltipContent>
       </Tooltip>
+      {hasOriginalMetadata && (
+        <p className="text-[11px] text-muted-foreground">
+          Preço original ({priceMeta?.original_unit ?? "unidade"}): {formatBRL(originalPrice)}
+        </p>
+      )}
       {!readOnly && (
         <div className="flex items-center gap-2">
           <Input
@@ -118,6 +135,7 @@ function CompetitorPriceBlock({
             }
             placeholder="Ajuste %"
             className="h-8 w-24 text-xs"
+            disabled={price == null}
           />
           {adjustmentPercent != null && simulated != null && (
             <span className="text-xs text-muted-foreground">
@@ -155,6 +173,10 @@ export function ComparisonRowCard({
   const baseSpecs = item.specs_snapshot?.base ?? {};
   const compASpecs = item.specs_snapshot?.competitor_a ?? {};
   const compBSpecs = item.specs_snapshot?.competitor_b ?? {};
+  const priceMeta = item.specs_snapshot?.price_meta;
+  const baseOriginalPrice = priceMeta?.base?.original_price ?? null;
+  const baseHasOriginalMetadata =
+    baseOriginalPrice != null && baseOriginalPrice !== item.base_price;
 
   const voltageAnalysis =
     voltageAttr && (baseSpecs[voltageAttr.key] || compASpecs[voltageAttr.key])
@@ -233,7 +255,17 @@ export function ComparisonRowCard({
               {item.base_brand}
             </p>
             <p className="font-mono text-sm font-medium">{item.base_code}</p>
-            <p className="text-lg font-semibold">{formatBRL(item.base_price)}</p>
+            <p className="text-lg font-semibold">
+              {item.base_price == null && baseOriginalPrice != null
+                ? PRICE_NOT_COMPARABLE_LABEL
+                : formatBRL(item.base_price)}
+            </p>
+            {baseHasOriginalMetadata && (
+              <p className="text-[11px] text-muted-foreground">
+                Preço original ({priceMeta?.base?.original_unit ?? "unidade"}):{" "}
+                {formatBRL(baseOriginalPrice)}
+              </p>
+            )}
             {!readOnly && (
               <div className="flex items-center gap-2">
                 <Input
@@ -248,6 +280,7 @@ export function ComparisonRowCard({
                   }
                   placeholder="Ajuste %"
                   className="h-8 w-24 text-xs"
+                  disabled={item.base_price == null}
                 />
                 {item.base_adjustment_percent != null && (
                   <span className="text-xs text-muted-foreground">
@@ -269,6 +302,7 @@ export function ComparisonRowCard({
             priceDate={item.competitor_a_price_date}
             region={item.competitor_a_region}
             source={item.competitor_a_source}
+            priceMeta={item.competitor_a_product_id ? priceMeta?.competitor_a : undefined}
             adjustmentPercent={item.competitor_a_adjustment_percent}
             onAdjustmentChange={(v) => onChange({ competitor_a_adjustment_percent: v })}
             onSubstitute={onSubstituteA}
@@ -284,6 +318,7 @@ export function ComparisonRowCard({
               priceDate={item.competitor_b_price_date}
               region={item.competitor_b_region}
               source={item.competitor_b_source}
+              priceMeta={item.competitor_b_product_id ? priceMeta?.competitor_b : undefined}
               adjustmentPercent={item.competitor_b_adjustment_percent}
               onAdjustmentChange={(v) => onChange({ competitor_b_adjustment_percent: v })}
               onSubstitute={onSubstituteB}

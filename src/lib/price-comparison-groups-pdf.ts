@@ -4,7 +4,7 @@
 // (ver performance-pdf.ts) — nunca captura a tela, gera o documento do zero.
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatBRL } from "./price-comparativos-core";
+import { PRICE_NOT_COMPARABLE_LABEL, formatBRL } from "./price-comparativos-core";
 import { analyzeAttribute, simulatePrice, top6For } from "./price-comparison-groups-attributes";
 import {
   ITEM_CLASSIFICATION_LABEL,
@@ -16,6 +16,28 @@ import {
 const INK: [number, number, number] = [17, 24, 39];
 const MUTED: [number, number, number] = [107, 114, 128];
 const LINE: [number, number, number] = [226, 232, 240];
+
+type StoredPriceMeta = {
+  original_price: number | null;
+  original_unit: string | null;
+  comparable_unit: string | null;
+};
+
+function formatStoredPrice(
+  price: number | null,
+  adjustment: number | null,
+  meta?: StoredPriceMeta,
+): string {
+  const originalPrice = meta?.original_price ?? null;
+  const comparable = simulatePrice(price, adjustment) ?? price;
+  const displayed =
+    comparable == null && originalPrice != null
+      ? PRICE_NOT_COMPARABLE_LABEL
+      : formatBRL(comparable);
+  return originalPrice != null && originalPrice !== price
+    ? `${displayed}\nOriginal (${meta?.original_unit ?? "unidade"}): ${formatBRL(originalPrice)}`
+    : displayed;
+}
 
 export function exportComparisonGroupPdf(group: ComparisonGroup, items: ComparisonGroupItem[]) {
   const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
@@ -98,17 +120,23 @@ export function exportComparisonGroupPdf(group: ComparisonGroup, items: Comparis
     ],
     body: items.map((it) => [
       `${it.base_brand} ${it.base_code}`,
-      formatBRL(simulatePrice(it.base_price, it.base_adjustment_percent) ?? it.base_price),
+      formatStoredPrice(
+        it.base_price,
+        it.base_adjustment_percent,
+        it.specs_snapshot?.price_meta?.base,
+      ),
       `${it.competitor_a_brand} ${it.competitor_a_code}`,
-      formatBRL(
-        simulatePrice(it.competitor_a_price, it.competitor_a_adjustment_percent) ??
-          it.competitor_a_price,
+      formatStoredPrice(
+        it.competitor_a_price,
+        it.competitor_a_adjustment_percent,
+        it.specs_snapshot?.price_meta?.competitor_a,
       ),
       it.two_competitors ? `${it.competitor_b_brand ?? ""} ${it.competitor_b_code ?? ""}` : "—",
       it.two_competitors
-        ? formatBRL(
-            simulatePrice(it.competitor_b_price, it.competitor_b_adjustment_percent) ??
-              it.competitor_b_price,
+        ? formatStoredPrice(
+            it.competitor_b_price,
+            it.competitor_b_adjustment_percent,
+            it.specs_snapshot?.price_meta?.competitor_b,
           )
         : "—",
       ITEM_STATUS_LABEL[it.status],
