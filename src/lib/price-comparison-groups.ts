@@ -11,6 +11,7 @@ import type { SpecValue } from "@/lib/price-comparativos-core";
 import {
   fetchProducts,
   matchesProductClassification,
+  searchCatalogProductRows,
   type ProductRow,
   type LoadedProduct,
   loadCatalogProducts,
@@ -566,11 +567,17 @@ export async function searchProducts(params: {
 }): Promise<LoadedProduct[]> {
   // A RLS de price_products limita à empresa atual. Preço/tabela não participam desta busca.
   // "Tipo" pode estar em `categoria` ou `tipo`, conforme a origem da importação.
-  const { categoria, ...catalogParams } = params;
-  const rows: ProductRow[] = await fetchProducts({ ...catalogParams, limit: null });
-  const matchingRows = categoria
-    ? rows.filter((row) => matchesProductClassification(row, categoria))
-    : rows;
+  const { categoria, busca, ...catalogParams } = params;
+  const rows: ProductRow[] = busca?.trim()
+    ? await searchCatalogProductRows(busca)
+    : await fetchProducts({ ...catalogParams, limit: null });
+  const normalize = (value: string | null | undefined) => (value ?? "").trim().toLowerCase();
+  const matchingRows = rows.filter(
+    (row) =>
+      (!catalogParams.familia || normalize(row.familia) === normalize(catalogParams.familia)) &&
+      (!catalogParams.marca || normalize(row.marca) === normalize(catalogParams.marca)) &&
+      (!categoria || matchesProductClassification(row, categoria)),
+  );
   return loadCatalogProducts(matchingRows);
 }
 

@@ -42,11 +42,13 @@ export function ProductCombobox({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LoadedProduct[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
 
   useEffect(() => {
     if (!open || !marca) return;
     let active = true;
     setLoading(true);
+    setSearchError(false);
     const t = setTimeout(() => {
       searchProducts({ familia, categoria: categoria ?? undefined, marca, busca: query })
         .then((r) => {
@@ -63,7 +65,12 @@ export function ProductCombobox({
             setOpen(false);
           }
         })
-        .catch(() => active && setResults([]))
+        .catch((error) => {
+          console.error("Falha ao buscar produtos para comparação", error);
+          if (!active) return;
+          setResults([]);
+          setSearchError(true);
+        })
         .finally(() => active && setLoading(false));
     }, 250);
     return () => {
@@ -105,7 +112,12 @@ export function ProductCombobox({
           />
           <CommandList>
             {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>}
-            {!loading && (
+            {!loading && searchError && (
+              <div className="px-3 py-2 text-xs text-destructive">
+                Não foi possível consultar o catálogo. Tente novamente.
+              </div>
+            )}
+            {!loading && !searchError && (
               <CommandEmpty className="px-3 py-2 text-xs text-muted-foreground">
                 Nenhum produto cadastrado para {marca} neste filtro.
               </CommandEmpty>

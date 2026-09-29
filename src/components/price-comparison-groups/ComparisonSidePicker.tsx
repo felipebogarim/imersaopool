@@ -200,7 +200,7 @@ export function ComparisonSidePicker({
                   !value.brand
                     ? "Escolha a marca"
                     : !product
-                      ? "Selecione um produto"
+                      ? "Selecione um produto primeiro"
                       : resolved.tables.length === 0
                         ? "Sem preço/tabela cadastrados"
                         : "Selecione a tabela"

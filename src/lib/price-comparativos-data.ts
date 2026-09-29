@@ -137,6 +137,29 @@ export async function fetchProducts(params: {
   return rows;
 }
 
+/**
+ * Busca textual direta no catálogo, sem join com preços e sem expressão PostgREST `or(...)`.
+ * Consultas separadas evitam que um campo/termo problemático derrube todo o autocomplete.
+ */
+export async function searchCatalogProductRows(term: string): Promise<ProductRow[]> {
+  const query = term.trim();
+  if (!query) return [];
+  const fields = ["sku", "referencia", "nome", "descricao"] as const;
+  const results = await Promise.all(
+    fields.map(async (field) => {
+      const { data, error } = await supabase
+        .from("price_products")
+        .select(PRODUCT_FIELDS)
+        .eq("is_deleted", false)
+        .ilike(field, `%${query}%`)
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as ProductRow[];
+    }),
+  );
+  return Array.from(new Map(results.flat().map((row) => [row.id, row])).values());
+}
+
 export async function fetchMarcas(): Promise<string[]> {
   const { data, error } = await supabase
     .from("price_products")
