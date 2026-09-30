@@ -63,7 +63,11 @@ export const syncAgendaInvitees = createServerFn({ method: "POST" })
     if (requestedIds.length === 0) return { sent: 0 };
 
     const [{ data: organizer }, { data: invitees, error: inviteesError }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("full_name, email").eq("id", context.userId).maybeSingle(),
+      supabaseAdmin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", context.userId)
+        .maybeSingle(),
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, active_company_id, status")
@@ -72,20 +76,21 @@ export const syncAgendaInvitees = createServerFn({ method: "POST" })
     if (inviteesError) throw inviteesError;
 
     const validInvitees = (invitees ?? []).filter(
-      (invitee) => invitee.active_company_id === event.company_id && invitee.status === "ativo" && invitee.email,
+      (invitee) =>
+        invitee.active_company_id === event.company_id &&
+        invitee.status === "ativo" &&
+        invitee.email,
     );
     if (validInvitees.length === 0) return { sent: 0 };
 
-    const { error: saveError } = await supabaseAdmin
-      .from("agenda_event_invitees")
-      .upsert(
-        validInvitees.map((invitee) => ({
-          event_id: event.id,
-          invitee_id: invitee.id,
-          owner_id: context.userId,
-        })),
-        { onConflict: "event_id,invitee_id" },
-      );
+    const { error: saveError } = await supabaseAdmin.from("agenda_event_invitees").upsert(
+      validInvitees.map((invitee) => ({
+        event_id: event.id,
+        invitee_id: invitee.id,
+        owner_id: context.userId,
+      })),
+      { onConflict: "event_id,invitee_id" },
+    );
     if (saveError) throw saveError;
 
     const newInvitees = validInvitees.filter((invitee) => !existingIds.has(invitee.id));
@@ -93,16 +98,19 @@ export const syncAgendaInvitees = createServerFn({ method: "POST" })
 
     const { sendTransactionalEmail } = await import("@/lib/email/send.server");
     const startsAt = new Date(event.starts_at);
-    const dateLabel = new Intl.DateTimeFormat("pt-BR", {
+    const endsAt = new Date(startsAt.getTime() + event.duration_minutes * 60_000);
+    const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
       dateStyle: "long",
       timeStyle: "short",
       timeZone: "America/Sao_Paulo",
-    }).format(startsAt);
-    const durationLabel = event.duration_minutes < 60
-      ? `${event.duration_minutes} minutos`
-      : event.duration_minutes % 60 === 0
-        ? `${event.duration_minutes / 60} hora${event.duration_minutes > 60 ? "s" : ""}`
-        : `${Math.floor(event.duration_minutes / 60)}h ${event.duration_minutes % 60}min`;
+    });
+    const dateLabel = `${dateFormatter.format(startsAt)} — ${dateFormatter.format(endsAt)}`;
+    const durationLabel =
+      event.duration_minutes < 60
+        ? `${event.duration_minutes} minutos`
+        : event.duration_minutes % 60 === 0
+          ? `${event.duration_minutes / 60} hora${event.duration_minutes > 60 ? "s" : ""}`
+          : `${Math.floor(event.duration_minutes / 60)}h ${event.duration_minutes % 60}min`;
     const origin = process.env.PUBLIC_SITE_URL || "https://poolflux.app";
 
     await Promise.all(

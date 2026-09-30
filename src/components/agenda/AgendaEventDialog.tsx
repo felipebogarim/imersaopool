@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { addHours, differenceInMinutes } from "date-fns";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -14,11 +15,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { AGENDA_EVENT_TYPES } from "@/lib/agenda-event-utils";
 import { syncAgendaInvitees } from "@/lib/agenda.functions";
-import type { AgendaEvent, AgendaEventForm, AgendaUser } from "@/lib/agenda-types";
+import type { AgendaEvent, AgendaEventForm, AgendaEventType, AgendaUser } from "@/lib/agenda-types";
 
 type Props = {
   open: boolean;
@@ -31,19 +39,14 @@ type Props = {
   onSaved: () => void;
 };
 
-const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 480];
-
-function toInputValue(value: string) {
+function toInputValue(value: string | Date) {
   const date = new Date(value);
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
 }
 
-function durationLabel(minutes: number) {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest ? `${hours}h ${rest}min` : `${hours}h`;
+function defaultEnd(startsAt: string, durationMinutes = 60) {
+  return toInputValue(addHours(new Date(startsAt), durationMinutes / 60));
 }
 
 export function AgendaEventDialog({
@@ -61,7 +64,8 @@ export function AgendaEventDialog({
   const [form, setForm] = useState<AgendaEventForm>({
     title: "",
     startsAt: toInputValue(initialStartsAt),
-    durationMinutes: 60,
+    endsAt: defaultEnd(initialStartsAt),
+    eventType: "outro",
     details: "",
     inviteeIds: [],
   });
@@ -73,7 +77,10 @@ export function AgendaEventDialog({
     setForm({
       title: event?.title ?? "",
       startsAt: toInputValue(event?.starts_at ?? initialStartsAt),
-      durationMinutes: event?.duration_minutes ?? 60,
+      endsAt: event?.ends_at
+        ? toInputValue(event.ends_at)
+        : defaultEnd(event?.starts_at ?? initialStartsAt, event?.duration_minutes),
+      eventType: event?.event_type ?? "outro",
       details: event?.details ?? "",
       inviteeIds: event?.invitees?.map((invitee) => invitee.invitee_id) ?? [],
     });
@@ -84,7 +91,10 @@ export function AgendaEventDialog({
     const term = search.trim().toLowerCase();
     return users
       .filter((user) => user.id !== currentUserId)
-      .filter((user) => !term || `${user.full_name ?? ""} ${user.email ?? ""}`.toLowerCase().includes(term));
+      .filter(
+        (user) =>
+          !term || `${user.full_name ?? ""} ${user.email ?? ""}`.toLowerCase().includes(term),
+      );
   }, [currentUserId, search, users]);
 
   function toggleInvitee(userId: string) {
@@ -96,28 +106,58 @@ export function AgendaEventDialog({
     }));
   }
 
+  function updateStart(startsAt: string) {
+    setForm((current) => {
+      const previousStart = new Date(current.startsAt);
+      const previousEnd = new Date(current.endsAt);
+      const nextStart = new Date(startsAt);
+      const periodMs = Math.max(previousEnd.getTime() - previousStart.getTime(), 60 * 60_000);
+      return {
+        ...current,
+        startsAt,
+        endsAt: Number.isNaN(nextStart.getTime())
+          ? current.endsAt
+          : toInputValue(new Date(nextStart.getTime() + periodMs)),
+      };
+    });
+  }
+
   async function save() {
     if (!form.title.trim()) return toast.error("Informe o título do compromisso");
-    if (!form.startsAt) return toast.error("Informe a data e o horário");
+    if (!form.startsAt || !form.endsAt)
+      return toast.error("Informe o início e o fim do compromisso");
     const startsAt = new Date(form.startsAt);
-    if (Number.isNaN(startsAt.getTime())) return toast.error("Data ou horário inválido");
+    const endsAt = new Date(form.endsAt);
+    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+      return toast.error("Data ou horário inválido");
+    }
+    if (endsAt <= startsAt) return toast.error("O fim deve ser posterior ao início");
 
     setSaving(true);
     try {
       const payload = {
         title: form.title.trim(),
         starts_at: startsAt.toISOString(),
-        duration_minutes: form.durationMinutes,
+        ends_at: endsAt.toISOString(),
+        event_type: form.eventType,
+        duration_minutes: differenceInMinutes(endsAt, startsAt),
         details: form.details.trim() || null,
         owner_id: currentUserId,
         company_id: companyId,
       };
       let eventId = event?.id;
       if (event) {
-        const { error } = await supabase.from("agenda_events").update(payload).eq("id", event.id);
+        const { error } = await supabase
+          .from("agenda_events")
+          .update(payload as never)
+          .eq("id", event.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("agenda_events").insert(payload).select("id").single();
+        const { data, error } = await supabase
+          .from("agenda_events")
+          .insert(payload as never)
+          .select("id")
+          .single();
         if (error) throw error;
         eventId = data.id;
       }
@@ -125,9 +165,10 @@ export function AgendaEventDialog({
 
       const result = await syncInvitees({ data: { eventId, inviteeIds: form.inviteeIds } });
       toast.success(event ? "Compromisso atualizado" : "Compromisso criado", {
-        description: result.sent > 0
-          ? `${result.sent} convite${result.sent > 1 ? "s" : ""} enviado${result.sent > 1 ? "s" : ""} por e-mail.`
-          : undefined,
+        description:
+          result.sent > 0
+            ? `${result.sent} convite${result.sent > 1 ? "s" : ""} enviado${result.sent > 1 ? "s" : ""} por e-mail.`
+            : undefined,
       });
       onOpenChange(false);
       onSaved();
@@ -155,9 +196,17 @@ export function AgendaEventDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{event ? (canEdit ? "Editar compromisso" : "Detalhes do compromisso") : "Novo compromisso"}</DialogTitle>
+          <DialogTitle>
+            {event
+              ? canEdit
+                ? "Editar compromisso"
+                : "Detalhes do compromisso"
+              : "Novo compromisso"}
+          </DialogTitle>
           <DialogDescription>
-            {canEdit ? "Organize a data e convide participantes da sua empresa." : "Você participa deste compromisso como convidado."}
+            {canEdit
+              ? "Organize o período e convide participantes da sua empresa."
+              : "Você participa deste compromisso como convidado."}
           </DialogDescription>
         </DialogHeader>
 
@@ -173,31 +222,48 @@ export function AgendaEventDialog({
               maxLength={160}
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <Select
+              value={form.eventType}
+              onValueChange={(value) =>
+                setForm((current) => ({ ...current, eventType: value as AgendaEventType }))
+              }
+              disabled={!canEdit}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AGENDA_EVENT_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="agenda-start">Data e horário</Label>
+              <Label htmlFor="agenda-start">Início</Label>
               <Input
                 id="agenda-start"
                 type="datetime-local"
                 value={form.startsAt}
-                onChange={(e) => setForm((current) => ({ ...current, startsAt: e.target.value }))}
+                onChange={(e) => updateStart(e.target.value)}
                 disabled={!canEdit}
               />
             </div>
             <div className="space-y-2">
-              <Label>Duração</Label>
-              <Select
-                value={String(form.durationMinutes)}
-                onValueChange={(value) => setForm((current) => ({ ...current, durationMinutes: Number(value) }))}
+              <Label htmlFor="agenda-end">Fim</Label>
+              <Input
+                id="agenda-end"
+                type="datetime-local"
+                value={form.endsAt}
+                min={form.startsAt}
+                onChange={(e) => setForm((current) => ({ ...current, endsAt: e.target.value }))}
                 disabled={!canEdit}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {DURATIONS.map((duration) => (
-                    <SelectItem key={duration} value={String(duration)}>{durationLabel(duration)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
           </div>
           <div className="space-y-2">
@@ -213,7 +279,9 @@ export function AgendaEventDialog({
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-2"><UserRound className="h-4 w-4" /> Convidados</Label>
+            <Label className="flex items-center gap-2">
+              <UserRound className="h-4 w-4" /> Convidados
+            </Label>
             {canEdit && (
               <Input
                 value={search}
@@ -224,25 +292,33 @@ export function AgendaEventDialog({
             <div className="max-h-52 overflow-y-auto rounded-md border bg-muted/20 p-1">
               {availableUsers.length === 0 ? (
                 <p className="p-3 text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
-              ) : availableUsers.map((user) => {
-                const selected = form.inviteeIds.includes(user.id);
-                if (!canEdit && !selected) return null;
-                return (
-                  <button
-                    key={user.id}
-                    type="button"
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-accent disabled:hover:bg-transparent"
-                    onClick={() => toggleInvitee(user.id)}
-                    disabled={!canEdit}
-                  >
-                    <Checkbox checked={selected} className="pointer-events-none" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium">{user.full_name ?? user.email ?? "Usuário"}</span>
-                      {user.email && <span className="block truncate text-xs text-muted-foreground">{user.email}</span>}
-                    </span>
-                  </button>
-                );
-              })}
+              ) : (
+                availableUsers.map((user) => {
+                  const selected = form.inviteeIds.includes(user.id);
+                  if (!canEdit && !selected) return null;
+                  return (
+                    <button
+                      key={user.id}
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-accent disabled:hover:bg-transparent"
+                      onClick={() => toggleInvitee(user.id)}
+                      disabled={!canEdit}
+                    >
+                      <Checkbox checked={selected} className="pointer-events-none" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">
+                          {user.full_name ?? user.email ?? "Usuário"}
+                        </span>
+                        {user.email && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {user.email}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -252,9 +328,13 @@ export function AgendaEventDialog({
             <Button type="button" variant="destructive" onClick={remove} disabled={saving}>
               <Trash2 /> Excluir
             </Button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
             {canEdit && (
               <Button type="button" onClick={save} disabled={saving || !form.title.trim()}>
                 {saving && <Loader2 className="animate-spin" />} Salvar

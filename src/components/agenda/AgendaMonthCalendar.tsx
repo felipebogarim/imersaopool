@@ -3,7 +3,6 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
   isSameMonth,
   isToday,
   startOfMonth,
@@ -12,25 +11,27 @@ import {
 import { ptBR } from "date-fns/locale";
 import { Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  agendaEventPeriodLabel,
+  agendaEventTimeOnDay,
+  agendaEventTypeLabel,
+  eventsForAgendaDay,
+} from "@/lib/agenda-event-utils";
 import { getBrazilianNationalHoliday } from "@/lib/brazilian-national-holidays";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent } from "@/lib/agenda-types";
 
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 
-function eventsForDay(events: AgendaEvent[], date: Date) {
-  return events
-    .filter((event) => isSameDay(new Date(event.starts_at), date))
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-}
-
 export function EventButton({
   event,
+  day,
   currentUserId,
   compact = false,
   onSelect,
 }: {
   event: AgendaEvent;
+  day: Date;
   currentUserId: string;
   compact?: boolean;
   onSelect: (event: AgendaEvent) => void;
@@ -39,7 +40,7 @@ export function EventButton({
   return (
     <button
       type="button"
-      title={`${format(new Date(event.starts_at), "HH:mm")} · ${event.title}`}
+      title={`${agendaEventPeriodLabel(event)} · ${event.title}`}
       onClick={(eventClick) => {
         eventClick.stopPropagation();
         onSelect(event);
@@ -54,12 +55,10 @@ export function EventButton({
       <span className={cn("block truncate font-medium", compact ? "text-[11px]" : "text-xs")}>
         {event.title}
       </span>
-      {!compact && (
-        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-          <Clock3 className="h-3 w-3" /> {format(new Date(event.starts_at), "HH:mm")} ·{" "}
-          {event.duration_minutes} min
-        </span>
-      )}
+      <span className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+        <Clock3 className="h-3 w-3 shrink-0" /> {agendaEventTimeOnDay(event, day)} ·{" "}
+        {agendaEventTypeLabel(event.event_type)}
+      </span>
     </button>
   );
 }
@@ -103,7 +102,7 @@ export function MonthCalendar({
       </div>
       <div className="grid grid-cols-7">
         {days.map((day, index) => {
-          const dayEvents = eventsForDay(events, day);
+          const dayEvents = eventsForAgendaDay(events, day);
           const holiday = getBrazilianNationalHoliday(day);
           return (
             <div
@@ -137,6 +136,7 @@ export function MonthCalendar({
                   <EventButton
                     key={event.id}
                     event={event}
+                    day={day}
                     currentUserId={currentUserId}
                     compact
                     onSelect={onSelectEvent}

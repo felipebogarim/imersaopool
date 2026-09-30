@@ -1,4 +1,5 @@
 export type AgendaView = "day" | "week" | "month" | "bimonth" | "year";
+export type AgendaEventType = "imersao" | "reuniao" | "outro";
 
 export type AgendaUser = {
   id: string;
@@ -12,6 +13,8 @@ export type AgendaEvent = {
   company_id: string;
   title: string;
   starts_at: string;
+  ends_at: string;
+  event_type: AgendaEventType;
   duration_minutes: number;
   details: string | null;
   created_at: string;
@@ -22,7 +25,8 @@ export type AgendaEvent = {
 export type AgendaEventForm = {
   title: string;
   startsAt: string;
-  durationMinutes: number;
+  endsAt: string;
+  eventType: AgendaEventType;
   details: string;
   inviteeIds: string[];
 };

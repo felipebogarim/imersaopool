@@ -4,7 +4,6 @@ import {
   endOfMonth,
   endOfWeek,
   format,
-  isSameDay,
   isSameMonth,
   isToday,
   startOfMonth,
@@ -12,10 +11,16 @@ import {
   startOfYear,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarPlus, Clock3, UsersRound } from "lucide-react";
+import { CalendarPlus, Clock3 } from "lucide-react";
 import { EventButton, MonthCalendar } from "@/components/agenda/AgendaMonthCalendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  agendaEventPeriodLabel,
+  agendaEventTimeOnDay,
+  agendaEventTypeLabel,
+  eventsForAgendaDay,
+} from "@/lib/agenda-event-utils";
 import { getBrazilianNationalHoliday } from "@/lib/brazilian-national-holidays";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent, AgendaView } from "@/lib/agenda-types";
@@ -30,12 +35,6 @@ type Props = {
 };
 
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-
-function eventsForDay(events: AgendaEvent[], date: Date) {
-  return events
-    .filter((event) => isSameDay(new Date(event.starts_at), date))
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-}
 
 function EmptyDay({ onAdd }: { onAdd: () => void }) {
   return (
@@ -58,7 +57,7 @@ export function AgendaCalendar({
   onSelectEvent,
 }: Props) {
   if (view === "day") {
-    const dayEvents = eventsForDay(events, cursor);
+    const dayEvents = eventsForAgendaDay(events, cursor);
     const holiday = getBrazilianNationalHoliday(cursor);
     return (
       <section className="min-h-[540px] rounded-lg border bg-card">
@@ -91,9 +90,12 @@ export function AgendaCalendar({
                     : "border-warning/40 bg-warning/10",
                 )}
               >
-                <span className="font-semibold">{format(new Date(event.starts_at), "HH:mm")}</span>
+                <span className="font-semibold">{agendaEventTimeOnDay(event, cursor)}</span>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{event.title}</span>
+                  <Badge variant="secondary" className="mt-1">
+                    {agendaEventTypeLabel(event.event_type)}
+                  </Badge>
                   {event.details && (
                     <span className="mt-1 block line-clamp-2 text-sm text-muted-foreground">
                       {event.details}
@@ -101,7 +103,7 @@ export function AgendaCalendar({
                   )}
                 </span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock3 className="h-3.5 w-3.5" /> {event.duration_minutes} min
+                  <Clock3 className="h-3.5 w-3.5" /> {agendaEventPeriodLabel(event)}
                 </span>
               </button>
             ))
@@ -129,7 +131,7 @@ export function AgendaCalendar({
       <div className="overflow-x-auto rounded-lg border bg-card">
         <div className="grid min-w-[840px] grid-cols-7 divide-x">
           {days.map((day) => {
-            const dayEvents = eventsForDay(events, day);
+            const dayEvents = eventsForAgendaDay(events, day);
             const holiday = getBrazilianNationalHoliday(day);
             return (
               <section key={day.toISOString()} className="min-h-[560px]">
@@ -167,6 +169,7 @@ export function AgendaCalendar({
                     <EventButton
                       key={event.id}
                       event={event}
+                      day={day}
                       currentUserId={currentUserId}
                       onSelect={onSelectEvent}
                     />
@@ -210,7 +213,7 @@ export function AgendaCalendar({
                   </span>
                 ))}
                 {days.map((day) => {
-                  const count = eventsForDay(events, day).length;
+                  const count = eventsForAgendaDay(events, day).length;
                   const holiday = getBrazilianNationalHoliday(day);
                   return (
                     <button

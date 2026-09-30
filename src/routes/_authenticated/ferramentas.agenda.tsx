@@ -85,8 +85,8 @@ function AgendaPage() {
       const { data, error: queryError } = await supabase
         .from("agenda_events")
         .select("*, invitees:agenda_event_invitees(invitee_id)")
-        .gte("starts_at", range.start.toISOString())
         .lt("starts_at", range.end.toISOString())
+        .gt("ends_at", range.start.toISOString())
         .order("starts_at");
       if (queryError) throw queryError;
       return (data ?? []) as AgendaEvent[];
