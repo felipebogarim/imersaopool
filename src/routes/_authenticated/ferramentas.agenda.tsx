@@ -174,6 +174,9 @@ function AgendaPage() {
           <Badge variant="outline" className="gap-1.5">
             <span className="h-2 w-2 rounded-full bg-warning" /> Convites recebidos
           </Badge>
+          <Badge variant="outline" className="gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-destructive" /> Feriado nacional
+          </Badge>
         </div>
 
         {accountLoading || eventsLoading ? (

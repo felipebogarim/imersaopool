@@ -12,6 +12,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import { Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getBrazilianNationalHoliday } from "@/lib/brazilian-national-holidays";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent } from "@/lib/agenda-types";
 
@@ -103,6 +104,7 @@ export function MonthCalendar({
       <div className="grid grid-cols-7">
         {days.map((day, index) => {
           const dayEvents = eventsForDay(events, day);
+          const holiday = getBrazilianNationalHoliday(day);
           return (
             <div
               key={day.toISOString()}
@@ -116,12 +118,21 @@ export function MonthCalendar({
               <span
                 className={cn(
                   "mb-2 inline-grid h-7 w-7 place-items-center rounded-full text-xs font-semibold",
+                  holiday && "text-destructive ring-1 ring-destructive/30",
                   isToday(day) && "bg-primary text-primary-foreground",
                 )}
               >
                 {format(day, "d")}
               </span>
               <div className="space-y-1">
+                {holiday && (
+                  <span
+                    title={holiday}
+                    className="block truncate rounded bg-destructive/10 px-1 py-0.5 text-[9px] font-semibold text-destructive"
+                  >
+                    {holiday}
+                  </span>
+                )}
                 {dayEvents.slice(0, 3).map((event) => (
                   <EventButton
                     key={event.id}

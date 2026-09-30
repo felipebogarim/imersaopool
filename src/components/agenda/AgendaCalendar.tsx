@@ -14,7 +14,9 @@ import {
 import { ptBR } from "date-fns/locale";
 import { CalendarPlus, Clock3, UsersRound } from "lucide-react";
 import { EventButton, MonthCalendar } from "@/components/agenda/AgendaMonthCalendar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getBrazilianNationalHoliday } from "@/lib/brazilian-national-holidays";
 import { cn } from "@/lib/utils";
 import type { AgendaEvent, AgendaView } from "@/lib/agenda-types";
 
@@ -57,6 +59,7 @@ export function AgendaCalendar({
 }: Props) {
   if (view === "day") {
     const dayEvents = eventsForDay(events, cursor);
+    const holiday = getBrazilianNationalHoliday(cursor);
     return (
       <section className="min-h-[540px] rounded-lg border bg-card">
         <header className="border-b px-5 py-4">
@@ -66,6 +69,11 @@ export function AgendaCalendar({
           <h2 className="text-xl font-semibold">
             {format(cursor, "d 'de' MMMM", { locale: ptBR })}
           </h2>
+          {holiday && (
+            <Badge variant="outline" className="mt-2 border-destructive/30 text-destructive">
+              {holiday} · Feriado nacional
+            </Badge>
+          )}
         </header>
         <div className="space-y-3 p-4 sm:p-5">
           {dayEvents.length === 0 ? (
@@ -122,6 +130,7 @@ export function AgendaCalendar({
         <div className="grid min-w-[840px] grid-cols-7 divide-x">
           {days.map((day) => {
             const dayEvents = eventsForDay(events, day);
+            const holiday = getBrazilianNationalHoliday(day);
             return (
               <section key={day.toISOString()} className="min-h-[560px]">
                 <button
@@ -138,11 +147,20 @@ export function AgendaCalendar({
                   <span
                     className={cn(
                       "mt-1 inline-grid h-8 w-8 place-items-center rounded-full text-sm font-semibold",
+                      holiday && "text-destructive ring-1 ring-destructive/30",
                       isToday(day) && "bg-primary text-primary-foreground",
                     )}
                   >
                     {format(day, "d")}
                   </span>
+                  {holiday && (
+                    <span
+                      title={holiday}
+                      className="mt-1 block truncate text-[9px] font-semibold text-destructive"
+                    >
+                      {holiday}
+                    </span>
+                  )}
                 </button>
                 <div className="space-y-2 p-2">
                   {dayEvents.map((event) => (
@@ -193,18 +211,29 @@ export function AgendaCalendar({
                 ))}
                 {days.map((day) => {
                   const count = eventsForDay(events, day).length;
+                  const holiday = getBrazilianNationalHoliday(day);
                   return (
                     <button
                       type="button"
                       key={day.toISOString()}
+                      title={holiday ?? undefined}
+                      aria-label={
+                        holiday
+                          ? `${format(day, "d 'de' MMMM", { locale: ptBR })}: ${holiday}`
+                          : undefined
+                      }
                       onClick={() => onSelectDay(day)}
                       className={cn(
                         "relative aspect-square rounded text-xs hover:bg-accent",
                         !isSameMonth(day, month) && "text-muted-foreground/40",
+                        holiday && "bg-destructive/10 font-semibold text-destructive",
                         isToday(day) && "bg-primary text-primary-foreground hover:bg-primary/90",
                       )}
                     >
                       {format(day, "d")}
+                      {holiday && (
+                        <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                      )}
                       {count > 0 && (
                         <span
                           className={cn(
