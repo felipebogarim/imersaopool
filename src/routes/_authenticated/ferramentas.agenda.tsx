@@ -4,11 +4,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
-import { AgendaCalendar, createStartsAt, moveCursor, periodTitle, visibleRange } from "@/components/agenda/AgendaCalendar";
+import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { AgendaEventDialog } from "@/components/agenda/AgendaEventDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { createStartsAt, moveCursor, periodTitle, visibleRange } from "@/lib/agenda-calendar";
 import { getAgendaUsers } from "@/lib/agenda.functions";
 import type { AgendaEvent, AgendaUser, AgendaView } from "@/lib/agenda-types";
 import { cn } from "@/lib/utils";
@@ -17,9 +18,15 @@ export const Route = createFileRoute("/_authenticated/ferramentas/agenda")({
   head: () => ({
     meta: [
       { title: "Agenda — PoolFlux" },
-      { name: "description", content: "Agenda compartilhada para organizar compromissos e convidar participantes." },
+      {
+        name: "description",
+        content: "Agenda compartilhada para organizar compromissos e convidar participantes.",
+      },
       { property: "og:title", content: "Agenda — PoolFlux" },
-      { property: "og:description", content: "Agenda compartilhada para organizar compromissos e convidar participantes." },
+      {
+        property: "og:description",
+        content: "Agenda compartilhada para organizar compromissos e convidar participantes.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -31,6 +38,7 @@ const VIEWS: { value: AgendaView; label: string }[] = [
   { value: "day", label: "Dia" },
   { value: "week", label: "Semana" },
   { value: "month", label: "Mês" },
+  { value: "bimonth", label: "Bimesal" },
   { value: "year", label: "Ano" },
 ];
 
@@ -67,7 +75,11 @@ function AgendaPage() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: events = [], isLoading: eventsLoading, error } = useQuery({
+  const {
+    data: events = [],
+    isLoading: eventsLoading,
+    error,
+  } = useQuery({
     queryKey: ["agenda-events", range.start.toISOString(), range.end.toISOString()],
     queryFn: async () => {
       const { data, error: queryError } = await supabase
@@ -103,30 +115,51 @@ function AgendaPage() {
       <PageHeader
         title="Agenda"
         subtitle="Organize seus compromissos e convide participantes."
-        actions={<Button onClick={() => openNew()}><Plus /> Novo compromisso</Button>}
+        actions={
+          <Button onClick={() => openNew()}>
+            <Plus /> Novo compromisso
+          </Button>
+        }
       />
 
       <div className="space-y-4 px-4 py-5 sm:px-8">
         <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" aria-label="Período anterior" onClick={() => setCursor((date) => moveCursor(view, date, -1))}>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Período anterior"
+              onClick={() => setCursor((date) => moveCursor(view, date, -1))}
+            >
               <ChevronLeft />
             </Button>
-            <Button variant="outline" onClick={() => setCursor(new Date())}>Hoje</Button>
-            <Button variant="outline" size="icon" aria-label="Próximo período" onClick={() => setCursor((date) => moveCursor(view, date, 1))}>
+            <Button variant="outline" onClick={() => setCursor(new Date())}>
+              Hoje
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Próximo período"
+              onClick={() => setCursor((date) => moveCursor(view, date, 1))}
+            >
               <ChevronRight />
             </Button>
-            <h2 className="ml-2 text-base font-semibold capitalize sm:text-lg">{periodTitle(view, cursor)}</h2>
+            <h2 className="ml-2 text-base font-semibold capitalize sm:text-lg">
+              {periodTitle(view, cursor)}
+            </h2>
           </div>
 
-          <div className="grid grid-cols-4 rounded-md border bg-muted/30 p-1">
+          <div className="grid grid-cols-5 rounded-md border bg-muted/30 p-1">
             {VIEWS.map((item) => (
               <Button
                 key={item.value}
                 variant="ghost"
                 size="sm"
                 onClick={() => setView(item.value)}
-                className={cn("shadow-none", view === item.value && "bg-background text-foreground shadow-sm")}
+                className={cn(
+                  "shadow-none",
+                  view === item.value && "bg-background text-foreground shadow-sm",
+                )}
               >
                 {item.label}
               </Button>
@@ -135,13 +168,19 @@ function AgendaPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline" className="gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" /> Meus compromissos</Badge>
-          <Badge variant="outline" className="gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" /> Convites recebidos</Badge>
+          <Badge variant="outline" className="gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-primary" /> Meus compromissos
+          </Badge>
+          <Badge variant="outline" className="gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-warning" /> Convites recebidos
+          </Badge>
         </div>
 
         {accountLoading || eventsLoading ? (
           <div className="grid min-h-[480px] place-items-center rounded-lg border bg-card text-sm text-muted-foreground">
-            <span className="flex items-center gap-2"><CalendarDays className="h-5 w-5" /> Carregando agenda…</span>
+            <span className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" /> Carregando agenda…
+            </span>
           </div>
         ) : error ? (
           <div className="grid min-h-60 place-items-center rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
@@ -158,7 +197,9 @@ function AgendaPage() {
           />
         ) : (
           <div className="grid min-h-60 place-items-center rounded-lg border bg-card p-6 text-center">
-            <p className="max-w-md text-sm text-muted-foreground">Selecione uma empresa ativa para usar a Agenda.</p>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Selecione uma empresa ativa para usar a Agenda.
+            </p>
           </div>
         )}
       </div>

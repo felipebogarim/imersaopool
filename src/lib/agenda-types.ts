@@ -1,4 +1,4 @@
-export type AgendaView = "day" | "week" | "month" | "year";
+export type AgendaView = "day" | "week" | "month" | "bimonth" | "year";
 
 export type AgendaUser = {
   id: string;
