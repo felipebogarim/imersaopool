@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, max-lines */
 import { useCallback, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Building2, Check, Circle, Loader2, Plus, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  Check,
+  Circle,
+  Loader2,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +43,7 @@ import { GroQuestionnaires } from "@/components/gro/GroQuestionnaires";
 import { useGroContext } from "@/hooks/useGroContext";
 import { useGroWorkspaceData } from "@/hooks/useGroWorkspaceData";
 import { supabase } from "@/integrations/supabase/client";
-import { CONSULTANCY_STEPS, GRO_SECTIONS, periodKind } from "@/lib/gro-nr1";
+import { CONSULTANCY_STEPS, GRO_SECTIONS, setPreferredGroExperience } from "@/lib/gro-nr1";
 
 const db = supabase as any;
 
@@ -60,14 +69,18 @@ export function GroWorkspace({ section }: { section: string }) {
       return data ?? [];
     },
   });
-  const workspace = useGroWorkspaceData(context?.companyId, selectedPeriods);
+  const workspace = useGroWorkspaceData(context?.companyId ?? undefined, selectedPeriods);
   const onPeriodChange = useCallback((ids: string[]) => setSelectedPeriods(ids), []);
 
   if (contextLoading || periodsLoading) return <Loading />;
   if (contextError || periodsError) return <SetupError error={contextError ?? periodsError} />;
   if (!context) return null;
-  const allowed = context.isConsultant ? GRO_SECTIONS.consultant : GRO_SECTIONS.company;
+  const allowed = [
+    ...(context.isConsultant ? GRO_SECTIONS.consultant : GRO_SECTIONS.company),
+    ...(context.canManageCompany ? GRO_SECTIONS.administration : []),
+  ];
   if (!allowed.some(([key]) => key === section)) return <Restricted />;
+  const isAdministration = GRO_SECTIONS.administration.some(([key]) => key === section);
   const selected = periods.filter((period) => selectedPeriods.includes(period.id));
   const primaryPeriod = selected.length === 1 ? selected[0] : undefined;
 
@@ -81,24 +94,30 @@ export function GroWorkspace({ section }: { section: string }) {
               <h1 className="truncate text-xl font-bold">{context.companyName}</h1>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>Workspace GRO NR1</span>
-              <span>·</span>
               <span>
                 {primaryPeriod
-                  ? primaryPeriod.status === "active"
-                    ? "Período em andamento"
-                    : primaryPeriod.status === "closed"
-                      ? "Período encerrado"
-                      : "Período programado"
-                  : "Visão agregada"}
+                  ? `Período atual: ${primaryPeriod.name}`
+                  : selectedPeriods.length > 1
+                    ? `${selectedPeriods.length} períodos selecionados`
+                    : "Período não selecionado"}
               </span>
               <span>·</span>
-              <span>
-                {context.isConsultant ? "Operação da consultoria" : "Execução da empresa"}
-              </span>
+              <span>{context.isConsultant ? "Consultoria" : "Empresa"}</span>
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
+            {context.hasConsultantContext && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setPreferredGroExperience("consultancy");
+                  window.location.assign("/gro/carteira");
+                }}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar para Carteira
+              </Button>
+            )}
             <GroPeriodSelector
               periods={periods}
               value={selectedPeriods}
@@ -113,22 +132,10 @@ export function GroWorkspace({ section }: { section: string }) {
           </div>
         </div>
       </header>
-      <nav className="border-b bg-background px-4 sm:px-8">
-        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto py-2">
-          {allowed.map(([key, label]) => (
-            <Link
-              key={key}
-              to="/gro/empresa/$section"
-              params={{ section: key }}
-              className={`whitespace-nowrap rounded-md px-3 py-2 text-sm ${section === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </nav>
       <main className="mx-auto max-w-7xl p-4 sm:p-8">
-        {!periods.length ? (
+        {isAdministration ? (
+          <CompanyAdministrationArea section={section} context={context} />
+        ) : !periods.length ? (
           <NoPeriods canCreate={context.isConsultant} onCreate={() => setPeriodOpen(true)} />
         ) : !selectedPeriods.length ? (
           <Loading />
@@ -361,7 +368,7 @@ function StepEditor({ context, period, steps }: any) {
 }
 
 function SectionTitle({ section, comparative }: { section: string; comparative: boolean }) {
-  const all = [...GRO_SECTIONS.consultant];
+  const all = [...GRO_SECTIONS.consultant, ...GRO_SECTIONS.administration];
   const label = all.find(([key]) => key === section)?.[1] ?? section;
   return (
     <div className="mb-5">
@@ -370,6 +377,44 @@ function SectionTitle({ section, comparative }: { section: string; comparative: 
         {comparative && <Badge variant="outline">Comparativo</Badge>}
       </div>
     </div>
+  );
+}
+
+function CompanyAdministrationArea({ section, context }: any) {
+  const users = section === "usuarios-permissoes";
+  const Icon = users ? Users : Settings;
+  return (
+    <>
+      <SectionTitle section={section} comparative={false} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Icon className="h-5 w-5 text-primary" />
+              {users ? "Acessos da empresa" : "Preferências do workspace"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {users
+                ? "Área reservada aos administradores para organizar usuários e permissões da empresa."
+                : "Configurações do ambiente da empresa e do contexto de Período."}
+            </p>
+            <div className="mt-4 rounded-lg border border-dashed p-4 text-sm">
+              {context.companyName} · acesso administrativo confirmado pelo RBAC.
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Estado inicial</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Nenhuma alteração administrativa pendente neste workspace.
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
 function Loading() {

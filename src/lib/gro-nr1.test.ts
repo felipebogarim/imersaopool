@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isConsultant, isOverdue, periodKind } from "./gro-nr1";
+import { GRO_SECTIONS, isConsultant, isOverdue, periodKind } from "./gro-nr1";
 
 describe("GRO NR1 longitudinal rules", () => {
   it("classifies current, previous and planned periods", () => {
@@ -15,7 +15,29 @@ describe("GRO NR1 longitudinal rules", () => {
   });
 
   it("separates consultancy and company roles", () => {
+    expect(isConsultant(["admin"])).toBe(true);
+    expect(isConsultant(["gestor"])).toBe(true);
+    expect(isConsultant(["agente"])).toBe(true);
     expect(isConsultant(["consultoria_operador"])).toBe(true);
     expect(isConsultant(["empresa_admin"])).toBe(false);
+    expect(isConsultant(["empresa_usuario"])).toBe(false);
+  });
+
+  it("keeps private consultancy areas out of the company menu", () => {
+    expect(GRO_SECTIONS.consultant.map(([key]) => key)).toEqual([
+      "panorama",
+      "documentos",
+      "questionarios",
+      "reportes-de-campo",
+      "relatorio-final",
+      "plano-de-acao",
+      "nossa-cultura",
+    ]);
+    expect(GRO_SECTIONS.company.map(([key]) => key)).toEqual([
+      "panorama",
+      "relatorio-final",
+      "plano-de-acao",
+      "nossa-cultura",
+    ]);
   });
 });
