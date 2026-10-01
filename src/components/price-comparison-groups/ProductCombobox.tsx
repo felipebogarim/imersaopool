@@ -14,6 +14,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { searchProducts } from "@/lib/price-comparison-groups";
+import { findExactCodeMatch } from "@/lib/product-code-match";
 import type { LoadedProduct } from "@/lib/price-comparativos-data";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,14 @@ export function ProductCombobox({
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(false);
 
+  // Ordem da seleção: 1) registra o produto (id) no estado do pai, 2) limpa a busca, 3) fecha.
+  // `setOpen(false)` programático não dispara onOpenChange, por isso a busca é limpa aqui.
+  function commit(product: LoadedProduct) {
+    onSelect(product);
+    setQuery("");
+    setOpen(false);
+  }
+
   useEffect(() => {
     if (!open || !marca) return;
     let active = true;
@@ -54,16 +63,9 @@ export function ProductCombobox({
         .then((r) => {
           if (!active) return;
           setResults(r);
-          // Código digitado por completo: seleciona o produto sem precisar clicar.
-          const code = query.trim().toLowerCase();
-          if (!code) return;
-          const exact = r.filter(
-            (p) => p.sku?.toLowerCase() === code || p.referencia?.toLowerCase() === code,
-          );
-          if (exact.length === 1) {
-            onSelect(exact[0]);
-            setOpen(false);
-          }
+          // Código digitado por completo: seleciona o produto (por id) sem precisar clicar.
+          const exact = findExactCodeMatch(r, query);
+          if (exact) commit(exact);
         })
         .catch((error) => {
           console.error("Falha ao buscar produtos para comparação", error);
@@ -82,6 +84,7 @@ export function ProductCombobox({
 
   return (
     <Popover
+      modal
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
@@ -103,7 +106,13 @@ export function ProductCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-72 p-0" align="start">
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] min-w-72 p-0"
+        align="start"
+        // Radix Select (marca) deixa `pointer-events:none` no body enquanto fecha; o conteúdo em
+        // portal herdava isso e o clique no item não chegava ao cmdk.
+        style={{ pointerEvents: "auto" }}
+      >
         <Command shouldFilter={false}>
           <CommandInput
             value={query}
@@ -111,7 +120,6 @@ export function ProductCombobox({
             placeholder="Buscar por código ou descrição…"
           />
           <CommandList>
-            {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>}
             {!loading && searchError && (
               <div className="px-3 py-2 text-xs text-destructive">
                 Não foi possível consultar o catálogo. Tente novamente.
@@ -127,10 +135,9 @@ export function ProductCombobox({
                 <CommandItem
                   key={r.id}
                   value={r.id}
-                  onSelect={() => {
-                    onSelect(r);
-                    setOpen(false);
-                  }}
+                  onSelect={() => commit(r)}
+                  // Evita que o input perca o foco (blur) antes do clique concluir a seleção.
+                  onMouseDown={(e) => e.preventDefault()}
                   className="flex items-start gap-2"
                 >
                   <Check
@@ -151,6 +158,7 @@ export function ProductCombobox({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {loading && <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>}
           </CommandList>
         </Command>
       </PopoverContent>
