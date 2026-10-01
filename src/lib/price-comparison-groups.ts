@@ -228,6 +228,8 @@ type EquivalenceRowShadow = {
   group_id: string | null;
   relation_context: string | null;
   is_deleted: boolean;
+  origin: "system_suggestion" | "admin_manual" | "comparables_validation";
+  relation_status: "sugestao_sistema" | "validada" | "rejeitada" | "em_revisao";
 };
 
 type EquivDatabase = {
@@ -779,6 +781,13 @@ async function upsertOfficialPair(
     equivalence_level: level,
     status: item.status,
     manually_edited: true,
+    origin: "comparables_validation" as const,
+    relation_status:
+      item.status === "validado"
+        ? ("validada" as const)
+        : item.status === "incompativel"
+          ? ("rejeitada" as const)
+          : ("em_revisao" as const),
     validation_notes: item.notes,
     group_id: group.id,
     relation_context: relationContext,

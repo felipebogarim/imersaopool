@@ -6,19 +6,23 @@ export const Route = createFileRoute("/_authenticated/price")({
   head: () => ({
     meta: [
       { title: "Price — PoolFlux" },
-      { name: "description", content: "Módulo Price: competidores, tabelas de preços e comparativos." },
+      {
+        name: "description",
+        content: "Módulo Price: competidores, tabelas de preços e comparativos.",
+      },
     ],
   }),
   component: PriceLayout,
 });
 
 const TABS = [
-  { to: "/price/pricing", label: "Pricing" },
+  { to: "/price/equivalencias", label: "Equivalências" },
+  { to: "/price/validacao", label: "Validação de Comparáveis" },
+  { to: "/price/comparativos-especificos", label: "Painel Price" },
   { to: "/price/competidores", label: "Competidores" },
   { to: "/price/tabelas", label: "Tabelas" },
-  { to: "/price/comparativos", label: "Comparativos" },
-  { to: "/price/validacao", label: "Validação de Comparáveis" },
-  { to: "/price/comparativos-especificos", label: "Comparativos Específicos" },
+  { to: "/price/pricing", label: "Pricing (legado)" },
+  { to: "/price/comparativos", label: "Comparativos (legado)" },
 ] as const;
 
 function PriceLayout() {
@@ -38,7 +42,7 @@ function PriceLayout() {
                   "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition",
                   active
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
                 {t.label}

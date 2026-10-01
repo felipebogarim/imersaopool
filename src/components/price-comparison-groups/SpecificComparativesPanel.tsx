@@ -74,7 +74,7 @@ export function SpecificComparativesPanel({
     <div className="w-full lg:w-72 shrink-0 rounded-xl border bg-card p-3 space-y-3 max-h-[80vh] overflow-y-auto">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Comparativos específicos salvos
+          Painéis Price salvos
         </p>
         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={toggle} title="Recolher">
           <ChevronRight className="h-4 w-4" />

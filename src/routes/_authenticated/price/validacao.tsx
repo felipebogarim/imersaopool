@@ -65,6 +65,7 @@ import {
   fetchBrandPriceTables,
   resolveTableKey,
 } from "@/lib/price-comparison-lookup";
+import { OfficialEquivalenceCheck } from "@/components/price-equivalences/OfficialEquivalenceCheck";
 import { SpecificComparativesPanel } from "@/components/price-comparison-groups/SpecificComparativesPanel";
 
 export const Route = createFileRoute("/_authenticated/price/validacao")({
@@ -626,6 +627,11 @@ function ValidacaoComparaveisPage() {
                   />
                 )}
               </div>
+              <OfficialEquivalenceCheck
+                base={baseSide.product}
+                competitor={compA.product}
+                canManage={canManage}
+              />
               <Button onClick={handleAddComparison} size="sm" className="gap-1.5">
                 <Plus className="h-4 w-4" /> Adicionar comparação
               </Button>

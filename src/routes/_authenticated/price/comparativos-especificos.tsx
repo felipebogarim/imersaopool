@@ -27,7 +27,7 @@ import { exportComparisonGroupPdf } from "@/lib/price-comparison-groups-pdf";
 import { ComparativeCard } from "@/components/price-comparison-groups/ComparativeCard";
 
 export const Route = createFileRoute("/_authenticated/price/comparativos-especificos")({
-  head: () => ({ meta: [{ title: "Comparativos Específicos — PoolFlux" }] }),
+  head: () => ({ meta: [{ title: "Painel Price — PoolFlux" }] }),
   component: ComparativosEspecificosPage,
 });
 
@@ -90,7 +90,7 @@ function ComparativosEspecificosPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Comparativos Específicos</h1>
+        <h1 className="text-xl font-semibold">Painel Price</h1>
         <p className="text-sm text-muted-foreground">
           Estudos comparativos salvos, sem alterar a base oficial. Abra um estudo para editar em
           Validação de Comparáveis.

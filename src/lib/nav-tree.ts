@@ -50,15 +50,27 @@ export const NAV_TREE: NavGroup[] = [
     key: "precos",
     label: "Preços",
     children: [
-      { key: "price.pricing", label: "Pricing", to: "/price/pricing" },
-      { key: "price.mapa", label: "Mapa de Preços", to: "/price/mapa" },
-      { key: "price.simulador", label: "Simulador, R$ + Características", to: "/price/simulador" },
-      { key: "price.comparativos", label: "Comparativos", to: "/price/comparativos" },
-      { key: "price.validacao", label: "Validação de Comparáveis", to: "/price/validacao" },
+      { key: "price.equivalencias", label: "Pricing · Equivalências", to: "/price/equivalencias" },
+      {
+        key: "price.validacao",
+        label: "Pricing · Validação de Comparáveis",
+        to: "/price/validacao",
+      },
       {
         key: "price.comparativos-especificos",
-        label: "Comparativos Específicos",
+        label: "Painel Price",
         to: "/price/comparativos-especificos",
+      },
+      { key: "price.competidores", label: "Competidores", to: "/price/competidores" },
+      { key: "price.tabelas", label: "Tabelas", to: "/price/tabelas" },
+      // Telas antigas, mantidas até a decisão de descontinuação (não excluir ainda).
+      { key: "price.pricing", label: "Pricing (legado)", to: "/price/pricing" },
+      { key: "price.comparativos", label: "Comparativos (legado)", to: "/price/comparativos" },
+      { key: "price.mapa", label: "Mapa de Preços (legado)", to: "/price/mapa" },
+      {
+        key: "price.simulador",
+        label: "Simulador, R$ + Características",
+        to: "/price/simulador",
       },
     ],
   },
@@ -76,14 +88,6 @@ export const NAV_TREE: NavGroup[] = [
       { key: "inputs.fontes", label: "Fontes de Insight", to: "/fontes" },
       { key: "inputs.entrevistas", label: "Entrevistas", to: "/entrevistas" },
       { key: "inputs.forms", label: "Forms", to: "/forms" },
-    ],
-  },
-  {
-    key: "dados-mercado",
-    label: "Dados de Mercado",
-    children: [
-      { key: "price.tabelas", label: "Tabelas", to: "/price/tabelas" },
-      { key: "price.competidores", label: "Competidores", to: "/price/competidores" },
     ],
   },
   {
