@@ -16,7 +16,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
-import { Route as QTokenRouteImport } from './routes/q.$token'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
@@ -55,7 +54,6 @@ import { Route as AuthenticatedPriceIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMapaAcoesIndexRouteImport } from './routes/_authenticated/mapa-acoes.index'
 import { Route as AuthenticatedManuaisIndexRouteImport } from './routes/_authenticated/manuais.index'
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
-import { Route as AuthenticatedGroIndexRouteImport } from './routes/_authenticated/gro.index'
 import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms.index'
 import { Route as AuthenticatedFontesIndexRouteImport } from './routes/_authenticated/fontes.index'
 import { Route as AuthenticatedEntrevistasIndexRouteImport } from './routes/_authenticated/entrevistas.index'
@@ -86,8 +84,6 @@ import { Route as AuthenticatedPerformanceRepsRouteImport } from './routes/_auth
 import { Route as AuthenticatedPerformanceBiClientesRouteImport } from './routes/_authenticated/performance.bi-clientes'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
-import { Route as AuthenticatedGroConfiguracoesRouteImport } from './routes/_authenticated/gro.configuracoes'
-import { Route as AuthenticatedGroCarteiraRouteImport } from './routes/_authenticated/gro.carteira'
 import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
 import { Route as AuthenticatedFontesIdRouteImport } from './routes/_authenticated/fontes.$id'
 import { Route as AuthenticatedFerramentasTranscricaoRouteImport } from './routes/_authenticated/ferramentas.transcricao'
@@ -126,7 +122,6 @@ import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api
 import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
-import { Route as AuthenticatedGroEmpresaSectionRouteImport } from './routes/_authenticated/gro.empresa.$section'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.$repId.$razao'
@@ -167,11 +162,6 @@ const IndexRoute = IndexRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QTokenRoute = QTokenRouteImport.update({
-  id: '/q/$token',
-  path: '/q/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MSlugRoute = MSlugRouteImport.update({
@@ -377,11 +367,6 @@ const AuthenticatedImersoesIndexRoute =
     path: '/imersoes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedGroIndexRoute = AuthenticatedGroIndexRouteImport.update({
-  id: '/gro/',
-  path: '/gro/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedFormsIndexRoute = AuthenticatedFormsIndexRouteImport.update({
   id: '/forms/',
   path: '/forms/',
@@ -551,18 +536,6 @@ const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
   path: '/imersoes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedGroConfiguracoesRoute =
-  AuthenticatedGroConfiguracoesRouteImport.update({
-    id: '/gro/configuracoes',
-    path: '/gro/configuracoes',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedGroCarteiraRoute =
-  AuthenticatedGroCarteiraRouteImport.update({
-    id: '/gro/carteira',
-    path: '/gro/carteira',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedFormsIdRoute = AuthenticatedFormsIdRouteImport.update({
   id: '/forms/$id',
   path: '/forms/$id',
@@ -785,12 +758,6 @@ const AuthenticatedPermissoesTypeIdRoute =
     path: '/permissoes/$type/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedGroEmpresaSectionRoute =
-  AuthenticatedGroEmpresaSectionRouteImport.update({
-    id: '/gro/empresa/$section',
-    path: '/gro/empresa/$section',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedEntrevistasIdSessaoRoute =
   AuthenticatedEntrevistasIdSessaoRouteImport.update({
     id: '/sessao',
@@ -869,7 +836,6 @@ export interface FileRoutesByFullPath {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
-  '/q/$token': typeof QTokenRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -895,8 +861,6 @@ export interface FileRoutesByFullPath {
   '/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
-  '/gro/carteira': typeof AuthenticatedGroCarteiraRoute
-  '/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -927,7 +891,6 @@ export interface FileRoutesByFullPath {
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/fontes/': typeof AuthenticatedFontesIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
-  '/gro/': typeof AuthenticatedGroIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
@@ -939,7 +902,6 @@ export interface FileRoutesByFullPath {
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
-  '/gro/empresa/$section': typeof AuthenticatedGroEmpresaSectionRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -994,7 +956,6 @@ export interface FileRoutesByTo {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
-  '/q/$token': typeof QTokenRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -1019,8 +980,6 @@ export interface FileRoutesByTo {
   '/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/forms/$id': typeof AuthenticatedFormsIdRoute
-  '/gro/carteira': typeof AuthenticatedGroCarteiraRoute
-  '/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -1051,7 +1010,6 @@ export interface FileRoutesByTo {
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
   '/fontes': typeof AuthenticatedFontesIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
-  '/gro': typeof AuthenticatedGroIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
   '/manuais': typeof AuthenticatedManuaisIndexRoute
   '/mapa-acoes': typeof AuthenticatedMapaAcoesIndexRoute
@@ -1063,7 +1021,6 @@ export interface FileRoutesByTo {
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
-  '/gro/empresa/$section': typeof AuthenticatedGroEmpresaSectionRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -1121,7 +1078,6 @@ export interface FileRoutesById {
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
   '/m/$slug': typeof MSlugRoute
-  '/q/$token': typeof QTokenRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
@@ -1147,8 +1103,6 @@ export interface FileRoutesById {
   '/_authenticated/ferramentas/transcricao': typeof AuthenticatedFerramentasTranscricaoRoute
   '/_authenticated/fontes/$id': typeof AuthenticatedFontesIdRoute
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
-  '/_authenticated/gro/carteira': typeof AuthenticatedGroCarteiraRoute
-  '/_authenticated/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -1179,7 +1133,6 @@ export interface FileRoutesById {
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
   '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
-  '/_authenticated/gro/': typeof AuthenticatedGroIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
   '/_authenticated/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/_authenticated/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
@@ -1191,7 +1144,6 @@ export interface FileRoutesById {
   '/_authenticated/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
-  '/_authenticated/gro/empresa/$section': typeof AuthenticatedGroEmpresaSectionRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -1249,7 +1201,6 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/m/$slug'
-    | '/q/$token'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -1275,8 +1226,6 @@ export interface FileRouteTypes {
     | '/ferramentas/transcricao'
     | '/fontes/$id'
     | '/forms/$id'
-    | '/gro/carteira'
-    | '/gro/configuracoes'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/performance/bi-clientes'
@@ -1307,7 +1256,6 @@ export interface FileRouteTypes {
     | '/entrevistas/'
     | '/fontes/'
     | '/forms/'
-    | '/gro/'
     | '/imersoes/'
     | '/manuais/'
     | '/mapa-acoes/'
@@ -1319,7 +1267,6 @@ export interface FileRouteTypes {
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
-    | '/gro/empresa/$section'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
@@ -1374,7 +1321,6 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/m/$slug'
-    | '/q/$token'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
@@ -1399,8 +1345,6 @@ export interface FileRouteTypes {
     | '/ferramentas/transcricao'
     | '/fontes/$id'
     | '/forms/$id'
-    | '/gro/carteira'
-    | '/gro/configuracoes'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/performance/bi-clientes'
@@ -1431,7 +1375,6 @@ export interface FileRouteTypes {
     | '/entrevistas'
     | '/fontes'
     | '/forms'
-    | '/gro'
     | '/imersoes'
     | '/manuais'
     | '/mapa-acoes'
@@ -1443,7 +1386,6 @@ export interface FileRouteTypes {
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
-    | '/gro/empresa/$section'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
@@ -1500,7 +1442,6 @@ export interface FileRouteTypes {
     | '/evento/sucesso'
     | '/f/$slug'
     | '/m/$slug'
-    | '/q/$token'
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
@@ -1526,8 +1467,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ferramentas/transcricao'
     | '/_authenticated/fontes/$id'
     | '/_authenticated/forms/$id'
-    | '/_authenticated/gro/carteira'
-    | '/_authenticated/gro/configuracoes'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/performance/bi-clientes'
@@ -1558,7 +1497,6 @@ export interface FileRouteTypes {
     | '/_authenticated/entrevistas/'
     | '/_authenticated/fontes/'
     | '/_authenticated/forms/'
-    | '/_authenticated/gro/'
     | '/_authenticated/imersoes/'
     | '/_authenticated/manuais/'
     | '/_authenticated/mapa-acoes/'
@@ -1570,7 +1508,6 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes-bi/$repId/$razao'
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
-    | '/_authenticated/gro/empresa/$section'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
@@ -1607,7 +1544,6 @@ export interface RootRouteChildren {
   EventoSucessoRoute: typeof EventoSucessoRoute
   FSlugRoute: typeof FSlugRoute
   MSlugRoute: typeof MSlugRoute
-  QTokenRoute: typeof QTokenRoute
   RTokenRoute: typeof RTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -1678,13 +1614,6 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/q/$token': {
-      id: '/q/$token'
-      path: '/q/$token'
-      fullPath: '/q/$token'
-      preLoaderRoute: typeof QTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/m/$slug': {
@@ -1953,13 +1882,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImersoesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/gro/': {
-      id: '/_authenticated/gro/'
-      path: '/gro'
-      fullPath: '/gro/'
-      preLoaderRoute: typeof AuthenticatedGroIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/forms/': {
       id: '/_authenticated/forms/'
       path: '/forms'
@@ -2168,20 +2090,6 @@ declare module '@tanstack/react-router' {
       path: '/imersoes/$id'
       fullPath: '/imersoes/$id'
       preLoaderRoute: typeof AuthenticatedImersoesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/gro/configuracoes': {
-      id: '/_authenticated/gro/configuracoes'
-      path: '/gro/configuracoes'
-      fullPath: '/gro/configuracoes'
-      preLoaderRoute: typeof AuthenticatedGroConfiguracoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/gro/carteira': {
-      id: '/_authenticated/gro/carteira'
-      path: '/gro/carteira'
-      fullPath: '/gro/carteira'
-      preLoaderRoute: typeof AuthenticatedGroCarteiraRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/forms/$id': {
@@ -2450,13 +2358,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPermissoesTypeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/gro/empresa/$section': {
-      id: '/_authenticated/gro/empresa/$section'
-      path: '/gro/empresa/$section'
-      fullPath: '/gro/empresa/$section'
-      preLoaderRoute: typeof AuthenticatedGroEmpresaSectionRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/entrevistas/$id/sessao': {
       id: '/_authenticated/entrevistas/$id/sessao'
       path: '/sessao'
@@ -2658,8 +2559,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFerramentasTranscricaoRoute: typeof AuthenticatedFerramentasTranscricaoRoute
   AuthenticatedFontesIdRoute: typeof AuthenticatedFontesIdRoute
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
-  AuthenticatedGroCarteiraRoute: typeof AuthenticatedGroCarteiraRoute
-  AuthenticatedGroConfiguracoesRoute: typeof AuthenticatedGroConfiguracoesRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedPerformanceBiClientesRoute: typeof AuthenticatedPerformanceBiClientesRoute
@@ -2676,7 +2575,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEntrevistasIndexRoute: typeof AuthenticatedEntrevistasIndexRoute
   AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
-  AuthenticatedGroIndexRoute: typeof AuthenticatedGroIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
   AuthenticatedManuaisIndexRoute: typeof AuthenticatedManuaisIndexRoute
   AuthenticatedMapaAcoesIndexRoute: typeof AuthenticatedMapaAcoesIndexRoute
@@ -2685,7 +2583,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSolicitacoesIndexRoute: typeof AuthenticatedSolicitacoesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
-  AuthenticatedGroEmpresaSectionRoute: typeof AuthenticatedGroEmpresaSectionRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -2730,8 +2627,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedFerramentasTranscricaoRoute,
   AuthenticatedFontesIdRoute: AuthenticatedFontesIdRoute,
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
-  AuthenticatedGroCarteiraRoute: AuthenticatedGroCarteiraRoute,
-  AuthenticatedGroConfiguracoesRoute: AuthenticatedGroConfiguracoesRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedPerformanceBiClientesRoute:
@@ -2752,7 +2647,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEntrevistasIndexRoute: AuthenticatedEntrevistasIndexRoute,
   AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
-  AuthenticatedGroIndexRoute: AuthenticatedGroIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
   AuthenticatedManuaisIndexRoute: AuthenticatedManuaisIndexRoute,
   AuthenticatedMapaAcoesIndexRoute: AuthenticatedMapaAcoesIndexRoute,
@@ -2762,7 +2656,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
   AuthenticatedClientesBiRepIdRazaoRoute:
     AuthenticatedClientesBiRepIdRazaoRoute,
-  AuthenticatedGroEmpresaSectionRoute: AuthenticatedGroEmpresaSectionRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute:
@@ -2792,7 +2685,6 @@ const rootRouteChildren: RootRouteChildren = {
   EventoSucessoRoute: EventoSucessoRoute,
   FSlugRoute: FSlugRoute,
   MSlugRoute: MSlugRoute,
-  QTokenRoute: QTokenRoute,
   RTokenRoute: RTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,

@@ -1,44 +1,5 @@
-/* eslint-disable max-lines */
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import {
-  BarChart3,
-  Users,
-  Briefcase,
-  Tag,
-  UserCog,
-  LogOut,
-  FileSearch,
-  TrendingUp,
-  Building2,
-  MessageSquare,
-  Repeat,
-  Shield,
-  ShieldCheck,
-  Database,
-  Package,
-  ChevronDown,
-  ChevronRight,
-  Inbox,
-  BookOpen,
-  Lightbulb,
-  Sparkles,
-  ListChecks,
-  HardDriveDownload,
-  FileText,
-  ScrollText,
-  KeyRound,
-  LineChart,
-  Wrench,
-  Menu,
-  X,
-  Lock,
-  User,
-  RefreshCw,
-  LayoutGrid,
-  CalendarDays,
-  ClipboardCheck,
-  Settings,
-} from "lucide-react";
+import { BarChart3, Users, Briefcase, Tag, UserCog, LogOut, FileSearch, TrendingUp, Building2, MessageSquare, Repeat, Shield, ShieldCheck, Database, Package, ChevronDown, ChevronRight, Inbox, BookOpen, Lightbulb, Sparkles, ListChecks, HardDriveDownload, FileText, ScrollText, KeyRound, LineChart, Wrench, Menu, X, Lock, User, RefreshCw, LayoutGrid, CalendarDays } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,7 +27,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const ICONS: Record<string, typeof BarChart3> = {
-  "gro-nr1": ClipboardCheck,
   home: Inbox,
   "bi-diretor": BarChart3,
   performance: TrendingUp,
@@ -117,22 +77,11 @@ const ICONS: Record<string, typeof BarChart3> = {
 };
 
 // Label span: hidden when sidebar is collapsed on desktop; shown on hover or when mobile drawer is open.
-const LBL =
-  "hidden group-hover/sidebar:inline group-data-[mobile-open=true]/sidebar:inline whitespace-nowrap";
+const LBL = "hidden group-hover/sidebar:inline group-data-[mobile-open=true]/sidebar:inline whitespace-nowrap";
 // Chevron / secondary UI: only when expanded (hover or mobile-open).
 const ONLY_EXPANDED = "hidden group-hover/sidebar:flex group-data-[mobile-open=true]/sidebar:flex";
 
-function NavItem({
-  to,
-  label,
-  Icon,
-  active,
-}: {
-  to: string;
-  label: string;
-  Icon: typeof BarChart3;
-  active: boolean;
-}) {
+function NavItem({ to, label, Icon, active }: { to: string; label: string; Icon: typeof BarChart3; active: boolean }) {
   return (
     <Link
       to={to}
@@ -141,7 +90,7 @@ function NavItem({
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition",
         active
           ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
-          : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
@@ -160,39 +109,28 @@ function NavGroupBlock({
   visibleChildren: NavGroup["children"];
 }) {
   const Icon = ICONS[group.key] ?? Database;
-  const [open, setOpen] = useState(() =>
-    visibleChildren.some((c) => pathname === c.to || pathname.startsWith(c.to + "/")),
-  );
+  const [open, setOpen] = useState(() => visibleChildren.some(c => pathname === c.to || pathname.startsWith(c.to + "/")));
   return (
     <div className="pt-2">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(o => !o)}
         title={group.label}
         className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition"
       >
         <Icon className="h-4 w-4 shrink-0" />
         <span className={cn("flex-1 text-left", LBL)}>{group.label}</span>
-        {open ? (
-          <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />
-        ) : (
-          <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />
-        )}
+        {open ? <ChevronDown className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} /> : <ChevronRight className={cn("h-3.5 w-3.5", ONLY_EXPANDED)} />}
       </button>
       {open && (
         <div className="mt-1 ml-3 pl-3 border-l border-sidebar-border space-y-1">
-          {visibleChildren.map((item) => (
+          {visibleChildren.map(item => (
             <NavItem
               key={item.key}
               to={item.to}
               label={item.label}
               Icon={ICONS[item.key] ?? Database}
-              active={
-                pathname === item.to ||
-                (item.to !== "/representantes" &&
-                  item.to !== "/clientes" &&
-                  pathname.startsWith(item.to + "/"))
-              }
+              active={pathname === item.to || (item.to !== "/representantes" && item.to !== "/clientes" && pathname.startsWith(item.to + "/"))}
             />
           ))}
           {group.key === "ferramentas" && (
@@ -228,9 +166,7 @@ function AccessDenied() {
 function initials(name?: string | null) {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
-  return (
-    (parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "")
-  ).toUpperCase();
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "")).toUpperCase();
 }
 
 function UserMenu({
@@ -252,11 +188,7 @@ function UserMenu({
       <DropdownMenuContent align={align} side="top" className="w-60">
         <DropdownMenuLabel className="leading-tight">
           <span className="block truncate">{name}</span>
-          {email && (
-            <span className="block text-xs font-normal text-muted-foreground truncate">
-              {email}
-            </span>
-          )}
+          {email && <span className="block text-xs font-normal text-muted-foreground truncate">{email}</span>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -270,18 +202,11 @@ function UserMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => {
-            void hardReload();
-          }}
-        >
+        <DropdownMenuItem onSelect={() => { void hardReload(); }}>
           <RefreshCw className="h-4 w-4" /> Atualizar aplicação
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => onSignOut()}
-          className="text-destructive focus:text-destructive"
-        >
+        <DropdownMenuItem onSelect={() => onSignOut()} className="text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" /> Sair
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -289,17 +214,17 @@ function UserMenu({
   );
 }
 
+
+
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouterState({ select: s => s.location.pathname });
   const isAccessGatePage = pathname === "/nda" || pathname === "/aceite-termos";
   const [mobileOpen, setMobileOpen] = useState(false);
   const access = useNavAccess();
   // Close mobile drawer on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const { data: workspace } = useQuery({
     queryKey: ["workspace-header"],
@@ -308,39 +233,21 @@ export function AppShell({ children }: { children: ReactNode }) {
       const uid = u.user?.id;
       if (!uid) return null;
       const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("active_company_id, company_id, full_name, email")
-          .eq("id", uid)
-          .maybeSingle(),
+        supabase.from("profiles").select("active_company_id, full_name, email").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
-      const roleList = (roles ?? []).map((roleRow) => roleRow.role as string);
+      const roleList = (roles ?? []).map((r: any) => r.role);
       const isAdmin = roleList.includes("admin");
-      const isComercialOnly =
-        roleList.length > 0 && roleList.every((r: string) => r === "comercial");
-      const isGroConsultant = roleList.some((role: string) =>
-        ["admin", "gestor", "agente", "consultoria_operador"].includes(role),
-      );
-      const isGroCompanyUser = roleList.some((role: string) =>
-        ["empresa_admin", "empresa_usuario"].includes(role),
-      );
+      const isComercialOnly = roleList.length > 0 && roleList.every((r: string) => r === "comercial");
       let companyName: string | null = null;
-      const headerCompanyId = isGroCompanyUser ? profile?.company_id : profile?.active_company_id;
-      if (headerCompanyId) {
-        const { data: c } = await supabase
-          .from("companies")
-          .select("nome")
-          .eq("id", headerCompanyId)
-          .maybeSingle();
+      if (profile?.active_company_id) {
+        const { data: c } = await supabase.from("companies").select("nome").eq("id", profile.active_company_id).maybeSingle();
         companyName = c?.nome ?? null;
       }
       const email = u.user?.email ?? profile?.email ?? null;
       return {
         isAdmin,
         isComercialOnly,
-        isGroConsultant,
-        isGroCompanyUser,
         companyName,
         userName: profile?.full_name ?? email ?? "Minha conta",
         userEmail: email,
@@ -362,12 +269,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const blocked =
     !access.loading &&
     !!required &&
-    !pathname.startsWith("/gro") &&
     (!access.can(required.groupKey) || (required.itemKey ? !access.can(required.itemKey) : false));
 
-  const visibleGroups = NAV_TREE.map((g) => {
+  const visibleGroups = NAV_TREE.map(g => {
     if (g.adminOnly && !workspace?.isAdmin) return null;
-    const children = g.children.filter((c) => access.can(c.key) && (!c.masterOnly || isMasterUser));
+    const children = g.children.filter(c => access.can(c.key) && (!c.masterOnly || isMasterUser));
     if (g.children.length > 0) {
       if (children.length === 0) return null;
     } else if (!access.can(g.key)) {
@@ -383,13 +289,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     : visibleGroups.length
       ? (visibleGroups[0].children[0]?.to ?? visibleGroups[0].group.to ?? null)
       : null;
-  const groMode = pathname.startsWith("/gro") || !!workspace?.isGroCompanyUser;
   useEffect(() => {
     if (blocked && firstAllowedTo && firstAllowedTo !== pathname) {
-      // Rotas permitidas são calculadas a partir da árvore canônica em runtime.
-      navigate({ to: firstAllowedTo as never, replace: true });
+      navigate({ to: firstAllowedTo as any, replace: true });
     }
   }, [blocked, firstAllowedTo, pathname, navigate]);
+
 
   return (
     <div className="min-h-screen flex">
@@ -411,87 +316,22 @@ export function AppShell({ children }: { children: ReactNode }) {
           // Desktop: rail that expands on hover
           "md:w-16 md:hover:w-60 md:translate-x-0",
           // Mobile: full drawer, off-canvas by default
-          mobileOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0",
+          mobileOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0"
         )}
       >
         <div className="p-3 border-b border-sidebar-border flex items-center gap-3 h-[73px]">
           {workspace?.companyName?.toLowerCase().includes("newline") ? (
-            <img
-              src={newlineLogo.url}
-              alt="Newline"
-              className="h-8 w-auto shrink-0 object-contain"
-            />
+            <img src={newlineLogo.url} alt="Newline" className="h-8 w-auto shrink-0 object-contain" />
           ) : workspace?.companyName?.toLowerCase().includes("flow") ? (
             <PoolFlowLogo className="h-8 shrink-0" />
           ) : (
             <BrandMark className="h-8 shrink-0" />
           )}
-          <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>
-            Imersões Comerciais
-          </p>
+          <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>Imersões Comerciais</p>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
-          {groMode ? (
-            <>
-              {workspace?.isGroConsultant && (
-                <>
-                  <NavItem
-                    to="/gro/carteira"
-                    label="Carteira"
-                    Icon={Briefcase}
-                    active={pathname === "/gro/carteira"}
-                  />
-                  <NavItem
-                    to="/empresas"
-                    label="Empresas"
-                    Icon={Building2}
-                    active={pathname === "/empresas"}
-                  />
-                  <NavItem
-                    to="/admin/usuarios"
-                    label="Usuários"
-                    Icon={Users}
-                    active={pathname === "/admin/usuarios"}
-                  />
-                  <NavItem
-                    to="/gro/configuracoes"
-                    label="Configurações"
-                    Icon={Settings}
-                    active={pathname === "/gro/configuracoes"}
-                  />
-                </>
-              )}
-              {workspace?.isGroCompanyUser && (
-                <>
-                  <NavItem
-                    to="/gro/empresa/panorama"
-                    label="Panorama"
-                    Icon={BarChart3}
-                    active={pathname.endsWith("/panorama")}
-                  />
-                  <NavItem
-                    to="/gro/empresa/relatorio-final"
-                    label="Relatório Final"
-                    Icon={FileText}
-                    active={pathname.endsWith("/relatorio-final")}
-                  />
-                  <NavItem
-                    to="/gro/empresa/plano-de-acao"
-                    label="Plano de Ação"
-                    Icon={ListChecks}
-                    active={pathname.endsWith("/plano-de-acao")}
-                  />
-                  <NavItem
-                    to="/gro/empresa/nossa-cultura"
-                    label="Nossa Cultura"
-                    Icon={BookOpen}
-                    active={pathname.endsWith("/nossa-cultura")}
-                  />
-                </>
-              )}
-            </>
-          ) : workspace?.isComercialOnly ? (
+          {workspace?.isComercialOnly ? (
             <NavItem
               to="/admin/gerador-performance"
               label="Gerador de Performance"
@@ -510,51 +350,27 @@ export function AppShell({ children }: { children: ReactNode }) {
                     active={pathname === group.to || pathname.startsWith(group.to + "/")}
                   />
                 ) : (
-                  <NavGroupBlock
-                    key={group.key}
-                    group={group}
-                    pathname={pathname}
-                    visibleChildren={children}
-                  />
-                ),
+                  <NavGroupBlock key={group.key} group={group} pathname={pathname} visibleChildren={children} />
+                )
               )}
             </>
           )}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          <div
-            className={cn(
-              "px-2 py-1.5 rounded-md bg-sidebar-accent/30",
-              "hidden group-hover/sidebar:block group-data-[mobile-open=true]/sidebar:block",
-            )}
-          >
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Empresa ativa
-            </p>
+          <div className={cn("px-2 py-1.5 rounded-md bg-sidebar-accent/30", "hidden group-hover/sidebar:block group-data-[mobile-open=true]/sidebar:block")}>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Empresa ativa</p>
             <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
           </div>
-          {workspace?.isGroConsultant && (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="w-full justify-start px-2"
-              title="Trocar empresa"
-            >
+          {workspace?.isAdmin && (
+            <Button asChild variant="outline" size="sm" className="w-full justify-start px-2" title="Trocar empresa">
               <Link to="/empresas">
                 <Repeat className="h-4 w-4 shrink-0" />
                 <span className={cn("ml-2", LBL)}>Trocar empresa</span>
               </Link>
             </Button>
           )}
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start px-2 text-muted-foreground"
-            title="Termos de Uso"
-          >
+          <Button asChild variant="ghost" size="sm" className="w-full justify-start px-2 text-muted-foreground" title="Termos de Uso">
             <Link to="/termos-de-uso">
               <ScrollText className="h-4 w-4 shrink-0" />
               <span className={cn("ml-2", LBL)}>Termos de Uso</span>
@@ -575,12 +391,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {initials(workspace?.userName)}
                 </span>
                 <span className={cn("min-w-0", LBL)}>
-                  <span className="block text-sm font-medium truncate">
-                    {workspace?.userName ?? "Minha conta"}
-                  </span>
-                  <span className="block text-[11px] text-muted-foreground truncate">
-                    {workspace?.userEmail ?? ""}
-                  </span>
+                  <span className="block text-sm font-medium truncate">{workspace?.userName ?? "Minha conta"}</span>
+                  <span className="block text-[11px] text-muted-foreground truncate">{workspace?.userEmail ?? ""}</span>
                 </span>
               </button>
             }
@@ -593,26 +405,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-            onClick={() => setMobileOpen((o) => !o)}
+            onClick={() => setMobileOpen(o => !o)}
             className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted transition"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           <div className="flex items-center gap-2 min-w-0">
             {workspace?.companyName?.toLowerCase().includes("newline") ? (
-              <img
-                src={newlineLogo.url}
-                alt="Newline"
-                className="h-6 w-auto shrink-0 object-contain"
-              />
+              <img src={newlineLogo.url} alt="Newline" className="h-6 w-auto shrink-0 object-contain" />
             ) : workspace?.companyName?.toLowerCase().includes("flow") ? (
               <PoolFlowLogo className="h-6 shrink-0" />
             ) : (
               <BrandMark className="h-6 shrink-0" />
             )}
-            <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">
-              {groMode ? "GRO NR1" : "Imersões"}
-            </span>
+            <span className="text-xs uppercase tracking-widest text-muted-foreground truncate">Imersões</span>
           </div>
 
           <div className="ml-auto">
@@ -644,38 +450,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  actions,
-  compact,
-}: {
-  title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  compact?: boolean;
-}) {
+export function PageHeader({ title, subtitle, actions, compact }: { title: string; subtitle?: string; actions?: ReactNode; compact?: boolean }) {
   return (
-    <div
-      className={cn(
-        "border-b border-border px-4 sm:px-8 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-4",
-        compact ? "py-3" : "py-5 sm:py-6",
-      )}
-    >
+    <div className={cn("border-b border-border px-4 sm:px-8 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-4", compact ? "py-3" : "py-5 sm:py-6")}>
       <div className="min-w-0">
-        <h1
-          className={cn(
-            "font-bold tracking-tight truncate",
-            compact ? "text-lg" : "text-xl sm:text-2xl",
-          )}
-        >
-          {title}
-        </h1>
+        <h1 className={cn("font-bold tracking-tight truncate", compact ? "text-lg" : "text-xl sm:text-2xl")}>{title}</h1>
         {subtitle && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{subtitle}</p>}
       </div>
-      {actions && (
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">{actions}</div>
-      )}
+      {actions && <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">{actions}</div>}
     </div>
   );
 }

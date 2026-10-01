@@ -17,10 +17,8 @@ export const Route = createFileRoute("/_authenticated")({
     // apenas deixa a rota atual renderizar para o usuário poder tentar de novo.
     if (gate.degraded) return { user };
     const roleList = gate.roles;
-    const isGroCompanyUser = roleList.some((role: string) =>
-      ["empresa_admin", "empresa_usuario"].includes(role),
-    );
-    const isComercialOnly = roleList.length > 0 && roleList.every((r: string) => r === "comercial");
+    const isComercialOnly =
+      roleList.length > 0 && roleList.every((r: string) => r === "comercial");
 
     const path = location.pathname;
     if (isComercialOnly) {
@@ -60,25 +58,16 @@ export const Route = createFileRoute("/_authenticated")({
     if (!gate.ndaAcceptedAt && path !== "/nda" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/nda" });
     }
-    if (isGroCompanyUser) {
-      const COMPANY_ALLOWED = ["/gro", "/perfil", "/termos-de-uso", "/aceite-termos", "/nda"];
-      if (!COMPANY_ALLOWED.some((prefix) => path === prefix || path.startsWith(prefix + "/"))) {
-        throw redirect({ to: "/gro" });
-      }
-      return { user };
-    }
-    if (
-      gate.ndaAcceptedAt &&
-      !gate.activeCompanyId &&
-      path !== "/empresas" &&
-      !ALLOWED_WITHOUT_TERMS.has(path)
-    ) {
+    if (gate.ndaAcceptedAt && !gate.activeCompanyId && path !== "/empresas" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/empresas" });
     }
 
     // MFA obrigatório para admins após o prazo de adaptação
     if (roleList.includes("admin")) {
-      const ALLOWED_WITHOUT_MFA = new Set(["/admin/mfa", ...Array.from(ALLOWED_WITHOUT_TERMS)]);
+      const ALLOWED_WITHOUT_MFA = new Set([
+        "/admin/mfa",
+        ...Array.from(ALLOWED_WITHOUT_TERMS),
+      ]);
       if (!ALLOWED_WITHOUT_MFA.has(path) && gate.mustEnrollMfa) {
         throw redirect({ to: "/admin/mfa" });
       }
@@ -86,6 +75,7 @@ export const Route = createFileRoute("/_authenticated")({
 
     return { user };
   },
+
 
   errorComponent: ({ error }: { error: unknown }) => {
     console.error("_authenticated gate:", error);
@@ -106,9 +96,7 @@ export const Route = createFileRoute("/_authenticated")({
             </button>
             <button
               type="button"
-              onClick={() => {
-                void hardReload();
-              }}
+              onClick={() => { void hardReload(); }}
               className="inline-flex items-center rounded-md border border-border bg-background px-4 py-2 text-sm"
             >
               Atualizar aplicação
