@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, max-lines */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,21 +8,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2, UserPlus, LinkIcon,
+  Users,
+  UserCog,
+  Send,
+  Key,
+  MessageSquare,
+  Lock,
+  MapPin,
+  FileText,
+  Trash2,
+  Check,
+  Loader2,
+  UserPlus,
+  LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword, generateFirstAccessLink,
+  inviteUser,
+  updateUserProfile,
+  deleteUserAccount,
+  getUserAudit,
+  createUserWithPassword,
+  generateFirstAccessLink,
   sendFirstAccessEmail,
 } from "@/lib/admin-usuarios.functions";
 
@@ -59,6 +84,9 @@ const ROLE_OPTIONS = [
   { value: "gestor", label: "Diretoria" },
   { value: "agente", label: "Liderança" },
   { value: "comercial", label: "Comercial" },
+  { value: "consultoria_operador", label: "Consultoria — Operador" },
+  { value: "empresa_admin", label: "Empresa — Administrador" },
+  { value: "empresa_usuario", label: "Empresa — Usuário" },
 ];
 
 function fmt(d: string | null) {
@@ -73,7 +101,7 @@ function fmtDateTime(d: string | null) {
 }
 
 function roleLabel(r: string | null) {
-  return ROLE_OPTIONS.find(o => o.value === r)?.label ?? "—";
+  return ROLE_OPTIONS.find((o) => o.value === r)?.label ?? "—";
 }
 
 function UsuariosPage() {
@@ -82,7 +110,13 @@ function UsuariosPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null>(null);
+  const [linkInfo, setLinkInfo] = useState<{
+    email: string;
+    link: string;
+    userId: string;
+    name?: string | null;
+    phone?: string | null;
+  } | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [auditRow, setAuditRow] = useState<Row | null>(null);
   const [localRow, setLocalRow] = useState<Row | null>(null);
@@ -96,11 +130,11 @@ function UsuariosPage() {
         .select("id, full_name, email, cargo, phone, regiao, status, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      const ids = (profiles ?? []).map(p => p.id);
+      const ids = (profiles ?? []).map((p) => p.id);
       const { data: roles } = ids.length
         ? await supabase.from("user_roles").select("user_id, role").in("user_id", ids)
         : { data: [] as { user_id: string; role: string }[] };
-      const byUser = new Map<string, string>((roles ?? []).map(r => [r.user_id, r.role]));
+      const byUser = new Map<string, string>((roles ?? []).map((r) => [r.user_id, r.role]));
 
       let lastSign = new Map<string, string | null>();
       const { data: adminList } = await supabase.rpc("admin_list_users");
@@ -108,7 +142,7 @@ function UsuariosPage() {
         lastSign = new Map(adminList.map((u: any) => [u.id, u.last_sign_in_at ?? null]));
       }
 
-      return (profiles ?? []).map<Row>(p => ({
+      return (profiles ?? []).map<Row>((p) => ({
         ...p,
         role: byUser.get(p.id) ?? null,
         last_sign_in_at: lastSign.get(p.id) ?? null,
@@ -126,7 +160,12 @@ function UsuariosPage() {
   }
 
   async function removeUser(r: Row) {
-    if (!confirm(`Remover definitivamente ${r.full_name ?? r.email}? Esta ação exclui a conta de acesso.`)) return;
+    if (
+      !confirm(
+        `Remover definitivamente ${r.full_name ?? r.email}? Esta ação exclui a conta de acesso.`,
+      )
+    )
+      return;
     setBusy(true);
     try {
       await deleteUserAccount({ data: { user_id: r.id } });
@@ -146,7 +185,13 @@ function UsuariosPage() {
         data: { user_id: r.id, origin: window.location.origin },
       });
       if (!res?.link) throw new Error("Não foi possível gerar o link");
-      setLinkInfo({ email: res.email, link: res.link, userId: r.id, name: res.name ?? r.full_name, phone: res.phone ?? r.phone });
+      setLinkInfo({
+        email: res.email,
+        link: res.link,
+        userId: r.id,
+        name: res.name ?? r.full_name,
+        phone: res.phone ?? r.phone,
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar link de primeiro acesso");
     } finally {
@@ -166,7 +211,9 @@ function UsuariosPage() {
           <UserCog className="h-7 w-7 text-primary" />
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Usuários e Permissões</h1>
-            <p className="text-sm text-muted-foreground">Gerencie usuários, aprovações e permissões de acesso</p>
+            <p className="text-sm text-muted-foreground">
+              Gerencie usuários, aprovações e permissões de acesso
+            </p>
           </div>
         </div>
       </div>
@@ -208,12 +255,20 @@ function UsuariosPage() {
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">Carregando…</td></tr>
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">
+                      Carregando…
+                    </td>
+                  </tr>
                 )}
                 {!isLoading && (data?.length ?? 0) === 0 && (
-                  <tr><td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">Nenhum usuário cadastrado</td></tr>
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">
+                      Nenhum usuário cadastrado
+                    </td>
+                  </tr>
                 )}
-                {data?.map(r => (
+                {data?.map((r) => (
                   <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -229,7 +284,7 @@ function UsuariosPage() {
                           "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium",
                           r.status === "aprovado" || r.status === "ativo"
                             ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            : "bg-yellow-100 text-yellow-700",
                         )}
                       >
                         <Check className="h-3 w-3" />
@@ -240,7 +295,11 @@ function UsuariosPage() {
                     <td className="px-6 py-4 text-muted-foreground">{fmt(r.last_sign_in_at)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <ActionIcon icon={Key} label="Resetar Senha" onClick={() => resetPassword(r.email)} />
+                        <ActionIcon
+                          icon={Key}
+                          label="Resetar Senha"
+                          onClick={() => resetPassword(r.email)}
+                        />
                         {!r.last_sign_in_at && (
                           <ActionIcon
                             icon={LinkIcon}
@@ -249,16 +308,40 @@ function UsuariosPage() {
                             onClick={() => firstAccess(r)}
                           />
                         )}
-                        <ActionIcon icon={UserCog} label="Editar Perfil" onClick={() => setEditRow(r)} />
-                        <ActionIcon icon={MessageSquare} label="Mensagem" onClick={() => message(r)} />
+                        <ActionIcon
+                          icon={UserCog}
+                          label="Editar Perfil"
+                          onClick={() => setEditRow(r)}
+                        />
+                        <ActionIcon
+                          icon={MessageSquare}
+                          label="Mensagem"
+                          onClick={() => message(r)}
+                        />
                         <ActionIcon
                           icon={Lock}
                           label="Acessos deste usuário"
-                          onClick={() => navigate({ to: "/admin/permissoes", search: { user: r.id } })}
+                          onClick={() =>
+                            navigate({ to: "/admin/permissoes", search: { user: r.id } })
+                          }
                         />
-                        <ActionIcon icon={MapPin} label="Localização" onClick={() => setLocalRow(r)} />
-                        <ActionIcon icon={FileText} label="Auditoria" onClick={() => setAuditRow(r)} />
-                        <ActionIcon icon={Trash2} label="Remover" danger disabled={busy} onClick={() => removeUser(r)} />
+                        <ActionIcon
+                          icon={MapPin}
+                          label="Localização"
+                          onClick={() => setLocalRow(r)}
+                        />
+                        <ActionIcon
+                          icon={FileText}
+                          label="Auditoria"
+                          onClick={() => setAuditRow(r)}
+                        />
+                        <ActionIcon
+                          icon={Trash2}
+                          label="Remover"
+                          danger
+                          disabled={busy}
+                          onClick={() => removeUser(r)}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -293,9 +376,16 @@ function UsuariosPage() {
 }
 
 function FirstAccessDialog({
-  info, onOpenChange,
+  info,
+  onOpenChange,
 }: {
-  info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null;
+  info: {
+    email: string;
+    link: string;
+    userId: string;
+    name?: string | null;
+    phone?: string | null;
+  } | null;
   onOpenChange: (o: boolean) => void;
 }) {
   const link = info?.link ?? "";
@@ -312,7 +402,9 @@ function FirstAccessDialog({
     if (!info) return;
     setSending(true);
     try {
-      await sendFirstAccessEmail({ data: { user_id: info.userId, origin: window.location.origin } });
+      await sendFirstAccessEmail({
+        data: { user_id: info.userId, origin: window.location.origin },
+      });
       toast.success(`Convite enviado para ${email}`);
       onOpenChange(false);
     } catch (e: any) {
@@ -336,16 +428,20 @@ function FirstAccessDialog({
         <DialogHeader>
           <DialogTitle>Convite de primeiro acesso</DialogTitle>
           <DialogDescription>
-            Convite pessoal para <strong>{email}</strong>. Não há senha temporária: ao clicar no link, a primeira
-            ação é cadastrar a própria senha (letras, números e símbolos).
+            Convite pessoal para <strong>{email}</strong>. Não há senha temporária: ao clicar no
+            link, a primeira ação é cadastrar a própria senha (letras, números e símbolos).
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">{link}</div>
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs break-all font-mono">
+            {link}
+          </div>
 
           <div className="rounded-lg border border-border p-3 space-y-2">
             <p className="text-sm font-medium">Enviar por e-mail</p>
-            <p className="text-xs text-muted-foreground">Mensagem formatada enviada para {email}.</p>
+            <p className="text-xs text-muted-foreground">
+              Mensagem formatada enviada para {email}.
+            </p>
             <Button onClick={enviarEmail} disabled={sending}>
               <Send className="h-4 w-4 mr-2" /> {sending ? "Enviando..." : "Enviar por e-mail"}
             </Button>
@@ -369,24 +465,33 @@ function FirstAccessDialog({
 
           <Button
             variant="ghost"
-            onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copiado"); }}
+            onClick={() => {
+              navigator.clipboard.writeText(link);
+              toast.success("Link copiado");
+            }}
           >
             Copiar link
           </Button>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Fechar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Fechar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-
-
 function CreateUserDialog({
-  open, onOpenChange, onDone,
-}: { open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  open,
+  onOpenChange,
+  onDone,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onDone: () => void;
+}) {
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
   const [cargo, setCargo] = useState("");
@@ -411,7 +516,10 @@ function CreateUserDialog({
         },
       });
       toast.success("Usuário criado");
-      setEmail(""); setNome(""); setCargo(""); setSenha("");
+      setEmail("");
+      setNome("");
+      setCargo("");
+      setSenha("");
       onOpenChange(false);
       onDone();
     } catch (e: any) {
@@ -427,44 +535,61 @@ function CreateUserDialog({
         <DialogHeader>
           <DialogTitle>Criar usuário</DialogTitle>
           <DialogDescription>
-            Crie a conta com uma senha temporária. No primeiro acesso o usuário será obrigado a definir a própria senha.
+            Crie a conta com uma senha temporária. No primeiro acesso o usuário será obrigado a
+            definir a própria senha.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>E-mail</Label>
-            <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="nome@empresa.com" />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nome@empresa.com"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} />
+            <Input value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Setor / cargo</Label>
-              <Input value={cargo} onChange={e => setCargo(e.target.value)} />
+              <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>Perfil</Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {ROLE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Senha temporária</Label>
-            <Input value={senha} onChange={e => setSenha(e.target.value)} placeholder="Mínimo de 8 caracteres" />
+            <Input
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              placeholder="Mínimo de 8 caracteres"
+            />
           </div>
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input type="checkbox" checked={forcar} onChange={e => setForcar(e.target.checked)} />
+            <input type="checkbox" checked={forcar} onChange={(e) => setForcar(e.target.checked)} />
             Exigir troca de senha no primeiro acesso
           </label>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Criar usuário
           </Button>
@@ -475,12 +600,21 @@ function CreateUserDialog({
 }
 
 function InviteDialog({
-  open, onOpenChange, onDone, onInvited,
+  open,
+  onOpenChange,
+  onDone,
+  onInvited,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onDone: () => void;
-  onInvited: (info: { email: string; link: string; userId: string; name?: string | null; phone?: string | null }) => void;
+  onInvited: (info: {
+    email: string;
+    link: string;
+    userId: string;
+    name?: string | null;
+    phone?: string | null;
+  }) => void;
 }) {
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
@@ -504,10 +638,19 @@ function InviteDialog({
         },
       });
       toast.success("Convite gerado — escolha como enviar");
-      setEmail(""); setNome(""); setCargo(""); setFone("");
+      setEmail("");
+      setNome("");
+      setCargo("");
+      setFone("");
       onOpenChange(false);
       onDone();
-      onInvited({ email: res.email, link: res.link, userId: res.user_id, name: res.name, phone: res.phone });
+      onInvited({
+        email: res.email,
+        link: res.link,
+        userId: res.user_id,
+        name: res.name,
+        phone: res.phone,
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao gerar convite");
     } finally {
@@ -521,40 +664,56 @@ function InviteDialog({
         <DialogHeader>
           <DialogTitle>Enviar convite</DialogTitle>
           <DialogDescription>
-            A conta é criada sem senha. Depois você escolhe enviar o convite por e-mail ou WhatsApp — o usuário
-            cadastra a própria senha ao abrir o link.
+            A conta é criada sem senha. Depois você escolhe enviar o convite por e-mail ou WhatsApp
+            — o usuário cadastra a própria senha ao abrir o link.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>E-mail</Label>
-            <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="nome@empresa.com" />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nome@empresa.com"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} />
+            <Input value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>WhatsApp (opcional)</Label>
-            <Input value={fone} onChange={e => setFone(e.target.value)} placeholder="(11) 99999-9999" />
+            <Input
+              value={fone}
+              onChange={(e) => setFone(e.target.value)}
+              placeholder="(11) 99999-9999"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Setor / cargo</Label>
-            <Input value={cargo} onChange={e => setCargo(e.target.value)} />
+            <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Perfil</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {ROLE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={submit} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Enviar convite
           </Button>
@@ -565,10 +724,24 @@ function InviteDialog({
 }
 
 function EditDialog({
-  row, onOpenChange, onDone,
-}: { row: Row | null; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  row,
+  onOpenChange,
+  onDone,
+}: {
+  row: Row | null;
+  onOpenChange: (o: boolean) => void;
+  onDone: () => void;
+}) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ email: "", full_name: "", cargo: "", phone: "", regiao: "", status: "pendente", role: "none" });
+  const [form, setForm] = useState({
+    email: "",
+    full_name: "",
+    cargo: "",
+    phone: "",
+    regiao: "",
+    status: "pendente",
+    role: "none",
+  });
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
   if (row && loadedId !== row.id) {
@@ -620,33 +793,53 @@ function EditDialog({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>E-mail de acesso</Label>
-            <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            <p className="text-xs text-muted-foreground">Corrigir o e-mail altera o login do usuário.</p>
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Corrigir o e-mail altera o login do usuário.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+            <Input
+              value={form.full_name}
+              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Setor / cargo</Label>
-              <Input value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} />
+              <Input
+                value={form.cargo}
+                onChange={(e) => setForm({ ...form, cargo: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Região</Label>
-              <Input value={form.regiao} onChange={e => setForm({ ...form, regiao: e.target.value })} />
+              <Input
+                value={form.regiao}
+                onChange={(e) => setForm({ ...form, regiao: e.target.value })}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Telefone</Label>
-              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+              <Input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
@@ -658,17 +851,25 @@ function EditDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Perfil de acesso</Label>
-            <Select value={form.role} onValueChange={v => setForm({ ...form, role: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sem perfil</SelectItem>
-                {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                {ROLE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={save} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Salvar
           </Button>
@@ -682,25 +883,38 @@ function useAudit(row: Row | null) {
   return useQuery({
     queryKey: ["admin-user-audit", row?.id],
     enabled: !!row,
-    queryFn: async () => (await getUserAudit({ data: { user_id: row!.id, limit: 50 } })) as AuditRow[],
+    queryFn: async () =>
+      (await getUserAudit({ data: { user_id: row!.id, limit: 50 } })) as AuditRow[],
   });
 }
 
-function AuditDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
+function AuditDialog({
+  row,
+  onOpenChange,
+}: {
+  row: Row | null;
+  onOpenChange: (o: boolean) => void;
+}) {
   const { data, isLoading } = useAudit(row);
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Auditoria — {row?.full_name ?? row?.email}</DialogTitle>
-          <DialogDescription>Últimos 50 eventos de segurança registrados para este usuário.</DialogDescription>
+          <DialogDescription>
+            Últimos 50 eventos de segurança registrados para este usuário.
+          </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-border">
-          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
-          {!isLoading && (data?.length ?? 0) === 0 && (
-            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum evento registrado</div>
+          {isLoading && (
+            <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>
           )}
-          {(data ?? []).map(e => (
+          {!isLoading && (data?.length ?? 0) === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">
+              Nenhum evento registrado
+            </div>
+          )}
+          {(data ?? []).map((e) => (
             <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">{e.acao ?? e.tipo}</span>
@@ -717,9 +931,15 @@ function AuditDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o:
   );
 }
 
-function LocalizacaoDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
+function LocalizacaoDialog({
+  row,
+  onOpenChange,
+}: {
+  row: Row | null;
+  onOpenChange: (o: boolean) => void;
+}) {
   const { data, isLoading } = useAudit(row);
-  const acessos = (data ?? []).filter(e => e.ip).slice(0, 20);
+  const acessos = (data ?? []).filter((e) => e.ip).slice(0, 20);
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -730,11 +950,15 @@ function LocalizacaoDialog({ row, onOpenChange }: { row: Row | null; onOpenChang
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border">
-          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
-          {!isLoading && acessos.length === 0 && (
-            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum acesso com IP registrado</div>
+          {isLoading && (
+            <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>
           )}
-          {acessos.map(e => (
+          {!isLoading && acessos.length === 0 && (
+            <div className="p-6 text-center text-muted-foreground text-sm">
+              Nenhum acesso com IP registrado
+            </div>
+          )}
+          {acessos.map((e) => (
             <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">{e.ip}</span>
@@ -750,8 +974,18 @@ function LocalizacaoDialog({ row, onOpenChange }: { row: Row | null; onOpenChang
 }
 
 function ActionIcon({
-  icon: Icon, label, onClick, danger, disabled,
-}: { icon: any; label: string; onClick?: () => void; danger?: boolean; disabled?: boolean }) {
+  icon: Icon,
+  label,
+  onClick,
+  danger,
+  disabled,
+}: {
+  icon: any;
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+}) {
   return (
     <TooltipProvider delayDuration={100}>
       <Tooltip>
@@ -764,7 +998,7 @@ function ActionIcon({
               "h-8 w-8 rounded-md flex items-center justify-center transition disabled:opacity-40",
               danger
                 ? "text-red-500 hover:bg-red-50"
-                : "text-foreground/70 hover:bg-primary hover:text-primary-foreground"
+                : "text-foreground/70 hover:bg-primary hover:text-primary-foreground",
             )}
           >
             <Icon className="h-4 w-4" />

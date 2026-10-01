@@ -1,8 +1,33 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const roleEnum = z.enum(["admin", "gestor", "agente", "comercial"]);
+const roleEnum = z.enum([
+  "admin",
+  "gestor",
+  "agente",
+  "comercial",
+  "consultoria_operador",
+  "empresa_admin",
+  "empresa_usuario",
+]);
+
+function isGroCompanyRole(role?: string | null) {
+  return role === "empresa_admin" || role === "empresa_usuario";
+}
+
+async function getAdminActiveCompany(context: any) {
+  const { data, error } = await context.supabase
+    .from("profiles")
+    .select("active_company_id")
+    .eq("id", context.userId)
+    .single();
+  if (error) throw new Error(error.message);
+  if (!data?.active_company_id)
+    throw new Error("Selecione a empresa antes de criar um usuário cliente");
+  return data.active_company_id as string;
+}
 
 async function assertAdmin(context: any) {
   const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
@@ -42,13 +67,17 @@ export const inviteUser = createServerFn({ method: "POST" })
     if (error) {
       if (!/already|registered|exists/i.test(error.message)) throw new Error(error.message);
       const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      uid = list?.users?.find(u => u.email?.toLowerCase() === data.email.toLowerCase())?.id ?? null;
+      uid =
+        list?.users?.find((u) => u.email?.toLowerCase() === data.email.toLowerCase())?.id ?? null;
       if (!uid) throw new Error(error.message);
     } else {
       uid = created?.user?.id ?? null;
     }
     if (!uid) throw new Error("Falha ao criar usuário");
 
+    const clientCompanyId = isGroCompanyRole(data.role)
+      ? await getAdminActiveCompany(context)
+      : null;
     await supabaseAdmin.from("profiles").upsert(
       {
         id: uid,
@@ -57,19 +86,21 @@ export const inviteUser = createServerFn({ method: "POST" })
         cargo: data.cargo || null,
         phone: data.phone || null,
         status: "pendente",
+        ...(clientCompanyId
+          ? { company_id: clientCompanyId, active_company_id: clientCompanyId }
+          : {}),
       },
       { onConflict: "id" },
     );
     if (data.role) {
       await supabaseAdmin
         .from("user_roles")
-        .upsert({ user_id: uid, role: data.role }, { onConflict: "user_id,role" });
+        .upsert({ user_id: uid, role: data.role } as never, { onConflict: "user_id,role" });
     }
 
     const { email, name, link, phone } = await issueFirstAccessLink(uid, data.origin);
     return { ok: true, user_id: uid, email, name, link, phone: phone ?? data.phone ?? null };
   });
-
 
 const updateSchema = z.object({
   user_id: z.string().uuid(),
@@ -98,7 +129,10 @@ export const updateUserProfile = createServerFn({ method: "POST" })
           email_confirm: true,
         });
         if (emailErr) throw new Error(emailErr.message);
-        await supabaseAdmin.from("profiles").update({ email } as never).eq("id", data.user_id);
+        await supabaseAdmin
+          .from("profiles")
+          .update({ email } as never)
+          .eq("id", data.user_id);
       }
     }
 
@@ -107,12 +141,22 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       if (data[k] !== undefined) patch[k] = data[k] === "" ? null : data[k];
     }
     if (Object.keys(patch).length) {
-      const { error } = await supabaseAdmin.from("profiles").update(patch as never).eq("id", data.user_id);
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update(patch as never)
+        .eq("id", data.user_id);
       if (error) throw new Error(error.message);
     }
 
-
     if (data.role !== undefined) {
+      if (isGroCompanyRole(data.role)) {
+        const companyId = await getAdminActiveCompany(context);
+        const { error: companyError } = await supabaseAdmin
+          .from("profiles")
+          .update({ company_id: companyId, active_company_id: companyId } as never)
+          .eq("id", data.user_id);
+        if (companyError) throw new Error(companyError.message);
+      }
       const { error: delErr } = await supabaseAdmin
         .from("user_roles")
         .delete()
@@ -121,7 +165,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
       if (data.role) {
         const { error: insErr } = await supabaseAdmin
           .from("user_roles")
-          .insert({ user_id: data.user_id, role: data.role });
+          .insert({ user_id: data.user_id, role: data.role } as never);
         if (insErr) throw new Error(insErr.message);
       }
     }
@@ -143,7 +187,10 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const auditSchema = z.object({ user_id: z.string().uuid(), limit: z.number().min(1).max(200).default(50) });
+const auditSchema = z.object({
+  user_id: z.string().uuid(),
+  limit: z.number().min(1).max(200).default(50),
+});
 
 export const getUserAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -191,6 +238,9 @@ export const createUserWithPassword = createServerFn({ method: "POST" })
     const uid = created?.user?.id;
     if (!uid) throw new Error("Falha ao criar usuário");
 
+    const clientCompanyId = isGroCompanyRole(data.role)
+      ? await getAdminActiveCompany(context)
+      : null;
     await supabaseAdmin.from("profiles").upsert(
       {
         id: uid,
@@ -198,11 +248,14 @@ export const createUserWithPassword = createServerFn({ method: "POST" })
         full_name: data.full_name || null,
         cargo: data.cargo || null,
         status: "ativo",
+        ...(clientCompanyId
+          ? { company_id: clientCompanyId, active_company_id: clientCompanyId }
+          : {}),
       },
       { onConflict: "id" },
     );
     await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
-    await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: data.role });
+    await supabaseAdmin.from("user_roles").insert({ user_id: uid, role: data.role } as never);
 
     return { ok: true, user_id: uid };
   });
@@ -281,6 +334,3 @@ export const sendFirstAccessEmail = createServerFn({ method: "POST" })
 
     return { ok: true, email };
   });
-
-
-

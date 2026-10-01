@@ -22,6 +22,7 @@ export type NavGroup = {
 };
 
 export const NAV_TREE: NavGroup[] = [
+  { key: "gro-nr1", label: "GRO NR1", to: "/gro", children: [] },
   { key: "home", label: "Home", to: "/home", children: [] },
   { key: "bi-diretor", label: "BI Diretor", to: "/bi-diretor", children: [] },
   {
