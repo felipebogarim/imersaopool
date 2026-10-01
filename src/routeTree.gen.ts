@@ -36,17 +36,12 @@ import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authenticated/perspectivas'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
-import { Route as AuthenticatedNossoMoodRouteImport } from './routes/_authenticated/nosso-mood'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
-import { Route as AuthenticatedDossieRelatoriosRouteImport } from './routes/_authenticated/dossie-relatorios'
-import { Route as AuthenticatedDossieRouteImport } from './routes/_authenticated/dossie'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
-import { Route as AuthenticatedCicloNr1RouteImport } from './routes/_authenticated/ciclo-nr1'
-import { Route as AuthenticatedCicloRouteImport } from './routes/_authenticated/ciclo'
 import { Route as AuthenticatedBiDiretorRouteImport } from './routes/_authenticated/bi-diretor'
 import { Route as AuthenticatedAgentesRouteImport } from './routes/_authenticated/agentes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -91,7 +86,6 @@ import { Route as AuthenticatedPerformanceRepsRouteImport } from './routes/_auth
 import { Route as AuthenticatedPerformanceBiClientesRouteImport } from './routes/_authenticated/performance.bi-clientes'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
-import { Route as AuthenticatedGroUsuariosRouteImport } from './routes/_authenticated/gro.usuarios'
 import { Route as AuthenticatedGroConfiguracoesRouteImport } from './routes/_authenticated/gro.configuracoes'
 import { Route as AuthenticatedGroCarteiraRouteImport } from './routes/_authenticated/gro.carteira'
 import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticated/forms.$id'
@@ -279,11 +273,6 @@ const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
   path: '/novo-corp',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedNossoMoodRoute = AuthenticatedNossoMoodRouteImport.update({
-  id: '/nosso-mood',
-  path: '/nosso-mood',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedNdaRoute = AuthenticatedNdaRouteImport.update({
   id: '/nda',
   path: '/nda',
@@ -304,17 +293,6 @@ const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
   path: '/empresas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDossieRelatoriosRoute =
-  AuthenticatedDossieRelatoriosRouteImport.update({
-    id: '/dossie-relatorios',
-    path: '/dossie-relatorios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDossieRoute = AuthenticatedDossieRouteImport.update({
-  id: '/dossie',
-  path: '/dossie',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -326,16 +304,6 @@ const AuthenticatedCompilacoesRoute =
     path: '/compilacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedCicloNr1Route = AuthenticatedCicloNr1RouteImport.update({
-  id: '/ciclo-nr1',
-  path: '/ciclo-nr1',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCicloRoute = AuthenticatedCicloRouteImport.update({
-  id: '/ciclo',
-  path: '/ciclo',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBiDiretorRoute = AuthenticatedBiDiretorRouteImport.update({
   id: '/bi-diretor',
   path: '/bi-diretor',
@@ -583,12 +551,6 @@ const AuthenticatedImersoesIdRoute = AuthenticatedImersoesIdRouteImport.update({
   path: '/imersoes/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedGroUsuariosRoute =
-  AuthenticatedGroUsuariosRouteImport.update({
-    id: '/gro/usuarios',
-    path: '/gro/usuarios',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedGroConfiguracoesRoute =
   AuthenticatedGroConfiguracoesRouteImport.update({
     id: '/gro/configuracoes',
@@ -882,17 +844,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/bi-diretor': typeof AuthenticatedBiDiretorRoute
-  '/ciclo': typeof AuthenticatedCicloRoute
-  '/ciclo-nr1': typeof AuthenticatedCicloNr1Route
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/dossie': typeof AuthenticatedDossieRoute
-  '/dossie-relatorios': typeof AuthenticatedDossieRelatoriosRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
-  '/nosso-mood': typeof AuthenticatedNossoMoodRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -940,7 +897,6 @@ export interface FileRoutesByFullPath {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/gro/carteira': typeof AuthenticatedGroCarteiraRoute
   '/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
-  '/gro/usuarios': typeof AuthenticatedGroUsuariosRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -1013,17 +969,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agentes': typeof AuthenticatedAgentesRoute
   '/bi-diretor': typeof AuthenticatedBiDiretorRoute
-  '/ciclo': typeof AuthenticatedCicloRoute
-  '/ciclo-nr1': typeof AuthenticatedCicloNr1Route
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/dossie': typeof AuthenticatedDossieRoute
-  '/dossie-relatorios': typeof AuthenticatedDossieRelatoriosRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
-  '/nosso-mood': typeof AuthenticatedNossoMoodRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -1070,7 +1021,6 @@ export interface FileRoutesByTo {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/gro/carteira': typeof AuthenticatedGroCarteiraRoute
   '/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
-  '/gro/usuarios': typeof AuthenticatedGroUsuariosRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -1146,17 +1096,12 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agentes': typeof AuthenticatedAgentesRoute
   '/_authenticated/bi-diretor': typeof AuthenticatedBiDiretorRoute
-  '/_authenticated/ciclo': typeof AuthenticatedCicloRoute
-  '/_authenticated/ciclo-nr1': typeof AuthenticatedCicloNr1Route
   '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/dossie': typeof AuthenticatedDossieRoute
-  '/_authenticated/dossie-relatorios': typeof AuthenticatedDossieRelatoriosRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
-  '/_authenticated/nosso-mood': typeof AuthenticatedNossoMoodRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/perspectivas': typeof AuthenticatedPerspectivasRoute
@@ -1204,7 +1149,6 @@ export interface FileRoutesById {
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/gro/carteira': typeof AuthenticatedGroCarteiraRoute
   '/_authenticated/gro/configuracoes': typeof AuthenticatedGroConfiguracoesRoute
-  '/_authenticated/gro/usuarios': typeof AuthenticatedGroUsuariosRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
   '/_authenticated/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
@@ -1280,17 +1224,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agentes'
     | '/bi-diretor'
-    | '/ciclo'
-    | '/ciclo-nr1'
     | '/compilacoes'
     | '/dashboard'
-    | '/dossie'
-    | '/dossie-relatorios'
     | '/empresas'
     | '/familias'
     | '/home'
     | '/nda'
-    | '/nosso-mood'
     | '/novo-corp'
     | '/perfil'
     | '/perspectivas'
@@ -1338,7 +1277,6 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/gro/carteira'
     | '/gro/configuracoes'
-    | '/gro/usuarios'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/performance/bi-clientes'
@@ -1411,17 +1349,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agentes'
     | '/bi-diretor'
-    | '/ciclo'
-    | '/ciclo-nr1'
     | '/compilacoes'
     | '/dashboard'
-    | '/dossie'
-    | '/dossie-relatorios'
     | '/empresas'
     | '/familias'
     | '/home'
     | '/nda'
-    | '/nosso-mood'
     | '/novo-corp'
     | '/perfil'
     | '/perspectivas'
@@ -1468,7 +1401,6 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/gro/carteira'
     | '/gro/configuracoes'
-    | '/gro/usuarios'
     | '/imersoes/$id'
     | '/imersoes/nova'
     | '/performance/bi-clientes'
@@ -1543,17 +1475,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/agentes'
     | '/_authenticated/bi-diretor'
-    | '/_authenticated/ciclo'
-    | '/_authenticated/ciclo-nr1'
     | '/_authenticated/compilacoes'
     | '/_authenticated/dashboard'
-    | '/_authenticated/dossie'
-    | '/_authenticated/dossie-relatorios'
     | '/_authenticated/empresas'
     | '/_authenticated/familias'
     | '/_authenticated/home'
     | '/_authenticated/nda'
-    | '/_authenticated/nosso-mood'
     | '/_authenticated/novo-corp'
     | '/_authenticated/perfil'
     | '/_authenticated/perspectivas'
@@ -1601,7 +1528,6 @@ export interface FileRouteTypes {
     | '/_authenticated/forms/$id'
     | '/_authenticated/gro/carteira'
     | '/_authenticated/gro/configuracoes'
-    | '/_authenticated/gro/usuarios'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
     | '/_authenticated/performance/bi-clientes'
@@ -1894,13 +1820,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNovoCorpRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/nosso-mood': {
-      id: '/_authenticated/nosso-mood'
-      path: '/nosso-mood'
-      fullPath: '/nosso-mood'
-      preLoaderRoute: typeof AuthenticatedNossoMoodRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/nda': {
       id: '/_authenticated/nda'
       path: '/nda'
@@ -1929,20 +1848,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dossie-relatorios': {
-      id: '/_authenticated/dossie-relatorios'
-      path: '/dossie-relatorios'
-      fullPath: '/dossie-relatorios'
-      preLoaderRoute: typeof AuthenticatedDossieRelatoriosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dossie': {
-      id: '/_authenticated/dossie'
-      path: '/dossie'
-      fullPath: '/dossie'
-      preLoaderRoute: typeof AuthenticatedDossieRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -1955,20 +1860,6 @@ declare module '@tanstack/react-router' {
       path: '/compilacoes'
       fullPath: '/compilacoes'
       preLoaderRoute: typeof AuthenticatedCompilacoesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ciclo-nr1': {
-      id: '/_authenticated/ciclo-nr1'
-      path: '/ciclo-nr1'
-      fullPath: '/ciclo-nr1'
-      preLoaderRoute: typeof AuthenticatedCicloNr1RouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ciclo': {
-      id: '/_authenticated/ciclo'
-      path: '/ciclo'
-      fullPath: '/ciclo'
-      preLoaderRoute: typeof AuthenticatedCicloRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bi-diretor': {
@@ -2277,13 +2168,6 @@ declare module '@tanstack/react-router' {
       path: '/imersoes/$id'
       fullPath: '/imersoes/$id'
       preLoaderRoute: typeof AuthenticatedImersoesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/gro/usuarios': {
-      id: '/_authenticated/gro/usuarios'
-      path: '/gro/usuarios'
-      fullPath: '/gro/usuarios'
-      preLoaderRoute: typeof AuthenticatedGroUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/gro/configuracoes': {
@@ -2747,17 +2631,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgentesRoute: typeof AuthenticatedAgentesRoute
   AuthenticatedBiDiretorRoute: typeof AuthenticatedBiDiretorRoute
-  AuthenticatedCicloRoute: typeof AuthenticatedCicloRoute
-  AuthenticatedCicloNr1Route: typeof AuthenticatedCicloNr1Route
   AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedDossieRoute: typeof AuthenticatedDossieRoute
-  AuthenticatedDossieRelatoriosRoute: typeof AuthenticatedDossieRelatoriosRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
-  AuthenticatedNossoMoodRoute: typeof AuthenticatedNossoMoodRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPerspectivasRoute: typeof AuthenticatedPerspectivasRoute
@@ -2781,7 +2660,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedGroCarteiraRoute: typeof AuthenticatedGroCarteiraRoute
   AuthenticatedGroConfiguracoesRoute: typeof AuthenticatedGroConfiguracoesRoute
-  AuthenticatedGroUsuariosRoute: typeof AuthenticatedGroUsuariosRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
   AuthenticatedPerformanceBiClientesRoute: typeof AuthenticatedPerformanceBiClientesRoute
@@ -2821,17 +2699,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgentesRoute: AuthenticatedAgentesRoute,
   AuthenticatedBiDiretorRoute: AuthenticatedBiDiretorRoute,
-  AuthenticatedCicloRoute: AuthenticatedCicloRoute,
-  AuthenticatedCicloNr1Route: AuthenticatedCicloNr1Route,
   AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedDossieRoute: AuthenticatedDossieRoute,
-  AuthenticatedDossieRelatoriosRoute: AuthenticatedDossieRelatoriosRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
-  AuthenticatedNossoMoodRoute: AuthenticatedNossoMoodRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPerspectivasRoute: AuthenticatedPerspectivasRoute,
@@ -2859,7 +2732,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedGroCarteiraRoute: AuthenticatedGroCarteiraRoute,
   AuthenticatedGroConfiguracoesRoute: AuthenticatedGroConfiguracoesRoute,
-  AuthenticatedGroUsuariosRoute: AuthenticatedGroUsuariosRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
   AuthenticatedPerformanceBiClientesRoute:

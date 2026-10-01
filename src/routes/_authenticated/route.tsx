@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { getAuthGate } from "@/lib/auth-gate";
 import { hardReload } from "@/lib/app-refresh";
-import { preferredGroExperience } from "@/lib/gro-nr1";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -20,9 +19,6 @@ export const Route = createFileRoute("/_authenticated")({
     const roleList = gate.roles;
     const isGroCompanyUser = roleList.some((role: string) =>
       ["empresa_admin", "empresa_usuario"].includes(role),
-    );
-    const isGroConsultant = roleList.some((role: string) =>
-      ["admin", "gestor", "agente", "consultoria_operador"].includes(role),
     );
     const isComercialOnly = roleList.length > 0 && roleList.every((r: string) => r === "comercial");
 
@@ -64,45 +60,17 @@ export const Route = createFileRoute("/_authenticated")({
     if (!gate.ndaAcceptedAt && path !== "/nda" && !ALLOWED_WITHOUT_TERMS.has(path)) {
       throw redirect({ to: "/nda" });
     }
-    if (isGroCompanyUser && !isGroConsultant) {
-      const COMPANY_ALLOWED = [
-        "/gro",
-        "/perfil",
-        "/termos-de-uso",
-        "/aceite-termos",
-        "/nda",
-        "/ciclo",
-        "/ciclo-nr1",
-        "/dossie",
-        "/dossie-relatorios",
-        "/nosso-mood",
-      ];
+    if (isGroCompanyUser) {
+      const COMPANY_ALLOWED = ["/gro", "/perfil", "/termos-de-uso", "/aceite-termos", "/nda"];
       if (!COMPANY_ALLOWED.some((prefix) => path === prefix || path.startsWith(prefix + "/"))) {
         throw redirect({ to: "/gro" });
       }
       return { user };
     }
-
-    if (path === "/home" && isGroConsultant) {
-      const companyExperience = preferredGroExperience() === "company" && !!gate.activeCompanyId;
-      throw redirect({
-        to: companyExperience ? "/gro/empresa/$section" : "/gro/carteira",
-        params: companyExperience ? { section: "panorama" } : (undefined as never),
-        replace: true,
-      } as never);
-    }
-
-    const consultancyGlobalRoutes = new Set([
-      "/gro",
-      "/gro/carteira",
-      "/gro/usuarios",
-      "/gro/configuracoes",
-    ]);
     if (
       gate.ndaAcceptedAt &&
       !gate.activeCompanyId &&
       path !== "/empresas" &&
-      !(isGroConsultant && consultancyGlobalRoutes.has(path)) &&
       !ALLOWED_WITHOUT_TERMS.has(path)
     ) {
       throw redirect({ to: "/empresas" });

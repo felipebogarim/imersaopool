@@ -38,9 +38,6 @@ import {
   CalendarDays,
   ClipboardCheck,
   Settings,
-  ClipboardList,
-  FolderOpen,
-  ClipboardPen,
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -59,7 +56,6 @@ import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
 import { MASTER_EMAIL, NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
 import { useNavAccess } from "@/hooks/useNavAccess";
 import { purgeAppCaches, hardReload } from "@/lib/app-refresh";
-import { preferredGroExperience, setPreferredGroExperience } from "@/lib/gro-nr1";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,22 +147,6 @@ function NavItem({
       <Icon className="h-4 w-4 shrink-0" />
       <span className={LBL}>{label}</span>
     </Link>
-  );
-}
-
-function GroNavSection({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="space-y-1 pt-3 first:pt-0">
-      <p
-        className={cn(
-          "px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50",
-          LBL,
-        )}
-      >
-        {label}
-      </p>
-      {children}
-    </div>
   );
 }
 
@@ -315,7 +295,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isAccessGatePage = pathname === "/nda" || pathname === "/aceite-termos";
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [groExperience, setGroExperience] = useState(preferredGroExperience);
   const access = useNavAccess();
   // Close mobile drawer on route change
   useEffect(() => {
@@ -323,7 +302,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   const { data: workspace } = useQuery({
-    queryKey: ["workspace-header", groExperience],
+    queryKey: ["workspace-header"],
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
@@ -346,17 +325,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       const isGroCompanyUser = roleList.some((role: string) =>
         ["empresa_admin", "empresa_usuario"].includes(role),
       );
-      const isGroCompanyAdmin = roleList.includes("empresa_admin");
-      const canManageCompany = isAdmin || roleList.includes("gestor") || isGroCompanyAdmin;
-      const canSwitchExperience =
-        (isAdmin && !!profile?.active_company_id) || (isGroConsultant && isGroCompanyUser);
       let companyName: string | null = null;
-      const companyHeaderExperience =
-        (isGroCompanyUser && !isGroConsultant) ||
-        (canSwitchExperience && groExperience === "company");
-      const headerCompanyId = companyHeaderExperience
-        ? (profile?.company_id ?? profile?.active_company_id)
-        : profile?.active_company_id;
+      const headerCompanyId = isGroCompanyUser ? profile?.company_id : profile?.active_company_id;
       if (headerCompanyId) {
         const { data: c } = await supabase
           .from("companies")
@@ -371,9 +341,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         isComercialOnly,
         isGroConsultant,
         isGroCompanyUser,
-        isGroCompanyAdmin,
-        canManageCompany,
-        canSwitchExperience,
         companyName,
         userName: profile?.full_name ?? email ?? "Minha conta",
         userEmail: email,
@@ -416,15 +383,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     : visibleGroups.length
       ? (visibleGroups[0].children[0]?.to ?? visibleGroups[0].group.to ?? null)
       : null;
-  const companyExperience =
-    (!!workspace?.isGroCompanyUser && !workspace?.isGroConsultant) ||
-    (!!workspace?.canSwitchExperience && groExperience === "company");
-  const consultancyExperience = !!workspace?.isGroConsultant && !companyExperience;
-  const companyWorkspace = pathname.startsWith("/gro/empresa/");
-  const groMode =
-    pathname.startsWith("/gro") ||
-    (consultancyExperience && ["/empresas", "/admin/usuarios"].includes(pathname)) ||
-    companyExperience;
+  const groMode = pathname.startsWith("/gro") || !!workspace?.isGroCompanyUser;
   useEffect(() => {
     if (blocked && firstAllowedTo && firstAllowedTo !== pathname) {
       // Rotas permitidas são calculadas a partir da árvore canônica em runtime.
@@ -468,113 +427,67 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BrandMark className="h-8 shrink-0" />
           )}
           <p className={cn("text-[10px] uppercase tracking-widest text-muted-foreground", LBL)}>
-            {groMode ? "GRO NR1" : "Imersões Comerciais"}
+            Imersões Comerciais
           </p>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
           {groMode ? (
             <>
-              {consultancyExperience && !companyWorkspace && (
+              {workspace?.isGroConsultant && (
                 <>
-                  <GroNavSection label="Visão Geral">
-                    <NavItem
-                      to="/gro/carteira"
-                      label="Carteira"
-                      Icon={Briefcase}
-                      active={pathname === "/gro/carteira"}
-                    />
-                  </GroNavSection>
-                  <GroNavSection label="Operação">
-                    <NavItem
-                      to="/empresas"
-                      label="Empresas"
-                      Icon={Building2}
-                      active={pathname === "/empresas"}
-                    />
-                  </GroNavSection>
-                  <GroNavSection label="Administração">
-                    <NavItem
-                      to="/gro/usuarios"
-                      label="Usuários"
-                      Icon={Users}
-                      active={["/gro/usuarios", "/admin/usuarios"].includes(pathname)}
-                    />
-                    <NavItem
-                      to="/gro/configuracoes"
-                      label="Configurações"
-                      Icon={Settings}
-                      active={pathname === "/gro/configuracoes"}
-                    />
-                  </GroNavSection>
+                  <NavItem
+                    to="/gro/carteira"
+                    label="Carteira"
+                    Icon={Briefcase}
+                    active={pathname === "/gro/carteira"}
+                  />
+                  <NavItem
+                    to="/empresas"
+                    label="Empresas"
+                    Icon={Building2}
+                    active={pathname === "/empresas"}
+                  />
+                  <NavItem
+                    to="/admin/usuarios"
+                    label="Usuários"
+                    Icon={Users}
+                    active={pathname === "/admin/usuarios"}
+                  />
+                  <NavItem
+                    to="/gro/configuracoes"
+                    label="Configurações"
+                    Icon={Settings}
+                    active={pathname === "/gro/configuracoes"}
+                  />
                 </>
               )}
-              {(companyWorkspace || companyExperience) && (
+              {workspace?.isGroCompanyUser && (
                 <>
-                  <GroNavSection label={consultancyExperience ? "Empresa ativa" : "GRO NR1"}>
-                    <NavItem
-                      to="/gro/empresa/panorama"
-                      label="Panorama"
-                      Icon={BarChart3}
-                      active={pathname.endsWith("/panorama")}
-                    />
-                    {consultancyExperience && (
-                      <>
-                        <NavItem
-                          to="/gro/empresa/documentos"
-                          label="Documentos"
-                          Icon={FolderOpen}
-                          active={pathname.endsWith("/documentos")}
-                        />
-                        <NavItem
-                          to="/gro/empresa/questionarios"
-                          label="Questionários"
-                          Icon={ClipboardList}
-                          active={pathname.endsWith("/questionarios")}
-                        />
-                        <NavItem
-                          to="/gro/empresa/reportes-de-campo"
-                          label="Reportes de Campo"
-                          Icon={ClipboardPen}
-                          active={pathname.endsWith("/reportes-de-campo")}
-                        />
-                      </>
-                    )}
-                    <NavItem
-                      to="/gro/empresa/relatorio-final"
-                      label="Relatório Final"
-                      Icon={FileText}
-                      active={pathname.endsWith("/relatorio-final")}
-                    />
-                    <NavItem
-                      to="/gro/empresa/plano-de-acao"
-                      label="Plano de Ação"
-                      Icon={ListChecks}
-                      active={pathname.endsWith("/plano-de-acao")}
-                    />
-                    <NavItem
-                      to="/gro/empresa/nossa-cultura"
-                      label="Nossa Cultura"
-                      Icon={BookOpen}
-                      active={pathname.endsWith("/nossa-cultura")}
-                    />
-                  </GroNavSection>
-                  {workspace?.canManageCompany && (
-                    <GroNavSection label="Administração">
-                      <NavItem
-                        to="/gro/empresa/usuarios-permissoes"
-                        label="Usuários e Permissões"
-                        Icon={Users}
-                        active={pathname.endsWith("/usuarios-permissoes")}
-                      />
-                      <NavItem
-                        to="/gro/empresa/configuracoes"
-                        label="Configurações"
-                        Icon={Settings}
-                        active={pathname.endsWith("/configuracoes")}
-                      />
-                    </GroNavSection>
-                  )}
+                  <NavItem
+                    to="/gro/empresa/panorama"
+                    label="Panorama"
+                    Icon={BarChart3}
+                    active={pathname.endsWith("/panorama")}
+                  />
+                  <NavItem
+                    to="/gro/empresa/relatorio-final"
+                    label="Relatório Final"
+                    Icon={FileText}
+                    active={pathname.endsWith("/relatorio-final")}
+                  />
+                  <NavItem
+                    to="/gro/empresa/plano-de-acao"
+                    label="Plano de Ação"
+                    Icon={ListChecks}
+                    active={pathname.endsWith("/plano-de-acao")}
+                  />
+                  <NavItem
+                    to="/gro/empresa/nossa-cultura"
+                    label="Nossa Cultura"
+                    Icon={BookOpen}
+                    active={pathname.endsWith("/nossa-cultura")}
+                  />
                 </>
               )}
             </>
@@ -621,7 +534,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
             <p className="text-sm font-semibold truncate">{workspace?.companyName ?? "—"}</p>
           </div>
-          {consultancyExperience && (
+          {workspace?.isGroConsultant && (
             <Button
               asChild
               variant="outline"
@@ -633,25 +546,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Repeat className="h-4 w-4 shrink-0" />
                 <span className={cn("ml-2", LBL)}>Trocar empresa</span>
               </Link>
-            </Button>
-          )}
-          {workspace?.canSwitchExperience && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start px-2"
-              title="Trocar perfil"
-              onClick={() => {
-                const next = companyExperience ? "consultancy" : "company";
-                setPreferredGroExperience(next);
-                setGroExperience(next);
-                window.location.assign(
-                  next === "company" ? "/gro/empresa/panorama" : "/gro/carteira",
-                );
-              }}
-            >
-              <Repeat className="h-4 w-4 shrink-0" />
-              <span className={cn("ml-2", LBL)}>Trocar perfil</span>
             </Button>
           )}
           <Button

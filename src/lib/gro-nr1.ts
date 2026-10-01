@@ -6,10 +6,10 @@ export const GRO_SECTIONS = {
     ["panorama", "Panorama"],
     ["documentos", "Documentos"],
     ["questionarios", "Questionários"],
-    ["reportes-de-campo", "Reportes de Campo"],
     ["relatorio-final", "Relatório Final"],
     ["plano-de-acao", "Plano de Ação"],
     ["nossa-cultura", "Nossa Cultura"],
+    ["reportes-de-campo", "Reportes de Campo"],
   ],
   company: [
     ["panorama", "Panorama"],
@@ -17,24 +17,7 @@ export const GRO_SECTIONS = {
     ["plano-de-acao", "Plano de Ação"],
     ["nossa-cultura", "Nossa Cultura"],
   ],
-  administration: [
-    ["usuarios-permissoes", "Usuários e Permissões"],
-    ["configuracoes", "Configurações"],
-  ],
 } as const;
-
-export const GRO_EXPERIENCE_STORAGE_KEY = "gro:experience";
-
-export function preferredGroExperience() {
-  if (typeof window === "undefined") return "consultancy" as const;
-  return localStorage.getItem(GRO_EXPERIENCE_STORAGE_KEY) === "company"
-    ? ("company" as const)
-    : ("consultancy" as const);
-}
-
-export function setPreferredGroExperience(mode: "consultancy" | "company") {
-  localStorage.setItem(GRO_EXPERIENCE_STORAGE_KEY, mode);
-}
 
 export const CONSULTANCY_STEPS = [
   ["initial_meeting", "Reunião inicial"],
