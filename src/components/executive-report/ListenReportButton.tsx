@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Pause, Play, Square } from "lucide-react";
+import { Download, Loader2, Pause, Play, Square } from "lucide-react";
 import { buildSpeechScript } from "@/lib/executive-report/speech";
 import type { ExecutiveReportData } from "@/lib/executive-report/types";
 
-type Track = { url: string; duration: number; start: number };
+type Track = { blob: Blob; url: string; duration: number; start: number };
 
 function fmt(s: number) {
   if (!Number.isFinite(s) || s < 0) s = 0;
@@ -15,7 +15,7 @@ function fmt(s: number) {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/** Botão "Ouvir relatório": a IA lê o relatório em voz alta, com barra de progresso. */
+/** Prepara o áudio do relatório para reprodução ou download. */
 export function ListenReportButton({
   data,
   autoStart,
@@ -42,7 +42,7 @@ export function ListenReportButton({
     };
   }, []);
 
-  async function fetchChunk(text: string, attempt = 0): Promise<string> {
+  async function fetchChunk(text: string, attempt = 0): Promise<Blob> {
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -53,7 +53,7 @@ export function ListenReportButton({
         const detail = await res.text().catch(() => "");
         throw new Error(detail || `Falha ao gerar áudio (${res.status})`);
       }
-      return URL.createObjectURL(await res.blob());
+      return await res.blob();
     } catch (err) {
       if (attempt < 2 && !stopRef.current) {
         await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
@@ -71,6 +71,42 @@ export function ListenReportButton({
       a.onerror = () => resolve(0);
       a.src = url;
     });
+  }
+
+  async function prepareTracks() {
+    if (tracksRef.current.length) return tracksRef.current;
+
+    const chunks = buildSpeechScript(data);
+    const blobs: (Blob | null)[] = new Array(chunks.length).fill(null);
+    let done = 0;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < chunks.length && !stopRef.current) {
+        const i = cursor++;
+        try {
+          blobs[i] = await fetchChunk(chunks[i]);
+        } catch {
+          blobs[i] = null;
+        }
+        done++;
+        setLoadPct(Math.round((done / chunks.length) * 100));
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(5, chunks.length) }, worker));
+    if (stopRef.current) return [];
+    const ok = blobs.filter((blob): blob is Blob => !!blob);
+    if (ok.length !== blobs.length) throw new Error("Não foi possível gerar o áudio completo.");
+    const urls = ok.map((blob) => URL.createObjectURL(blob));
+    const durations = await Promise.all(urls.map(durationOf));
+    let acc = 0;
+    tracksRef.current = ok.map((blob, i) => {
+      const track = { blob, url: urls[i], duration: durations[i] || 0, start: acc };
+      acc += track.duration;
+      return track;
+    });
+    setTotal(acc);
+    return tracksRef.current;
   }
 
   /** Toca a partir de um instante global (segundos). */
@@ -102,7 +138,8 @@ export function ListenReportButton({
     audio.onerror = () => {
       // Pula o trecho com defeito em vez de interromper a leitura.
       const next = indexRef.current + 1;
-      if (!stopRef.current && next < tracksRef.current.length) playAt(tracksRef.current[next].start + 0.001);
+      if (!stopRef.current && next < tracksRef.current.length)
+        playAt(tracksRef.current[next].start + 0.001);
       else setState("idle");
     };
     audio.currentTime = offset;
@@ -116,42 +153,47 @@ export function ListenReportButton({
     setState("loading");
     setLoadPct(0);
     try {
-      if (!tracksRef.current.length) {
-        const chunks = buildSpeechScript(data);
-        const urls: (string | null)[] = new Array(chunks.length).fill(null);
-        let done = 0;
-        let cursor = 0;
-        const worker = async () => {
-          while (cursor < chunks.length && !stopRef.current) {
-            const i = cursor++;
-            try {
-              urls[i] = await fetchChunk(chunks[i]);
-            } catch {
-              urls[i] = null;
-            }
-            done++;
-            setLoadPct(Math.round((done / chunks.length) * 100));
-          }
-        };
-        // Várias requisições em paralelo deixam a preparação muito mais rápida.
-        await Promise.all(Array.from({ length: Math.min(5, chunks.length) }, worker));
-        if (stopRef.current) return setState("idle");
-        const ok = urls.filter((u): u is string => !!u);
-        if (!ok.length) throw new Error("Não foi possível gerar o áudio.");
-        const durations = await Promise.all(ok.map(durationOf));
-        let acc = 0;
-        tracksRef.current = ok.map((url, i) => {
-          const t = { url, duration: durations[i] || 0, start: acc };
-          acc += t.duration;
-          return t;
-        });
-        setTotal(acc);
-      }
+      await prepareTracks();
       if (stopRef.current) return setState("idle");
       playAt(0);
     } catch (err) {
       setState("idle");
       toast.error(err instanceof Error ? err.message : "Não foi possível ler o relatório.");
+    }
+  }
+
+  async function download() {
+    const alreadyPrepared = tracksRef.current.length > 0;
+    stopRef.current = false;
+    if (!alreadyPrepared) {
+      setState("loading");
+      setLoadPct(0);
+    }
+    try {
+      const tracks = await prepareTracks();
+      if (stopRef.current || !tracks.length) return setState("idle");
+      const file = new Blob(
+        tracks.map((track) => track.blob),
+        { type: "audio/mpeg" },
+      );
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      const client = data.client.display_name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .toLowerCase();
+      link.href = url;
+      link.download = `relatorio-executivo-${client || "cliente"}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      if (!alreadyPrepared) setState("idle");
+    } catch (err) {
+      if (!alreadyPrepared) setState("idle");
+      toast.error(err instanceof Error ? err.message : "Não foi possível baixar o áudio.");
     }
   }
 
@@ -185,10 +227,16 @@ export function ListenReportButton({
 
   if (state === "idle") {
     return (
-      <Button variant="outline" size="sm" onClick={() => void play()}>
-        <Play className="mr-1 h-4 w-4" />
-        Ouvir relatório
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => void play()}>
+          <Play className="mr-1 h-4 w-4" />
+          Ouvir relatório
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => void download()}>
+          <Download className="mr-1 h-4 w-4" />
+          Baixar áudio
+        </Button>
+      </div>
     );
   }
 
@@ -199,9 +247,14 @@ export function ListenReportButton({
       <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${loadPct}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${loadPct}%` }}
+          />
         </div>
-        <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">{loadPct}%</span>
+        <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
+          {loadPct}%
+        </span>
         <Button variant="ghost" size="icon" aria-label="Cancelar preparação" onClick={stop}>
           <Square className="h-4 w-4" />
         </Button>
@@ -212,14 +265,12 @@ export function ListenReportButton({
   return (
     <div className="flex w-full min-w-[260px] max-w-sm items-center gap-2">
       <Button variant="outline" size="icon" onClick={togglePause}>
-        {state === "playing" ? (
-          <Pause className="h-4 w-4" />
-        ) : (
-          <Play className="h-4 w-4" />
-        )}
+        {state === "playing" ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
       </Button>
       <div className="flex flex-1 items-center gap-2">
-        <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{fmt(value)}</span>
+        <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
+          {fmt(value)}
+        </span>
         <Slider
           className="flex-1"
           min={0}
@@ -239,6 +290,9 @@ export function ListenReportButton({
       </div>
       <Button variant="ghost" size="icon" aria-label="Parar leitura" onClick={stop}>
         <Square className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" aria-label="Baixar áudio" onClick={() => void download()}>
+        <Download className="h-4 w-4" />
       </Button>
     </div>
   );

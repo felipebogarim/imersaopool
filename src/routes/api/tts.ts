@@ -16,7 +16,8 @@ export const Route = createFileRoute("/api/tts")({
         }
         const text = String(body.text ?? "").trim();
         if (!text) return Response.json({ error: "Texto vazio" }, { status: 400 });
-        if (text.length > 4000) return Response.json({ error: "Texto muito longo" }, { status: 400 });
+        if (text.length > 4000)
+          return Response.json({ error: "Texto muito longo" }, { status: 400 });
 
         const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
           method: "POST",
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/api/tts")({
             voice: body.voice || "alloy",
             response_format: "mp3",
             instructions:
-              "Leia como uma apresentação executiva em português do Brasil: ritmo calmo e profissional, pausa clara entre capítulos e entre itens, ênfase nos títulos.",
+              "Leia integral e literalmente apenas o texto fornecido, em português do Brasil, com ritmo calmo e profissional, pausa clara entre capítulos e itens e ênfase nos títulos. Ao terminar a última palavra fornecida, encerre o áudio imediatamente. Não acrescente conclusão, resumo, despedida, comentário ou qualquer outro texto.",
           }),
         });
 
@@ -38,7 +39,10 @@ export const Route = createFileRoute("/api/tts")({
           const detail = await res.text().catch(() => "");
           return Response.json(
             { error: `Falha ao gerar áudio: ${res.status} ${detail}` },
-            { status: res.status === 429 || res.status === 402 || res.status === 403 ? res.status : 502 },
+            {
+              status:
+                res.status === 429 || res.status === 402 || res.status === 403 ? res.status : 502,
+            },
           );
         }
 

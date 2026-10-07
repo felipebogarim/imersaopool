@@ -1,9 +1,4 @@
-import {
-  formatVisitDate,
-  isCompactLayout,
-  isCompactV2,
-  type ExecutiveReportData,
-} from "./types";
+import { formatVisitDate, isCompactLayout, isCompactV2, type ExecutiveReportData } from "./types";
 
 /**
  * Monta o roteiro de leitura em voz alta do relatório executivo, capítulo a
@@ -60,24 +55,24 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
   }
 
   if (!v2) {
-  push("Capítulo três. Do diagnóstico à ação.");
-  data.decision_blocks.forEach((b, i) => {
-    push(`Diagnóstico ${i + 1}. ${b.title}.`);
-    if (isCompactLayout(data)) {
-      push(b.fact || b.cause);
-    } else {
-      if (b.cause) push(`Causa. ${b.cause}`);
-      if (b.impact) push(`Impacto. ${b.impact}`);
-    }
-    if (b.evidence?.quote) {
-      const autor = [b.evidence.author, b.evidence.role].filter(Boolean).join(", ");
-      push(`Depoimento${autor ? ` de ${autor}` : ""}. ${b.evidence.quote}`);
-    }
-    for (const id of b.action_ids) {
-      const a = data.actions.find((x) => x.id === id);
-      if (a) push(`Ação. ${a.title}.${a.description ? ` ${a.description}` : ""}`);
-    }
-  });
+    push("Capítulo três. Do diagnóstico à ação.");
+    data.decision_blocks.forEach((b, i) => {
+      push(`Diagnóstico ${i + 1}. ${b.title}.`);
+      if (isCompactLayout(data)) {
+        push(b.fact || b.cause);
+      } else {
+        if (b.cause) push(`Causa. ${b.cause}`);
+        if (b.impact) push(`Impacto. ${b.impact}`);
+      }
+      if (b.evidence?.quote) {
+        const autor = [b.evidence.author, b.evidence.role].filter(Boolean).join(", ");
+        push(`Depoimento${autor ? ` de ${autor}` : ""}. ${b.evidence.quote}`);
+      }
+      for (const id of b.action_ids) {
+        const a = data.actions.find((x) => x.id === id);
+        if (a) push(`Ação. ${a.title}.${a.description ? ` ${a.description}` : ""}`);
+      }
+    });
   }
 
   if (data.do_not_prioritize?.length) {
@@ -89,7 +84,6 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
     }
   }
 
-  push("Fim do relatório.");
   return chunkScript(parts);
 }
 
