@@ -14,9 +14,13 @@ import {
   Plus,
   ShieldCheck,
   Layers,
+  MessageCircle,
+  Loader2,
 } from "lucide-react";
 import type { RepStructure, ModeloEscritorio } from "@/lib/estrutura-rep/types";
 import { MODELO_ESCRITORIO_LABEL, MODELO_ATUACAO_LABEL, RECURSOS_CONFIG } from "@/lib/estrutura-rep/types";
+import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
+import { toast } from "sonner";
 
 interface RepKanbanViewProps {
   reps: Array<{
@@ -45,6 +49,23 @@ export function RepKanbanView({
   onAddNew,
 }: RepKanbanViewProps) {
   const [groupBy, setGroupBy] = useState<GroupBy>("modelo_escritorio");
+  const [sharingId, setSharingId] = useState<string | null>(null);
+
+  const handleShareWhats = async (rep: typeof reps[0]) => {
+    const struct = structures[rep.id];
+    if (!struct) {
+      toast.error("Estrutura não encontrada para este representante.");
+      return;
+    }
+    setSharingId(rep.id);
+    try {
+      await shareRepStructureByWhatsapp(struct, { email: rep.email, telefone: rep.telefone });
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao compartilhar no WhatsApp");
+    } finally {
+      setSharingId(null);
+    }
+  };
 
   const columns = useMemo(() => {
     if (groupBy === "modelo_escritorio") {
@@ -287,7 +308,7 @@ export function RepKanbanView({
                           </div>
                         </div>
 
-                        {/* Rodapé do Card com Ações (Ver Radiografia, Editar, Excluir) */}
+                        {/* Rodapé do Card com Ações (Ver Radiografia, WhatsApp, Editar, Excluir) */}
                         <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-1">
                           <Button
                             size="sm"
@@ -299,11 +320,28 @@ export function RepKanbanView({
                             <span>Radiografia</span>
                           </Button>
 
+                          {/* Botão Compartilhar por Whats */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleShareWhats(rep)}
+                            disabled={sharingId === rep.id}
+                            className="h-6 px-2 text-[10px] gap-1 font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-500/30"
+                            title="Compartilhar no WhatsApp com PDF executivo formatado"
+                          >
+                            {sharingId === rep.id ? (
+                              <Loader2 className="h-2.5 w-2.5 animate-spin text-emerald-600" />
+                            ) : (
+                              <MessageCircle className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
+                            )}
+                            <span className="hidden sm:inline">Whats</span>
+                          </Button>
+
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => onEdit(rep.id)}
-                            className="h-6 px-2 text-[10px] gap-1 font-medium hover:bg-muted"
+                            className="h-6 px-1.5 text-[10px] gap-1 font-medium hover:bg-muted"
                             title="Editar estrutura"
                           >
                             <Pencil className="h-2.5 w-2.5" />

@@ -15,9 +15,13 @@ import {
   ShieldCheck,
   CheckCircle2,
   SlidersHorizontal,
+  MessageCircle,
+  Loader2,
 } from "lucide-react";
 import type { RepStructure } from "@/lib/estrutura-rep/types";
 import { MODELO_ESCRITORIO_LABEL, MODELO_ATUACAO_LABEL, RECURSOS_CONFIG } from "@/lib/estrutura-rep/types";
+import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
+import { toast } from "sonner";
 
 interface RepListViewProps {
   reps: Array<{
@@ -45,6 +49,23 @@ export function RepListView({
 }: RepListViewProps) {
   const [search, setSearch] = useState("");
   const [filterModelo, setFilterModelo] = useState<string>("all");
+  const [sharingId, setSharingId] = useState<string | null>(null);
+
+  const handleShareWhats = async (rep: typeof reps[0]) => {
+    const struct = structures[rep.id];
+    if (!struct) {
+      toast.error("Estrutura não encontrada para este representante.");
+      return;
+    }
+    setSharingId(rep.id);
+    try {
+      await shareRepStructureByWhatsapp(struct, { email: rep.email, telefone: rep.telefone });
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao compartilhar no WhatsApp");
+    } finally {
+      setSharingId(null);
+    }
+  };
 
   const filteredReps = useMemo(() => {
     return reps.filter((rep) => {
@@ -360,7 +381,7 @@ export function RepListView({
                       </td>
 
                       {/* Ações */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap min-w-[220px]">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap min-w-[240px]">
                         <div className="flex items-center justify-end gap-1.5">
                           <Button
                             size="sm"
@@ -370,6 +391,22 @@ export function RepListView({
                           >
                             <Eye className="h-3 w-3" />
                             <span>Radiografia</span>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleShareWhats(rep)}
+                            disabled={sharingId === rep.id}
+                            className="h-7 px-2 text-[11px] gap-1 font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-500/30"
+                            title="Compartilhar no WhatsApp com PDF executivo formatado"
+                          >
+                            {sharingId === rep.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-emerald-600" />
+                            ) : (
+                              <MessageCircle className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                            )}
+                            <span className="hidden sm:inline">Whats</span>
                           </Button>
 
                           <Button

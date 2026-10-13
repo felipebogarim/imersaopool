@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Loader2,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { RepBrazilMap } from "@/components/estrutura-rep/RepBrazilMap";
 import { RepresentadasSection } from "@/components/estrutura-rep/RepresentadasSection";
@@ -44,6 +45,7 @@ import {
   saveRepStructure,
   deleteRepStructure,
 } from "@/lib/estrutura-rep/storage";
+import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
 import type { RepStructure } from "@/lib/estrutura-rep/types";
 import {
   MODELO_ESCRITORIO_LABEL,
@@ -88,6 +90,7 @@ function EstruturaRepPage() {
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [sharingWhats, setSharingWhats] = useState(false);
 
   // 1. Carrega lista de representantes
   const { data: reps = [], isLoading: loadingReps } = useQuery({
@@ -209,6 +212,21 @@ function EstruturaRepPage() {
     handleViewPanel(created.representative_id);
   };
 
+  const handleShareCurrentWhats = async () => {
+    if (!structure) return;
+    setSharingWhats(true);
+    try {
+      await shareRepStructureByWhatsapp(structure, {
+        email: selectedRep?.email,
+        telefone: selectedRep?.telefone,
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao compartilhar no WhatsApp");
+    } finally {
+      setSharingWhats(false);
+    }
+  };
+
   // KPIs da Radiografia
   const totalEstados = structure?.estados_atendidos?.length || 0;
   const totalMarcas = structure?.marcas_representadas?.length || 0;
@@ -294,6 +312,22 @@ function EstruturaRepPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleShareCurrentWhats}
+                  disabled={!structure || sharingWhats}
+                  className="gap-1.5 text-xs h-9 shadow-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-500/30"
+                  title="Compartilhar no WhatsApp com PDF executivo formatado"
+                >
+                  {sharingWhats ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                  ) : (
+                    <MessageCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  <span className="hidden sm:inline">Compartilhar Whats</span>
+                </Button>
 
                 <Button
                   size="sm"
