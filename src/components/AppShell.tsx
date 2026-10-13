@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
-import { Watermark } from "@/components/Watermark";
 import { AdminMfaBanner } from "@/components/mfa/AdminMfaBanner";
 import { SensitiveAdminGate } from "@/components/mfa/SensitiveAdminGate";
 import { MASTER_EMAIL, NAV_TREE, navKeyForPath, type NavGroup } from "@/lib/nav-tree";
@@ -445,7 +444,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       {!isAccessGatePage && <ForcePasswordChange />}
       {!isAccessGatePage && <ConfidentialityModal />}
       {!isAccessGatePage && <SensitiveAdminGate />}
-      <Watermark />
     </div>
   );
 }
