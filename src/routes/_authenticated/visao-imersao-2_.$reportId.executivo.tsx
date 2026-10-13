@@ -92,7 +92,7 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId
     const ogImageUrl = isClara
       ? "https://poolflux.app/og-charts/0ab3e2a1-f172-43a5-a633-9c347c09f06f.png"
       : (reportId
-          ? `https://poolflux.app/og-charts/${reportId}.png`
+          ? `https://poolflux.app/api/og-executivo/${reportId}.png`
           : "https://poolflux.app/og-charts/default.png");
 
     return {

@@ -208,33 +208,70 @@ export async function generateFamiliasChartBlob(
 }
 
 /**
- * Faz upload do print do gráfico para o bucket público `product-images` no Supabase,
+ * Faz upload do print do gráfico para persistência no banco e storage,
  * garantindo que o WhatsApp e outras redes possam carregar como imagem de OpenGraph.
  */
 export async function uploadChartImageToStorage(
   reportId: string,
   blob: Blob
 ): Promise<string | null> {
+  const resultUrl = `https://poolflux.app/api/og-executivo/${reportId}.png`;
+
+  // 1. POST para a rota de API do servidor (salva no storage do servidor e structured_data)
+  try {
+    await fetch(`/api/og-executivo/${reportId}`, {
+      method: "POST",
+      body: blob,
+      headers: { "Content-Type": "image/png" },
+    });
+  } catch (err) {
+    console.warn("Falha no POST /api/og-executivo:", err);
+  }
+
+  // 2. Salva também em structured_data diretamente pelo cliente autenticado
+  try {
+    const base64Url = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    if (base64Url) {
+      const { data: rep } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("structured_data")
+        .eq("id", reportId)
+        .maybeSingle();
+
+      if (rep) {
+        const cur = (rep.structured_data as Record<string, unknown>) || {};
+        await supabase
+          .from("field_immersion_v2_reports")
+          .update({
+            structured_data: {
+              ...cur,
+              og_chart_image: base64Url,
+            },
+          })
+          .eq("id", reportId);
+      }
+    }
+  } catch (err) {
+    console.warn("Falha ao salvar og_chart_image no cliente:", err);
+  }
+
+  // 3. Fallback de upload direto para o bucket Supabase
   try {
     const path = `og-charts/${reportId}.png`;
-    const { error: upErr } = await supabase.storage
+    await supabase.storage
       .from("product-images")
       .upload(path, blob, { contentType: "image/png", upsert: true });
-
-    if (upErr) {
-      console.warn("Falha ao salvar print do gráfico no storage:", upErr);
-      return null;
-    }
-
-    const { data: pubData } = supabase.storage
-      .from("product-images")
-      .getPublicUrl(path);
-
-    return pubData?.publicUrl ?? null;
   } catch (err) {
-    console.warn("Erro ao fazer upload do print do gráfico:", err);
-    return null;
+    console.warn("Erro no upload do bucket:", err);
   }
+
+  return resultUrl;
 }
 
 /**
@@ -245,5 +282,5 @@ export function getReportOgImageUrl(reportId?: string | null): string {
   if (reportId === "0ab3e2a1-f172-43a5-a633-9c347c09f06f") {
     return "https://poolflux.app/og-charts/0ab3e2a1-f172-43a5-a633-9c347c09f06f.png";
   }
-  return `https://poolflux.app/og-charts/${reportId}.png`;
+  return `https://poolflux.app/api/og-executivo/${reportId}.png`;
 }
