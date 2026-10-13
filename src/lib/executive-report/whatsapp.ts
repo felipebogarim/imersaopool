@@ -195,14 +195,14 @@ export function formatExecutiveReportForWhatsapp(
     });
   }
 
-  // 5. Rodapé com Link para a Plataforma e Áudio
+  // 5. Rodapé com Link do Gráfico em Destaque (abre imagem com zoom sem acessar o sistema)
   const baseUrl = options.appUrl || "https://poolflux.app";
   const reportId = options.immersionReportId || r.immersion_report_id || r.id;
   if (reportId) {
     lines.push("");
     lines.push(DIVIDER);
-    lines.push(`*Acesse o relatório completo e áudio na plataforma:*`);
-    lines.push(`${baseUrl.replace(/\/+$/, "")}/visao-imersao-2/${reportId}/executivo?v=grafico`);
+    lines.push(`*Gráfico em alta resolução (abrir e dar zoom):*`);
+    lines.push(`${baseUrl.replace(/\/+$/, "")}/grafico/${reportId}`);
   }
 
   return lines.join("\n");

@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
+import { Route as GraficoReportIdRouteImport } from './routes/grafico.$reportId'
 import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
@@ -169,6 +170,11 @@ const RTokenRoute = RTokenRouteImport.update({
 const MSlugRoute = MSlugRouteImport.update({
   id: '/m/$slug',
   path: '/m/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GraficoReportIdRoute = GraficoReportIdRouteImport.update({
+  id: '/grafico/$reportId',
+  path: '/grafico/$reportId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FSlugRoute = FSlugRouteImport.update({
@@ -848,6 +854,7 @@ export interface FileRoutesByFullPath {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
@@ -970,6 +977,7 @@ export interface FileRoutesByTo {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
@@ -1094,6 +1102,7 @@ export interface FileRoutesById {
   '/evento/pendente': typeof EventoPendenteRoute
   '/evento/sucesso': typeof EventoSucessoRoute
   '/f/$slug': typeof FSlugRoute
+  '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
@@ -1219,6 +1228,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
@@ -1341,6 +1351,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
     | '/admin/auditoria-seguranca'
@@ -1464,6 +1475,7 @@ export interface FileRouteTypes {
     | '/evento/pendente'
     | '/evento/sucesso'
     | '/f/$slug'
+    | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
     | '/_authenticated/admin/auditoria-seguranca'
@@ -1568,6 +1580,7 @@ export interface RootRouteChildren {
   EventoPendenteRoute: typeof EventoPendenteRoute
   EventoSucessoRoute: typeof EventoSucessoRoute
   FSlugRoute: typeof FSlugRoute
+  GraficoReportIdRoute: typeof GraficoReportIdRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
   ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
@@ -1647,6 +1660,13 @@ declare module '@tanstack/react-router' {
       path: '/m/$slug'
       fullPath: '/m/$slug'
       preLoaderRoute: typeof MSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grafico/$reportId': {
+      id: '/grafico/$reportId'
+      path: '/grafico/$reportId'
+      fullPath: '/grafico/$reportId'
+      preLoaderRoute: typeof GraficoReportIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/f/$slug': {
@@ -2726,6 +2746,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventoPendenteRoute: EventoPendenteRoute,
   EventoSucessoRoute: EventoSucessoRoute,
   FSlugRoute: FSlugRoute,
+  GraficoReportIdRoute: GraficoReportIdRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
   ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,

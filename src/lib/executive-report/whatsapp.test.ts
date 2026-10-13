@@ -123,8 +123,8 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(text).not.toContain("*PLANO DE AÇÃO EXECUTIVO");
     expect(text).not.toContain("Enviar mostruário de fitas 24V");
 
-    // Link da plataforma ao final
-    expect(text).toContain("https://poolflux.app/visao-imersao-2/imm-999/executivo");
+    // Link do gráfico ao final
+    expect(text).toContain("https://poolflux.app/grafico/imm-999");
   });
 
   it("formata telefone brasileiro corretamente", () => {
@@ -219,9 +219,9 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(text).not.toContain("*PLANO DE AÇÃO EXECUTIVO");
     expect(text).not.toContain("Reunião de alinhamento");
 
-    // Link da plataforma
+    // Link do gráfico
     expect(text).toContain(
-      "https://poolflux.app/visao-imersao-2/0ab3e2a1-f172-43a5-a633-9c347c09f06f/executivo"
+      "https://poolflux.app/grafico/0ab3e2a1-f172-43a5-a633-9c347c09f06f"
     );
   });
 });

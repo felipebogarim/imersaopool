@@ -263,10 +263,10 @@ export function EnviarWhatsappDialog({
                   {data.client?.trade_name || data.client?.display_name || "Relatório Executivo"} · Resultado por família
                 </p>
                 <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                  Gráfico de atingimento por família e camada de decisão da imersão em campo.
+                  Gráfico de atingimento em alta resolução. O destinatário abre a imagem e pode dar zoom sem acessar o sistema.
                 </p>
-                <p className="text-[10px] text-muted-foreground/80 font-mono">
-                  poolflux.app
+                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
+                  poolflux.app/grafico/{immersionReportId?.slice(0, 8) || "..."}
                 </p>
               </div>
             </div>
