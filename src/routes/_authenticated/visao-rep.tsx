@@ -28,6 +28,7 @@ import {
   type UploadLite,
 } from "@/lib/visao-rep";
 import { exportVisaoRepPdf } from "@/lib/visao-rep-pdf";
+import { sortPerformanceVersions } from "@/lib/performance-periods";
 import { cn } from "@/lib/utils";
 import { ArrowRightLeft, BarChart3, ChevronDown, ExternalLink, FileDown, ScanSearch, Sparkles, Target } from "lucide-react";
 
@@ -67,14 +68,15 @@ function VisaoRep() {
 
   const { data: uploads = [] } = useQuery({
     queryKey: ["visao-rep-uploads"],
-    queryFn: async () =>
-      ((
-        await supabase
-          .from("rep_performance_uploads")
-          .select("id, representative_id, periodo_label, atingimento_geral, familias, familia_atingimento_categoria, created_at")
-          .is("substituida_em", null)
-          .order("created_at", { ascending: false })
-      ).data ?? []) as unknown as UploadLite[],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_fim, atingimento_geral, familias, familia_atingimento_categoria, created_at")
+        .is("substituida_em", null)
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      return sortPerformanceVersions((data ?? []) as any[]) as unknown as UploadLite[];
+    },
   });
 
   const { data: painel } = useQuery({

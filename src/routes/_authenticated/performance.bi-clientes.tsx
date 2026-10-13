@@ -11,6 +11,7 @@ import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_MIDPOINT, type FarolStatus } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
+import { getLatestActiveVersionByRep } from "@/lib/performance-periods";
 
 
 export const Route = createFileRoute("/_authenticated/performance/bi-clientes")({
@@ -38,9 +39,12 @@ function BIClientesPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("rep_performance_uploads")
-        .select("id, representative_id, familias")
-        .is("substituida_em", null);
-      return data ?? [];
+        .select("id, representative_id, familias, periodo_fim, periodo_label, created_at")
+        .is("substituida_em", null)
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      const byRep = getLatestActiveVersionByRep((data ?? []) as any[]);
+      return Array.from(byRep.values());
     },
   });
 

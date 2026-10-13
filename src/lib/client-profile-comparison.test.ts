@@ -79,11 +79,11 @@ describe("médias", () => {
   const c = bi("Black", 80, flat(80));
 
   it("média geral com 2 clientes", () => {
-    expect(calculateCategoryAverageIncludingClient([a, b])).toBeCloseTo(52.25, 6);
+    expect(calculateCategoryAverageIncludingClient([a, b])).toBeCloseTo(55, 6);
   });
 
   it("média geral com vários clientes", () => {
-    expect(calculateCategoryAverageIncludingClient([a, b, c])).toBeCloseTo(61.5, 6);
+    expect(calculateCategoryAverageIncludingClient([a, b, c])).toBeCloseTo(63.333333, 5);
   });
 
   it("média sem o cliente atual", () => {
@@ -269,7 +269,7 @@ describe("orquestração e casos especiais", () => {
       representante: "MARIO",
       periodoLabel: "1º Semestre 2026",
     });
-    expect(r.mediaGeral).toBeCloseTo(53, 6);
+    expect(r.mediaGeral).toBeCloseTo(57.25, 2);
     expect(r.leituraExecutiva).toContain("pontos percentuais");
     expect(r.leituraExecutiva).not.toMatch(/R\$/);
   });

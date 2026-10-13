@@ -13,20 +13,38 @@ import {
   type PerformanceVersion,
   type RepresentativeBIResult,
 } from "./performance-bi-engine";
+import { sortPerformanceVersions } from "./performance-periods";
 
 export const PERFORMANCE_BI_KEY = "performance-bi";
 
 async function fetchVersion(repId: string, versionId?: string | null) {
-  let q = supabase
+  if (versionId) {
+    const { data, error } = await supabase
+      .from("rep_performance_uploads")
+      .select(
+        "id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, familias, familia_participacao_categoria, categoria_participacao",
+      )
+      .eq("representative_id", repId)
+      .eq("id", versionId)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as PerformanceVersion | null) ?? null;
+  }
+
+  const { data, error } = await supabase
     .from("rep_performance_uploads")
     .select(
       "id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, familias, familia_participacao_categoria, categoria_participacao",
     )
-    .eq("representative_id", repId);
-  q = versionId ? q.eq("id", versionId) : q.is("substituida_em", null);
-  const { data, error } = await q.order("created_at", { ascending: false }).limit(1).maybeSingle();
+    .eq("representative_id", repId)
+    .is("substituida_em", null)
+    .order("periodo_fim", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
   if (error) throw error;
-  return (data as PerformanceVersion | null) ?? null;
+  if (!data || data.length === 0) return null;
+  const sorted = sortPerformanceVersions(data as unknown as PerformanceVersion[]);
+  return sorted[0] ?? null;
 }
 
 async function fetchRows(versionId: string): Promise<PerformanceRow[]> {

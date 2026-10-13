@@ -30,6 +30,7 @@ import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerc
 import { ExecutiveReportButton } from "@/components/executive-report/ExecutiveReportButton";
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
+import { resolveClientCommercialData } from "@/lib/client-commercial-resolver";
 import { 
   ArrowLeft, 
   Compass,
@@ -406,53 +407,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   });
 
   async function fetchClientCommercialData(clientId: string) {
-    // Busca o cliente primeiro para ter a Razão Social canônica
-    const { data: clientInfo } = await supabase
-      .from("clients")
-      .select("razao_social, categoria, representative_id")
-      .eq("id", clientId)
-      .single();
-
-    if (!clientInfo) return { status: "not_found" };
-
-    // Busca o BI mais recente pela Razão Social (o schema não tem client_id)
-    const { data: biUpload } = await (supabase as any)
-      .from("client_bi_uploads")
-      .select("data, representative_id, razao_social")
-      .eq("razao_social", clientInfo.razao_social)
-      .eq("kind", "bi")
-      .is("substituida_em", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const biPayload = biUpload?.data as any;
-    const client = clientInfo;
-
-    if (!biPayload && !client) return { status: "not_found" };
-
-    const familias = Array.isArray(biPayload?.familias) 
-      ? biPayload.familias.map((item: any) => ({
-          familia: String(item.familia ?? ""),
-          pct: Math.abs(Number(item.atingimento ?? 0)) <= 1.5
-            ? Number(item.atingimento ?? 0) * 100
-            : Number(item.atingimento ?? 0),
-          status: item.farol ?? "normal",
-        }))
-      : [];
-
-    return {
-      status: "linked",
-      clientId,
-      razaoSocial: client?.razao_social || biUpload?.razao_social,
-      representativeId: client?.representative_id || biUpload?.representative_id,
-      categoria: client?.categoria || biPayload?.categoria,
-      geralPct: biPayload?.geral != null
-        ? (Math.abs(Number(biPayload.geral)) <= 1.5 ? Number(biPayload.geral) * 100 : Number(biPayload.geral))
-        : null,
-      periodoLabel: biPayload?.periodo || "1º Semestre 2026",
-      familias
-    };
+    return await resolveClientCommercialData(clientId);
   }
 
   async function confirmarVinculo(clientId: string) {

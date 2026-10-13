@@ -44,6 +44,7 @@ import {
   type FarolStatus,
 } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
+import { sortPerformanceVersions, getLatestActiveVersionByRep } from "@/lib/performance-periods";
 
 
 export const Route = createFileRoute("/_authenticated/representantes/performance")({
@@ -164,11 +165,9 @@ export function PerformancePageContent() {
         .from("rep_performance_uploads")
         .select("id, representative_id, periodo_label, periodo_inicio, periodo_fim, created_at, filename, familias")
         .is("substituida_em", null)
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
-      const byRep = new Map<string, any>();
-      for (const u of ups ?? []) {
-        if (!byRep.has(u.representative_id)) byRep.set(u.representative_id, u);
-      }
+      const byRep = getLatestActiveVersionByRep(ups ?? []);
       return Array.from(byRep.entries()).map(([rid, u]) => ({ rep_id: rid, upload: u }));
     },
   });
@@ -189,24 +188,30 @@ export function PerformancePageContent() {
   const { data: uploads = [] } = useQuery({
     queryKey: ["perf-uploads", repId],
     enabled: !!repId,
-    queryFn: async () =>
-      (await supabase
+    queryFn: async () => {
+      const { data: list } = await supabase
         .from("rep_performance_uploads")
         .select("*")
         .eq("representative_id", repId)
         .is("substituida_em", null)
-        .order("created_at", { ascending: false })).data ?? [],
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      return sortPerformanceVersions((list ?? []) as any[]);
+    },
   });
 
   const { data: allVersions = [] } = useQuery({
     queryKey: ["perf-all-versions", repId],
     enabled: !!repId,
-    queryFn: async () =>
-      (await supabase
+    queryFn: async () => {
+      const { data: list } = await supabase
         .from("rep_performance_uploads")
         .select("*")
         .eq("representative_id", repId)
-        .order("created_at", { ascending: false })).data ?? [],
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      return sortPerformanceVersions((list ?? []) as any[]);
+    },
   });
 
   const currentUpload = useMemo(

@@ -41,6 +41,7 @@ import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { briefingPadrao } from "@/lib/visao-rep2-briefing";
 
 import { buildPerfResumo, fmtPct, matchRepresentativeId, type PerfRowLite, type UploadLite } from "@/lib/visao-rep";
+import { sortPerformanceVersions } from "@/lib/performance-periods";
 import { exportVisaoRep2Pdf } from "@/lib/visao-rep2-pdf";
 import {
   AlertTriangle,
@@ -237,14 +238,15 @@ function VisaoRep2Page() {
   // ---- Performance vinculada ----
   const { data: uploads = [] } = useQuery({
     queryKey: ["vr2-uploads"],
-    queryFn: async () =>
-      ((
-        await supabase
-          .from("rep_performance_uploads")
-          .select("id, representative_id, periodo_label, atingimento_geral, familias, familia_atingimento_categoria, created_at")
-          .is("substituida_em", null)
-          .order("created_at", { ascending: false })
-      ).data ?? []) as unknown as UploadLite[],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, representative_id, periodo_label, periodo_fim, atingimento_geral, familias, familia_atingimento_categoria, created_at")
+        .is("substituida_em", null)
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      return sortPerformanceVersions((data ?? []) as any[]) as unknown as UploadLite[];
+    },
   });
   /** Vincula performance pelo id do representante; se o relatório não tiver id, casa por nome (regra canônica).
    *  Vale também para o rascunho importado, para o atingimento aparecer já na prévia. */

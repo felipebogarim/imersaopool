@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
+import { getLatestPerformanceVersion } from "@/lib/performance-periods";
 
 const searchSchema = z.object({ client: z.string().optional() });
 
@@ -63,15 +64,15 @@ function NewImmersion() {
     queryFn: async () => {
       let portfolioNames: string[] | null = null;
       if (form.representative_id) {
-        const { data: upload, error: uploadError } = await supabase
+        const { data: uploads, error: uploadError } = await supabase
           .from("rep_performance_uploads")
-          .select("id")
+          .select("id, periodo_fim, periodo_label, created_at")
           .eq("representative_id", form.representative_id)
           .is("substituida_em", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order("periodo_fim", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false });
         if (uploadError) throw uploadError;
+        const upload = getLatestPerformanceVersion((uploads ?? []) as any[]);
         if (!upload) return [];
 
         const { data: rows, error: rowsError } = await supabase

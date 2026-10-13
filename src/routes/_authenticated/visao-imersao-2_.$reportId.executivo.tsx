@@ -51,6 +51,7 @@ import {
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
 import { buildExecutiveReadingFromImmersion } from "@/lib/executive-report/synthesis";
 import { extractTradeName } from "@/lib/executive-report/trade-name";
+import { resolveClientCommercialData } from "@/lib/client-commercial-resolver";
 
 
 import {
@@ -249,31 +250,17 @@ function RelatorioExecutivoPage() {
       }
       if (!clientRow) return null;
 
-      const { data: bi } = await (supabase as any)
-        .from("client_bi_uploads")
-        .select("data, representative_id, razao_social")
-        .eq("razao_social", clientRow.razao_social)
-        .eq("kind", "bi")
-        .is("substituida_em", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const payload = bi?.data as any;
-      const geralRaw = payload?.geral != null ? Number(payload.geral) : null;
-      const geralPct =
-        geralRaw == null ? null : Math.abs(geralRaw) <= 1.5 ? geralRaw * 100 : geralRaw;
+      const res = await resolveClientCommercialData(clientRow.id);
+      if (res.status === "not_found") return null;
 
       return {
-        clientId: clientRow.id as string,
-        razaoSocial: (clientRow.razao_social ?? bi?.razao_social ?? null) as string | null,
-        nomeFantasia: (clientRow.nome_fantasia ?? null) as string | null,
-        representativeId: (clientRow.representative_id ?? bi?.representative_id ?? null) as
-          | string
-          | null,
-        categoria: (clientRow.categoria ?? payload?.categoria ?? null) as string | null,
-        geralPct,
-        periodoLabel: (payload?.periodo || "1º Semestre 2026") as string,
+        clientId: res.clientId,
+        razaoSocial: res.razaoSocial,
+        nomeFantasia: res.nomeFantasia ?? clientRow.nome_fantasia ?? null,
+        representativeId: res.representativeId,
+        categoria: res.categoria,
+        geralPct: res.geralPct,
+        periodoLabel: res.periodoLabel,
       };
     },
   });
