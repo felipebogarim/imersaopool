@@ -136,7 +136,8 @@ export function exportExecutiveReportPdf(input: ExecutiveReportData) {
   // Capítulo 01 — Briefing
   chapter("01", "Briefing executivo");
   const info: [string, string][] = [
-    ["Cliente", data.client.display_name || "—"],
+    ["Razão Social", data.client.display_name || "—"],
+    ["Nome Fantasia", data.client.trade_name || "—"],
     ["Data", formatVisitDate(data.client.visit_date)],
     ["Local", data.client.location || "—"],
     ["Representante", data.client.representative || "—"],

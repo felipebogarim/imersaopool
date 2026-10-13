@@ -50,6 +50,7 @@ import {
 } from "@/lib/executive-report/match-existing";
 import { exportExecutiveReportPdf } from "@/lib/executive-report/pdf";
 import { buildExecutiveReadingFromImmersion } from "@/lib/executive-report/synthesis";
+import { extractTradeName } from "@/lib/executive-report/trade-name";
 
 
 import {
@@ -156,7 +157,7 @@ function RelatorioExecutivoPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("field_immersion_v2_reports")
-        .select("id, client_name, visit_date, company_id, structured_data")
+        .select("id, client_name, visit_date, company_id, structured_data, content_markdown")
         .eq("id", reportId)
         .maybeSingle();
       return data ?? null;
@@ -210,7 +211,7 @@ function RelatorioExecutivoPage() {
       if (parentResolvedClientId) {
         const { data: c } = await supabase
           .from("clients")
-          .select("id, razao_social, categoria, representative_id")
+          .select("id, razao_social, nome_fantasia, categoria, representative_id")
           .eq("id", parentResolvedClientId)
           .maybeSingle();
         clientRow = c ?? null;
@@ -219,7 +220,7 @@ function RelatorioExecutivoPage() {
         const term = parentClientName.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const { data: cands } = await supabase
           .from("clients")
-          .select("id, razao_social, categoria, representative_id")
+          .select("id, razao_social, nome_fantasia, categoria, representative_id")
           .or(`razao_social.ilike.%${term}%,nome_fantasia.ilike.%${term}%`)
           .limit(2);
         if (cands?.length === 1) clientRow = cands[0];
@@ -244,6 +245,7 @@ function RelatorioExecutivoPage() {
       return {
         clientId: clientRow.id as string,
         razaoSocial: (clientRow.razao_social ?? bi?.razao_social ?? null) as string | null,
+        nomeFantasia: (clientRow.nome_fantasia ?? null) as string | null,
         representativeId: (clientRow.representative_id ?? bi?.representative_id ?? null) as
           | string
           | null,
@@ -277,6 +279,20 @@ function RelatorioExecutivoPage() {
       : base.decision_blocks
           .map((b) => ({ ...b, action_ids: b.action_ids.filter((id) => keptIds.has(id)) }))
           .filter((b) => b.action_ids.length > 0);
+    const resolvedTradeName = extractTradeName({
+      explicitTradeName: base.client.trade_name,
+      razaoSocial: commercial?.razaoSocial || base.client.display_name || parent?.client_name,
+      dbTradeName: commercial?.nomeFantasia,
+      textSources: [
+        parent?.content_markdown,
+        base.executive_reading,
+        base.executive_summary,
+        ...(base.evidence_recommendations ?? []).map((e) => e.evidence?.quote || ""),
+        ...(base.decision_blocks ?? []).map((b) => b.evidence?.quote || ""),
+      ],
+      structuredData: parent?.structured_data,
+    });
+
     return {
       ...base,
       actions,
@@ -285,11 +301,12 @@ function RelatorioExecutivoPage() {
       executive_reading: compact ? base.executive_reading : fullReading || base.executive_reading,
       client: {
         ...base.client,
+        trade_name: resolvedTradeName,
         attainment,
         category: commercial?.categoria || base.client.category || null,
       },
     };
-  }, [data, closed, commercial, fullReading, activeCompanyName]);
+  }, [data, closed, commercial, fullReading, activeCompanyName, parent]);
 
 
 
@@ -306,6 +323,19 @@ function RelatorioExecutivoPage() {
       const text = await file.text();
       const parsed = parseExecutiveReportFile(text);
       const parentInfo = (parent?.structured_data as any)?.data ?? {};
+      const resolvedTradeName = extractTradeName({
+        explicitTradeName: parsed.client.trade_name,
+        razaoSocial: commercial?.razaoSocial || parent?.client_name || parsed.client.display_name,
+        dbTradeName: commercial?.nomeFantasia,
+        textSources: [
+          parent?.content_markdown,
+          parsed.executive_reading,
+          parsed.executive_summary,
+          ...(parsed.evidence_recommendations ?? []).map((e) => e.evidence?.quote || ""),
+          ...(parsed.decision_blocks ?? []).map((b) => b.evidence?.quote || ""),
+        ],
+        structuredData: parent?.structured_data,
+      });
       // "Atualizar": substitui integralmente os dados atuais pelo novo arquivo.
       if (data?.id) await deleteExecutiveReport(data.id);
       await createExecutiveReport({
@@ -316,6 +346,7 @@ function RelatorioExecutivoPage() {
           ...parsed,
           client: {
             ...parsed.client,
+            trade_name: resolvedTradeName,
             visit_date: parsed.client.visit_date || parent?.visit_date || null,
             representative:
               parsed.client.representative || parentInfo?.metadata?.representative_name || null,

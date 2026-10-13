@@ -104,6 +104,7 @@ export type ExecutiveNonPriority = {
 
 export type ExecutiveClient = {
   display_name: string;
+  trade_name?: string | null;
   visit_date?: string | null;
   location?: string | null;
   representative?: string | null;

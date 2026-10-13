@@ -82,7 +82,8 @@ export const ExecutiveReportEmail = ({ report, message, appUrl, families, immers
   const companyName = (r?.companyName || "Newline").toUpperCase();
   const actions = r?.actions ?? [];
   const briefing: { label: string; value?: string | null }[] = [
-    { label: "Cliente", value: r?.client?.display_name },
+    { label: "Razão social", value: r?.client?.display_name },
+    { label: "Nome fantasia", value: r?.client?.trade_name },
     { label: "Data da imersão", value: formatVisitDate(r?.client?.visit_date) },
     { label: "Local", value: r?.client?.location },
     { label: "Representante", value: r?.client?.representative },

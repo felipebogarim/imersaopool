@@ -94,6 +94,9 @@ export function formatExecutiveReportForWhatsapp(
 
   // 2. Dados do Briefing (diretos, sem cabeçalho nem divisória antes)
   const briefingLines: string[] = [];
+  if (r.client?.trade_name) {
+    briefingLines.push(`• *Nome fantasia:* ${r.client.trade_name}`);
+  }
   if (r.client?.visit_date) {
     briefingLines.push(`• *Data:* ${formatVisitDate(r.client.visit_date)}`);
   }

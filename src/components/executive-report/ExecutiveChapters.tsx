@@ -45,7 +45,8 @@ export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
       <ChapterHeader num="01" title="Briefing executivo" />
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Info label="Cliente" value={data.client.display_name} />
+          <Info label="Razão social" value={data.client.display_name} />
+          <Info label="Nome fantasia" value={data.client.trade_name} />
           <Info label="Data da imersão" value={formatVisitDate(data.client.visit_date)} />
           <Info label="Local" value={data.client.location} />
           <Info label="Representante" value={data.client.representative} />

@@ -20,6 +20,7 @@ import {
   type ExecutiveReportData,
   type ExecutiveTopic,
 } from "./types";
+import { extractTradeName } from "./trade-name";
 
 export const EXECUTIVE_BLOCK = "relatorio_executivo_imersao";
 export const EXECUTIVE_SCHEMA = "executive_field_visit_report_v1";
@@ -209,13 +210,26 @@ export function parseExecutiveReportFile(raw: string): ExecutiveReportData {
   }
 
   const client = json.client ?? {};
+  const explicitTrade = sanitize(client.trade_name ?? client.nome_fantasia ?? client.fantasy_name);
+  const clientDisplayName = sanitize(client.display_name ?? client.razao_social ?? client.name);
+  const resolvedTradeName = extractTradeName({
+    explicitTradeName: explicitTrade || null,
+    razaoSocial: clientDisplayName,
+    textSources: [
+      sanitize(json.executive_reading),
+      executive_summary,
+      ...evidence_recommendations.map((e) => e.evidence?.quote || ""),
+      ...decision_blocks.map((b) => b.evidence?.quote || ""),
+    ],
+  });
 
   return {
     status: "review",
     report_title: sanitize(json.report_title) || "Relatório Executivo",
     source_schema: schema,
     client: {
-      display_name: sanitize(client.display_name ?? client.name),
+      display_name: clientDisplayName,
+      trade_name: resolvedTradeName,
       visit_date: sanitize(client.visit_date) || null,
       location: sanitize(client.location) || null,
       representative: sanitize(client.representative) || null,
