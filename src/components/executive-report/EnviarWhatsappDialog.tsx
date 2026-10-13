@@ -59,9 +59,7 @@ export function EnviarWhatsappDialog({
   });
 
   const [phone, setPhone] = useState("");
-  const [introMessage, setIntroMessage] = useState(
-    data.email?.intro ?? "Olá! Segue a síntese do Relatório Executivo de Imersão:"
-  );
+  const [introMessage, setIntroMessage] = useState("");
   const [copied, setCopied] = useState(false);
 
   function selectDestination(dest: "desktop" | "web") {
@@ -246,7 +244,7 @@ export function EnviarWhatsappDialog({
                   Prévia da Mensagem Formatada
                 </span>
                 <Badge variant="secondary" className="text-[10px] font-normal py-0 px-2 h-5">
-                  <Sparkles className="h-3 w-3 mr-1 text-emerald-500" /> WhatsApp Ready
+                  Padrão WhatsApp
                 </Badge>
               </div>
               <span className="text-[11px] text-muted-foreground">

@@ -94,11 +94,14 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(text).toContain("*NEWLINE* · Ilumilux Piscinas");
     expect(text).toContain("Prezados, segue o relatório da imersão.");
 
-    // Briefing
-    expect(text).toContain("*BRIEFING EXECUTIVO*");
-    expect(text).toContain("Campinas - SP");
-    expect(text).toContain("João Silva");
-    expect(text).toContain("Sodramar · Sibrape");
+    // Briefing (direto, sem emojis)
+    expect(text).toContain("• *Data:* 15/09/2026");
+    expect(text).toContain("• *Local:* Campinas - SP");
+    expect(text).toContain("• *Representante:* João Silva");
+    expect(text).toContain("• *Marcas observadas:* Sodramar · Sibrape");
+
+    // Garante ausência de emojis
+    expect(text).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
 
     // Leitura / Resumo
     expect(text).toContain("Resumo executivo da visita técnica.");
