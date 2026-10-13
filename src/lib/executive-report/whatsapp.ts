@@ -24,7 +24,7 @@ export function formatWhatsappPhone(phone: string): string {
   return digits;
 }
 
-/** Gera a URL do WhatsApp Web pronta para abertura. */
+/** Gera a URL do WhatsApp Web pronta para abertura no navegador. */
 export function buildWhatsappWebUrl(text: string, phone?: string): string {
   const encodedText = encodeURIComponent(text);
   const cleanPhone = phone ? formatWhatsappPhone(phone) : "";
@@ -32,6 +32,26 @@ export function buildWhatsappWebUrl(text: string, phone?: string): string {
     return `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`;
   }
   return `https://web.whatsapp.com/send?text=${encodedText}`;
+}
+
+/** Gera a URL nativa do WhatsApp Desktop instalado no Mac / Windows (protocolo whatsapp://). */
+export function buildWhatsappDesktopUrl(text: string, phone?: string): string {
+  const encodedText = encodeURIComponent(text);
+  const cleanPhone = phone ? formatWhatsappPhone(phone) : "";
+  if (cleanPhone) {
+    return `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`;
+  }
+  return `whatsapp://send?text=${encodedText}`;
+}
+
+/** Gera a URL da API do WhatsApp com direcionamento inteligente para aplicativo desktop e web. */
+export function buildWhatsappApiUrl(text: string, phone?: string): string {
+  const encodedText = encodeURIComponent(text);
+  const cleanPhone = phone ? formatWhatsappPhone(phone) : "";
+  if (cleanPhone) {
+    return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`;
+  }
+  return `https://api.whatsapp.com/send?text=${encodedText}`;
 }
 
 /** Gera a URL do WhatsApp universal (wa.me) como alternativa mobile. */

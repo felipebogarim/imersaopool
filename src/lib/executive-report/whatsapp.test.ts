@@ -3,6 +3,8 @@ import {
   formatExecutiveReportForWhatsapp,
   formatWhatsappPhone,
   buildWhatsappWebUrl,
+  buildWhatsappDesktopUrl,
+  buildWhatsappApiUrl,
   buildWhatsappUniversalUrl,
 } from "./whatsapp";
 import type { ExecutiveReportData } from "./types";
@@ -131,7 +133,7 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(formatWhatsappPhone("")).toBe("");
   });
 
-  it("gera URLs de WhatsApp Web e universal", () => {
+  it("gera URLs de WhatsApp Web, Desktop (Mac) e universal", () => {
     const webUrl = buildWhatsappWebUrl("Teste de mensagem", "11999998888");
     expect(webUrl).toBe(
       "https://web.whatsapp.com/send?phone=5511999998888&text=Teste%20de%20mensagem"
@@ -139,6 +141,17 @@ describe("formatExecutiveReportForWhatsapp", () => {
 
     const webUrlNoPhone = buildWhatsappWebUrl("Olá mundo");
     expect(webUrlNoPhone).toBe("https://web.whatsapp.com/send?text=Ol%C3%A1%20mundo");
+
+    const desktopUrl = buildWhatsappDesktopUrl("Relatório Mac", "11999998888");
+    expect(desktopUrl).toBe(
+      "whatsapp://send?phone=5511999998888&text=Relat%C3%B3rio%20Mac"
+    );
+
+    const desktopUrlNoPhone = buildWhatsappDesktopUrl("Relatório Mac");
+    expect(desktopUrlNoPhone).toBe("whatsapp://send?text=Relat%C3%B3rio%20Mac");
+
+    const apiUrl = buildWhatsappApiUrl("Teste", "11999998888");
+    expect(apiUrl).toBe("https://api.whatsapp.com/send?phone=5511999998888&text=Teste");
 
     const uniUrl = buildWhatsappUniversalUrl("Teste", "11999998888");
     expect(uniUrl).toBe("https://wa.me/5511999998888?text=Teste");
