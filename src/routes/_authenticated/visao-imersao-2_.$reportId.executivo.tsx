@@ -24,6 +24,7 @@ import {
   History,
   Loader2,
   Mail,
+  MessageCircle,
   RefreshCw,
   Trash2,
   Upload,
@@ -39,6 +40,7 @@ import {
 import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
+import { EnviarWhatsappDialog } from "@/components/executive-report/EnviarWhatsappDialog";
 import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
 import { ValidateActionKanbanDialog } from "@/components/executive-report/ValidateActionKanbanDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
@@ -104,6 +106,7 @@ function RelatorioExecutivoPage() {
   const [validating, setValidating] = useState<ExecutiveAction | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [emailOpen, setEmailOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [blockEditing, setBlockEditing] = useState<any | null>(null);
@@ -561,6 +564,14 @@ function RelatorioExecutivoPage() {
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
                   <Mail className="mr-1 h-4 w-4" /> Enviar por e-mail
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setWhatsappOpen(true)}
+                  className="hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-colors"
+                >
+                  <MessageCircle className="mr-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Enviar por WhatsApp
                 </Button>
                 {closed && (
                   <Button size="sm" variant="outline" onClick={() => void handleRevisar()}>
@@ -1127,6 +1138,16 @@ function RelatorioExecutivoPage() {
               error: error ?? null,
             });
           }}
+        />
+      )}
+
+      {viewData && (
+        <EnviarWhatsappDialog
+          open={whatsappOpen}
+          onOpenChange={setWhatsappOpen}
+          data={viewData}
+          appUrl={typeof window !== "undefined" ? window.location.origin : "https://poolflux.app"}
+          immersionReportId={reportId}
         />
       )}
     </div>
