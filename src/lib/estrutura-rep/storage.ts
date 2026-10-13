@@ -270,3 +270,204 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
     console.warn("[saveRepStructure] Supabase network/schema exception (fallback kept in localStorage):", err);
   }
 }
+
+/** Carrega as estruturas de todos os representantes informados */
+export async function loadAllRepStructures(reps: {
+  id: string;
+  nome: string;
+  representacao?: string | null;
+  regiao?: string | null;
+  outras_marcas?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+}[]): Promise<Record<string, RepStructure>> {
+  const result: Record<string, RepStructure> = {};
+  if (!reps || reps.length === 0) return result;
+
+  let supabaseData: any[] = [];
+  try {
+    const { data, error } = await (supabase as any)
+      .from("rep_structures")
+      .select("*");
+    if (!error && Array.isArray(data)) {
+      supabaseData = data;
+    }
+  } catch (e) {
+    console.warn("[loadAllRepStructures] Batch query failed, using fallbacks:", e);
+  }
+
+  const supabaseMap = new Map<string, any>();
+  for (const item of supabaseData) {
+    if (item.representative_id) {
+      supabaseMap.set(item.representative_id, item);
+    }
+  }
+
+  for (const rep of reps) {
+    const dbItem = supabaseMap.get(rep.id);
+    if (dbItem) {
+      result[rep.id] = {
+        representative_id: rep.id,
+        nome_representante: rep.nome,
+        empresa_representacao: dbItem.empresa_representacao ?? rep.representacao ?? "",
+        cidade_base: dbItem.cidade_base ?? "",
+        estado_base: dbItem.estado_base ?? "",
+        regiao_principal: dbItem.regiao_principal ?? rep.regiao ?? "",
+        modelo_atuacao: dbItem.modelo_atuacao ?? "equipe",
+        estados_atendidos: Array.isArray(dbItem.estados_atendidos) ? dbItem.estados_atendidos : [],
+        detalhes_municipais: dbItem.detalhes_municipais ?? {},
+        marcas_representadas: Array.isArray(dbItem.marcas_representadas) ? dbItem.marcas_representadas : [],
+        modelo_escritorio: dbItem.modelo_escritorio ?? "escritorio_fisico",
+        recursos_operacionais: dbItem.recursos_operacionais ?? {
+          estrutura_administrativa: false,
+          atendimento_comercial: false,
+          suporte_clientes: false,
+          apoio_tecnico: false,
+          gestao_pedidos: false,
+          pos_venda: false,
+        },
+        equipe: Array.isArray(dbItem.equipe) ? dbItem.equipe : [],
+        observacoes_gerais: dbItem.observacoes_gerais ?? "",
+        updated_at: dbItem.updated_at,
+      };
+      continue;
+    }
+
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(getLocalKey(rep.id));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.representative_id === rep.id) {
+            result[rep.id] = { ...parsed, nome_representante: rep.nome };
+            continue;
+          }
+        }
+      } catch {}
+    }
+
+    result[rep.id] = buildDefaultStructure(rep);
+  }
+
+  return result;
+}
+
+/** Exclui um representante e toda a sua estrutura associada */
+export async function deleteRepStructure(repId: string): Promise<void> {
+  // 1. Remove do LocalStorage
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem(getLocalKey(repId));
+    } catch (e) {
+      console.warn("[deleteRepStructure] LocalStorage remove failed:", e);
+    }
+  }
+
+  // 2. Remove de rep_structures
+  try {
+    await (supabase as any)
+      .from("rep_structures")
+      .delete()
+      .eq("representative_id", repId);
+  } catch (err) {
+    console.warn("[deleteRepStructure] Supabase rep_structures delete failed:", err);
+  }
+
+  // 3. Remove de representatives
+  const { error } = await supabase
+    .from("representatives")
+    .delete()
+    .eq("id", repId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+/** Cria um novo representante e sua respectiva estrutura */
+export async function createRepresentativeWithStructure(params: {
+  nome: string;
+  representacao?: string;
+  email?: string;
+  telefone?: string;
+  cidade_base?: string;
+  estado_base?: string;
+  regiao?: string;
+  modelo_atuacao?: import("./types").ModeloAtuacao;
+  modelo_escritorio?: import("./types").ModeloEscritorio;
+  estados_atendidos?: string[];
+  outras_marcas?: string;
+  marcas_representadas?: import("./types").RepresentadaItem[];
+  equipe?: import("./types").MembroEquipe[];
+  recursos_operacionais?: import("./types").RecursosOperacionais;
+}): Promise<RepStructure> {
+  const { data: userData } = await supabase.auth.getUser();
+
+  const repPayload: any = {
+    nome: params.nome.trim(),
+    representacao: params.representacao?.trim() || null,
+    email: params.email?.trim() || null,
+    telefone: params.telefone?.trim() || null,
+    regiao: params.regiao?.trim() || params.estados_atendidos?.join(" / ") || null,
+    outras_marcas: params.outras_marcas?.trim() || null,
+    created_by: userData.user?.id || null,
+  };
+
+  const { data: repData, error: repError } = await supabase
+    .from("representatives")
+    .insert(repPayload)
+    .select("id")
+    .single();
+
+  if (repError || !repData?.id) {
+    throw new Error(repError?.message || "Erro ao cadastrar representante no banco");
+  }
+
+  const newRepId = repData.id;
+
+  const defaultBase = buildDefaultStructure({
+    id: newRepId,
+    nome: params.nome,
+    representacao: params.representacao,
+    regiao: params.regiao,
+    outras_marcas: params.outras_marcas,
+  });
+
+  const structure: RepStructure = {
+    ...defaultBase,
+    representative_id: newRepId,
+    nome_representante: params.nome.trim(),
+    empresa_representacao: params.representacao?.trim() || defaultBase.empresa_representacao,
+    cidade_base: params.cidade_base?.trim() || defaultBase.cidade_base,
+    estado_base: params.estado_base?.trim() || defaultBase.estado_base,
+    regiao_principal: params.regiao?.trim() || defaultBase.regiao_principal,
+    modelo_atuacao: params.modelo_atuacao || defaultBase.modelo_atuacao,
+    modelo_escritorio: params.modelo_escritorio || defaultBase.modelo_escritorio,
+    estados_atendidos:
+      params.estados_atendidos && params.estados_atendidos.length > 0
+        ? params.estados_atendidos
+        : defaultBase.estados_atendidos,
+    marcas_representadas:
+      params.marcas_representadas && params.marcas_representadas.length > 0
+        ? params.marcas_representadas
+        : defaultBase.marcas_representadas,
+    equipe:
+      params.equipe && params.equipe.length > 0
+        ? params.equipe
+        : [
+            {
+              id: "member-1",
+              nome: params.nome.trim(),
+              cargo: "Representante Titular / Gestor Comercial",
+              responsabilidades: ["Negociações estratégicas", "Abertura de contas-chave", "Atendimento em campo"],
+              vinculo: "socio",
+              modalidade: "hibrido",
+              nivel: "titular",
+            },
+          ],
+    recursos_operacionais: params.recursos_operacionais || defaultBase.recursos_operacionais,
+  };
+
+  await saveRepStructure(structure);
+  return structure;
+}

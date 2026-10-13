@@ -61,4 +61,17 @@ describe("estrutura-rep storage and defaults", () => {
     expect(structure.marcas_representadas.length).toBeGreaterThanOrEqual(1);
     expect(structure.equipe.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("carrega lote de estruturas com loadAllRepStructures", async () => {
+    const { loadAllRepStructures } = await import("./storage");
+    const reps = [
+      { id: "r1", nome: "Carlos", representacao: "Carlos Rep", regiao: "SP", outras_marcas: null },
+      { id: "r2", nome: "Ana", representacao: "Ana Rep", regiao: "RS", outras_marcas: null },
+    ];
+    const map = await loadAllRepStructures(reps);
+    expect(map["r1"]).toBeDefined();
+    expect(map["r1"].nome_representante).toBe("Carlos");
+    expect(map["r2"]).toBeDefined();
+    expect(map["r2"].nome_representante).toBe("Ana");
+  });
 });
