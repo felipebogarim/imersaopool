@@ -6,15 +6,16 @@ For all project work:
 2. Load the global `project-context-budget` skill.
 3. Load the global `development-workflow` skill.
 4. Read `ai/PROJECT_BRAIN.md`.
-5. Follow `ai/AGENT_INSTRUCTIONS.md`.
+5. Follow `ai/AGENT_INSTRUCTIONS.md` (including proportional execution policy and commit hygiene).
 6. Use `ai/TASK_TEMPLATE.md` for substantial tasks.
 7. Load context progressively. Do not scan the entire repository by default.
 8. Preserve the Lovable git-history rules defined in `AGENTS.md`.
 
-## Git governance
+## Execution Policy & Git Governance
 
-`main` is the only operational and canonical branch. Orca, GitHub and Lovable work on the same `main`.
-
+- **Execution Policy:** Classify tasks into Simple, Intermediate, or Complex. Do not run build/test/typecheck for simple text/punctuation/style changes. Run targeted validations for intermediate tasks, and full rigorous checks only for complex/high-risk tasks.
+- **Commit Hygiene:** Verify the branch and stage exclusively the task's files. Never use indiscriminate `git add .`. Push only to the intended branch.
+- **Canonical Branch:** `main` is the only operational and canonical branch. Orca, GitHub and Lovable work on the same `main`.
 - Orca changes are committed and pushed directly to `main`; Lovable changes stay in `main`.
 - `orca-dev` is a legacy branch only, no longer operational. Do not use it for new work.
 - Before relevant work: fetch/pull `origin/main` and inspect the working tree.

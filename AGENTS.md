@@ -9,14 +9,15 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-## Git governance
+## Git governance & Execution Policy
 
 `main` is the only operational and canonical branch. Orca, GitHub and Lovable work on the same `main`.
 
 - Orca changes are committed and pushed directly to `main`; Lovable changes stay in `main`.
 - `orca-dev` is a legacy branch only, no longer operational. Do not use it for new work.
 - Before relevant work: fetch/pull `origin/main` and inspect the working tree.
-- Before push: fetch the remote again to avoid overwriting work from Lovable, another agent or another developer; resolve conflicts preserving remote work.
+- Before commit: verify the branch and stage exclusively the task's files. Never use indiscriminate `git add .`.
+- Before push: fetch the remote again to avoid overwriting work from Lovable, another agent or another developer; resolve conflicts preserving remote work. Push strictly to `main`.
 - Create task branches only when there is a concrete need for isolation.
 - Forbidden without explicit authorization: force push, destructive `reset`, rebase/amend of published history, deleting remote branches and other destructive rewrites.
 
@@ -26,7 +27,7 @@ For project work:
 2. Load the global `project-context-budget` skill.
 3. Load the global `development-workflow` skill.
 4. Read `ai/PROJECT_BRAIN.md`.
-5. Follow `ai/AGENT_INSTRUCTIONS.md`.
+5. Follow `ai/AGENT_INSTRUCTIONS.md` (proportional validation: simple tasks skip build/tsc/tests; intermediate run targeted checks; complex preserve full rigor).
 6. Use `ai/TASK_TEMPLATE.md` for substantial tasks.
 7. Inspect only the source files necessary for the current task.
 
