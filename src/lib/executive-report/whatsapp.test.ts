@@ -94,11 +94,14 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(text).toContain("*NEWLINE* · Ilumilux Piscinas");
     expect(text).toContain("Prezados, segue o relatório da imersão.");
 
-    // Briefing (direto, sem emojis)
+    // Briefing (direto, sem emojis, sem consultor, atingimento ou marcas)
     expect(text).toContain("• *Data:* 15/09/2026");
     expect(text).toContain("• *Local:* Campinas - SP");
     expect(text).toContain("• *Representante:* João Silva");
-    expect(text).toContain("• *Marcas observadas:* Sodramar · Sibrape");
+    expect(text).toContain("• *Categoria comercial:* Ouro");
+    expect(text).not.toContain("*Consultor:*");
+    expect(text).not.toContain("*Atingimento geral:*");
+    expect(text).not.toContain("*Marcas observadas:*");
 
     // Garante ausência de emojis
     expect(text).not.toMatch(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
@@ -108,24 +111,19 @@ describe("formatExecutiveReportForWhatsapp", () => {
     expect(text).toContain("*Expansão de Linha*");
     expect(text).toContain("Forte demanda por fita 24V");
 
-    // Evidências e Recomendações
+    // Evidências e Recomendações (o relatório se encerra neste capítulo)
     expect(text).toContain("*EVIDÊNCIAS & RECOMENDAÇÕES*");
     expect(text).toContain("Posicionamento no showroom");
     expect(text).toContain("Nossa bancada está precisando de fitas novas.");
     expect(text).toContain("(Marcos · Gerente)");
 
-    // O que não priorizar
-    expect(text).toContain("*O QUE NÃO PRIORIZAR*");
-    expect(text).toContain("Linha de refletores antigos");
+    // Capítulos posteriores removidos do WhatsApp
+    expect(text).not.toContain("*O QUE NÃO PRIORIZAR*");
+    expect(text).not.toContain("Linha de refletores antigos");
+    expect(text).not.toContain("*PLANO DE AÇÃO EXECUTIVO");
+    expect(text).not.toContain("Enviar mostruário de fitas 24V");
 
-    // Ações (ignora rejeitadas)
-    expect(text).toContain("*PLANO DE AÇÃO EXECUTIVO (1 ações)*");
-    expect(text).toContain("Enviar mostruário de fitas 24V");
-    expect(text).toContain("Comercial");
-    expect(text).toContain("Alta");
-    expect(text).not.toContain("Ação rejeitada");
-
-    // Link
+    // Link da plataforma ao final
     expect(text).toContain("https://poolflux.app/visao-imersao-2/imm-999/executivo");
   });
 
@@ -158,5 +156,72 @@ describe("formatExecutiveReportForWhatsapp", () => {
 
     const uniUrl = buildWhatsappUniversalUrl("Teste", "11999998888");
     expect(uniUrl).toBe("https://wa.me/5511999998888?text=Teste");
+  });
+
+  it("formata relatório estilo Clara sem consultor, atingimento, marcas e encerra em evidências", () => {
+    const claraReport: ExecutiveReportData = {
+      ...mockReport,
+      companyName: "Newline",
+      client: {
+        display_name: "CLARA ILUMINACAO LTDA",
+        trade_name: "Arquiluz",
+        visit_date: "2026-10-06",
+        location: "Salvador, BA",
+        representative: "Anselmo",
+        consultant: "Felipe",
+        category: "Black",
+        attainment: "82,1% · 1º Semestre 2026",
+      },
+      brands_observed: ["Newline", "Studio", "Stella", "Brilia", "Interlight", "Cia da Luz", "Alpertone"],
+      do_not_prioritize: [
+        {
+          title: "Projetos de iluminação residencial simples",
+          cause: "Foco exclusivo em alto padrão",
+          decision: "Não alocar recursos",
+        },
+      ],
+      actions: [
+        {
+          id: "ACT01",
+          area: "commercial",
+          priority: "high",
+          title: "Reunião de alinhamento",
+          status: "validated",
+          history: [],
+          ordem: 1,
+        },
+      ],
+    };
+
+    const text = formatExecutiveReportForWhatsapp(claraReport, {
+      immersionReportId: "0ab3e2a1-f172-43a5-a633-9c347c09f06f",
+    });
+
+    expect(text).toContain("*NEWLINE* · CLARA ILUMINACAO LTDA");
+    expect(text).toContain("• *Nome fantasia:* Arquiluz");
+    expect(text).toContain("• *Data:* 06/10/2026");
+    expect(text).toContain("• *Local:* Salvador, BA");
+    expect(text).toContain("• *Representante:* Anselmo");
+    expect(text).toContain("• *Categoria comercial:* Black");
+
+    // Campos excluídos
+    expect(text).not.toContain("Consultor:");
+    expect(text).not.toContain("Felipe");
+    expect(text).not.toContain("Atingimento geral:");
+    expect(text).not.toContain("82,1%");
+    expect(text).not.toContain("Marcas observadas:");
+    expect(text).not.toContain("Studio · Stella");
+
+    // Encerramento em EVIDÊNCIAS & RECOMENDAÇÕES (sem O QUE NÃO PRIORIZAR nem plano de ação)
+    expect(text).toContain("*EVIDÊNCIAS & RECOMENDAÇÕES*");
+    expect(text).not.toContain("*O QUE NÃO PRIORIZAR*");
+    expect(text).not.toContain("Projetos de iluminação residencial simples");
+    expect(text).not.toContain("*PLANO DE AÇÃO EXECUTIVO");
+    expect(text).not.toContain("Reunião de alinhamento");
+
+    // Link da plataforma
+    expect(text).toContain(
+      "https://poolflux.app/visao-imersao-2/0ab3e2a1-f172-43a5-a633-9c347c09f06f/executivo"
+    );
   });
 });

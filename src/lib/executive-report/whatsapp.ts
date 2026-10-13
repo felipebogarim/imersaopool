@@ -1,6 +1,4 @@
 import {
-  AREA_LABEL,
-  PRIORITY_LABEL,
   formatVisitDate,
   isCompactLayout,
   isCompactV2,
@@ -106,17 +104,8 @@ export function formatExecutiveReportForWhatsapp(
   if (r.client?.representative) {
     briefingLines.push(`• *Representante:* ${r.client.representative}`);
   }
-  if (r.client?.consultant) {
-    briefingLines.push(`• *Consultor:* ${r.client.consultant}`);
-  }
   if (r.client?.category) {
     briefingLines.push(`• *Categoria comercial:* ${r.client.category}`);
-  }
-  if (r.client?.attainment) {
-    briefingLines.push(`• *Atingimento geral:* ${r.client.attainment}`);
-  }
-  if ((r.brands_observed ?? []).length > 0) {
-    briefingLines.push(`• *Marcas observadas:* ${r.brands_observed.join(" · ")}`);
   }
 
   if (briefingLines.length > 0) {
@@ -206,57 +195,7 @@ export function formatExecutiveReportForWhatsapp(
     });
   }
 
-  // 5. O que NÃO priorizar (se houver)
-  if ((r.do_not_prioritize ?? []).length > 0) {
-    lines.push("");
-    lines.push(DIVIDER);
-    lines.push(`*O QUE NÃO PRIORIZAR*`);
-    for (const item of r.do_not_prioritize) {
-      lines.push("");
-      lines.push(`• *${item.title}*`);
-      if (item.cause?.trim()) {
-        lines.push(`  _Motivo:_ ${item.cause.trim()}`);
-      }
-      if (item.decision?.trim()) {
-        lines.push(`  _Decisão:_ ${item.decision.trim()}`);
-      }
-    }
-  }
-
-  // 6. Ações Estratégicas / Sugeridas
-  const activeActions = (r.actions ?? []).filter((a) => a.status !== "rejected");
-  if (activeActions.length > 0) {
-    lines.push("");
-    lines.push(DIVIDER);
-    lines.push(`*PLANO DE AÇÃO EXECUTIVO (${activeActions.length} ações)*`);
-
-    activeActions.forEach((act, idx) => {
-      lines.push("");
-      const area = AREA_LABEL[act.area] || act.area;
-      const prioridade = PRIORITY_LABEL[act.priority] || act.priority;
-      const statusLabel =
-        act.status === "validated"
-          ? "Validada"
-          : act.status === "edited"
-            ? "Editada"
-            : "Sugerida";
-
-      lines.push(`${idx + 1}. *${act.title}*`);
-      lines.push(`   • Área: ${area} | Prioridade: *${prioridade}*`);
-      lines.push(`   • Status: ${statusLabel}`);
-      if (act.owner?.trim() || act.due_date?.trim()) {
-        const meta: string[] = [];
-        if (act.owner?.trim()) meta.push(`Responsável: ${act.owner.trim()}`);
-        if (act.due_date?.trim()) meta.push(`Prazo: ${act.due_date.trim()}`);
-        lines.push(`   • ${meta.join(" | ")}`);
-      }
-      if (act.description?.trim()) {
-        lines.push(`   _${act.description.trim()}_`);
-      }
-    });
-  }
-
-  // 7. Rodapé com Link para a Plataforma e Áudio
+  // 5. Rodapé com Link para a Plataforma e Áudio
   const baseUrl = options.appUrl || "https://poolflux.app";
   const reportId = options.immersionReportId || r.immersion_report_id || r.id;
   if (reportId) {
