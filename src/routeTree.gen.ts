@@ -65,6 +65,7 @@ import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/back
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
+import { Route as ApiOgExecutivoReportIdRouteImport } from './routes/api/og-executivo.$reportId'
 import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_authenticated/solicitacoes.novo'
 import { Route as AuthenticatedSolicitacoesDashboardRouteImport } from './routes/_authenticated/solicitacoes.dashboard'
 import { Route as AuthenticatedSolicitacoesAdminRouteImport } from './routes/_authenticated/solicitacoes.admin'
@@ -424,6 +425,11 @@ const ApiPublicBackupCodigoRoute = ApiPublicBackupCodigoRouteImport.update({
 const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
   id: '/api/public/backup-audit',
   path: '/api/public/backup-audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOgExecutivoReportIdRoute = ApiOgExecutivoReportIdRouteImport.update({
+  id: '/api/og-executivo/$reportId',
+  path: '/api/og-executivo/$reportId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSolicitacoesNovoRoute =
@@ -888,6 +894,7 @@ export interface FileRoutesByFullPath {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1008,6 +1015,7 @@ export interface FileRoutesByTo {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1132,6 +1140,7 @@ export interface FileRoutesById {
   '/_authenticated/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/_authenticated/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1256,6 +1265,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1376,6 +1386,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1499,6 +1510,7 @@ export interface FileRouteTypes {
     | '/_authenticated/solicitacoes/admin'
     | '/_authenticated/solicitacoes/dashboard'
     | '/_authenticated/solicitacoes/novo'
+    | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1558,6 +1570,7 @@ export interface RootRouteChildren {
   FSlugRoute: typeof FSlugRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
+  ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
@@ -1970,6 +1983,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/backup-audit'
       fullPath: '/api/public/backup-audit'
       preLoaderRoute: typeof ApiPublicBackupAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/og-executivo/$reportId': {
+      id: '/api/og-executivo/$reportId'
+      path: '/api/og-executivo/$reportId'
+      fullPath: '/api/og-executivo/$reportId'
+      preLoaderRoute: typeof ApiOgExecutivoReportIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/solicitacoes/novo': {
@@ -2708,6 +2728,7 @@ const rootRouteChildren: RootRouteChildren = {
   FSlugRoute: FSlugRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
+  ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,

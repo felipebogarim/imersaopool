@@ -236,6 +236,41 @@ export function EnviarWhatsappDialog({
             </div>
           </div>
 
+          {/* Card de Imagem do Link (WhatsApp Preview) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Card de Imagem do Link (WhatsApp)
+              </span>
+              <Badge variant="outline" className="text-[10px] font-normal py-0 px-2 h-5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                Resultado por família
+              </Badge>
+            </div>
+            <div className="rounded-xl border border-border/70 overflow-hidden bg-muted/20 flex flex-col sm:flex-row items-center gap-3 p-2.5">
+              <div className="w-full sm:w-44 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
+                <img
+                  src={immersionReportId ? `/api/og-executivo/${immersionReportId}.png` : "/og-charts/default.png"}
+                  alt="Resultado por família"
+                  className="w-full h-full object-cover object-center"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/og-charts/default.png";
+                  }}
+                />
+              </div>
+              <div className="flex-1 min-w-0 py-0.5 space-y-1">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {data.client?.trade_name || data.client?.display_name || "Relatório Executivo"} · Resultado por família
+                </p>
+                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                  Gráfico de atingimento por família e camada de decisão da imersão em campo.
+                </p>
+                <p className="text-[10px] text-muted-foreground/80 font-mono">
+                  poolflux.app
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Prévia da Mensagem */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">

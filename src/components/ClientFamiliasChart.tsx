@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { BarChart3 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BarChart3, Camera, Check, Loader2 } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -13,6 +13,12 @@ import {
 } from "recharts";
 import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 import { useClientBI } from "@/lib/use-performance-bi";
+import {
+  generateFamiliasChartBlob,
+  uploadChartImageToStorage,
+} from "@/lib/executive-report/chart-image";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const fmtPct = (n: number | null | undefined) =>
   n == null || Number.isNaN(n) ? "—" : `${n.toFixed(1).replace(".", ",")}%`;
@@ -22,15 +28,22 @@ export function ClientFamiliasChart({
   razaoSocial,
   filterFams,
   versionId = null,
+  reportId,
+  clientName,
 }: {
   repId: string;
   razaoSocial: string;
   companyId: string | null;
   filterFams: string[];
   versionId?: string | null;
+  reportId?: string;
+  clientName?: string;
 }) {
   // Fonte única: exatamente os mesmos dados derivados usados pelos cards.
   const { data: bi = null, isLoading } = useClientBI(repId, razaoSocial, versionId);
+  const [savingOg, setSavingOg] = useState(false);
+  const [savedOg, setSavedOg] = useState(false);
+  const autoSavedRef = useRef<string | null>(null);
 
   const chartData = useMemo(() => {
     const wanted = new Set(filterFams);
@@ -44,13 +57,87 @@ export function ClientFamiliasChart({
       }));
   }, [bi, filterFams]);
 
+  // Sincroniza automaticamente o print em alta resolução para ser a imagem do card de WhatsApp
+  useEffect(() => {
+    if (!reportId || chartData.length === 0 || autoSavedRef.current === reportId) return;
+    autoSavedRef.current = reportId;
+
+    void (async () => {
+      try {
+        const blob = await generateFamiliasChartBlob(chartData, {
+          clientName: clientName || razaoSocial,
+        });
+        if (blob) {
+          const url = await uploadChartImageToStorage(reportId, blob);
+          if (url) setSavedOg(true);
+        }
+      } catch (err) {
+        console.warn("Auto-sync do print do gráfico para WhatsApp:", err);
+      }
+    })();
+  }, [reportId, chartData, clientName, razaoSocial]);
+
+  async function handleSavePrint() {
+    if (chartData.length === 0) return;
+    setSavingOg(true);
+    try {
+      const blob = await generateFamiliasChartBlob(chartData, {
+        clientName: clientName || razaoSocial,
+      });
+      if (!blob) throw new Error("Não foi possível gerar a imagem");
+
+      if (reportId) {
+        const url = await uploadChartImageToStorage(reportId, blob);
+        if (url) {
+          setSavedOg(true);
+          toast.success("Print do Resultado por família salvo para o WhatsApp!");
+          return;
+        }
+      }
+      // Fallback: download direto da imagem
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = `resultado-familias-${razaoSocial.slice(0, 20)}.png`;
+      a.click();
+      URL.revokeObjectURL(u);
+      toast.success("Print do gráfico baixado!");
+    } catch {
+      toast.error("Erro ao gerar print do gráfico.");
+    } finally {
+      setSavingOg(false);
+    }
+  }
+
   return (
     <div className="surface rounded-xl overflow-hidden">
-      <div className="w-full px-4 py-3 border-b border-border flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-        <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-          Resultado por família
-        </p>
+      <div className="w-full px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            Resultado por família
+          </p>
+        </div>
+        {chartData.length > 0 && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => void handleSavePrint()}
+            disabled={savingOg}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+            title="Salvar print do gráfico para o card de pré-visualização do WhatsApp"
+          >
+            {savingOg ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : savedOg ? (
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <Camera className="h-3.5 w-3.5" />
+            )}
+            <span>{savedOg ? "Print salvo p/ WhatsApp" : "Salvar print p/ WhatsApp"}</span>
+          </Button>
+        )}
       </div>
       <div className="p-4">
         {isLoading ? (
