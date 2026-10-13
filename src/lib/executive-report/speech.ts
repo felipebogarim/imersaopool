@@ -14,74 +14,75 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
     if (t) parts.push(t);
   };
 
-  push(`${data.report_title || "Relatório Executivo"}. Cliente ${data.client.display_name}.`);
-  const meta = [
-    data.client.visit_date ? `Visita em ${formatVisitDate(data.client.visit_date)}` : null,
-    data.client.representative ? `Representante ${data.client.representative}` : null,
-    data.client.consultant ? `Consultor ${data.client.consultant}` : null,
-  ].filter(Boolean);
-  if (meta.length) push(`${meta.join(". ")}.`);
+  const company = data.companyName ? `${data.companyName.trim()}. ` : "";
+  const clientDisplay = data.client?.display_name || "Cliente";
+  push(`Relatório Executivo de Imersão. ${company}${clientDisplay}.`);
 
-  push("Capítulo um. Briefing executivo.");
-  if (data.brands_observed?.length) push(`Marcas observadas: ${data.brands_observed.join(", ")}.`);
+  const briefing: string[] = [];
+  if (data.client?.trade_name) {
+    briefing.push(`Nome fantasia: ${data.client.trade_name}.`);
+  }
+  if (data.client?.visit_date) {
+    briefing.push(`Data: ${formatVisitDate(data.client.visit_date)}.`);
+  }
+  if (data.client?.location) {
+    briefing.push(`Local: ${data.client.location}.`);
+  }
+  if (data.client?.representative) {
+    briefing.push(`Representante: ${data.client.representative}.`);
+  }
+  if (data.client?.category) {
+    briefing.push(`Categoria comercial: ${data.client.category}.`);
+  }
 
-  push("Capítulo dois. Leitura executiva.");
+  if (briefing.length) {
+    push("Briefing executivo.");
+    for (const b of briefing) push(b);
+  }
+
+  push("Leitura executiva.");
   if (isCompactLayout(data)) {
-    push(data.executive_summary);
+    if (data.executive_summary?.trim()) push(data.executive_summary.trim());
     for (const t of data.executive_topics ?? []) {
-      push(`${t.title}.`);
-      for (const b of t.bullets ?? []) push(b);
+      if (t.title?.trim()) push(`${t.title.trim()}.`);
+      for (const b of t.bullets ?? []) {
+        if (b?.trim()) push(b.trim());
+      }
     }
-  } else {
-    for (const p of String(data.executive_reading ?? "").split(/\n{2,}/)) push(p);
+  } else if (data.executive_reading?.trim()) {
+    for (const p of data.executive_reading.split(/\n{2,}/)) {
+      if (p?.trim()) push(p.trim());
+    }
   }
 
   const v2 = isCompactV2(data);
-  if (v2) {
-    push("Capítulo três. Evidências e recomendações.");
-    (data.evidence_recommendations ?? []).forEach((e) => {
-      push(`${e.title}.`);
-      if (e.perception) push(`Percepção. ${e.perception}`);
-      if (e.evidence?.quote) {
-        const autor = [e.evidence.author, e.evidence.role].filter(Boolean).join(", ");
-        push(`Citação${autor ? ` de ${autor}` : ""}. ${e.evidence.quote}`);
+  if (v2 && (data.evidence_recommendations ?? []).length > 0) {
+    push("Evidências e recomendações.");
+    (data.evidence_recommendations ?? []).forEach((e, idx) => {
+      push(`${idx + 1}. ${e.title}.`);
+      if (e.perception?.trim()) push(`Percepção. ${e.perception.trim()}`);
+      if (e.evidence?.quote?.trim()) {
+        const autor = [e.evidence.author?.trim(), e.evidence.role?.trim()]
+          .filter(Boolean)
+          .join(", ");
+        push(`Evidência${autor ? ` de ${autor}` : ""}. "${e.evidence.quote.trim()}"`);
       }
-      if (e.opportunity) push(`Oportunidade. ${e.opportunity}`);
+      if (e.opportunity?.trim()) push(`Oportunidade. ${e.opportunity.trim()}`);
     });
-    push("Capítulo quatro. Ações sugeridas.");
-    for (const a of data.actions.slice(0, 3)) {
-      push(`${a.title}.${a.description ? ` ${a.description}` : ""}`);
-    }
-  }
-
-  if (!v2) {
-    push("Capítulo três. Do diagnóstico à ação.");
-    data.decision_blocks.forEach((b, i) => {
-      push(`Diagnóstico ${i + 1}. ${b.title}.`);
-      if (isCompactLayout(data)) {
-        push(b.fact || b.cause);
-      } else {
-        if (b.cause) push(`Causa. ${b.cause}`);
-        if (b.impact) push(`Impacto. ${b.impact}`);
-      }
-      if (b.evidence?.quote) {
-        const autor = [b.evidence.author, b.evidence.role].filter(Boolean).join(", ");
-        push(`Depoimento${autor ? ` de ${autor}` : ""}. ${b.evidence.quote}`);
-      }
-      for (const id of b.action_ids) {
-        const a = data.actions.find((x) => x.id === id);
-        if (a) push(`Ação. ${a.title}.${a.description ? ` ${a.description}` : ""}`);
+  } else if (!v2 && (data.decision_blocks ?? []).length > 0) {
+    push("Diagnóstico e decisão.");
+    data.decision_blocks.forEach((b, idx) => {
+      push(`${idx + 1}. ${b.title}.`);
+      if (b.fact?.trim()) push(`Fato. ${b.fact.trim()}`);
+      if (b.cause?.trim()) push(`Causa. ${b.cause.trim()}`);
+      if (b.impact?.trim()) push(`Impacto. ${b.impact.trim()}`);
+      if (b.evidence?.quote?.trim()) {
+        const autor = [b.evidence.author?.trim(), b.evidence.role?.trim()]
+          .filter(Boolean)
+          .join(", ");
+        push(`Evidência${autor ? ` de ${autor}` : ""}. "${b.evidence.quote.trim()}"`);
       }
     });
-  }
-
-  if (data.do_not_prioritize?.length) {
-    push(`Capítulo ${v2 ? "cinco" : "quatro"}. Onde não concentrar energia agora.`);
-    for (const n of data.do_not_prioritize) {
-      push(n.title);
-      if (n.cause) push(`Causa. ${n.cause}`);
-      if (n.decision) push(`Decisão recomendada. ${n.decision}`);
-    }
   }
 
   return chunkScript(parts);
