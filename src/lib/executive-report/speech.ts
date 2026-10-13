@@ -85,6 +85,11 @@ export function buildSpeechScript(data: ExecutiveReportData): string[] {
     });
   }
 
+  const companyName = data.companyName?.trim() || "Newline";
+  push(
+    `Este foi um resumo da imersão em campo. Acesse o relatório completo e áudio na plataforma na Imersão Comercial ${companyName}.`
+  );
+
   return chunkScript(parts);
 }
 

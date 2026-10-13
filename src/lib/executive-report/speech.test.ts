@@ -109,7 +109,16 @@ describe("buildSpeechScript", () => {
     expect(script).not.toContain("Ação que NÃO deve estar no áudio");
     expect(script).not.toContain("Fim do relatório");
 
-    // Encerramento exatamente no último dado de evidências e recomendações
-    expect(script.trim().endsWith("Oportunidade. Aprofundar linha de fitas e fontes.")).toBe(true);
+    // Encerramento com a frase padrão solicitada
+    expect(script).toContain(
+      "Este foi um resumo da imersão em campo. Acesse o relatório completo e áudio na plataforma na Imersão Comercial Newline."
+    );
+    expect(
+      script
+        .trim()
+        .endsWith(
+          "Este foi um resumo da imersão em campo. Acesse o relatório completo e áudio na plataforma na Imersão Comercial Newline."
+        )
+    ).toBe(true);
   });
 });
