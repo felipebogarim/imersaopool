@@ -39,6 +39,7 @@ import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
+import { Route as AuthenticatedEstruturaRepRouteImport } from './routes/_authenticated/estrutura-rep'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompilacoesRouteImport } from './routes/_authenticated/compilacoes'
@@ -286,6 +287,12 @@ const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
   path: '/familias',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEstruturaRepRoute =
+  AuthenticatedEstruturaRepRouteImport.update({
+    id: '/estrutura-rep',
+    path: '/estrutura-rep',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
   id: '/empresas',
   path: '/empresas',
@@ -833,6 +840,7 @@ export interface FileRoutesByFullPath {
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
+  '/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
@@ -956,6 +964,7 @@ export interface FileRoutesByTo {
   '/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
+  '/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/nda': typeof AuthenticatedNdaRoute
@@ -1081,6 +1090,7 @@ export interface FileRoutesById {
   '/_authenticated/compilacoes': typeof AuthenticatedCompilacoesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
+  '/_authenticated/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
@@ -1207,6 +1217,7 @@ export interface FileRouteTypes {
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
+    | '/estrutura-rep'
     | '/familias'
     | '/home'
     | '/nda'
@@ -1330,6 +1341,7 @@ export interface FileRouteTypes {
     | '/compilacoes'
     | '/dashboard'
     | '/empresas'
+    | '/estrutura-rep'
     | '/familias'
     | '/home'
     | '/nda'
@@ -1454,6 +1466,7 @@ export interface FileRouteTypes {
     | '/_authenticated/compilacoes'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
+    | '/_authenticated/estrutura-rep'
     | '/_authenticated/familias'
     | '/_authenticated/home'
     | '/_authenticated/nda'
@@ -1814,6 +1827,13 @@ declare module '@tanstack/react-router' {
       path: '/familias'
       fullPath: '/familias'
       preLoaderRoute: typeof AuthenticatedFamiliasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/estrutura-rep': {
+      id: '/_authenticated/estrutura-rep'
+      path: '/estrutura-rep'
+      fullPath: '/estrutura-rep'
+      preLoaderRoute: typeof AuthenticatedEstruturaRepRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/empresas': {
@@ -2597,6 +2617,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompilacoesRoute: typeof AuthenticatedCompilacoesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
+  AuthenticatedEstruturaRepRoute: typeof AuthenticatedEstruturaRepRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
@@ -2661,6 +2682,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompilacoesRoute: AuthenticatedCompilacoesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
+  AuthenticatedEstruturaRepRoute: AuthenticatedEstruturaRepRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,

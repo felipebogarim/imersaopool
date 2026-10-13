@@ -44,6 +44,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "analises.visao-rep-2", label: "Visão Reps", to: "/visao-rep-2" },
       { key: "analises.visao-imersao-2", label: "Visão Imersões em Campo", to: "/visao-imersao-2" },
       { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
+      { key: "analises.estrutura-rep", label: "Estrutura Rep", to: "/estrutura-rep" },
     ],
   },
   {
