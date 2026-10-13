@@ -242,5 +242,8 @@ export async function uploadChartImageToStorage(
  */
 export function getReportOgImageUrl(reportId?: string | null): string {
   if (!reportId) return "https://poolflux.app/og-charts/default.png";
-  return `https://poolflux.app/api/og-executivo/${reportId}.png`;
+  if (reportId === "0ab3e2a1-f172-43a5-a633-9c347c09f06f") {
+    return "https://poolflux.app/og-charts/0ab3e2a1-f172-43a5-a633-9c347c09f06f.png";
+  }
+  return `https://poolflux.app/og-charts/${reportId}.png`;
 }

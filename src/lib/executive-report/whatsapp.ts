@@ -202,7 +202,7 @@ export function formatExecutiveReportForWhatsapp(
     lines.push("");
     lines.push(DIVIDER);
     lines.push(`*Acesse o relatório completo e áudio na plataforma:*`);
-    lines.push(`${baseUrl.replace(/\/+$/, "")}/visao-imersao-2/${reportId}/executivo`);
+    lines.push(`${baseUrl.replace(/\/+$/, "")}/visao-imersao-2/${reportId}/executivo?v=grafico`);
   }
 
   return lines.join("\n");

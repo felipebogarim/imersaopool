@@ -31,6 +31,7 @@ import {
   buildWhatsappWebUrl,
   formatExecutiveReportForWhatsapp,
 } from "@/lib/executive-report/whatsapp";
+import { getReportOgImageUrl } from "@/lib/executive-report/chart-image";
 
 interface EnviarWhatsappDialogProps {
   open: boolean;
@@ -249,7 +250,7 @@ export function EnviarWhatsappDialog({
             <div className="rounded-xl border border-border/70 overflow-hidden bg-muted/20 flex flex-col sm:flex-row items-center gap-3 p-2.5">
               <div className="w-full sm:w-44 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center">
                 <img
-                  src={immersionReportId ? `/api/og-executivo/${immersionReportId}.png` : "/og-charts/default.png"}
+                  src={getReportOgImageUrl(immersionReportId)}
                   alt="Resultado por família"
                   className="w-full h-full object-cover object-center"
                   onError={(e) => {

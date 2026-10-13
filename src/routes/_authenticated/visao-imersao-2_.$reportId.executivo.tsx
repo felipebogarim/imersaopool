@@ -79,37 +79,38 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId
   head: ({ params }) => {
     const rawId = (params as any)?.reportId || "";
     const reportId = String(rawId).trim();
-    const ogImageUrl = reportId
-      ? `https://poolflux.app/api/og-executivo/${reportId}.png`
-      : "https://poolflux.app/og-charts/default.png";
+    const isClara = reportId === "0ab3e2a1-f172-43a5-a633-9c347c09f06f";
+
+    const title = isClara
+      ? "Arquiluz · Resultado por família"
+      : "Resultado por família · Relatório Executivo";
+
+    const description = isClara
+      ? "Gráfico de atingimento por família e camada de decisão da imersão em campo."
+      : "Resultado por família e camadas de decisão da imersão em campo: validar ações, fechar versão, exportar e enviar.";
+
+    const ogImageUrl = isClara
+      ? "https://poolflux.app/og-charts/0ab3e2a1-f172-43a5-a633-9c347c09f06f.png"
+      : (reportId
+          ? `https://poolflux.app/og-charts/${reportId}.png`
+          : "https://poolflux.app/og-charts/default.png");
 
     return {
       meta: [
-        { title: "Relatório Executivo de Imersão" },
-        {
-          name: "description",
-          content:
-            "Ambiente de decisão da imersão em campo: validar ações, fechar versão, exportar e enviar.",
-        },
-        { property: "og:title", content: "Relatório Executivo de Imersão" },
-        {
-          property: "og:description",
-          content:
-            "Resultado por família e camadas de decisão da imersão em campo: validar ações, fechar versão, exportar e enviar.",
-        },
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { property: "og:image", content: ogImageUrl },
         { property: "og:image:secure_url", content: ogImageUrl },
         { property: "og:image:type", content: "image/png" },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
-        { property: "og:image:alt", content: "Resultado por família do cliente" },
+        { property: "og:image:alt", content: title },
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: "Relatório Executivo de Imersão" },
-        {
-          name: "twitter:description",
-          content: "Resultado por família e camadas de decisão da imersão em campo.",
-        },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
         { name: "twitter:image", content: ogImageUrl },
       ],
     };
