@@ -5,20 +5,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Upload, FileSpreadsheet, MoreVertical, Download, Trash2, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Upload,
+  FileSpreadsheet,
+  MoreVertical,
+  Download,
+  Trash2,
+  RefreshCw,
+  DollarSign,
+} from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { relinkReplacedTable } from "@/lib/price-table-replace";
+import { ImportarPrecosTabelaDialog } from "@/components/price/ImportarPrecosTabelaDialog";
+import type { TableForImport } from "@/lib/price-table-import";
 
 export const Route = createFileRoute("/_authenticated/price/tabelas")({
   head: () => ({
     meta: [
       { title: "Tabelas de Preços | Price" },
-      { name: "description", content: "Upload e gestão de tabelas de preços vinculadas a competidores." },
+      {
+        name: "description",
+        content: "Upload e gestão de tabelas de preços vinculadas a competidores.",
+      },
     ],
   }),
   component: TabelasPage,
@@ -61,6 +91,7 @@ function TabelasPage() {
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
   const [replaceTitle, setReplaceTitle] = useState("");
   const [replacing, setReplacing] = useState(false);
+  const [importTable, setImportTable] = useState<TableForImport | null>(null);
 
   const { data: competitors = [] } = useQuery({
     queryKey: ["price-competitors"],
@@ -71,16 +102,22 @@ function TabelasPage() {
   const { data: tabelas = [], isLoading } = useQuery({
     queryKey: ["price-tables"],
     queryFn: async () =>
-      (await supabase
-        .from("price_tables")
-        .select("*, competitor:price_competitors(id,nome)")
-        .order("data_referencia", { ascending: false })
-        .order("created_at", { ascending: false })).data ?? [],
+      (
+        await supabase
+          .from("price_tables")
+          .select("*, competitor:price_competitors(id,nome)")
+          .order("data_referencia", { ascending: false })
+          .order("created_at", { ascending: false })
+      ).data ?? [],
   });
 
-  async function uploadFile(file: File): Promise<{ path: string; name: string; size: number; mime: string }> {
+  async function uploadFile(
+    file: File,
+  ): Promise<{ path: string; name: string; size: number; mime: string }> {
     const ext = file.name.split(".").pop() ?? "bin";
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const { data: profile } = await supabase
       .from("profiles")
       .select("company_id")
@@ -95,7 +132,12 @@ function TabelasPage() {
       contentType: file.type || undefined,
     });
     if (error) throw error;
-    return { path, name: file.name, size: file.size, mime: file.type || "application/octet-stream" };
+    return {
+      path,
+      name: file.name,
+      size: file.size,
+      mime: file.type || "application/octet-stream",
+    };
   }
 
   async function save() {
@@ -117,7 +159,9 @@ function TabelasPage() {
         file_size = up.size;
         file_mime = up.mime;
       }
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const { error } = await supabase.from("price_tables").insert({
         titulo: form.titulo,
         competitor_id: form.competitor_id,
@@ -145,7 +189,9 @@ function TabelasPage() {
 
   async function downloadFile(row: any) {
     if (!row.file_path) return toast.error("Sem arquivo anexado");
-    const { data, error } = await supabase.storage.from("price-tables").createSignedUrl(row.file_path, 60);
+    const { data, error } = await supabase.storage
+      .from("price-tables")
+      .createSignedUrl(row.file_path, 60);
     if (error || !data) return toast.error(error?.message ?? "Falha ao gerar link");
     window.open(data.signedUrl, "_blank");
   }
@@ -238,9 +284,15 @@ function TabelasPage() {
 
   return (
     <div className="space-y-4">
+      <ImportarPrecosTabelaDialog table={importTable} onClose={() => setImportTable(null)} />
       <input ref={replaceInputRef} type="file" className="hidden" onChange={onReplaceChosen} />
 
-      <Dialog open={!!replaceFile} onOpenChange={(o) => { if (!o && !replacing) cancelReplace(); }}>
+      <Dialog
+        open={!!replaceFile}
+        onOpenChange={(o) => {
+          if (!o && !replacing) cancelReplace();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Atualizar tabela</DialogTitle>
@@ -273,9 +325,16 @@ function TabelasPage() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <FileSpreadsheet className="h-4 w-4" />
-          {tabelas.length} tabela{tabelas.length === 1 ? "" : "s"} registrada{tabelas.length === 1 ? "" : "s"}
+          {tabelas.length} tabela{tabelas.length === 1 ? "" : "s"} registrada
+          {tabelas.length === 1 ? "" : "s"}
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(emptyForm); }}>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) setForm(emptyForm);
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Upload className="h-4 w-4 mr-1" /> Carregar tabela
@@ -288,15 +347,26 @@ function TabelasPage() {
             <div className="space-y-3">
               <div>
                 <Label>Título *</Label>
-                <Input value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ex.: Tabela Distribuidor A - Nov/26" />
+                <Input
+                  value={form.titulo}
+                  onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
+                  placeholder="Ex.: Tabela Distribuidor A - Nov/26"
+                />
               </div>
               <div>
                 <Label>Competidor *</Label>
-                <Select value={form.competitor_id} onValueChange={(v) => setForm((f) => ({ ...f, competitor_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <Select
+                  value={form.competitor_id}
+                  onValueChange={(v) => setForm((f) => ({ ...f, competitor_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
                   <SelectContent>
                     {competitors.map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
                     ))}
                     {competitors.length === 0 && (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
@@ -309,31 +379,53 @@ function TabelasPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Categoria *</Label>
-                  <Select value={form.categoria} onValueChange={(v: any) => setForm((f) => ({ ...f, categoria: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={form.categoria}
+                    onValueChange={(v: any) => setForm((f) => ({ ...f, categoria: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIAS.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {CATEGORIAS.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Data de referência *</Label>
-                  <Input type="date" value={form.data_referencia} onChange={(e) => setForm((f) => ({ ...f, data_referencia: e.target.value }))} />
+                  <Input
+                    type="date"
+                    value={form.data_referencia}
+                    onChange={(e) => setForm((f) => ({ ...f, data_referencia: e.target.value }))}
+                  />
                 </div>
               </div>
               {form.categoria === "outra" && (
                 <div>
                   <Label>Descreva a categoria *</Label>
-                  <Input value={form.categoria_outra} onChange={(e) => setForm((f) => ({ ...f, categoria_outra: e.target.value }))} />
+                  <Input
+                    value={form.categoria_outra}
+                    onChange={(e) => setForm((f) => ({ ...f, categoria_outra: e.target.value }))}
+                  />
                 </div>
               )}
               <div>
                 <Label>Arquivo (xlsx, pdf, csv...)</Label>
-                <Input type="file" onChange={(e) => setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))} />
+                <Input
+                  type="file"
+                  onChange={(e) => setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))}
+                />
               </div>
               <div>
                 <Label>Observações</Label>
-                <Textarea value={form.observacoes} onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))} />
+                <Textarea
+                  value={form.observacoes}
+                  onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
+                />
               </div>
               <Button onClick={save} className="w-full" disabled={saving}>
                 {saving ? "Salvando..." : "Registrar tabela"}
@@ -357,9 +449,17 @@ function TabelasPage() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Carregando...</td></tr>
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                  Carregando...
+                </td>
+              </tr>
             ) : tabelas.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhuma tabela registrada ainda.</td></tr>
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                  Nenhuma tabela registrada ainda.
+                </td>
+              </tr>
             ) : (
               tabelas.map((row: any) => (
                 <tr key={row.id} className="border-t border-border">
@@ -367,7 +467,9 @@ function TabelasPage() {
                   <td className="px-4 py-3 text-muted-foreground">{row.competitor?.nome ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{categoriaLabel(row)}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {row.data_referencia ? format(new Date(row.data_referencia + "T00:00:00"), "dd/MM/yyyy") : "—"}
+                    {row.data_referencia
+                      ? format(new Date(row.data_referencia + "T00:00:00"), "dd/MM/yyyy")
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs max-w-[260px] truncate">
                     {row.file_name ?? "—"}
@@ -380,13 +482,34 @@ function TabelasPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled={!row.file_path} onClick={() => downloadFile(row)}>
+                        <DropdownMenuItem
+                          disabled={!row.file_path}
+                          onClick={() => downloadFile(row)}
+                        >
                           <Download className="h-4 w-4 mr-2" /> Baixar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!row.competitor?.nome}
+                          onClick={() =>
+                            setImportTable({
+                              id: row.id,
+                              titulo: row.titulo,
+                              competitor_id: row.competitor_id,
+                              competitorName: row.competitor?.nome ?? "",
+                              data_referencia: row.data_referencia,
+                              file_name: row.file_name ?? null,
+                            })
+                          }
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" /> Importar preços
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => triggerReplace(row.id)}>
                           <RefreshCw className="h-4 w-4 mr-2" /> Atualizar (novo arquivo)
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => removeRow(row)}>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => removeRow(row)}
+                        >
                           <Trash2 className="h-4 w-4 mr-2" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>

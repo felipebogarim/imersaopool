@@ -3992,6 +3992,7 @@ export type Database = {
           price_per_1000_lumens: number | null
           price_per_meter: number | null
           price_per_watt: number | null
+          price_table_id: string | null
           price_unit: string | null
           price_with_tax: number | null
           price_without_tax: number | null
@@ -4017,6 +4018,7 @@ export type Database = {
           price_per_1000_lumens?: number | null
           price_per_meter?: number | null
           price_per_watt?: number | null
+          price_table_id?: string | null
           price_unit?: string | null
           price_with_tax?: number | null
           price_without_tax?: number | null
@@ -4042,6 +4044,7 @@ export type Database = {
           price_per_1000_lumens?: number | null
           price_per_meter?: number | null
           price_per_watt?: number | null
+          price_table_id?: string | null
           price_unit?: string | null
           price_with_tax?: number | null
           price_without_tax?: number | null
@@ -4054,6 +4057,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "price_product_prices_price_table_id_fkey"
+            columns: ["price_table_id"]
+            isOneToOne: false
+            referencedRelation: "price_tables"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "price_product_prices_product_id_fkey"
             columns: ["product_id"]

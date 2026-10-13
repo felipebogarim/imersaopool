@@ -202,5 +202,43 @@ describe("Pricing lookup code-first", () => {
       expect(r.legacy?.sourceFile).toBe("modelo_comparativo_preenchido_v2.xlsx");
       expect(selectPricingTable(r, "legacy").selectedTableKey).toBe("t1");
     });
+
+    it("aceite: preço importado com price_table_id aparece na tabela e o legado segue à parte", () => {
+      const base = {
+        product_id: "STELLA-STL21834/27",
+        price_unit: "bobina",
+        region: null,
+        price_availability: "informado",
+        price_list_name: null,
+      };
+      const official: PricingPriceRow = {
+        ...base,
+        id: "o1",
+        price: 100,
+        price_per_meter: 20,
+        effective_date: "2026-04-17",
+        source_file: "STELLA - 17.04.2026.pdf",
+        price_table_id: "t1",
+      };
+      const legacy: PricingPriceRow = {
+        ...base,
+        id: "l1",
+        price: 59.9,
+        price_per_meter: 11.98,
+        effective_date: "2026-08-03",
+        source_file: "modelo_comparativo_preenchido_v2.xlsx",
+        price_table_id: null,
+      };
+      const r = buildPricingResolvedProduct(
+        product("STL21834/27", "STELLA"),
+        completeSpecs,
+        [legacy, official],
+        [stella],
+      );
+      expect(r.selectedTable?.id).toBe("t1");
+      expect(r.priceOrigin).toBe("table");
+      expect(r.comparablePrice).toBe(20);
+      expect(r.legacy?.comparablePrice).toBe(11.98);
+    });
   });
 });
