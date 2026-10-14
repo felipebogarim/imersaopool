@@ -23,6 +23,7 @@ import { Route as EventoSucessoRouteImport } from './routes/evento.sucesso'
 import { Route as EventoPendenteRouteImport } from './routes/evento.pendente'
 import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
+import { Route as EstruturaRepIdRouteImport } from './routes/estrutura.$repId'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeChunkRouteImport } from './routes/api/transcribe-chunk'
@@ -68,6 +69,7 @@ import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
 import { Route as ApiOgExecutivoReportIdRouteImport } from './routes/api/og-executivo.$reportId'
+import { Route as ApiOgEstruturaRepIdRouteImport } from './routes/api/og-estrutura.$repId'
 import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_authenticated/solicitacoes.novo'
 import { Route as AuthenticatedSolicitacoesDashboardRouteImport } from './routes/_authenticated/solicitacoes.dashboard'
 import { Route as AuthenticatedSolicitacoesAdminRouteImport } from './routes/_authenticated/solicitacoes.admin'
@@ -201,6 +203,11 @@ const EventoFalhaRoute = EventoFalhaRouteImport.update({
 const EventoCheckoutRoute = EventoCheckoutRouteImport.update({
   id: '/evento/checkout',
   path: '/evento/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstruturaRepIdRoute = EstruturaRepIdRouteImport.update({
+  id: '/estrutura/$repId',
+  path: '/estrutura/$repId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -443,6 +450,11 @@ const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
 const ApiOgExecutivoReportIdRoute = ApiOgExecutivoReportIdRouteImport.update({
   id: '/api/og-executivo/$reportId',
   path: '/api/og-executivo/$reportId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOgEstruturaRepIdRoute = ApiOgEstruturaRepIdRouteImport.update({
+  id: '/api/og-estrutura/$repId',
+  path: '/api/og-estrutura/$repId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSolicitacoesNovoRoute =
@@ -857,6 +869,7 @@ export interface FileRoutesByFullPath {
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -909,6 +922,7 @@ export interface FileRoutesByFullPath {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
@@ -981,6 +995,7 @@ export interface FileRoutesByTo {
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -1032,6 +1047,7 @@ export interface FileRoutesByTo {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
@@ -1107,6 +1123,7 @@ export interface FileRoutesById {
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
   '/evento/falha': typeof EventoFalhaRoute
   '/evento/pendente': typeof EventoPendenteRoute
@@ -1159,6 +1176,7 @@ export interface FileRoutesById {
   '/_authenticated/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/_authenticated/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
@@ -1234,6 +1252,7 @@ export interface FileRouteTypes {
     | '/api/transcribe-chunk'
     | '/api/tts'
     | '/email/unsubscribe'
+    | '/estrutura/$repId'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -1286,6 +1305,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
@@ -1358,6 +1378,7 @@ export interface FileRouteTypes {
     | '/api/transcribe-chunk'
     | '/api/tts'
     | '/email/unsubscribe'
+    | '/estrutura/$repId'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -1409,6 +1430,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
@@ -1483,6 +1505,7 @@ export interface FileRouteTypes {
     | '/api/transcribe-chunk'
     | '/api/tts'
     | '/email/unsubscribe'
+    | '/estrutura/$repId'
     | '/evento/checkout'
     | '/evento/falha'
     | '/evento/pendente'
@@ -1535,6 +1558,7 @@ export interface FileRouteTypes {
     | '/_authenticated/solicitacoes/admin'
     | '/_authenticated/solicitacoes/dashboard'
     | '/_authenticated/solicitacoes/novo'
+    | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
@@ -1588,6 +1612,7 @@ export interface RootRouteChildren {
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
   ApiTtsRoute: typeof ApiTtsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  EstruturaRepIdRoute: typeof EstruturaRepIdRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
   EventoFalhaRoute: typeof EventoFalhaRoute
   EventoPendenteRoute: typeof EventoPendenteRoute
@@ -1596,6 +1621,7 @@ export interface RootRouteChildren {
   GraficoReportIdRoute: typeof GraficoReportIdRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
+  ApiOgEstruturaRepIdRoute: typeof ApiOgEstruturaRepIdRoute
   ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
@@ -1715,6 +1741,13 @@ declare module '@tanstack/react-router' {
       path: '/evento/checkout'
       fullPath: '/evento/checkout'
       preLoaderRoute: typeof EventoCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estrutura/$repId': {
+      id: '/estrutura/$repId'
+      path: '/estrutura/$repId'
+      fullPath: '/estrutura/$repId'
+      preLoaderRoute: typeof EstruturaRepIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -2030,6 +2063,13 @@ declare module '@tanstack/react-router' {
       path: '/api/og-executivo/$reportId'
       fullPath: '/api/og-executivo/$reportId'
       preLoaderRoute: typeof ApiOgExecutivoReportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/og-estrutura/$repId': {
+      id: '/api/og-estrutura/$repId'
+      path: '/api/og-estrutura/$repId'
+      fullPath: '/api/og-estrutura/$repId'
+      preLoaderRoute: typeof ApiOgEstruturaRepIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/solicitacoes/novo': {
@@ -2763,6 +2803,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
   ApiTtsRoute: ApiTtsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  EstruturaRepIdRoute: EstruturaRepIdRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
   EventoFalhaRoute: EventoFalhaRoute,
   EventoPendenteRoute: EventoPendenteRoute,
@@ -2771,6 +2812,7 @@ const rootRouteChildren: RootRouteChildren = {
   GraficoReportIdRoute: GraficoReportIdRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
+  ApiOgEstruturaRepIdRoute: ApiOgEstruturaRepIdRoute,
   ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,

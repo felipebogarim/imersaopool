@@ -34,7 +34,12 @@ describe("estrutura-rep WhatsApp and PDF utilities", () => {
     expect(text).toContain("DF");
     expect(text).toContain("Newline Iluminação");
     expect(text).toContain("RECURSOS OPERACIONAIS");
-    expect(text).toContain("Relatório Executivo em PDF");
+    expect(text).toContain("*Documento Executivo em PDF (abrir e visualizar):*");
+    expect(text).toContain("https://poolflux.app/estrutura/rep-1");
+
+    // Valida que NÃO contém nenhum emoji no texto (requisito estrito do usuário)
+    const emojiRegex = /[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+    expect(emojiRegex.test(text)).toBe(false);
   });
 
   it("gera SVG do mapa com os estados atendidos destacados", () => {

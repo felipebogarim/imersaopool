@@ -18,10 +18,11 @@ export function formatWhatsappNumber(phone?: string | null): string {
   return digits;
 }
 
-/** Formata mensagem textual executiva de alta legibilidade para WhatsApp */
+/** Formata mensagem textual executiva de alta legibilidade para WhatsApp (sem emojis) */
 export function formatRepStructureWhatsappText(
   structure: RepStructure,
-  repContact?: { email?: string | null; telefone?: string | null }
+  repContact?: { email?: string | null; telefone?: string | null },
+  options?: { appUrl?: string }
 ): string {
   const nome = structure.nome_representante || "Representante";
   const empresa = structure.empresa_representacao || "Representação Comercial";
@@ -53,26 +54,26 @@ export function formatRepStructureWhatsappText(
   ).map((r) => r.label);
 
   const linhas: string[] = [
-    `🏢 *ESTRUTURA COMERCIAL & OPERACIONAL*`,
+    `*ESTRUTURA COMERCIAL & OPERACIONAL*`,
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-    `👤 *Representante:* ${nome}`,
-    `🏢 *Empresa:* ${empresa}`,
-    `📍 *Base:* ${base}  •  *Região:* ${regiao}`,
-    `💼 *Atuação:* ${atuacao}`,
-    `🏢 *Escritório:* ${escritorio}`,
+    `*Representante:* ${nome}`,
+    `*Empresa:* ${empresa}`,
+    `*Base:* ${base}  •  *Região:* ${regiao}`,
+    `*Atuação:* ${atuacao}`,
+    `*Escritório:* ${escritorio}`,
   ];
 
   if (repContact?.telefone || repContact?.email) {
     const contatos = [repContact.telefone, repContact.email].filter(Boolean).join("  •  ");
-    linhas.push(`📞 *Contato:* ${contatos}`);
+    linhas.push(`*Contato:* ${contatos}`);
   }
 
   linhas.push(
     ``,
-    `🗺️ *TERRITÓRIO ATENDIDO (${totalUfs} UFs):*`,
+    `*TERRITÓRIO ATENDIDO (${totalUfs} UFs):*`,
     ufsStr,
     ``,
-    `💼 *MARCAS REPRESENTADAS (${marcas.length}):*`
+    `*MARCAS REPRESENTADAS (${marcas.length}):*`
   );
 
   if (marcasLines.length > 0) {
@@ -83,7 +84,7 @@ export function formatRepStructureWhatsappText(
 
   linhas.push(
     ``,
-    `👥 *EQUIPE & BACKOFFICE (${equipe.length} integrantes):*`
+    `*EQUIPE & BACKOFFICE (${equipe.length} integrantes):*`
   );
 
   if (equipeLines.length > 0) {
@@ -94,11 +95,20 @@ export function formatRepStructureWhatsappText(
 
   linhas.push(
     ``,
-    `🛡️ *RECURSOS OPERACIONAIS (${recursosAtivos.length}/6 ativos):*`,
-    recursosAtivos.map((r) => `✓ ${r}`).join("  ·  ") || "Em estruturação",
+    `*RECURSOS OPERACIONAIS (${recursosAtivos.length}/6 ativos):*`,
+    recursosAtivos.map((r) => `• ${r}`).join("  ·  ") || "Em estruturação"
+  );
+
+  const baseUrl = options?.appUrl || "https://poolflux.app";
+  const repId = structure.representative_id;
+  const previewUrl = `${baseUrl.replace(/\/+$/, "")}/estrutura/${repId}`;
+
+  linhas.push(
     ``,
-    `📄 *Segue anexo o Relatório Executivo em PDF com o mapa geográfico e organograma completo.*`,
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `*Documento Executivo em PDF (abrir e visualizar):*`,
+    previewUrl,
+    ``,
     `_PoolFlux · Imersão Comercial Newline_`
   );
 

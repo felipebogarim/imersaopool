@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -32,6 +32,11 @@ import {
   formatWhatsappNumber,
 } from "@/lib/estrutura-rep/whatsapp";
 import { generateRepStructurePdf } from "@/lib/estrutura-rep/pdf";
+import {
+  generateStructureThumbnail,
+  uploadEstruturaImageToStorage,
+  getEstruturaOgImageUrl,
+} from "@/lib/estrutura-rep/thumbnail";
 
 interface EnviarEstruturaWhatsDialogProps {
   open: boolean;
@@ -61,6 +66,60 @@ export function EnviarEstruturaWhatsDialog({
   const [copied, setCopied] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
+  // Miniatura de destaque gerada do PDF / Estrutura
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
+  const [loadingThumbnail, setLoadingThumbnail] = useState(false);
+
+  const repNome = structure.nome_representante || "Representante";
+  const repEmpresa = structure.empresa_representacao || "Representação Comercial";
+  const repSlug = repNome
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://poolflux.app";
+
+  // Gera e persiste a miniatura visual do PDF da estrutura
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+
+    async function prepareThumbnail() {
+      setLoadingThumbnail(true);
+      try {
+        // 1. Gera PDF em background
+        const { blob: pdfBlob } = await generateRepStructurePdf(structure);
+        if (!active) return;
+
+        // 2. Converte PDF ou estrutura em imagem de alta fidelidade
+        const { dataUrl, blob: thumbBlob } = await generateStructureThumbnail(structure, pdfBlob);
+        if (!active) return;
+        setThumbnailUrl(dataUrl);
+
+        // 3. Salva no storage em background para o OpenGraph do WhatsApp carregar imediatamente
+        if (structure.representative_id && thumbBlob && thumbBlob.size > 0) {
+          void uploadEstruturaImageToStorage(structure.representative_id, thumbBlob);
+        }
+      } catch (err) {
+        console.warn("[EnviarEstruturaWhatsDialog] Erro ao gerar miniatura:", err);
+        // Fallback para URL padrão do OpenGraph
+        if (active) {
+          setThumbnailUrl(getEstruturaOgImageUrl(structure.representative_id));
+        }
+      } finally {
+        if (active) setLoadingThumbnail(false);
+      }
+    }
+
+    void prepareThumbnail();
+
+    return () => {
+      active = false;
+    };
+  }, [open, structure]);
+
   function selectDestination(dest: "desktop" | "web") {
     setDestination(dest);
     try {
@@ -73,13 +132,17 @@ export function EnviarEstruturaWhatsDialog({
   const cleanPhone = useMemo(() => formatWhatsappNumber(phone), [phone]);
 
   const formattedText = useMemo(() => {
-    const baseText = formatRepStructureWhatsappText(structure, {
-      email: repContact?.email,
-      telefone: phone || repContact?.telefone,
-    });
+    const baseText = formatRepStructureWhatsappText(
+      structure,
+      {
+        email: repContact?.email,
+        telefone: phone || repContact?.telefone,
+      },
+      { appUrl }
+    );
     if (!introMessage.trim()) return baseText;
     return `${introMessage.trim()}\n\n${baseText}`;
-  }, [structure, repContact, phone, introMessage]);
+  }, [structure, repContact, phone, introMessage, appUrl]);
 
   const desktopUrl = useMemo(() => {
     const encoded = encodeURIComponent(formattedText);
@@ -134,7 +197,7 @@ export function EnviarEstruturaWhatsDialog({
   }
 
   async function handleOpenDesktop() {
-    // Também baixa o PDF para que o usuário possa anexar na conversa
+    // Baixa o PDF automaticamente para facilitar anexar na conversa
     void handleDownloadPdf();
 
     const a = document.createElement("a");
@@ -145,9 +208,9 @@ export function EnviarEstruturaWhatsDialog({
 
     toast.success(
       isMac
-        ? "Abrindo no WhatsApp Desktop do Mac... O PDF foi baixado para anexar na conversa."
-        : "Abrindo no WhatsApp Desktop... O PDF foi baixado para anexar na conversa.",
-      { duration: 5000 }
+        ? "Abrindo no WhatsApp Desktop do Mac... O PDF foi baixado para anexar na conversa com a miniatura de destaque."
+        : "Abrindo no WhatsApp Desktop... O PDF foi baixado para anexar na conversa com a miniatura de destaque.",
+      { duration: 6000 }
     );
     onOpenChange(false);
   }
@@ -156,8 +219,8 @@ export function EnviarEstruturaWhatsDialog({
     void handleDownloadPdf();
     window.open(webUrl, "_blank", "noopener,noreferrer");
     toast.success(
-      "Abrindo WhatsApp Web no navegador... O PDF foi baixado para anexar na conversa.",
-      { duration: 5000 }
+      "Abrindo WhatsApp Web no navegador... O PDF foi baixado para anexar na conversa com a miniatura de destaque.",
+      { duration: 6000 }
     );
     onOpenChange(false);
   }
@@ -168,10 +231,6 @@ export function EnviarEstruturaWhatsDialog({
     toast.success("Abrindo WhatsApp...");
     onOpenChange(false);
   }
-
-  const repNome = structure.nome_representante || "Representante";
-  const repEmpresa = structure.empresa_representacao || "Representação Comercial";
-  const repSlug = repNome.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -282,53 +341,75 @@ export function EnviarEstruturaWhatsDialog({
             </div>
           </div>
 
-          {/* Card do Anexo PDF Executivo (Modelo Visual Padrão) */}
+          {/* Card de Imagem do Link (WhatsApp Preview & Miniatura de Destaque) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Documento Executivo em PDF (Modelo Padrão)
+                Card de Imagem do Link (WhatsApp)
               </span>
               <Badge
                 variant="outline"
                 className="text-[10px] font-normal py-0 px-2 h-5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
               >
-                1 Página · Alta Fidelidade
+                1 Página · Miniatura de Destaque
               </Badge>
             </div>
-            <div className="rounded-xl border border-border/70 overflow-hidden bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3 p-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs font-semibold text-foreground truncate">
-                    Estrutura-Rep-{repSlug}.pdf
+            <div className="rounded-xl border border-border/70 overflow-hidden bg-muted/20 flex flex-col sm:flex-row items-center gap-3 p-2.5">
+              <div className="w-full sm:w-44 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center relative">
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt={`Miniatura do PDF — ${repNome}`}
+                    className="w-full h-full object-cover object-top transition-transform hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground text-[11px] gap-1">
+                    {loadingThumbnail ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+                        <span>Gerando miniatura...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-5 w-5 text-emerald-600" />
+                        <span>Estrutura Rep</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0 py-0.5 space-y-1">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {repNome} ({repEmpresa}) · Documento Executivo em PDF
+                </p>
+                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                  Miniatura de destaque gerada para o WhatsApp. Mapa de atuação (dias/mês), Treinamentos, Frequência Top 10 e Organograma hierárquico.
+                </p>
+                <div className="flex items-center justify-between pt-0.5">
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 truncate max-w-[200px] sm:max-w-[260px]">
+                    poolflux.app/estrutura/{structure.representative_id.slice(0, 8)}...
                   </p>
-                  <p className="text-[11px] text-muted-foreground line-clamp-1">
-                    Mapa de atuação (dias/mês), Treinamentos, Frequência Top 10 e Organograma hierárquico.
-                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDownloadPdf}
+                    disabled={generatingPdf}
+                    className="h-6 px-2 text-[11px] shrink-0 gap-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                  >
+                    {generatingPdf ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="h-3 w-3" />
+                    )}
+                    Baixar PDF
+                  </Button>
                 </div>
               </div>
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleDownloadPdf}
-                disabled={generatingPdf}
-                className="h-8 px-3 text-xs shrink-0 gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-              >
-                {generatingPdf ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-                <span>Baixar PDF</span>
-              </Button>
             </div>
           </div>
 
-          {/* Prévia da Mensagem Formatada */}
+          {/* Prévia da Mensagem Formatada (Padrão WhatsApp sem emojis) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -336,7 +417,7 @@ export function EnviarEstruturaWhatsDialog({
                   Prévia da Mensagem Formatada
                 </span>
                 <Badge variant="secondary" className="text-[10px] font-normal py-0 px-2 h-5">
-                  Padrão WhatsApp
+                  Padrão WhatsApp (Sem Emojis)
                 </Badge>
               </div>
               <span className="text-[11px] text-muted-foreground">
