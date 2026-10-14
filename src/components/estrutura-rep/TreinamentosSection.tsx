@@ -24,6 +24,7 @@ import {
   Trash2,
   CalendarCheck,
   ChevronDown,
+  ChevronUp,
   UserCheck,
   Search,
   X,
@@ -85,6 +86,7 @@ export function TreinamentosSection({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Estados de Filtro e Pesquisa
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMonth, setSelectedMonth] = useState<string>("todos");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("todos");
@@ -272,7 +274,29 @@ export function TreinamentosSection({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant={isFilterExpanded ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setIsFilterExpanded((prev) => !prev)}
+            className={`h-7 px-2 text-xs font-medium gap-1.5 transition-colors ${
+              isFilterExpanded
+                ? "bg-primary/10 text-primary border-primary/40 shadow-xs"
+                : hasActiveFilters
+                ? "text-primary border-primary/30 bg-primary/5"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title={isFilterExpanded ? "Retrair pesquisa e filtros" : "Pesquisar e filtrar treinamentos"}
+            aria-label={isFilterExpanded ? "Retrair pesquisa e filtros" : "Pesquisar e filtrar treinamentos"}
+            aria-expanded={isFilterExpanded}
+          >
+            <Search className="h-3.5 w-3.5" />
+            {hasActiveFilters && !isFilterExpanded && (
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            )}
+          </Button>
+
           {onAddClick && (
             <Button
               type="button"
@@ -291,153 +315,169 @@ export function TreinamentosSection({
         </div>
       </div>
 
-      {/* Barra de Filtros e Pesquisa (Topo) */}
-      <div className="space-y-2 mb-3 bg-muted/30 p-2.5 rounded-lg border border-border/70">
-        {/* Linha 1: Campo de Busca Textual (digitar e pesquisar) */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por cliente, tipo de treinamento ou ministrante..."
-            className="pl-8 pr-8 h-8 text-xs bg-background"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
-              title="Limpar pesquisa"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Linha 2: Filtros por Mês, Período e Status */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Filtro por Mês */}
-          <div className="flex-1 min-w-[125px]">
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="h-7 text-[11px] bg-background">
-                <Calendar className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos" className="text-xs">
-                  Todos os Meses
-                </SelectItem>
-                {availableMonths.length > 0 ? (
-                  availableMonths.map((mNum) => {
-                    const idx = parseInt(mNum, 10) - 1;
-                    return (
-                      <SelectItem key={mNum} value={mNum} className="text-xs">
-                        {MONTH_NAMES[idx] || `Mês ${mNum}`}
-                      </SelectItem>
-                    );
-                  })
-                ) : (
-                  MONTH_NAMES.map((name, i) => (
-                    <SelectItem
-                      key={name}
-                      value={String(i + 1).padStart(2, "0")}
-                      className="text-xs"
-                    >
-                      {name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filtro por Período Específico */}
-          <div className="flex-1 min-w-[130px]">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="h-7 text-[11px] bg-background">
-                <Clock className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos" className="text-xs">
-                  Todos os Períodos
-                </SelectItem>
-                <SelectItem value="proximos_7" className="text-xs">
-                  Próximos 7 dias
-                </SelectItem>
-                <SelectItem value="proximos_30" className="text-xs">
-                  Próximos 30 dias
-                </SelectItem>
-                <SelectItem value="este_mes" className="text-xs">
-                  Este mês
-                </SelectItem>
-                <SelectItem value="passados" className="text-xs">
-                  Datas anteriores
-                </SelectItem>
-                <SelectItem value="personalizado" className="text-xs font-medium text-primary">
-                  Intervalo específico...
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Filtro por Status (Planejado vs Realizado) */}
-          <div className="flex-1 min-w-[110px]">
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="h-7 text-[11px] bg-background">
-                <Filter className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos" className="text-xs">
-                  Todos os Status
-                </SelectItem>
-                <SelectItem value="planejado" className="text-xs">
-                  Planejados
-                </SelectItem>
-                <SelectItem value="realizado" className="text-xs">
-                  Realizados
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Botão Limpar Filtros (aparece se houver algum filtro ativo) */}
-          {hasActiveFilters && (
+      {/* Barra de Filtros e Pesquisa (Expansível via Lupa) */}
+      {isFilterExpanded && (
+        <div className="space-y-2 mb-3 bg-muted/30 p-2.5 rounded-lg border border-border/70 animate-in fade-in-50 duration-150">
+          {/* Linha 1: Campo de Busca Textual + Botão Retrair */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por cliente, tipo de treinamento ou ministrante..."
+                className="pl-8 pr-8 h-8 text-xs bg-background"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                  title="Limpar pesquisa"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={handleClearFilters}
-              className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
-              title="Limpar todos os filtros"
+              onClick={() => setIsFilterExpanded(false)}
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1 shrink-0"
+              title="Retrair filtros"
             >
-              <RotateCcw className="h-3 w-3" />
-              <span>Limpar</span>
+              <ChevronUp className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Retrair</span>
             </Button>
+          </div>
+
+          {/* Linha 2: Filtros por Mês, Período e Status */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro por Mês */}
+            <div className="flex-1 min-w-[125px]">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="h-7 text-[11px] bg-background">
+                  <Calendar className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos" className="text-xs">
+                    Todos os Meses
+                  </SelectItem>
+                  {availableMonths.length > 0 ? (
+                    availableMonths.map((mNum) => {
+                      const idx = parseInt(mNum, 10) - 1;
+                      return (
+                        <SelectItem key={mNum} value={mNum} className="text-xs">
+                          {MONTH_NAMES[idx] || `Mês ${mNum}`}
+                        </SelectItem>
+                      );
+                    })
+                  ) : (
+                    MONTH_NAMES.map((name, i) => (
+                      <SelectItem
+                        key={name}
+                        value={String(i + 1).padStart(2, "0")}
+                        className="text-xs"
+                      >
+                        {name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Período Específico */}
+            <div className="flex-1 min-w-[130px]">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="h-7 text-[11px] bg-background">
+                  <Clock className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos" className="text-xs">
+                    Todos os Períodos
+                  </SelectItem>
+                  <SelectItem value="proximos_7" className="text-xs">
+                    Próximos 7 dias
+                  </SelectItem>
+                  <SelectItem value="proximos_30" className="text-xs">
+                    Próximos 30 dias
+                  </SelectItem>
+                  <SelectItem value="este_mes" className="text-xs">
+                    Este mês
+                  </SelectItem>
+                  <SelectItem value="passados" className="text-xs">
+                    Datas anteriores
+                  </SelectItem>
+                  <SelectItem value="personalizado" className="text-xs font-medium text-primary">
+                    Intervalo específico...
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Status (Planejado vs Realizado) */}
+            <div className="flex-1 min-w-[110px]">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-7 text-[11px] bg-background">
+                  <Filter className="h-3 w-3 mr-1 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos" className="text-xs">
+                    Todos os Status
+                  </SelectItem>
+                  <SelectItem value="planejado" className="text-xs">
+                    Planejados
+                  </SelectItem>
+                  <SelectItem value="realizado" className="text-xs">
+                    Realizados
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Botão Limpar Filtros (aparece se houver algum filtro ativo) */}
+            {hasActiveFilters && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground gap-1"
+                title="Limpar todos os filtros"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Limpar</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Linha Condicional: Intervalo Personalizado de Datas */}
+          {selectedPeriod === "personalizado" && (
+            <div className="flex items-center gap-2 pt-1.5 border-t border-border/60 animate-in fade-in-50 duration-150">
+              <span className="text-[11px] text-muted-foreground shrink-0">De:</span>
+              <Input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="h-7 text-xs bg-background flex-1"
+              />
+              <span className="text-[11px] text-muted-foreground shrink-0">Até:</span>
+              <Input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="h-7 text-xs bg-background flex-1"
+              />
+            </div>
           )}
         </div>
-
-        {/* Linha Condicional: Intervalo Personalizado de Datas */}
-        {selectedPeriod === "personalizado" && (
-          <div className="flex items-center gap-2 pt-1.5 border-t border-border/60 animate-in fade-in-50 duration-150">
-            <span className="text-[11px] text-muted-foreground shrink-0">De:</span>
-            <Input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="h-7 text-xs bg-background flex-1"
-            />
-            <span className="text-[11px] text-muted-foreground shrink-0">Até:</span>
-            <Input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="h-7 text-xs bg-background flex-1"
-            />
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Lista de Treinamentos */}
       {treinamentos.length === 0 ? (
