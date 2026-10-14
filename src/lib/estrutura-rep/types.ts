@@ -255,6 +255,7 @@ export interface RepStructure {
   observacoes_gerais?: string;
   treinamentos?: TreinamentoItem[];
   frequencia_visitas?: ClienteFrequenciaItem[];
+  frequencia_demais_clientes?: number; // frequência de visita aos demais clientes da carteira (dias)
   updated_at?: string;
 }
 

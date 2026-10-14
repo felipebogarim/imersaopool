@@ -12,21 +12,28 @@ import {
   Trash2,
   Calendar,
   Sparkles,
+  SlidersHorizontal,
 } from "lucide-react";
 
 interface FrequenciaVisitasSectionProps {
   clientes?: ClienteFrequenciaItem[];
+  frequenciaDemaisClientes?: number;
   onAddClick?: () => void;
   onEditClick?: (item: ClienteFrequenciaItem) => void;
   onDeleteClick?: (id: string) => void;
+  onBatchEditTop10Click?: () => void;
+  onEditDemaisClick?: () => void;
   className?: string;
 }
 
 export function FrequenciaVisitasSection({
   clientes = [],
+  frequenciaDemaisClientes = 60,
   onAddClick,
   onEditClick,
   onDeleteClick,
+  onBatchEditTop10Click,
+  onEditDemaisClick,
   className = "",
 }: FrequenciaVisitasSectionProps) {
   // Ordena por posição (1 a 10) ou pela frequência (menor frequência = mais visitas)
@@ -70,6 +77,8 @@ export function FrequenciaVisitasSection({
     return "bg-muted text-muted-foreground font-semibold border";
   };
 
+  const demaisVariant = getFrequencyVariant(frequenciaDemaisClientes);
+
   return (
     <div className={`flex flex-col h-full bg-card rounded-xl border p-4 sm:p-5 shadow-xs ${className}`}>
       {/* Header */}
@@ -86,7 +95,21 @@ export function FrequenciaVisitasSection({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onBatchEditTop10Click && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onBatchEditTop10Click}
+              className="h-7 text-xs font-semibold gap-1 text-primary hover:text-primary hover:bg-primary/10 px-2.5 shadow-2xs"
+              title="Marcar todos os 10 clientes e definir a mesma frequência"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Marcar Todos (10)</span>
+            </Button>
+          )}
+
           {onAddClick && sorted.length < 10 && (
             <Button
               type="button"
@@ -99,6 +122,7 @@ export function FrequenciaVisitasSection({
               <span>Adicionar</span>
             </Button>
           )}
+
           <Badge variant="outline" className="text-xs px-2 py-0.5 font-medium">
             {sorted.length}/10 Clientes
           </Badge>
@@ -127,7 +151,7 @@ export function FrequenciaVisitasSection({
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[460px] no-scrollbar">
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[440px] no-scrollbar">
           {sorted.map((item, idx) => {
             const variant = getFrequencyVariant(item.frequencia_dias);
             const rank = item.posicao || idx + 1;
@@ -192,7 +216,7 @@ export function FrequenciaVisitasSection({
                         size="icon"
                         variant="ghost"
                         onClick={() => onEditClick(item)}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                         title="Editar cliente e frequência"
                       >
                         <Pencil className="h-3 w-3" />
@@ -204,7 +228,7 @@ export function FrequenciaVisitasSection({
                         size="icon"
                         variant="ghost"
                         onClick={() => onDeleteClick(item.id)}
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
                         title="Remover do Top 10"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -217,6 +241,56 @@ export function FrequenciaVisitasSection({
           })}
         </div>
       )}
+
+      {/* Card Fixo: Demais Clientes da Carteira (Campo fixo com frequência variável) */}
+      <div className="pt-3 mt-3 border-t">
+        <div className="flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-lg border border-primary/25 bg-primary/5 hover:bg-primary/10 transition-colors">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="h-7 w-7 rounded-md bg-primary/20 text-primary flex items-center justify-center text-xs shrink-0 font-bold">
+              <Users className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
+                  Demais Clientes da Carteira
+                </h4>
+                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 font-bold bg-background text-muted-foreground border">
+                  Marcação Fixa
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                Frequência de visita presencial para todos os clientes fora do Top 10
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-col items-end text-right">
+              <Badge
+                variant="outline"
+                className={`text-xs px-2 py-0.5 font-bold border ${demaisVariant.badge}`}
+              >
+                A cada {frequenciaDemaisClientes} dias
+              </Badge>
+              <span className="text-[10px] text-muted-foreground mt-0.5">
+                {demaisVariant.label}
+              </span>
+            </div>
+            {onEditDemaisClick && (
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={onEditDemaisClick}
+                className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                title="Ajustar frequência dos demais clientes"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

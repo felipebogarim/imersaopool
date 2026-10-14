@@ -214,6 +214,7 @@ export function buildDefaultStructure(rep: {
     observacoes_gerais: "Operação estruturada com atendimento em campo e retaguarda de backoffice fixa.",
     treinamentos: defaultTreinamentos,
     frequencia_visitas: defaultFrequenciaVisitas,
+    frequencia_demais_clientes: 60,
   };
 }
 
@@ -246,6 +247,10 @@ export async function loadRepStructure(rep: {
               Array.isArray(parsed.frequencia_visitas) && parsed.frequencia_visitas.length > 0
                 ? parsed.frequencia_visitas
                 : defaultStruct.frequencia_visitas,
+            frequencia_demais_clientes:
+              typeof parsed.frequencia_demais_clientes === "number"
+                ? parsed.frequencia_demais_clientes
+                : (parsed.recursos_operacionais?.frequencia_demais_clientes ?? 60),
           };
         }
       }
@@ -273,11 +278,22 @@ export async function loadRepStructure(rep: {
           ? dbTreinamentos
           : localData?.treinamentos ?? defaultStruct.treinamentos;
 
-      const dbFreq = Array.isArray(data.frequencia_visitas) ? data.frequencia_visitas : [];
+      const dbFreq = Array.isArray(data.frequencia_visitas)
+        ? data.frequencia_visitas
+        : Array.isArray(data.recursos_operacionais?.frequencia_visitas)
+          ? data.recursos_operacionais.frequencia_visitas
+          : [];
       const freqFinais =
         dbFreq.length > 0
           ? dbFreq
           : localData?.frequencia_visitas ?? defaultStruct.frequencia_visitas;
+
+      const freqDemais =
+        typeof data.frequencia_demais_clientes === "number"
+          ? data.frequencia_demais_clientes
+          : typeof data.recursos_operacionais?.frequencia_demais_clientes === "number"
+            ? data.recursos_operacionais.frequencia_demais_clientes
+            : localData?.frequencia_demais_clientes ?? 60;
 
       return {
         representative_id: rep.id,
@@ -303,6 +319,7 @@ export async function loadRepStructure(rep: {
         observacoes_gerais: data.observacoes_gerais ?? "",
         treinamentos: treinamentosFinais,
         frequencia_visitas: freqFinais,
+        frequencia_demais_clientes: freqDemais,
         updated_at: data.updated_at,
       };
     }
@@ -376,7 +393,12 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
       detalhes_municipais: structure.detalhes_municipais,
       marcas_representadas: structure.marcas_representadas,
       modelo_escritorio: structure.modelo_escritorio,
-      recursos_operacionais: structure.recursos_operacionais,
+      recursos_operacionais: {
+        ...structure.recursos_operacionais,
+        frequencia_visitas: structure.frequencia_visitas,
+        frequencia_demais_clientes: structure.frequencia_demais_clientes,
+        treinamentos: structure.treinamentos,
+      },
       equipe: structure.equipe,
       observacoes_gerais: structure.observacoes_gerais || null,
       updated_at: nowIso,
@@ -452,6 +474,29 @@ export async function loadAllRepStructures(reps: {
           ? localData.marcas_representadas
           : dbMarcas;
 
+      const dbTreinamentos = Array.isArray(dbItem.treinamentos) ? dbItem.treinamentos : [];
+      const treinamentosFinais =
+        dbTreinamentos.length > 0
+          ? dbTreinamentos
+          : localData?.treinamentos ?? buildDefaultStructure(rep).treinamentos;
+
+      const dbFreq = Array.isArray(dbItem.frequencia_visitas)
+        ? dbItem.frequencia_visitas
+        : Array.isArray(dbItem.recursos_operacionais?.frequencia_visitas)
+          ? dbItem.recursos_operacionais.frequencia_visitas
+          : [];
+      const freqFinais =
+        dbFreq.length > 0
+          ? dbFreq
+          : localData?.frequencia_visitas ?? buildDefaultStructure(rep).frequencia_visitas;
+
+      const freqDemais =
+        typeof dbItem.frequencia_demais_clientes === "number"
+          ? dbItem.frequencia_demais_clientes
+          : typeof dbItem.recursos_operacionais?.frequencia_demais_clientes === "number"
+            ? dbItem.recursos_operacionais.frequencia_demais_clientes
+            : localData?.frequencia_demais_clientes ?? 60;
+
       result[rep.id] = {
         representative_id: rep.id,
         nome_representante: rep.nome,
@@ -474,6 +519,9 @@ export async function loadAllRepStructures(reps: {
         },
         equipe: Array.isArray(dbItem.equipe) ? dbItem.equipe : [],
         observacoes_gerais: dbItem.observacoes_gerais ?? "",
+        treinamentos: treinamentosFinais,
+        frequencia_visitas: freqFinais,
+        frequencia_demais_clientes: freqDemais,
         updated_at: dbItem.updated_at,
       };
       continue;

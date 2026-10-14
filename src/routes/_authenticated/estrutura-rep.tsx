@@ -35,7 +35,10 @@ import { RepBrazilMap } from "@/components/estrutura-rep/RepBrazilMap";
 import { TreinamentosSection } from "@/components/estrutura-rep/TreinamentosSection";
 import { FrequenciaVisitasSection } from "@/components/estrutura-rep/FrequenciaVisitasSection";
 import { TreinamentoEditorModal } from "@/components/estrutura-rep/TreinamentoEditorModal";
-import { ClienteFrequenciaModal } from "@/components/estrutura-rep/ClienteFrequenciaModal";
+import {
+  ClienteFrequenciaModal,
+  type SaveFrequenciaOptions,
+} from "@/components/estrutura-rep/ClienteFrequenciaModal";
 import { EstruturaFisicaSection } from "@/components/estrutura-rep/EstruturaFisicaSection";
 import { EquipeOrganogramaSection } from "@/components/estrutura-rep/EquipeOrganogramaSection";
 import { RepStructureEditorDialog } from "@/components/estrutura-rep/RepStructureEditorDialog";
@@ -104,6 +107,7 @@ function EstruturaRepPage() {
   const [editingTraining, setEditingTraining] = useState<TreinamentoItem | null>(null);
   const [freqModalOpen, setFreqModalOpen] = useState(false);
   const [editingFreq, setEditingFreq] = useState<ClienteFrequenciaItem | null>(null);
+  const [freqModalBatchMode, setFreqModalBatchMode] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -299,31 +303,53 @@ function EstruturaRepPage() {
     toast.success("Agendamento de treinamento removido.");
   };
 
-  // Salva cliente e frequência no Top 10
-  const handleSaveFrequencia = async (item: ClienteFrequenciaItem) => {
+  // Salva cliente e frequência no Top 10 (individual ou em lote) e para os demais clientes
+  const handleSaveFrequencia = async (payload: SaveFrequenciaOptions) => {
     if (!structure) {
       toast.error("Nenhum representante selecionado.");
       return;
     }
 
-    const current = structure.frequencia_visitas || [];
-    const exists = current.some((f) => f.id === item.id);
-    const updated = exists
-      ? current.map((f) => (f.id === item.id ? item : f))
-      : [...current, item];
+    let updatedFrequencia = [...(structure.frequencia_visitas || [])];
+
+    if (payload.aplicarTodosTop10 && typeof payload.frequenciaTodosDias === "number") {
+      if (updatedFrequencia.length > 0) {
+        updatedFrequencia = updatedFrequencia.map((f) => ({
+          ...f,
+          frequencia_dias: payload.frequenciaTodosDias!,
+        }));
+      } else {
+        updatedFrequencia = Array.from({ length: 10 }, (_, i) => ({
+          id: `freq-${i + 1}`,
+          posicao: i + 1,
+          cliente_nome: `Cliente Top ${i + 1}`,
+          frequencia_dias: payload.frequenciaTodosDias!,
+        }));
+      }
+    } else if (payload.item) {
+      const exists = updatedFrequencia.some((f) => f.id === payload.item!.id);
+      updatedFrequencia = exists
+        ? updatedFrequencia.map((f) => (f.id === payload.item!.id ? payload.item! : f))
+        : [...updatedFrequencia, payload.item!];
+    }
 
     // Ordena por posição
-    updated.sort((a, b) => (a.posicao || 99) - (b.posicao || 99));
+    updatedFrequencia.sort((a, b) => (a.posicao || 99) - (b.posicao || 99));
 
     const updatedStructure: RepStructure = {
       ...structure,
-      frequencia_visitas: updated,
+      frequencia_visitas: updatedFrequencia,
+      frequencia_demais_clientes:
+        typeof payload.frequenciaDemaisClientes === "number"
+          ? payload.frequenciaDemaisClientes
+          : (structure.frequencia_demais_clientes ?? 60),
     };
 
     await saveRepStructure(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     setFreqModalOpen(false);
     setEditingFreq(null);
+    setFreqModalBatchMode(false);
   };
 
   // Exclui cliente do Top 10
@@ -648,12 +674,25 @@ function EstruturaRepPage() {
 
                   <FrequenciaVisitasSection
                     clientes={structure.frequencia_visitas}
+                    frequenciaDemaisClientes={structure.frequencia_demais_clientes ?? 60}
                     onAddClick={() => {
                       setEditingFreq(null);
+                      setFreqModalBatchMode(false);
                       setFreqModalOpen(true);
                     }}
                     onEditClick={(item) => {
                       setEditingFreq(item);
+                      setFreqModalBatchMode(false);
+                      setFreqModalOpen(true);
+                    }}
+                    onBatchEditTop10Click={() => {
+                      setEditingFreq(null);
+                      setFreqModalBatchMode(true);
+                      setFreqModalOpen(true);
+                    }}
+                    onEditDemaisClick={() => {
+                      setEditingFreq(null);
+                      setFreqModalBatchMode(false);
                       setFreqModalOpen(true);
                     }}
                     onDeleteClick={handleDeleteFrequencia}
@@ -729,16 +768,24 @@ function EstruturaRepPage() {
         onSave={handleSaveTreinamento}
       />
 
-      {/* Modal de Edição de Frequência de Visita dos Top 10 Clientes */}
+      {/* Modal de Edição de Frequência de Visita dos Top 10 Clientes e Demais Clientes */}
       <ClienteFrequenciaModal
         open={freqModalOpen}
-        onOpenChange={setFreqModalOpen}
+        onOpenChange={(open) => {
+          setFreqModalOpen(open);
+          if (!open) {
+            setEditingFreq(null);
+            setFreqModalBatchMode(false);
+          }
+        }}
         cliente={editingFreq}
         posicaoSugerida={(structure?.frequencia_visitas?.length || 0) + 1}
         representativeId={selectedRep?.id}
         repNome={selectedRep?.nome || structure?.nome_representante}
         equipe={structure?.equipe}
         structureClients={repStructureClients}
+        currentFrequenciaDemais={structure?.frequencia_demais_clientes ?? 60}
+        initialBatchMode={freqModalBatchMode}
         onSave={handleSaveFrequencia}
       />
 

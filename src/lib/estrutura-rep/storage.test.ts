@@ -71,7 +71,23 @@ describe("estrutura-rep storage and defaults", () => {
     const map = await loadAllRepStructures(reps);
     expect(map["r1"]).toBeDefined();
     expect(map["r1"].nome_representante).toBe("Carlos");
+    expect(map["r1"].frequencia_visitas).toBeDefined();
+    expect(map["r1"].frequencia_demais_clientes).toBe(60);
     expect(map["r2"]).toBeDefined();
     expect(map["r2"].nome_representante).toBe("Ana");
+  });
+
+  it("inicializa frequencia_demais_clientes e top 10 com valores coerentes", () => {
+    const rep = {
+      id: "rep-teste",
+      nome: "Rep Teste",
+      representacao: null,
+      regiao: "BA",
+      outras_marcas: null,
+    };
+    const structure = buildDefaultStructure(rep);
+    expect(structure.frequencia_demais_clientes).toBe(60);
+    expect(structure.frequencia_visitas?.length).toBe(10);
+    expect(structure.frequencia_visitas?.[0].posicao).toBe(1);
   });
 });
