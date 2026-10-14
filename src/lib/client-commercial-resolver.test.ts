@@ -151,4 +151,86 @@ describe("client-commercial-resolver", () => {
 
     expect(result.status).toBe("not_found");
   });
+
+  it("reconhece cliente na performance pelo nome_fantasia quando a razão social é diferente", async () => {
+    const mockClient = {
+      id: "client-all-led",
+      razao_social: "RSS DISTRIBUIDORA DE MATERIAL ELETRICO E SERVICOS LTDA",
+      nome_fantasia: "ALL LED BAHIA",
+      categoria: "Silver",
+      representative_id: "rep-anselmo",
+    };
+
+    const mockUploads = [
+      {
+        id: "v-sem1-anselmo",
+        representative_id: "rep-anselmo",
+        periodo_label: "1º Semestre 2026",
+        periodo_fim: "2026-06-30",
+        created_at: "2026-09-13T12:00:00Z",
+        familias: ["FITAS E FONTES", "PRO LED"],
+      },
+    ];
+
+    const mockRows = [
+      {
+        id: "row-all-led",
+        upload_id: "v-sem1-anselmo",
+        razao_social: "ALL LED BAHIA", // Nome usado na planilha do representante!
+        categoria: "Gold",
+        ordem: 1,
+        total_pct: 0.95,
+        total_pct_status: "otimo",
+        familia_pct: { "FITAS E FONTES": 0.85, "PRO LED": 1.05 },
+        metas_status: { "FITAS E FONTES": "proximo", "PRO LED": "superado" },
+      },
+    ];
+
+    const mockSupabase: any = {
+      from: (table: string) => {
+        if (table === "clients") {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: mockClient, error: null }),
+              }),
+            }),
+            update: () => ({ eq: async () => ({ error: null }) }),
+          };
+        }
+        if (table === "rep_performance_uploads") {
+          return {
+            select: () => ({
+              eq: () => ({
+                is: () => ({
+                  order: () => ({
+                    order: async () => ({ data: mockUploads, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "rep_performance_rows") {
+          return {
+            select: () => ({
+              eq: async () => ({ data: mockRows, error: null }),
+            }),
+          };
+        }
+        return {};
+      },
+    };
+
+    const result = await resolveClientCommercialData("client-all-led", {
+      customSupabase: mockSupabase,
+    });
+
+    expect(result.status).toBe("linked");
+    if (result.status === "linked") {
+      expect(result.categoria).toBe("Gold");
+      expect(result.geralPct).toBe(95);
+      expect(result.source).toBe("performance_bi");
+    }
+  });
 });

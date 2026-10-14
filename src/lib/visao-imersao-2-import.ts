@@ -69,6 +69,9 @@ export function buildVisaoImersao2ViewModel(data: Immersion2Data, chapters: V2Ch
     report_date: new Date().toISOString().split('T')[0],
   });
 
+  visao.metadata.client_trade_name = data.client.trade_name || data.trade_name || null;
+  visao.metadata.resolved_client_id = data.resolved_client_id || data.client.resolved_client_id || data.client.client_id || null;
+
 
   visao.representative_context.additional_context = [
     `Cliente: ${data.client.name}`,

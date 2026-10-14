@@ -25,6 +25,62 @@ export interface ResolvedClientCommercialData {
   versionId?: string | null;
 }
 
+export function normalizeCommercialName(text?: string | null): string {
+  return String(text ?? "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function stripCorporateSuffixes(text?: string | null): string {
+  const norm = normalizeCommercialName(text);
+  return norm
+    .replace(/\b(LTDA|ME|EPP|EIRELI|S\/A|S\.A\.|SA|SOCIEDADE ANONIMA)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function matchPerformanceRow(
+  rowRazaoSocial: string | null | undefined,
+  clientInfo: { razao_social?: string | null; nome_fantasia?: string | null }
+): boolean {
+  if (!rowRazaoSocial) return false;
+  const normRow = normalizeCommercialName(rowRazaoSocial);
+  if (!normRow) return false;
+
+  const namesToTest = [
+    clientInfo.razao_social,
+    clientInfo.nome_fantasia,
+  ].filter(Boolean) as string[];
+
+  for (const name of namesToTest) {
+    const normName = normalizeCommercialName(name);
+    if (!normName) continue;
+
+    // 1. Exato normalizado
+    if (normRow === normName) return true;
+
+    // 2. Sem sufixos corporativos (LTDA, S/A, etc.)
+    const cleanRow = stripCorporateSuffixes(normRow);
+    const cleanName = stripCorporateSuffixes(normName);
+    if (cleanRow && cleanName && cleanRow === cleanName) return true;
+
+    // 3. Substring mútua para nomes com comprimento significativo (>= 4 caracteres)
+    if (cleanRow.length >= 4 && cleanName.length >= 4) {
+      if (cleanRow.includes(cleanName) || cleanName.includes(cleanRow)) return true;
+    }
+    if (normRow.length >= 4 && normName.length >= 4) {
+      if (normRow.includes(normName) || normName.includes(normRow)) return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * Resolve os dados comerciais e de atingimento de um cliente sempre
  * a partir do relatório mais recente do sistema (motor Performance → BI).
@@ -51,7 +107,6 @@ export async function resolveClientCommercialData(
   }
 
   const targetRepId = options?.forcedRepresentativeId || clientInfo.representative_id;
-  const canonicalName = String(clientInfo.razao_social ?? "").trim().toUpperCase();
 
   let targetVersion: PerformanceVersion | null = null;
   let targetRow: PerformanceRow | null = null;
@@ -79,7 +134,7 @@ export async function resolveClientCommercialData(
           .eq("upload_id", ver.id);
 
         const found = (rows ?? []).find(
-          (r: any) => String(r.razao_social ?? "").trim().toUpperCase() === canonicalName,
+          (r: any) => matchPerformanceRow(r.razao_social, clientInfo),
         );
 
         if (found) {
@@ -91,28 +146,49 @@ export async function resolveClientCommercialData(
     }
   }
 
-  // 3. Se não achou com o representante direto, busca globalmente em rep_performance_rows pela Razão Social
+  // 3. Se não achou com o representante direto, busca globalmente em rep_performance_rows por Razão Social e Nome Fantasia
   if (!targetRow) {
-    const { data: directRows } = await sb
-      .from("rep_performance_rows")
-      .select(
-        `
-        id, 
-        razao_social, 
-        categoria, 
-        ordem, 
-        familia_pct, 
-        metas_status, 
-        total_pct, 
-        total_pct_status,
-        upload_id
-      `,
-      )
-      .ilike("razao_social", `%${clientInfo.razao_social}%`)
-      .limit(20);
+    const searchTerms = Array.from(
+      new Set(
+        [
+          clientInfo.razao_social,
+          stripCorporateSuffixes(clientInfo.razao_social),
+          clientInfo.nome_fantasia,
+          stripCorporateSuffixes(clientInfo.nome_fantasia),
+        ]
+          .filter(Boolean)
+          .map((s) => s!.trim())
+          .filter((s) => s.length >= 3),
+      ),
+    );
 
-    const matchingRows = (directRows ?? []).filter(
-      (r: any) => String(r.razao_social ?? "").trim().toUpperCase() === canonicalName,
+    const directRows: any[] = [];
+    for (const term of searchTerms) {
+      const { data } = await sb
+        .from("rep_performance_rows")
+        .select(
+          `
+          id, 
+          razao_social, 
+          categoria, 
+          ordem, 
+          familia_pct, 
+          metas_status, 
+          total_pct, 
+          total_pct_status,
+          upload_id
+        `,
+        )
+        .ilike("razao_social", `%${term}%`)
+        .limit(20);
+
+      if (data && data.length > 0) {
+        directRows.push(...data);
+      }
+    }
+
+    const matchingRows = directRows.filter((r: any) =>
+      matchPerformanceRow(r.razao_social, clientInfo),
     );
 
     if (matchingRows.length > 0) {

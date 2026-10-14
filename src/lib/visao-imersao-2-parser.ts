@@ -8,10 +8,13 @@ export const Immersion2DataSchema = z.object({
   schema: z.literal("visao_imersao_2_data_v1"),
   client: z.object({
     name: z.string(),
+    trade_name: z.string().optional(),
     visit_date: z.string(),
     location: z.string(),
     representative: z.string().optional(),
     consultant: z.string().optional(),
+    client_id: z.string().optional(),
+    resolved_client_id: z.string().optional(),
   }),
   brands_observed: z.array(z.string()),
   families_analyzed: z.array(z.string()),
@@ -82,6 +85,25 @@ export const Immersion2DataSchema = z.object({
     .optional(),
   chapter_review_policy: z.string().optional(),
   resolved_client_id: z.string().optional(),
+  client_id: z.string().optional(),
+  trade_name: z.string().optional(),
+}).transform((val) => {
+  const resolved =
+    val.resolved_client_id ||
+    val.client_id ||
+    val.client.resolved_client_id ||
+    val.client.client_id;
+  const trade = val.client.trade_name || val.trade_name;
+  return {
+    ...val,
+    resolved_client_id: resolved,
+    trade_name: trade,
+    client: {
+      ...val.client,
+      resolved_client_id: resolved,
+      trade_name: trade,
+    },
+  };
 });
 
 export type Immersion2Data = z.infer<typeof Immersion2DataSchema>;

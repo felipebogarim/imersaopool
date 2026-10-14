@@ -74,6 +74,8 @@ export type Metadata = {
   representative_id: string | null;
   representative_name: string | null;
   client_name: string | null;
+  client_trade_name?: string | null;
+  resolved_client_id?: string | null;
   region: string | null;
   interview_date: string | null;
   report_date: string | null;

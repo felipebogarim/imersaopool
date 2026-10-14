@@ -240,13 +240,55 @@ function RelatorioExecutivoPage() {
         clientRow = c ?? null;
       }
       if (!clientRow && parentClientName) {
-        const term = parentClientName.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const parentTradeName =
+          (parent?.structured_data as any)?.data?.client?.trade_name ||
+          (parent?.structured_data as any)?.data?.trade_name ||
+          (parent?.structured_data as any)?.trade_name ||
+          null;
+
+        const cleanCorp = (s: string) =>
+          s
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\b(LTDA|ME|EPP|EIRELI|S\/A|S\.A\.|SA|SOCIEDADE ANONIMA)\b/g, "")
+            .replace(/[^\w\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const searchTerms = Array.from(
+          new Set(
+            [
+              parentTradeName,
+              cleanCorp(parentTradeName || ""),
+              parentClientName,
+              cleanCorp(parentClientName),
+            ]
+              .filter((s): s is string => Boolean(s && s.trim().length >= 3))
+              .map((s) => s.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
+          ),
+        );
+
+        const orClause = searchTerms
+          .flatMap((t) => [`razao_social.ilike.%${t}%`, `nome_fantasia.ilike.%${t}%`])
+          .join(",");
+
         const { data: cands } = await supabase
           .from("clients")
           .select("id, razao_social, nome_fantasia, categoria, representative_id")
-          .or(`razao_social.ilike.%${term}%,nome_fantasia.ilike.%${term}%`)
-          .limit(2);
-        if (cands?.length === 1) clientRow = cands[0];
+          .or(orClause)
+          .limit(5);
+
+        if (cands && cands.length >= 1) {
+          // Se houver 1 ou se algum corresponder exatamente ao trade_name
+          const exact = cands.find(
+            (c) =>
+              parentTradeName &&
+              (cleanCorp(c.nome_fantasia || "") === cleanCorp(parentTradeName) ||
+                cleanCorp(c.razao_social || "") === cleanCorp(parentTradeName)),
+          );
+          clientRow = exact || cands[0];
+        }
       }
       if (!clientRow) return null;
 

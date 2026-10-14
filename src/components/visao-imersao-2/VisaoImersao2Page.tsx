@@ -41,8 +41,22 @@ import {
   MessageCircle,
   Link as LinkIcon,
   Pencil,
-  Trash2
+  Trash2,
+  Search,
+  CheckCircle2,
+  Building2,
+  Loader2,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +92,11 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
   const [excluir, setExcluir] = useState<any | null>(null);
+
+  const [vincularOpen, setVincularOpen] = useState(false);
+  const [buscaTermo, setBuscaTermo] = useState("");
+  const [buscando, setBuscando] = useState(false);
+  const [clientesEncontrados, setClientesEncontrados] = useState<any[]>([]);
 
   function linkRelatorio(r: any) {
     return `${window.location.origin}/visao-imersao-2/${r.id}`;
@@ -247,12 +266,26 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         .single();
       if (profileError || !profile?.company_id) throw new Error("Empresa ativa não encontrada.");
 
+      const resolvedId =
+        avulso.data.resolved_client_id ||
+        (avulso.data.client as any)?.resolved_client_id ||
+        (avulso.data.client as any)?.client_id ||
+        undefined;
+
       const payload = {
         client_name: avulso.data.client.name,
         visit_date: avulso.data.client.visit_date,
         source_filename: avulso.arquivo,
         content_markdown: avulso.markdown,
-        structured_data: { schema: "visao_imersao_2_data_v1", block: "visao_imersao_2", data: avulso.data } as any,
+        structured_data: {
+          schema: "visao_imersao_2_data_v1",
+          block: "visao_imersao_2",
+          data: {
+            ...avulso.data,
+            resolved_client_id: resolvedId,
+          },
+          resolved_client_id: resolvedId,
+        } as any,
         company_id: profile.company_id,
         created_by: userId,
       };
@@ -301,13 +334,29 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   // 1. Busca vínculo persistente ou candidatos em caso de ambiguidade
   const clientName = visao?.metadata?.client_name;
   const representativeName = visao?.metadata?.representative_name;
+  const clientTradeName =
+    (avulso?.data?.client as any)?.trade_name ||
+    (avulso?.data as any)?.trade_name ||
+    visao?.metadata?.client_trade_name ||
+    "";
 
   const { data: commercialData, refetch: refetchCommercial } = useQuery({
-    queryKey: ["vi2-commercial", avulso?.id, clientName, representativeName, avulso?.data?.resolved_client_id],
+    queryKey: [
+      "vi2-commercial",
+      avulso?.id,
+      clientName,
+      representativeName,
+      clientTradeName,
+      avulso?.data?.resolved_client_id,
+      (avulso?.data?.client as any)?.resolved_client_id,
+    ],
     enabled: !!clientName,
     queryFn: async () => {
       // 1. PRIORIDADE: Vínculo em memória (estado local do componente) ou persistido
-      const manualId = avulso?.data?.resolved_client_id;
+      const manualId =
+        avulso?.data?.resolved_client_id ||
+        (avulso?.data?.client as any)?.resolved_client_id ||
+        (avulso?.data?.client as any)?.client_id;
       if (manualId) {
         console.log("[VisaoImersao2] Usando ID de cliente em memória:", manualId);
         return await fetchClientCommercialData(manualId);
@@ -320,19 +369,211 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           .select("structured_data")
           .eq("id", reportId)
           .single();
-        
-        const savedClientId = (savedReport?.structured_data as any)?.data?.resolved_client_id || (savedReport?.structured_data as any)?.resolved_client_id;
+
+        const savedClientId =
+          (savedReport?.structured_data as any)?.data?.resolved_client_id ||
+          (savedReport?.structured_data as any)?.resolved_client_id ||
+          (savedReport?.structured_data as any)?.data?.client?.resolved_client_id;
         if (savedClientId) {
           console.log("[VisaoImersao2] Usando ID de cliente persistido:", savedClientId);
           return await fetchClientCommercialData(savedClientId);
         }
       }
 
-      // 2. BUSCA DE CANDIDATOS (CNPJ ou Nome)
-      const normalizedSearch = clientName!.trim().toUpperCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      // 2. BUSCA INTELIGENTE DE CANDIDATOS (trade_name, nome fantasia, razão social)
+      const cleanCorp = (str: string) =>
+        str
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(
+            /\b(LTDA|ME|EPP|EIRELI|S\/A|S\.A\.|SA|SOCIEDADE ANONIMA|DISTRIBUIDORA DE MATERIAL ELETRICO E SERVICOS|DISTRIBUIDORA DE MATERIAL ELETRICO|DISTRIBUIDORA)\b/g,
+            "",
+          )
+          .replace(/[^\w\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
 
-      const { data: candidates } = await supabase
+      const searchPhrases = Array.from(
+        new Set(
+          [
+            clientTradeName,
+            cleanCorp(clientTradeName),
+            clientName,
+            cleanCorp(clientName || ""),
+          ]
+            .filter((s): s is string => Boolean(s && s.trim().length >= 3))
+            .map((s) =>
+              s
+                .trim()
+                .toUpperCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, ""),
+            ),
+        ),
+      );
+
+      let candidates: any[] = [];
+      if (searchPhrases.length > 0) {
+        const orConditions = searchPhrases
+          .flatMap((term) => [
+            `razao_social.ilike.%${term}%`,
+            `nome_fantasia.ilike.%${term}%`,
+          ])
+          .join(",");
+
+        const { data } = await supabase
+          .from("clients")
+          .select(`
+            id, 
+            razao_social, 
+            nome_fantasia, 
+            cnpj, 
+            cidade, 
+            estado,
+            categoria,
+            representative_id,
+            representatives:representative_id (nome, representacao)
+          `)
+          .or(orConditions)
+          .limit(20);
+
+        candidates = data ?? [];
+      }
+
+      if (!candidates || candidates.length === 0) return { status: "not_found" };
+
+      // Se houver mais de um candidato, tentar desempatar por representante ou correspondência exata
+      let chosenCandidate = candidates.length === 1 ? candidates[0] : null;
+
+      if (!chosenCandidate && candidates.length > 1) {
+        // Desempate 1: Representante
+        if (representativeName) {
+          const normRep = representativeName
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+          const repMatches = candidates.filter((c) => {
+            const rNome = String((c as any).representatives?.nome || "")
+              .toUpperCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "");
+            const rRep = String((c as any).representatives?.representacao || "")
+              .toUpperCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "");
+            return rNome.includes(normRep) || rRep.includes(normRep) || normRep.includes(rNome);
+          });
+          if (repMatches.length === 1) {
+            chosenCandidate = repMatches[0];
+          }
+        }
+
+        // Desempate 2: Trade Name exato
+        if (!chosenCandidate && clientTradeName) {
+          const normTrade = cleanCorp(clientTradeName);
+          const tradeMatches = candidates.filter(
+            (c) =>
+              cleanCorp(c.nome_fantasia || "") === normTrade ||
+              cleanCorp(c.razao_social || "") === normTrade,
+          );
+          if (tradeMatches.length === 1) {
+            chosenCandidate = tradeMatches[0];
+          }
+        }
+      }
+
+      if (chosenCandidate) {
+        const candidate = chosenCandidate;
+        if (reportId) {
+          const { data: current } = await supabase
+            .from("field_immersion_v2_reports")
+            .select("structured_data")
+            .eq("id", reportId)
+            .single();
+
+          if (
+            !(current?.structured_data as any)?.data?.resolved_client_id &&
+            !(current?.structured_data as any)?.resolved_client_id
+          ) {
+            console.log("[VisaoImersao2] Persistindo vínculo automático único:", candidate.id);
+            const currentData =
+              (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
+            const newData = {
+              ...((current?.structured_data as any) || {}),
+              data: {
+                ...currentData,
+                resolved_client_id: candidate.id,
+              },
+              resolved_client_id: candidate.id,
+              resolved_at: new Date().toISOString(),
+              resolution_method: "auto_unique",
+            };
+            await supabase
+              .from("field_immersion_v2_reports")
+              .update({ structured_data: newData })
+              .eq("id", reportId);
+
+            setAvulso((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    data: { ...prev.data, resolved_client_id: candidate.id },
+                  }
+                : null,
+            );
+          }
+        } else {
+          // Relatório avulso em memória: já anota no estado para que ao clicar em "Salvar" vá vinculado
+          setAvulso((prev) =>
+            prev && !prev.data.resolved_client_id
+              ? {
+                  ...prev,
+                  data: { ...prev.data, resolved_client_id: candidate.id },
+                }
+              : prev,
+          );
+        }
+        return await fetchClientCommercialData(candidate.id);
+      }
+
+      // 3. AMBIGUIDADE: Retorna lista de candidatos para seleção manual
+      return {
+        status: "ambiguous",
+        candidates: candidates.map((c) => ({
+          id: c.id,
+          razao_social: c.razao_social,
+          nome_fantasia: c.nome_fantasia,
+          cnpj: c.cnpj,
+          local: `${c.cidade || ""} / ${c.estado || ""}`,
+          representante:
+            (c as any).representatives?.nome || (c as any).representatives?.representacao || "—",
+          categoria: c.categoria,
+        })),
+      };
+    },
+  });
+
+  async function fetchClientCommercialData(clientId: string) {
+    return await resolveClientCommercialData(clientId);
+  }
+
+  function abrirModalVinculo() {
+    const initialTerm =
+      clientTradeName ||
+      visao?.metadata?.client_name ||
+      "";
+    setBuscaTermo(initialTerm);
+    setVincularOpen(true);
+    void executarBuscaClientes(initialTerm);
+  }
+
+  async function executarBuscaClientes(termo: string) {
+    setBuscando(true);
+    try {
+      const clean = termo.trim();
+      let query = supabase
         .from("clients")
         .select(`
           id, 
@@ -345,133 +586,98 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           representative_id,
           representatives:representative_id (nome, representacao)
         `)
-        .or(`razao_social.ilike.%${normalizedSearch}%,nome_fantasia.ilike.%${normalizedSearch}%`)
-        .limit(10);
+        .order("nome_fantasia", { ascending: true })
+        .limit(30);
 
-      if (!candidates || candidates.length === 0) return { status: "not_found" };
-
-      // Se houver apenas um match exato ou único, vincula automaticamente
-      if (candidates.length === 1) {
-        const candidate = candidates[0];
-        // Short-circuit: Se o relatório já está salvo e identificamos o cliente único, 
-        // persistimos o vínculo imediatamente para evitar re-calculo fuzzy no futuro.
-        if (reportId) {
-          const { data: current } = await supabase
-            .from("field_immersion_v2_reports")
-            .select("structured_data")
-            .eq("id", reportId)
-            .single();
-          
-          if (!(current?.structured_data as any)?.data?.resolved_client_id && !(current?.structured_data as any)?.resolved_client_id) {
-            console.log("[VisaoImersao2] Persistindo vínculo automático único:", candidate.id);
-            const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
-            const newData = {
-              ...(current?.structured_data as any || {}),
-              data: {
-                ...currentData,
-                resolved_client_id: candidate.id,
-              },
-              resolved_client_id: candidate.id,
-              resolved_at: new Date().toISOString(),
-              resolution_method: "auto_unique"
-            };
-            await supabase
-              .from("field_immersion_v2_reports")
-              .update({ structured_data: newData })
-              .eq("id", reportId);
-            
-            // Atualiza estado local também para sincronia imediata
-            setAvulso(prev => prev ? {
-              ...prev,
-              data: { ...prev.data, resolved_client_id: candidate.id }
-            } : null);
-          }
-        }
-        return await fetchClientCommercialData(candidate.id);
+      if (clean) {
+        const norm = clean
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        query = query.or(
+          `razao_social.ilike.%${norm}%,nome_fantasia.ilike.%${norm}%,cnpj.ilike.%${norm}%`,
+        );
       }
 
-      // 3. AMBIGUIDADE: Retorna lista de candidatos para seleção manual
-      return { 
-        status: "ambiguous", 
-        candidates: candidates.map(c => ({
-          id: c.id,
-          razao_social: c.razao_social,
-          nome_fantasia: c.nome_fantasia,
-          cnpj: c.cnpj,
-          local: `${c.cidade || ""} / ${c.estado || ""}`,
-          representante: (c as any).representatives?.nome || (c as any).representatives?.representacao || "—",
-          categoria: c.categoria
-        }))
-      };
+      const { data, error } = await query;
+      if (error) throw error;
+      setClientesEncontrados(data ?? []);
+    } catch (e: any) {
+      console.error("[VisaoImersao2] Erro na busca manual de clientes:", e);
+      toast.error("Falha ao buscar clientes na base comercial.");
+    } finally {
+      setBuscando(false);
     }
-  });
-
-  async function fetchClientCommercialData(clientId: string) {
-    return await resolveClientCommercialData(clientId);
   }
 
   async function confirmarVinculo(clientId: string) {
-    if (!avulso?.id) {
-      toast.error("Salve o relatório primeiro para vincular o cliente permanentemente.");
-      // Alternativa: Se for relatório novo, guardamos o ID no estado temporário do import
-      setAvulso(prev => prev ? {
-        ...prev,
-        data: {
-          ...prev.data,
-          resolved_client_id: clientId
-        }
-      } : null);
-      return;
-    }
+    // 1. Atualiza estado em memória imediatamente para renderizar na UI
+    setAvulso((prev) =>
+      prev
+        ? {
+            ...prev,
+            data: {
+              ...prev.data,
+              resolved_client_id: clientId,
+              client: {
+                ...prev.data.client,
+                resolved_client_id: clientId,
+              },
+            },
+          }
+        : null,
+    );
+    setDirty(true);
+    setVincularOpen(false);
 
-    setSalvando(true);
-    try {
-      const { data: current, error: fetchError } = await supabase
-        .from("field_immersion_v2_reports")
-        .select("structured_data")
-        .eq("id", avulso.id)
-        .single();
+    // 2. Se o relatório já foi salvo, persiste no banco
+    if (avulso?.id) {
+      setSalvando(true);
+      try {
+        const { data: current, error: fetchError } = await supabase
+          .from("field_immersion_v2_reports")
+          .select("structured_data")
+          .eq("id", avulso.id)
+          .single();
 
-      if (fetchError) throw fetchError;
+        if (fetchError) throw fetchError;
 
-      const currentData = (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
-      const newData = {
-        ...(current?.structured_data as any || {}),
-        data: {
-          ...currentData,
+        const currentData =
+          (current?.structured_data as any)?.data || (current?.structured_data as any) || {};
+        const newData = {
+          ...((current?.structured_data as any) || {}),
+          data: {
+            ...currentData,
+            resolved_client_id: clientId,
+            client: {
+              ...(currentData.client || {}),
+              resolved_client_id: clientId,
+            },
+          },
           resolved_client_id: clientId,
-        },
-        resolved_client_id: clientId, // Root para compatibilidade
-        resolved_at: new Date().toISOString(),
-        resolution_method: "manual"
-      };
+          resolved_at: new Date().toISOString(),
+          resolution_method: "manual",
+        };
 
-      const { error: updateError } = await supabase
-        .from("field_immersion_v2_reports")
-        .update({ structured_data: newData })
-        .eq("id", avulso.id);
+        const { error: updateError } = await supabase
+          .from("field_immersion_v2_reports")
+          .update({ structured_data: newData })
+          .eq("id", avulso.id);
 
-      if (updateError) throw updateError;
-      
-      // Forçar atualização do estado local do avulso para evitar que o render atual
-      // use structured_data antigo antes do refetch
-      setAvulso(prev => prev ? {
-        ...prev,
-        data: {
-          ...prev.data,
-          resolved_client_id: clientId
-        }
-      } : null);
-
-      await queryClient.invalidateQueries({ queryKey: ["vi2-commercial", avulso.id] });
-      await refetchCommercial();
-      toast.success("Vínculo comercial confirmado e persistido.");
-    } catch (e: any) {
-      console.error("[VisaoImersao2] Erro na persistência do vínculo:", e);
-      toast.error("Erro ao salvar vínculo no banco: " + e.message);
-    } finally {
-      setSalvando(false);
+        if (updateError) throw updateError;
+        toast.success("Vínculo comercial confirmado e persistido.");
+      } catch (e: any) {
+        console.error("[VisaoImersao2] Erro na persistência do vínculo:", e);
+        toast.error("Erro ao salvar vínculo no banco: " + e.message);
+      } finally {
+        setSalvando(false);
+      }
+    } else {
+      toast.success("Cliente vinculado em memória. Clique em 'Salvar relatório' para persistir.");
     }
+
+    await queryClient.invalidateQueries({ queryKey: ["vi2-commercial"] });
+    await refetchCommercial();
   }
 
 
@@ -654,8 +860,16 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
               <Save className="mr-1 h-4 w-4" />
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
             </Button>
+            <Button
+              variant="outline"
+              onClick={abrirModalVinculo}
+              title="Gerenciar vínculo comercial com cliente da base"
+            >
+              <LinkIcon className="mr-1 h-4 w-4" />
+              {commercialData?.status === "linked" ? "Alterar vínculo" : "Vincular cliente"}
+            </Button>
             <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
-              <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
+            <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
             </Button>
             <Button variant="ghost" onClick={voltarParaLista}>
@@ -701,10 +915,38 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             categoria={commercialData?.status === "linked" ? (commercialData as any).categoria : null}
           />
 
+          {commercialData?.status === "linked" && (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+              <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>
+                  Vínculo comercial estabelecido: <strong className="font-semibold text-foreground">{(commercialData as any).razaoSocial}</strong>
+                  {(commercialData as any).nomeFantasia &&
+                    (commercialData as any).nomeFantasia !== (commercialData as any).razaoSocial && (
+                      <span className="text-muted-foreground"> ({(commercialData as any).nomeFantasia})</span>
+                    )}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 border-emerald-500/30 hover:bg-emerald-500/10"
+                onClick={abrirModalVinculo}
+              >
+                <Pencil className="h-3 w-3" /> Alterar cliente
+              </Button>
+            </div>
+          )}
+
           {commercialData?.status === "ambiguous" && (
             <Alert variant="destructive" className="bg-destructive/5">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Ambiguidade comercial</AlertTitle>
+              <AlertTitle className="flex items-center justify-between">
+                <span>Ambiguidade comercial</span>
+                <Button size="sm" variant="outline" onClick={abrirModalVinculo} className="h-7 text-xs gap-1">
+                  <Search className="h-3 w-3" /> Buscar outro cadastro
+                </Button>
+              </AlertTitle>
               <AlertDescription className="space-y-4">
                 <p>Encontramos mais de um cliente compatível com este relatório. Selecione o cadastro correto para vincular os dados de performance:</p>
                 <div className="grid gap-2 mt-2">
@@ -712,6 +954,9 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                     <div key={c.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent transition-colors">
                       <div className="text-sm">
                         <p className="font-bold">{c.razao_social}</p>
+                        {c.nome_fantasia && c.nome_fantasia !== c.razao_social && (
+                          <p className="text-xs text-muted-foreground font-medium">{c.nome_fantasia}</p>
+                        )}
                         <p className="text-muted-foreground text-xs">
                           {c.local} · Rep: {c.representante} · Categoria: {c.categoria || "—"}
                         </p>
@@ -728,11 +973,18 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           )}
 
           {commercialData?.status === "not_found" && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Aguardando vínculo com a base comercial</AlertTitle>
-              <AlertDescription>
-                Não foi possível localizar este cliente automaticamente na base PoolFlux. Os indicadores de performance serão exibidos após o vínculo manual ou correção do nome no relatório.
+            <Alert className="border-amber-500/30 bg-amber-500/5">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertTitle className="text-amber-900 dark:text-amber-200">Aguardando vínculo com a base comercial</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p className="text-muted-foreground">
+                  Não foi possível localizar este cliente automaticamente na base comercial. Clique no botão abaixo para buscar e selecionar o cadastro correspondente:
+                </p>
+                <div>
+                  <Button size="sm" onClick={abrirModalVinculo} className="gap-1.5 shadow-sm">
+                    <LinkIcon className="h-3.5 w-3.5" /> Buscar e vincular cliente manualmente
+                  </Button>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -814,6 +1066,110 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             </div>
           </div>
         )}
+        {/* Modal de Busca e Vínculo Manual de Cliente */}
+        <Dialog open={vincularOpen} onOpenChange={setVincularOpen}>
+          <DialogContent className="max-w-xl max-h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" /> Vincular Cliente Comercial
+              </DialogTitle>
+              <DialogDescription>
+                Pesquise pelo nome fantasia, razão social ou CNPJ para vincular este relatório aos dados de atingimento e metas.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2 flex-1 overflow-hidden flex flex-col">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Ex: ALL LED, RSS DISTRIBUIDORA, Salvador..."
+                    value={buscaTermo}
+                    onChange={(e) => {
+                      setBuscaTermo(e.target.value);
+                      void executarBuscaClientes(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void executarBuscaClientes(buscaTermo);
+                      }
+                    }}
+                    className="pl-8"
+                    autoFocus
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => void executarBuscaClientes(buscaTermo)}
+                  disabled={buscando}
+                >
+                  {buscando ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
+                </Button>
+              </div>
+
+              <div className="overflow-y-auto flex-1 divide-y divide-border border rounded-lg max-h-[400px]">
+                {buscando && (
+                  <div className="p-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Buscando clientes...
+                  </div>
+                )}
+                {!buscando && clientesEncontrados.length === 0 && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    Nenhum cliente localizado para "{buscaTermo}". Tente outro termo ou limpe o campo para ver os primeiros cadastros.
+                  </div>
+                )}
+                {!buscando &&
+                  clientesEncontrados.map((c) => (
+                    <div
+                      key={c.id}
+                      className="p-3 flex items-center justify-between gap-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm truncate">
+                            {c.nome_fantasia || c.razao_social}
+                          </p>
+                          {c.categoria && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                              {c.categoria}
+                            </Badge>
+                          )}
+                        </div>
+                        {c.nome_fantasia && c.razao_social && c.nome_fantasia !== c.razao_social && (
+                          <p className="text-xs text-muted-foreground truncate">{c.razao_social}</p>
+                        )}
+                        <p className="text-[11px] text-muted-foreground">
+                          {[
+                            c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade || c.estado,
+                            c.representatives?.nome || c.representatives?.representacao
+                              ? `Rep: ${c.representatives.nome || c.representatives.representacao}`
+                              : null,
+                            c.cnpj ? `CNPJ: ${c.cnpj}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => void confirmarVinculo(c.id)}
+                      >
+                        Vincular
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setVincularOpen(false)}>
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
