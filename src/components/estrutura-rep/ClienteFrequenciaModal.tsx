@@ -31,6 +31,7 @@ interface ClienteFrequenciaModalProps {
   representativeId?: string;
   repNome?: string;
   equipe?: MembroEquipe[];
+  structureClients?: Array<{ nome: string; cidade?: string | null; estado?: string | null }>;
   onSave: (item: ClienteFrequenciaItem) => Promise<void> | void;
 }
 
@@ -48,6 +49,7 @@ export function ClienteFrequenciaModal({
   representativeId,
   repNome,
   equipe = [],
+  structureClients,
   onSave,
 }: ClienteFrequenciaModalProps) {
   const [posicao, setPosicao] = useState<number>(posicaoSugerida);
@@ -209,17 +211,18 @@ export function ClienteFrequenciaModal({
               }}
               representativeId={representativeId}
               repNome={repNome}
+              structureClients={structureClients}
               placeholder="Buscar cliente na carteira do rep..."
               required
             />
           </div>
 
-          {/* Responsável pelo Atendimento / Visita */}
+          {/* Quem irá ministrar a ação / Responsável pela visita */}
           <div className="space-y-1.5">
             <Label htmlFor="client-freq-resp" className="text-xs font-semibold flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <UserCheck className="h-3.5 w-3.5 text-primary" />
-                <span>Responsável pelo Atendimento / Visita</span>
+                <span>Quem irá ministrar / realizar a ação (Responsável)</span>
               </span>
               <span className="text-[10px] text-muted-foreground font-normal">
                 (opcional)
@@ -229,7 +232,7 @@ export function ClienteFrequenciaModal({
               id="client-freq-resp"
               value={responsavel}
               onChange={(e) => setResponsavel(e.target.value)}
-              placeholder="Ex: Felipe Bogarim (Rep Titular) ou membro da equipe"
+              placeholder="Ex: Felipe Bogarim (Rep Titular), Consultor Técnico, etc."
               className="h-9 text-xs"
             />
             {responsavelSugestoes.length > 0 && (

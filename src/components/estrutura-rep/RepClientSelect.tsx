@@ -24,6 +24,7 @@ interface RepClientSelectProps {
   onSelectClient?: (client: { nome: string; cidade?: string | null; estado?: string | null }) => void;
   representativeId?: string;
   repNome?: string;
+  structureClients?: Array<{ nome: string; cidade?: string | null; estado?: string | null }>;
   placeholder?: string;
   id?: string;
   required?: boolean;
@@ -35,6 +36,7 @@ export function RepClientSelect({
   onSelectClient,
   representativeId,
   repNome,
+  structureClients,
   placeholder = "Selecione ou busque um cliente...",
   id,
   required = false,
@@ -48,7 +50,7 @@ export function RepClientSelect({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchClientsForRep(representativeId, repNome)
+    fetchClientsForRep(representativeId, repNome, structureClients)
       .then((data) => {
         if (active) setClients(data);
       })
@@ -59,7 +61,7 @@ export function RepClientSelect({
     return () => {
       active = false;
     };
-  }, [representativeId, repNome]);
+  }, [representativeId, repNome, structureClients]);
 
   const repClientsCount = useMemo(
     () => clients.filter((c) => c.isRepClient).length,
@@ -128,9 +130,12 @@ export function RepClientSelect({
     );
   }
 
+  const repClientsList = useMemo(() => filtered.filter((c) => c.isRepClient), [filtered]);
+  const otherClientsList = useMemo(() => filtered.filter((c) => !c.isRepClient), [filtered]);
+
   return (
     <div className="space-y-1">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover modal={true} open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -175,8 +180,9 @@ export function RepClientSelect({
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-[360px] sm:w-[420px] p-0 shadow-lg border rounded-xl"
+          className="w-[--radix-popover-trigger-width] min-w-[340px] max-w-[440px] p-0 z-[70] shadow-xl border rounded-xl bg-popover"
           align="start"
+          sideOffset={4}
         >
           {/* Campo de Busca Rápida */}
           <div className="p-2.5 border-b bg-muted/20 space-y-2">
@@ -186,6 +192,16 @@ export function RepClientSelect({
                 placeholder="Buscar cliente por nome, razão social ou cidade..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (filtered.length > 0) {
+                      handleSelect(filtered[0]);
+                    } else if (search.trim()) {
+                      handleUseCustomName(search);
+                    }
+                  }
+                }}
                 className="pl-8 h-8 text-xs bg-background"
                 autoFocus
               />
@@ -208,7 +224,7 @@ export function RepClientSelect({
                   </span>
                 ) : (
                   <span>
-                    {filtered.length} {filtered.length === 1 ? "cliente encontrado" : "clientes encontrados"}
+                    {filtered.length} {filtered.length === 1 ? "cliente" : "clientes"}
                     {repClientsCount > 0 && ` (${repClientsCount} na carteira do rep)`}
                   </span>
                 )}
@@ -264,59 +280,124 @@ export function RepClientSelect({
                 )}
               </div>
             ) : (
-              filtered.map((client) => {
-                const isSelected = value.trim().toLowerCase() === client.nome_fantasia.toLowerCase();
-
-                return (
-                  <button
-                    key={client.id}
-                    type="button"
-                    onClick={() => handleSelect(client)}
-                    className={cn(
-                      "w-full flex items-start justify-between gap-2 p-2 rounded-lg text-left text-xs transition cursor-pointer group",
-                      isSelected
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "hover:bg-muted text-foreground"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {client.nome_fantasia}
-                        </span>
-                        {client.isRepClient && (
-                          <Badge
-                            variant="secondary"
-                            className="text-[9px] h-4 px-1 py-0 font-bold bg-primary/15 text-primary border-primary/30 shrink-0"
-                          >
-                            Carteira
-                          </Badge>
-                        )}
-                      </div>
-
-                      {client.razao_social && client.razao_social !== client.nome_fantasia && (
-                        <span className="text-[10px] text-muted-foreground truncate block">
-                          {client.razao_social}
-                        </span>
-                      )}
-
-                      {(client.cidade || client.estado) && (
-                        <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-2.5 w-2.5 opacity-60" />
-                          <span>
-                            {client.cidade}
-                            {client.cidade && client.estado ? ` - ${client.estado}` : client.estado}
-                          </span>
-                        </span>
-                      )}
+              <>
+                {/* Grupo 1: Clientes da Carteira do Rep */}
+                {repClientsList.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="px-2 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-primary flex items-center justify-between">
+                      <span>Carteira do Representante ({repClientsList.length})</span>
+                      {repNome && <span className="font-normal text-muted-foreground lowercase truncate max-w-[120px]">{repNome}</span>}
                     </div>
+                    {repClientsList.map((client) => {
+                      const isSelected = value.trim().toLowerCase() === client.nome_fantasia.toLowerCase();
 
-                    {isSelected && (
-                      <Check className="h-4 w-4 text-primary shrink-0 self-center" />
+                      return (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => handleSelect(client)}
+                          className={cn(
+                            "w-full flex items-start justify-between gap-2 p-2 rounded-lg text-left text-xs transition cursor-pointer group",
+                            isSelected
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "hover:bg-muted text-foreground"
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {client.nome_fantasia}
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className="text-[9px] h-4 px-1 py-0 font-bold bg-primary/15 text-primary border-primary/30 shrink-0"
+                              >
+                                Carteira
+                              </Badge>
+                            </div>
+
+                            {client.razao_social && client.razao_social !== client.nome_fantasia && (
+                              <span className="text-[10px] text-muted-foreground truncate block">
+                                {client.razao_social}
+                              </span>
+                            )}
+
+                            {(client.cidade || client.estado) && (
+                              <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5">
+                                <MapPin className="h-2.5 w-2.5 opacity-60" />
+                                <span>
+                                  {client.cidade}
+                                  {client.cidade && client.estado ? ` - ${client.estado}` : client.estado}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+
+                          {isSelected && (
+                            <Check className="h-4 w-4 text-primary shrink-0 self-center" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Grupo 2: Outros Clientes */}
+                {otherClientsList.length > 0 && (
+                  <div className="space-y-1 pt-1.5">
+                    {repClientsList.length > 0 && (
+                      <div className="px-2 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-t">
+                        Outros Clientes Cadastrados ({otherClientsList.length})
+                      </div>
                     )}
-                  </button>
-                );
-              })
+                    {otherClientsList.map((client) => {
+                      const isSelected = value.trim().toLowerCase() === client.nome_fantasia.toLowerCase();
+
+                      return (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => handleSelect(client)}
+                          className={cn(
+                            "w-full flex items-start justify-between gap-2 p-2 rounded-lg text-left text-xs transition cursor-pointer group",
+                            isSelected
+                              ? "bg-primary/10 text-primary font-bold"
+                              : "hover:bg-muted text-foreground"
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {client.nome_fantasia}
+                              </span>
+                            </div>
+
+                            {client.razao_social && client.razao_social !== client.nome_fantasia && (
+                              <span className="text-[10px] text-muted-foreground truncate block">
+                                {client.razao_social}
+                              </span>
+                            )}
+
+                            {(client.cidade || client.estado) && (
+                              <span className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5">
+                                <MapPin className="h-2.5 w-2.5 opacity-60" />
+                                <span>
+                                  {client.cidade}
+                                  {client.cidade && client.estado ? ` - ${client.estado}` : client.estado}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+
+                          {isSelected && (
+                            <Check className="h-4 w-4 text-primary shrink-0 self-center" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </PopoverContent>

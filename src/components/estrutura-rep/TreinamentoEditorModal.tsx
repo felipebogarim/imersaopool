@@ -43,6 +43,7 @@ interface TreinamentoEditorModalProps {
   representativeId?: string;
   repNome?: string;
   equipe?: MembroEquipe[];
+  structureClients?: Array<{ nome: string; cidade?: string | null; estado?: string | null }>;
   onSave: (item: TreinamentoItem) => Promise<void> | void;
 }
 
@@ -53,6 +54,7 @@ export function TreinamentoEditorModal({
   representativeId,
   repNome,
   equipe = [],
+  structureClients,
   onSave,
 }: TreinamentoEditorModalProps) {
   const [tipo, setTipo] = useState<TipoTreinamento>("mini_palestra");
@@ -197,6 +199,7 @@ export function TreinamentoEditorModal({
               }}
               representativeId={representativeId}
               repNome={repNome}
+              structureClients={structureClients}
               placeholder="Buscar cliente na carteira do rep..."
               required
             />

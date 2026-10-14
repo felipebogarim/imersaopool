@@ -148,6 +148,30 @@ function EstruturaRepPage() {
     return null;
   }, [allStructures, editingRepId, selectedRep]);
 
+  // Clientes já cadastrados na estrutura do representante (Top 10 frequencia_visitas e treinamentos)
+  const repStructureClients = useMemo(() => {
+    const list: Array<{ nome: string; cidade?: string | null; estado?: string | null }> = [];
+    const seen = new Set<string>();
+
+    for (const f of structure?.frequencia_visitas || []) {
+      const norm = (f.cliente_nome || "").trim().toLowerCase();
+      if (norm && !seen.has(norm)) {
+        seen.add(norm);
+        list.push({ nome: f.cliente_nome, cidade: f.cidade, estado: f.uf });
+      }
+    }
+
+    for (const t of structure?.treinamentos || []) {
+      const norm = (t.cliente_nome || "").trim().toLowerCase();
+      if (norm && !seen.has(norm)) {
+        seen.add(norm);
+        list.push({ nome: t.cliente_nome });
+      }
+    }
+
+    return list;
+  }, [structure]);
+
   const setView = (v: "lista" | "kanban" | "painel", repId?: string) => {
     navigate({
       to: "/estrutura-rep",
@@ -701,6 +725,7 @@ function EstruturaRepPage() {
         representativeId={selectedRep?.id}
         repNome={selectedRep?.nome || structure?.nome_representante}
         equipe={structure?.equipe}
+        structureClients={repStructureClients}
         onSave={handleSaveTreinamento}
       />
 
@@ -713,6 +738,7 @@ function EstruturaRepPage() {
         representativeId={selectedRep?.id}
         repNome={selectedRep?.nome || structure?.nome_representante}
         equipe={structure?.equipe}
+        structureClients={repStructureClients}
         onSave={handleSaveFrequencia}
       />
 
