@@ -306,20 +306,28 @@ export async function drawStructureOgCanvas(
   ctx.fillText("PoolFlux · Imersão Comercial Newline · Documento de Alta Resolução", colRightX, contentY + contentH - 8);
 }
 
-/** Gera a miniatura do PDF (preferindo renderização direta do PDF via pdfjs ou fallback em canvas) */
+import { generateRepInfographicImage } from "./infographic";
+
+/** Gera a imagem no estilo infográfico visual da Estrutura Comercial */
 export async function generateStructureThumbnail(
   structure: RepStructure,
   pdfBlob?: Blob
 ): Promise<{ dataUrl: string; blob: Blob }> {
-  // 1. Tentar renderizar a página do PDF gerado (mais fiel possível)
-  if (pdfBlob) {
-    const rendered = await renderPdfBlobToImage(pdfBlob, 1200);
-    if (rendered) {
-      return rendered;
+  try {
+    const info = await generateRepInfographicImage(structure);
+    if (info.dataUrl && info.blob) {
+      return { dataUrl: info.dataUrl, blob: info.blob };
     }
+  } catch (err) {
+    console.warn("[generateStructureThumbnail] Falha no infográfico canvas, tentando fallback:", err);
   }
 
-  // 2. Fallback de alta resolução em Canvas puro 1200x630
+  // Fallback se necessário
+  if (pdfBlob) {
+    const rendered = await renderPdfBlobToImage(pdfBlob, 1200);
+    if (rendered) return rendered;
+  }
+
   const canvas = document.createElement("canvas");
   await drawStructureOgCanvas(canvas, structure, { width: 1200, height: 630 });
 
@@ -330,6 +338,7 @@ export async function generateStructureThumbnail(
 
   return { dataUrl, blob };
 }
+
 
 /** Faz upload da imagem de destaque (OpenGraph) para persistência e compartilhamento via WhatsApp */
 export async function uploadEstruturaImageToStorage(

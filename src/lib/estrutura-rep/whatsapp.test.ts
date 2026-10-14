@@ -67,4 +67,21 @@ describe("estrutura-rep WhatsApp and PDF utilities", () => {
     expect(result.filename).toBe("Estrutura-Rep-carlos-silva.pdf");
     expect(result.title).toContain("Carlos Silva");
   });
+
+  it("gera imagem infográfico PNG da estrutura comercial", async () => {
+    const { generateRepInfographicImage } = await import("./infographic");
+    const struct = buildDefaultStructure({
+      id: "rep-3",
+      nome: "Anselmo Ribeiro",
+      representacao: "Anselmo Representações",
+      regiao: "BA, CE e SE",
+      outras_marcas: "Newline, Brilia, Mister LED",
+    });
+
+    const result = await generateRepInfographicImage(struct);
+    expect(result.filename).toBe("infografico-estrutura-anselmo-ribeiro.png");
+    expect(result.dataUrl).toContain("data:image/png");
+    expect(result.blob).toBeDefined();
+  });
 });
+

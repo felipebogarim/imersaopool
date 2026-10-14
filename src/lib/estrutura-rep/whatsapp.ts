@@ -115,29 +115,30 @@ export function formatRepStructureWhatsappText(
   return linhas.join("\n");
 }
 
-/** Dispara o compartilhamento via WhatsApp com geração e anexo do PDF otimizado */
+import { generateRepInfographicImage } from "./infographic";
+
+/** Dispara o compartilhamento via WhatsApp com geração e envio da imagem em formato infográfico */
 export async function shareRepStructureByWhatsapp(
   structure: RepStructure,
   repContact?: { email?: string | null; telefone?: string | null }
 ): Promise<void> {
-  const shareText = formatRepStructureWhatsappText(structure, repContact);
+  const nome = structure.nome_representante || "Representante";
   const cleanPhone = formatWhatsappNumber(repContact?.telefone);
 
-  // 1. Gera o PDF executivo
-  const { blob, filename, title } = await generateRepStructurePdf(structure);
+  // 1. Gera a imagem infográfico de alta resolução em PNG
+  const { blob, filename } = await generateRepInfographicImage(structure);
 
-  // 2. Tenta compartilhamento nativo com o arquivo PDF (Mobile / Safari / Chrome com Web Share)
-  const file = new File([blob], filename, { type: "application/pdf" });
+  // 2. Tenta compartilhamento nativo com o arquivo de imagem PNG (Mobile / Safari com Web Share)
+  const file = new File([blob], filename, { type: "image/png" });
   const nav: any = typeof navigator !== "undefined" ? navigator : null;
 
   if (nav && nav.canShare && nav.canShare({ files: [file] })) {
     try {
       await nav.share({
         files: [file],
-        title,
-        text: shareText,
+        title: `Infográfico da Estrutura Comercial — ${nome}`,
       });
-      toast.success("Estrutura compartilhada via WhatsApp com sucesso!");
+      toast.success("Infográfico compartilhado via WhatsApp com sucesso!");
       return;
     } catch (err: any) {
       if (err?.name === "AbortError") {
@@ -147,7 +148,16 @@ export async function shareRepStructureByWhatsapp(
     }
   }
 
-  // 3. Fallback Desktop / Web: Baixa o PDF no dispositivo e abre o WhatsApp com a mensagem pronta
+  // 3. Fallback Desktop / Web: Copia a imagem para a área de transferência e baixa o PNG
+  if (typeof navigator !== "undefined" && navigator.clipboard?.write) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast.info("Imagem do infográfico copiada para a área de transferência! Cole (Ctrl+V) na conversa.");
+    } catch {
+      // noop
+    }
+  }
+
   const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = blobUrl;
@@ -157,16 +167,16 @@ export async function shareRepStructureByWhatsapp(
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 
-  // Abre WhatsApp Web ou wa.me
-  const encodedText = encodeURIComponent(shareText);
+  // Abre WhatsApp Web ou wa.me limpo, pronto para colar a imagem
   const waUrl = cleanPhone
-    ? `https://wa.me/${cleanPhone}?text=${encodedText}`
-    : `https://wa.me/?text=${encodedText}`;
+    ? `https://wa.me/${cleanPhone}`
+    : `https://wa.me/`;
 
   window.open(waUrl, "_blank", "noopener,noreferrer");
 
   toast.success(
-    "PDF da estrutura gerado e baixado! Anexe o arquivo baixado na conversa do WhatsApp que foi aberta.",
-    { duration: 6000 }
+    "Infográfico baixado e imagem copiada! Na conversa do WhatsApp que foi aberta, basta pressionar Ctrl+V (ou Cmd+V) para enviar a imagem.",
+    { duration: 7000 }
   );
 }
+

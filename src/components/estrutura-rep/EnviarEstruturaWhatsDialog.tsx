@@ -11,8 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
   MessageCircle,
@@ -23,20 +21,17 @@ import {
   Laptop,
   Globe,
   Download,
-  FileText,
   Loader2,
+  Sparkles,
+  Info,
 } from "lucide-react";
 import type { RepStructure } from "@/lib/estrutura-rep/types";
+import { formatWhatsappNumber } from "@/lib/estrutura-rep/whatsapp";
 import {
-  formatRepStructureWhatsappText,
-  formatWhatsappNumber,
-} from "@/lib/estrutura-rep/whatsapp";
-import { generateRepStructurePdf } from "@/lib/estrutura-rep/pdf";
-import {
-  generateStructureThumbnail,
-  uploadEstruturaImageToStorage,
-  getEstruturaOgImageUrl,
-} from "@/lib/estrutura-rep/thumbnail";
+  generateRepInfographicImage,
+  type InfographicResult,
+} from "@/lib/estrutura-rep/infographic";
+import { uploadEstruturaImageToStorage } from "@/lib/estrutura-rep/thumbnail";
 
 interface EnviarEstruturaWhatsDialogProps {
   open: boolean;
@@ -62,13 +57,12 @@ export function EnviarEstruturaWhatsDialog({
   });
 
   const [phone, setPhone] = useState(() => repContact?.telefone || "");
-  const [introMessage, setIntroMessage] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  // Miniatura de destaque gerada do PDF / Estrutura
-  const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
-  const [loadingThumbnail, setLoadingThumbnail] = useState(false);
+  // Infográfico gerado em formato de imagem vertical de alta fidelidade
+  const [infographic, setInfographic] = useState<InfographicResult | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const repNome = structure.nome_representante || "Representante";
   const repEmpresa = structure.empresa_representacao || "Representação Comercial";
@@ -79,41 +73,31 @@ export function EnviarEstruturaWhatsDialog({
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://poolflux.app";
-
-  // Gera e persiste a miniatura visual do PDF da estrutura
+  // Gera o Infográfico de alta resolução em PNG
   useEffect(() => {
     if (!open) return;
     let active = true;
 
-    async function prepareThumbnail() {
-      setLoadingThumbnail(true);
+    async function loadInfographic() {
+      setLoading(true);
       try {
-        // 1. Gera PDF em background
-        const { blob: pdfBlob } = await generateRepStructurePdf(structure);
+        const result = await generateRepInfographicImage(structure);
         if (!active) return;
+        setInfographic(result);
 
-        // 2. Converte PDF ou estrutura em imagem de alta fidelidade
-        const { dataUrl, blob: thumbBlob } = await generateStructureThumbnail(structure, pdfBlob);
-        if (!active) return;
-        setThumbnailUrl(dataUrl);
-
-        // 3. Salva no storage em background para o OpenGraph do WhatsApp carregar imediatamente
-        if (structure.representative_id && thumbBlob && thumbBlob.size > 0) {
-          void uploadEstruturaImageToStorage(structure.representative_id, thumbBlob);
+        // Upload no background para persistência pública da imagem
+        if (structure.representative_id && result.blob && result.blob.size > 0) {
+          void uploadEstruturaImageToStorage(structure.representative_id, result.blob);
         }
       } catch (err) {
-        console.warn("[EnviarEstruturaWhatsDialog] Erro ao gerar miniatura:", err);
-        // Fallback para URL padrão do OpenGraph
-        if (active) {
-          setThumbnailUrl(getEstruturaOgImageUrl(structure.representative_id));
-        }
+        console.warn("[EnviarEstruturaWhatsDialog] Erro ao gerar infográfico:", err);
+        toast.error("Não foi possível gerar a imagem do infográfico.");
       } finally {
-        if (active) setLoadingThumbnail(false);
+        if (active) setLoading(false);
       }
     }
 
-    void prepareThumbnail();
+    void loadInfographic();
 
     return () => {
       active = false;
@@ -131,75 +115,79 @@ export function EnviarEstruturaWhatsDialog({
 
   const cleanPhone = useMemo(() => formatWhatsappNumber(phone), [phone]);
 
-  const formattedText = useMemo(() => {
-    const baseText = formatRepStructureWhatsappText(
-      structure,
-      {
-        email: repContact?.email,
-        telefone: phone || repContact?.telefone,
-      },
-      { appUrl }
-    );
-    if (!introMessage.trim()) return baseText;
-    return `${introMessage.trim()}\n\n${baseText}`;
-  }, [structure, repContact, phone, introMessage, appUrl]);
-
   const desktopUrl = useMemo(() => {
-    const encoded = encodeURIComponent(formattedText);
     return cleanPhone
-      ? `whatsapp://send?phone=${cleanPhone}&text=${encoded}`
-      : `whatsapp://send?text=${encoded}`;
-  }, [formattedText, cleanPhone]);
+      ? `whatsapp://send?phone=${cleanPhone}`
+      : `whatsapp://send`;
+  }, [cleanPhone]);
 
   const webUrl = useMemo(() => {
-    const encoded = encodeURIComponent(formattedText);
     return cleanPhone
-      ? `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
-      : `https://web.whatsapp.com/send?text=${encoded}`;
-  }, [formattedText, cleanPhone]);
+      ? `https://web.whatsapp.com/send?phone=${cleanPhone}`
+      : `https://web.whatsapp.com`;
+  }, [cleanPhone]);
 
   const mobileUrl = useMemo(() => {
-    const encoded = encodeURIComponent(formattedText);
     return cleanPhone
-      ? `https://wa.me/${cleanPhone}?text=${encoded}`
-      : `https://wa.me/?text=${encoded}`;
-  }, [formattedText, cleanPhone]);
+      ? `https://wa.me/${cleanPhone}`
+      : `https://wa.me/`;
+  }, [cleanPhone]);
 
-  async function handleDownloadPdf(): Promise<void> {
-    setGeneratingPdf(true);
+  // Copia a imagem do infográfico para o clipboard do sistema (para colar direto com Ctrl+V)
+  async function handleCopyImage(): Promise<boolean> {
+    if (!infographic?.blob) {
+      toast.error("Infográfico ainda está sendo gerado...");
+      return false;
+    }
+    if (typeof navigator === "undefined" || !navigator.clipboard?.write) {
+      toast.error("Seu navegador não suporta cópia direta de imagem. Use o botão Baixar Imagem.");
+      return false;
+    }
     try {
-      const { blob, filename } = await generateRepStructurePdf(structure);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-      toast.success("PDF da Estrutura gerado e baixado com sucesso!");
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao gerar PDF da Estrutura");
-    } finally {
-      setGeneratingPdf(false);
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": infographic.blob }),
+      ]);
+      setCopiedImage(true);
+      toast.success("Imagem do infográfico copiada! Basta pressionar Ctrl+V (ou colar) na conversa do WhatsApp.");
+      setTimeout(() => setCopiedImage(false), 2500);
+      return true;
+    } catch (err) {
+      console.warn("[EnviarEstruturaWhatsDialog] Falha ao copiar imagem:", err);
+      return false;
     }
   }
 
-  async function handleCopy() {
+  // Baixa o arquivo PNG no dispositivo
+  function handleDownloadImage() {
+    if (!infographic?.blob) {
+      toast.error("Aguardando carregamento da imagem...");
+      return;
+    }
+    setDownloading(true);
     try {
-      await navigator.clipboard.writeText(formattedText);
-      setCopied(true);
-      toast.success("Mensagem formatada copiada para a área de transferência!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Não foi possível copiar automaticamente.");
+      const blobUrl = URL.createObjectURL(infographic.blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = infographic.filename || `infografico-${repSlug || "estrutura"}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      toast.success("Imagem do infográfico baixada com sucesso!");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao baixar imagem");
+    } finally {
+      setDownloading(false);
     }
   }
 
   async function handleOpenDesktop() {
-    // Baixa o PDF automaticamente para facilitar anexar na conversa
-    void handleDownloadPdf();
+    // 1. Copia a imagem para o clipboard automaticamente
+    await handleCopyImage();
+    // 2. Baixa o arquivo PNG como garantia
+    handleDownloadImage();
 
+    // 3. Abre o app do WhatsApp
     const a = document.createElement("a");
     a.href = desktopUrl;
     document.body.appendChild(a);
@@ -208,25 +196,48 @@ export function EnviarEstruturaWhatsDialog({
 
     toast.success(
       isMac
-        ? "Abrindo no WhatsApp Desktop do Mac... O PDF foi baixado para anexar na conversa com a miniatura de destaque."
-        : "Abrindo no WhatsApp Desktop... O PDF foi baixado para anexar na conversa com a miniatura de destaque.",
-      { duration: 6000 }
+        ? "Abrindo WhatsApp Desktop no Mac... A imagem do infográfico já foi copiada. Pressione Cmd+V na conversa para colar e enviar!"
+        : "Abrindo WhatsApp Desktop... A imagem do infográfico já foi copiada. Pressione Ctrl+V na conversa para colar e enviar!",
+      { duration: 7000 }
     );
     onOpenChange(false);
   }
 
   async function handleOpenWeb() {
-    void handleDownloadPdf();
+    await handleCopyImage();
+    handleDownloadImage();
+
     window.open(webUrl, "_blank", "noopener,noreferrer");
     toast.success(
-      "Abrindo WhatsApp Web no navegador... O PDF foi baixado para anexar na conversa com a miniatura de destaque.",
-      { duration: 6000 }
+      "Abrindo WhatsApp Web no navegador... A imagem já foi copiada. Pressione Ctrl+V na conversa para colar e enviar!",
+      { duration: 7000 }
     );
     onOpenChange(false);
   }
 
-  function handleOpenMobile() {
-    void handleDownloadPdf();
+  async function handleOpenMobile() {
+    // Se o dispositivo suportar Web Share API com arquivos de imagem, compartilha direto
+    if (infographic?.blob) {
+      const file = new File([infographic.blob], infographic.filename, {
+        type: "image/png",
+      });
+      const nav: any = typeof navigator !== "undefined" ? navigator : null;
+      if (nav && nav.canShare && nav.canShare({ files: [file] })) {
+        try {
+          await nav.share({
+            files: [file],
+            title: `Infográfico Estrutura Comercial — ${repNome}`,
+          });
+          toast.success("Compartilhado com sucesso!");
+          onOpenChange(false);
+          return;
+        } catch (err: any) {
+          if (err?.name === "AbortError") return;
+        }
+      }
+    }
+
+    handleDownloadImage();
     window.open(mobileUrl, "_blank", "noopener,noreferrer");
     toast.success("Abrindo WhatsApp...");
     onOpenChange(false);
@@ -238,16 +249,22 @@ export function EnviarEstruturaWhatsDialog({
         {/* Top Header */}
         <div className="p-6 pb-4 border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-primary/5 to-transparent">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 <MessageCircle className="h-5 w-5" />
               </span>
               <div>
-                <DialogTitle className="text-lg font-semibold tracking-tight">
-                  Compartilhar Estrutura Rep por WhatsApp
+                <DialogTitle className="text-lg font-semibold tracking-tight flex items-center gap-2">
+                  <span>Compartilhar Infográfico no WhatsApp</span>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-medium border-emerald-500/30 text-emerald-600 dark:text-emerald-400 py-0.5"
+                  >
+                    Imagem PNG · 100% Visual
+                  </Badge>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  {repNome} ({repEmpresa}) · Compatível com WhatsApp Desktop (Mac) e WhatsApp Web
+                  {repNome} ({repEmpresa}) · Formato infográfico pronto para colar e enviar
                 </DialogDescription>
               </div>
             </div>
@@ -308,130 +325,102 @@ export function EnviarEstruturaWhatsDialog({
             </div>
           </div>
 
-          {/* Parâmetros de envio */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <Label htmlFor="wa-rep-phone" className="text-xs font-medium text-foreground/90">
-                Número do WhatsApp <span className="text-muted-foreground font-normal">(opcional)</span>
-              </Label>
-              <Input
-                id="wa-rep-phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Ex.: (11) 98765-4321"
-                className="h-9 text-xs"
-              />
-              <p className="text-[11px] text-muted-foreground/80">
-                Se vazio, você escolhe a conversa diretamente no aplicativo.
-              </p>
-            </div>
+          {/* Telefone do destinatário */}
+          <div className="space-y-1.5">
+            <Label htmlFor="wa-rep-phone" className="text-xs font-medium text-foreground/90">
+              Número do WhatsApp <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <Input
+              id="wa-rep-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Ex.: (11) 98765-4321"
+              className="h-9 text-xs"
+            />
+            <p className="text-[11px] text-muted-foreground/80">
+              Se vazio, você escolhe o contato ou grupo diretamente no aplicativo do WhatsApp.
+            </p>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="wa-rep-intro" className="text-xs font-medium text-foreground/90">
-                Mensagem de abertura <span className="text-muted-foreground font-normal">(opcional)</span>
-              </Label>
-              <Textarea
-                id="wa-rep-intro"
-                value={introMessage}
-                onChange={(e) => setIntroMessage(e.target.value)}
-                placeholder="Recado inicial antes do relatório..."
-                rows={2}
-                className="text-xs resize-none min-h-[36px] h-9 py-2"
-              />
+          {/* Dica de Envio Visual */}
+          <div className="flex items-start gap-2.5 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 text-emerald-950 dark:text-emerald-100">
+            <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <div className="text-[11.5px] leading-relaxed">
+              <strong>Como funciona o envio do Infográfico:</strong> Ao clicar no botão de envio abaixo,
+              a imagem é <strong>copiada automaticamente para sua área de transferência</strong> e o
+              arquivo PNG é baixado. Na conversa que se abrir no WhatsApp, basta pressionar{" "}
+              <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-background rounded border border-border">
+                {isMac ? "Cmd+V" : "Ctrl+V"}
+              </kbd>{" "}
+              para colar e enviar a imagem completa na hora!
             </div>
           </div>
 
-          {/* Card de Imagem do Link (WhatsApp Preview & Miniatura de Destaque) */}
-          <div className="space-y-1.5">
+          {/* Preview do Infográfico Completo */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Card de Imagem do Link (WhatsApp)
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span>Prévia do Infográfico</span>
+                <span className="text-[10px] font-normal text-muted-foreground lowercase">
+                  (rolagem vertical)
+                </span>
               </span>
-              <Badge
-                variant="outline"
-                className="text-[10px] font-normal py-0 px-2 h-5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-              >
-                1 Página · Miniatura de Destaque
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadImage}
+                  disabled={loading || !infographic}
+                  className="h-6 px-2.5 text-[11px] gap-1 border-border/80 hover:bg-muted"
+                >
+                  <Download className="h-3 w-3" />
+                  Baixar PNG
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyImage}
+                  disabled={loading || !infographic}
+                  className="h-6 px-2.5 text-[11px] gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                >
+                  {copiedImage ? (
+                    <>
+                      <Check className="h-3 w-3 text-emerald-600" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" />
+                      Copiar Imagem
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-            <div className="rounded-xl border border-border/70 overflow-hidden bg-muted/20 flex flex-col sm:flex-row items-center gap-3 p-2.5">
-              <div className="w-full sm:w-44 h-24 shrink-0 rounded-lg overflow-hidden border border-border/50 bg-background flex items-center justify-center relative">
-                {thumbnailUrl ? (
+
+            {/* Container do Infográfico com rolagem suave */}
+            <div className="rounded-xl border border-border/80 bg-slate-900/5 dark:bg-slate-950/40 p-2 overflow-hidden shadow-inner flex justify-center">
+              <div className="max-h-[360px] sm:max-h-[420px] w-full overflow-y-auto rounded-lg border border-border/60 bg-background flex flex-col items-center p-2 relative">
+                {loading ? (
+                  <div className="py-24 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+                    <span>Gerando imagem do infográfico em alta resolução...</span>
+                  </div>
+                ) : infographic?.dataUrl ? (
                   <img
-                    src={thumbnailUrl}
-                    alt={`Miniatura do PDF — ${repNome}`}
-                    className="w-full h-full object-cover object-top transition-transform hover:scale-105"
+                    src={infographic.dataUrl}
+                    alt={`Infográfico da Estrutura Comercial — ${repNome}`}
+                    className="w-full max-w-[620px] rounded-md shadow-xs object-contain"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-muted-foreground text-[11px] gap-1">
-                    {loadingThumbnail ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                        <span>Gerando miniatura...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="h-5 w-5 text-emerald-600" />
-                        <span>Estrutura Rep</span>
-                      </>
-                    )}
+                  <div className="py-20 flex flex-col items-center justify-center text-muted-foreground text-xs gap-1.5">
+                    <Info className="h-5 w-5 text-muted-foreground/60" />
+                    <span>Nenhuma imagem disponível</span>
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  {repNome} ({repEmpresa}) · Documento Executivo em PDF
-                </p>
-                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                  Miniatura de destaque gerada para o WhatsApp. Mapa de atuação (dias/mês), Treinamentos, Frequência Top 10 e Organograma hierárquico.
-                </p>
-                <div className="flex items-center justify-between pt-0.5">
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 truncate max-w-[200px] sm:max-w-[260px]">
-                    poolflux.app/estrutura/{structure.representative_id.slice(0, 8)}...
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDownloadPdf}
-                    disabled={generatingPdf}
-                    className="h-6 px-2 text-[11px] shrink-0 gap-1 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                  >
-                    {generatingPdf ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Download className="h-3 w-3" />
-                    )}
-                    Baixar PDF
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Prévia da Mensagem Formatada (Padrão WhatsApp sem emojis) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Prévia da Mensagem Formatada
-                </span>
-                <Badge variant="secondary" className="text-[10px] font-normal py-0 px-2 h-5">
-                  Padrão WhatsApp (Sem Emojis)
-                </Badge>
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                {formattedText.length} caracteres
-              </span>
-            </div>
-
-            {/* Container visual simulando mensagem limpa */}
-            <div className="rounded-xl border border-border/70 bg-muted/40 p-1">
-              <ScrollArea className="h-48 sm:h-56 w-full rounded-lg bg-background/80 p-4 border border-border/40">
-                <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed text-foreground/90 select-text font-normal">
-                  {formattedText}
-                </pre>
-              </ScrollArea>
             </div>
           </div>
         </div>
@@ -443,16 +432,17 @@ export function EnviarEstruturaWhatsDialog({
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleCopy}
-              className="text-xs h-9"
+              onClick={handleCopyImage}
+              disabled={loading || !infographic}
+              className="text-xs h-9 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
             >
-              {copied ? (
+              {copiedImage ? (
                 <>
-                  <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-500" /> Copiado!
+                  <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-600" /> Imagem Copiada!
                 </>
               ) : (
                 <>
-                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar texto
+                  <Copy className="mr-1.5 h-3.5 w-3.5 text-emerald-600" /> Copiar Imagem
                 </>
               )}
             </Button>
@@ -462,8 +452,9 @@ export function EnviarEstruturaWhatsDialog({
               variant="ghost"
               size="sm"
               onClick={handleOpenMobile}
+              disabled={loading || !infographic}
               className="text-xs h-9 text-muted-foreground hover:text-foreground"
-              title="Abrir via link universal wa.me"
+              title="Abrir no celular via link universal ou Web Share"
             >
               <Smartphone className="mr-1.5 h-3.5 w-3.5" /> wa.me
             </Button>
@@ -485,7 +476,7 @@ export function EnviarEstruturaWhatsDialog({
                 type="button"
                 size="sm"
                 onClick={handleOpenDesktop}
-                disabled={generatingPdf}
+                disabled={loading || !infographic}
                 className="text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors"
               >
                 <Laptop className="mr-1.5 h-3.5 w-3.5" />
@@ -496,7 +487,7 @@ export function EnviarEstruturaWhatsDialog({
                 type="button"
                 size="sm"
                 onClick={handleOpenWeb}
-                disabled={generatingPdf}
+                disabled={loading || !infographic}
                 className="text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors"
               >
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />

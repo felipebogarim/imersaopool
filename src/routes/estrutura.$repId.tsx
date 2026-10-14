@@ -74,16 +74,15 @@ function PublicEstruturaViewerPage() {
 
         setStructure(loaded);
 
-        // Gera e exibe a visualização direta do PDF em alta resolução
+        // Gera e exibe o infográfico executivo em alta definição
         try {
-          const { blob: pdfBlob } = await generateRepStructurePdf(loaded);
-          const { generateStructureThumbnail } = await import("@/lib/estrutura-rep/thumbnail");
-          const { dataUrl } = await generateStructureThumbnail(loaded, pdfBlob);
-          if (dataUrl) {
-            setImageUrl(dataUrl);
+          const { generateRepInfographicImage } = await import("@/lib/estrutura-rep/infographic");
+          const info = await generateRepInfographicImage(loaded);
+          if (info.dataUrl) {
+            setImageUrl(info.dataUrl);
           }
         } catch (e) {
-          console.warn("[PublicEstruturaViewerPage] Falha na prévia dinâmica do PDF:", e);
+          console.warn("[PublicEstruturaViewerPage] Falha no infográfico:", e);
         }
       } catch (err) {
         console.warn("[PublicEstruturaViewerPage] Falha ao carregar dados:", err);
@@ -94,6 +93,31 @@ function PublicEstruturaViewerPage() {
       loadData();
     }
   }, [cleanId]);
+
+  async function handleDownloadImage() {
+    if (!structure) {
+      toast.error("Aguardando carregamento da estrutura...");
+      return;
+    }
+    setDownloading(true);
+    try {
+      const { generateRepInfographicImage } = await import("@/lib/estrutura-rep/infographic");
+      const { blob, filename } = await generateRepInfographicImage(structure);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast.success("Download da imagem do infográfico concluído!");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao baixar imagem");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleDownloadPdf() {
     if (!structure) {
@@ -118,6 +142,7 @@ function PublicEstruturaViewerPage() {
       setDownloading(false);
     }
   }
+
 
   function handleZoomIn() {
     setScale((s) => Math.min(s + 0.35, 3.5));
@@ -267,12 +292,24 @@ function PublicEstruturaViewerPage() {
           <Button
             type="button"
             size="sm"
-            onClick={handleDownloadPdf}
+            onClick={handleDownloadImage}
             disabled={downloading}
             className="ml-2 h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors"
           >
             <Download className="mr-1.5 h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Baixar</span> PDF
+            <span className="hidden sm:inline">Baixar</span> Infográfico
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="h-8 px-2.5 text-xs border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium transition-colors"
+          >
+            <Download className="mr-1 h-3 w-3" />
+            PDF
           </Button>
         </div>
       </header>
