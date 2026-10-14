@@ -16,7 +16,7 @@ import {
   Pencil,
   Trash2,
   CalendarCheck,
-  ChevronRight,
+  ChevronDown,
   UserCheck,
 } from "lucide-react";
 
@@ -35,6 +35,21 @@ export function TreinamentosSection({
   onDeleteClick,
   className = "",
 }: TreinamentosSectionProps) {
+  // Estado para controlar quais cards estão expandidos
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   // Ordena por data (mais próximas primeiro)
   const sorted = [...treinamentos].sort((a, b) => {
     return new Date(a.data).getTime() - new Date(b.data).getTime();
@@ -124,102 +139,142 @@ export function TreinamentosSection({
             const dateBlock = formatDateBlock(item.data);
             const color = TIPO_TREINAMENTO_COLOR[item.tipo] || TIPO_TREINAMENTO_COLOR.outro;
             const tipoLabel = TIPO_TREINAMENTO_LABEL[item.tipo] || item.tipo;
+            const isExpanded = expandedIds.has(item.id);
 
             return (
               <div
                 key={item.id}
-                className="group relative flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-all duration-150 hover:shadow-2xs"
+                className="group relative flex flex-col p-3 rounded-lg border bg-card hover:bg-muted/20 transition-all duration-150 hover:shadow-2xs"
               >
-                {/* Bloco de Data Visual (Estilo Calendário) */}
-                <div className="flex flex-col items-center justify-center w-12 sm:w-14 h-14 rounded-lg bg-muted/60 border border-border/80 shrink-0 text-center overflow-hidden shadow-2xs">
-                  <div className="w-full bg-primary/10 text-primary font-bold text-[9px] py-0.5 tracking-wider border-b border-primary/20">
-                    {dateBlock.month}
-                  </div>
-                  <div className="flex-1 flex flex-col items-center justify-center">
-                    <span className="text-base font-extrabold text-foreground leading-none">
-                      {dateBlock.day}
-                    </span>
-                    {dateBlock.weekday && (
-                      <span className="text-[9px] text-muted-foreground font-medium">
-                        {dateBlock.weekday}
+                {/* Linha de Resumo Inicial */}
+                <div className="flex items-center gap-3">
+                  {/* Bloco de Data Visual (Estilo Calendário) */}
+                  <div className="flex flex-col items-center justify-center w-12 sm:w-14 h-14 rounded-lg bg-muted/60 border border-border/80 shrink-0 text-center overflow-hidden shadow-2xs">
+                    <div className="w-full bg-primary/10 text-primary font-bold text-[9px] py-0.5 tracking-wider border-b border-primary/20">
+                      {dateBlock.month}
+                    </div>
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <span className="text-base font-extrabold text-foreground leading-none">
+                        {dateBlock.day}
                       </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Conteúdo do Treinamento */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] h-5 px-1.5 py-0 font-semibold border ${color.bg} ${color.text} ${color.border}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full mr-1 ${color.dot}`} />
-                      <span className="truncate max-w-[220px]" title={tipoLabel}>
-                        {tipoLabel}
-                      </span>
-                    </Badge>
+                      {dateBlock.weekday && (
+                        <span className="text-[9px] text-muted-foreground font-medium">
+                          {dateBlock.weekday}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <h4 className="text-xs sm:text-sm font-bold text-foreground truncate" title={item.cliente_nome}>
-                    {item.cliente_nome}
-                  </h4>
+                  {/* Conteúdo Principal (Resumo Inicial) */}
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer select-none"
+                    onClick={() => toggleExpand(item.id)}
+                    title={isExpanded ? "Clique para recolher" : "Clique para expandir"}
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] h-5 px-1.5 py-0 font-semibold border ${color.bg} ${color.text} ${color.border}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full mr-1 ${color.dot}`} />
+                        <span className="truncate max-w-[220px]" title={tipoLabel}>
+                          {tipoLabel}
+                        </span>
+                      </Badge>
+                    </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
-                    {item.ministrante && (
-                      <div className="flex items-center gap-1 shrink-0 text-foreground font-semibold" title="Ministrante da ação">
-                        <UserCheck className="h-3 w-3 text-primary shrink-0" />
-                        <span>{item.ministrante}</span>
-                      </div>
-                    )}
-                    {item.horario && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Clock className="h-3 w-3 text-primary/70" />
-                        <span>{item.horario}</span>
-                      </div>
-                    )}
-                    {item.local && (
-                      <div className="flex items-center gap-1 truncate" title={item.local}>
-                        <MapPin className="h-3 w-3 text-primary/70 shrink-0" />
-                        <span className="truncate">{item.local}</span>
-                      </div>
-                    )}
+                    <h4 className="text-xs sm:text-sm font-bold text-foreground truncate" title={item.cliente_nome}>
+                      {item.cliente_nome}
+                    </h4>
                   </div>
 
-                  {item.observacoes && (
-                    <p className="text-[11px] text-muted-foreground/90 mt-1 italic line-clamp-1">
-                      "{item.observacoes}"
-                    </p>
-                  )}
-                </div>
-
-                {/* Ações (Editar e Excluir) */}
-                <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                  {onEditClick && (
+                  {/* Ações (Editar, Excluir e Seta Expandir) */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {onEditClick && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditClick(item);
+                        }}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        title="Editar treinamento"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {onDeleteClick && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClick(item.id);
+                        }}
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        title="Excluir agendamento"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
-                      onClick={() => onEditClick(item)}
+                      onClick={() => toggleExpand(item.id)}
                       className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      title="Editar treinamento"
+                      title={isExpanded ? "Recolher informações" : "Expandir informações"}
+                      aria-expanded={isExpanded}
                     >
-                      <Pencil className="h-3 w-3" />
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
                     </Button>
-                  )}
-                  {onDeleteClick && (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => onDeleteClick(item.id)}
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      title="Excluir agendamento"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
+                  </div>
                 </div>
+
+                {/* Informações Detalhadas (Expandidas) */}
+                {isExpanded && (
+                  <div className="border-t border-border/70 pt-2.5 mt-2.5 pl-0 sm:pl-[68px] animate-in fade-in-50 duration-150">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      {item.ministrante && (
+                        <div className="flex items-center gap-1 shrink-0 text-foreground font-semibold" title="Ministrante da ação">
+                          <UserCheck className="h-3 w-3 text-primary shrink-0" />
+                          <span>{item.ministrante}</span>
+                        </div>
+                      )}
+                      {item.horario && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Clock className="h-3 w-3 text-primary/70" />
+                          <span>{item.horario}</span>
+                        </div>
+                      )}
+                      {item.local && (
+                        <div className="flex items-center gap-1 truncate" title={item.local}>
+                          <MapPin className="h-3 w-3 text-primary/70 shrink-0" />
+                          <span className="truncate">{item.local}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {item.observacoes && (
+                      <p className="text-[11px] text-muted-foreground/90 mt-1 italic">
+                        "{item.observacoes}"
+                      </p>
+                    )}
+
+                    {!item.ministrante && !item.horario && !item.local && !item.observacoes && (
+                      <p className="text-[11px] text-muted-foreground italic">
+                        Nenhuma informação adicional cadastrada.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
