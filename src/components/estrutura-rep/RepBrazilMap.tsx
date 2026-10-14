@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { BRAZIL_STATE_PATHS, type StatePath } from "@/components/director-bi/immersions/brazil-svg-paths";
 import type { DetalheMunicipal } from "@/lib/estrutura-rep/types";
 import { computeFramedViewBox, DEFAULT_BRAZIL_VIEWBOX } from "@/lib/estrutura-rep/map-bounds";
@@ -29,6 +29,11 @@ export function RepBrazilMap({
   const [hoveredUf, setHoveredUf] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isFullView, setIsFullView] = useState<boolean>(false);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
+  const hasDraggedRef = useRef(false);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   // Computa o enquadramento regional otimizado para os estados atendidos
   const framedBounds = useMemo(() => {
@@ -38,15 +43,87 @@ export function RepBrazilMap({
   // Se o usuário alternar para visão completa do país, usa o viewBox completo do Brasil
   const activeViewBox = isFullView ? DEFAULT_BRAZIL_VIEWBOX : framedBounds;
 
-  // Quando mudar a lista de estados atendidos, reseta o zoom manual e volta ao foco regional
+  // Quando mudar a lista de estados atendidos, reseta o zoom manual, pan e volta ao foco regional
   useEffect(() => {
     setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
     setIsFullView(false);
   }, [estadosAtendidos.join(",")]);
 
   const setEstados = useMemo(() => new Set(estadosAtendidos), [estadosAtendidos]);
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Não iniciar arrasto se clicou em botões de zoom ou controles
+    if ((e.target as HTMLElement).closest("button")) return;
+
+    // Apenas botão principal (esquerdo) ou toque
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startPanX: panOffset.x,
+      startPanY: panOffset.y,
+    };
+    hasDraggedRef.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current) return;
+
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > 3) {
+      hasDraggedRef.current = true;
+      if (!isDragging) {
+        setIsDragging(true);
+      }
+    }
+
+    const svg = svgRef.current;
+    if (svg) {
+      const rect = svg.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        // Escala 1:1 proporcional com o viewBox para acompanhamento natural com o cursor
+        const factorX = activeViewBox.width / rect.width;
+        const factorY = activeViewBox.height / rect.height;
+        setPanOffset({
+          x: dragStartRef.current.startPanX + dx * factorX,
+          y: dragStartRef.current.startPanY + dy * factorY,
+        });
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      dragStartRef.current = null;
+      setIsDragging(false);
+      setTimeout(() => {
+        hasDraggedRef.current = false;
+      }, 50);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY < 0) {
+      setZoomLevel((z) => Math.min(Number((z + 0.2).toFixed(2)), 3));
+    } else if (e.deltaY > 0) {
+      setZoomLevel((z) => Math.max(Number((z - 0.2).toFixed(2)), 0.6));
+    }
+  };
+
   const handleStateClick = (uf: string) => {
+    if (hasDraggedRef.current) return;
     if (onSelectEstado) {
       onSelectEstado(uf);
     }
@@ -100,8 +177,17 @@ export function RepBrazilMap({
         </div>
       </div>
 
-      {/* Container do Mapa SVG com Controles de Zoom */}
-      <div className="relative flex-1 min-h-[380px] sm:min-h-[440px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-50 via-background to-blue-50/20 dark:from-slate-950/40 dark:via-background dark:to-blue-950/10 border flex items-center justify-center p-2">
+      {/* Container do Mapa SVG com Controles de Zoom e Arrastar (Pan) */}
+      <div
+        className={`relative flex-1 min-h-[380px] sm:min-h-[440px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-50 via-background to-blue-50/20 dark:from-slate-950/40 dark:via-background dark:to-blue-950/10 border flex items-center justify-center p-2 select-none touch-none ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        }`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onWheel={handleWheel}
+      >
         {/* Controles de Zoom e Enquadramento */}
         <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-md border bg-background/90 p-1 shadow-xs backdrop-blur">
           <Button
@@ -109,8 +195,8 @@ export function RepBrazilMap({
             variant="ghost"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
             title="Aumentar zoom"
-            onClick={() => setZoomLevel((z) => Math.min(Number((z + 0.25).toFixed(2)), 2.5))}
-            disabled={zoomLevel >= 2.5}
+            onClick={() => setZoomLevel((z) => Math.min(Number((z + 0.25).toFixed(2)), 3))}
+            disabled={zoomLevel >= 3}
           >
             <ZoomIn className="h-3.5 w-3.5" />
           </Button>
@@ -127,19 +213,25 @@ export function RepBrazilMap({
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            className={`h-7 w-7 ${
+              panOffset.x !== 0 || panOffset.y !== 0 || zoomLevel !== 1
+                ? "text-primary font-bold bg-primary/10"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
             title={
-              zoomLevel !== 1
-                ? "Restaurar enquadramento da região"
+              zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0
+                ? "Restaurar posição e enquadramento inicial"
                 : isFullView
                 ? "Focar na região atendida"
                 : "Ver mapa do Brasil completo"
             }
             onClick={() => {
-              if (zoomLevel !== 1) {
+              if (zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) {
                 setZoomLevel(1);
+                setPanOffset({ x: 0, y: 0 });
               } else if (estadosAtendidos.length > 0) {
                 setIsFullView((prev) => !prev);
+                setPanOffset({ x: 0, y: 0 });
               }
             }}
           >
@@ -147,11 +239,12 @@ export function RepBrazilMap({
           </Button>
         </div>
 
-        {/* SVG Interativo do Brasil com Enquadramento Regional Automático */}
+        {/* SVG Interativo do Brasil com Enquadramento Regional Automático e Pan */}
         <TooltipProvider delayDuration={100}>
           <svg
+            ref={svgRef}
             viewBox={activeViewBox.viewBox}
-            className="h-full w-full max-h-[500px] select-none transition-all duration-300 ease-out"
+            className="h-full w-full max-h-[500px] select-none"
           >
             <defs>
               <filter id="badge-shadow" x="-30%" y="-30%" width="160%" height="160%">
@@ -160,8 +253,8 @@ export function RepBrazilMap({
             </defs>
 
             <g
-              transform={`translate(${activeViewBox.centerX}, ${activeViewBox.centerY}) scale(${zoomLevel}) translate(${-activeViewBox.centerX}, ${-activeViewBox.centerY})`}
-              className="transition-transform duration-200 ease-out"
+              transform={`translate(${activeViewBox.centerX + panOffset.x}, ${activeViewBox.centerY + panOffset.y}) scale(${zoomLevel}) translate(${-activeViewBox.centerX}, ${-activeViewBox.centerY})`}
+              className={isDragging ? "" : "transition-transform duration-200 ease-out"}
             >
               {BRAZIL_STATE_PATHS.map((state) => {
                 const isCovered = setEstados.has(state.id);
@@ -170,7 +263,7 @@ export function RepBrazilMap({
                 const isParcial = detalhe && detalhe.tipo !== "todos";
 
                 return (
-                  <Tooltip key={state.id}>
+                  <Tooltip key={state.id} open={isDragging ? false : undefined}>
                     <TooltipTrigger asChild>
                       <path
                         d={state.d}
