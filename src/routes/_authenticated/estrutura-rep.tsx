@@ -39,7 +39,6 @@ import {
   ClienteFrequenciaModal,
   type SaveFrequenciaOptions,
 } from "@/components/estrutura-rep/ClienteFrequenciaModal";
-import { EstruturaFisicaSection } from "@/components/estrutura-rep/EstruturaFisicaSection";
 import { EquipeOrganogramaSection } from "@/components/estrutura-rep/EquipeOrganogramaSection";
 import { RepStructureEditorDialog } from "@/components/estrutura-rep/RepStructureEditorDialog";
 import { RepListView } from "@/components/estrutura-rep/RepListView";
@@ -700,15 +699,7 @@ function EstruturaRepPage() {
                   />
                 </div>
 
-                <div className="lg:col-span-5 min-h-[380px]">
-                  <EstruturaFisicaSection
-                    modeloEscritorio={structure.modelo_escritorio}
-                    recursos={structure.recursos_operacionais}
-                    observacoes={structure.recursos_operacionais.observacoes}
-                  />
-                </div>
-
-                <div className="lg:col-span-7 min-h-[380px]">
+                <div className="lg:col-span-12 min-h-[380px]">
                   <EquipeOrganogramaSection
                     equipe={structure.equipe}
                     onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id, "equipe")}
