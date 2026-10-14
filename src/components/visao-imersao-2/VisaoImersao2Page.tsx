@@ -339,6 +339,19 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
     (avulso?.data as any)?.trade_name ||
     visao?.metadata?.client_trade_name ||
     "";
+  const clientDoc =
+    (avulso?.data?.client as any)?.documento ||
+    (avulso?.data?.client as any)?.cnpj ||
+    (avulso?.data as any)?.documento ||
+    (avulso?.data as any)?.cnpj ||
+    avulso?.markdown?.match(/(?:documento|cnpj)\s*:\s*([^\n\r]+)/i)?.[1]?.trim() ||
+    avulso?.markdown?.match(/\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/)?.[0] ||
+    "";
+  const clientLocation =
+    (avulso?.data?.client as any)?.location ||
+    visao?.metadata?.region ||
+    avulso?.markdown?.match(/(?:local|cidade)\s*:\s*([^\n\r]+)/i)?.[1]?.trim() ||
+    "";
 
   const { data: commercialData, refetch: refetchCommercial } = useQuery({
     queryKey: [
@@ -347,6 +360,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
       clientName,
       representativeName,
       clientTradeName,
+      clientDoc,
       avulso?.data?.resolved_client_id,
       (avulso?.data?.client as any)?.resolved_client_id,
     ],
@@ -380,19 +394,41 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         }
       }
 
-      // 2. BUSCA INTELIGENTE DE CANDIDATOS (trade_name, nome fantasia, razão social)
+      // 2. BUSCA INTELIGENTE DE CANDIDATOS (trade_name, nome fantasia, razão social, documento/cnpj)
       const cleanCorp = (str: string) =>
         str
           .toUpperCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
           .replace(
-            /\b(LTDA|ME|EPP|EIRELI|S\/A|S\.A\.|SA|SOCIEDADE ANONIMA|DISTRIBUIDORA DE MATERIAL ELETRICO E SERVICOS|DISTRIBUIDORA DE MATERIAL ELETRICO|DISTRIBUIDORA)\b/g,
+            /\b(LTDA|ME|EPP|EIRELI|S\/A|S\.A\.|SA|SOCIEDADE ANONIMA|DISTRIBUIDORA DE MATERIAL ELETRICO E SERVICOS|DISTRIBUIDORA DE MATERIAL ELETRICO|DISTRIBUIDORA|COMERCIO DE MATERIAIS E ARTIGOS ELETRICOS|COMERCIO DE MATERIAIS ELETRICOS|COMERCIO DE MATERIAIS E ARTIGOS EL|MATERIAIS E ARTIGOS ELETRICOS|MATERIAIS E ARTIGOS EL)\b/g,
             "",
           )
           .replace(/[^\w\s]/g, " ")
           .replace(/\s+/g, " ")
           .trim();
+
+      const getSignificantPrefixes = (str: string) => {
+        const stopWords = new Set(["DE", "DA", "DO", "DAS", "DOS", "E", "EM", "COM", "PARA", "POR", "LTDA", "ME", "EPP", "EIRELI"]);
+        const words = str
+          .toUpperCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\w\s]/g, " ")
+          .split(/\s+/)
+          .filter((w) => w.length >= 2 && !stopWords.has(w));
+        const prefixes: string[] = [];
+        if (words.length >= 2) {
+          prefixes.push(words.slice(0, 2).join(" "));
+        }
+        if (words.length >= 3) {
+          prefixes.push(words.slice(0, 3).join(" "));
+        }
+        return prefixes;
+      };
+
+      const namePrefixes = clientName ? getSignificantPrefixes(clientName) : [];
+      const tradePrefixes = clientTradeName ? getSignificantPrefixes(clientTradeName) : [];
 
       const searchPhrases = Array.from(
         new Set(
@@ -401,6 +437,8 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             cleanCorp(clientTradeName),
             clientName,
             cleanCorp(clientName || ""),
+            ...namePrefixes,
+            ...tradePrefixes,
           ]
             .filter((s): s is string => Boolean(s && s.trim().length >= 3))
             .map((s) =>
@@ -413,15 +451,32 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         ),
       );
 
-      let candidates: any[] = [];
-      if (searchPhrases.length > 0) {
-        const orConditions = searchPhrases
-          .flatMap((term) => [
-            `razao_social.ilike.%${term}%`,
-            `nome_fantasia.ilike.%${term}%`,
-          ])
-          .join(",");
+      const docNumbers: string[] = [];
+      if (clientDoc) {
+        const rawDoc = clientDoc.trim();
+        if (rawDoc.length >= 4) docNumbers.push(rawDoc);
+        const digits = rawDoc.replace(/\D/g, "");
+        if (digits.length >= 4) {
+          docNumbers.push(digits);
+          if (digits.length === 14) {
+            docNumbers.push(digits.slice(0, 8));
+            docNumbers.push(`${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}`);
+          }
+        }
+      }
 
+      let candidates: any[] = [];
+      const orClauses: string[] = [];
+      for (const phrase of searchPhrases) {
+        orClauses.push(`razao_social.ilike.%${phrase}%`);
+        orClauses.push(`nome_fantasia.ilike.%${phrase}%`);
+      }
+      for (const doc of Array.from(new Set(docNumbers))) {
+        orClauses.push(`documento.ilike.%${doc}%`);
+        orClauses.push(`cnpj.ilike.%${doc}%`);
+      }
+
+      if (orClauses.length > 0) {
         const { data } = await supabase
           .from("clients")
           .select(`
@@ -429,26 +484,63 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             razao_social, 
             nome_fantasia, 
             cnpj, 
+            documento,
             cidade, 
             estado,
             categoria,
             representative_id,
             representatives:representative_id (nome, representacao)
           `)
-          .or(orConditions)
-          .limit(20);
+          .or(orClauses.join(","))
+          .limit(30);
 
         candidates = data ?? [];
       }
 
       if (!candidates || candidates.length === 0) return { status: "not_found" };
 
-      // Se houver mais de um candidato, tentar desempatar por representante ou correspondência exata
+      // Se houver mais de um candidato, tentar desempatar por documento/CNPJ, localidade, matriz, representante ou correspondência exata
       let chosenCandidate = candidates.length === 1 ? candidates[0] : null;
 
       if (!chosenCandidate && candidates.length > 1) {
+        // Desempate 0: Documento / CNPJ
+        if (clientDoc) {
+          const targetDigits = clientDoc.replace(/\D/g, "");
+          if (targetDigits.length >= 8) {
+            const docMatches = candidates.filter((c) => {
+              const cDoc = (c.documento || c.cnpj || "").replace(/\D/g, "");
+              if (targetDigits.length === 14) {
+                return cDoc === targetDigits;
+              }
+              return cDoc.includes(targetDigits) || targetDigits.includes(cDoc);
+            });
+            if (docMatches.length === 1) {
+              chosenCandidate = docMatches[0];
+            } else if (docMatches.length > 1) {
+              let narrowed = docMatches;
+              if (clientLocation) {
+                const normLoc = clientLocation.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const cm = narrowed.filter((c) => {
+                  const cLoc = `${c.cidade || ""} ${c.estado || ""}`.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                  return (c.cidade && normLoc.includes(c.cidade.toUpperCase())) || cLoc.includes(normLoc);
+                });
+                if (cm.length > 0) narrowed = cm;
+              }
+              if (narrowed.length === 1) {
+                chosenCandidate = narrowed[0];
+              } else {
+                const matriz = narrowed.find((c) => {
+                  const cDoc = (c.documento || c.cnpj || "").replace(/\D/g, "");
+                  return cDoc.includes("0001");
+                });
+                if (matriz) chosenCandidate = matriz;
+              }
+            }
+          }
+        }
+
         // Desempate 1: Representante
-        if (representativeName) {
+        if (!chosenCandidate && representativeName) {
           const normRep = representativeName
             .toUpperCase()
             .normalize("NFD")
@@ -467,19 +559,48 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           });
           if (repMatches.length === 1) {
             chosenCandidate = repMatches[0];
+          } else if (repMatches.length > 1) {
+            const matriz = repMatches.find((c) => {
+              const cDoc = (c.documento || c.cnpj || "").replace(/\D/g, "");
+              return cDoc.includes("0001");
+            });
+            if (matriz) chosenCandidate = matriz;
           }
         }
 
-        // Desempate 2: Trade Name exato
-        if (!chosenCandidate && clientTradeName) {
+        // Desempate 2: Razão Social ou Trade Name exato + Localidade
+        if (!chosenCandidate) {
           const normTrade = cleanCorp(clientTradeName);
-          const tradeMatches = candidates.filter(
-            (c) =>
-              cleanCorp(c.nome_fantasia || "") === normTrade ||
-              cleanCorp(c.razao_social || "") === normTrade,
-          );
-          if (tradeMatches.length === 1) {
-            chosenCandidate = tradeMatches[0];
+          const normName = cleanCorp(clientName || "");
+          const exactMatches = candidates.filter((c) => {
+            const cTrade = cleanCorp(c.nome_fantasia || "");
+            const cName = cleanCorp(c.razao_social || "");
+            return (
+              (normTrade && (cTrade === normTrade || cName === normTrade)) ||
+              (normName && (cTrade === normName || cName === normName))
+            );
+          });
+          if (exactMatches.length === 1) {
+            chosenCandidate = exactMatches[0];
+          } else if (exactMatches.length > 1) {
+            let cityFiltered = exactMatches;
+            if (clientLocation) {
+              const normLoc = clientLocation.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              const cm = cityFiltered.filter((c) => {
+                const cLoc = `${c.cidade || ""} ${c.estado || ""}`.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return (c.cidade && normLoc.includes(c.cidade.toUpperCase())) || cLoc.includes(normLoc);
+              });
+              if (cm.length > 0) cityFiltered = cm;
+            }
+            if (cityFiltered.length === 1) {
+              chosenCandidate = cityFiltered[0];
+            } else {
+              const matriz = cityFiltered.find((c) => {
+                const cDoc = (c.documento || c.cnpj || "").replace(/\D/g, "");
+                return cDoc.includes("0001");
+              });
+              if (matriz) chosenCandidate = matriz;
+            }
           }
         }
       }
@@ -545,7 +666,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           id: c.id,
           razao_social: c.razao_social,
           nome_fantasia: c.nome_fantasia,
-          cnpj: c.cnpj,
+          cnpj: c.cnpj || c.documento,
           local: `${c.cidade || ""} / ${c.estado || ""}`,
           representante:
             (c as any).representatives?.nome || (c as any).representatives?.representacao || "—",
@@ -580,6 +701,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           razao_social, 
           nome_fantasia, 
           cnpj, 
+          documento,
           cidade, 
           estado,
           categoria,
@@ -594,9 +716,18 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           .toUpperCase()
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "");
-        query = query.or(
-          `razao_social.ilike.%${norm}%,nome_fantasia.ilike.%${norm}%,cnpj.ilike.%${norm}%`,
-        );
+        const digits = clean.replace(/\D/g, "");
+        const conditions = [
+          `razao_social.ilike.%${norm}%`,
+          `nome_fantasia.ilike.%${norm}%`,
+          `cnpj.ilike.%${norm}%`,
+          `documento.ilike.%${norm}%`,
+        ];
+        if (digits.length >= 4) {
+          conditions.push(`cnpj.ilike.%${digits}%`);
+          conditions.push(`documento.ilike.%${digits}%`);
+        }
+        query = query.or(conditions.join(","));
       }
 
       const { data, error } = await query;
@@ -1145,7 +1276,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                             c.representatives?.nome || c.representatives?.representacao
                               ? `Rep: ${c.representatives.nome || c.representatives.representacao}`
                               : null,
-                            c.cnpj ? `CNPJ: ${c.cnpj}` : null,
+                            c.cnpj || c.documento ? `CNPJ: ${c.cnpj || c.documento}` : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}

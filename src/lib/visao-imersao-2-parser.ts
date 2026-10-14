@@ -15,6 +15,8 @@ export const Immersion2DataSchema = z.object({
     consultant: z.string().optional(),
     client_id: z.string().optional(),
     resolved_client_id: z.string().optional(),
+    documento: z.string().optional(),
+    cnpj: z.string().optional(),
   }),
   brands_observed: z.array(z.string()),
   families_analyzed: z.array(z.string()),
@@ -87,6 +89,8 @@ export const Immersion2DataSchema = z.object({
   resolved_client_id: z.string().optional(),
   client_id: z.string().optional(),
   trade_name: z.string().optional(),
+  documento: z.string().optional(),
+  cnpj: z.string().optional(),
 }).transform((val) => {
   const resolved =
     val.resolved_client_id ||
@@ -94,14 +98,19 @@ export const Immersion2DataSchema = z.object({
     val.client.resolved_client_id ||
     val.client.client_id;
   const trade = val.client.trade_name || val.trade_name;
+  const doc = val.client.documento || val.client.cnpj || val.documento || val.cnpj;
   return {
     ...val,
     resolved_client_id: resolved,
     trade_name: trade,
+    documento: doc,
+    cnpj: doc,
     client: {
       ...val.client,
       resolved_client_id: resolved,
       trade_name: trade,
+      documento: doc,
+      cnpj: doc,
     },
   };
 });

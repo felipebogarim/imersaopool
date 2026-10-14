@@ -25,6 +25,26 @@ describe("Visao Imersao 2 - Parser e Vinculo Comercial", () => {
     expect(vm.metadata.representative_name).toBe("Anselmo");
   });
 
+  it("faz parse de Relatorio_Final_Imersao_BAHIA_ILUMINACAO_Salvador_NOVO com documento e dados cadastrais corretos", () => {
+    const filePath = path.resolve(
+      process.cwd(),
+      ".orca/drops/Relatorio_Final_Imersao_BAHIA_ILUMINACAO_Salvador_NOVO.md"
+    );
+    const content = fs.readFileSync(filePath, "utf-8");
+    const data = parseVisaoImersao2File(content);
+
+    expect(data.client.name).toBe("BAHIA COMERCIO DE MATERIAIS E ARTIGOS EL");
+    expect(data.client.trade_name).toBe("BAHIA COMERCIO");
+    expect(data.client.documento).toBe("25.526.063/0001-07");
+    expect(data.client.cnpj).toBe("25.526.063/0001-07");
+    expect(data.client.representative).toBe("Anselmo");
+    expect(data.client.location).toBe("Salvador, BA");
+
+    const vm = buildVisaoImersao2ViewModel(data);
+    expect(vm.metadata.client_name).toBe("BAHIA COMERCIO DE MATERIAIS E ARTIGOS EL");
+    expect(vm.metadata.client_trade_name).toBe("BAHIA COMERCIO");
+  });
+
   it("reconhece correspondencia entre razao social, trade_name e linha de performance", () => {
     const client = {
       razao_social: "RSS DISTRIBUIDORA DE MATERIAL ELETRICO E SERVICOS LTDA",
