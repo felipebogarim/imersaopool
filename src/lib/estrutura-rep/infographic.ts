@@ -1,6 +1,6 @@
 import type {
   RepStructure,
-  EquipeItem,
+  MembroEquipe,
   TreinamentoItem,
   ClienteFrequenciaItem,
   RepresentadaItem,
@@ -9,6 +9,8 @@ import {
   MODELO_ATUACAO_LABEL,
   MODELO_ESCRITORIO_LABEL,
   MODELO_NEGOCIO_LABEL,
+  VINCULO_LABEL,
+  MODALIDADE_LABEL,
 } from "./types";
 import { findBrandLogo } from "./brand-library";
 import { buildBrazilMapSvg, svgToPngDataUrl, logoToPngDataUrl } from "./pdf";
@@ -178,6 +180,14 @@ export async function generateRepInfographicImage(
   const clientesFreq = (structure.frequencia_visitas || []).slice(0, 5);
   const equipe = structure.equipe || [];
 
+  // Iniciais do representante para avatares nos cards (definido no escopo da função)
+  const repInitials = (nomeRep || "RP")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
   // Pré-renderização paralela dos logos das marcas
   const brandLogosMap: Record<string, string> = {};
   if (!options?.skipImages) {
@@ -283,16 +293,10 @@ export async function generateRepInfographicImage(
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    const initials = (nomeRep || "RP")
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join("");
     ctx.fillStyle = "#0284c7";
     ctx.font = "bold 17px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(initials, avatarX + avatarR, avatarY + avatarR + 6);
+    ctx.fillText(repInitials, avatarX + avatarR, avatarY + avatarR + 6);
     ctx.textAlign = "left";
 
     // Nome do Representante + Badge de Atuação
@@ -774,7 +778,8 @@ export async function generateRepInfographicImage(
 
         ctx.fillStyle = "#64748b";
         ctx.font = "500 9.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        const local = `${cli.cidade || "Salvador"} - ${cli.estado || "BA"}`;
+        const localUf = (cli as any).estado || cli.uf || "BA";
+        const local = `${cli.cidade || "Salvador"} - ${localUf}`;
         ctx.fillText(fitText(ctx, local, maxNameW), textX, itemY + 33);
 
         // Badge de Frequência (Verde)
@@ -927,7 +932,7 @@ export async function generateRepInfographicImage(
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(initials, t1AvX + t1AvR, t1AvY + t1AvR + 4.5);
+    ctx.fillText(repInitials, t1AvX + t1AvR, t1AvY + t1AvR + 4.5);
     ctx.textAlign = "left";
 
     // Textos Titular
@@ -1034,12 +1039,17 @@ export async function generateRepInfographicImage(
 
         ctx.fillStyle = "#64748b";
         ctx.font = "500 9.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        const prepSub = `${prep.tipo_contrato || "Prestador"}  •  ${prep.modelo_trabalho || "Remoto"}`;
+        const prepVinculo = (prep.vinculo && VINCULO_LABEL[prep.vinculo]) || (prep as any).tipo_contrato || "Prestador";
+        const prepMod = (prep.modalidade && MODALIDADE_LABEL[prep.modalidade]) || (prep as any).modelo_trabalho || "Remoto";
+        const prepSub = `${prepVinculo}  •  ${prepMod}`;
         ctx.fillText(fitText(ctx, prepSub, t2ColW - 28), pbx + 14, t2RowY + 38);
 
         ctx.fillStyle = "#0369a1";
         ctx.font = "500 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.fillText(fitText(ctx, prep.atribuicoes || "Visitas em campo e vendas", t2ColW - 28), pbx + 14, t2RowY + 50);
+        const prepAtrib = (prep.responsabilidades && prep.responsabilidades.length > 0)
+          ? prep.responsabilidades.join(" • ")
+          : ((prep as any).atribuicoes || prep.cargo || "Visitas em campo e vendas");
+        ctx.fillText(fitText(ctx, prepAtrib, t2ColW - 28), pbx + 14, t2RowY + 50);
       }
     }
 
@@ -1132,12 +1142,17 @@ export async function generateRepInfographicImage(
 
         ctx.fillStyle = "#64748b";
         ctx.font = "500 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        const assSub = `${ass.tipo_contrato || "Prestador"} • ${ass.modelo_trabalho || "Remoto"}`;
+        const assVinculo = (ass.vinculo && VINCULO_LABEL[ass.vinculo]) || (ass as any).tipo_contrato || "Prestador";
+        const assMod = (ass.modalidade && MODALIDADE_LABEL[ass.modalidade]) || (ass as any).modelo_trabalho || "Remoto";
+        const assSub = `${assVinculo} • ${assMod}`;
         ctx.fillText(fitText(ctx, assSub, t3ColW - 20), abx + 12, t3RowY + 35);
 
         ctx.fillStyle = "#475569";
         ctx.font = "500 8.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.fillText(fitText(ctx, ass.atribuicoes || "Atendimento e suporte", t3ColW - 20), abx + 12, t3RowY + 48);
+        const assAtrib = (ass.responsabilidades && ass.responsabilidades.length > 0)
+          ? ass.responsabilidades.join(" • ")
+          : ((ass as any).atribuicoes || ass.cargo || "Atendimento e suporte");
+        ctx.fillText(fitText(ctx, assAtrib, t3ColW - 20), abx + 12, t3RowY + 48);
       }
     }
 
@@ -1183,3 +1198,125 @@ export async function generateRepInfographicImage(
     height: canvas.height,
   };
 }
+
+// =========================================================================
+// CACHE EM MEMÓRIA & PERSISTÊNCIA ANTECIPADA DO INFOGRÁFICO
+// =========================================================================
+
+const infographicMemoryCache = new Map<string, InfographicResult>();
+
+export function getCachedInfographic(repId?: string | null): InfographicResult | null {
+  if (!repId) return null;
+  return infographicMemoryCache.get(repId) || null;
+}
+
+export function setCachedInfographic(repId: string, result: InfographicResult): void {
+  if (!repId || !result) return;
+  infographicMemoryCache.set(repId, result);
+}
+
+/**
+ * Tenta carregar o infográfico já existente no cache em memória ou no banco/storage.
+ * Retorna null se não houver imagem prévia válida.
+ */
+export async function loadExistingInfographic(
+  structure: RepStructure
+): Promise<InfographicResult | null> {
+  const repId = structure.representative_id;
+  if (!repId) return null;
+
+  // 1. Verifica cache rápido de memória
+  const memoryCached = getCachedInfographic(repId);
+  if (memoryCached) return memoryCached;
+
+  // 2. Se a estrutura tem URL persistida ou o endpoint og-estrutura possui o PNG pronto
+  try {
+    const url = `/api/og-estrutura/${repId}.png?v=${encodeURIComponent(structure.infographic_updated_at || structure.updated_at || "1")}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("image/png") && !contentType.includes("image")) {
+      return null;
+    }
+
+    const blob = await res.blob();
+    // Se o fallback padrão default.png foi retornado (menos de 4KB), não considera pré-gerado do representante
+    if (!blob || blob.size < 4000) return null;
+
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string) || "");
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(blob);
+    });
+
+    if (!dataUrl) return null;
+
+    const nomeRep = structure.nome_representante || "Representante";
+    const repSlug = nomeRep
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const result: InfographicResult = {
+      dataUrl,
+      blob,
+      filename: `infografico-estrutura-${repSlug || "comercial"}.png`,
+      width: 1720,
+      height: 3200,
+    };
+
+    setCachedInfographic(repId, result);
+    return result;
+  } catch (err) {
+    console.warn("[loadExistingInfographic] Não foi possível carregar imagem preexistente:", err);
+    return null;
+  }
+}
+
+/**
+ * Gera o infográfico em alta resolução, armazena no Storage Supabase e salva no banco de dados.
+ * Quando o usuário clicar em "Compartilhar Whats", o infográfico já terá existido!
+ */
+export async function generateAndSaveInfographic(
+  structure: RepStructure
+): Promise<{ result: InfographicResult; updatedStructure: RepStructure }> {
+  // 1. Renderiza no canvas
+  const result = await generateRepInfographicImage(structure);
+  if (!result.dataUrl) {
+    throw new Error("Canvas gerado sem dados de imagem.");
+  }
+
+  // 2. Armazena no cache imediato em memória
+  setCachedInfographic(structure.representative_id, result);
+
+  // 3. Faz upload para o bucket e API de armazenamento
+  let resultUrl = `https://poolflux.app/api/og-estrutura/${structure.representative_id}.png`;
+  try {
+    const { uploadEstruturaImageToStorage } = await import("./thumbnail");
+    resultUrl = await uploadEstruturaImageToStorage(structure.representative_id, result.blob);
+  } catch (uploadErr) {
+    console.warn("[generateAndSaveInfographic] Falha ao enviar para storage:", uploadErr);
+  }
+
+  // 4. Salva os metadados na estrutura (Supabase + LocalStorage)
+  const nowIso = new Date().toISOString();
+  const updatedStructure: RepStructure = {
+    ...structure,
+    infographic_url: resultUrl,
+    infographic_updated_at: nowIso,
+  };
+
+  try {
+    const { saveRepStructure } = await import("./storage");
+    await saveRepStructure(updatedStructure);
+  } catch (saveErr) {
+    console.warn("[generateAndSaveInfographic] Falha ao salvar estrutura no banco:", saveErr);
+  }
+
+  return { result, updatedStructure };
+}
+

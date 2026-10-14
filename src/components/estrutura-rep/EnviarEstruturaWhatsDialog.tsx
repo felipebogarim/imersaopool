@@ -30,6 +30,9 @@ import type { RepStructure } from "@/lib/estrutura-rep/types";
 import { formatWhatsappNumber } from "@/lib/estrutura-rep/whatsapp";
 import {
   generateRepInfographicImage,
+  loadExistingInfographic,
+  getCachedInfographic,
+  setCachedInfographic,
   type InfographicResult,
 } from "@/lib/estrutura-rep/infographic";
 import { uploadEstruturaImageToStorage } from "@/lib/estrutura-rep/thumbnail";
@@ -62,7 +65,9 @@ export function EnviarEstruturaWhatsDialog({
   const [downloading, setDownloading] = useState(false);
 
   // Infográfico gerado em formato de imagem vertical de alta fidelidade
-  const [infographic, setInfographic] = useState<InfographicResult | null>(null);
+  const [infographic, setInfographic] = useState<InfographicResult | null>(() => {
+    return getCachedInfographic(structure.representative_id);
+  });
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -75,24 +80,51 @@ export function EnviarEstruturaWhatsDialog({
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-  // Gera o Infográfico de alta resolução em PNG
-  const generateInfographic = useCallback(async () => {
+  // Carrega ou gera o Infográfico de alta resolução em PNG
+  const generateInfographic = useCallback(async (force = false) => {
+    const repId = structure.representative_id;
+
+    // Se não for forçado, tenta recuperar do cache em memória imediatamente
+    if (!force) {
+      const cached = getCachedInfographic(repId);
+      if (cached) {
+        setInfographic(cached);
+        setLoadError(null);
+        return;
+      }
+    }
+
     setLoading(true);
     setLoadError(null);
+
     try {
+      // Se não for forçado, tenta carregar imagem já existente salva no banco/storage
+      if (!force) {
+        const preExisting = await loadExistingInfographic(structure);
+        if (preExisting) {
+          setInfographic(preExisting);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Gera via canvas se não houver preexistente ou se forçado pelo usuário
       const result = await generateRepInfographicImage(structure);
       if (!result.dataUrl) {
         throw new Error("Canvas gerado sem dados de imagem.");
       }
       setInfographic(result);
+      if (repId) {
+        setCachedInfographic(repId, result);
+      }
 
       // Upload no background para persistência pública da imagem
-      if (structure.representative_id && result.blob && result.blob.size > 0) {
-        void uploadEstruturaImageToStorage(structure.representative_id, result.blob);
+      if (repId && result.blob && result.blob.size > 0) {
+        void uploadEstruturaImageToStorage(repId, result.blob);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[EnviarEstruturaWhatsDialog] Erro ao gerar infográfico:", err);
+      console.error("[EnviarEstruturaWhatsDialog] Erro ao carregar/gerar infográfico:", err);
       setLoadError(msg || "Falha na renderização visual do infográfico.");
       toast.error("Não foi possível gerar a imagem do infográfico.");
     } finally {
@@ -102,7 +134,7 @@ export function EnviarEstruturaWhatsDialog({
 
   useEffect(() => {
     if (!open) return;
-    void generateInfographic();
+    void generateInfographic(false);
   }, [open, generateInfographic]);
 
   function selectDestination(dest: "desktop" | "web") {
@@ -428,7 +460,7 @@ export function EnviarEstruturaWhatsDialog({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => void generateInfographic()}
+                      onClick={() => void generateInfographic(true)}
                       className="mt-2 text-xs h-8 gap-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
                     >
                       <RotateCw className="h-3.5 w-3.5" />

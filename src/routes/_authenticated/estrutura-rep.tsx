@@ -30,6 +30,7 @@ import {
   Loader2,
   Sparkles,
   MessageCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { RepBrazilMap } from "@/components/estrutura-rep/RepBrazilMap";
 import { TreinamentosSection } from "@/components/estrutura-rep/TreinamentosSection";
@@ -57,6 +58,7 @@ import {
   deleteRepStructure,
 } from "@/lib/estrutura-rep/storage";
 import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
+import { generateAndSaveInfographic } from "@/lib/estrutura-rep/infographic";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -117,6 +119,7 @@ function EstruturaRepPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sharingWhats, setSharingWhats] = useState(false);
+  const [generatingInfographic, setGeneratingInfographic] = useState(false);
   const [whatsDialogOpen, setWhatsDialogOpen] = useState(false);
   const [whatsDialogData, setWhatsDialogData] = useState<{
     structure: RepStructure;
@@ -527,6 +530,29 @@ function EstruturaRepPage() {
     setWhatsDialogOpen(true);
   };
 
+  // Gera e armazena o infográfico no banco e storage diretamente pela página principal
+  const handleGenerateInfographic = async () => {
+    if (!structure) {
+      toast.error("Nenhum representante selecionado para gerar o infográfico.");
+      return;
+    }
+
+    setGeneratingInfographic(true);
+    try {
+      await generateAndSaveInfographic(structure);
+      await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+      toast.success(
+        `Infográfico de ${structure.nome_representante || "representante"} gerado e armazenado com sucesso no banco!`
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[handleGenerateInfographic] Erro:", err);
+      toast.error(`Falha ao gerar e armazenar o infográfico: ${msg}`);
+    } finally {
+      setGeneratingInfographic(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/10 pb-12">
@@ -603,13 +629,32 @@ function EstruturaRepPage() {
                   </Select>
                 </div>
 
+                {/* Botão Gerar Infográfico na página principal e armazenar no banco */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerateInfographic}
+                  disabled={!structure || generatingInfographic}
+                  className="gap-1.5 text-xs h-9 shadow-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/40 border-sky-500/30"
+                  title="Gerar imagem do infográfico em alta resolução e armazenar no banco/storage"
+                >
+                  {generatingInfographic ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-600" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {structure?.infographic_updated_at ? "Atualizar Infográfico" : "Gerar Infográfico"}
+                  </span>
+                </Button>
+
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleShareCurrentWhats}
                   disabled={!structure || sharingWhats}
                   className="gap-1.5 text-xs h-9 shadow-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-emerald-500/30"
-                  title="Compartilhar no WhatsApp com PDF executivo formatado"
+                  title="Compartilhar no WhatsApp com imagem e PDF executivo formatado"
                 >
                   {sharingWhats ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-600" />
@@ -692,7 +737,7 @@ function EstruturaRepPage() {
         {/* ========================================================================= */}
         {viewMode === "painel" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -702,6 +747,13 @@ function EstruturaRepPage() {
                 <ArrowLeft className="h-3.5 w-3.5" />
                 <span>Voltar para Lista de Representações</span>
               </Button>
+
+              {structure?.infographic_updated_at && (
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded-md shadow-2xs font-medium">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Infográfico armazenado no banco</span>
+                </div>
+              )}
             </div>
 
             {/* Identificação Compacta do Representante + KPIs Estratégicos */}

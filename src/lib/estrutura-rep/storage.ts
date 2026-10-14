@@ -375,6 +375,22 @@ export async function loadRepStructure(rep: {
         treinamentos: treinamentosFinais,
         frequencia_visitas: freqFinais,
         frequencia_demais_clientes: freqDemais,
+        performance_comparativo:
+          data.performance_comparativo ??
+          data.recursos_operacionais?.performance_comparativo ??
+          localData?.performance_comparativo,
+        ranking_clientes_comparativo:
+          data.ranking_clientes_comparativo ??
+          data.recursos_operacionais?.ranking_clientes_comparativo ??
+          localData?.ranking_clientes_comparativo,
+        infographic_url:
+          data.infographic_url ??
+          data.recursos_operacionais?.infographic_url ??
+          localData?.infographic_url,
+        infographic_updated_at:
+          data.infographic_updated_at ??
+          data.recursos_operacionais?.infographic_updated_at ??
+          localData?.infographic_updated_at,
         updated_at: data.updated_at,
       };
     }
@@ -468,6 +484,8 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
         dias_campo_por_estado: structure.dias_campo_por_estado,
         performance_comparativo: structure.performance_comparativo,
         ranking_clientes_comparativo: structure.ranking_clientes_comparativo,
+        infographic_url: structure.infographic_url,
+        infographic_updated_at: structure.infographic_updated_at,
       },
       equipe: structure.equipe,
       observacoes_gerais: structure.observacoes_gerais || null,
@@ -612,6 +630,14 @@ export async function loadAllRepStructures(reps: {
           dbItem.ranking_clientes_comparativo ??
           dbItem.recursos_operacionais?.ranking_clientes_comparativo ??
           localData?.ranking_clientes_comparativo,
+        infographic_url:
+          dbItem.infographic_url ??
+          dbItem.recursos_operacionais?.infographic_url ??
+          localData?.infographic_url,
+        infographic_updated_at:
+          dbItem.infographic_updated_at ??
+          dbItem.recursos_operacionais?.infographic_updated_at ??
+          localData?.infographic_updated_at,
         updated_at: dbItem.updated_at,
       };
       continue;

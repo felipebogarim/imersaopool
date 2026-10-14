@@ -280,6 +280,8 @@ export interface RepStructure {
   frequencia_demais_clientes?: number; // frequência de visita aos demais clientes da carteira (dias)
   performance_comparativo?: PerformanceComparativo; // Comparativo manual Ano Anterior vs Ano Atual
   ranking_clientes_comparativo?: RankingClientesComparativo; // Ranking comparativo de clientes por categoria (Silver, Gold, Black)
+  infographic_url?: string; // URL da imagem do infográfico gerada e persistida
+  infographic_updated_at?: string; // Data/hora da última geração do infográfico
   updated_at?: string;
 }
 
