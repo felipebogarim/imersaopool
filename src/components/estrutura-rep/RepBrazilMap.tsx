@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { BRAZIL_STATE_PATHS, type StatePath } from "@/components/director-bi/immersions/brazil-svg-paths";
 import type { DetalheMunicipal } from "@/lib/estrutura-rep/types";
+import { computeFramedViewBox, DEFAULT_BRAZIL_VIEWBOX } from "@/lib/estrutura-rep/map-bounds";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MapPin, CheckCircle2, CircleSlash, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
@@ -25,6 +26,21 @@ export function RepBrazilMap({
 }: RepBrazilMapProps) {
   const [hoveredUf, setHoveredUf] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [isFullView, setIsFullView] = useState<boolean>(false);
+
+  // Computa o enquadramento regional otimizado para os estados atendidos
+  const framedBounds = useMemo(() => {
+    return computeFramedViewBox(estadosAtendidos);
+  }, [estadosAtendidos]);
+
+  // Se o usuário alternar para visão completa do país, usa o viewBox completo do Brasil
+  const activeViewBox = isFullView ? DEFAULT_BRAZIL_VIEWBOX : framedBounds;
+
+  // Quando mudar a lista de estados atendidos, reseta o zoom manual e volta ao foco regional
+  useEffect(() => {
+    setZoomLevel(1);
+    setIsFullView(false);
+  }, [estadosAtendidos.join(",")]);
 
   const setEstados = useMemo(() => new Set(estadosAtendidos), [estadosAtendidos]);
 
@@ -71,12 +87,12 @@ export function RepBrazilMap({
 
         {/* Legenda simples e direta */}
         <div className="flex items-center gap-2.5 text-xs">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-medium">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-medium">
+            <span className="h-2 w-2 rounded-full bg-primary" />
             <span>Atendido ({estadosAtendidos.length})</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted border text-muted-foreground">
-            <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/70 border border-border/60 text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-muted-foreground/50" />
             <span>Não atendido</span>
           </div>
         </div>
@@ -84,161 +100,179 @@ export function RepBrazilMap({
 
       {/* Container do Mapa SVG com Controles de Zoom */}
       <div className="relative flex-1 min-h-[380px] sm:min-h-[440px] w-full overflow-hidden rounded-lg bg-gradient-to-br from-slate-50 via-background to-blue-50/20 dark:from-slate-950/40 dark:via-background dark:to-blue-950/10 border flex items-center justify-center p-2">
-        {/* Controles de Zoom */}
+        {/* Controles de Zoom e Enquadramento */}
         <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-md border bg-background/90 p-1 shadow-xs backdrop-blur">
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             title="Aumentar zoom"
-            onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 1.8))}
-            disabled={zoomLevel >= 1.8}
+            onClick={() => setZoomLevel((z) => Math.min(Number((z + 0.25).toFixed(2)), 2.5))}
+            disabled={zoomLevel >= 2.5}
           >
             <ZoomIn className="h-3.5 w-3.5" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
             title="Diminuir zoom"
-            onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.8))}
-            disabled={zoomLevel <= 0.8}
+            onClick={() => setZoomLevel((z) => Math.max(Number((z - 0.25).toFixed(2)), 0.6))}
+            disabled={zoomLevel <= 0.6}
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
-            title="Restaurar visão"
-            onClick={() => setZoomLevel(1)}
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            title={
+              zoomLevel !== 1
+                ? "Restaurar enquadramento da região"
+                : isFullView
+                ? "Focar na região atendida"
+                : "Ver mapa do Brasil completo"
+            }
+            onClick={() => {
+              if (zoomLevel !== 1) {
+                setZoomLevel(1);
+              } else if (estadosAtendidos.length > 0) {
+                setIsFullView((prev) => !prev);
+              }
+            }}
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>
 
-        {/* SVG Interativo do Brasil */}
+        {/* SVG Interativo do Brasil com Enquadramento Regional Automático */}
         <TooltipProvider delayDuration={100}>
           <svg
-            viewBox="0 0 800 800"
-            className="h-full w-full max-h-[500px] transition-transform duration-200 select-none"
-            style={{ transform: `scale(${zoomLevel})` }}
+            viewBox={activeViewBox.viewBox}
+            className="h-full w-full max-h-[500px] select-none transition-all duration-300 ease-out"
           >
             <defs>
-              <filter id="shadow-covered" x="-10%" y="-10%" width="120%" height="120%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.25" floodColor="currentColor" />
+              <filter id="badge-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="1.2" stdDeviation="1.5" floodOpacity="0.22" floodColor="#000" />
               </filter>
             </defs>
 
-            {BRAZIL_STATE_PATHS.map((state) => {
-              const isCovered = setEstados.has(state.id);
-              const isHovered = hoveredUf === state.id;
-              const detalhe = detalhesMunicipais[state.id];
-              const isParcial = detalhe && detalhe.tipo !== "todos";
+            <g
+              transform={`translate(${activeViewBox.centerX}, ${activeViewBox.centerY}) scale(${zoomLevel}) translate(${-activeViewBox.centerX}, ${-activeViewBox.centerY})`}
+              className="transition-transform duration-200 ease-out"
+            >
+              {BRAZIL_STATE_PATHS.map((state) => {
+                const isCovered = setEstados.has(state.id);
+                const isHovered = hoveredUf === state.id;
+                const detalhe = detalhesMunicipais[state.id];
+                const isParcial = detalhe && detalhe.tipo !== "todos";
 
-              return (
-                <Tooltip key={state.id}>
-                  <TooltipTrigger asChild>
-                    <path
-                      d={state.d}
-                      id={`state-${state.id}`}
-                      onMouseEnter={() => setHoveredUf(state.id)}
-                      onMouseLeave={() => setHoveredUf(null)}
-                      onClick={() => handleStateClick(state.id)}
-                      className={`transition-all duration-150 cursor-pointer ${
-                        isCovered
-                          ? isParcial
-                            ? "fill-indigo-500/85 hover:fill-indigo-600 stroke-indigo-200 dark:stroke-indigo-900 stroke-1"
-                            : "fill-primary hover:fill-primary/90 stroke-primary-foreground/30 stroke-1 shadow-sm"
-                          : "fill-muted/30 hover:fill-muted/60 stroke-border/70 stroke-[0.7]"
-                      } ${isHovered ? "brightness-110 drop-shadow-md stroke-[1.5]" : ""}`}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="p-2.5 max-w-xs shadow-md border bg-popover text-popover-foreground">
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2 border-b pb-1">
-                        <span className="font-semibold text-xs">{state.name} ({state.id})</span>
-                        {isCovered ? (
-                          <Badge variant="default" className="text-[10px] h-4 py-0 px-1 bg-primary">
-                            Atendido
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] h-4 py-0 px-1 text-muted-foreground">
-                            Não atendido
-                          </Badge>
-                        )}
-                      </div>
-
-                      {isCovered ? (
-                        <div className="text-[11px] text-muted-foreground pt-0.5">
-                          {isParcial ? (
-                            <p>
-                              <strong className="text-foreground">Detalhamento: </strong>
-                              {detalhe?.descricao ||
-                                (detalhe?.tipo === "capital"
-                                  ? "Apenas Capital"
-                                  : detalhe?.tipo === "interior"
-                                  ? "Apenas Interior"
-                                  : "Cobertura regional específica")}
-                            </p>
+                return (
+                  <Tooltip key={state.id}>
+                    <TooltipTrigger asChild>
+                      <path
+                        d={state.d}
+                        id={`state-${state.id}`}
+                        onMouseEnter={() => setHoveredUf(state.id)}
+                        onMouseLeave={() => setHoveredUf(null)}
+                        onClick={() => handleStateClick(state.id)}
+                        className={`transition-all duration-150 cursor-pointer ${
+                          isCovered
+                            ? isParcial
+                              ? "fill-indigo-600 dark:fill-indigo-500 hover:fill-indigo-700 stroke-indigo-200 dark:stroke-indigo-900 stroke-1"
+                              : "fill-primary hover:fill-primary/90 stroke-background/50 stroke-1 shadow-sm"
+                            : "fill-muted/35 hover:fill-muted/65 stroke-border/70 stroke-[0.8]"
+                        } ${isHovered ? "brightness-110 drop-shadow-md stroke-[1.5]" : ""}`}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="p-2.5 max-w-xs shadow-md border bg-popover text-popover-foreground">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2 border-b pb-1">
+                          <span className="font-semibold text-xs">{state.name} ({state.id})</span>
+                          {isCovered ? (
+                            <Badge variant="default" className="text-[10px] h-4 py-0 px-1 bg-primary">
+                              Atendido
+                            </Badge>
                           ) : (
-                            <p className="text-emerald-600 dark:text-emerald-400 font-medium">
-                              ✓ Cobertura integral no estado
-                            </p>
+                            <Badge variant="outline" className="text-[10px] h-4 py-0 px-1 text-muted-foreground">
+                              Não atendido
+                            </Badge>
                           )}
                         </div>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground pt-0.5">
-                          Estado fora da área de atuação deste representante.
-                        </p>
-                      )}
 
-                      {interactive && (
-                        <p className="text-[10px] text-primary/80 italic pt-1">
-                          Clique para {isCovered ? "remover" : "adicionar"} da cobertura
-                        </p>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+                        {isCovered ? (
+                          <div className="text-[11px] text-muted-foreground pt-0.5">
+                            {isParcial ? (
+                              <p>
+                                <strong className="text-foreground">Detalhamento: </strong>
+                                {detalhe?.descricao ||
+                                  (detalhe?.tipo === "capital"
+                                    ? "Apenas Capital"
+                                    : detalhe?.tipo === "interior"
+                                    ? "Apenas Interior"
+                                    : "Cobertura regional específica")}
+                              </p>
+                            ) : (
+                              <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                ✓ Cobertura integral no estado
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground pt-0.5">
+                            Estado fora da área de atuação deste representante.
+                          </p>
+                        )}
 
-            {/* Marcadores / Siglas nos estados atendidos */}
-            {BRAZIL_STATE_PATHS.filter((s) => setEstados.has(s.id)).map((state) => {
-              const detalhe = detalhesMunicipais[state.id];
-              const isParcial = detalhe && detalhe.tipo !== "todos";
+                        {interactive && (
+                          <p className="text-[10px] text-primary/80 italic pt-1">
+                            Clique para {isCovered ? "remover" : "adicionar"} da cobertura
+                          </p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
 
-              return (
-                <g
-                  key={`label-${state.id}`}
-                  className="pointer-events-none select-none transition-transform duration-150"
-                  transform={`translate(${state.centroid.x}, ${state.centroid.y})`}
-                >
-                  <circle
-                    r={state.id === "DF" ? "8" : "11"}
-                    className={
-                      isParcial
-                        ? "fill-indigo-900/90 dark:fill-indigo-100 stroke-background stroke-1"
-                        : "fill-primary-foreground dark:fill-primary-foreground stroke-primary stroke-1"
-                    }
-                  />
-                  <text
-                    textAnchor="middle"
-                    dy="3.5"
-                    className={`font-bold ${
-                      state.id === "DF" ? "text-[8px]" : "text-[9px]"
-                    } ${
-                      isParcial
-                        ? "fill-white dark:fill-indigo-950"
-                        : "fill-primary dark:fill-primary"
-                    }`}
+              {/* Marcadores / Siglas nos estados atendidos */}
+              {BRAZIL_STATE_PATHS.filter((s) => setEstados.has(s.id)).map((state) => {
+                const detalhe = detalhesMunicipais[state.id];
+                const isParcial = detalhe && detalhe.tipo !== "todos";
+                const radius = state.id === "DF" ? 8 : 11;
+
+                return (
+                  <g
+                    key={`label-${state.id}`}
+                    className="pointer-events-none select-none transition-transform duration-150"
+                    transform={`translate(${state.centroid.x}, ${state.centroid.y})`}
                   >
-                    {state.id}
-                  </text>
-                </g>
-              );
-            })}
+                    <circle
+                      r={radius}
+                      filter="url(#badge-shadow)"
+                      className={
+                        isParcial
+                          ? "fill-white dark:fill-indigo-950 stroke-indigo-500 stroke-1"
+                          : "fill-white dark:fill-card stroke-primary/30 stroke-1"
+                      }
+                    />
+                    <text
+                      textAnchor="middle"
+                      dy="3.5"
+                      className={`font-bold ${
+                        state.id === "DF" ? "text-[8px]" : "text-[9px]"
+                      } ${
+                        isParcial
+                          ? "fill-indigo-700 dark:fill-indigo-300"
+                          : "fill-primary dark:fill-primary"
+                      }`}
+                    >
+                      {state.id}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
           </svg>
         </TooltipProvider>
 
@@ -277,8 +311,10 @@ export function RepBrazilMap({
                 <Badge
                   key={uf}
                   variant={isParcial ? "secondary" : "default"}
-                  className={`text-xs px-2 py-0.5 font-medium cursor-pointer transition-transform hover:scale-105 ${
-                    isParcial ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : ""
+                  className={`text-xs px-2.5 py-0.5 rounded-lg font-semibold cursor-pointer transition-transform hover:scale-105 shadow-2xs ${
+                    isParcial
+                      ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
                   }`}
                   onClick={() => onSelectEstado?.(uf)}
                   title={detalhe?.descricao || "Integral"}
