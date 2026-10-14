@@ -679,6 +679,7 @@ function EstruturaRepPage() {
           structure={structure}
           onSave={handleSaveStructure}
           initialTab={editorInitialTab}
+          allStructures={allStructures}
         />
       )}
 
@@ -688,6 +689,8 @@ function EstruturaRepPage() {
         onOpenChange={setBrandModalOpen}
         brand={editingBrand}
         onSaveBrand={handleSaveBrand}
+        repNome={selectedRep?.nome}
+        allStructures={allStructures}
       />
 
       {/* Modal de Agendamento e Edição de Treinamento */}

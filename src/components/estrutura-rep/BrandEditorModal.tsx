@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from "react";
-import type { RepresentadaItem, ModeloNegocioRepresentada } from "@/lib/estrutura-rep/types";
+import React, { useState, useEffect, useMemo } from "react";
+import type { RepresentadaItem, ModeloNegocioRepresentada, RepStructure } from "@/lib/estrutura-rep/types";
 import { MODELO_NEGOCIO_LABEL, CANAIS_COMERCIAIS } from "@/lib/estrutura-rep/types";
+import {
+  getSharedBrandLibrary,
+  saveBrandToLibrary,
+  normalizeBrandKey,
+  type BrandLibraryItem,
+} from "@/lib/estrutura-rep/brand-library";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +20,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Upload, Loader2, X, Link as LinkIcon, Check, Image as ImageIcon } from "lucide-react";
+import {
+  Briefcase,
+  Upload,
+  Loader2,
+  X,
+  Link as LinkIcon,
+  Check,
+  Image as ImageIcon,
+  Sparkles,
+  Library,
+} from "lucide-react";
 import { toast } from "sonner";
 import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
 
@@ -22,6 +38,8 @@ interface BrandEditorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   brand?: RepresentadaItem | null;
+  repNome?: string;
+  allStructures?: Record<string, RepStructure> | RepStructure[];
   onSaveBrand: (brand: RepresentadaItem) => Promise<void> | void;
 }
 
@@ -29,6 +47,8 @@ export function BrandEditorModal({
   open,
   onOpenChange,
   brand,
+  repNome,
+  allStructures,
   onSaveBrand,
 }: BrandEditorModalProps) {
   const [nome, setNome] = useState("");
@@ -40,7 +60,13 @@ export function BrandEditorModal({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [showLogoGallery, setShowLogoGallery] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
+
+  // Biblioteca unificada de marcas e logos já carregadas anteriormente
+  const brandLibrary = useMemo(() => {
+    return getSharedBrandLibrary(allStructures);
+  }, [allStructures, open]);
 
   // Inicializa o formulário com dados da marca ou valores padrão
   useEffect(() => {
@@ -64,6 +90,26 @@ export function BrandEditorModal({
       setUrlDraft("");
     }
   }, [open, brand]);
+
+  const handleSelectFromLibrary = (item: BrandLibraryItem) => {
+    setNome(item.nome);
+    if (item.logo_url) {
+      setLogoUrl(item.logo_url);
+    }
+    if (item.segmento) {
+      setSegmento(item.segmento);
+    }
+    if (item.modelo_negocio) {
+      setModeloNegocio(item.modelo_negocio);
+    }
+    if (item.canais && item.canais.length > 0) {
+      setCanais(item.canais);
+    }
+    if (item.abrangencia) {
+      setAbrangencia(item.abrangencia);
+    }
+    toast.success(`Marca "${item.nome}" e logomarca selecionadas!`);
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,6 +161,9 @@ export function BrandEditorModal({
         abrangencia: abrangencia.trim() || "Integral",
       };
 
+      // Salva na biblioteca compartilhada para ficar disponível para todos os representantes
+      saveBrandToLibrary(item, repNome);
+
       await onSaveBrand(item);
       toast.success(brand ? "Marca atualizada com sucesso!" : "Marca cadastrada com sucesso!");
       onOpenChange(false);
@@ -138,20 +187,70 @@ export function BrandEditorModal({
                 {brand ? "Editar Marca Representada" : "Cadastrar Nova Marca Representada"}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Informe os dados e faça upload da logomarca para exibição na faixa de representadas.
+                Informe os dados ou escolha uma marca já cadastrada no sistema.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+          {/* Seletor rápido de marcas / logos já carregadas anteriormente */}
+          {brandLibrary.length > 0 && !brand && (
+            <div className="p-3 rounded-xl border bg-muted/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  <span>Marcas já carregadas no sistema (seleção rápida)</span>
+                </span>
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-semibold bg-primary/10 text-primary border-primary/20">
+                  {brandLibrary.length} disponíveis
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Clique para selecionar uma representada com sua logomarca sem precisar reenviar o arquivo:
+              </p>
+
+              {/* Chips com Logo + Nome das marcas disponíveis */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                {brandLibrary.map((libItem) => {
+                  const isSelected = normalizeBrandKey(nome) === normalizeBrandKey(libItem.nome);
+                  return (
+                    <button
+                      key={libItem.id}
+                      type="button"
+                      onClick={() => handleSelectFromLibrary(libItem)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left shrink-0 transition-all text-xs cursor-pointer ${
+                        isSelected
+                          ? "bg-primary/10 border-primary text-primary font-bold shadow-2xs"
+                          : "bg-card hover:bg-muted border-border/80 text-foreground/90 shadow-2xs hover:border-primary/50"
+                      }`}
+                      title={libItem.origem || libItem.nome}
+                    >
+                      {libItem.logo_url ? (
+                        <div className="h-6 w-10 bg-white rounded border flex items-center justify-center p-0.5 shrink-0">
+                          <img src={libItem.logo_url} alt={libItem.nome} className="max-h-full max-w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-6 w-6 rounded bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {libItem.nome.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="truncate max-w-[130px] font-semibold">{libItem.nome}</span>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Nome da Marca */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">
               Nome da Empresa / Marca <span className="text-destructive">*</span>
             </Label>
             <Input
-              placeholder="Ex: Stella Iluminação, Newline, Brilha..."
+              placeholder="Ex: Stella Iluminação, Newline, Brilia..."
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               className="h-9 text-xs"
@@ -164,15 +263,72 @@ export function BrandEditorModal({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold">Logomarca da Empresa</Label>
-              <button
-                type="button"
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
-              >
-                <LinkIcon className="h-3 w-3" />
-                <span>{showUrlInput ? "Ocultar URL" : "Inserir por link / URL"}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {brandLibrary.some((b) => b.logo_url) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowLogoGallery(!showLogoGallery)}
+                    className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
+                  >
+                    <ImageIcon className="h-3 w-3" />
+                    <span>{showLogoGallery ? "Fechar galeria" : "Galeria de logos"}</span>
+                  </button>
+                )}
+                <span className="text-muted-foreground/60 text-xs">•</span>
+                <button
+                  type="button"
+                  onClick={() => setShowUrlInput(!showUrlInput)}
+                  className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  <span>{showUrlInput ? "Ocultar URL" : "Inserir URL"}</span>
+                </button>
+              </div>
             </div>
+
+            {/* Galeria Expansível de Logomarcas Já Carregadas */}
+            {showLogoGallery && (
+              <div className="p-3 bg-muted/40 rounded-xl border space-y-2 animate-in fade-in-0 duration-150">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-foreground">
+                    Selecione uma logomarca já carregada:
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Clique para aplicar à representada
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 no-scrollbar">
+                  {brandLibrary
+                    .filter((b) => b.logo_url)
+                    .map((item) => (
+                      <button
+                        key={`gal-${item.id}`}
+                        type="button"
+                        onClick={() => {
+                          setLogoUrl(item.logo_url!);
+                          setShowLogoGallery(false);
+                          toast.success(`Logomarca de "${item.nome}" aplicada!`);
+                        }}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border bg-white hover:border-primary transition group text-center cursor-pointer ${
+                          logoUrl === item.logo_url ? "border-primary ring-2 ring-primary/20" : "border-border/80"
+                        }`}
+                        title={`Usar logo de ${item.nome}`}
+                      >
+                        <div className="h-8 w-full flex items-center justify-center">
+                          <img
+                            src={item.logo_url}
+                            alt={item.nome}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                        <span className="text-[10px] font-medium text-slate-700 truncate w-full mt-1">
+                          {item.nome}
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
 
             {showUrlInput && (
               <div className="flex items-center gap-2 p-2 bg-muted/40 rounded-lg border">

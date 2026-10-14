@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { saveBrandToLibrary } from "./brand-library";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -336,6 +337,13 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
     } catch (e) {
       console.warn("[saveRepStructure] LocalStorage save failed:", e);
     }
+  }
+
+  // 2. Registra as marcas no catálogo compartilhado para ficarem disponíveis para outros representantes
+  if (structure.marcas_representadas && structure.marcas_representadas.length > 0) {
+    structure.marcas_representadas.forEach((m) => {
+      saveBrandToLibrary(m, structure.nome_representante || structure.empresa_representacao);
+    });
   }
 
   // 2. Atualiza representatives.outras_marcas no Supabase para manter o catálogo do representante sincronizado

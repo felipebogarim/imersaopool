@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -45,9 +45,16 @@ import {
   Loader2,
   X,
   Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
+import {
+  getSharedBrandLibrary,
+  saveBrandToLibrary,
+  normalizeBrandKey,
+  type BrandLibraryItem,
+} from "@/lib/estrutura-rep/brand-library";
 
 interface RepStructureEditorDialogProps {
   open: boolean;
@@ -55,6 +62,7 @@ interface RepStructureEditorDialogProps {
   structure: RepStructure;
   onSave: (updated: RepStructure) => Promise<void>;
   initialTab?: string;
+  allStructures?: Record<string, RepStructure> | RepStructure[];
 }
 
 const REGIOES_BRASIL: Record<string, string[]> = {
@@ -71,13 +79,32 @@ export function RepStructureEditorDialog({
   structure,
   onSave,
   initialTab = "identificacao",
+  allStructures,
 }: RepStructureEditorDialogProps) {
   const [draft, setDraft] = useState<RepStructure>({ ...structure });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBrandId, setUploadingBrandId] = useState<string | null>(null);
+  const [showDialogLogoGallery, setShowDialogLogoGallery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const brandLibrary = useMemo(
+    () => getSharedBrandLibrary(allStructures),
+    [open, allStructures]
+  );
+
+  const handleSelectBrandFromLibrary = (item: BrandLibraryItem) => {
+    setNovaMarca({
+      nome: item.nome,
+      segmento: item.segmento,
+      modelo_negocio: item.modelo_negocio,
+      canais: item.canais,
+      abrangencia: item.abrangencia,
+      logo_url: item.logo_url,
+    });
+    toast.success(`Marca "${item.nome}" e logomarca selecionadas!`);
+  };
 
   // Novo item temporário para Marcas
   const [novaMarca, setNovaMarca] = useState<Partial<RepresentadaItem>>({
@@ -166,6 +193,12 @@ export function RepStructureEditorDialog({
       };
       setDraft(updatedDraft);
 
+      const existing = draft.marcas_representadas.find((m) => m.id === brandId);
+      saveBrandToLibrary(
+        { id: brandId, nome: existing?.nome || "Marca", logo_url: url },
+        draft.nome_representante || draft.empresa_representacao
+      );
+
       // Auto-salva para garantir persistência imediata da logomarca
       await onSave(updatedDraft);
       toast.success("Logomarca atualizada e salva com sucesso!");
@@ -191,6 +224,8 @@ export function RepStructureEditorDialog({
       canais: novaMarca.canais?.length ? novaMarca.canais : ["varejo", "projetos"],
       abrangencia: novaMarca.abrangencia?.trim() || "Integral",
     };
+
+    saveBrandToLibrary(item, draft.nome_representante || draft.empresa_representacao);
 
     setDraft((prev) => ({
       ...prev,
@@ -489,6 +524,63 @@ export function RepStructureEditorDialog({
 
             {/* 3. ABA MARCAS */}
             <TabsContent value="marcas" className="space-y-5 m-0">
+              {/* Seletor rápido de marcas / logos compartilhadas de outros representantes */}
+              {brandLibrary.length > 0 && (
+                <div className="p-3 rounded-xl border bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span>Marcas e Logomarcas do Sistema (Seleção Rápida)</span>
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] h-5 px-1.5 font-semibold bg-primary/10 text-primary border-primary/20"
+                    >
+                      {brandLibrary.length} disponíveis
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Clique para selecionar uma representada com sua logomarca sem precisar reenviar o arquivo:
+                  </p>
+
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                    {brandLibrary.map((libItem) => {
+                      const isSelected =
+                        normalizeBrandKey(novaMarca.nome || "") === normalizeBrandKey(libItem.nome);
+                      return (
+                        <button
+                          key={libItem.id}
+                          type="button"
+                          onClick={() => handleSelectBrandFromLibrary(libItem)}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left shrink-0 transition-all text-xs cursor-pointer ${
+                            isSelected
+                              ? "bg-primary/10 border-primary text-primary font-bold shadow-2xs"
+                              : "bg-card hover:bg-muted border-border/80 text-foreground/90 shadow-2xs hover:border-primary/50"
+                          }`}
+                          title={libItem.origem ? `${libItem.nome} (${libItem.origem})` : libItem.nome}
+                        >
+                          {libItem.logo_url ? (
+                            <div className="h-6 w-10 bg-white rounded border flex items-center justify-center p-0.5 shrink-0">
+                              <img
+                                src={libItem.logo_url}
+                                alt={libItem.nome}
+                                className="max-h-full max-w-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-6 w-6 rounded bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                              {libItem.nome.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="truncate max-w-[130px] font-semibold">{libItem.nome}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Formulário para adicionar nova marca */}
               <div className="p-4 border rounded-xl bg-muted/20 space-y-4">
                 <span className="text-xs font-bold block text-foreground flex items-center gap-1.5">
@@ -538,15 +630,73 @@ export function RepStructureEditorDialog({
 
                 {/* Upload da Logomarca (obrigatório para exibição visual na barra de marcas) */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium flex items-center justify-between">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium flex items-center gap-1">
                       <span>Logomarca da Empresa *</span>
                       <span className="text-destructive font-bold text-xs">(obrigatória)</span>
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-normal">
-                      PNG, JPG, SVG ou WebP (máx. 15MB)
-                    </span>
-                  </Label>
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      {brandLibrary.some((b) => b.logo_url) && (
+                        <button
+                          type="button"
+                          onClick={() => setShowDialogLogoGallery(!showDialogLogoGallery)}
+                          className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1 cursor-pointer"
+                        >
+                          <ImageIcon className="h-3 w-3" />
+                          <span>{showDialogLogoGallery ? "Fechar galeria" : "Galeria de logos"}</span>
+                        </button>
+                      )}
+                      <span className="text-[10px] text-muted-foreground font-normal hidden sm:inline">
+                        PNG, JPG, SVG ou WebP (máx. 15MB)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Galeria Expansível de Logomarcas */}
+                  {showDialogLogoGallery && (
+                    <div className="p-3 bg-muted/40 rounded-xl border space-y-2 animate-in fade-in-0 duration-150">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-foreground">
+                          Selecione uma logomarca já carregada:
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Clique para aplicar à representada
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 no-scrollbar">
+                        {brandLibrary
+                          .filter((b) => b.logo_url)
+                          .map((item) => (
+                            <button
+                              key={`dialog-gal-${item.id}`}
+                              type="button"
+                              onClick={() => {
+                                setNovaMarca((m) => ({ ...m, logo_url: item.logo_url }));
+                                setShowDialogLogoGallery(false);
+                                toast.success(`Logomarca de "${item.nome}" aplicada!`);
+                              }}
+                              className={`flex flex-col items-center justify-center p-2 rounded-lg border bg-white hover:border-primary transition group text-center cursor-pointer ${
+                                novaMarca.logo_url === item.logo_url
+                                  ? "border-primary ring-2 ring-primary/20"
+                                  : "border-border/80"
+                              }`}
+                              title={`Usar logo de ${item.nome}`}
+                            >
+                              <div className="h-8 w-full flex items-center justify-center">
+                                <img
+                                  src={item.logo_url}
+                                  alt={item.nome}
+                                  className="max-h-full max-w-full object-contain"
+                                />
+                              </div>
+                              <span className="text-[10px] text-foreground font-medium mt-1 truncate max-w-full">
+                                {item.nome}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
 
                   <input
                     id="editor-brand-logo-file-picker"
