@@ -37,6 +37,7 @@ interface RepListViewProps {
   onEdit: (repId: string) => void;
   onDelete: (repId: string, nome: string) => void;
   onAddNew: () => void;
+  onShareWhats?: (rep: RepListViewProps["reps"][0]) => void;
 }
 
 export function RepListView({
@@ -46,12 +47,17 @@ export function RepListView({
   onEdit,
   onDelete,
   onAddNew,
+  onShareWhats,
 }: RepListViewProps) {
   const [search, setSearch] = useState("");
   const [filterModelo, setFilterModelo] = useState<string>("all");
   const [sharingId, setSharingId] = useState<string | null>(null);
 
   const handleShareWhats = async (rep: typeof reps[0]) => {
+    if (onShareWhats) {
+      onShareWhats(rep);
+      return;
+    }
     const struct = structures[rep.id];
     if (!struct) {
       toast.error("Estrutura não encontrada para este representante.");

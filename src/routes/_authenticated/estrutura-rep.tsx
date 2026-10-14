@@ -43,6 +43,7 @@ import { EquipeOrganogramaSection } from "@/components/estrutura-rep/EquipeOrgan
 import { RepStructureEditorDialog } from "@/components/estrutura-rep/RepStructureEditorDialog";
 import { RepListView } from "@/components/estrutura-rep/RepListView";
 import { RepKanbanView } from "@/components/estrutura-rep/RepKanbanView";
+import { EnviarEstruturaWhatsDialog } from "@/components/estrutura-rep/EnviarEstruturaWhatsDialog";
 import { NewRepDialog } from "@/components/estrutura-rep/NewRepDialog";
 import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
 import { BrandEditorModal } from "@/components/estrutura-rep/BrandEditorModal";
@@ -111,6 +112,11 @@ function EstruturaRepPage() {
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sharingWhats, setSharingWhats] = useState(false);
+  const [whatsDialogOpen, setWhatsDialogOpen] = useState(false);
+  const [whatsDialogData, setWhatsDialogData] = useState<{
+    structure: RepStructure;
+    repContact?: { email?: string | null; telefone?: string | null };
+  } | null>(null);
 
   // 1. Carrega lista de representantes
   const { data: reps = [], isLoading: loadingReps } = useQuery({
@@ -402,19 +408,29 @@ function EstruturaRepPage() {
     handleViewPanel(created.representative_id);
   };
 
-  const handleShareCurrentWhats = async () => {
+  const handleShareCurrentWhats = () => {
     if (!structure) return;
-    setSharingWhats(true);
-    try {
-      await shareRepStructureByWhatsapp(structure, {
+    setWhatsDialogData({
+      structure,
+      repContact: {
         email: selectedRep?.email,
         telefone: selectedRep?.telefone,
-      });
-    } catch (err: any) {
-      toast.error(err?.message || "Erro ao compartilhar no WhatsApp");
-    } finally {
-      setSharingWhats(false);
+      },
+    });
+    setWhatsDialogOpen(true);
+  };
+
+  const handleShareWhatsRep = (rep: { id: string; email?: string | null; telefone?: string | null }) => {
+    const struct = allStructures[rep.id] || (selectedRepId === rep.id ? structure : null);
+    if (!struct) {
+      toast.error("Estrutura não encontrada para este representante.");
+      return;
     }
+    setWhatsDialogData({
+      structure: struct,
+      repContact: { email: rep.email, telefone: rep.telefone },
+    });
+    setWhatsDialogOpen(true);
   };
 
 
@@ -558,6 +574,7 @@ function EstruturaRepPage() {
             onEdit={handleOpenEdit}
             onDelete={handlePromptDelete}
             onAddNew={() => setNewDialogOpen(true)}
+            onShareWhats={handleShareWhatsRep}
           />
         )}
 
@@ -572,6 +589,7 @@ function EstruturaRepPage() {
             onEdit={handleOpenEdit}
             onDelete={handlePromptDelete}
             onAddNew={() => setNewDialogOpen(true)}
+            onShareWhats={handleShareWhatsRep}
           />
         )}
 
@@ -832,6 +850,16 @@ function EstruturaRepPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Compartilhamento via WhatsApp */}
+      {whatsDialogData && (
+        <EnviarEstruturaWhatsDialog
+          open={whatsDialogOpen}
+          onOpenChange={setWhatsDialogOpen}
+          structure={whatsDialogData.structure}
+          repContact={whatsDialogData.repContact}
+        />
+      )}
     </div>
   );
 }

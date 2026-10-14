@@ -36,6 +36,7 @@ interface RepKanbanViewProps {
   onEdit: (repId: string) => void;
   onDelete: (repId: string, nome: string) => void;
   onAddNew: () => void;
+  onShareWhats?: (rep: RepKanbanViewProps["reps"][0]) => void;
 }
 
 type GroupBy = "modelo_escritorio" | "modelo_atuacao";
@@ -47,11 +48,16 @@ export function RepKanbanView({
   onEdit,
   onDelete,
   onAddNew,
+  onShareWhats,
 }: RepKanbanViewProps) {
   const [groupBy, setGroupBy] = useState<GroupBy>("modelo_escritorio");
   const [sharingId, setSharingId] = useState<string | null>(null);
 
   const handleShareWhats = async (rep: typeof reps[0]) => {
+    if (onShareWhats) {
+      onShareWhats(rep);
+      return;
+    }
     const struct = structures[rep.id];
     if (!struct) {
       toast.error("Estrutura não encontrada para este representante.");
