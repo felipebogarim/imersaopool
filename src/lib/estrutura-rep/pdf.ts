@@ -346,11 +346,14 @@ export async function generateRepStructurePdf(structure: RepStructure): Promise<
   doc.text("UFs Cobertas:", M + 10, ufBadgeY - 4);
 
   (structure.estados_atendidos || []).forEach((uf) => {
-    if (ufBadgeX + 26 > M + colW - 10) {
+    const dias = structure.detalhes_municipais?.[uf]?.dias_campo_mes ?? structure.dias_campo_por_estado?.[uf];
+    const label = dias ? `${uf} (${dias}d/mês)` : uf;
+    const approxW = label.length * 5 + 12;
+    if (ufBadgeX + approxW > M + colW - 10) {
       ufBadgeX = M + 10;
       ufBadgeY += 16;
     }
-    const bw = drawBadge(uf, ufBadgeX, ufBadgeY, C.primarySoft, C.primary, 7);
+    const bw = drawBadge(label, ufBadgeX, ufBadgeY, C.primarySoft, C.primary, 7);
     ufBadgeX += bw + 4;
   });
 

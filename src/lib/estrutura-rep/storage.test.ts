@@ -90,4 +90,21 @@ describe("estrutura-rep storage and defaults", () => {
     expect(structure.frequencia_visitas?.length).toBe(10);
     expect(structure.frequencia_visitas?.[0].posicao).toBe(1);
   });
+
+  it("inicializa dias de campo por mês por estado e detalhes municipais", () => {
+    const rep = {
+      id: "rep-anselmo",
+      nome: "ANSELMO",
+      representacao: "Anselmo Representações",
+      regiao: "MT, GO e DF",
+      outras_marcas: null,
+    };
+    const structure = buildDefaultStructure(rep);
+    expect(structure.dias_campo_por_estado).toBeDefined();
+    expect(structure.dias_campo_por_estado?.["DF"]).toBe(12);
+    expect(structure.dias_campo_por_estado?.["GO"]).toBe(8);
+    expect(structure.dias_campo_por_estado?.["MT"]).toBe(4);
+    expect(structure.detalhes_municipais["DF"]?.dias_campo_mes).toBe(12);
+  });
 });
+

@@ -217,6 +217,11 @@ export function RepBrazilMap({
                                 ✓ Cobertura integral no estado
                               </p>
                             )}
+                            {typeof detalhe?.dias_campo_mes === "number" && detalhe.dias_campo_mes > 0 && (
+                              <p className="text-primary font-medium mt-1">
+                                📅 Atuação em campo: {detalhe.dias_campo_mes} dias/mês
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <p className="text-[11px] text-muted-foreground pt-0.5">
@@ -320,6 +325,9 @@ export function RepBrazilMap({
                   title={detalhe?.descricao || "Integral"}
                 >
                   {uf}
+                  {typeof detalhe?.dias_campo_mes === "number" && detalhe.dias_campo_mes > 0 && (
+                    <span className="ml-1 text-[10px] opacity-90 font-normal">({detalhe.dias_campo_mes}d)</span>
+                  )}
                   {isParcial && <span className="ml-1 text-[10px] opacity-75">• Parcial</span>}
                 </Badge>
               );

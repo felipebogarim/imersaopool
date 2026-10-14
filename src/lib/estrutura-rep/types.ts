@@ -155,6 +155,7 @@ export interface DetalheMunicipal {
   tipo: "todos" | "parcial" | "capital" | "interior";
   descricao?: string;
   municipios?: string[];
+  dias_campo_mes?: number; // quantos dias por mês há atuação em campo no estado
 }
 
 export type TipoTreinamento =
@@ -248,6 +249,7 @@ export interface RepStructure {
   modelo_atuacao: ModeloAtuacao;
   estados_atendidos: string[];
   detalhes_municipais: Record<string, DetalheMunicipal>;
+  dias_campo_por_estado?: Record<string, number>; // quantos dias por mês há atuação em campo por estado (UF -> dias)
   marcas_representadas: RepresentadaItem[];
   modelo_escritorio: ModeloEscritorio;
   recursos_operacionais: RecursosOperacionais;

@@ -205,8 +205,14 @@ export function buildDefaultStructure(rep: {
     modelo_atuacao: "equipe",
     estados_atendidos: estados,
     detalhes_municipais: {
-      [estados[0] || "MT"]: { tipo: "todos", descricao: "Cobertura integral de todas as mesorregiões" },
+      [estados[0] || "MT"]: { tipo: "todos", descricao: "Cobertura integral de todas as mesorregiões", dias_campo_mes: 12 },
+      ...(estados[1] ? { [estados[1]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 8 } } : {}),
+      ...(estados[2] ? { [estados[2]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 4 } } : {}),
     },
+    dias_campo_por_estado: estados.reduce((acc, uf, idx) => {
+      acc[uf] = idx === 0 ? 12 : idx === 1 ? 8 : idx === 2 ? 4 : 5;
+      return acc;
+    }, {} as Record<string, number>),
     marcas_representadas: marcas,
     modelo_escritorio: "escritorio_fisico",
     recursos_operacionais: defaultRecursos,
@@ -295,6 +301,17 @@ export async function loadRepStructure(rep: {
             ? data.recursos_operacionais.frequencia_demais_clientes
             : localData?.frequencia_demais_clientes ?? 60;
 
+      const diasCampo: Record<string, number> = {
+        ...(data.dias_campo_por_estado ?? data.recursos_operacionais?.dias_campo_por_estado ?? localData?.dias_campo_por_estado ?? {}),
+      };
+      if (data.detalhes_municipais && typeof data.detalhes_municipais === "object") {
+        Object.entries(data.detalhes_municipais).forEach(([uf, d]: [string, any]) => {
+          if (typeof d?.dias_campo_mes === "number" && diasCampo[uf] === undefined) {
+            diasCampo[uf] = d.dias_campo_mes;
+          }
+        });
+      }
+
       return {
         representative_id: rep.id,
         nome_representante: rep.nome,
@@ -305,6 +322,7 @@ export async function loadRepStructure(rep: {
         modelo_atuacao: data.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(data.estados_atendidos) ? data.estados_atendidos : [],
         detalhes_municipais: data.detalhes_municipais ?? {},
+        dias_campo_por_estado: Object.keys(diasCampo).length > 0 ? diasCampo : defaultStruct.dias_campo_por_estado,
         marcas_representadas: marcasFinais,
         modelo_escritorio: data.modelo_escritorio ?? "escritorio_fisico",
         recursos_operacionais: data.recursos_operacionais ?? {
@@ -339,8 +357,20 @@ export async function loadRepStructure(rep: {
 /** Salva a estrutura do representante (Supabase + LocalStorage) */
 export async function saveRepStructure(structure: RepStructure): Promise<void> {
   const nowIso = new Date().toISOString();
-  const structureWithTimestamp: RepStructure = {
+  // Sincroniza dias_campo_mes em detalhes_municipais
+  const detalhesMunicipaisSync = { ...(structure.detalhes_municipais || {}) };
+  if (structure.dias_campo_por_estado) {
+    Object.entries(structure.dias_campo_por_estado).forEach(([uf, dias]) => {
+      detalhesMunicipaisSync[uf] = {
+        ...(detalhesMunicipaisSync[uf] || { tipo: "todos", descricao: "Cobertura integral" }),
+        dias_campo_mes: dias,
+      };
+    });
+  }
+
+  const structureToSave: RepStructure = {
     ...structure,
+    detalhes_municipais: detalhesMunicipaisSync,
     updated_at: nowIso,
   };
 
@@ -349,7 +379,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
     try {
       localStorage.setItem(
         getLocalKey(structure.representative_id),
-        JSON.stringify(structureWithTimestamp)
+        JSON.stringify(structureToSave)
       );
     } catch (e) {
       console.warn("[saveRepStructure] LocalStorage save failed:", e);
@@ -363,7 +393,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
     });
   }
 
-  // 2. Atualiza representatives.outras_marcas no Supabase para manter o catálogo do representante sincronizado
+  // 3. Atualiza representatives.outras_marcas no Supabase para manter o catálogo do representante sincronizado
   try {
     const nomesMarcas = (structure.marcas_representadas || [])
       .map((m) => m.nome?.trim())
@@ -380,7 +410,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
     console.warn("[saveRepStructure] representatives.outras_marcas update error:", err);
   }
 
-  // 3. Tenta persistir na tabela rep_structures (caso já provisionada no Supabase)
+  // 4. Tenta persistir na tabela rep_structures (caso já provisionada no Supabase)
   try {
     const payload = {
       representative_id: structure.representative_id,
@@ -390,7 +420,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
       regiao_principal: structure.regiao_principal || null,
       modelo_atuacao: structure.modelo_atuacao,
       estados_atendidos: structure.estados_atendidos,
-      detalhes_municipais: structure.detalhes_municipais,
+      detalhes_municipais: detalhesMunicipaisSync,
       marcas_representadas: structure.marcas_representadas,
       modelo_escritorio: structure.modelo_escritorio,
       recursos_operacionais: {
@@ -398,6 +428,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
         frequencia_visitas: structure.frequencia_visitas,
         frequencia_demais_clientes: structure.frequencia_demais_clientes,
         treinamentos: structure.treinamentos,
+        dias_campo_por_estado: structure.dias_campo_por_estado,
       },
       equipe: structure.equipe,
       observacoes_gerais: structure.observacoes_gerais || null,
@@ -497,6 +528,17 @@ export async function loadAllRepStructures(reps: {
             ? dbItem.recursos_operacionais.frequencia_demais_clientes
             : localData?.frequencia_demais_clientes ?? 60;
 
+      const diasCampo: Record<string, number> = {
+        ...(dbItem.dias_campo_por_estado ?? dbItem.recursos_operacionais?.dias_campo_por_estado ?? localData?.dias_campo_por_estado ?? {}),
+      };
+      if (dbItem.detalhes_municipais && typeof dbItem.detalhes_municipais === "object") {
+        Object.entries(dbItem.detalhes_municipais).forEach(([uf, d]: [string, any]) => {
+          if (typeof d?.dias_campo_mes === "number" && diasCampo[uf] === undefined) {
+            diasCampo[uf] = d.dias_campo_mes;
+          }
+        });
+      }
+
       result[rep.id] = {
         representative_id: rep.id,
         nome_representante: rep.nome,
@@ -507,6 +549,7 @@ export async function loadAllRepStructures(reps: {
         modelo_atuacao: dbItem.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(dbItem.estados_atendidos) ? dbItem.estados_atendidos : [],
         detalhes_municipais: dbItem.detalhes_municipais ?? {},
+        dias_campo_por_estado: Object.keys(diasCampo).length > 0 ? diasCampo : buildDefaultStructure(rep).dias_campo_por_estado,
         marcas_representadas: marcasFinais,
         modelo_escritorio: dbItem.modelo_escritorio ?? "escritorio_fisico",
         recursos_operacionais: dbItem.recursos_operacionais ?? {
@@ -584,6 +627,8 @@ export async function createRepresentativeWithStructure(params: {
   modelo_atuacao?: import("./types").ModeloAtuacao;
   modelo_escritorio?: import("./types").ModeloEscritorio;
   estados_atendidos?: string[];
+  detalhes_municipais?: Record<string, import("./types").DetalheMunicipal>;
+  dias_campo_por_estado?: Record<string, number>;
   outras_marcas?: string;
   marcas_representadas?: import("./types").RepresentadaItem[];
   equipe?: import("./types").MembroEquipe[];
@@ -635,6 +680,22 @@ export async function createRepresentativeWithStructure(params: {
       params.estados_atendidos && params.estados_atendidos.length > 0
         ? params.estados_atendidos
         : defaultBase.estados_atendidos,
+    dias_campo_por_estado:
+      params.dias_campo_por_estado ||
+      defaultBase.dias_campo_por_estado ||
+      {},
+    detalhes_municipais:
+      params.detalhes_municipais ||
+      (params.estados_atendidos && params.estados_atendidos.length > 0
+        ? params.estados_atendidos.reduce((acc, uf) => {
+            acc[uf] = {
+              tipo: "todos",
+              descricao: "Cobertura integral",
+              dias_campo_mes: params.dias_campo_por_estado?.[uf] ?? 0,
+            };
+            return acc;
+          }, {} as Record<string, import("./types").DetalheMunicipal>)
+        : defaultBase.detalhes_municipais),
     marcas_representadas:
       params.marcas_representadas && params.marcas_representadas.length > 0
         ? params.marcas_representadas

@@ -457,24 +457,32 @@ export function RepStructureEditorDialog({
                 </div>
               </div>
 
-              {/* Detalhamento municipal para as UFs selecionadas */}
+              {/* Detalhamento municipal e atuação em campo para as UFs selecionadas */}
               {draft.estados_atendidos.length > 0 && (
                 <div className="border rounded-lg p-3 space-y-3 bg-muted/20">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <Label className="text-xs font-bold">Detalhamento Municipal / Exceções de Cobertura:</Label>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <Label className="text-xs font-bold">Detalhamento Territorial & Atuação em Campo:</Label>
+                    </div>
+                    {draft.estados_atendidos.reduce((acc, uf) => acc + (draft.detalhes_municipais[uf]?.dias_campo_mes ?? draft.dias_campo_por_estado?.[uf] ?? 0), 0) > 0 && (
+                      <Badge variant="secondary" className="text-[11px] font-semibold h-5 px-2">
+                        Total em Campo: {draft.estados_atendidos.reduce((acc, uf) => acc + (draft.detalhes_municipais[uf]?.dias_campo_mes ?? draft.dias_campo_por_estado?.[uf] ?? 0), 0)} dias/mês
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Especifique se algum estado possui atendimento apenas em municípios específicos (ex.: "Capital", "Interior", "Cuiabá e Várzea Grande").
+                    Especifique a cobertura municipal e quantos dias por mês há atuação presencial/em campo do representante em cada estado.
                   </p>
 
                   <div className="space-y-2">
                     {draft.estados_atendidos.map((uf) => {
                       const det = draft.detalhes_municipais[uf] || { tipo: "todos", descricao: "" };
+                      const diasCampoVal = det.dias_campo_mes ?? draft.dias_campo_por_estado?.[uf] ?? 0;
 
                       return (
-                        <div key={uf} className="flex items-center gap-2 text-xs bg-background p-2 rounded border">
-                          <Badge variant="outline" className="w-10 justify-center font-bold">
+                        <div key={uf} className="flex flex-wrap sm:flex-nowrap items-center gap-2 text-xs bg-background p-2 rounded border shadow-2xs">
+                          <Badge variant="outline" className="w-10 justify-center font-bold shrink-0">
                             {uf}
                           </Badge>
                           <Select
@@ -489,7 +497,7 @@ export function RepStructureEditorDialog({
                               }));
                             }}
                           >
-                            <SelectTrigger className="w-32 h-8 text-xs">
+                            <SelectTrigger className="w-32 h-8 text-xs shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -501,7 +509,7 @@ export function RepStructureEditorDialog({
                           </Select>
 
                           <Input
-                            className="h-8 text-xs flex-1"
+                            className="h-8 text-xs flex-1 min-w-[140px]"
                             placeholder="Descreva as cidades atendidas (opcional)"
                             value={det.descricao || ""}
                             onChange={(e) => {
@@ -514,6 +522,34 @@ export function RepStructureEditorDialog({
                               }));
                             }}
                           />
+
+                          <div className="flex items-center gap-1.5 shrink-0 bg-muted/40 px-2 py-1 rounded border">
+                            <span className="text-[11px] text-muted-foreground whitespace-nowrap">Em campo:</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={31}
+                              className="w-14 h-7 text-xs text-center font-bold px-1"
+                              placeholder="0"
+                              value={diasCampoVal === 0 && det.dias_campo_mes === undefined ? "" : diasCampoVal}
+                              onChange={(e) => {
+                                const raw = e.target.value;
+                                const val = raw === "" ? 0 : Math.max(0, Math.min(31, parseInt(raw, 10) || 0));
+                                setDraft((d) => ({
+                                  ...d,
+                                  detalhes_municipais: {
+                                    ...d.detalhes_municipais,
+                                    [uf]: { ...det, dias_campo_mes: val },
+                                  },
+                                  dias_campo_por_estado: {
+                                    ...(d.dias_campo_por_estado || {}),
+                                    [uf]: val,
+                                  },
+                                }));
+                              }}
+                            />
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">dias/mês</span>
+                          </div>
                         </div>
                       );
                     })}

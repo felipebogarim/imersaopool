@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { BRAZIL_STATE_PATHS } from "@/components/director-bi/immersions/brazil-s
 import type { ModeloEscritorio, ModeloAtuacao, RepStructure } from "@/lib/estrutura-rep/types";
 import { MODELO_ESCRITORIO_LABEL, MODELO_ATUACAO_LABEL } from "@/lib/estrutura-rep/types";
 import { createRepresentativeWithStructure } from "@/lib/estrutura-rep/storage";
-import { Building2, Plus, Sparkles, Loader2, Check } from "lucide-react";
+import { Building2, Plus, Sparkles, Loader2, Check, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
 interface NewRepDialogProps {
@@ -39,7 +39,12 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
   const [modeloAtuacao, setModeloAtuacao] = useState<ModeloAtuacao>("equipe");
   const [modeloEscritorio, setModeloEscritorio] = useState<ModeloEscritorio>("escritorio_fisico");
   const [estados, setEstados] = useState<string[]>(["MT", "GO", "DF"]);
+  const [diasCampo, setDiasCampo] = useState<Record<string, number>>({ MT: 10, GO: 8, DF: 4 });
   const [outrasMarcas, setOutrasMarcas] = useState("Newline Iluminação");
+
+  const totalDiasCampo = useMemo(() => {
+    return estados.reduce((acc, uf) => acc + (diasCampo[uf] || 0), 0);
+  }, [estados, diasCampo]);
 
   const handleToggleState = (uf: string) => {
     setEstados((prev) => {
@@ -48,12 +53,23 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
       }
       return [...prev, uf];
     });
+    setDiasCampo((prev) => {
+      if (prev[uf] !== undefined) return prev;
+      return { ...prev, [uf]: 5 };
+    });
   };
 
   const handleApplyRegion = (ufs: string[]) => {
     setEstados((prev) => {
       const set = new Set([...prev, ...ufs]);
       return Array.from(set);
+    });
+    setDiasCampo((prev) => {
+      const next = { ...prev };
+      ufs.forEach((uf) => {
+        if (next[uf] === undefined) next[uf] = 5;
+      });
+      return next;
     });
   };
 
@@ -77,6 +93,7 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
         modelo_atuacao: modeloAtuacao,
         modelo_escritorio: modeloEscritorio,
         estados_atendidos: estados,
+        dias_campo_por_estado: diasCampo,
         outras_marcas: outrasMarcas.trim() || undefined,
       });
 
@@ -89,6 +106,7 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
       setTelefone("");
       setCidadeBase("");
       setEstados(["MT", "GO", "DF"]);
+      setDiasCampo({ MT: 10, GO: 8, DF: 4 });
       setOutrasMarcas("Newline Iluminação");
 
       onSuccess(created);
@@ -288,6 +306,71 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
                 );
               })}
             </div>
+
+            {/* Atuação em Campo por Estado (Dias por Mês) */}
+            {estados.length > 0 && (
+              <div className="pt-2.5 mt-2 border-t border-border/70 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+                      <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                      <span>Atuação em Campo do Representante (dias/mês)</span>
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Defina quantos dias por mês há atuação presencial/em campo em cada estado atendido:
+                    </p>
+                  </div>
+                  {totalDiasCampo > 0 && (
+                    <Badge variant="secondary" className="text-[11px] font-semibold h-5 px-2">
+                      Total em campo: {totalDiasCampo} dias/mês
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+                  {estados.map((uf) => {
+                    const stateObj = BRAZIL_STATE_PATHS.find((s) => s.id === uf);
+                    const stateName = stateObj?.name || uf;
+                    const dias = diasCampo[uf] ?? 0;
+
+                    return (
+                      <div
+                        key={uf}
+                        className="flex items-center justify-between gap-2 p-2 rounded-md border bg-background shadow-2xs text-xs"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Badge variant="outline" className="font-bold text-[11px] px-1.5 py-0 h-5 shrink-0">
+                            {uf}
+                          </Badge>
+                          <span className="text-[11px] truncate text-muted-foreground font-medium" title={stateName}>
+                            {stateName}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={31}
+                            value={dias === 0 && diasCampo[uf] === undefined ? "" : dias}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              const val = raw === "" ? 0 : Math.max(0, Math.min(31, parseInt(raw, 10) || 0));
+                              setDiasCampo((prev) => ({
+                                ...prev,
+                                [uf]: val,
+                              }));
+                            }}
+                            placeholder="0"
+                            className="w-14 h-7 text-xs text-center font-bold px-1"
+                          />
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">dias/mês</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Marcas Representadas */}
