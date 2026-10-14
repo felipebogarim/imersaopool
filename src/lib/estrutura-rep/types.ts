@@ -247,10 +247,16 @@ export interface ClienteFrequenciaItem {
 export interface PerformanceComparativo {
   ano_anterior_label?: string; // ex: "2025"
   ano_anterior_valor?: number; // ex: 1850000
-  ano_atual_label?: string; // ex: "2026 (YTD)"
+  ano_atual_label?: string; // ex: "2026"
   ano_atual_valor?: number; // ex: 2140000
   meta_ano_atual?: number; // ex: 2500000
   observacoes?: string;
+  ano_base?: number; // Ano 1 de comparação (ex: 2025)
+  ano_comparado?: number; // Ano 2 de comparação (ex: 2026)
+  mes_inicio?: number; // Mês inicial (1..12)
+  mes_fim?: number; // Mês final (1..12)
+  meses_selecionados?: number[]; // Lista de meses (1..12) inclusos na comparação
+  periodo_label?: string; // Rótulo descritivo do período (ex: "Jan a Out")
 }
 
 export interface RepStructure {

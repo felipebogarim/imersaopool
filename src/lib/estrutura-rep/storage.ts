@@ -228,9 +228,15 @@ export function buildDefaultStructure(rep: {
     performance_comparativo: {
       ano_anterior_label: "2025",
       ano_anterior_valor: 1850000,
-      ano_atual_label: "2026 (YTD)",
+      ano_atual_label: "2026",
       ano_atual_valor: 2140000,
       meta_ano_atual: 2500000,
+      ano_base: 2025,
+      ano_comparado: 2026,
+      mes_inicio: 1,
+      mes_fim: 10,
+      meses_selecionados: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      periodo_label: "Jan a Out",
       observacoes: "Crescimento sustentado com expansão em contas-chave",
     },
   };

@@ -106,5 +106,23 @@ describe("estrutura-rep storage and defaults", () => {
     expect(structure.dias_campo_por_estado?.["MT"]).toBe(4);
     expect(structure.detalhes_municipais["DF"]?.dias_campo_mes).toBe(12);
   });
+
+  it("inicializa performance_comparativo com comparativo de evolução configurado", () => {
+    const rep = {
+      id: "rep-teste",
+      nome: "Rep Teste",
+      representacao: null,
+      regiao: "SP",
+      outras_marcas: null,
+    };
+    const structure = buildDefaultStructure(rep);
+    expect(structure.performance_comparativo).toBeDefined();
+    expect(structure.performance_comparativo?.ano_base).toBe(2025);
+    expect(structure.performance_comparativo?.ano_comparado).toBe(2026);
+    expect(structure.performance_comparativo?.meses_selecionados).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(structure.performance_comparativo?.periodo_label).toBe("Jan a Out");
+    expect(structure.performance_comparativo?.ano_anterior_valor).toBe(1850000);
+    expect(structure.performance_comparativo?.ano_atual_valor).toBe(2140000);
+  });
 });
 
