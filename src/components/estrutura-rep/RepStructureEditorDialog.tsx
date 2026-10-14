@@ -1114,15 +1114,41 @@ export function RepStructureEditorDialog({
                       </div>
                     </div>
 
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-                      onClick={() => handleRemoveMembro(membro.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Select
+                        value={membro.nivel || "operacao"}
+                        onValueChange={(val: NivelHierarquico) => {
+                          setDraft((prev) => ({
+                            ...prev,
+                            equipe: prev.equipe.map((m) =>
+                              m.id === membro.id ? { ...m, nivel: val } : m
+                            ),
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="h-7 text-[11px] w-[140px] bg-muted/40 font-medium">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(NIVEL_LABEL).map(([val, lbl]) => (
+                            <SelectItem key={val} value={val} className="text-xs">
+                              {lbl}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                        onClick={() => handleRemoveMembro(membro.id)}
+                        title="Remover integrante"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

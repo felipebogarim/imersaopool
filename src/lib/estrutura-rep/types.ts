@@ -132,12 +132,13 @@ export const MODALIDADE_LABEL: Record<ModalidadeTrabalho, string> = {
   hibrido: "Híbrido",
 };
 
-export type NivelHierarquico = "titular" | "lideranca" | "operacao" | "apoio";
+export type NivelHierarquico = "titular" | "preposto" | "lideranca" | "operacao" | "apoio";
 
 export const NIVEL_LABEL: Record<NivelHierarquico, string> = {
-  titular: "Representante Titular",
-  lideranca: "Liderança Comercial",
-  operacao: "Operação / Backoffice",
+  titular: "Representante Titular / Principal",
+  preposto: "Preposto Comercial / Campo",
+  lideranca: "Liderança Comercial / Supervisão",
+  operacao: "Assistente Comercial / Backoffice",
   apoio: "Apoio / Atendimento",
 };
 
