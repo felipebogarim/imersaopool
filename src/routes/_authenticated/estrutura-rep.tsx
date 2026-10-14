@@ -785,6 +785,7 @@ function EstruturaRepPage() {
         repNome={selectedRep?.nome || structure?.nome_representante}
         equipe={structure?.equipe}
         structureClients={repStructureClients}
+        frequenciaVisitas={structure?.frequencia_visitas}
         currentFrequenciaDemais={structure?.frequencia_demais_clientes ?? 60}
         initialBatchMode={freqModalBatchMode}
         onSave={handleSaveFrequencia}

@@ -33,6 +33,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { RepClientSelect } from "./RepClientSelect";
+import {
+  fetchTopPerformanceClients,
+  type TopPerformanceClient,
+} from "@/lib/estrutura-rep/rep-clients";
 
 export interface SaveFrequenciaOptions {
   // Se salvar item individual do Top 10:
@@ -53,6 +57,7 @@ interface ClienteFrequenciaModalProps {
   repNome?: string;
   equipe?: MembroEquipe[];
   structureClients?: Array<{ nome: string; cidade?: string | null; estado?: string | null }>;
+  frequenciaVisitas?: ClienteFrequenciaItem[];
   currentFrequenciaDemais?: number;
   initialBatchMode?: boolean;
   onSave: (payload: SaveFrequenciaOptions) => Promise<void> | void;
@@ -73,6 +78,7 @@ export function ClienteFrequenciaModal({
   repNome,
   equipe = [],
   structureClients,
+  frequenciaVisitas = [],
   currentFrequenciaDemais = 60,
   initialBatchMode = false,
   onSave,
@@ -87,11 +93,46 @@ export function ClienteFrequenciaModal({
   const [responsavel, setResponsavel] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [topPerformance, setTopPerformance] = useState<TopPerformanceClient[]>([]);
+
+  // Retorna o cliente da performance ou frequenciaVisitas para uma posição específica
+  const getClientForPosicao = (pos: number) => {
+    const fromPerf = topPerformance.find((p) => p.posicao === pos);
+    if (fromPerf?.cliente_nome) return fromPerf.cliente_nome;
+    const fromFreq = frequenciaVisitas?.find((f) => f.posicao === pos);
+    if (fromFreq?.cliente_nome) return fromFreq.cliente_nome;
+    return null;
+  };
 
   useEffect(() => {
     if (open) {
       setMarcarTodos(initialBatchMode);
       setFrequenciaDemais(currentFrequenciaDemais || 60);
+
+      let active = true;
+
+      // Busca os 10 maiores clientes da performance do representante
+      fetchTopPerformanceClients(representativeId, repNome, frequenciaVisitas)
+        .then((perfList: TopPerformanceClient[]) => {
+          if (!active) return;
+          setTopPerformance(perfList);
+
+          // Se estiver cadastrando e nenhum cliente específico foi passado, preenche com o da posição sugerida
+          if (!cliente) {
+            const targetPos = posicaoSugerida || 1;
+            const match = perfList.find((p: TopPerformanceClient) => p.posicao === targetPos) ||
+              frequenciaVisitas?.find((f) => f.posicao === targetPos);
+            if (match && match.cliente_nome) {
+              setClienteNome(match.cliente_nome);
+              if (match.cidade) setCidade(match.cidade);
+              if (match.uf) setUf(match.uf);
+              if (match.frequencia_dias) setFrequenciaDias(match.frequencia_dias);
+              if (match.responsavel) setResponsavel(match.responsavel);
+              if (match.observacoes) setObservacoes(match.observacoes);
+            }
+          }
+        })
+        .catch((err: any) => console.warn("Erro ao buscar top clientes performance:", err));
 
       if (cliente) {
         setPosicao(cliente.posicao || posicaoSugerida);
@@ -102,16 +143,49 @@ export function ClienteFrequenciaModal({
         setResponsavel(cliente.responsavel || "");
         setObservacoes(cliente.observacoes || "");
       } else {
-        setPosicao(posicaoSugerida);
-        setClienteNome("");
-        setCidade("");
-        setUf("BA");
-        setFrequenciaDias(40);
-        setResponsavel(repNome ? `${repNome} (Rep Titular)` : "");
-        setObservacoes("");
+        const targetPos = posicaoSugerida || 1;
+        setPosicao(targetPos);
+        const match = frequenciaVisitas?.find((f) => f.posicao === targetPos);
+        if (match && match.cliente_nome) {
+          setClienteNome(match.cliente_nome);
+          setCidade(match.cidade || "");
+          setUf(match.uf || "BA");
+          setFrequenciaDias(match.frequencia_dias || 40);
+          setResponsavel(match.responsavel || (repNome ? `${repNome} (Rep Titular)` : ""));
+          setObservacoes(match.observacoes || "");
+        } else {
+          setClienteNome("");
+          setCidade("");
+          setUf("BA");
+          setFrequenciaDias(40);
+          setResponsavel(repNome ? `${repNome} (Rep Titular)` : "");
+          setObservacoes("");
+        }
       }
+
+      return () => {
+        active = false;
+      };
     }
-  }, [open, cliente, posicaoSugerida, repNome, currentFrequenciaDemais, initialBatchMode]);
+  }, [open, cliente, posicaoSugerida, repNome, currentFrequenciaDemais, initialBatchMode, representativeId, frequenciaVisitas]);
+
+  const handleSelectPosicao = (novaPos: number) => {
+    setPosicao(novaPos);
+
+    // Quando o usuário escolhe uma posição no ranking, carrega automaticamente os dados desse cliente
+    const matchPerf = topPerformance.find((p) => p.posicao === novaPos);
+    const matchFreq = frequenciaVisitas?.find((f) => f.posicao === novaPos);
+    const match = matchFreq || matchPerf;
+
+    if (match && match.cliente_nome) {
+      setClienteNome(match.cliente_nome);
+      if (match.cidade) setCidade(match.cidade);
+      if (match.uf) setUf(match.uf);
+      if (match.frequencia_dias) setFrequenciaDias(match.frequencia_dias);
+      if (match.responsavel) setResponsavel(match.responsavel);
+      if (match.observacoes) setObservacoes(match.observacoes);
+    }
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -278,31 +352,59 @@ export function ClienteFrequenciaModal({
           ) : (
             /* MODO 2: Individual (1 a 10) */
             <>
-              {/* Posição no Ranking (1 a 10) e Frequência Individual */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5 col-span-1">
-                  <Label className="text-xs font-semibold">Posição</Label>
+              {/* Posição no Ranking (1 a 10) com os nomes dos clientes da performance */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-xs font-semibold flex items-center justify-between">
+                    <span>Posição no Ranking (Top 10) *</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      10 maiores da performance
+                    </span>
+                  </Label>
                   <Select
                     value={String(posicao)}
-                    onValueChange={(v) => setPosicao(Number(v))}
+                    onValueChange={(v) => handleSelectPosicao(Number(v))}
                   >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue />
+                    <SelectTrigger className="h-9 text-xs font-semibold">
+                      <SelectValue placeholder="Selecione a posição">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="font-bold text-foreground shrink-0">{posicao}º Lugar</span>
+                          {getClientForPosicao(posicao) ? (
+                            <span className="text-muted-foreground truncate font-medium">
+                              — {getClientForPosicao(posicao)}
+                            </span>
+                          ) : null}
+                        </div>
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                        <SelectItem key={num} value={String(num)} className="text-xs">
-                          {num}º Lugar
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="max-w-[390px] sm:max-w-[440px]">
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => {
+                        const clientName = getClientForPosicao(num);
+                        return (
+                          <SelectItem key={num} value={String(num)} className="text-xs py-2 cursor-pointer">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-bold text-foreground shrink-0">{num}º Lugar</span>
+                              {clientName ? (
+                                <span className="text-muted-foreground truncate font-medium" title={clientName}>
+                                  — {clientName}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground/60 italic text-[11px] truncate">
+                                  (Disponível para cadastro)
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Ciclo / Frequência em Dias */}
-                <div className="space-y-1.5 col-span-2">
+                <div className="space-y-1.5 sm:col-span-1">
                   <Label htmlFor="freq-days" className="text-xs font-semibold">
-                    Frequência de Retorno (dias) *
+                    Frequência (dias) *
                   </Label>
                   <div className="relative">
                     <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -318,8 +420,8 @@ export function ClienteFrequenciaModal({
                       required
                     />
                   </div>
-                  <span className="text-[10px] text-muted-foreground block">
-                    Exemplo: a cada {frequenciaDias || 40} dias
+                  <span className="text-[10px] text-muted-foreground block truncate">
+                    Ciclo: a cada {frequenciaDias || 40}d
                   </span>
                 </div>
               </div>

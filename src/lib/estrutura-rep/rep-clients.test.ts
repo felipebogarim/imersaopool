@@ -88,4 +88,20 @@ describe("rep-clients", () => {
     expect(result[2].nome_fantasia).toBe("Cliente Geral");
     expect(result[2].isRepClient).toBe(false);
   });
+
+  it("retorna lista ordenada do top 10 com fetchTopPerformanceClients e fallback de frequencia", async () => {
+    const { fetchTopPerformanceClients } = await import("./rep-clients");
+    const mockFrequencia = [
+      { posicao: 1, cliente_nome: "Cliente Um", cidade: "Salvador", uf: "BA", frequencia_dias: 30 },
+      { posicao: 2, cliente_nome: "Cliente Dois", cidade: "Feira de Santana", uf: "BA", frequencia_dias: 40 },
+    ];
+
+    const result = await fetchTopPerformanceClients("rep-test", "Representante Teste", mockFrequencia);
+    expect(result).toBeDefined();
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    expect(result[0].posicao).toBe(1);
+    expect(result[0].cliente_nome).toBe("Cliente Um");
+    expect(result[1].posicao).toBe(2);
+    expect(result[1].cliente_nome).toBe("Cliente Dois");
+  });
 });

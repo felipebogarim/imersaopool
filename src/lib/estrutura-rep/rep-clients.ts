@@ -168,3 +168,123 @@ export async function fetchClientsForRep(
     return processRepClients([], representativeId, repNome, structureClients);
   }
 }
+
+export interface TopPerformanceClient {
+  posicao: number;
+  cliente_nome: string;
+  cidade?: string;
+  uf?: string;
+  frequencia_dias?: number;
+  responsavel?: string;
+  observacoes?: string;
+}
+
+/**
+ * Busca os 10 maiores clientes da performance para o representante.
+ * Prioriza dados reais de rep_performance_rows (ordenados pelo ranking de performance),
+ * enriquecendo com dados cadastrais e preenchendo com frequencia_visitas existente.
+ */
+export async function fetchTopPerformanceClients(
+  representativeId?: string,
+  repNome?: string,
+  frequenciaVisitas?: Array<{
+    posicao?: number;
+    cliente_nome: string;
+    cidade?: string;
+    uf?: string;
+    frequencia_dias?: number;
+    responsavel?: string;
+    observacoes?: string;
+  }>
+): Promise<TopPerformanceClient[]> {
+  const result: TopPerformanceClient[] = [];
+
+  // 1. Tenta carregar os 10 maiores clientes da planilha de performance no Supabase
+  if (representativeId) {
+    try {
+      const { data: uploads } = await supabase
+        .from("rep_performance_uploads")
+        .select("id, periodo_fim, created_at")
+        .eq("representative_id", representativeId)
+        .is("substituida_em", null)
+        .order("periodo_fim", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+
+      if (uploads && uploads.length > 0) {
+        const uploadId = uploads[0].id;
+        const { data: rows } = await supabase
+          .from("rep_performance_rows")
+          .select("id, razao_social, total_pct, ordem")
+          .eq("upload_id", uploadId)
+          .order("ordem", { ascending: true });
+
+        const summaryPrefixes = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
+        const clientRows = (rows || []).filter((r) => {
+          const name = (r.razao_social || "").trim().toUpperCase();
+          return name && !summaryPrefixes.some((p) => name.startsWith(p));
+        });
+
+        if (clientRows.length > 0) {
+          const top10Rows = clientRows.slice(0, 10);
+          const names = top10Rows.map((r) => r.razao_social.trim());
+
+          // Busca dados de cidade e estado para esses clientes na tabela clients
+          const { data: clientsData } = await supabase
+            .from("clients")
+            .select("razao_social, nome_fantasia, cidade, municipio, estado")
+            .in("razao_social", names);
+
+          const clientInfoMap = new Map<string, { cidade?: string; estado?: string }>();
+          (clientsData || []).forEach((c) => {
+            const key = normalizeText(c.razao_social || c.nome_fantasia);
+            if (key) {
+              clientInfoMap.set(key, {
+                cidade: (c.cidade || c.municipio || "").trim() || undefined,
+                estado: (c.estado || "").trim() || undefined,
+              });
+            }
+          });
+
+          top10Rows.forEach((r, idx) => {
+            const name = r.razao_social.trim();
+            const normKey = normalizeText(name);
+            const info = clientInfoMap.get(normKey);
+            const existingFreq = frequenciaVisitas?.find((f) => f.posicao === idx + 1);
+
+            result.push({
+              posicao: idx + 1,
+              cliente_nome: name,
+              cidade: existingFreq?.cidade || info?.cidade,
+              uf: existingFreq?.uf || info?.estado,
+              frequencia_dias: existingFreq?.frequencia_dias,
+              responsavel: existingFreq?.responsavel,
+              observacoes: existingFreq?.observacoes,
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[fetchTopPerformanceClients] Erro ao buscar performance:", err);
+    }
+  }
+
+  // 2. Se não houver performance carregada ou houver posições pendentes, complementa com frequencia_visitas existente
+  for (let pos = 1; pos <= 10; pos++) {
+    if (!result.some((r) => r.posicao === pos)) {
+      const existingFreq = frequenciaVisitas?.find((f) => f.posicao === pos);
+      if (existingFreq && existingFreq.cliente_nome) {
+        result.push({
+          posicao: pos,
+          cliente_nome: existingFreq.cliente_nome,
+          cidade: existingFreq.cidade,
+          uf: existingFreq.uf,
+          frequencia_dias: existingFreq.frequencia_dias,
+          responsavel: existingFreq.responsavel,
+          observacoes: existingFreq.observacoes,
+        });
+      }
+    }
+  }
+
+  return result.sort((a, b) => a.posicao - b.posicao);
+}
