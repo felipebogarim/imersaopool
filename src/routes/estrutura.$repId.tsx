@@ -73,6 +73,18 @@ function PublicEstruturaViewerPage() {
         });
 
         setStructure(loaded);
+
+        // Gera e exibe a visualização direta do PDF em alta resolução
+        try {
+          const { blob: pdfBlob } = await generateRepStructurePdf(loaded);
+          const { generateStructureThumbnail } = await import("@/lib/estrutura-rep/thumbnail");
+          const { dataUrl } = await generateStructureThumbnail(loaded, pdfBlob);
+          if (dataUrl) {
+            setImageUrl(dataUrl);
+          }
+        } catch (e) {
+          console.warn("[PublicEstruturaViewerPage] Falha na prévia dinâmica do PDF:", e);
+        }
       } catch (err) {
         console.warn("[PublicEstruturaViewerPage] Falha ao carregar dados:", err);
       }

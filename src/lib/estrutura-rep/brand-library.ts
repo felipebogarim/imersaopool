@@ -38,6 +38,10 @@ const SVG_INTERLIGHT = `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="23" text-anchor="middle" fill="#0284c7" letter-spacing="1">INTERLIGHT</text></svg>`
 )}`;
 
+const SVG_DRESALL = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#0f172a" letter-spacing="2">DRESALL</text></svg>`
+)}`;
+
 /** Catálogo base de marcas de iluminação com logomarcas vetorizadas */
 export const DEFAULT_BRAND_CATALOG: BrandLibraryItem[] = [
   {
@@ -97,6 +101,16 @@ export const DEFAULT_BRAND_CATALOG: BrandLibraryItem[] = [
     segmento: "Iluminação Arquitetural",
     modelo_negocio: "fabricante",
     canais: ["projetos", "distribuidores"],
+    abrangencia: "Integral",
+    origem: "Catálogo Oficial",
+  },
+  {
+    id: "lib-dresall",
+    nome: "Dresall",
+    logo_url: SVG_DRESALL,
+    segmento: "Iluminação & Perfilados",
+    modelo_negocio: "fabricante",
+    canais: ["varejo", "projetos"],
     abrangencia: "Integral",
     origem: "Catálogo Oficial",
   },
@@ -256,3 +270,49 @@ export function getSharedBrandLibrary(
     return a.nome.localeCompare(b.nome);
   });
 }
+
+/**
+ * Busca a melhor logomarca disponível para um determinado nome de marca.
+ * Procura primeiro na estrutura local, depois no catálogo padrão e na biblioteca compartilhada.
+ */
+export function findBrandLogo(name: string, structureMarcas?: RepresentadaItem[]): string | undefined {
+  if (!name || !name.trim()) return undefined;
+  const targetKey = normalizeBrandKey(name);
+
+  // 1. Procura na lista informada do próprio representante
+  if (structureMarcas && structureMarcas.length > 0) {
+    const directMatch = structureMarcas.find(
+      (m) => normalizeBrandKey(m.nome) === targetKey && Boolean(m.logo_url)
+    );
+    if (directMatch?.logo_url) return directMatch.logo_url;
+  }
+
+  // 2. Procura no catálogo padrão oficial
+  const defaultExact = DEFAULT_BRAND_CATALOG.find((b) => normalizeBrandKey(b.nome) === targetKey);
+  if (defaultExact?.logo_url) return defaultExact.logo_url;
+
+  // 3. Procura correspondência parcial no catálogo padrão (ex: "brillia" vs "brilia")
+  const defaultFuzzy = DEFAULT_BRAND_CATALOG.find(
+    (b) =>
+      normalizeBrandKey(b.nome).includes(targetKey) ||
+      targetKey.includes(normalizeBrandKey(b.nome)) ||
+      (targetKey.includes("bril") && normalizeBrandKey(b.nome).includes("bril"))
+  );
+  if (defaultFuzzy?.logo_url) return defaultFuzzy.logo_url;
+
+  // 4. Procura na biblioteca compartilhada
+  try {
+    const shared = getSavedSharedBrands();
+    const sharedMatch = shared.find(
+      (b) =>
+        (normalizeBrandKey(b.nome) === targetKey ||
+          normalizeBrandKey(b.nome).includes(targetKey) ||
+          targetKey.includes(normalizeBrandKey(b.nome))) &&
+        Boolean(b.logo_url)
+    );
+    if (sharedMatch?.logo_url) return sharedMatch.logo_url;
+  } catch {}
+
+  return undefined;
+}
+

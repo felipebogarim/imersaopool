@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { saveBrandToLibrary } from "./brand-library";
+import { saveBrandToLibrary, findBrandLogo } from "./brand-library";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -17,10 +17,12 @@ export function getLocalKey(repId: string): string {
 
 /** Extrai marcas de texto livre como "Stella, Brilha, Pampa" para itens estruturados */
 function parseMarcasTexto(outrasMarcas?: string | null): RepresentadaItem[] {
+  const newlineLogo = findBrandLogo("Newline Iluminação");
   const marcas: RepresentadaItem[] = [
     {
       id: "brand-newline",
       nome: "Newline Iluminação",
+      logo_url: newlineLogo,
       segmento: "Iluminação Técnica e Decorativa",
       modelo_negocio: "fabricante",
       canais: ["varejo", "distribuidores", "projetos"],
@@ -39,9 +41,11 @@ function parseMarcasTexto(outrasMarcas?: string | null): RepresentadaItem[] {
 
   items.forEach((nome, idx) => {
     if (nome.toLowerCase().includes("newline")) return;
+    const logoUrl = findBrandLogo(nome);
     marcas.push({
       id: `brand-extra-${idx}`,
       nome,
+      logo_url: logoUrl,
       segmento: "Iluminação & Complementos",
       modelo_negocio: idx % 2 === 0 ? "importador" : "distribuidor",
       canais: ["varejo", "projetos"],
