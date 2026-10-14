@@ -239,6 +239,25 @@ export function buildDefaultStructure(rep: {
       periodo_label: "Jan a Out",
       observacoes: "Crescimento sustentado com expansão em contas-chave",
     },
+    ranking_clientes_comparativo: {
+      periodo_1: {
+        label: "2025 (Ano Completo)",
+        ano: 2025,
+        periodo_meses: "Ano Completo",
+        qtd_silver: 18,
+        qtd_gold: 8,
+        qtd_black: 3,
+      },
+      periodo_2: {
+        label: "2026 (Jan - Out)",
+        ano: 2026,
+        periodo_meses: "Jan a Out",
+        qtd_silver: 22,
+        qtd_gold: 11,
+        qtd_black: 5,
+      },
+      observacoes: "Migração consistente de contas Silver para Gold e ampliação de contas estratégicas Black.",
+    },
   };
 }
 

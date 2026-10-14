@@ -124,5 +124,23 @@ describe("estrutura-rep storage and defaults", () => {
     expect(structure.performance_comparativo?.ano_anterior_valor).toBe(1850000);
     expect(structure.performance_comparativo?.ano_atual_valor).toBe(2140000);
   });
+
+  it("inicializa ranking_clientes_comparativo com categorias Black, Gold e Silver", () => {
+    const rep = {
+      id: "rep-teste",
+      nome: "Rep Teste",
+      representacao: null,
+      regiao: "SP",
+      outras_marcas: null,
+    };
+    const structure = buildDefaultStructure(rep);
+    expect(structure.ranking_clientes_comparativo).toBeDefined();
+    expect(structure.ranking_clientes_comparativo?.periodo_1.qtd_silver).toBe(18);
+    expect(structure.ranking_clientes_comparativo?.periodo_1.qtd_gold).toBe(8);
+    expect(structure.ranking_clientes_comparativo?.periodo_1.qtd_black).toBe(3);
+    expect(structure.ranking_clientes_comparativo?.periodo_2.qtd_silver).toBe(22);
+    expect(structure.ranking_clientes_comparativo?.periodo_2.qtd_gold).toBe(11);
+    expect(structure.ranking_clientes_comparativo?.periodo_2.qtd_black).toBe(5);
+  });
 });
 

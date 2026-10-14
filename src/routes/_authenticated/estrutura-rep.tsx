@@ -48,6 +48,7 @@ import { NewRepDialog } from "@/components/estrutura-rep/NewRepDialog";
 import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
 import { BrandEditorModal } from "@/components/estrutura-rep/BrandEditorModal";
 import { RepPerformanceYtdCard } from "@/components/estrutura-rep/RepPerformanceYtdCard";
+import { RankingClientesComparativoCard } from "@/components/estrutura-rep/RankingClientesComparativoCard";
 import {
   loadRepStructure,
   loadAllRepStructures,
@@ -61,6 +62,7 @@ import type {
   TreinamentoItem,
   ClienteFrequenciaItem,
   PerformanceComparativo,
+  RankingClientesComparativo,
 } from "@/lib/estrutura-rep/types";
 import {
   MODELO_ESCRITORIO_LABEL,
@@ -343,6 +345,19 @@ function EstruturaRepPage() {
     const updatedStructure: RepStructure = {
       ...structure,
       performance_comparativo: perf,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+  };
+
+  // Salva ranking comparativo manual de clientes por categoria (Black, Gold, Silver)
+  const handleSaveRankingClientesComparativo = async (ranking: RankingClientesComparativo) => {
+    if (!structure) return;
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      ranking_clientes_comparativo: ranking,
     };
 
     await saveRepStructure(updatedStructure);
@@ -771,6 +786,14 @@ function EstruturaRepPage() {
                   <RepPerformanceYtdCard
                     performance={structure.performance_comparativo}
                     onSave={handleSavePerformanceComparativo}
+                  />
+                </div>
+
+                {/* Abaixo de tudo: Ranking Comparativo de Clientes por Categoria (Black, Gold, Silver) */}
+                <div className="lg:col-span-12">
+                  <RankingClientesComparativoCard
+                    data={structure.ranking_clientes_comparativo}
+                    onSave={handleSaveRankingClientesComparativo}
                   />
                 </div>
               </div>

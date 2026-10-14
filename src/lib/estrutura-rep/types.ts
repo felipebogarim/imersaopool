@@ -278,8 +278,24 @@ export interface RepStructure {
   treinamentos?: TreinamentoItem[];
   frequencia_visitas?: ClienteFrequenciaItem[];
   frequencia_demais_clientes?: number; // frequência de visita aos demais clientes da carteira (dias)
-  performance_comparativo?: PerformanceComparativo; // Comparativo manual Ano Anterior vs Ano Atual YTD
+  performance_comparativo?: PerformanceComparativo; // Comparativo manual Ano Anterior vs Ano Atual
+  ranking_clientes_comparativo?: RankingClientesComparativo; // Ranking comparativo de clientes por categoria (Silver, Gold, Black)
   updated_at?: string;
+}
+
+export interface PeriodoRankingClientes {
+  label: string; // ex: "2025 (Ano Completo)" ou "2025"
+  ano?: number; // ex: 2025
+  periodo_meses?: string; // ex: "Ano Completo" ou "Jan a Out"
+  qtd_silver: number; // 1 ponto cada
+  qtd_gold: number; // 2 pontos cada
+  qtd_black: number; // 3 pontos cada
+}
+
+export interface RankingClientesComparativo {
+  periodo_1: PeriodoRankingClientes;
+  periodo_2: PeriodoRankingClientes;
+  observacoes?: string;
 }
 
 
