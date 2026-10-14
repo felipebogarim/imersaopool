@@ -32,7 +32,10 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { RepBrazilMap } from "@/components/estrutura-rep/RepBrazilMap";
-import { RepresentadasSection } from "@/components/estrutura-rep/RepresentadasSection";
+import { TreinamentosSection } from "@/components/estrutura-rep/TreinamentosSection";
+import { FrequenciaVisitasSection } from "@/components/estrutura-rep/FrequenciaVisitasSection";
+import { TreinamentoEditorModal } from "@/components/estrutura-rep/TreinamentoEditorModal";
+import { ClienteFrequenciaModal } from "@/components/estrutura-rep/ClienteFrequenciaModal";
 import { EstruturaFisicaSection } from "@/components/estrutura-rep/EstruturaFisicaSection";
 import { EquipeOrganogramaSection } from "@/components/estrutura-rep/EquipeOrganogramaSection";
 import { RepStructureEditorDialog } from "@/components/estrutura-rep/RepStructureEditorDialog";
@@ -48,7 +51,12 @@ import {
   deleteRepStructure,
 } from "@/lib/estrutura-rep/storage";
 import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
-import type { RepStructure, RepresentadaItem } from "@/lib/estrutura-rep/types";
+import type {
+  RepStructure,
+  RepresentadaItem,
+  TreinamentoItem,
+  ClienteFrequenciaItem,
+} from "@/lib/estrutura-rep/types";
 import {
   MODELO_ESCRITORIO_LABEL,
   MODELO_ATUACAO_LABEL,
@@ -92,6 +100,10 @@ function EstruturaRepPage() {
   const [editorInitialTab, setEditorInitialTab] = useState<string>("identificacao");
   const [brandModalOpen, setBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<RepresentadaItem | null>(null);
+  const [trainingModalOpen, setTrainingModalOpen] = useState(false);
+  const [editingTraining, setEditingTraining] = useState<TreinamentoItem | null>(null);
+  const [freqModalOpen, setFreqModalOpen] = useState(false);
+  const [editingFreq, setEditingFreq] = useState<ClienteFrequenciaItem | null>(null);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -220,6 +232,91 @@ function EstruturaRepPage() {
     await queryClient.invalidateQueries({ queryKey: ["estrutura-reps-list"] });
     setBrandModalOpen(false);
     setEditingBrand(null);
+  };
+
+  // Salva agendamento de treinamento diretamente e persiste
+  const handleSaveTreinamento = async (item: TreinamentoItem) => {
+    if (!structure) {
+      toast.error("Nenhum representante selecionado.");
+      return;
+    }
+
+    const current = structure.treinamentos || [];
+    const exists = current.some((t) => t.id === item.id);
+    const updated = exists
+      ? current.map((t) => (t.id === item.id ? item : t))
+      : [...current, item];
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      treinamentos: updated,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    setTrainingModalOpen(false);
+    setEditingTraining(null);
+  };
+
+  // Exclui agendamento de treinamento
+  const handleDeleteTreinamento = async (trainId: string) => {
+    if (!structure) return;
+
+    const current = structure.treinamentos || [];
+    const updated = current.filter((t) => t.id !== trainId);
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      treinamentos: updated,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    toast.success("Agendamento de treinamento removido.");
+  };
+
+  // Salva cliente e frequência no Top 10
+  const handleSaveFrequencia = async (item: ClienteFrequenciaItem) => {
+    if (!structure) {
+      toast.error("Nenhum representante selecionado.");
+      return;
+    }
+
+    const current = structure.frequencia_visitas || [];
+    const exists = current.some((f) => f.id === item.id);
+    const updated = exists
+      ? current.map((f) => (f.id === item.id ? item : f))
+      : [...current, item];
+
+    // Ordena por posição
+    updated.sort((a, b) => (a.posicao || 99) - (b.posicao || 99));
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      frequencia_visitas: updated,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    setFreqModalOpen(false);
+    setEditingFreq(null);
+  };
+
+  // Exclui cliente do Top 10
+  const handleDeleteFrequencia = async (freqId: string) => {
+    if (!structure) return;
+
+    const current = structure.frequencia_visitas || [];
+    const updated = current.filter((f) => f.id !== freqId);
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      frequencia_visitas: updated,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    toast.success("Cliente removido da lista Top 10.");
   };
 
   // Confirmação de exclusão
@@ -511,11 +608,31 @@ function EstruturaRepPage() {
                   />
                 </div>
 
-                <div className="lg:col-span-7 min-h-[500px]">
-                  <RepresentadasSection
-                    marcas={structure.marcas_representadas}
-                    onAddClick={handleOpenAddBrand}
-                    onEditClick={handleOpenEditBrand}
+                <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[500px]">
+                  <TreinamentosSection
+                    treinamentos={structure.treinamentos}
+                    onAddClick={() => {
+                      setEditingTraining(null);
+                      setTrainingModalOpen(true);
+                    }}
+                    onEditClick={(item) => {
+                      setEditingTraining(item);
+                      setTrainingModalOpen(true);
+                    }}
+                    onDeleteClick={handleDeleteTreinamento}
+                  />
+
+                  <FrequenciaVisitasSection
+                    clientes={structure.frequencia_visitas}
+                    onAddClick={() => {
+                      setEditingFreq(null);
+                      setFreqModalOpen(true);
+                    }}
+                    onEditClick={(item) => {
+                      setEditingFreq(item);
+                      setFreqModalOpen(true);
+                    }}
+                    onDeleteClick={handleDeleteFrequencia}
                   />
                 </div>
 
@@ -571,6 +688,23 @@ function EstruturaRepPage() {
         onOpenChange={setBrandModalOpen}
         brand={editingBrand}
         onSaveBrand={handleSaveBrand}
+      />
+
+      {/* Modal de Agendamento e Edição de Treinamento */}
+      <TreinamentoEditorModal
+        open={trainingModalOpen}
+        onOpenChange={setTrainingModalOpen}
+        treinamento={editingTraining}
+        onSave={handleSaveTreinamento}
+      />
+
+      {/* Modal de Edição de Frequência de Visita dos Top 10 Clientes */}
+      <ClienteFrequenciaModal
+        open={freqModalOpen}
+        onOpenChange={setFreqModalOpen}
+        cliente={editingFreq}
+        posicaoSugerida={(structure?.frequencia_visitas?.length || 0) + 1}
+        onSave={handleSaveFrequencia}
       />
 
       {/* Diálogo de Confirmação de Exclusão */}

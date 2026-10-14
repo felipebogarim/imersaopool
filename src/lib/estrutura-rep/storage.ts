@@ -4,6 +4,8 @@ import type {
   RepresentadaItem,
   MembroEquipe,
   RecursosOperacionais,
+  TreinamentoItem,
+  ClienteFrequenciaItem,
 } from "./types";
 
 const LOCAL_STORAGE_PREFIX = "estrutura_rep_";
@@ -140,6 +142,58 @@ export function buildDefaultStructure(rep: {
     observacoes: "Equipe com rotina de alinhamento semanal e suporte contínuo via WhatsApp e telefone.",
   };
 
+  const defaultTreinamentos: TreinamentoItem[] = [
+    {
+      id: "train-1",
+      tipo: "mini_palestra",
+      cliente_nome: "Ilustre Iluminação & Design",
+      data: "2026-10-24",
+      horario: "09:00",
+      local: "Showroom da Loja",
+      observacoes: "Apresentação dos lançamentos Newline e diferenciais ópticos",
+    },
+    {
+      id: "train-2",
+      tipo: "papo_mesa_a_mesa",
+      cliente_nome: "Luz & Arte Conceito",
+      data: "2026-11-05",
+      horario: "14:30",
+      local: "Mesa técnica da equipe de vendas",
+      observacoes: "Tira-dúvidas sobre perfilados, trilhos e fitas LED",
+    },
+    {
+      id: "train-3",
+      tipo: "trade_nl",
+      cliente_nome: "Center Luz Distribuidora",
+      data: "2026-11-18",
+      horario: "10:00",
+      local: "Auditório Principal",
+      observacoes: "Alinhamento com vendedores internos e balcão de atendimento",
+    },
+    {
+      id: "train-4",
+      tipo: "rep_vendedores_arquitetos",
+      cliente_nome: "Ateliê da Luz e Arquitetura",
+      data: "2026-12-02",
+      horario: "19:00",
+      local: "Espaço Gourmet & Projetos",
+      observacoes: "Encontro com especificadores e arquitetos parceiros",
+    },
+  ];
+
+  const defaultFrequenciaVisitas: ClienteFrequenciaItem[] = [
+    { id: "freq-1", posicao: 1, cliente_nome: "Ilustre Iluminação", cidade: "Salvador", uf: estados[0] || "BA", frequencia_dias: 20 },
+    { id: "freq-2", posicao: 2, cliente_nome: "Luz & Arte Conceito", cidade: "Feira de Santana", uf: estados[0] || "BA", frequencia_dias: 30 },
+    { id: "freq-3", posicao: 3, cliente_nome: "Center Luz Distribuidora", cidade: "Aracaju", uf: estados[1] || "SE", frequencia_dias: 30 },
+    { id: "freq-4", posicao: 4, cliente_nome: "Eletro Nobre Iluminação", cidade: "Fortaleza", uf: estados[2] || "CE", frequencia_dias: 40 },
+    { id: "freq-5", posicao: 5, cliente_nome: "Brilho Real Conceito", cidade: "Vitória da Conquista", uf: estados[0] || "BA", frequencia_dias: 45 },
+    { id: "freq-6", posicao: 6, cliente_nome: "Studio Luz Arquitetura", cidade: "Salvador", uf: estados[0] || "BA", frequencia_dias: 45 },
+    { id: "freq-7", posicao: 7, cliente_nome: "Design & Luz Projetos", cidade: "Itabuna", uf: estados[0] || "BA", frequencia_dias: 60 },
+    { id: "freq-8", posicao: 8, cliente_nome: "Solar Iluminação Técnica", cidade: "Juazeiro do Norte", uf: estados[2] || "CE", frequencia_dias: 60 },
+    { id: "freq-9", posicao: 9, cliente_nome: "Luminar Prime", cidade: "Sobral", uf: estados[2] || "CE", frequencia_dias: 60 },
+    { id: "freq-10", posicao: 10, cliente_nome: "Ponto da Luz Decorações", cidade: "Ilhéus", uf: estados[0] || "BA", frequencia_dias: 90 },
+  ];
+
   return {
     representative_id: rep.id,
     nome_representante: rep.nome,
@@ -157,6 +211,8 @@ export function buildDefaultStructure(rep: {
     recursos_operacionais: defaultRecursos,
     equipe: defaultEquipe,
     observacoes_gerais: "Operação estruturada com atendimento em campo e retaguarda de backoffice fixa.",
+    treinamentos: defaultTreinamentos,
+    frequencia_visitas: defaultFrequenciaVisitas,
   };
 }
 
@@ -168,6 +224,8 @@ export async function loadRepStructure(rep: {
   regiao?: string | null;
   outras_marcas?: string | null;
 }): Promise<RepStructure> {
+  const defaultStruct = buildDefaultStructure(rep);
+
   // 1. Busca LocalStorage previamente para reconciliação
   let localData: RepStructure | null = null;
   if (typeof window !== "undefined") {
@@ -176,7 +234,18 @@ export async function loadRepStructure(rep: {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.representative_id === rep.id) {
-          localData = { ...parsed, nome_representante: rep.nome };
+          localData = {
+            ...parsed,
+            nome_representante: rep.nome,
+            treinamentos:
+              Array.isArray(parsed.treinamentos) && parsed.treinamentos.length > 0
+                ? parsed.treinamentos
+                : defaultStruct.treinamentos,
+            frequencia_visitas:
+              Array.isArray(parsed.frequencia_visitas) && parsed.frequencia_visitas.length > 0
+                ? parsed.frequencia_visitas
+                : defaultStruct.frequencia_visitas,
+          };
         }
       }
     } catch {}
@@ -196,6 +265,18 @@ export async function loadRepStructure(rep: {
         localData?.marcas_representadas && localData.marcas_representadas.length > 0 && dbMarcas.length === 0
           ? localData.marcas_representadas
           : dbMarcas;
+
+      const dbTreinamentos = Array.isArray(data.treinamentos) ? data.treinamentos : [];
+      const treinamentosFinais =
+        dbTreinamentos.length > 0
+          ? dbTreinamentos
+          : localData?.treinamentos ?? defaultStruct.treinamentos;
+
+      const dbFreq = Array.isArray(data.frequencia_visitas) ? data.frequencia_visitas : [];
+      const freqFinais =
+        dbFreq.length > 0
+          ? dbFreq
+          : localData?.frequencia_visitas ?? defaultStruct.frequencia_visitas;
 
       return {
         representative_id: rep.id,
@@ -219,6 +300,8 @@ export async function loadRepStructure(rep: {
         },
         equipe: Array.isArray(data.equipe) ? data.equipe : [],
         observacoes_gerais: data.observacoes_gerais ?? "",
+        treinamentos: treinamentosFinais,
+        frequencia_visitas: freqFinais,
         updated_at: data.updated_at,
       };
     }
@@ -231,8 +314,7 @@ export async function loadRepStructure(rep: {
     return localData;
   }
 
-  // 3. Fallback inteligente pré-populado
-  const defaultStruct = buildDefaultStructure(rep);
+  // 4. Fallback inteligente pré-populado
   return defaultStruct;
 }
 

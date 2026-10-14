@@ -157,6 +157,85 @@ export interface DetalheMunicipal {
   municipios?: string[];
 }
 
+export type TipoTreinamento =
+  | "mini_palestra"
+  | "papo_mesa_a_mesa"
+  | "rep_vendedores_arquitetos"
+  | "trade_nl"
+  | "outro";
+
+export const TIPO_TREINAMENTO_LABEL: Record<TipoTreinamento, string> = {
+  mini_palestra: "Mini palestra rep para vendedores",
+  papo_mesa_a_mesa: "Papo rep: mesa a mesa",
+  rep_vendedores_arquitetos: "Rep para vendedores e arquitetos convidados",
+  trade_nl: "Trade NL",
+  outro: "Outro",
+};
+
+export const TIPO_TREINAMENTO_SHORT_LABEL: Record<TipoTreinamento, string> = {
+  mini_palestra: "Mini Palestra",
+  papo_mesa_a_mesa: "Papo Mesa a Mesa",
+  rep_vendedores_arquitetos: "Vendedores & Arquit.",
+  trade_nl: "Trade NL",
+  outro: "Outro",
+};
+
+export const TIPO_TREINAMENTO_COLOR: Record<
+  TipoTreinamento,
+  { bg: string; text: string; border: string; dot: string }
+> = {
+  mini_palestra: {
+    bg: "bg-blue-500/10 dark:bg-blue-500/20",
+    text: "text-blue-700 dark:text-blue-300",
+    border: "border-blue-500/30",
+    dot: "bg-blue-500",
+  },
+  papo_mesa_a_mesa: {
+    bg: "bg-amber-500/10 dark:bg-amber-500/20",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-500/30",
+    dot: "bg-amber-500",
+  },
+  rep_vendedores_arquitetos: {
+    bg: "bg-purple-500/10 dark:bg-purple-500/20",
+    text: "text-purple-700 dark:text-purple-300",
+    border: "border-purple-500/30",
+    dot: "bg-purple-500",
+  },
+  trade_nl: {
+    bg: "bg-teal-500/10 dark:bg-teal-500/20",
+    text: "text-teal-700 dark:text-teal-300",
+    border: "border-teal-500/30",
+    dot: "bg-teal-500",
+  },
+  outro: {
+    bg: "bg-slate-500/10 dark:bg-slate-500/20",
+    text: "text-slate-700 dark:text-slate-300",
+    border: "border-slate-500/30",
+    dot: "bg-slate-400",
+  },
+};
+
+export interface TreinamentoItem {
+  id: string;
+  tipo: TipoTreinamento;
+  cliente_nome: string;
+  data: string; // formato YYYY-MM-DD
+  horario?: string; // ex: "09:00"
+  local?: string; // ex: "Showroom Loja" ou "Online"
+  observacoes?: string;
+}
+
+export interface ClienteFrequenciaItem {
+  id: string;
+  posicao?: number; // 1 a 10
+  cliente_nome: string;
+  cidade?: string;
+  uf?: string;
+  frequencia_dias: number; // ex: 40 (dias para retornar)
+  observacoes?: string;
+}
+
 export interface RepStructure {
   representative_id: string;
   nome_representante?: string;
@@ -172,5 +251,8 @@ export interface RepStructure {
   recursos_operacionais: RecursosOperacionais;
   equipe: MembroEquipe[];
   observacoes_gerais?: string;
+  treinamentos?: TreinamentoItem[];
+  frequencia_visitas?: ClienteFrequenciaItem[];
   updated_at?: string;
 }
+
