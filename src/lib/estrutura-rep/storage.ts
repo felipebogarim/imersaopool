@@ -225,6 +225,14 @@ export function buildDefaultStructure(rep: {
     treinamentos: defaultTreinamentos,
     frequencia_visitas: defaultFrequenciaVisitas,
     frequencia_demais_clientes: 60,
+    performance_comparativo: {
+      ano_anterior_label: "2025",
+      ano_anterior_valor: 1850000,
+      ano_atual_label: "2026 (YTD)",
+      ano_atual_valor: 2140000,
+      meta_ano_atual: 2500000,
+      observacoes: "Crescimento sustentado com expansão em contas-chave",
+    },
   };
 }
 

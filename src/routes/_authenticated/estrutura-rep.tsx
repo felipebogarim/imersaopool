@@ -47,6 +47,7 @@ import { EnviarEstruturaWhatsDialog } from "@/components/estrutura-rep/EnviarEst
 import { NewRepDialog } from "@/components/estrutura-rep/NewRepDialog";
 import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
 import { BrandEditorModal } from "@/components/estrutura-rep/BrandEditorModal";
+import { RepPerformanceYtdCard } from "@/components/estrutura-rep/RepPerformanceYtdCard";
 import {
   loadRepStructure,
   loadAllRepStructures,
@@ -59,6 +60,7 @@ import type {
   RepresentadaItem,
   TreinamentoItem,
   ClienteFrequenciaItem,
+  PerformanceComparativo,
 } from "@/lib/estrutura-rep/types";
 import {
   MODELO_ESCRITORIO_LABEL,
@@ -332,6 +334,19 @@ function EstruturaRepPage() {
         ? "Treinamento marcado como Realizado!"
         : "Treinamento marcado como Planejado."
     );
+  };
+
+  // Salva dados comparativos manuais de performance (Ano Anterior vs Ano Atual YTD)
+  const handleSavePerformanceComparativo = async (perf: PerformanceComparativo) => {
+    if (!structure) return;
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      performance_comparativo: perf,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
   };
 
   // Salva cliente e frequência no Top 10 (individual ou em lote) e para os demais clientes
@@ -744,10 +759,18 @@ function EstruturaRepPage() {
                   />
                 </div>
 
-                <div className="lg:col-span-12 min-h-[380px]">
+                {/* Linha Inferior: Organograma da Equipe (2/3) + Performance Comparativa YTD (1/3) */}
+                <div className="lg:col-span-8 min-h-[360px]">
                   <EquipeOrganogramaSection
                     equipe={structure.equipe}
                     onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id, "equipe")}
+                  />
+                </div>
+
+                <div className="lg:col-span-4 min-h-[360px]">
+                  <RepPerformanceYtdCard
+                    performance={structure.performance_comparativo}
+                    onSave={handleSavePerformanceComparativo}
                   />
                 </div>
               </div>

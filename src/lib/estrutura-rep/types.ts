@@ -244,6 +244,15 @@ export interface ClienteFrequenciaItem {
   observacoes?: string;
 }
 
+export interface PerformanceComparativo {
+  ano_anterior_label?: string; // ex: "2025"
+  ano_anterior_valor?: number; // ex: 1850000
+  ano_atual_label?: string; // ex: "2026 (YTD)"
+  ano_atual_valor?: number; // ex: 2140000
+  meta_ano_atual?: number; // ex: 2500000
+  observacoes?: string;
+}
+
 export interface RepStructure {
   representative_id: string;
   nome_representante?: string;
@@ -263,6 +272,8 @@ export interface RepStructure {
   treinamentos?: TreinamentoItem[];
   frequencia_visitas?: ClienteFrequenciaItem[];
   frequencia_demais_clientes?: number; // frequência de visita aos demais clientes da carteira (dias)
+  performance_comparativo?: PerformanceComparativo; // Comparativo manual Ano Anterior vs Ano Atual YTD
   updated_at?: string;
 }
+
 
