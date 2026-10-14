@@ -2,17 +2,20 @@ import React from "react";
 import type { RepresentadaItem } from "@/lib/estrutura-rep/types";
 import { MODELO_NEGOCIO_LABEL, CANAIS_COMERCIAIS } from "@/lib/estrutura-rep/types";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Building, Layers, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Briefcase, Building, Layers, MapPin, Pencil, Plus } from "lucide-react";
 
 interface RepresentadasSectionProps {
   marcas: RepresentadaItem[];
   onAddClick?: () => void;
+  onEditClick?: (brandId: string) => void;
   className?: string;
 }
 
 export function RepresentadasSection({
   marcas,
   onAddClick,
+  onEditClick,
   className = "",
 }: RepresentadasSectionProps) {
   // Mapa de cores para modelos de negócio
@@ -44,17 +47,46 @@ export function RepresentadasSection({
           </p>
         </div>
 
-        <Badge variant="outline" className="text-xs px-2.5 py-0.5 font-medium">
-          {marcas.length} {marcas.length === 1 ? "Empresa" : "Empresas"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {onAddClick && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAddClick}
+              className="h-7 text-xs font-semibold gap-1 text-primary hover:text-primary hover:bg-primary/10 px-2.5 shadow-2xs"
+              title="Cadastrar nova marca"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Adicionar</span>
+            </Button>
+          )}
+          <Badge variant="outline" className="text-xs px-2.5 py-0.5 font-medium">
+            {marcas.length} {marcas.length === 1 ? "Empresa" : "Empresas"}
+          </Badge>
+        </div>
       </div>
 
       {/* Grid de Cards Compactos */}
       {marcas.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground border border-dashed rounded-lg">
+        <div
+          onClick={onAddClick}
+          role={onAddClick ? "button" : undefined}
+          tabIndex={onAddClick ? 0 : undefined}
+          onKeyDown={(e) => e.key === "Enter" && onAddClick?.()}
+          className={`flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground border border-dashed rounded-lg ${
+            onAddClick ? "cursor-pointer hover:bg-muted/30 transition-colors" : ""
+          }`}
+        >
           <Building className="h-8 w-8 mb-2 opacity-40" />
           <p className="text-sm font-medium">Nenhuma representada cadastrada</p>
           <p className="text-xs mt-1">Adicione as marcas e empresas atendidas pelo representante.</p>
+          {onAddClick && (
+            <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs gap-1 text-primary font-semibold">
+              <Plus className="h-3.5 w-3.5" />
+              Cadastrar Marca
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto max-h-[500px] pr-1">
@@ -64,7 +96,12 @@ export function RepresentadasSection({
             return (
               <div
                 key={m.id}
-                className={`relative flex flex-col justify-between p-3.5 rounded-lg border transition-all duration-150 hover:shadow-xs ${
+                onClick={() => onEditClick?.(m.id)}
+                role={onEditClick ? "button" : undefined}
+                tabIndex={onEditClick ? 0 : undefined}
+                className={`relative flex flex-col justify-between p-3.5 rounded-lg border transition-all duration-150 hover:shadow-xs text-left ${
+                  onEditClick ? "cursor-pointer" : ""
+                } ${
                   isNewline
                     ? "bg-gradient-to-br from-primary/5 via-card to-primary/10 border-primary/30"
                     : "bg-card hover:bg-muted/30"
@@ -102,14 +139,24 @@ export function RepresentadasSection({
                       </div>
                     </div>
 
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] h-5 px-1.5 py-0 font-medium shrink-0 border ${
-                        modeloVariant[m.modelo_negocio] || modeloVariant.outro
-                      }`}
-                    >
-                      {MODELO_NEGOCIO_LABEL[m.modelo_negocio] || m.modelo_negocio}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] h-5 px-1.5 py-0 font-medium border ${
+                          modeloVariant[m.modelo_negocio] || modeloVariant.outro
+                        }`}
+                      >
+                        {MODELO_NEGOCIO_LABEL[m.modelo_negocio] || m.modelo_negocio}
+                      </Badge>
+                      {onEditClick && (
+                        <div
+                          className="h-5 w-5 rounded flex items-center justify-center text-muted-foreground/70 hover:text-foreground hover:bg-muted/80 transition-colors"
+                          title="Editar marca ou alterar logomarca"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Canais de Atendimento */}

@@ -168,7 +168,21 @@ export async function loadRepStructure(rep: {
   regiao?: string | null;
   outras_marcas?: string | null;
 }): Promise<RepStructure> {
-  // 1. Tenta carregar do Supabase
+  // 1. Busca LocalStorage previamente para reconciliação
+  let localData: RepStructure | null = null;
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(getLocalKey(rep.id));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.representative_id === rep.id) {
+          localData = { ...parsed, nome_representante: rep.nome };
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Tenta carregar do Supabase
   try {
     const { data, error } = await (supabase as any)
       .from("rep_structures")
@@ -177,6 +191,12 @@ export async function loadRepStructure(rep: {
       .maybeSingle();
 
     if (!error && data) {
+      const dbMarcas = Array.isArray(data.marcas_representadas) ? data.marcas_representadas : [];
+      const marcasFinais =
+        localData?.marcas_representadas && localData.marcas_representadas.length > 0 && dbMarcas.length === 0
+          ? localData.marcas_representadas
+          : dbMarcas;
+
       return {
         representative_id: rep.id,
         nome_representante: rep.nome,
@@ -187,7 +207,7 @@ export async function loadRepStructure(rep: {
         modelo_atuacao: data.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(data.estados_atendidos) ? data.estados_atendidos : [],
         detalhes_municipais: data.detalhes_municipais ?? {},
-        marcas_representadas: Array.isArray(data.marcas_representadas) ? data.marcas_representadas : [],
+        marcas_representadas: marcasFinais,
         modelo_escritorio: data.modelo_escritorio ?? "escritorio_fisico",
         recursos_operacionais: data.recursos_operacionais ?? {
           estrutura_administrativa: false,
@@ -206,22 +226,9 @@ export async function loadRepStructure(rep: {
     console.warn("[loadRepStructure] Supabase table query failed, trying local fallback:", err);
   }
 
-  // 2. Fallback no LocalStorage
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(getLocalKey(rep.id));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.representative_id === rep.id) {
-          return {
-            ...parsed,
-            nome_representante: rep.nome,
-          };
-        }
-      }
-    } catch {
-      // Ignora erro de JSON parse
-    }
+  // 3. Fallback no LocalStorage
+  if (localData) {
+    return localData;
   }
 
   // 3. Fallback inteligente pré-populado
@@ -231,16 +238,42 @@ export async function loadRepStructure(rep: {
 
 /** Salva a estrutura do representante (Supabase + LocalStorage) */
 export async function saveRepStructure(structure: RepStructure): Promise<void> {
-  // Salva no LocalStorage imediatamente para garantir persistência local rápida
+  const nowIso = new Date().toISOString();
+  const structureWithTimestamp: RepStructure = {
+    ...structure,
+    updated_at: nowIso,
+  };
+
+  // 1. Salva no LocalStorage imediatamente para garantir persistência local rápida e sem falhas
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(getLocalKey(structure.representative_id), JSON.stringify(structure));
+      localStorage.setItem(
+        getLocalKey(structure.representative_id),
+        JSON.stringify(structureWithTimestamp)
+      );
     } catch (e) {
       console.warn("[saveRepStructure] LocalStorage save failed:", e);
     }
   }
 
-  // Tenta persistir no Supabase
+  // 2. Atualiza representatives.outras_marcas no Supabase para manter o catálogo do representante sincronizado
+  try {
+    const nomesMarcas = (structure.marcas_representadas || [])
+      .map((m) => m.nome?.trim())
+      .filter(Boolean)
+      .join(", ");
+
+    if (nomesMarcas) {
+      await (supabase as any)
+        .from("representatives")
+        .update({ outras_marcas: nomesMarcas })
+        .eq("id", structure.representative_id);
+    }
+  } catch (err) {
+    console.warn("[saveRepStructure] representatives.outras_marcas update error:", err);
+  }
+
+  // 3. Tenta persistir na tabela rep_structures (caso já provisionada no Supabase)
   try {
     const payload = {
       representative_id: structure.representative_id,
@@ -256,7 +289,7 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
       recursos_operacionais: structure.recursos_operacionais,
       equipe: structure.equipe,
       observacoes_gerais: structure.observacoes_gerais || null,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
     };
 
     const { error } = await (supabase as any)
@@ -304,8 +337,31 @@ export async function loadAllRepStructures(reps: {
   }
 
   for (const rep of reps) {
+    // 1. Busca dados no localStorage
+    let localData: RepStructure | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(getLocalKey(rep.id));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.representative_id === rep.id) {
+            localData = { ...parsed, nome_representante: rep.nome };
+          }
+        }
+      } catch {}
+    }
+
     const dbItem = supabaseMap.get(rep.id);
+
+    // 2. Se houver item no banco
     if (dbItem) {
+      const dbMarcas = Array.isArray(dbItem.marcas_representadas) ? dbItem.marcas_representadas : [];
+      // Se o localStorage tiver marcas mais recentes ou o banco estiver com marcas vazias, preserva as marcas locais
+      const marcasFinais =
+        localData?.marcas_representadas && localData.marcas_representadas.length > 0 && dbMarcas.length === 0
+          ? localData.marcas_representadas
+          : dbMarcas;
+
       result[rep.id] = {
         representative_id: rep.id,
         nome_representante: rep.nome,
@@ -316,7 +372,7 @@ export async function loadAllRepStructures(reps: {
         modelo_atuacao: dbItem.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(dbItem.estados_atendidos) ? dbItem.estados_atendidos : [],
         detalhes_municipais: dbItem.detalhes_municipais ?? {},
-        marcas_representadas: Array.isArray(dbItem.marcas_representadas) ? dbItem.marcas_representadas : [],
+        marcas_representadas: marcasFinais,
         modelo_escritorio: dbItem.modelo_escritorio ?? "escritorio_fisico",
         recursos_operacionais: dbItem.recursos_operacionais ?? {
           estrutura_administrativa: false,
@@ -333,19 +389,13 @@ export async function loadAllRepStructures(reps: {
       continue;
     }
 
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem(getLocalKey(rep.id));
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.representative_id === rep.id) {
-            result[rep.id] = { ...parsed, nome_representante: rep.nome };
-            continue;
-          }
-        }
-      } catch {}
+    // 3. Se não houver no banco mas houver no localStorage
+    if (localData) {
+      result[rep.id] = localData;
+      continue;
     }
 
+    // 4. Fallback padrão
     result[rep.id] = buildDefaultStructure(rep);
   }
 

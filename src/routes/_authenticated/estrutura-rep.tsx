@@ -40,6 +40,7 @@ import { RepListView } from "@/components/estrutura-rep/RepListView";
 import { RepKanbanView } from "@/components/estrutura-rep/RepKanbanView";
 import { NewRepDialog } from "@/components/estrutura-rep/NewRepDialog";
 import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
+import { BrandEditorModal } from "@/components/estrutura-rep/BrandEditorModal";
 import {
   loadRepStructure,
   loadAllRepStructures,
@@ -47,7 +48,7 @@ import {
   deleteRepStructure,
 } from "@/lib/estrutura-rep/storage";
 import { shareRepStructureByWhatsapp } from "@/lib/estrutura-rep/whatsapp";
-import type { RepStructure } from "@/lib/estrutura-rep/types";
+import type { RepStructure, RepresentadaItem } from "@/lib/estrutura-rep/types";
 import {
   MODELO_ESCRITORIO_LABEL,
   MODELO_ATUACAO_LABEL,
@@ -89,6 +90,8 @@ function EstruturaRepPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingRepId, setEditingRepId] = useState<string | null>(null);
   const [editorInitialTab, setEditorInitialTab] = useState<string>("identificacao");
+  const [brandModalOpen, setBrandModalOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<RepresentadaItem | null>(null);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -164,11 +167,24 @@ function EstruturaRepPage() {
     });
   };
 
-  // Abre modal de edição
+  // Abre modal de edição completa
   const handleOpenEdit = (repId: string, initialTab: string = "identificacao") => {
     setEditingRepId(repId);
     setEditorInitialTab(initialTab);
     setEditorOpen(true);
+  };
+
+  // Abre modal focado em adicionar nova marca
+  const handleOpenAddBrand = () => {
+    setEditingBrand(null);
+    setBrandModalOpen(true);
+  };
+
+  // Abre modal focado em editar marca existente ou alterar logo
+  const handleOpenEditBrand = (brandId: string) => {
+    const found = structure?.marcas_representadas?.find((m) => m.id === brandId) || null;
+    setEditingBrand(found);
+    setBrandModalOpen(true);
   };
 
   // Salva estrutura editada
@@ -179,6 +195,31 @@ function EstruturaRepPage() {
     toast.success("Estrutura atualizada com sucesso!");
     setEditorOpen(false);
     setEditingRepId(null);
+  };
+
+  // Salva marca diretamente e persiste imediatamente na estrutura
+  const handleSaveBrand = async (brandItem: RepresentadaItem) => {
+    if (!structure) {
+      toast.error("Nenhum representante selecionado para vincular a marca.");
+      return;
+    }
+
+    const currentMarcas = structure.marcas_representadas || [];
+    const exists = currentMarcas.some((m) => m.id === brandItem.id);
+    const updatedMarcas = exists
+      ? currentMarcas.map((m) => (m.id === brandItem.id ? brandItem : m))
+      : [...currentMarcas, brandItem];
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      marcas_representadas: updatedMarcas,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    await queryClient.invalidateQueries({ queryKey: ["estrutura-reps-list"] });
+    setBrandModalOpen(false);
+    setEditingBrand(null);
   };
 
   // Confirmação de exclusão
@@ -453,8 +494,8 @@ function EstruturaRepPage() {
                 {/* Faixa Horizontal de Marcas Representadas (Logomarcas de ponta a ponta com Detalhes no Hover) */}
                 <RepMarcasStrip
                   marcas={structure.marcas_representadas}
-                  onAddBrand={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
-                  onEditBrand={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
+                  onAddBrand={handleOpenAddBrand}
+                  onEditBrand={handleOpenEditBrand}
                 />
               </div>
             )}
@@ -473,7 +514,8 @@ function EstruturaRepPage() {
                 <div className="lg:col-span-7 min-h-[500px]">
                   <RepresentadasSection
                     marcas={structure.marcas_representadas}
-                    onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
+                    onAddClick={handleOpenAddBrand}
+                    onEditClick={handleOpenEditBrand}
                   />
                 </div>
 
@@ -522,6 +564,14 @@ function EstruturaRepPage() {
           initialTab={editorInitialTab}
         />
       )}
+
+      {/* Modal Focado de Cadastro e Upload de Logo de Marca Representada */}
+      <BrandEditorModal
+        open={brandModalOpen}
+        onOpenChange={setBrandModalOpen}
+        brand={editingBrand}
+        onSaveBrand={handleSaveBrand}
+      />
 
       {/* Diálogo de Confirmação de Exclusão */}
       <Dialog

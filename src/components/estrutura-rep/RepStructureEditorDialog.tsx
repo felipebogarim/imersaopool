@@ -149,7 +149,7 @@ export function RepStructureEditorDialog({
       toast.error(err?.message || "Falha ao processar logomarca");
     } finally {
       setUploadingLogo(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      e.target.value = "";
     }
   };
 
@@ -157,13 +157,18 @@ export function RepStructureEditorDialog({
     setUploadingBrandId(brandId);
     try {
       const url = await processLogoUpload(file);
-      setDraft((prev) => ({
-        ...prev,
-        marcas_representadas: prev.marcas_representadas.map((m) =>
-          m.id === brandId ? { ...m, logo_url: url } : m
-        ),
-      }));
-      toast.success("Logomarca atualizada com sucesso!");
+      const updatedMarcas = draft.marcas_representadas.map((m) =>
+        m.id === brandId ? { ...m, logo_url: url } : m
+      );
+      const updatedDraft: RepStructure = {
+        ...draft,
+        marcas_representadas: updatedMarcas,
+      };
+      setDraft(updatedDraft);
+
+      // Auto-salva para garantir persistência imediata da logomarca
+      await onSave(updatedDraft);
+      toast.success("Logomarca atualizada e salva com sucesso!");
     } catch (err: any) {
       toast.error(err?.message || "Falha ao processar logomarca");
     } finally {
@@ -177,15 +182,10 @@ export function RepStructureEditorDialog({
       return;
     }
 
-    if (!novaMarca.logo_url) {
-      toast.error("Por favor, faça o upload da logomarca da empresa.");
-      return;
-    }
-
     const item: RepresentadaItem = {
       id: `brand-${Date.now()}`,
       nome: novaMarca.nome.trim(),
-      logo_url: novaMarca.logo_url.trim(),
+      logo_url: novaMarca.logo_url?.trim() || undefined,
       segmento: novaMarca.segmento?.trim() || "Iluminação & Complementos",
       modelo_negocio: novaMarca.modelo_negocio || "fabricante",
       canais: novaMarca.canais?.length ? novaMarca.canais : ["varejo", "projetos"],
@@ -205,7 +205,7 @@ export function RepStructureEditorDialog({
       abrangencia: "Integral",
       logo_url: "",
     });
-    toast.success("Representada adicionada.");
+    toast.success("Representada incluída na lista.");
   };
 
   const handleRemoveMarca = (id: string) => {
@@ -549,10 +549,10 @@ export function RepStructureEditorDialog({
                   </Label>
 
                   <input
-                    ref={fileInputRef}
+                    id="editor-brand-logo-file-picker"
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                    className="hidden"
+                    className="sr-only"
                     onChange={handleSelectLogo}
                   />
 
@@ -574,17 +574,12 @@ export function RepStructureEditorDialog({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingLogo}
-                          className="h-7 text-xs px-2.5 gap-1 shadow-2xs"
-                        >
-                          <Upload className="h-3 w-3" />
-                          <span>Trocar</span>
-                        </Button>
+                        <label htmlFor="editor-brand-logo-file-picker" className="cursor-pointer">
+                          <span className="inline-flex items-center gap-1 h-7 text-xs px-2.5 rounded border bg-background hover:bg-muted text-muted-foreground shadow-2xs font-medium">
+                            <Upload className="h-3 w-3" />
+                            <span>Trocar</span>
+                          </span>
+                        </label>
                         <Button
                           type="button"
                           variant="ghost"
@@ -597,9 +592,9 @@ export function RepStructureEditorDialog({
                       </div>
                     </div>
                   ) : (
-                    <div
-                      onClick={() => !uploadingLogo && fileInputRef.current?.click()}
-                      className="border border-dashed border-primary/40 rounded-lg p-3.5 bg-primary/5 hover:bg-primary/10 transition cursor-pointer flex items-center justify-center gap-3 text-center"
+                    <label
+                      htmlFor="editor-brand-logo-file-picker"
+                      className="border-2 border-dashed border-primary/30 hover:border-primary/60 rounded-xl p-3.5 bg-primary/5 hover:bg-primary/10 transition cursor-pointer flex items-center justify-center gap-3 text-center block"
                     >
                       {uploadingLogo ? (
                         <div className="flex items-center gap-2 text-xs text-primary font-semibold py-1">
@@ -615,7 +610,7 @@ export function RepStructureEditorDialog({
                           </span>
                         </div>
                       )}
-                    </div>
+                    </label>
                   )}
                 </div>
 
