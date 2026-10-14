@@ -31,6 +31,7 @@ const GRUPO_DIRETORIA = [
   "angelica.galan@newline.ind.br",
   "sergio@newline.ind.br",
   "filipe@newline.ind.br",
+  "felipe.borin@newline.ind.br",
 ];
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const LINK_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 dias
