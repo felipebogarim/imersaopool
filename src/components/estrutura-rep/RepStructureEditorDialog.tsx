@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -41,14 +41,20 @@ import {
   Check,
   Save,
   HelpCircle,
+  Upload,
+  Loader2,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
 
 interface RepStructureEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   structure: RepStructure;
   onSave: (updated: RepStructure) => Promise<void>;
+  initialTab?: string;
 }
 
 const REGIOES_BRASIL: Record<string, string[]> = {
@@ -64,10 +70,14 @@ export function RepStructureEditorDialog({
   onOpenChange,
   structure,
   onSave,
+  initialTab = "identificacao",
 }: RepStructureEditorDialogProps) {
   const [draft, setDraft] = useState<RepStructure>({ ...structure });
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("identificacao");
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBrandId, setUploadingBrandId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Novo item temporário para Marcas
   const [novaMarca, setNovaMarca] = useState<Partial<RepresentadaItem>>({
@@ -76,6 +86,7 @@ export function RepStructureEditorDialog({
     modelo_negocio: "fabricante",
     canais: ["varejo", "projetos"],
     abrangencia: "Integral",
+    logo_url: "",
   });
 
   // Novo membro temporário para Equipe
@@ -92,8 +103,11 @@ export function RepStructureEditorDialog({
   useEffect(() => {
     if (open) {
       setDraft(JSON.parse(JSON.stringify(structure)));
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
     }
-  }, [open, structure]);
+  }, [open, structure, initialTab]);
 
   const handleToggleUf = (uf: string) => {
     setDraft((prev) => {
@@ -122,18 +136,59 @@ export function RepStructureEditorDialog({
     });
   };
 
+  const handleSelectLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    try {
+      const url = await processLogoUpload(file);
+      setNovaMarca((m) => ({ ...m, logo_url: url }));
+      toast.success("Logomarca carregada com sucesso!");
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao processar logomarca");
+    } finally {
+      setUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadLogoForExistingBrand = async (brandId: string, file: File) => {
+    setUploadingBrandId(brandId);
+    try {
+      const url = await processLogoUpload(file);
+      setDraft((prev) => ({
+        ...prev,
+        marcas_representadas: prev.marcas_representadas.map((m) =>
+          m.id === brandId ? { ...m, logo_url: url } : m
+        ),
+      }));
+      toast.success("Logomarca atualizada com sucesso!");
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao processar logomarca");
+    } finally {
+      setUploadingBrandId(null);
+    }
+  };
+
   const handleAddMarca = () => {
     if (!novaMarca.nome?.trim()) {
       toast.error("Informe o nome da marca representada.");
       return;
     }
 
+    if (!novaMarca.logo_url) {
+      toast.error("Por favor, faça o upload da logomarca da empresa.");
+      return;
+    }
+
     const item: RepresentadaItem = {
       id: `brand-${Date.now()}`,
       nome: novaMarca.nome.trim(),
-      segmento: novaMarca.segmento?.trim() || "Iluminação",
+      logo_url: novaMarca.logo_url.trim(),
+      segmento: novaMarca.segmento?.trim() || "Iluminação & Complementos",
       modelo_negocio: novaMarca.modelo_negocio || "fabricante",
-      canais: novaMarca.canais?.length ? novaMarca.canais : ["varejo"],
+      canais: novaMarca.canais?.length ? novaMarca.canais : ["varejo", "projetos"],
       abrangencia: novaMarca.abrangencia?.trim() || "Integral",
     };
 
@@ -148,6 +203,7 @@ export function RepStructureEditorDialog({
       modelo_negocio: "fabricante",
       canais: ["varejo", "projetos"],
       abrangencia: "Integral",
+      logo_url: "",
     });
     toast.success("Representada adicionada.");
   };
@@ -434,14 +490,14 @@ export function RepStructureEditorDialog({
             {/* 3. ABA MARCAS */}
             <TabsContent value="marcas" className="space-y-5 m-0">
               {/* Formulário para adicionar nova marca */}
-              <div className="p-3.5 border rounded-lg bg-muted/20 space-y-3">
+              <div className="p-4 border rounded-xl bg-muted/20 space-y-4">
                 <span className="text-xs font-bold block text-foreground flex items-center gap-1.5">
                   <Plus className="h-4 w-4 text-primary" /> Adicionar Representada ao Portfólio:
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs font-medium">Nome da Marca</Label>
+                    <Label className="text-xs font-medium">Nome da Marca *</Label>
                     <Input
                       className="h-8 text-xs"
                       placeholder="Ex.: Stella Iluminação"
@@ -480,6 +536,89 @@ export function RepStructureEditorDialog({
                   </div>
                 </div>
 
+                {/* Upload da Logomarca (obrigatório para exibição visual na barra de marcas) */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <span>Logomarca da Empresa *</span>
+                      <span className="text-destructive font-bold text-xs">(obrigatória)</span>
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      PNG, JPG, SVG ou WebP (máx. 15MB)
+                    </span>
+                  </Label>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={handleSelectLogo}
+                  />
+
+                  {novaMarca.logo_url ? (
+                    <div className="flex items-center gap-3 p-2.5 rounded-lg border bg-background">
+                      <div className="h-12 w-20 bg-white rounded-md border flex items-center justify-center p-1 shrink-0 shadow-2xs">
+                        <img
+                          src={novaMarca.logo_url}
+                          alt="Pré-visualização da Logo"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-foreground block truncate">
+                          Logomarca pronta para inclusão
+                        </span>
+                        <span className="text-[10px] text-muted-foreground block truncate">
+                          Será exibida na barra horizontal da radiografia
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                          className="h-7 text-xs px-2.5 gap-1 shadow-2xs"
+                        >
+                          <Upload className="h-3 w-3" />
+                          <span>Trocar</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setNovaMarca((m) => ({ ...m, logo_url: "" }))}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => !uploadingLogo && fileInputRef.current?.click()}
+                      className="border border-dashed border-primary/40 rounded-lg p-3.5 bg-primary/5 hover:bg-primary/10 transition cursor-pointer flex items-center justify-center gap-3 text-center"
+                    >
+                      {uploadingLogo ? (
+                        <div className="flex items-center gap-2 text-xs text-primary font-semibold py-1">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Processando logomarca...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-primary font-semibold py-1">
+                          <Upload className="h-4 w-4" />
+                          <span>Fazer Upload da Logomarca</span>
+                          <span className="text-[11px] font-normal text-muted-foreground hidden sm:inline">
+                            (PNG, SVG ou JPG)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs font-medium">Abrangência Territorial</Label>
@@ -492,8 +631,14 @@ export function RepStructureEditorDialog({
                   </div>
 
                   <div className="flex items-end">
-                    <Button type="button" size="sm" onClick={handleAddMarca} className="w-full text-xs h-8">
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Incluir Marca
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddMarca}
+                      disabled={uploadingLogo}
+                      className="w-full text-xs h-8 font-semibold gap-1.5"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Incluir Marca no Portfólio
                     </Button>
                   </div>
                 </div>
@@ -501,36 +646,86 @@ export function RepStructureEditorDialog({
 
               {/* Lista das marcas cadastradas */}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">Marcas no Portfólio ({draft.marcas_representadas.length}):</Label>
-                {draft.marcas_representadas.map((marca) => (
-                  <div
-                    key={marca.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg border bg-card text-xs gap-3"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-7 w-7 rounded bg-muted flex items-center justify-center font-bold text-[10px] shrink-0">
-                        {marca.nome.slice(0, 2).toUpperCase()}
+                <Label className="text-xs font-semibold">
+                  Marcas no Portfólio ({draft.marcas_representadas.length}):
+                </Label>
+                {draft.marcas_representadas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-3 border rounded-lg text-center bg-muted/10">
+                    Nenhuma marca cadastrada até o momento.
+                  </p>
+                ) : (
+                  draft.marcas_representadas.map((marca) => (
+                    <div
+                      key={marca.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card text-xs gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {marca.logo_url ? (
+                          <div className="h-10 w-16 bg-white rounded border flex items-center justify-center p-1 shrink-0 shadow-2xs">
+                            <img
+                              src={marca.logo_url}
+                              alt={marca.nome}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center font-bold text-xs shrink-0 text-muted-foreground border">
+                            {marca.nome.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div className="min-w-0">
+                          <span className="font-bold text-foreground block truncate">{marca.nome}</span>
+                          <span className="text-muted-foreground text-[11px] truncate block">
+                            {marca.segmento} • {MODELO_NEGOCIO_LABEL[marca.modelo_negocio] || marca.modelo_negocio}
+                            {marca.abrangencia ? ` • ${marca.abrangencia}` : ""}
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-foreground block truncate">{marca.nome}</span>
-                        <span className="text-muted-foreground text-[11px] truncate">
-                          {marca.segmento} • {MODELO_NEGOCIO_LABEL[marca.modelo_negocio] || marca.modelo_negocio}
-                          {marca.abrangencia ? ` • ${marca.abrangencia}` : ""}
-                        </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Botão de upload/troca de logo para a marca existente */}
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadLogoForExistingBrand(marca.id, file);
+                              e.target.value = "";
+                            }}
+                          />
+                          <span
+                            className={`inline-flex items-center gap-1 h-7 px-2 rounded border text-xs font-medium transition ${
+                              marca.logo_url
+                                ? "bg-background hover:bg-muted text-muted-foreground border-border"
+                                : "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 font-semibold"
+                            }`}
+                          >
+                            {uploadingBrandId === marca.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Upload className="h-3 w-3" />
+                            )}
+                            <span>{marca.logo_url ? "Trocar Logo" : "Upload Logo"}</span>
+                          </span>
+                        </label>
+
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                          onClick={() => handleRemoveMarca(marca.id)}
+                          title="Remover marca"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
-
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-                      onClick={() => handleRemoveMarca(marca.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 

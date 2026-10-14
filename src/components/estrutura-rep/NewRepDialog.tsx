@@ -184,8 +184,8 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
                 </SelectTrigger>
                 <SelectContent>
                   {BRAZIL_STATE_PATHS.map((s) => (
-                    <SelectItem key={s.uf} value={s.uf} className="text-xs">
-                      {s.uf} - {s.name}
+                    <SelectItem key={s.id} value={s.id} className="text-xs">
+                      {s.id} - {s.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -271,19 +271,19 @@ export function NewRepDialog({ open, onOpenChange, onSuccess }: NewRepDialogProp
             {/* Grid com todas as 27 UFs */}
             <div className="grid grid-cols-6 sm:grid-cols-9 gap-1.5 pt-1">
               {BRAZIL_STATE_PATHS.map((s) => {
-                const isSelected = estados.includes(s.uf);
+                const isSelected = estados.includes(s.id);
                 return (
                   <button
-                    key={s.uf}
+                    key={s.id}
                     type="button"
-                    onClick={() => handleToggleState(s.uf)}
+                    onClick={() => handleToggleState(s.id)}
                     className={`h-7 rounded text-xs font-bold transition flex items-center justify-center border ${
                       isSelected
                         ? "bg-primary text-primary-foreground border-primary shadow-2xs"
                         : "bg-background hover:bg-muted text-foreground border-border/80"
                     }`}
                   >
-                    {s.uf}
+                    {s.id}
                   </button>
                 );
               })}

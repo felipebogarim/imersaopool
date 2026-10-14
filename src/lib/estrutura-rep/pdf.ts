@@ -438,7 +438,7 @@ export async function generateRepStructurePdf(structure: RepStructure): Promise<
   doc.setFontSize(10.5);
   doc.setTextColor(...C.white);
   doc.text(
-    `ESTRUTURA FÍSICA, OPERACIONAL E EQUIPE · ${structure.nome_representante.toUpperCase()}`,
+    `ESTRUTURA FÍSICA, OPERACIONAL E EQUIPE · ${(structure.nome_representante || "REPRESENTANTE").toUpperCase()}`,
     M + 14,
     y + 20
   );

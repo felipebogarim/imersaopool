@@ -39,6 +39,7 @@ import { RepStructureEditorDialog } from "@/components/estrutura-rep/RepStructur
 import { RepListView } from "@/components/estrutura-rep/RepListView";
 import { RepKanbanView } from "@/components/estrutura-rep/RepKanbanView";
 import { NewRepDialog } from "@/components/estrutura-rep/NewRepDialog";
+import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
 import {
   loadRepStructure,
   loadAllRepStructures,
@@ -87,6 +88,7 @@ function EstruturaRepPage() {
   // Estados de modais
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingRepId, setEditingRepId] = useState<string | null>(null);
+  const [editorInitialTab, setEditorInitialTab] = useState<string>("identificacao");
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nome: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -136,7 +138,7 @@ function EstruturaRepPage() {
       to: "/estrutura-rep",
       search: {
         view: v,
-        rep: repId ?? selectedRepId,
+        rep: repId || selectedRepId,
       },
     });
   };
@@ -163,8 +165,9 @@ function EstruturaRepPage() {
   };
 
   // Abre modal de edição
-  const handleOpenEdit = (repId: string) => {
+  const handleOpenEdit = (repId: string, initialTab: string = "identificacao") => {
     setEditingRepId(repId);
+    setEditorInitialTab(initialTab);
     setEditorOpen(true);
   };
 
@@ -227,16 +230,6 @@ function EstruturaRepPage() {
     }
   };
 
-  // KPIs da Radiografia
-  const totalEstados = structure?.estados_atendidos?.length || 0;
-  const totalMarcas = structure?.marcas_representadas?.length || 0;
-  const totalEquipe = structure?.equipe?.length || 0;
-  const modeloEscritorio = structure?.modelo_escritorio
-    ? MODELO_ESCRITORIO_LABEL[structure.modelo_escritorio]
-    : "—";
-  const totalRecursosAtivos = structure?.recursos_operacionais
-    ? RECURSOS_CONFIG.filter((r) => Boolean(structure.recursos_operacionais[r.key])).length
-    : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/10 pb-12">
@@ -457,61 +450,12 @@ function EstruturaRepPage() {
                   )}
                 </div>
 
-                {/* Barra de KPIs Executivos */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4">
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
-                      <MapPin className="h-3.5 w-3.5 text-primary" />
-                      <span>Estados Atendidos</span>
-                    </div>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                      {totalEstados} <span className="text-xs font-normal text-muted-foreground">UFs</span>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
-                      <Briefcase className="h-3.5 w-3.5 text-primary" />
-                      <span>Representadas</span>
-                    </div>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                      {totalMarcas} <span className="text-xs font-normal text-muted-foreground">Marcas</span>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
-                      <Users className="h-3.5 w-3.5 text-primary" />
-                      <span>Equipe / Backoffice</span>
-                    </div>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                      {totalEquipe} <span className="text-xs font-normal text-muted-foreground">Integrantes</span>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
-                      <Building2 className="h-3.5 w-3.5 text-primary" />
-                      <span>Modelo de Escritório</span>
-                    </div>
-                    <div
-                      className="text-sm sm:text-base font-bold text-foreground mt-1 truncate"
-                      title={modeloEscritorio}
-                    >
-                      {modeloEscritorio}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60 col-span-2 sm:col-span-1">
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>Recursos Ativos</span>
-                    </div>
-                    <div className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                      {totalRecursosAtivos}/6 <span className="text-xs font-normal text-muted-foreground">Funções</span>
-                    </div>
-                  </div>
-                </div>
+                {/* Faixa Horizontal de Marcas Representadas (Logomarcas de ponta a ponta com Detalhes no Hover) */}
+                <RepMarcasStrip
+                  marcas={structure.marcas_representadas}
+                  onAddBrand={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
+                  onEditBrand={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
+                />
               </div>
             )}
 
@@ -522,14 +466,14 @@ function EstruturaRepPage() {
                   <RepBrazilMap
                     estadosAtendidos={structure.estados_atendidos}
                     detalhesMunicipais={structure.detalhes_municipais}
-                    onSelectEstado={() => selectedRep && handleOpenEdit(selectedRep.id)}
+                    onSelectEstado={() => selectedRep && handleOpenEdit(selectedRep.id, "territorio")}
                   />
                 </div>
 
                 <div className="lg:col-span-7 min-h-[500px]">
                   <RepresentadasSection
                     marcas={structure.marcas_representadas}
-                    onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id)}
+                    onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id, "marcas")}
                   />
                 </div>
 
@@ -544,7 +488,7 @@ function EstruturaRepPage() {
                 <div className="lg:col-span-7 min-h-[380px]">
                   <EquipeOrganogramaSection
                     equipe={structure.equipe}
-                    onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id)}
+                    onAddClick={() => selectedRep && handleOpenEdit(selectedRep.id, "equipe")}
                   />
                 </div>
               </div>
@@ -575,6 +519,7 @@ function EstruturaRepPage() {
           }}
           structure={structure}
           onSave={handleSaveStructure}
+          initialTab={editorInitialTab}
         />
       )}
 
