@@ -223,6 +223,7 @@ export interface TreinamentoItem {
   data: string; // formato YYYY-MM-DD
   horario?: string; // ex: "09:00"
   local?: string; // ex: "Showroom Loja" ou "Online"
+  ministrante?: string; // quem irá ministrar a ação (ex: Rep Titular, Membro da Equipe)
   observacoes?: string;
 }
 
@@ -233,6 +234,7 @@ export interface ClienteFrequenciaItem {
   cidade?: string;
   uf?: string;
   frequencia_dias: number; // ex: 40 (dias para retornar)
+  responsavel?: string; // responsável pelo atendimento ou visita
   observacoes?: string;
 }
 

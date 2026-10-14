@@ -152,14 +152,21 @@ export function FrequenciaVisitasSection({
                     <h4 className="text-xs sm:text-sm font-bold text-foreground truncate" title={item.cliente_nome}>
                       {item.cliente_nome}
                     </h4>
-                    {(item.cidade || item.uf) && (
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-                        <MapPin className="h-3 w-3 shrink-0 text-primary/70" />
-                        <span className="truncate">
-                          {[item.cidade, item.uf].filter(Boolean).join(" - ")}
+                    <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground truncate">
+                      {(item.cidade || item.uf) && (
+                        <div className="flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3 shrink-0 text-primary/70" />
+                          <span className="truncate">
+                            {[item.cidade, item.uf].filter(Boolean).join(" - ")}
+                          </span>
+                        </div>
+                      )}
+                      {item.responsavel && (
+                        <span className="text-[10px] text-foreground/80 font-medium truncate">
+                          • {item.responsavel}
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
 

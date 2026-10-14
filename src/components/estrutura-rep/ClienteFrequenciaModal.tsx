@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { ClienteFrequenciaItem } from "@/lib/estrutura-rep/types";
+import type { ClienteFrequenciaItem, MembroEquipe } from "@/lib/estrutura-rep/types";
 import {
   Dialog,
   DialogContent,
@@ -19,14 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RotateCcw, Building, MapPin, Loader2, Calendar } from "lucide-react";
+import { RotateCcw, Building, MapPin, Loader2, Calendar, UserCheck } from "lucide-react";
 import { toast } from "sonner";
+import { RepClientSelect } from "./RepClientSelect";
 
 interface ClienteFrequenciaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cliente?: ClienteFrequenciaItem | null;
   posicaoSugerida?: number;
+  representativeId?: string;
+  repNome?: string;
+  equipe?: MembroEquipe[];
   onSave: (item: ClienteFrequenciaItem) => Promise<void> | void;
 }
 
@@ -41,6 +45,9 @@ export function ClienteFrequenciaModal({
   onOpenChange,
   cliente,
   posicaoSugerida = 1,
+  representativeId,
+  repNome,
+  equipe = [],
   onSave,
 }: ClienteFrequenciaModalProps) {
   const [posicao, setPosicao] = useState<number>(posicaoSugerida);
@@ -48,6 +55,7 @@ export function ClienteFrequenciaModal({
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("BA");
   const [frequenciaDias, setFrequenciaDias] = useState<number>(40);
+  const [responsavel, setResponsavel] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +67,7 @@ export function ClienteFrequenciaModal({
         setCidade(cliente.cidade || "");
         setUf(cliente.uf || "BA");
         setFrequenciaDias(cliente.frequencia_dias || 40);
+        setResponsavel(cliente.responsavel || "");
         setObservacoes(cliente.observacoes || "");
       } else {
         setPosicao(posicaoSugerida);
@@ -66,10 +75,11 @@ export function ClienteFrequenciaModal({
         setCidade("");
         setUf("BA");
         setFrequenciaDias(40);
+        setResponsavel(repNome ? `${repNome} (Rep Titular)` : "");
         setObservacoes("");
       }
     }
-  }, [open, cliente, posicaoSugerida]);
+  }, [open, cliente, posicaoSugerida, repNome]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -93,6 +103,7 @@ export function ClienteFrequenciaModal({
         cidade: cidade.trim() || undefined,
         uf: uf || undefined,
         frequencia_dias: Number(frequenciaDias),
+        responsavel: responsavel.trim() || undefined,
         observacoes: observacoes.trim() || undefined,
       };
 
@@ -107,6 +118,11 @@ export function ClienteFrequenciaModal({
       setSaving(false);
     }
   };
+
+  const responsavelSugestoes = [
+    repNome ? `${repNome} (Rep Titular)` : null,
+    ...equipe.map((m) => `${m.nome} (${m.cargo})`),
+  ].filter(Boolean) as string[];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,8 +143,8 @@ export function ClienteFrequenciaModal({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Posição no Ranking (1 a 10) */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+          {/* Posição no Ranking (1 a 10) e Frequência */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5 col-span-1">
               <Label className="text-xs font-semibold">Posição</Label>
@@ -174,22 +190,66 @@ export function ClienteFrequenciaModal({
             </div>
           </div>
 
-          {/* Nome do Cliente */}
+          {/* Nome do Cliente com Seletor e Busca da Carteira */}
           <div className="space-y-1.5">
-            <Label htmlFor="client-freq-name" className="text-xs font-semibold">
-              Nome do Cliente *
+            <Label htmlFor="client-freq-name" className="text-xs font-semibold flex items-center justify-between">
+              <span>Nome do Cliente *</span>
+              <span className="text-[10px] text-muted-foreground font-normal">
+                Pesquise na carteira de clientes do rep
+              </span>
             </Label>
-            <div className="relative">
-              <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="client-freq-name"
-                value={clienteNome}
-                onChange={(e) => setClienteNome(e.target.value)}
-                placeholder="Ex: Ilustre Iluminação"
-                className="pl-9 h-9 text-xs"
-                required
-              />
-            </div>
+            <RepClientSelect
+              id="client-freq-name"
+              value={clienteNome}
+              onChange={setClienteNome}
+              onSelectClient={(c) => {
+                setClienteNome(c.nome);
+                if (c.cidade) setCidade(c.cidade);
+                if (c.estado) setUf(c.estado.toUpperCase());
+              }}
+              representativeId={representativeId}
+              repNome={repNome}
+              placeholder="Buscar cliente na carteira do rep..."
+              required
+            />
+          </div>
+
+          {/* Responsável pelo Atendimento / Visita */}
+          <div className="space-y-1.5">
+            <Label htmlFor="client-freq-resp" className="text-xs font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <UserCheck className="h-3.5 w-3.5 text-primary" />
+                <span>Responsável pelo Atendimento / Visita</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground font-normal">
+                (opcional)
+              </span>
+            </Label>
+            <Input
+              id="client-freq-resp"
+              value={responsavel}
+              onChange={(e) => setResponsavel(e.target.value)}
+              placeholder="Ex: Felipe Bogarim (Rep Titular) ou membro da equipe"
+              className="h-9 text-xs"
+            />
+            {responsavelSugestoes.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {responsavelSugestoes.map((sugestao) => (
+                  <button
+                    key={sugestao}
+                    type="button"
+                    onClick={() => setResponsavel(sugestao)}
+                    className={`text-[10px] px-2 py-0.5 rounded-md border transition cursor-pointer ${
+                      responsavel === sugestao
+                        ? "bg-primary text-primary-foreground font-bold border-primary shadow-2xs"
+                        : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80"
+                    }`}
+                  >
+                    {sugestao}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Cidade e UF */}
@@ -229,14 +289,14 @@ export function ClienteFrequenciaModal({
 
           {/* Observações */}
           <div className="space-y-1.5">
-            <Label htmlFor="client-freq-obs" className="text-xs font-semibold">
-              Observações
+            <Label htmlFor="client-obs" className="text-xs font-semibold">
+              Observações Estratégicas
             </Label>
             <Textarea
-              id="client-freq-obs"
+              id="client-obs"
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Ex: Visita alinhada com compras e especificadores"
+              placeholder="Ex: Cliente com maior volume de faturamento; foco em produtos Newline e Brilia."
               rows={2}
               className="text-xs resize-none"
             />

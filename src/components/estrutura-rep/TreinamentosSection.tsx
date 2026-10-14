@@ -17,6 +17,7 @@ import {
   Trash2,
   CalendarCheck,
   ChevronRight,
+  UserCheck,
 } from "lucide-react";
 
 interface TreinamentosSectionProps {
@@ -165,6 +166,12 @@ export function TreinamentosSection({
                   </h4>
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
+                    {item.ministrante && (
+                      <div className="flex items-center gap-1 shrink-0 text-foreground font-semibold" title="Ministrante da ação">
+                        <UserCheck className="h-3 w-3 text-primary shrink-0" />
+                        <span>{item.ministrante}</span>
+                      </div>
+                    )}
                     {item.horario && (
                       <div className="flex items-center gap-1 shrink-0">
                         <Clock className="h-3 w-3 text-primary/70" />

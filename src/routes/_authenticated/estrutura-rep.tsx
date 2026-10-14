@@ -698,6 +698,9 @@ function EstruturaRepPage() {
         open={trainingModalOpen}
         onOpenChange={setTrainingModalOpen}
         treinamento={editingTraining}
+        representativeId={selectedRep?.id}
+        repNome={selectedRep?.nome || structure?.nome_representante}
+        equipe={structure?.equipe}
         onSave={handleSaveTreinamento}
       />
 
@@ -707,6 +710,9 @@ function EstruturaRepPage() {
         onOpenChange={setFreqModalOpen}
         cliente={editingFreq}
         posicaoSugerida={(structure?.frequencia_visitas?.length || 0) + 1}
+        representativeId={selectedRep?.id}
+        repNome={selectedRep?.nome || structure?.nome_representante}
+        equipe={structure?.equipe}
         onSave={handleSaveFrequencia}
       />
 
