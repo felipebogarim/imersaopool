@@ -49,6 +49,7 @@ import { RepMarcasStrip } from "@/components/estrutura-rep/RepMarcasStrip";
 import { BrandEditorModal } from "@/components/estrutura-rep/BrandEditorModal";
 import { RepPerformanceYtdCard } from "@/components/estrutura-rep/RepPerformanceYtdCard";
 import { RankingClientesComparativoCard } from "@/components/estrutura-rep/RankingClientesComparativoCard";
+import { RepObservacoesCard } from "@/components/estrutura-rep/RepObservacoesCard";
 import {
   loadRepStructure,
   loadAllRepStructures,
@@ -358,6 +359,43 @@ function EstruturaRepPage() {
     const updatedStructure: RepStructure = {
       ...structure,
       ranking_clientes_comparativo: ranking,
+      observacoes_gerais: ranking.observacoes !== undefined ? ranking.observacoes : structure.observacoes_gerais,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+  };
+
+  // Salva observações do representante e do ranking comparativo
+  const handleSaveObservacoes = async (texto: string) => {
+    if (!structure) return;
+
+    const currentRanking = structure.ranking_clientes_comparativo || {
+      periodo_1: {
+        label: "2025 (Ano Completo)",
+        ano: 2025,
+        periodo_meses: "Ano Completo",
+        qtd_silver: 18,
+        qtd_gold: 8,
+        qtd_black: 3,
+      },
+      periodo_2: {
+        label: "2026 (Jan - Out)",
+        ano: 2026,
+        periodo_meses: "Jan a Out",
+        qtd_silver: 22,
+        qtd_gold: 11,
+        qtd_black: 5,
+      },
+    };
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      observacoes_gerais: texto,
+      ranking_clientes_comparativo: {
+        ...currentRanking,
+        observacoes: texto,
+      },
     };
 
     await saveRepStructure(updatedStructure);
@@ -789,11 +827,20 @@ function EstruturaRepPage() {
                   />
                 </div>
 
-                {/* Abaixo de tudo: Ranking Comparativo de Clientes por Categoria (Black, Gold, Silver) */}
-                <div className="lg:col-span-12">
+                {/* Ranking Comparativo de Clientes por Categoria (2/3 da tela) */}
+                <div className="lg:col-span-8 flex flex-col">
                   <RankingClientesComparativoCard
                     data={structure.ranking_clientes_comparativo}
                     onSave={handleSaveRankingClientesComparativo}
+                    className="h-full"
+                  />
+                </div>
+
+                {/* Card de Observações e Apontamentos (1/3 da tela) */}
+                <div className="lg:col-span-4 flex flex-col">
+                  <RepObservacoesCard
+                    observacoes={structure.ranking_clientes_comparativo?.observacoes ?? structure.observacoes_gerais ?? ""}
+                    onSave={handleSaveObservacoes}
                   />
                 </div>
               </div>

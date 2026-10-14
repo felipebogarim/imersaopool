@@ -664,13 +664,6 @@ export function RankingClientesComparativoCard({
         </div>
       </div>
 
-      {/* Observações / Rodapé */}
-      {observacoes && (
-        <div className="mt-3.5 pt-3 border-t border-border/70 text-xs text-muted-foreground italic">
-          "{observacoes}"
-        </div>
-      )}
-
       {/* Modal de Preenchimento Manual dos Dois Períodos */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden">

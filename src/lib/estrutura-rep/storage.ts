@@ -466,6 +466,8 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
         frequencia_demais_clientes: structure.frequencia_demais_clientes,
         treinamentos: structure.treinamentos,
         dias_campo_por_estado: structure.dias_campo_por_estado,
+        performance_comparativo: structure.performance_comparativo,
+        ranking_clientes_comparativo: structure.ranking_clientes_comparativo,
       },
       equipe: structure.equipe,
       observacoes_gerais: structure.observacoes_gerais || null,
@@ -602,6 +604,14 @@ export async function loadAllRepStructures(reps: {
         treinamentos: treinamentosFinais,
         frequencia_visitas: freqFinais,
         frequencia_demais_clientes: freqDemais,
+        performance_comparativo:
+          dbItem.performance_comparativo ??
+          dbItem.recursos_operacionais?.performance_comparativo ??
+          localData?.performance_comparativo,
+        ranking_clientes_comparativo:
+          dbItem.ranking_clientes_comparativo ??
+          dbItem.recursos_operacionais?.ranking_clientes_comparativo ??
+          localData?.ranking_clientes_comparativo,
         updated_at: dbItem.updated_at,
       };
       continue;
