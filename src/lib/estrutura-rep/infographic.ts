@@ -13,7 +13,7 @@ import {
 import { findBrandLogo } from "./brand-library";
 import { buildBrazilMapSvg, svgToPngDataUrl, logoToPngDataUrl } from "./pdf";
 
-// Utility: desenha retângulo arredondado no canvas 2D
+// Utility: desenha retângulo arredondado no canvas 2D com segurança contra raios ou tamanhos inválidos
 function drawRoundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -22,50 +22,61 @@ function drawRoundRect(
   h: number,
   r: number | number[]
 ) {
+  if (w <= 0 || h <= 0) return;
+  const rawRadius = typeof r === "number" ? r : r[0] || 0;
+  const radius = Math.max(0, Math.min(rawRadius, w / 2, h / 2));
+
   ctx.beginPath();
-  if (typeof (ctx as any).roundRect === "function") {
-    (ctx as any).roundRect(x, y, w, h, r);
-  } else {
-    const radius = typeof r === "number" ? r : r[0] || 0;
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + w - radius, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-    ctx.lineTo(x + w, y + h - radius);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-    ctx.lineTo(x + radius, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-  }
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
 }
 
-// Trunca texto com reticências se exceder a largura máxima
+// Trunca texto com reticências se exceder a largura máxima com segurança para undefined/null
 function fitText(
   ctx: CanvasRenderingContext2D,
-  text: string,
+  text: string | null | undefined,
   maxWidth: number
 ): string {
-  if (ctx.measureText(text).width <= maxWidth) return text;
-  let truncated = text;
-  while (truncated.length > 1 && ctx.measureText(`${truncated}…`).width > maxWidth) {
-    truncated = truncated.slice(0, -1);
+  const safeText = String(text || "").trim();
+  if (!safeText || maxWidth <= 0) return "";
+  try {
+    if (ctx.measureText(safeText).width <= maxWidth) return safeText;
+    let truncated = safeText;
+    while (truncated.length > 1 && ctx.measureText(`${truncated}…`).width > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    return `${truncated}…`;
+  } catch {
+    return safeText;
   }
-  return `${truncated}…`;
 }
 
-// Carrega imagem HTML a partir de Data URL / URL
+// Carrega imagem HTML a partir de Data URL / URL com proteção crossOrigin
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || typeof document === "undefined" || !src) {
       resolve(null);
       return;
     }
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
+    try {
+      const img = new Image();
+      if (!src.startsWith("data:") && !src.startsWith("blob:")) {
+        img.crossOrigin = "anonymous";
+      }
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    } catch {
+      resolve(null);
+    }
   });
 }
 
@@ -334,33 +345,46 @@ export async function generateRepInfographicImage(
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      const logoPng = brandLogosMap[marca.id || marca.nome];
+      const logoPng = brandLogosMap[marca?.id || marca?.nome || ""];
       let loadedLogo: HTMLImageElement | null = null;
       if (logoPng) {
         loadedLogo = await loadImage(logoPng);
       }
 
-      if (loadedLogo && loadedLogo.width > 0) {
-        const padX = 12;
-        const padY = 8;
-        const maxW = brandCardW - padX * 2;
-        const maxH = brandCardH - padY * 2;
-        const aspect = loadedLogo.width / loadedLogo.height;
-        let dw = maxW;
-        let dh = dw / aspect;
-        if (dh > maxH) {
-          dh = maxH;
-          dw = dh * aspect;
+      const natW = loadedLogo?.naturalWidth || loadedLogo?.width || 0;
+      const natH = loadedLogo?.naturalHeight || loadedLogo?.height || 0;
+      let logoDrawn = false;
+
+      if (loadedLogo && natW > 0 && natH > 0) {
+        try {
+          const padX = 12;
+          const padY = 8;
+          const maxW = Math.max(10, brandCardW - padX * 2);
+          const maxH = Math.max(10, brandCardH - padY * 2);
+          const aspect = natW / natH;
+          let dw = maxW;
+          let dh = dw / (aspect || 1);
+          if (dh > maxH) {
+            dh = maxH;
+            dw = dh * aspect;
+          }
+          dw = Math.max(1, dw);
+          dh = Math.max(1, dh);
+          const dx = bx + (brandCardW - dw) / 2;
+          const dy = by + (brandCardH - dh) / 2;
+          ctx.drawImage(loadedLogo, dx, dy, dw, dh);
+          logoDrawn = true;
+        } catch {
+          logoDrawn = false;
         }
-        const dx = bx + (brandCardW - dw) / 2;
-        const dy = by + (brandCardH - dh) / 2;
-        ctx.drawImage(loadedLogo, dx, dy, dw, dh);
-      } else {
+      }
+
+      if (!logoDrawn) {
         // Fallback tipográfico elegante
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(fitText(ctx, marca.nome, brandCardW - 16), bx + brandCardW / 2, by + 34);
+        ctx.fillText(fitText(ctx, marca?.nome || "Marca", brandCardW - 16), bx + brandCardW / 2, by + 34);
         ctx.textAlign = "left";
       }
     }
@@ -436,17 +460,23 @@ export async function generateRepInfographicImage(
     // Desenha o Mapa SVG renderizado
     if (mapPngUrl) {
       const mapImg = await loadImage(mapPngUrl);
-      if (mapImg && mapImg.width > 0) {
-        const aspect = mapImg.width / mapImg.height;
-        let dw = mapBoxW - 20;
-        let dh = dw / aspect;
-        if (dh > mapBoxH - 16) {
-          dh = mapBoxH - 16;
-          dw = dh * aspect;
+      const natW = mapImg?.naturalWidth || mapImg?.width || 0;
+      const natH = mapImg?.naturalHeight || mapImg?.height || 0;
+      if (mapImg && natW > 0 && natH > 0) {
+        try {
+          const aspect = natW / natH;
+          let dw = mapBoxW - 20;
+          let dh = dw / aspect;
+          if (dh > mapBoxH - 16) {
+            dh = mapBoxH - 16;
+            dw = dh * aspect;
+          }
+          const dx = mapBoxX + (mapBoxW - dw) / 2;
+          const dy = mapBoxY + (mapBoxH - dh) / 2;
+          ctx.drawImage(mapImg, dx, dy, dw, dh);
+        } catch (err) {
+          console.warn("[infographic] Erro ao desenhar mapa:", err);
         }
-        const dx = mapBoxX + (mapBoxW - dw) / 2;
-        const dy = mapBoxY + (mapBoxH - dh) / 2;
-        ctx.drawImage(mapImg, dx, dy, dw, dh);
       }
     }
 
@@ -608,7 +638,7 @@ export async function generateRepInfographicImage(
           // Nome do Cliente
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-          const clientName = fitText(ctx, tr.cliente_nome.toUpperCase(), itemW - 80);
+          const clientName = fitText(ctx, (tr.cliente_nome || "Cliente").toUpperCase(), itemW - 80);
           ctx.fillText(clientName, infoX, dateBoxY + 38);
 
           itemY += itemH + 10;
@@ -698,7 +728,7 @@ export async function generateRepInfographicImage(
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         const maxNameW = itemW - 180;
-        ctx.fillText(fitText(ctx, cli.cliente_nome.toUpperCase(), maxNameW), textX, itemY + 19);
+        ctx.fillText(fitText(ctx, (cli.cliente_nome || "Cliente").toUpperCase(), maxNameW), textX, itemY + 19);
 
         ctx.fillStyle = "#64748b";
         ctx.font = "500 9.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -946,7 +976,7 @@ export async function generateRepInfographicImage(
 
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.fillText(fitText(ctx, prep.nome, t2ColW - 80), pbx + 14, t2RowY + 22);
+        ctx.fillText(fitText(ctx, prep.nome || "Preposto", t2ColW - 80), pbx + 14, t2RowY + 22);
 
         // Badge Preposto
         const pBadgeW = 58;
@@ -1044,7 +1074,7 @@ export async function generateRepInfographicImage(
 
         ctx.fillStyle = "#0f172a";
         ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-        ctx.fillText(fitText(ctx, ass.nome, t3ColW - 74), abx + 12, t3RowY + 20);
+        ctx.fillText(fitText(ctx, ass.nome || "Assistente", t3ColW - 74), abx + 12, t3RowY + 20);
 
         // Badge Assistente
         const aBadgeW = 56;
@@ -1088,9 +1118,31 @@ export async function generateRepInfographicImage(
   }
 
   // Exporta imagem final PNG de altíssima fidelidade
-  const dataUrl = canvas.toDataURL("image/png");
+  let dataUrl = "";
+  try {
+    dataUrl = canvas.toDataURL("image/png");
+  } catch (err) {
+    console.error("[infographic] Falha ao exportar canvas para dataUrl:", err);
+  }
+
   const blob = await new Promise<Blob>((resolve) => {
-    canvas.toBlob((b) => resolve(b || new Blob()), "image/png");
+    try {
+      canvas.toBlob((b) => {
+        if (b) {
+          resolve(b);
+        } else if (dataUrl) {
+          fetch(dataUrl)
+            .then((r) => r.blob())
+            .then(resolve)
+            .catch(() => resolve(new Blob([], { type: "image/png" })));
+        } else {
+          resolve(new Blob([], { type: "image/png" }));
+        }
+      }, "image/png");
+    } catch (err) {
+      console.error("[infographic] Falha ao exportar canvas para blob:", err);
+      resolve(new Blob([], { type: "image/png" }));
+    }
   });
 
   return {

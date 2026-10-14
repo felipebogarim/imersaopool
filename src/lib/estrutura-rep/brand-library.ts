@@ -15,31 +15,31 @@ const SHARED_BRAND_STORAGE_KEY = "rep_shared_brand_library";
 
 // Logos padrão em SVG vetorial leve para as principais marcas do setor de iluminação
 const SVG_NEWLINE = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0084a8" letter-spacing="1">newline</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0084a8" letter-spacing="1">newline</text></svg>`
 )}`;
 
 const SVG_BRILIA = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><circle cx="38" cy="30" r="16" fill="#f97316"/><circle cx="38" cy="30" r="9" fill="#ffffff"/><text x="118" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#1e293b" letter-spacing="0.5">brilia</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><circle cx="38" cy="30" r="16" fill="#f97316"/><circle cx="38" cy="30" r="9" fill="#ffffff"/><text x="118" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#1e293b" letter-spacing="0.5">brilia</text></svg>`
 )}`;
 
 const SVG_MISTER_LED = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="18" y="14" width="34" height="32" rx="4" fill="#ea580c"/><text x="35" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="#ffffff">ML</text><text x="122" y="33" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="19" text-anchor="middle" fill="#1e293b">MISTER LED</text><text x="122" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="9" text-anchor="middle" fill="#64748b" letter-spacing="2">ILUMINAÇÃO</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="18" y="14" width="34" height="32" rx="4" fill="#ea580c"/><text x="35" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="#ffffff">ML</text><text x="122" y="33" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="19" text-anchor="middle" fill="#1e293b">MISTER LED</text><text x="122" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="9" text-anchor="middle" fill="#64748b" letter-spacing="2">ILUMINAÇÃO</text></svg>`
 )}`;
 
 const SVG_ALPERTONE = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="15" y="14" width="170" height="32" rx="6" fill="#dc2626"/><text x="100" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" text-anchor="middle" fill="#ffffff" letter-spacing="1">alpertone</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="15" y="14" width="170" height="32" rx="6" fill="#dc2626"/><text x="100" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" text-anchor="middle" fill="#ffffff" letter-spacing="1">alpertone</text></svg>`
 )}`;
 
 const SVG_STELLA = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0f172a" letter-spacing="2">STELLA</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0f172a" letter-spacing="2">STELLA</text></svg>`
 )}`;
 
 const SVG_INTERLIGHT = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="23" text-anchor="middle" fill="#0284c7" letter-spacing="1">INTERLIGHT</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="23" text-anchor="middle" fill="#0284c7" letter-spacing="1">INTERLIGHT</text></svg>`
 )}`;
 
 const SVG_DRESALL = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#0f172a" letter-spacing="2">DRESALL</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#0f172a" letter-spacing="2">DRESALL</text></svg>`
 )}`;
 
 /** Catálogo base de marcas de iluminação com logomarcas vetorizadas */

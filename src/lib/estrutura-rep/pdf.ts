@@ -132,18 +132,31 @@ export async function svgToPngDataUrl(svgString: string, size = 600): Promise<st
       const url = URL.createObjectURL(svgBlob);
 
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, size, size);
-          ctx.drawImage(img, 0, 0, size, size);
-          const dataUrl = canvas.toDataURL("image/png");
-          URL.revokeObjectURL(url);
-          resolve(dataUrl);
-        } else {
+        try {
+          const natW = img.naturalWidth || img.width || size;
+          const natH = img.naturalHeight || img.height || size;
+          if (natW <= 0 || natH <= 0) {
+            URL.revokeObjectURL(url);
+            resolve("");
+            return;
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, size, size);
+            ctx.drawImage(img, 0, 0, size, size);
+            const dataUrl = canvas.toDataURL("image/png");
+            URL.revokeObjectURL(url);
+            resolve(dataUrl);
+          } else {
+            URL.revokeObjectURL(url);
+            resolve("");
+          }
+        } catch {
           URL.revokeObjectURL(url);
           resolve("");
         }
@@ -178,36 +191,51 @@ export async function logoToPngDataUrl(logoUrlOrSvg?: string, width = 240, heigh
         const blob = new Blob([src], { type: "image/svg+xml;charset=utf-8" });
         src = URL.createObjectURL(blob);
         blobUrlToRevoke = src;
+      } else if (src.startsWith("http")) {
+        img.crossOrigin = "anonymous";
       }
 
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = width * 2; // retina 2x
-        canvas.height = height * 2;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
+        try {
+          const natW = img.naturalWidth || img.width || width;
+          const natH = img.naturalHeight || img.height || height;
+          if (natW <= 0 || natH <= 0) {
+            if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
+            resolve("");
+            return;
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width * 2; // retina 2x
+          canvas.height = height * 2;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
+            resolve("");
+            return;
+          }
+
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          const padX = 12;
+          const padY = 8;
+          const maxW = Math.max(10, canvas.width - padX * 2);
+          const maxH = Math.max(10, canvas.height - padY * 2);
+          const scale = Math.min(maxW / natW, maxH / natH);
+          const dw = Math.max(1, natW * scale);
+          const dh = Math.max(1, natH * scale);
+          const dx = (canvas.width - dw) / 2;
+          const dy = (canvas.height - dh) / 2;
+
+          ctx.drawImage(img, dx, dy, dw, dh);
+          const pngUrl = canvas.toDataURL("image/png");
+          if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
+          resolve(pngUrl);
+        } catch {
           if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
           resolve("");
-          return;
         }
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const padX = 12;
-        const padY = 8;
-        const maxW = canvas.width - padX * 2;
-        const maxH = canvas.height - padY * 2;
-        const scale = Math.min(maxW / (img.width || 1), maxH / (img.height || 1));
-        const dw = (img.width || 1) * scale;
-        const dh = (img.height || 1) * scale;
-        const dx = (canvas.width - dw) / 2;
-        const dy = (canvas.height - dh) / 2;
-
-        ctx.drawImage(img, dx, dy, dw, dh);
-        const pngUrl = canvas.toDataURL("image/png");
-        if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
-        resolve(pngUrl);
       };
 
       img.onerror = () => {

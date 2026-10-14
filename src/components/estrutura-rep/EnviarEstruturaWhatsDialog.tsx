@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   Loader2,
   Sparkles,
   Info,
+  RotateCw,
 } from "lucide-react";
 import type { RepStructure } from "@/lib/estrutura-rep/types";
 import { formatWhatsappNumber } from "@/lib/estrutura-rep/whatsapp";
@@ -63,6 +64,7 @@ export function EnviarEstruturaWhatsDialog({
   // Infográfico gerado em formato de imagem vertical de alta fidelidade
   const [infographic, setInfographic] = useState<InfographicResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const repNome = structure.nome_representante || "Representante";
   const repEmpresa = structure.empresa_representacao || "Representação Comercial";
@@ -74,35 +76,34 @@ export function EnviarEstruturaWhatsDialog({
     .replace(/^-|-$/g, "");
 
   // Gera o Infográfico de alta resolução em PNG
+  const generateInfographic = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const result = await generateRepInfographicImage(structure);
+      if (!result.dataUrl) {
+        throw new Error("Canvas gerado sem dados de imagem.");
+      }
+      setInfographic(result);
+
+      // Upload no background para persistência pública da imagem
+      if (structure.representative_id && result.blob && result.blob.size > 0) {
+        void uploadEstruturaImageToStorage(structure.representative_id, result.blob);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[EnviarEstruturaWhatsDialog] Erro ao gerar infográfico:", err);
+      setLoadError("Falha na renderização visual do infográfico.");
+      toast.error("Não foi possível gerar a imagem do infográfico.");
+    } finally {
+      setLoading(false);
+    }
+  }, [structure]);
+
   useEffect(() => {
     if (!open) return;
-    let active = true;
-
-    async function loadInfographic() {
-      setLoading(true);
-      try {
-        const result = await generateRepInfographicImage(structure);
-        if (!active) return;
-        setInfographic(result);
-
-        // Upload no background para persistência pública da imagem
-        if (structure.representative_id && result.blob && result.blob.size > 0) {
-          void uploadEstruturaImageToStorage(structure.representative_id, result.blob);
-        }
-      } catch (err) {
-        console.warn("[EnviarEstruturaWhatsDialog] Erro ao gerar infográfico:", err);
-        toast.error("Não foi possível gerar a imagem do infográfico.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void loadInfographic();
-
-    return () => {
-      active = false;
-    };
-  }, [open, structure]);
+    void generateInfographic();
+  }, [open, generateInfographic]);
 
   function selectDestination(dest: "desktop" | "web") {
     setDestination(dest);
@@ -415,9 +416,24 @@ export function EnviarEstruturaWhatsDialog({
                     className="w-full max-w-[620px] rounded-md shadow-xs object-contain"
                   />
                 ) : (
-                  <div className="py-20 flex flex-col items-center justify-center text-muted-foreground text-xs gap-1.5">
-                    <Info className="h-5 w-5 text-muted-foreground/60" />
-                    <span>Nenhuma imagem disponível</span>
+                  <div className="py-16 px-4 flex flex-col items-center justify-center text-muted-foreground text-xs gap-2 text-center">
+                    <Info className="h-6 w-6 text-amber-500/80" />
+                    <span className="font-medium text-foreground">
+                      {loadError || "Nenhuma imagem disponível"}
+                    </span>
+                    <p className="text-[11px] text-muted-foreground max-w-sm">
+                      Ocorreu uma instabilidade na geração da imagem pelo navegador. Clique abaixo para tentar renderizar novamente.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void generateInfographic()}
+                      className="mt-2 text-xs h-8 gap-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                      Tentar Novamente
+                    </Button>
                   </div>
                 )}
               </div>
