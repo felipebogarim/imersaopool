@@ -119,24 +119,24 @@ export function buildBrazilMapSvg(
   </svg>`;
 }
 
-/** Rasteriza o SVG do mapa para um PNG Data URL para inserção no jsPDF */
+/** Rasteriza o SVG do mapa para um PNG Data URL para inserção no jsPDF sem manchar o canvas */
 export async function svgToPngDataUrl(svgString: string, size = 600): Promise<string> {
   return new Promise((resolve) => {
-    if (typeof window === "undefined" || typeof document === "undefined") {
+    if (typeof window === "undefined" || typeof document === "undefined" || !svgString) {
       resolve("");
       return;
     }
     try {
       const img = new Image();
-      const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(svgBlob);
+      const safeDataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgString);
 
+      const timer = setTimeout(() => resolve(""), 3500);
       img.onload = () => {
+        clearTimeout(timer);
         try {
           const natW = img.naturalWidth || img.width || size;
           const natH = img.naturalHeight || img.height || size;
           if (natW <= 0 || natH <= 0) {
-            URL.revokeObjectURL(url);
             resolve("");
             return;
           }
@@ -149,23 +149,24 @@ export async function svgToPngDataUrl(svgString: string, size = 600): Promise<st
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, size, size);
             ctx.drawImage(img, 0, 0, size, size);
-            const dataUrl = canvas.toDataURL("image/png");
-            URL.revokeObjectURL(url);
-            resolve(dataUrl);
+            try {
+              const dataUrl = canvas.toDataURL("image/png");
+              resolve(dataUrl);
+            } catch {
+              resolve("");
+            }
           } else {
-            URL.revokeObjectURL(url);
             resolve("");
           }
         } catch {
-          URL.revokeObjectURL(url);
           resolve("");
         }
       };
       img.onerror = () => {
-        URL.revokeObjectURL(url);
+        clearTimeout(timer);
         resolve("");
       };
-      img.src = url;
+      img.src = safeDataUrl;
     } catch {
       resolve("");
     }
@@ -185,22 +186,20 @@ export async function logoToPngDataUrl(logoUrlOrSvg?: string, width = 240, heigh
     try {
       const img = new Image();
       let src = logoUrlOrSvg;
-      let blobUrlToRevoke = "";
 
       if (!src.startsWith("data:") && !src.startsWith("http")) {
-        const blob = new Blob([src], { type: "image/svg+xml;charset=utf-8" });
-        src = URL.createObjectURL(blob);
-        blobUrlToRevoke = src;
+        src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src);
       } else if (src.startsWith("http")) {
         img.crossOrigin = "anonymous";
       }
 
+      const timer = setTimeout(() => resolve(""), 3500);
       img.onload = () => {
+        clearTimeout(timer);
         try {
           const natW = img.naturalWidth || img.width || width;
           const natH = img.naturalHeight || img.height || height;
           if (natW <= 0 || natH <= 0) {
-            if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
             resolve("");
             return;
           }
@@ -210,7 +209,6 @@ export async function logoToPngDataUrl(logoUrlOrSvg?: string, width = 240, heigh
           canvas.height = height * 2;
           const ctx = canvas.getContext("2d");
           if (!ctx) {
-            if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
             resolve("");
             return;
           }
@@ -229,17 +227,19 @@ export async function logoToPngDataUrl(logoUrlOrSvg?: string, width = 240, heigh
           const dy = (canvas.height - dh) / 2;
 
           ctx.drawImage(img, dx, dy, dw, dh);
-          const pngUrl = canvas.toDataURL("image/png");
-          if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
-          resolve(pngUrl);
+          try {
+            const pngUrl = canvas.toDataURL("image/png");
+            resolve(pngUrl);
+          } catch {
+            resolve("");
+          }
         } catch {
-          if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
           resolve("");
         }
       };
 
       img.onerror = () => {
-        if (blobUrlToRevoke) URL.revokeObjectURL(blobUrlToRevoke);
+        clearTimeout(timer);
         resolve("");
       };
 

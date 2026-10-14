@@ -93,7 +93,7 @@ export function EnviarEstruturaWhatsDialog({
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[EnviarEstruturaWhatsDialog] Erro ao gerar infográfico:", err);
-      setLoadError("Falha na renderização visual do infográfico.");
+      setLoadError(msg || "Falha na renderização visual do infográfico.");
       toast.error("Não foi possível gerar a imagem do infográfico.");
     } finally {
       setLoading(false);

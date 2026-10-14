@@ -59,7 +59,24 @@ function fitText(
   }
 }
 
-// Carrega imagem HTML a partir de Data URL / URL com proteção crossOrigin
+// Converte Data URL base64 diretamente para Blob em memória sem depender de canvas.toBlob assíncrono
+export function dataUrlToBlob(dataUrl: string): Blob {
+  try {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  } catch {
+    return new Blob([], { type: "image/png" });
+  }
+}
+
+// Carrega imagem HTML a partir de Data URL / URL com proteção crossOrigin e timeout
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || typeof document === "undefined" || !src) {
@@ -71,8 +88,15 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
       if (!src.startsWith("data:") && !src.startsWith("blob:")) {
         img.crossOrigin = "anonymous";
       }
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
+      const timer = setTimeout(() => resolve(null), 3500);
+      img.onload = () => {
+        clearTimeout(timer);
+        resolve(img);
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
       img.src = src;
     } catch {
       resolve(null);
@@ -118,7 +142,7 @@ export interface InfographicResult {
  */
 export async function generateRepInfographicImage(
   structure: RepStructure,
-  options?: { scale?: number }
+  options?: { scale?: number; skipImages?: boolean }
 ): Promise<InfographicResult> {
   const nomeRep = structure.nome_representante || "Representante";
   const empresaRep = structure.empresa_representacao || "Representação Comercial";
@@ -156,31 +180,36 @@ export async function generateRepInfographicImage(
 
   // Pré-renderização paralela dos logos das marcas
   const brandLogosMap: Record<string, string> = {};
-  await Promise.all(
-    marcas.map(async (m) => {
-      const resolved = findBrandLogo(m.nome, marcas);
-      if (resolved) {
-        try {
-          const pngUrl = await logoToPngDataUrl(resolved, 160, 60);
-          if (pngUrl) brandLogosMap[m.id || m.nome] = pngUrl;
-        } catch {
-          // fallback
+  if (!options?.skipImages) {
+    await Promise.all(
+      marcas.map(async (m) => {
+        const resolved = findBrandLogo(m.nome, marcas);
+        if (resolved) {
+          try {
+            const pngUrl = await logoToPngDataUrl(resolved, 160, 60);
+            if (pngUrl) brandLogosMap[m.id || m.nome] = pngUrl;
+          } catch {
+            // fallback
+          }
         }
-      }
-    })
-  );
+      })
+    );
+  }
 
   // Pré-renderização do mapa do Brasil SVG para PNG
   let mapPngUrl = "";
-  try {
-    const mapSvg = buildBrazilMapSvg(
-      structure.estados_atendidos || [],
-      structure.detalhes_municipais || {},
-      structure.dias_campo_por_estado || {}
-    );
-    mapPngUrl = await svgToPngDataUrl(mapSvg, 700);
-  } catch (err) {
-    console.warn("[generateRepInfographicImage] Falha ao renderizar mapa SVG:", err);
+  if (!options?.skipImages) {
+    try {
+      const mapSvg = buildBrazilMapSvg(
+        structure.estados_atendidos || [],
+        structure.detalhes_municipais || {},
+        structure.dias_campo_por_estado || {}
+      );
+      const safeDataUri = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(mapSvg);
+      mapPngUrl = (await svgToPngDataUrl(mapSvg, 700)) || safeDataUri;
+    } catch (err) {
+      console.warn("[generateRepInfographicImage] Falha ao renderizar mapa SVG:", err);
+    }
   }
 
   // Medidas dinâmicas de altura
@@ -458,7 +487,7 @@ export async function generateRepInfographicImage(
     ctx.stroke();
 
     // Desenha o Mapa SVG renderizado
-    if (mapPngUrl) {
+    if (mapPngUrl && !options?.skipImages) {
       const mapImg = await loadImage(mapPngUrl);
       const natW = mapImg?.naturalWidth || mapImg?.width || 0;
       const natH = mapImg?.naturalHeight || mapImg?.height || 0;
@@ -478,6 +507,19 @@ export async function generateRepInfographicImage(
           console.warn("[infographic] Erro ao desenhar mapa:", err);
         }
       }
+    } else {
+      // Fallback vetorial limpo caso skipImages esteja ativo
+      const centerX = mapBoxX + mapBoxW / 2;
+      const centerY = mapBoxY + mapBoxH / 2;
+      ctx.fillStyle = "#0284c7";
+      ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("COBERTURA REGIONAL & ATUAÇÃO EM CAMPO", centerX, centerY - 20);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "500 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillText(`${ufs.length} estados atendidos com rotina periódica de visitas`, centerX, centerY + 6);
+      ctx.textAlign = "left";
     }
 
     // Barra inferior: UFs Atendidas com pílulas
@@ -1125,25 +1167,13 @@ export async function generateRepInfographicImage(
     console.error("[infographic] Falha ao exportar canvas para dataUrl:", err);
   }
 
-  const blob = await new Promise<Blob>((resolve) => {
-    try {
-      canvas.toBlob((b) => {
-        if (b) {
-          resolve(b);
-        } else if (dataUrl) {
-          fetch(dataUrl)
-            .then((r) => r.blob())
-            .then(resolve)
-            .catch(() => resolve(new Blob([], { type: "image/png" })));
-        } else {
-          resolve(new Blob([], { type: "image/png" }));
-        }
-      }, "image/png");
-    } catch (err) {
-      console.error("[infographic] Falha ao exportar canvas para blob:", err);
-      resolve(new Blob([], { type: "image/png" }));
-    }
-  });
+  // Se o canvas tiver sido contaminado por restrições de CORS/SVG no navegador, aciona fallback vetorial 100% seguro
+  if (!dataUrl && !options?.skipImages) {
+    console.warn("[infographic] Canvas com restrição de segurança. Acionando renderização vetorial segura...");
+    return generateRepInfographicImage(structure, { ...options, skipImages: true });
+  }
+
+  const blob = dataUrl ? dataUrlToBlob(dataUrl) : new Blob([], { type: "image/png" });
 
   return {
     dataUrl,
