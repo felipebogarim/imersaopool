@@ -32,6 +32,7 @@ import {
   Loader2,
   UserCheck,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { RepClientSelect } from "./RepClientSelect";
@@ -63,6 +64,7 @@ export function TreinamentoEditorModal({
   const [data, setData] = useState("");
   const [horario, setHorario] = useState("09:00");
   const [local, setLocal] = useState("");
+  const [status, setStatus] = useState<"planejado" | "realizado">("planejado");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -75,6 +77,7 @@ export function TreinamentoEditorModal({
         setData(treinamento.data || new Date().toISOString().split("T")[0]);
         setHorario(treinamento.horario || "09:00");
         setLocal(treinamento.local || "");
+        setStatus(treinamento.status || "planejado");
         setObservacoes(treinamento.observacoes || "");
       } else {
         setTipo("mini_palestra");
@@ -86,6 +89,7 @@ export function TreinamentoEditorModal({
         setData(tomorrow.toISOString().split("T")[0]);
         setHorario("09:00");
         setLocal("Showroom da Loja");
+        setStatus("planejado");
         setObservacoes("");
       }
     }
@@ -119,6 +123,7 @@ export function TreinamentoEditorModal({
         data,
         horario: horario.trim() || undefined,
         local: local.trim() || undefined,
+        status,
         observacoes: observacoes.trim() || undefined,
       };
 
@@ -128,6 +133,7 @@ export function TreinamentoEditorModal({
       );
       onOpenChange(false);
     } catch (err: any) {
+
       toast.error(err?.message || "Falha ao salvar agendamento");
     } finally {
       setSaving(false);
@@ -298,6 +304,37 @@ export function TreinamentoEditorModal({
                 placeholder="Ex: Showroom da Loja / Sala Técnica"
                 className="pl-9 h-9 text-xs"
               />
+            </div>
+          </div>
+
+          {/* Status da Ação: Planejado vs Realizado */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Status da Ação</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setStatus("planejado")}
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border text-xs font-semibold transition-all ${
+                  status === "planejado"
+                    ? "bg-blue-500/15 border-blue-500/50 text-blue-700 dark:text-blue-300 shadow-2xs"
+                    : "bg-muted/40 border-border/80 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Planejado</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatus("realizado")}
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border text-xs font-semibold transition-all ${
+                  status === "realizado"
+                    ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 shadow-2xs"
+                    : "bg-muted/40 border-border/80 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Realizado</span>
+              </button>
             </div>
           </div>
 

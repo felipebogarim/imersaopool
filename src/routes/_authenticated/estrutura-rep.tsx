@@ -308,6 +308,32 @@ function EstruturaRepPage() {
     toast.success("Agendamento de treinamento removido.");
   };
 
+  // Alterna status do agendamento (planejado <-> realizado)
+  const handleToggleTreinamentoStatus = async (
+    trainId: string,
+    newStatus: "planejado" | "realizado"
+  ) => {
+    if (!structure) return;
+
+    const current = structure.treinamentos || [];
+    const updated = current.map((t) =>
+      t.id === trainId ? { ...t, status: newStatus } : t
+    );
+
+    const updatedStructure: RepStructure = {
+      ...structure,
+      treinamentos: updated,
+    };
+
+    await saveRepStructure(updatedStructure);
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    toast.success(
+      newStatus === "realizado"
+        ? "Treinamento marcado como Realizado!"
+        : "Treinamento marcado como Planejado."
+    );
+  };
+
   // Salva cliente e frequência no Top 10 (individual ou em lote) e para os demais clientes
   const handleSaveFrequencia = async (payload: SaveFrequenciaOptions) => {
     if (!structure) {
@@ -688,6 +714,7 @@ function EstruturaRepPage() {
                       setTrainingModalOpen(true);
                     }}
                     onDeleteClick={handleDeleteTreinamento}
+                    onToggleStatus={handleToggleTreinamentoStatus}
                   />
 
                   <FrequenciaVisitasSection

@@ -218,6 +218,8 @@ export const TIPO_TREINAMENTO_COLOR: Record<
   },
 };
 
+export type StatusTreinamento = "planejado" | "realizado";
+
 export interface TreinamentoItem {
   id: string;
   tipo: TipoTreinamento;
@@ -226,8 +228,10 @@ export interface TreinamentoItem {
   horario?: string; // ex: "09:00"
   local?: string; // ex: "Showroom Loja" ou "Online"
   ministrante?: string; // quem irá ministrar a ação (ex: Rep Titular, Membro da Equipe)
+  status?: StatusTreinamento; // "planejado" | "realizado" (padrão: "planejado")
   observacoes?: string;
 }
+
 
 export interface ClienteFrequenciaItem {
   id: string;

@@ -590,6 +590,21 @@ export async function generateRepInfographicImage(
           ctx.fillStyle = "#0369a1";
           ctx.fillText(tipoText, infoX + 8, dateBoxY + 15);
 
+          // Pílula de Status (Planejado vs Realizado)
+          const isDone = tr.status === "realizado";
+          const statusText = isDone ? "Realizado" : "Planejado";
+          const statusX = infoX + tipoW + 6;
+          ctx.font = "bold 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+          const statusW = ctx.measureText(statusText).width + 14;
+          drawRoundRect(ctx, statusX, dateBoxY + 3, statusW, 18, 4);
+          ctx.fillStyle = isDone ? "#ecfdf5" : "#f1f5f9";
+          ctx.fill();
+          ctx.strokeStyle = isDone ? "#a7f3d0" : "#cbd5e1";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+          ctx.fillStyle = isDone ? "#047857" : "#475569";
+          ctx.fillText(statusText, statusX + 7, dateBoxY + 15);
+
           // Nome do Cliente
           ctx.fillStyle = "#0f172a";
           ctx.font = "bold 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
