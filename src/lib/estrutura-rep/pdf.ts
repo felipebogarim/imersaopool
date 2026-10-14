@@ -32,7 +32,11 @@ const C = {
 };
 
 /** Gera o SVG do mapa do Brasil com os estados atendidos destacados */
-export function buildBrazilMapSvg(estadosAtendidos: string[]): string {
+export function buildBrazilMapSvg(
+  estadosAtendidos: string[],
+  detalhesMunicipais: Record<string, import("./types").DetalheMunicipal> = {},
+  diasCampoPorEstado: Record<string, number> = {}
+): string {
   const set = new Set(estadosAtendidos);
   const stateElements = BRAZIL_STATE_PATHS.map((s) => {
     const isSelected = set.has(s.id);
@@ -43,8 +47,21 @@ export function buildBrazilMapSvg(estadosAtendidos: string[]): string {
 
   const labelElements = BRAZIL_STATE_PATHS.filter((s) => set.has(s.id))
     .map((s) => {
-      return `<circle cx="${s.centroid.x}" cy="${s.centroid.y}" r="11" fill="#083344" />
-            <text x="${s.centroid.x}" y="${s.centroid.y + 3.5}" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle">${s.id}</text>`;
+      const dias = detalhesMunicipais[s.id]?.dias_campo_mes ?? diasCampoPorEstado[s.id] ?? 0;
+      const isDf = s.id === "DF";
+      const radius = isDf ? 9 : 13;
+      const ufCircle = `<circle cx="${s.centroid.x}" cy="${s.centroid.y}" r="${radius}" fill="#ffffff" stroke="#0e7490" stroke-width="0.8" />
+            <text x="${s.centroid.x}" y="${s.centroid.y + (isDf ? 3 : 4)}" font-family="Helvetica, Arial, sans-serif" font-size="${isDf ? 8 : 10}" font-weight="bold" fill="#0e7490" text-anchor="middle">${s.id}</text>`;
+      const diasBadge = dias > 0
+        ? `<g transform="translate(${s.centroid.x + 4}, ${s.centroid.y + 3})">
+            <rect x="0" y="4" width="50" height="14" rx="7" fill="#BAE6FD" stroke="#7DD3FC" stroke-width="0.6" />
+            <circle cx="6.5" cy="11" r="7.5" fill="#BAE6FD" />
+            <text x="6.5" y="13.8" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#0369A1" text-anchor="middle">${dias}</text>
+            <text x="16.5" y="9.2" font-family="Helvetica, Arial, sans-serif" font-size="4" font-weight="bold" fill="#0F172A">dias por mês</text>
+            <text x="16.5" y="14.5" font-family="Helvetica, Arial, sans-serif" font-size="4" font-weight="bold" fill="#0F172A">em campo</text>
+          </g>`
+        : "";
+      return `<g>${ufCircle}${diasBadge}</g>`;
     })
     .join("");
 
@@ -108,7 +125,11 @@ export async function generateRepStructurePdf(structure: RepStructure): Promise<
   const W = PW - M * 2; // 531.28 pt
 
   // Converte SVG do mapa para imagem rasterizada em paralelo
-  const mapSvg = buildBrazilMapSvg(structure.estados_atendidos || []);
+  const mapSvg = buildBrazilMapSvg(
+    structure.estados_atendidos || [],
+    structure.detalhes_municipais,
+    structure.dias_campo_por_estado
+  );
   const mapPng = await svgToPngDataUrl(mapSvg, 700);
 
   // Helper para desenhar fundo

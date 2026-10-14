@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 interface RepBrazilMapProps {
   estadosAtendidos: string[];
   detalhesMunicipais?: Record<string, DetalheMunicipal>;
+  diasCampoPorEstado?: Record<string, number>;
   onToggleEstado?: (uf: string) => void;
   onSelectEstado?: (uf: string) => void;
   interactive?: boolean;
@@ -19,6 +20,7 @@ interface RepBrazilMapProps {
 export function RepBrazilMap({
   estadosAtendidos,
   detalhesMunicipais = {},
+  diasCampoPorEstado = {},
   onToggleEstado,
   onSelectEstado,
   interactive = false,
@@ -240,11 +242,13 @@ export function RepBrazilMap({
                 );
               })}
 
-              {/* Marcadores / Siglas nos estados atendidos */}
+              {/* Marcadores / Siglas nos estados atendidos e badge de dias por mês em campo */}
               {BRAZIL_STATE_PATHS.filter((s) => setEstados.has(s.id)).map((state) => {
                 const detalhe = detalhesMunicipais[state.id];
+                const diasCampo = detalhe?.dias_campo_mes ?? diasCampoPorEstado[state.id] ?? 0;
                 const isParcial = detalhe && detalhe.tipo !== "todos";
-                const radius = state.id === "DF" ? 8 : 11;
+                const isDf = state.id === "DF";
+                const radius = isDf ? 9 : 13;
 
                 return (
                   <g
@@ -252,28 +256,90 @@ export function RepBrazilMap({
                     className="pointer-events-none select-none transition-transform duration-150"
                     transform={`translate(${state.centroid.x}, ${state.centroid.y})`}
                   >
+                    {/* Círculo Principal com a UF */}
                     <circle
                       r={radius}
                       filter="url(#badge-shadow)"
                       className={
                         isParcial
-                          ? "fill-white dark:fill-indigo-950 stroke-indigo-500 stroke-1"
+                          ? "fill-white dark:fill-indigo-950 stroke-indigo-400 stroke-1"
                           : "fill-white dark:fill-card stroke-primary/30 stroke-1"
                       }
                     />
                     <text
                       textAnchor="middle"
-                      dy="3.5"
-                      className={`font-bold ${
-                        state.id === "DF" ? "text-[8px]" : "text-[9px]"
+                      dy={isDf ? "3" : "4"}
+                      className={`font-black ${
+                        isDf ? "text-[8px]" : "text-[10px]"
                       } ${
                         isParcial
                           ? "fill-indigo-700 dark:fill-indigo-300"
-                          : "fill-primary dark:fill-primary"
+                          : "fill-primary"
                       }`}
                     >
                       {state.id}
                     </text>
+
+                    {/* Badge de Dias por Mês em Campo (conforme anexo) */}
+                    {diasCampo > 0 && (
+                      <g
+                        transform={isDf ? "translate(3, 2)" : "translate(4, 3)"}
+                        filter="url(#badge-shadow)"
+                      >
+                        {/* Pílula de fundo */}
+                        <rect
+                          x="0"
+                          y="4"
+                          width="50"
+                          height="14"
+                          rx="7"
+                          ry="7"
+                          fill="#BAE6FD"
+                          stroke="#7DD3FC"
+                          strokeWidth="0.6"
+                        />
+                        {/* Círculo do número em destaque */}
+                        <circle
+                          cx="6.5"
+                          cy="11"
+                          r="7.5"
+                          fill="#BAE6FD"
+                        />
+                        {/* Número de dias em campo */}
+                        <text
+                          x="6.5"
+                          y="13.8"
+                          textAnchor="middle"
+                          fontFamily="Inter, system-ui, sans-serif"
+                          fontSize="8.5"
+                          fontWeight="800"
+                          fill="#0369A1"
+                        >
+                          {diasCampo}
+                        </text>
+                        {/* Texto de 2 linhas */}
+                        <text
+                          x="16.5"
+                          y="9.2"
+                          fontFamily="Inter, system-ui, sans-serif"
+                          fontSize="4"
+                          fontWeight="700"
+                          fill="#0F172A"
+                        >
+                          dias por mês
+                        </text>
+                        <text
+                          x="16.5"
+                          y="14.5"
+                          fontFamily="Inter, system-ui, sans-serif"
+                          fontSize="4"
+                          fontWeight="700"
+                          fill="#0F172A"
+                        >
+                          em campo
+                        </text>
+                      </g>
+                    )}
                   </g>
                 );
               })}

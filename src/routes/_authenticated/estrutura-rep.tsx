@@ -654,6 +654,7 @@ function EstruturaRepPage() {
                   <RepBrazilMap
                     estadosAtendidos={structure.estados_atendidos}
                     detalhesMunicipais={structure.detalhes_municipais}
+                    diasCampoPorEstado={structure.dias_campo_por_estado}
                     onSelectEstado={() => selectedRep && handleOpenEdit(selectedRep.id, "territorio")}
                   />
                 </div>
