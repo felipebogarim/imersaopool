@@ -14,6 +14,10 @@ import {
 import { FAROL_HEX, FAROL_LABEL } from "@/lib/performance-farol";
 import { useClientBI } from "@/lib/use-performance-bi";
 import {
+  getPerformancePortfolioTarget,
+  normalizePortfolioCategory,
+} from "@/lib/performance-portfolio-targets";
+import {
   generateFamiliasChartBlob,
   uploadChartImageToStorage,
 } from "@/lib/executive-report/chart-image";
@@ -22,6 +26,42 @@ import { toast } from "sonner";
 
 const fmtPct = (n: number | null | undefined) =>
   n == null || Number.isNaN(n) ? "—" : `${n.toFixed(1).replace(".", ",")}%`;
+
+const fmtCurrency = (n: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+
+type ChartDatum = {
+  familia: string;
+  atingimento: number;
+  farol: string;
+  fill: string;
+  categoria: string | null;
+  meta: number | null;
+};
+
+function PerformanceTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: ChartDatum }>;
+}) {
+  const item = payload?.[0]?.payload;
+  if (!active || !item) return null;
+
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+      <p className="font-medium">{item.familia}</p>
+      <p className="mt-1">
+        Atingimento real: {fmtPct(item.atingimento)} · {item.farol}
+      </p>
+      <p>
+        Meta{item.categoria ? ` ${item.categoria}` : ""}:{" "}
+        {item.meta == null ? "—" : fmtCurrency(item.meta)}
+      </p>
+    </div>
+  );
+}
 
 export function ClientFamiliasChart({
   repId,
@@ -47,6 +87,7 @@ export function ClientFamiliasChart({
 
   const chartData = useMemo(() => {
     const wanted = new Set(filterFams);
+    const categoria = normalizePortfolioCategory(bi?.categoria);
     return (bi?.familias ?? [])
       .filter((f) => (filterFams.length === 0 ? true : wanted.has(f.familia)))
       .map((f) => ({
@@ -54,6 +95,8 @@ export function ClientFamiliasChart({
         atingimento: f.atingimento_ratio != null ? f.atingimento_ratio * 100 : 0,
         farol: f.farol ? FAROL_LABEL[f.farol] : "—",
         fill: FAROL_HEX[f.farol ?? "sem_compra"],
+        categoria,
+        meta: getPerformancePortfolioTarget(categoria, f.familia),
       }));
   }, [bi, filterFams]);
 
@@ -159,13 +202,11 @@ export function ClientFamiliasChart({
                   height={70}
                   tick={{ fontSize: 11 }}
                 />
-                <YAxis tickFormatter={(v) => `${v}%`} domain={[0, (max: number) => Math.max(120, max)]} />
-                <Tooltip
-                  formatter={(value: any, _name: any, item: any) => [
-                    `${fmtPct(value as number)} · ${item?.payload?.farol ?? ""}`,
-                    "Atingimento real",
-                  ]}
+                <YAxis
+                  tickFormatter={(v) => `${v}%`}
+                  domain={[0, (max: number) => Math.max(120, max)]}
                 />
+                <Tooltip content={<PerformanceTooltip />} />
                 <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" />
                 <Bar dataKey="atingimento" name="Atingimento real" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, idx) => (
