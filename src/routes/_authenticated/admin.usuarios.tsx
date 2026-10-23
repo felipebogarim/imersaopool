@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,18 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Users, UserCog, Send, Key, MessageSquare, Lock, MapPin, FileText, Trash2, Check, Loader2, UserPlus, LinkIcon,
+  Users, UserCog, Send, KeyRound, MessageSquare, Check, Loader2, UserPlus, MoreVertical, Pencil, ShieldCheck,
+  Ban, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ALL_NAV_KEYS, NAV_TREE } from "@/lib/nav-tree";
 import {
-  inviteUser, updateUserProfile, deleteUserAccount, getUserAudit, createUserWithPassword, generateFirstAccessLink,
-  sendFirstAccessEmail,
+  inviteUser, updateUserProfile, createUserWithPassword, sendFirstAccessEmail, setUserSuspended,
 } from "@/lib/admin-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
@@ -42,18 +44,6 @@ type Row = {
   last_sign_in_at: string | null;
 };
 
-type AuditRow = {
-  id: string;
-  tipo: string;
-  acao: string | null;
-  recurso: string | null;
-  resultado: string | null;
-  nivel_risco: string | null;
-  ip: string | null;
-  user_agent: string | null;
-  ocorrido_em: string;
-};
-
 const ROLE_OPTIONS = [
   { value: "admin", label: "Gestão" },
   { value: "gestor", label: "Diretoria" },
@@ -67,26 +57,34 @@ function fmt(d: string | null) {
   return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
-function fmtDateTime(d: string | null) {
-  if (!d) return "—";
-  return new Date(d).toLocaleString("pt-BR");
-}
-
 function roleLabel(r: string | null) {
   return ROLE_OPTIONS.find(o => o.value === r)?.label ?? "—";
 }
 
 function UsuariosPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [linkInfo, setLinkInfo] = useState<{ email: string; link: string; userId: string; name?: string | null; phone?: string | null } | null>(null);
   const [editRow, setEditRow] = useState<Row | null>(null);
-  const [auditRow, setAuditRow] = useState<Row | null>(null);
-  const [localRow, setLocalRow] = useState<Row | null>(null);
+  const [roleRow, setRoleRow] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const { data: isGlobalAdmin = false } = useQuery({
+    queryKey: ["current-user-is-global-admin"],
+    queryFn: async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return false;
+      const { data: role } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", authData.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!role;
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -125,38 +123,20 @@ function UsuariosPage() {
     toast.success("E-mail de redefinição enviado");
   }
 
-  async function removeUser(r: Row) {
-    if (!confirm(`Remover definitivamente ${r.full_name ?? r.email}? Esta ação exclui a conta de acesso.`)) return;
+  async function toggleSuspension(r: Row) {
+    const suspended = r.status !== "inativo";
+    const verb = suspended ? "suspender" : "reativar";
+    if (!confirm(`Deseja ${verb} ${r.full_name ?? r.email}?`)) return;
     setBusy(true);
     try {
-      await deleteUserAccount({ data: { user_id: r.id } });
-      toast.success("Usuário removido");
-      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      await setUserSuspended({ data: { user_id: r.id, suspended } });
+      toast.success(suspended ? "Usuário suspenso" : "Usuário reativado");
+      await qc.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao remover usuário");
+      toast.error(e?.message ?? `Falha ao ${verb} usuário`);
     } finally {
       setBusy(false);
     }
-  }
-
-  async function firstAccess(r: Row) {
-    setBusy(true);
-    try {
-      const res: any = await generateFirstAccessLink({
-        data: { user_id: r.id, origin: window.location.origin },
-      });
-      if (!res?.link) throw new Error("Não foi possível gerar o link");
-      setLinkInfo({ email: res.email, link: res.link, userId: r.id, name: res.name ?? r.full_name, phone: res.phone ?? r.phone });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao gerar link de primeiro acesso");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function message(r: Row) {
-    if (!r.email) return toast.error("Usuário sem e-mail");
-    window.location.href = `mailto:${r.email}?subject=${encodeURIComponent("Contato — Painel")}`;
   }
 
   return (
@@ -229,36 +209,50 @@ function UsuariosPage() {
                           "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium",
                           r.status === "aprovado" || r.status === "ativo"
                             ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            : r.status === "inativo"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
                         )}
                       >
                         <Check className="h-3 w-3" />
-                        {r.status === "aprovado" || r.status === "ativo" ? "Aprovado" : "Pendente"}
+                        {r.status === "aprovado" || r.status === "ativo"
+                          ? "Aprovado"
+                          : r.status === "inativo" ? "Suspenso" : "Pendente"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{fmt(r.created_at)}</td>
                     <td className="px-6 py-4 text-muted-foreground">{fmt(r.last_sign_in_at)}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <ActionIcon icon={Key} label="Resetar Senha" onClick={() => resetPassword(r.email)} />
-                        {!r.last_sign_in_at && (
-                          <ActionIcon
-                            icon={LinkIcon}
-                            label="Enviar convite de primeiro acesso"
-                            disabled={busy}
-                            onClick={() => firstAccess(r)}
-                          />
-                        )}
-                        <ActionIcon icon={UserCog} label="Editar Perfil" onClick={() => setEditRow(r)} />
-                        <ActionIcon icon={MessageSquare} label="Mensagem" onClick={() => message(r)} />
-                        <ActionIcon
-                          icon={Lock}
-                          label="Acessos deste usuário"
-                          onClick={() => navigate({ to: "/admin/permissoes", search: { user: r.id } })}
-                        />
-                        <ActionIcon icon={MapPin} label="Localização" onClick={() => setLocalRow(r)} />
-                        <ActionIcon icon={FileText} label="Auditoria" onClick={() => setAuditRow(r)} />
-                        <ActionIcon icon={Trash2} label="Remover" danger disabled={busy} onClick={() => removeUser(r)} />
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações de ${r.full_name ?? r.email}`}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuItem onSelect={() => setEditRow(r)}>
+                              <Pencil /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => resetPassword(r.email)}>
+                              <KeyRound /> Alterar senha
+                            </DropdownMenuItem>
+                            {isGlobalAdmin && (
+                              <DropdownMenuItem onSelect={() => setRoleRow(r)}>
+                                <ShieldCheck /> Papel
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              disabled={busy}
+                              onSelect={() => toggleSuspension(r)}
+                              className={r.status === "inativo" ? "text-emerald-700 focus:text-emerald-700" : "text-destructive focus:text-destructive"}
+                            >
+                              {r.status === "inativo" ? <UserCheck /> : <Ban />}
+                              {r.status === "inativo" ? "Reativar" : "Suspender"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
@@ -285,9 +279,12 @@ function UsuariosPage() {
         onOpenChange={(o) => !o && setEditRow(null)}
         onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
       />
+      <RoleAccessDialog
+        row={roleRow}
+        onOpenChange={(o) => !o && setRoleRow(null)}
+        onDone={() => qc.invalidateQueries({ queryKey: ["admin-users"] })}
+      />
       <FirstAccessDialog info={linkInfo} onOpenChange={(o) => !o && setLinkInfo(null)} />
-      <AuditDialog row={auditRow} onOpenChange={(o) => !o && setAuditRow(null)} />
-      <LocalizacaoDialog row={localRow} onOpenChange={(o) => !o && setLocalRow(null)} />
     </div>
   );
 }
@@ -568,7 +565,7 @@ function EditDialog({
   row, onOpenChange, onDone,
 }: { row: Row | null; onOpenChange: (o: boolean) => void; onDone: () => void }) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ email: "", full_name: "", cargo: "", phone: "", regiao: "", status: "pendente", role: "none" });
+  const [form, setForm] = useState({ email: "", full_name: "", cargo: "", phone: "", regiao: "" });
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
   if (row && loadedId !== row.id) {
@@ -579,8 +576,6 @@ function EditDialog({
       cargo: row.cargo ?? "",
       phone: row.phone ?? "",
       regiao: row.regiao ?? "",
-      status: row.status ?? "pendente",
-      role: row.role ?? "none",
     });
   }
 
@@ -596,8 +591,6 @@ function EditDialog({
           cargo: form.cargo,
           phone: form.phone,
           regiao: form.regiao,
-          status: form.status as any,
-          role: form.role === "none" ? null : (form.role as any),
         },
       });
       toast.success("Perfil atualizado");
@@ -638,33 +631,9 @@ function EditDialog({
               <Input value={form.regiao} onChange={e => setForm({ ...form, regiao: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Telefone</Label>
-              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="aprovado">Aprovado</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
           <div className="space-y-1.5">
-            <Label>Perfil de acesso</Label>
-            <Select value={form.role} onValueChange={v => setForm({ ...form, role: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem perfil</SelectItem>
-                {ROLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label>Telefone</Label>
+            <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           </div>
         </div>
         <DialogFooter>
@@ -678,100 +647,148 @@ function EditDialog({
   );
 }
 
-function useAudit(row: Row | null) {
-  return useQuery({
-    queryKey: ["admin-user-audit", row?.id],
+function accessForRole(role: string, permissions: { role: string; nav_key: string; allowed: boolean }[]) {
+  if (role === "admin") return Object.fromEntries(ALL_NAV_KEYS.map(key => [key, true]));
+  const allowed = new Set(permissions.filter(p => p.role === role && p.allowed).map(p => p.nav_key));
+  return Object.fromEntries(ALL_NAV_KEYS.map(key => [key, allowed.has(key)]));
+}
+
+function propagateAccess(map: Record<string, boolean>, key: string, value: boolean) {
+  const next = { ...map, [key]: value };
+  const group = NAV_TREE.find(g => g.key === key);
+  if (group) {
+    for (const child of group.children) next[child.key] = value;
+  } else if (value) {
+    const parent = NAV_TREE.find(g => g.children.some(child => child.key === key));
+    if (parent) next[parent.key] = true;
+  }
+  return next;
+}
+
+function RoleAccessDialog({
+  row, onOpenChange, onDone,
+}: { row: Row | null; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+  const qc = useQueryClient();
+  const [role, setRole] = useState("none");
+  const [access, setAccess] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-role-access", row?.id],
     enabled: !!row,
-    queryFn: async () => (await getUserAudit({ data: { user_id: row!.id, limit: 50 } })) as AuditRow[],
+    queryFn: async () => {
+      const [rolePermissions, userPermissions] = await Promise.all([
+        supabase.from("role_permissions").select("role, nav_key, allowed"),
+        (supabase as any).from("user_nav_permissions").select("nav_key, allowed").eq("user_id", row!.id),
+      ]);
+      if (rolePermissions.error) throw rolePermissions.error;
+      if (userPermissions.error) throw userPermissions.error;
+      return {
+        rolePermissions: (rolePermissions.data ?? []) as { role: string; nav_key: string; allowed: boolean }[],
+        userPermissions: (userPermissions.data ?? []) as { nav_key: string; allowed: boolean }[],
+      };
+    },
   });
-}
 
-function AuditDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
-  const { data, isLoading } = useAudit(row);
-  return (
-    <Dialog open={!!row} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Auditoria — {row?.full_name ?? row?.email}</DialogTitle>
-          <DialogDescription>Últimos 50 eventos de segurança registrados para este usuário.</DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-border">
-          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
-          {!isLoading && (data?.length ?? 0) === 0 && (
-            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum evento registrado</div>
-          )}
-          {(data ?? []).map(e => (
-            <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-medium">{e.acao ?? e.tipo}</span>
-                <span className="text-xs text-muted-foreground">{fmtDateTime(e.ocorrido_em)}</span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {[e.recurso, e.resultado, e.nivel_risco, e.ip].filter(Boolean).join(" · ") || "—"}
-              </div>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+  useEffect(() => {
+    if (!row || !data) return;
+    const selectedRole = row.role ?? "none";
+    const next = accessForRole(selectedRole, data.rolePermissions);
+    for (const permission of data.userPermissions) next[permission.nav_key] = permission.allowed;
+    setRole(selectedRole);
+    setAccess(next);
+  }, [row, data]);
 
-function LocalizacaoDialog({ row, onOpenChange }: { row: Row | null; onOpenChange: (o: boolean) => void }) {
-  const { data, isLoading } = useAudit(row);
-  const acessos = (data ?? []).filter(e => e.ip).slice(0, 20);
+  function changeRole(nextRole: string) {
+    setRole(nextRole);
+    setAccess(accessForRole(nextRole, data?.rolePermissions ?? []));
+  }
+
+  async function save() {
+    if (!row) return;
+    setSaving(true);
+    try {
+      await updateUserProfile({
+        data: { user_id: row.id, role: role === "none" ? null : role as "admin" | "gestor" | "agente" | "comercial" },
+      });
+      const rows = ALL_NAV_KEYS.map(navKey => ({ user_id: row.id, nav_key: navKey, allowed: !!access[navKey] }));
+      const { error } = await (supabase as any)
+        .from("user_nav_permissions")
+        .upsert(rows, { onConflict: "user_id,nav_key" });
+      if (error) throw error;
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["user-permissions", row.id] }),
+        qc.invalidateQueries({ queryKey: ["nav-access"] }),
+      ]);
+      toast.success("Papel e níveis de acesso atualizados");
+      onOpenChange(false);
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar papel e acessos");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <Dialog open={!!row} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Localização e dispositivos — {row?.full_name ?? row?.email}</DialogTitle>
+          <DialogTitle>Papel e níveis de acesso</DialogTitle>
           <DialogDescription>
-            Região cadastrada: <strong>{row?.regiao ?? "não informada"}</strong>
+            Defina o papel e os acessos permitidos para {row?.full_name ?? row?.email}.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[55vh] overflow-y-auto rounded-lg border border-border">
-          {isLoading && <div className="p-6 text-center text-muted-foreground text-sm">Carregando…</div>}
-          {!isLoading && acessos.length === 0 && (
-            <div className="p-6 text-center text-muted-foreground text-sm">Nenhum acesso com IP registrado</div>
-          )}
-          {acessos.map(e => (
-            <div key={e.id} className="border-b border-border last:border-0 px-4 py-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-medium">{e.ip}</span>
-                <span className="text-xs text-muted-foreground">{fmtDateTime(e.ocorrido_em)}</span>
-              </div>
-              <div className="text-xs text-muted-foreground truncate">{e.user_agent ?? "—"}</div>
+        {isLoading ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Carregando acessos…</div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Papel</Label>
+              <Select value={role} onValueChange={changeRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem papel</SelectItem>
+                  {ROLE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <Label>Acessos permitidos</Label>
+              <div className="max-h-[48vh] overflow-y-auto rounded-lg border border-border">
+                {NAV_TREE.map(group => (
+                  <div key={group.key} className="border-b border-border last:border-0">
+                    <label className="flex cursor-pointer items-center gap-3 px-4 py-3 font-medium hover:bg-muted/40">
+                      <Checkbox
+                        checked={!!access[group.key]}
+                        onCheckedChange={value => setAccess(current => propagateAccess(current, group.key, !!value))}
+                      />
+                      {group.label}
+                    </label>
+                    {group.children.map(child => (
+                      <label key={child.key} className="flex cursor-pointer items-center gap-3 border-t border-border/60 px-4 py-2.5 pl-10 text-sm text-muted-foreground hover:bg-muted/30">
+                        <Checkbox
+                          checked={!!access[child.key]}
+                          onCheckedChange={value => setAccess(current => propagateAccess(current, child.key, !!value))}
+                        />
+                        {child.label}
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={save} disabled={saving || isLoading}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />} Salvar papel e acessos
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function ActionIcon({
-  icon: Icon, label, onClick, danger, disabled,
-}: { icon: any; label: string; onClick?: () => void; danger?: boolean; disabled?: boolean }) {
-  return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            className={cn(
-              "h-8 w-8 rounded-md flex items-center justify-center transition disabled:opacity-40",
-              danger
-                ? "text-red-500 hover:bg-red-50"
-                : "text-foreground/70 hover:bg-primary hover:text-primary-foreground"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 }

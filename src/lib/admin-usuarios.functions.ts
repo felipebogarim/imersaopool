@@ -128,6 +128,35 @@ export const updateUserProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const suspensionSchema = z.object({
+  user_id: z.string().uuid(),
+  suspended: z.boolean(),
+});
+
+export const setUserSuspended = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw) => suspensionSchema.parse(raw))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.user_id === context.userId && data.suspended) {
+      throw new Error("Você não pode suspender a si mesmo");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, {
+      ban_duration: data.suspended ? "876000h" : "none",
+    });
+    if (authError) throw new Error(authError.message);
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ status: data.suspended ? "inativo" : "ativo" } as never)
+      .eq("id", data.user_id);
+    if (profileError) throw new Error(profileError.message);
+
+    return { ok: true };
+  });
+
 const deleteSchema = z.object({ user_id: z.string().uuid() });
 
 export const deleteUserAccount = createServerFn({ method: "POST" })
