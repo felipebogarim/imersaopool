@@ -47,19 +47,13 @@ export interface NewImmersionSubjectForm {
 
 /**
  * Colunas de sujeito para o INSERT de `immersions`. Lança erro de validação em português.
- * Cliente exige `client_id`; parceiro nunca leva `client_id`.
+ * Cliente exige `client_id` e não envia colunas de parceiro; parceiro nunca leva `client_id`.
  */
 export function buildImmersionSubject(form: NewImmersionSubjectForm) {
   if (form.perfil === "cliente") {
     if (!form.client_id) throw new Error("Selecione um cliente da base.");
-    return {
-      subject_type: "client" as const,
-      client_id: form.client_id,
-      partner_name: null,
-      partner_type: null,
-      partner_type_label: null,
-      partner_description: null,
-    };
+    // Só campos de cliente: não toca nas colunas de parceiro (subject_type assume o default "client").
+    return { client_id: form.client_id };
   }
   const name = form.partner_name?.trim();
   if (!name) throw new Error("Informe o nome do parceiro.");

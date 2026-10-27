@@ -26,10 +26,8 @@ describe("buildImmersionSubject", () => {
 
   it("cliente exige client_id e não carrega dados de parceiro", () => {
     expect(() => buildImmersionSubject({ perfil: "cliente" })).toThrow(/cliente/);
-    expect(buildImmersionSubject({ perfil: "cliente", client_id: "c1" })).toMatchObject({
-      subject_type: "client",
+    expect(buildImmersionSubject({ perfil: "cliente", client_id: "c1" })).toEqual({
       client_id: "c1",
-      partner_name: null,
     });
   });
 

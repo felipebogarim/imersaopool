@@ -197,7 +197,7 @@ function NewImmersion() {
     const { data: { user } } = await supabase.auth.getUser();
     
     // Gerar título se vazio
-    const subjectLabel = subject.subject_type === "partner" ? subject.partner_name : "";
+    const subjectLabel = "partner_name" in subject ? subject.partner_name : "";
     const finalTitle =
       form.titulo || `Imersão - ${subjectLabel || form.perfil} - ${form.data_visita}`;
 
