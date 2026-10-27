@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeText, processRepClients } from "./rep-clients";
+import { mergeTop10, normalizeText, processRepClients } from "./rep-clients";
 
 describe("rep-clients", () => {
   it("normaliza textos removendo acentos e caixa alta", () => {
@@ -93,15 +93,51 @@ describe("rep-clients", () => {
     const { fetchTopPerformanceClients } = await import("./rep-clients");
     const mockFrequencia = [
       { posicao: 1, cliente_nome: "Cliente Um", cidade: "Salvador", uf: "BA", frequencia_dias: 30 },
-      { posicao: 2, cliente_nome: "Cliente Dois", cidade: "Feira de Santana", uf: "BA", frequencia_dias: 40 },
+      {
+        posicao: 2,
+        cliente_nome: "Cliente Dois",
+        cidade: "Feira de Santana",
+        uf: "BA",
+        frequencia_dias: 40,
+      },
     ];
 
-    const result = await fetchTopPerformanceClients("rep-test", "Representante Teste", mockFrequencia);
+    const result = await fetchTopPerformanceClients(
+      "rep-test",
+      "Representante Teste",
+      mockFrequencia,
+    );
     expect(result).toBeDefined();
     expect(result.length).toBeGreaterThanOrEqual(2);
     expect(result[0].posicao).toBe(1);
     expect(result[0].cliente_nome).toBe("Cliente Um");
     expect(result[1].posicao).toBe(2);
     expect(result[1].cliente_nome).toBe("Cliente Dois");
+  });
+});
+
+describe("mergeTop10", () => {
+  const perf = Array.from({ length: 10 }, (_, i) => ({
+    posicao: i + 1,
+    cliente_nome: `Cliente ${i + 1}`,
+  }));
+
+  it("completa o Top 10 com a performance quando só há um cliente salvo", () => {
+    const saved = [{ id: "s1", posicao: 1, cliente_nome: "cliente 3", frequencia_dias: 7 }];
+    const out = mergeTop10(saved, perf, 60);
+    expect(out).toHaveLength(10);
+    const c3 = out.find((i) => i.cliente_nome === "cliente 3")!;
+    expect(c3.id).toBe("s1");
+    expect(c3.frequencia_dias).toBe(7);
+    expect(c3.posicao).toBe(3);
+    expect(out.find((i) => i.cliente_nome === "Cliente 1")!.frequencia_dias).toBe(60);
+  });
+
+  it("preserva cliente manual fora do ranking e mantém no máximo 10", () => {
+    const saved = [{ id: "m", posicao: 1, cliente_nome: "Manual", frequencia_dias: 15 }];
+    const out = mergeTop10(saved, perf, 60);
+    expect(out).toHaveLength(10);
+    expect(out.some((i) => i.id === "m")).toBe(true);
+    expect(new Set(out.map((i) => i.posicao)).size).toBe(10);
   });
 });

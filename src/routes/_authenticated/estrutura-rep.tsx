@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchTopPerformanceClients } from "@/lib/estrutura-rep/rep-clients";
+import { fetchTopPerformanceClients, mergeTop10 } from "@/lib/estrutura-rep/rep-clients";
 import { dedupeRepresentatives } from "@/lib/estrutura-rep/dedupe-reps";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -174,24 +174,21 @@ function EstruturaRepPage() {
     return null;
   }, [allStructures, editingRepId, selectedRep]);
 
-  // Sem Top 10 cadastrado, usa os maiores clientes reais da performance do representante
-  const hasSavedTop10 = (structure?.frequencia_visitas?.length ?? 0) > 0;
+  // Top 10 = maiores clientes reais da performance, com a frequência já salva por cliente
   const { data: performanceTop10 = [] } = useQuery({
     queryKey: ["rep-top10-performance", selectedRep?.id],
-    enabled: Boolean(selectedRep?.id) && !hasSavedTop10,
+    enabled: Boolean(selectedRep?.id),
     queryFn: () => fetchTopPerformanceClients(selectedRep?.id, selectedRep?.nome),
   });
-  const top10Clientes = useMemo(() => {
-    if (hasSavedTop10) return structure?.frequencia_visitas ?? [];
-    return performanceTop10.map((c) => ({
-      id: `perf-top-${c.posicao}`,
-      posicao: c.posicao,
-      cliente_nome: c.cliente_nome,
-      cidade: c.cidade,
-      uf: c.uf,
-      frequencia_dias: c.frequencia_dias ?? structure?.frequencia_demais_clientes ?? 60,
-    }));
-  }, [hasSavedTop10, performanceTop10, structure]);
+  const top10Clientes = useMemo(
+    () =>
+      mergeTop10(
+        structure?.frequencia_visitas ?? [],
+        performanceTop10,
+        structure?.frequencia_demais_clientes ?? 60,
+      ),
+    [performanceTop10, structure],
+  );
 
   // Clientes já cadastrados na estrutura do representante (Top 10 frequencia_visitas e treinamentos)
   const repStructureClients = useMemo(() => {

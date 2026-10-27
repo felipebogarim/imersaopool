@@ -288,3 +288,59 @@ export async function fetchTopPerformanceClients(
 
   return result.sort((a, b) => a.posicao - b.posicao);
 }
+
+interface Top10Item {
+  id: string;
+  posicao?: number;
+  cliente_nome: string;
+  cidade?: string;
+  uf?: string;
+  frequencia_dias: number;
+}
+
+/**
+ * Monta o Top 10 exibido: maiores clientes reais da performance, usando a frequência já
+ * salva quando o cliente coincide (por nome). Clientes salvos fora do ranking (inclusos
+ * manualmente) são preservados e ocupam vagas antes dos demais da performance.
+ */
+export function mergeTop10<S extends Top10Item>(
+  saved: S[],
+  performance: TopPerformanceClient[],
+  defaultDias: number,
+): Array<S | Top10Item> {
+  const savedByName = new Map(saved.map((s) => [normalizeText(s.cliente_nome), s]));
+  const matched = new Set<string>();
+
+  const fromPerf: Array<S | Top10Item> = performance.map((p) => {
+    const key = normalizeText(p.cliente_nome);
+    const s = savedByName.get(key);
+    if (s) {
+      matched.add(key);
+      return { ...s, posicao: p.posicao, cidade: s.cidade || p.cidade, uf: s.uf || p.uf };
+    }
+    return {
+      id: `perf-top-${p.posicao}`,
+      posicao: p.posicao,
+      cliente_nome: p.cliente_nome,
+      cidade: p.cidade,
+      uf: p.uf,
+      frequencia_dias: p.frequencia_dias ?? defaultDias,
+    };
+  });
+
+  const extras = saved.filter((s) => !matched.has(normalizeText(s.cliente_nome)));
+  const kept = [
+    ...fromPerf.filter((i) => matched.has(normalizeText(i.cliente_nome))),
+    ...fromPerf.filter((i) => !matched.has(normalizeText(i.cliente_nome))),
+  ].slice(0, Math.max(0, 10 - extras.length));
+
+  const taken = new Set(kept.map((i) => i.posicao ?? 0));
+  const placedExtras = extras.map((e) => {
+    let pos = e.posicao || 1;
+    while (taken.has(pos)) pos++;
+    taken.add(pos);
+    return { ...e, posicao: pos };
+  });
+
+  return [...kept, ...placedExtras].sort((a, b) => (a.posicao ?? 99) - (b.posicao ?? 99)).slice(0, 10);
+}
