@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchTopPerformanceClients } from "@/lib/estrutura-rep/rep-clients";
+import { dedupeRepresentatives } from "@/lib/estrutura-rep/dedupe-reps";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -135,7 +136,14 @@ function EstruturaRepPage() {
         .from("representatives")
         .select("id, nome, representacao, regiao, outras_marcas, email, telefone")
         .order("nome");
-      return data ?? [];
+      let withStructure = new Set<string>();
+      try {
+        const { data: structs } = await (supabase as any)
+          .from("rep_structures")
+          .select("representative_id");
+        withStructure = new Set((structs ?? []).map((s: any) => s.representative_id));
+      } catch {}
+      return dedupeRepresentatives(data ?? [], withStructure);
     },
   });
 
