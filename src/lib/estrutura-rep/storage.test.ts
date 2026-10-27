@@ -77,7 +77,7 @@ describe("estrutura-rep storage and defaults", () => {
     expect(map["r2"].nome_representante).toBe("Ana");
   });
 
-  it("inicializa frequencia_demais_clientes e top 10 com valores coerentes", () => {
+  it("inicializa frequencia_demais_clientes sem inventar Top 10 nem base", () => {
     const rep = {
       id: "rep-teste",
       nome: "Rep Teste",
@@ -87,8 +87,8 @@ describe("estrutura-rep storage and defaults", () => {
     };
     const structure = buildDefaultStructure(rep);
     expect(structure.frequencia_demais_clientes).toBe(60);
-    expect(structure.frequencia_visitas?.length).toBe(10);
-    expect(structure.frequencia_visitas?.[0].posicao).toBe(1);
+    expect(structure.frequencia_visitas).toEqual([]);
+    expect(structure.cidade_base).toBe("");
   });
 
   it("inicializa dias de campo por mês por estado e detalhes municipais", () => {

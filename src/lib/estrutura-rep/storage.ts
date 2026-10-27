@@ -84,6 +84,31 @@ function parseEstadosRegiao(regiao?: string | null): string[] {
   return ["MT", "GO", "DF"];
 }
 
+
+const LEGACY_DEMO_CLIENTES = new Set([
+  "ilustre iluminação",
+  "luz & arte conceito",
+  "center luz distribuidora",
+  "eletro nobre iluminação",
+  "brilho real conceito",
+  "studio luz arquitetura",
+  "design & luz projetos",
+  "solar iluminação técnica",
+  "luminar prime",
+  "ponto da luz decorações",
+]);
+
+/** Remove o Top 10 fictício que versões antigas gravaram como padrão no cadastro. */
+export function stripLegacyDemoFrequencia(
+  items: ClienteFrequenciaItem[] | undefined,
+): ClienteFrequenciaItem[] {
+  const list = Array.isArray(items) ? items : [];
+  const demo = list.filter((i) =>
+    LEGACY_DEMO_CLIENTES.has((i.cliente_nome || "").trim().toLowerCase()),
+  );
+  return demo.length >= 5 && demo.length === list.length ? [] : list;
+}
+
 /** Cria uma estrutura padrão rica quando o representante ainda não possui cadastro */
 export function buildDefaultStructure(rep: {
   id: string;
@@ -186,25 +211,15 @@ export function buildDefaultStructure(rep: {
     },
   ];
 
-  const defaultFrequenciaVisitas: ClienteFrequenciaItem[] = [
-    { id: "freq-1", posicao: 1, cliente_nome: "Ilustre Iluminação", cidade: "Salvador", uf: estados[0] || "BA", frequencia_dias: 20 },
-    { id: "freq-2", posicao: 2, cliente_nome: "Luz & Arte Conceito", cidade: "Feira de Santana", uf: estados[0] || "BA", frequencia_dias: 30 },
-    { id: "freq-3", posicao: 3, cliente_nome: "Center Luz Distribuidora", cidade: "Aracaju", uf: estados[1] || "SE", frequencia_dias: 30 },
-    { id: "freq-4", posicao: 4, cliente_nome: "Eletro Nobre Iluminação", cidade: "Fortaleza", uf: estados[2] || "CE", frequencia_dias: 40 },
-    { id: "freq-5", posicao: 5, cliente_nome: "Brilho Real Conceito", cidade: "Vitória da Conquista", uf: estados[0] || "BA", frequencia_dias: 45 },
-    { id: "freq-6", posicao: 6, cliente_nome: "Studio Luz Arquitetura", cidade: "Salvador", uf: estados[0] || "BA", frequencia_dias: 45 },
-    { id: "freq-7", posicao: 7, cliente_nome: "Design & Luz Projetos", cidade: "Itabuna", uf: estados[0] || "BA", frequencia_dias: 60 },
-    { id: "freq-8", posicao: 8, cliente_nome: "Solar Iluminação Técnica", cidade: "Juazeiro do Norte", uf: estados[2] || "CE", frequencia_dias: 60 },
-    { id: "freq-9", posicao: 9, cliente_nome: "Luminar Prime", cidade: "Sobral", uf: estados[2] || "CE", frequencia_dias: 60 },
-    { id: "freq-10", posicao: 10, cliente_nome: "Ponto da Luz Decorações", cidade: "Ilhéus", uf: estados[0] || "BA", frequencia_dias: 90 },
-  ];
+  // Top 10 nunca é inventado: vem da performance real ou do cadastro do representante.
+  const defaultFrequenciaVisitas: ClienteFrequenciaItem[] = [];
 
   return {
     representative_id: rep.id,
     nome_representante: rep.nome,
     empresa_representacao: rep.representacao || `${rep.nome} Representações Comerciais`,
-    cidade_base: estados[0] === "MT" ? "Cuiabá" : estados[0] === "BA" ? "Salvador" : "Goiânia",
-    estado_base: estados[0] || "MT",
+    cidade_base: "",
+    estado_base: "",
     regiao_principal: rep.regiao || "Centro-Oeste",
     modelo_atuacao: "equipe",
     estados_atendidos: estados,
@@ -373,7 +388,7 @@ export async function loadRepStructure(rep: {
         equipe: Array.isArray(data.equipe) ? data.equipe : [],
         observacoes_gerais: data.observacoes_gerais ?? "",
         treinamentos: treinamentosFinais,
-        frequencia_visitas: freqFinais,
+        frequencia_visitas: stripLegacyDemoFrequencia(freqFinais),
         frequencia_demais_clientes: freqDemais,
         performance_comparativo:
           data.performance_comparativo ??
@@ -620,7 +635,7 @@ export async function loadAllRepStructures(reps: {
         equipe: Array.isArray(dbItem.equipe) ? dbItem.equipe : [],
         observacoes_gerais: dbItem.observacoes_gerais ?? "",
         treinamentos: treinamentosFinais,
-        frequencia_visitas: freqFinais,
+        frequencia_visitas: stripLegacyDemoFrequencia(freqFinais),
         frequencia_demais_clientes: freqDemais,
         performance_comparativo:
           dbItem.performance_comparativo ??
