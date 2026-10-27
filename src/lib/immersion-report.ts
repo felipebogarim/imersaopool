@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
+import { immersionSubjectName, isPartnerImmersion, partnerTypeLabel } from "@/lib/immersion-subject";
 
 type Chapter = { title: string; blocks: { label?: string; text: string }[] };
 
@@ -75,16 +76,26 @@ function buildChapters(d: Awaited<ReturnType<typeof fetchImmersionData>>): Chapt
     title: "1. Identificação",
     blocks: [
       { label: "Título", text: i.titulo },
-      { label: "Cliente", text: i.client?.nome_fantasia ?? "—" },
-      {
-        label: "Grupo / Categoria",
-        text: [i.client?.grupo, i.client?.categoria].filter(Boolean).join(" / ") || "—",
-      },
-      {
-        label: "Localização",
-        text: [i.client?.cidade, i.client?.estado].filter(Boolean).join(", ") || "—",
-      },
-      { label: "Comprador", text: i.client?.nome_comprador ?? "—" },
+      ...(isPartnerImmersion(i as any)
+        ? [
+            {
+              label: "Parceiro",
+              text: `${immersionSubjectName(i as any) || "—"} (${partnerTypeLabel(i as any)})`,
+            },
+            { label: "Descrição", text: (i as any).partner_description ?? "—" },
+          ]
+        : [
+            { label: "Cliente", text: i.client?.nome_fantasia ?? "—" },
+            {
+              label: "Grupo / Categoria",
+              text: [i.client?.grupo, i.client?.categoria].filter(Boolean).join(" / ") || "—",
+            },
+            {
+              label: "Localização",
+              text: [i.client?.cidade, i.client?.estado].filter(Boolean).join(", ") || "—",
+            },
+            { label: "Comprador", text: i.client?.nome_comprador ?? "—" },
+          ]),
       { label: "Representante", text: i.representative?.nome ?? "—" },
       {
         label: "Data da visita",
@@ -304,7 +315,12 @@ export async function generateImmersionPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(18);
   setText(CYAN);
-  doc.text(data.immersion.client?.nome_fantasia ?? "Cliente não informado", margin, titleY + 8);
+  doc.text(
+    immersionSubjectName(data.immersion as any) ||
+      (isPartnerImmersion(data.immersion as any) ? "Parceiro não informado" : "Cliente não informado"),
+    margin,
+    titleY + 8,
+  );
 
   const metaY = pageH - 210;
   const metaCols = [

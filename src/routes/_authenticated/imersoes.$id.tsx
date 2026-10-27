@@ -16,6 +16,8 @@ import { ExportInterviewPdfDialog } from "@/components/ExportInterviewPdfDialog"
 import { InterviewFinalPdf } from "@/components/InterviewFinalPdf";
 import { isFieldImmersionReport } from "@/lib/immersion-final-pdf";
 
+import { immersionSubjectName, isPartnerImmersion, partnerTypeLabel } from "@/lib/immersion-subject";
+
 export const Route = createFileRoute("/_authenticated/imersoes/$id")({
   head: () => ({ meta: [{ title: "Imersão — PoolFlux" }] }),
   component: ImmersionDetail,
@@ -55,7 +57,9 @@ function ImmersionDetail() {
 
   // Fallback da categoria: alguns cadastros não têm categoria no cliente,
   // mas ela existe nos dados de performance (por razão social).
-  const razaoSocial = (imm as any)?.client?.razao_social as string | undefined;
+  const isPartner = isPartnerImmersion(imm as any);
+  const subjectName = immersionSubjectName(imm as any);
+  const razaoSocial = isPartner ? undefined : ((imm as any)?.client?.razao_social as string | undefined);
   const { data: categoriaFallback } = useQuery({
     queryKey: ["client-categoria-fallback", razaoSocial],
     enabled: !!razaoSocial && !(imm as any)?.client?.categoria,
@@ -138,13 +142,13 @@ function ImmersionDetail() {
         onOpenChange={setExportOpen}
         interviewId={sessao?.id || ""}
         defaults={{
-          entrevistado: imm.client?.nome_fantasia ?? "",
+          entrevistado: subjectName,
           modelo: imm.titulo ?? "",
         }}
       />
       <PageHeader
         title={imm.titulo}
-        subtitle={imm.client?.nome_fantasia}
+        subtitle={isPartner ? `${subjectName} · Parceiro ${partnerTypeLabel(imm as any)}` : imm.client?.nome_fantasia}
         actions={
           <div className="flex gap-2">
             <SessionNotes entityType="immersion" entityId={id} />
@@ -168,13 +172,23 @@ function ImmersionDetail() {
                 {(imm.observacoes as any)?.perfil || '—'} / {(imm.observacoes as any)?.tipo || '—'}
               </div>
               <div>
-                <span className="text-muted-foreground">Cliente:</span>{" "}
-                {imm.client?.nome_fantasia || (imm.observacoes as any)?.empresa_manual || "—"}
+                <span className="text-muted-foreground">{isPartner ? "Parceiro:" : "Cliente:"}</span>{" "}
+                {isPartner
+                  ? `${subjectName || "—"} (${partnerTypeLabel(imm as any)})`
+                  : imm.client?.nome_fantasia || (imm.observacoes as any)?.empresa_manual || "—"}
               </div>
-              <div>
-                <span className="text-muted-foreground">Grupo / Categoria:</span>{" "}
-                {[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
-              </div>
+              {isPartner ? (
+                (imm as any).partner_description && (
+                  <div>
+                    <span className="text-muted-foreground">Descrição:</span> {(imm as any).partner_description}
+                  </div>
+                )
+              ) : (
+                <div>
+                  <span className="text-muted-foreground">Grupo / Categoria:</span>{" "}
+                  {[imm.client?.grupo, imm.client?.categoria ?? categoriaFallback].filter(Boolean).join(" / ") || "—"}
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground">Representante:</span>{" "}
                 {imm.representative?.nome || "—"}

@@ -63,6 +63,8 @@ type SessaoRow = {
     titulo: string | null; 
     data_visita: string | null; 
     client_id: string | null;
+    subject_type?: string | null;
+    partner_name?: string | null;
     client: { 
       id: string;
       nome_fantasia: string | null;
@@ -108,6 +110,8 @@ function VisaoImersaoPage() {
             titulo, 
             data_visita, 
             client_id,
+            subject_type,
+            partner_name,
             client:clients(id, nome_fantasia, razao_social)
           )
         `)
@@ -121,7 +125,7 @@ function VisaoImersaoPage() {
     const q = busca.trim().toLowerCase();
     if (!q) return sessoes;
     return sessoes.filter(s =>
-      `${s.immersion?.titulo ?? ""} ${s.immersion?.client?.nome_fantasia ?? ""}`.toLowerCase().includes(q),
+      `${s.immersion?.titulo ?? ""} ${s.immersion?.client?.nome_fantasia ?? s.immersion?.partner_name ?? ""}`.toLowerCase().includes(q),
     );
   }, [sessoes, busca]);
 
@@ -295,7 +299,16 @@ function VisaoImersaoPage() {
           titulo: avulso.doc.meta["titulo"] || avulso.arquivo,
           data_visita: avulso.doc.meta["data_visita"] || new Date().toISOString(),
           company_id: profile.company_id,
-          client_id: clientId || "00000000-0000-0000-0000-000000000000", // placeholder se não achar
+          // Sem cliente na base a imersão é de parceiro: nunca usar cliente fictício.
+          ...(clientId
+            ? { subject_type: "client", client_id: clientId }
+            : {
+                subject_type: "partner",
+                client_id: null,
+                partner_name: avulso.doc.meta["cliente"] || avulso.doc.meta["titulo"] || avulso.arquivo,
+                partner_type: "outro",
+                partner_type_label: "Não classificado",
+              }),
           status: "concluida"
         })
         .select()
@@ -370,7 +383,7 @@ function VisaoImersaoPage() {
   const handleCompartilharWhats = (s: SessaoRow, e: React.MouseEvent) => {
     e.stopPropagation();
     const titulo = s.immersion?.titulo || "Imersão";
-    const cliente = s.immersion?.client?.nome_fantasia || "";
+    const cliente = s.immersion?.client?.nome_fantasia || s.immersion?.partner_name || "";
     const texto = `Confira a Visão Imersão de ${titulo}${cliente ? ` - ${cliente}` : ""}: ${window.location.origin}/visao-imersao?id=${s.id}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
   };
@@ -455,7 +468,7 @@ function VisaoImersaoPage() {
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold">{m["titulo"] || s.immersion?.titulo || "Imersão"}</div>
                         <div className="text-sm text-muted-foreground">
-                          {m["cliente"] || s.immersion?.client?.nome_fantasia || "—"}
+                          {m["cliente"] || s.immersion?.client?.nome_fantasia || s.immersion?.partner_name || "—"}
                           {m["local"] ? ` • ${m["local"]}` : ""}
                         </div>
                       </div>

@@ -27,6 +27,8 @@ const STATUS_LABEL: Record<string, string> = {
   concluida: "Concluída",
 };
 
+import { isPartnerImmersion, partnerTypeLabel } from "@/lib/immersion-subject";
+
 function ImmersionsIndex() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ function ImmersionsIndex() {
     queryKey: ["immersions"],
     queryFn: async () => (await supabase
       .from("immersions")
-      .select("id, titulo, status, data_visita, created_at, client:clients(nome_fantasia, grupo, categoria)")
+      .select("id, titulo, status, data_visita, created_at, subject_type, partner_name, partner_type, partner_type_label, client:clients(nome_fantasia, grupo, categoria)")
       .order("created_at", { ascending: false })).data ?? [],
   });
 
@@ -93,9 +95,18 @@ function ImmersionsIndex() {
                     <div className="min-w-0">
                       <div className="font-semibold mb-1">{i.titulo}</div>
                       <div className="text-sm text-muted-foreground">
-                        {i.client?.nome_fantasia}
-                        {i.client?.grupo && <span className="mx-2">•</span>}{i.client?.grupo}
-                        {i.client?.categoria && <span className="mx-2">•</span>}{i.client?.categoria}
+                        {isPartnerImmersion(i as any) ? (
+                          <>
+                            {(i as any).partner_name}
+                            <span className="mx-2">•</span>Parceiro · {partnerTypeLabel(i as any)}
+                          </>
+                        ) : (
+                          <>
+                            {i.client?.nome_fantasia}
+                            {i.client?.grupo && <span className="mx-2">•</span>}{i.client?.grupo}
+                            {i.client?.categoria && <span className="mx-2">•</span>}{i.client?.categoria}
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">

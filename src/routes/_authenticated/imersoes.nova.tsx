@@ -17,6 +17,9 @@ import { toast } from "sonner";
 import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { getLatestPerformanceVersion } from "@/lib/performance-periods";
 
+import { buildImmersionSubject, defaultPartnerKindForPerfil } from "@/lib/immersion-subject";
+import { PARTNER_KIND_LABELS, type PartnerKind } from "@/lib/visao-imersao-2-partner";
+
 const searchSchema = z.object({ client: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/imersoes/nova")({
@@ -57,6 +60,10 @@ function NewImmersion() {
     roteiro_id: "",
     especificar_perfil: "",
     empresa_manual: "",
+    partner_name: "",
+    partner_type: "",
+    partner_type_label: "",
+    partner_description: "",
   });
 
   const { data: clients = [] } = useQuery({
@@ -178,18 +185,25 @@ function NewImmersion() {
 
   async function save() {
     if (!form.perfil) return toast.error("Selecione o perfil");
-    if (form.perfil === "cliente" && !form.client_id && !form.empresa_manual) return toast.error("Informe o cliente ou empresa");
+    let subject: ReturnType<typeof buildImmersionSubject>;
+    try {
+      subject = buildImmersionSubject(form as any);
+    } catch (e: any) {
+      return toast.error(e.message);
+    }
     if (!form.roteiro_id) return toast.error("Selecione um roteiro");
     
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     
     // Gerar título se vazio
-    const finalTitle = form.titulo || `Imersão - ${form.perfil} - ${form.data_visita}`;
+    const subjectLabel = subject.subject_type === "partner" ? subject.partner_name : "";
+    const finalTitle =
+      form.titulo || `Imersão - ${subjectLabel || form.perfil} - ${form.data_visita}`;
 
     const { data, error } = await supabase.from("immersions").insert({
       titulo: finalTitle,
-      client_id: form.perfil === "cliente" ? (form.client_id || null) : null,
+      ...subject,
       representative_id: form.vinculado_rep ? (form.representative_id || null) : null,
       data_visita: form.data_visita,
       status: "planejada",
@@ -198,7 +212,7 @@ function NewImmersion() {
       roteiro_id: form.roteiro_id,
       observacoes: JSON.stringify({
         perfil: form.perfil,
-        especificar_perfil: form.especificar_perfil,
+        especificar_perfil: form.partner_description || form.especificar_perfil,
         tipo: form.tipo,
         acompanhantes: form.acompanhantes,
         empresa_manual: form.empresa_manual
@@ -215,7 +229,7 @@ function NewImmersion() {
     const { error: interviewError } = await supabase.from("interviews").insert({
       immersion_id: data.id,
       roteiro_id: form.roteiro_id,
-      client_id: form.perfil === "cliente" ? (form.client_id || null) : null,
+      client_id: subject.client_id,
       entrevistado_nome: finalTitle,
       entrevistado_classificacao: "imersao",
       perfil: "imersao",
@@ -247,7 +261,12 @@ function NewImmersion() {
             {/* Perfil */}
             <div className="space-y-2">
               <Label>Perfil *</Label>
-              <Select value={form.perfil} onValueChange={v => setForm(f => ({ ...f, perfil: v, client_id: v === "cliente" ? f.client_id : "" }))}>
+              <Select value={form.perfil} onValueChange={v => setForm(f => ({
+                ...f,
+                perfil: v,
+                client_id: v === "cliente" ? f.client_id : "",
+                partner_type: v === "cliente" ? "" : (f.partner_type || defaultPartnerKindForPerfil(v)),
+              }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione o perfil" /></SelectTrigger>
                 <SelectContent>
                   {PERFIS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
@@ -285,7 +304,7 @@ function NewImmersion() {
                         />
                         <CommandList className="max-h-64">
                           <CommandEmpty className="p-2 text-xs">
-                            Nenhum cliente encontrado. "{form.empresa_manual}" será usado como nome manual.
+                            Nenhum cliente encontrado na base. Se não for cliente, use o perfil Especificador.
                           </CommandEmpty>
                           <CommandGroup>
                             {clients
@@ -315,14 +334,45 @@ function NewImmersion() {
                   </Popover>
                 </>
               ) : (
-                <>
-                  <Label>Especificar perfil</Label>
-                  <Input 
-                    placeholder="Ex: Arquiteto parceiro, Consultor..." 
-                    value={form.especificar_perfil} 
-                    onChange={e => setForm(f => ({ ...f, especificar_perfil: e.target.value }))}
-                  />
-                </>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Nome do parceiro / escritório *</Label>
+                    <Input
+                      placeholder="Ex: Polo Escritório Light Designer"
+                      value={form.partner_name}
+                      onChange={e => setForm(f => ({ ...f, partner_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de parceiro *</Label>
+                    <Select value={form.partner_type} onValueChange={v => setForm(f => ({ ...f, partner_type: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PARTNER_KIND_LABELS) as PartnerKind[]).map(k => (
+                          <SelectItem key={k} value={k}>{PARTNER_KIND_LABELS[k]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {form.partner_type === "outro" && (
+                    <div className="space-y-2">
+                      <Label>Especifique o tipo</Label>
+                      <Input
+                        placeholder="Ex: Engenheiro, Designer de interiores"
+                        value={form.partner_type_label}
+                        onChange={e => setForm(f => ({ ...f, partner_type_label: e.target.value }))}
+                      />
+                    </div>
+                  )}
+                  <div className="md:col-span-2 space-y-2">
+                    <Label>Descrição / perfil</Label>
+                    <Input
+                      placeholder="Ex: Escritório focado em projetos residenciais de alto padrão"
+                      value={form.partner_description}
+                      onChange={e => setForm(f => ({ ...f, partner_description: e.target.value }))}
+                    />
+                  </div>
+                </div>
               )}
             </div>
 
