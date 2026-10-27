@@ -30,7 +30,18 @@ import {
   Image as ImageIcon,
   Sparkles,
   Library,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
 
@@ -41,6 +52,7 @@ interface BrandEditorModalProps {
   repNome?: string;
   allStructures?: Record<string, RepStructure> | RepStructure[];
   onSaveBrand: (brand: RepresentadaItem) => Promise<void> | void;
+  onDeleteBrand?: (brandId: string) => Promise<void> | void;
 }
 
 export function BrandEditorModal({
@@ -50,7 +62,9 @@ export function BrandEditorModal({
   repNome,
   allStructures,
   onSaveBrand,
+  onDeleteBrand,
 }: BrandEditorModalProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [nome, setNome] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [segmento, setSegmento] = useState("Iluminação & Complementos");
@@ -483,6 +497,19 @@ export function BrandEditorModal({
           </div>
 
           <DialogFooter className="pt-3 border-t flex items-center justify-end gap-2">
+            {brand && onDeleteBrand && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+                disabled={saving || uploading}
+                className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5 sm:mr-auto"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Excluir da lista
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -514,6 +541,30 @@ export function BrandEditorModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir marca da lista?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {brand?.nome || "Esta marca"} será removida das marcas representadas deste
+              representante.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!brand) return;
+                await onDeleteBrand?.(brand.id);
+                onOpenChange(false);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

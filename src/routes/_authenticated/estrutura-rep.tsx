@@ -295,6 +295,19 @@ function EstruturaRepPage() {
     setEditingBrand(null);
   };
 
+  // Remove marca da lista de representadas e persiste
+  const handleDeleteBrand = async (brandId: string) => {
+    if (!structure) return;
+    await saveRepStructure({
+      ...structure,
+      marcas_representadas: (structure.marcas_representadas || []).filter((m) => m.id !== brandId),
+    });
+    await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
+    await queryClient.invalidateQueries({ queryKey: ["estrutura-reps-list"] });
+    setEditingBrand(null);
+    toast.success("Marca removida da lista.");
+  };
+
   // Salva agendamento de treinamento diretamente e persiste
   const handleSaveTreinamento = async (item: TreinamentoItem) => {
     if (!structure) {
@@ -954,6 +967,7 @@ function EstruturaRepPage() {
         onOpenChange={setBrandModalOpen}
         brand={editingBrand}
         onSaveBrand={handleSaveBrand}
+        onDeleteBrand={handleDeleteBrand}
         repNome={selectedRep?.nome}
         allStructures={allStructures}
       />
