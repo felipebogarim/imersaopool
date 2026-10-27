@@ -115,6 +115,25 @@ function NewImmersion() {
     },
   });
 
+  const [pickedOutside, setPickedOutside] = useState<{ id: string; nome_fantasia: string } | null>(null);
+  // Clientes fora da carteira do representante: busca na base inteira ao digitar.
+  const searchTerm = (form.empresa_manual ?? "").trim();
+  const { data: outsideClients = [] } = useQuery({
+    queryKey: ["clients-search-all", searchTerm],
+    enabled: !!form.representative_id && searchTerm.length >= 3,
+    queryFn: async () => {
+      const term = searchTerm.replace(/[%,()]/g, " ");
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, nome_fantasia, razao_social")
+        .or(`nome_fantasia.ilike.%${term}%,razao_social.ilike.%${term}%`)
+        .order("nome_fantasia")
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: reps = [] } = useQuery({
     queryKey: ["reps-select"],
     queryFn: async () => (await supabase.from("representatives").select("id, nome").order("nome")).data ?? [],
@@ -291,7 +310,7 @@ function NewImmersion() {
                     <PopoverTrigger asChild>
                       <Button variant="outline" role="combobox" className="w-full justify-between font-normal h-10 px-3">
                         <span className="truncate">
-                          {clients.find((c: any) => c.id === form.client_id)?.nome_fantasia || form.empresa_manual || "Selecione ou digite o nome da empresa"}
+                          {clients.find((c: any) => c.id === form.client_id)?.nome_fantasia || (pickedOutside?.id === form.client_id ? pickedOutside?.nome_fantasia : undefined) || form.empresa_manual || "Selecione ou digite o nome da empresa"}
                         </span>
                         <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
                       </Button>
@@ -328,6 +347,26 @@ function NewImmersion() {
                                 </CommandItem>
                               ))}
                           </CommandGroup>
+                          {outsideClients.filter((c: any) => !clients.some((x: any) => x.id === c.id)).length > 0 && (
+                            <CommandGroup heading="Outros clientes da base (fora da carteira do representante)">
+                              {outsideClients
+                                .filter((c: any) => !clients.some((x: any) => x.id === c.id))
+                                .map((c: any) => (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={c.id}
+                                    onSelect={() => {
+                                      setPickedOutside({ id: c.id, nome_fantasia: c.nome_fantasia || c.razao_social });
+                                      setForm(f => ({ ...f, client_id: c.id, empresa_manual: "" }));
+                                      setClientOpen(false);
+                                    }}
+                                  >
+                                    <Check className={form.client_id === c.id ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
+                                    <span className="truncate">{c.nome_fantasia || c.razao_social}</span>
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          )}
                         </CommandList>
                       </Command>
                     </PopoverContent>
