@@ -12,6 +12,41 @@ export const V2_INCOMPATIBLE_MESSAGE = "Arquivo incompatível com Visão Imersã
  * Procura EXCLUSIVAMENTE o fenced block ```visao_imersao_2 e valida o
  * contrato canônico. Nenhum fallback para formatos legados.
  */
+const PARTNER_KEYS = ["partner", "parceiro", "specifier", "especificador", "escritorio", "office"];
+
+/**
+ * Arquivos de parceiro especificador podem vir sem o bloco `client` (null/ausente).
+ * Monta um `client` a partir do bloco de parceiro, de campos soltos ou do título do markdown.
+ */
+function normalizeCandidate(candidate: any, raw: string): any {
+  const client = candidate.client;
+  if (client && typeof client === "object") return candidate;
+
+  const partnerKey = PARTNER_KEYS.find((k) => candidate[k] && typeof candidate[k] === "object");
+  const partner = partnerKey ? candidate[partnerKey] : undefined;
+  const title = raw.match(/^#\s+(.+)$/m)?.[1]?.replace(/\*+/g, "").trim();
+  const date =
+    candidate.visit_date ??
+    candidate.date ??
+    partner?.visit_date ??
+    raw.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1] ??
+    new Date().toISOString().slice(0, 10);
+  const name =
+    partner?.name ?? partner?.nome ?? candidate.client_name ?? candidate.name ?? title ?? "Parceiro";
+  return {
+    ...candidate,
+    client: {
+      name: String(name),
+      trade_name: partner?.trade_name ?? undefined,
+      visit_date: String(date),
+      location: String(partner?.location ?? partner?.city ?? partner?.cidade ?? candidate.location ?? ""),
+      representative: candidate.representative ?? undefined,
+      consultant: candidate.consultant ?? undefined,
+    },
+    partner: candidate.partner ?? partner ?? { kind: "outro" },
+  };
+}
+
 export function parseVisaoImersao2File(text: string): Immersion2Data {
   const raw = String(text ?? "").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   const fence = /```[ \t]*(?:json[ \t]+)?visao_imersao_2[^\n]*\n([\s\S]*?)```/gi;
@@ -31,7 +66,7 @@ export function parseVisaoImersao2File(text: string): Immersion2Data {
     if (!candidate) continue;
     if (candidate.block && candidate.block !== "visao_imersao_2") continue;
     if (candidate.schema !== "visao_imersao_2_data_v1") continue;
-    return Immersion2DataSchema.parse(candidate);
+    return Immersion2DataSchema.parse(normalizeCandidate(candidate, raw));
   }
 
   throw new Error(V2_INCOMPATIBLE_MESSAGE);

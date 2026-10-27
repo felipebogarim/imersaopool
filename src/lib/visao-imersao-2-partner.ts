@@ -41,3 +41,28 @@ export function readPartner(structured: unknown): ReportPartner | null {
     notes: clean(raw.notes),
   };
 }
+
+/** Converte um bloco de parceiro vindo do arquivo importado (texto livre) para o cadastro mínimo. */
+export function coercePartner(raw: unknown): ReportPartner | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const label = clean(r.kind_label) ?? clean(r.kind) ?? clean(r.type) ?? clean(r.tipo) ?? clean(r.role);
+  const norm = (label ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const kind: PartnerKind = norm.includes("arquitet")
+    ? "arquiteto"
+    : norm.includes("light") || norm.includes("ilumin")
+      ? "light_designer"
+      : "outro";
+  return {
+    kind,
+    kind_label: kind === "outro" ? label : undefined,
+    contact_name: clean(r.contact_name) ?? clean(r.contact) ?? clean(r.contato),
+    city: clean(r.city) ?? clean(r.cidade) ?? clean(r.location),
+    phone: clean(r.phone) ?? clean(r.telefone),
+    email: clean(r.email),
+    notes: clean(r.notes) ?? clean(r.observacoes),
+  };
+}

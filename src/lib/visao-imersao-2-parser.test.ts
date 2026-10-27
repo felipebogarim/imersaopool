@@ -69,3 +69,24 @@ describe("Visao Imersao 2 - Parser e Vinculo Comercial", () => {
     );
   });
 });
+
+describe("parseVisaoImersao2File sem bloco client (parceiro)", () => {
+  it("aceita client null e deriva o cliente do parceiro", () => {
+    const body = JSON.stringify({
+      schema: "visao_imersao_2_data_v1",
+      block: "visao_imersao_2",
+      client: null,
+      partner: { name: "POLO Arquitetura", kind: "Arquiteto", city: "Curitiba" },
+      brands_observed: [],
+      families_analyzed: [],
+      perspectives: [],
+      quotes: [],
+      signals: [],
+    });
+    const md = "# Relatório POLO\n\n```json visao_imersao_2\n" + body + "\n```\n";
+    const data = parseVisaoImersao2File(md);
+    expect(data.client.name).toBe("POLO Arquitetura");
+    expect(data.client.location).toBe("Curitiba");
+    expect(data.partner.kind).toBe("Arquiteto");
+  });
+});

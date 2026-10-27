@@ -91,6 +91,8 @@ export const Immersion2DataSchema = z.object({
   trade_name: z.string().optional(),
   documento: z.string().optional(),
   cnpj: z.string().optional(),
+  /** Presente quando o arquivo é de parceiro especificador (sem cliente cadastrado). */
+  partner: z.any().optional(),
 }).transform((val) => {
   const resolved =
     val.resolved_client_id ||

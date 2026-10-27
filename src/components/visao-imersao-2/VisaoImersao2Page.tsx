@@ -34,6 +34,7 @@ import { resolveClientCommercialData } from "@/lib/client-commercial-resolver";
 import {
   PARTNER_KIND_LABELS,
   partnerKindLabel,
+  coercePartner,
   readPartner,
   type PartnerKind,
   type ReportPartner,
@@ -270,8 +271,10 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
     try {
       buildVisaoImersao2ViewModel(preview.data, preview.chapters);
       if (!avulso) {
-        setPartner(null);
-        setPartnerAsked(false);
+        // Arquivo de parceiro (sem bloco de cliente) já entra marcado como parceiro.
+        const fromFile = coercePartner((preview.data as any).partner);
+        setPartner(fromFile);
+        setPartnerAsked(Boolean(fromFile));
       }
       setAvulso(preview);
       setDirty(true);
