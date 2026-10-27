@@ -33,3 +33,6 @@ ALTER TABLE public.immersions ADD CONSTRAINT immersions_subject_consistency_chec
   );
 
 CREATE INDEX IF NOT EXISTS idx_imm_subject_type ON public.immersions(subject_type);
+
+-- Faz o PostgREST reconhecer as novas colunas imediatamente (evita "column not found in schema cache").
+NOTIFY pgrst, 'reload schema';
