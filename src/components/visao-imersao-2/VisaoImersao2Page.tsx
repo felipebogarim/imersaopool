@@ -31,6 +31,22 @@ import { ExecutiveReportButton } from "@/components/executive-report/ExecutiveRe
 import { BrandPositioningRadarV2 } from "@/components/visao-rep2/BrandPositioningRadarV2";
 import { buildPerspectivasVM } from "@/lib/visao-rep2-perspectivas";
 import { resolveClientCommercialData } from "@/lib/client-commercial-resolver";
+import {
+  PARTNER_KIND_LABELS,
+  partnerKindLabel,
+  readPartner,
+  type PartnerKind,
+  type ReportPartner,
+} from "@/lib/visao-imersao-2-partner";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Compass,
@@ -46,6 +62,7 @@ import {
   CheckCircle2,
   Building2,
   Loader2,
+  Handshake,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +114,13 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   const [buscaTermo, setBuscaTermo] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [clientesEncontrados, setClientesEncontrados] = useState<any[]>([]);
+
+  // Parceiro especificador (arquiteto, light designer…): relatório que não é de cliente cadastrado.
+  const [partner, setPartner] = useState<ReportPartner | null>(null);
+  const [partnerOpen, setPartnerOpen] = useState(false);
+  const [partnerStep, setPartnerStep] = useState<"confirm" | "form">("form");
+  const [partnerDraft, setPartnerDraft] = useState<ReportPartner>({ kind: "arquiteto" });
+  const [partnerAsked, setPartnerAsked] = useState(false);
 
   function linkRelatorio(r: any) {
     return `${window.location.origin}/visao-imersao-2/${r.id}`;
@@ -181,6 +205,8 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         markdown: report.content_markdown,
         id: report.id,
       });
+      setPartner(readPartner(stored));
+      setPartnerAsked(true);
       setDirty(false);
       if (opts?.navegar !== false && report.id) {
         void navigate({ to: "/visao-imersao-2/$reportId", params: { reportId: String(report.id) } });
@@ -243,6 +269,10 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
     if (!preview) return;
     try {
       buildVisaoImersao2ViewModel(preview.data, preview.chapters);
+      if (!avulso) {
+        setPartner(null);
+        setPartnerAsked(false);
+      }
       setAvulso(preview);
       setDirty(true);
       setPreview(null);
@@ -266,11 +296,12 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         .single();
       if (profileError || !profile?.company_id) throw new Error("Empresa ativa não encontrada.");
 
-      const resolvedId =
-        avulso.data.resolved_client_id ||
-        (avulso.data.client as any)?.resolved_client_id ||
-        (avulso.data.client as any)?.client_id ||
-        undefined;
+      const resolvedId = partner
+        ? undefined
+        : avulso.data.resolved_client_id ||
+          (avulso.data.client as any)?.resolved_client_id ||
+          (avulso.data.client as any)?.client_id ||
+          undefined;
 
       const payload = {
         client_name: avulso.data.client.name,
@@ -285,6 +316,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             resolved_client_id: resolvedId,
           },
           resolved_client_id: resolvedId,
+          partner: partner ?? undefined,
         } as any,
         company_id: profile.company_id,
         created_by: userId,
@@ -364,7 +396,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
       avulso?.data?.resolved_client_id,
       (avulso?.data?.client as any)?.resolved_client_id,
     ],
-    enabled: !!clientName,
+    enabled: !!clientName && !partner,
     queryFn: async () => {
       // 1. PRIORIDADE: Vínculo em memória (estado local do componente) ou persistido
       const manualId =
@@ -812,6 +844,94 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   }
 
 
+  function abrirParceiro(step: "confirm" | "form") {
+    setPartnerDraft(partner ?? { kind: "arquiteto" });
+    setPartnerStep(step);
+    setPartnerOpen(true);
+  }
+
+  // Cliente não localizado na base: pergunta uma única vez se é parceiro especificador.
+  useEffect(() => {
+    if (
+      avulso &&
+      !avulso.id &&
+      !partner &&
+      !partnerAsked &&
+      commercialData?.status === "not_found"
+    ) {
+      setPartnerAsked(true);
+      abrirParceiro("confirm");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avulso, partner, partnerAsked, commercialData?.status]);
+
+  /** Marca (ou desmarca, com `null`) o relatório como de parceiro; persiste se já estiver salvo. */
+  async function confirmarParceiro(next: ReportPartner | null) {
+    setPartnerOpen(false);
+    setPartner(next);
+    setPartnerAsked(true);
+    setAvulso((prev) =>
+      prev && next
+        ? {
+            ...prev,
+            data: {
+              ...prev.data,
+              resolved_client_id: undefined,
+              client: { ...prev.data.client, resolved_client_id: undefined },
+            },
+          }
+        : prev,
+    );
+    setDirty(true);
+
+    if (!avulso?.id) {
+      toast.success(
+        next
+          ? "Parceiro registrado. Clique em 'Salvar relatório' para persistir."
+          : "Marcação de parceiro removida.",
+      );
+      void queryClient.invalidateQueries({ queryKey: ["vi2-commercial"] });
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      const { data: current, error: fetchError } = await supabase
+        .from("field_immersion_v2_reports")
+        .select("structured_data")
+        .eq("id", avulso.id)
+        .single();
+      if (fetchError) throw fetchError;
+      const stored = (current?.structured_data as any) || {};
+      const currentData = stored.data || stored;
+      const newData = {
+        ...stored,
+        data: next
+          ? {
+              ...currentData,
+              resolved_client_id: undefined,
+              client: { ...(currentData.client || {}), resolved_client_id: undefined },
+            }
+          : currentData,
+        partner: next ?? undefined,
+        ...(next ? { resolved_client_id: undefined } : {}),
+      };
+      const { error } = await supabase
+        .from("field_immersion_v2_reports")
+        .update({ structured_data: newData })
+        .eq("id", avulso.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["vi2-reports"] });
+      await queryClient.invalidateQueries({ queryKey: ["vi2-commercial"] });
+      setDirty(false);
+      toast.success(next ? "Parceiro salvo no relatório." : "Marcação de parceiro removida.");
+    } catch (e: any) {
+      toast.error("Erro ao salvar parceiro: " + (e?.message ?? e));
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   const perf = useMemo((): PerfResumo | null => {
     if (!commercialData || (commercialData as any).status !== "linked") return null;
     const cd = commercialData as any;
@@ -924,7 +1044,14 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                 {reports.map((r: any) => (
                   <li key={r.id} className="flex items-center justify-between gap-4 bg-card p-4">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{r.client_name}</p>
+                      <p className="truncate font-medium">
+                        {r.client_name}
+                        {readPartner(r.structured_data) && (
+                          <Badge variant="secondary" className="ml-2 align-middle text-[10px]">
+                            Parceiro · {partnerKindLabel(readPartner(r.structured_data)!)}
+                          </Badge>
+                        )}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
@@ -991,14 +1118,33 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
               <Save className="mr-1 h-4 w-4" />
               {salvando ? "Salvando…" : avulso.id ? "Salvar versão atualizada" : "Salvar relatório"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={abrirModalVinculo}
-              title="Gerenciar vínculo comercial com cliente da base"
-            >
-              <LinkIcon className="mr-1 h-4 w-4" />
-              {commercialData?.status === "linked" ? "Alterar vínculo" : "Vincular cliente"}
-            </Button>
+            {partner ? (
+              <Button
+                variant="outline"
+                onClick={() => abrirParceiro("form")}
+                title="Editar cadastro do parceiro"
+              >
+                <Handshake className="mr-1 h-4 w-4" /> Editar parceiro
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={abrirModalVinculo}
+                  title="Gerenciar vínculo comercial com cliente da base"
+                >
+                  <LinkIcon className="mr-1 h-4 w-4" />
+                  {commercialData?.status === "linked" ? "Alterar vínculo" : "Vincular cliente"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => abrirParceiro("confirm")}
+                  title="Este relatório não é de um cliente cadastrado"
+                >
+                  <Handshake className="mr-1 h-4 w-4" /> É parceiro
+                </Button>
+              </>
+            )}
             <VisaoImersao2Importer onValidated={setPreview} variant="outline" label="Substituir relatório" />
             <Button variant="outline" onClick={() => setDebugMode(!debugMode)}>
               {debugMode ? "Esconder Diagnóstico" : "Ver Diagnóstico"}
@@ -1045,6 +1191,26 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             mode="imersao"
             categoria={commercialData?.status === "linked" ? (commercialData as any).categoria : null}
           />
+
+          {partner && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs">
+              <div className="flex items-center gap-2">
+                <Handshake className="h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  Parceiro especificador · <strong className="font-semibold">{partnerKindLabel(partner)}</strong>
+                  {[partner.contact_name, partner.city].filter(Boolean).length > 0 && (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {[partner.contact_name, partner.city].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => abrirParceiro("form")}>
+                <Pencil className="h-3 w-3" /> Editar parceiro
+              </Button>
+            </div>
+          )}
 
           {commercialData?.status === "linked" && (
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
@@ -1115,6 +1281,9 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                   <Button size="sm" onClick={abrirModalVinculo} className="gap-1.5 shadow-sm">
                     <LinkIcon className="h-3.5 w-3.5" /> Buscar e vincular cliente manualmente
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => abrirParceiro("confirm")} className="ml-2 gap-1.5">
+                    <Handshake className="h-3.5 w-3.5" /> Não é cliente (parceiro)
+                  </Button>
                 </div>
               </AlertDescription>
             </Alert>
@@ -1122,7 +1291,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         </div>
         
         {/* 5. RESULTADO POR FAMÍLIA — o mesmo gráfico e a mesma fonte do BI do cliente. */}
-        {commercialData?.status === "linked" ? (
+        {partner ? null : commercialData?.status === "linked" ? (
           <ClientFamiliasChart
             repId={(commercialData as any).representativeId}
             razaoSocial={(commercialData as any).razaoSocial}
@@ -1197,6 +1366,128 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
             </div>
           </div>
         )}
+        {/* Cadastro mínimo de parceiro especificador */}
+        <Dialog open={partnerOpen} onOpenChange={setPartnerOpen}>
+          <DialogContent className="max-w-md">
+            {partnerStep === "confirm" ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Handshake className="h-5 w-5 text-primary" /> Este relatório não é de um cliente?
+                  </DialogTitle>
+                  <DialogDescription>
+                    Se for de um parceiro especificador (arquiteto, light designer…), o relatório não
+                    puxa cadastro de cliente nem dados de performance, e segue normalmente para a
+                    Visão Imersão e o Relatório Executivo.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setPartnerOpen(false)}>
+                    Não, é cliente
+                  </Button>
+                  <Button onClick={() => setPartnerStep("form")}>Sim, é parceiro</Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Handshake className="h-5 w-5 text-primary" /> Cadastro de parceiro
+                  </DialogTitle>
+                  <DialogDescription>
+                    Informe o tipo de parceiro. Os demais campos são opcionais.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 py-1">
+                  <div className="space-y-1.5">
+                    <Label>Tipo de parceiro</Label>
+                    <Select
+                      value={partnerDraft.kind}
+                      onValueChange={(v) => setPartnerDraft((d) => ({ ...d, kind: v as PartnerKind }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PARTNER_KIND_LABELS) as PartnerKind[]).map((k) => (
+                          <SelectItem key={k} value={k}>
+                            {PARTNER_KIND_LABELS[k]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {partnerDraft.kind === "outro" && (
+                    <div className="space-y-1.5">
+                      <Label>Especifique</Label>
+                      <Input
+                        value={partnerDraft.kind_label ?? ""}
+                        onChange={(e) => setPartnerDraft((d) => ({ ...d, kind_label: e.target.value }))}
+                        placeholder="Ex.: Engenheiro, Designer de interiores"
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Contato</Label>
+                      <Input
+                        value={partnerDraft.contact_name ?? ""}
+                        onChange={(e) => setPartnerDraft((d) => ({ ...d, contact_name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Cidade</Label>
+                      <Input
+                        value={partnerDraft.city ?? ""}
+                        onChange={(e) => setPartnerDraft((d) => ({ ...d, city: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Telefone</Label>
+                      <Input
+                        value={partnerDraft.phone ?? ""}
+                        onChange={(e) => setPartnerDraft((d) => ({ ...d, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>E-mail</Label>
+                      <Input
+                        value={partnerDraft.email ?? ""}
+                        onChange={(e) => setPartnerDraft((d) => ({ ...d, email: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Observações</Label>
+                    <Textarea
+                      rows={2}
+                      value={partnerDraft.notes ?? ""}
+                      onChange={(e) => setPartnerDraft((d) => ({ ...d, notes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="gap-2 sm:justify-between">
+                  {partner ? (
+                    <Button variant="ghost" onClick={() => void confirmarParceiro(null)}>
+                      Não é parceiro (é cliente)
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex gap-2">
+                    <Button variant="ghost" onClick={() => setPartnerOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={() => void confirmarParceiro(readPartner({ partner: partnerDraft }))}>
+                      Salvar parceiro
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Modal de Busca e Vínculo Manual de Cliente */}
         <Dialog open={vincularOpen} onOpenChange={setVincularOpen}>
           <DialogContent className="max-w-xl max-h-[85vh] flex flex-col">

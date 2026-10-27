@@ -226,9 +226,11 @@ function RelatorioExecutivoPage() {
     (parent?.structured_data as any)?.resolved_client_id ??
     null;
 
+  const parentIsPartner = Boolean((parent?.structured_data as any)?.partner);
+
   const { data: commercial } = useQuery({
     queryKey: ["exec-commercial", parentResolvedClientId, parentClientName],
-    enabled: Boolean(parentResolvedClientId || parentClientName),
+    enabled: !parentIsPartner && Boolean(parentResolvedClientId || parentClientName),
     queryFn: async () => {
       let clientRow: any = null;
       if (parentResolvedClientId) {
