@@ -103,10 +103,28 @@ export function stripLegacyDemoFrequencia(
   items: ClienteFrequenciaItem[] | undefined,
 ): ClienteFrequenciaItem[] {
   const list = Array.isArray(items) ? items : [];
-  const demo = list.filter((i) =>
-    LEGACY_DEMO_CLIENTES.has((i.cliente_nome || "").trim().toLowerCase()),
-  );
-  return demo.length >= 5 && demo.length === list.length ? [] : list;
+  const isDemo = (i: ClienteFrequenciaItem) =>
+    LEGACY_DEMO_CLIENTES.has((i.cliente_nome || "").trim().toLowerCase());
+  return list.filter(isDemo).length >= 5 ? list.filter((i) => !isDemo(i)) : list;
+}
+
+const LEGACY_DEMO_BASES: Record<string, string> = { goiânia: "GO", salvador: "BA", cuiabá: "MT" };
+
+/** Descarta a base inventada por versões antigas (cidade padrão com UF que não confere). */
+export function sanitizeBase(cidade?: string | null, uf?: string | null) {
+  const c = (cidade ?? "").trim();
+  const u = (uf ?? "").trim().toUpperCase();
+  const legacyUf = LEGACY_DEMO_BASES[c.toLowerCase()];
+  if (legacyUf && u !== legacyUf) return { cidade_base: "", estado_base: "" };
+  return { cidade_base: c, estado_base: u };
+}
+
+function cleanLegacyLocal(d: RepStructure): RepStructure {
+  return {
+    ...d,
+    ...sanitizeBase(d.cidade_base, d.estado_base),
+    frequencia_visitas: stripLegacyDemoFrequencia(d.frequencia_visitas),
+  };
 }
 
 /** Cria uma estrutura padrão rica quando o representante ainda não possui cadastro */
@@ -368,8 +386,7 @@ export async function loadRepStructure(rep: {
         representative_id: rep.id,
         nome_representante: rep.nome,
         empresa_representacao: data.empresa_representacao ?? rep.representacao ?? "",
-        cidade_base: data.cidade_base ?? "",
-        estado_base: data.estado_base ?? "",
+        ...sanitizeBase(data.cidade_base, data.estado_base),
         regiao_principal: data.regiao_principal ?? rep.regiao ?? "",
         modelo_atuacao: data.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(data.estados_atendidos) ? data.estados_atendidos : [],
@@ -415,7 +432,7 @@ export async function loadRepStructure(rep: {
 
   // 3. Fallback no LocalStorage
   if (localData) {
-    return localData;
+    return cleanLegacyLocal(localData);
   }
 
   // 4. Fallback inteligente pré-populado
@@ -615,8 +632,7 @@ export async function loadAllRepStructures(reps: {
         representative_id: rep.id,
         nome_representante: rep.nome,
         empresa_representacao: dbItem.empresa_representacao ?? rep.representacao ?? "",
-        cidade_base: dbItem.cidade_base ?? "",
-        estado_base: dbItem.estado_base ?? "",
+        ...sanitizeBase(dbItem.cidade_base, dbItem.estado_base),
         regiao_principal: dbItem.regiao_principal ?? rep.regiao ?? "",
         modelo_atuacao: dbItem.modelo_atuacao ?? "equipe",
         estados_atendidos: Array.isArray(dbItem.estados_atendidos) ? dbItem.estados_atendidos : [],
@@ -660,7 +676,7 @@ export async function loadAllRepStructures(reps: {
 
     // 3. Se não houver no banco mas houver no localStorage
     if (localData) {
-      result[rep.id] = localData;
+      result[rep.id] = cleanLegacyLocal(localData);
       continue;
     }
 
