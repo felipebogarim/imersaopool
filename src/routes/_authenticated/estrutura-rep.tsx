@@ -445,7 +445,8 @@ function EstruturaRepPage() {
       return;
     }
 
-    let updatedFrequencia = [...(structure.frequencia_visitas || [])];
+    // Parte da lista exibida (inclui o Top 10 da performance ainda não salvo)
+    let updatedFrequencia = [...top10Clientes];
 
     if (payload.aplicarTodosTop10 && typeof payload.frequenciaTodosDias === "number") {
       if (updatedFrequencia.length > 0) {
@@ -491,8 +492,7 @@ function EstruturaRepPage() {
   const handleDeleteFrequencia = async (freqId: string) => {
     if (!structure) return;
 
-    const current = structure.frequencia_visitas || [];
-    const updated = current.filter((f) => f.id !== freqId);
+    const updated = top10Clientes.filter((f) => f.id !== freqId);
 
     const updatedStructure: RepStructure = {
       ...structure,
@@ -995,12 +995,12 @@ function EstruturaRepPage() {
           }
         }}
         cliente={editingFreq}
-        posicaoSugerida={(structure?.frequencia_visitas?.length || 0) + 1}
+        posicaoSugerida={top10Clientes.length + 1}
         representativeId={selectedRep?.id}
         repNome={selectedRep?.nome || structure?.nome_representante}
         equipe={structure?.equipe}
         structureClients={repStructureClients}
-        frequenciaVisitas={structure?.frequencia_visitas}
+        frequenciaVisitas={top10Clientes}
         currentFrequenciaDemais={structure?.frequencia_demais_clientes ?? 60}
         initialBatchMode={freqModalBatchMode}
         onSave={handleSaveFrequencia}
