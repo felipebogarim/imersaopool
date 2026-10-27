@@ -37,10 +37,24 @@ function ImmersionsIndex() {
 
   const { data: imms = [], isLoading } = useQuery({
     queryKey: ["immersions"],
-    queryFn: async () => (await supabase
-      .from("immersions")
-      .select("id, titulo, status, data_visita, created_at, subject_type, partner_name, partner_type, partner_type_label, client:clients(nome_fantasia, grupo, categoria)")
-      .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const base = "id, titulo, status, data_visita, created_at";
+      const client = "client:clients(nome_fantasia, grupo, categoria)";
+      const full = await supabase
+        .from("immersions")
+        .select(
+          `${base}, subject_type, partner_name, partner_type, partner_type_label, ${client}`,
+        )
+        .order("created_at", { ascending: false });
+      if (!full.error) return full.data ?? [];
+      // Migration de parceiro ainda não aplicada: lista só com as colunas legadas.
+      const legacy = await supabase
+        .from("immersions")
+        .select(`${base}, ${client}`)
+        .order("created_at", { ascending: false });
+      if (legacy.error) toast.error(legacy.error.message);
+      return legacy.data ?? [];
+    },
   });
 
   async function runShare(id: string, kind: "email" | "whats") {
