@@ -870,3 +870,15 @@ export async function createRepresentativeWithStructure(params: {
   await saveRepStructure(structure);
   return structure;
 }
+
+/** Verifica se a tabela `rep_structures` responde no banco; devolve a mensagem de erro ou null. */
+export async function checkRepStructuresTable(): Promise<string | null> {
+  try {
+    const { error } = await (supabase as any)
+      .from("rep_structures")
+      .select("representative_id", { head: true, count: "exact" });
+    return error ? error.message : null;
+  } catch (err: any) {
+    return err?.message ?? "Falha de rede";
+  }
+}

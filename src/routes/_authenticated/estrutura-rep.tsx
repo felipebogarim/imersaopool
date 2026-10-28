@@ -56,6 +56,7 @@ import { RepObservacoesCard } from "@/components/estrutura-rep/RepObservacoesCar
 import {
   loadRepStructure,
   loadAllRepStructures,
+  checkRepStructuresTable,
   saveRepStructure,
   deleteRepStructure,
 } from "@/lib/estrutura-rep/storage";
@@ -154,6 +155,12 @@ function EstruturaRepPage() {
     queryFn: async () => {
       return await loadAllRepStructures(reps);
     },
+  });
+
+  const { data: tableError } = useQuery({
+    queryKey: ["rep-structures-table-check"],
+    queryFn: checkRepStructuresTable,
+    staleTime: 60_000,
   });
 
   // Representante selecionado para visualização em painel/radiografia
@@ -775,6 +782,14 @@ function EstruturaRepPage() {
         {/* ========================================================================= */}
         {/* VISUALIZAÇÃO 3: RADIOGRAFIA / PAINEL EXECUTIVO */}
         {/* ========================================================================= */}
+        {tableError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            As estruturas não estão sendo gravadas no banco ({tableError}). Elas ficam só neste
+            navegador e não aparecem em outros computadores. Peça para aplicar a migration
+            rep_structures no Lovable Cloud.
+          </div>
+        )}
+
         {viewMode === "painel" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
