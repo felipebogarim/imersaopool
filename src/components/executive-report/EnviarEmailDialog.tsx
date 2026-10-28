@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { buildExecutiveEmailSubject } from "@/lib/executive-report/email-subject";
 import { Loader2, Monitor, Paperclip, Send, Smartphone, Users, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toEmailData, type ExecutiveReportData } from "@/lib/executive-report/types";
@@ -74,9 +75,39 @@ export function EnviarEmailDialog({
   const [recipients, setRecipients] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
-  const [subject, setSubject] = useState(
-    data.email?.subject || `Relatório Executivo de Imersão · ${data.client.display_name}`,
+  const [subject, setSubject] = useState(() =>
+    buildExecutiveEmailSubject(
+      data.client.location,
+      data.client.representative,
+      `Relatório Executivo de Imersão · ${data.client.display_name}`,
+    ),
   );
+  const [subjectEdited, setSubjectEdited] = useState(false);
+
+  // Assunto padrão: região e nome do representante cadastrados (quando há representante vinculado).
+  useEffect(() => {
+    if (!repId) return;
+    let cancelled = false;
+    void supabase
+      .from("representatives")
+      .select("nome, regiao")
+      .eq("id", repId)
+      .maybeSingle()
+      .then(({ data: rep }) => {
+        if (cancelled || !rep || subjectEdited) return;
+        setSubject(
+          buildExecutiveEmailSubject(
+            rep.regiao || data.client.location,
+            rep.nome || data.client.representative,
+            `Relatório Executivo de Imersão · ${data.client.display_name}`,
+          ),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repId]);
   const [message, setMessage] = useState(data.email?.intro ?? "");
   const [attachPdf, setAttachPdf] = useState(true);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -301,7 +332,13 @@ export function EnviarEmailDialog({
 
           <div>
             <Label>Assunto</Label>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+            <Input
+              value={subject}
+              onChange={(e) => {
+                setSubjectEdited(true);
+                setSubject(e.target.value);
+              }}
+            />
           </div>
 
           <div>
