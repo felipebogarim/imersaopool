@@ -38,6 +38,7 @@ import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authent
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNovoCorpRouteImport } from './routes/_authenticated/novo-corp'
 import { Route as AuthenticatedNdaRouteImport } from './routes/_authenticated/nda'
+import { Route as AuthenticatedHome2RouteImport } from './routes/_authenticated/home-2'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated/familias'
 import { Route as AuthenticatedEstruturaRepRouteImport } from './routes/_authenticated/estrutura-rep'
@@ -282,6 +283,11 @@ const AuthenticatedNovoCorpRoute = AuthenticatedNovoCorpRouteImport.update({
 const AuthenticatedNdaRoute = AuthenticatedNdaRouteImport.update({
   id: '/nda',
   path: '/nda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHome2Route = AuthenticatedHome2RouteImport.update({
+  id: '/home-2',
+  path: '/home-2',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
@@ -855,6 +861,7 @@ export interface FileRoutesByFullPath {
   '/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/home-2': typeof AuthenticatedHome2Route
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -981,6 +988,7 @@ export interface FileRoutesByTo {
   '/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/familias': typeof AuthenticatedFamiliasRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/home-2': typeof AuthenticatedHome2Route
   '/nda': typeof AuthenticatedNdaRoute
   '/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -1109,6 +1117,7 @@ export interface FileRoutesById {
   '/_authenticated/estrutura-rep': typeof AuthenticatedEstruturaRepRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/home-2': typeof AuthenticatedHome2Route
   '/_authenticated/nda': typeof AuthenticatedNdaRoute
   '/_authenticated/novo-corp': typeof AuthenticatedNovoCorpRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -1238,6 +1247,7 @@ export interface FileRouteTypes {
     | '/estrutura-rep'
     | '/familias'
     | '/home'
+    | '/home-2'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -1364,6 +1374,7 @@ export interface FileRouteTypes {
     | '/estrutura-rep'
     | '/familias'
     | '/home'
+    | '/home-2'
     | '/nda'
     | '/novo-corp'
     | '/perfil'
@@ -1491,6 +1502,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estrutura-rep'
     | '/_authenticated/familias'
     | '/_authenticated/home'
+    | '/_authenticated/home-2'
     | '/_authenticated/nda'
     | '/_authenticated/novo-corp'
     | '/_authenticated/perfil'
@@ -1846,6 +1858,13 @@ declare module '@tanstack/react-router' {
       path: '/nda'
       fullPath: '/nda'
       preLoaderRoute: typeof AuthenticatedNdaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home-2': {
+      id: '/_authenticated/home-2'
+      path: '/home-2'
+      fullPath: '/home-2'
+      preLoaderRoute: typeof AuthenticatedHome2RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/home': {
@@ -2660,6 +2679,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstruturaRepRoute: typeof AuthenticatedEstruturaRepRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedHome2Route: typeof AuthenticatedHome2Route
   AuthenticatedNdaRoute: typeof AuthenticatedNdaRoute
   AuthenticatedNovoCorpRoute: typeof AuthenticatedNovoCorpRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -2725,6 +2745,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstruturaRepRoute: AuthenticatedEstruturaRepRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedHome2Route: AuthenticatedHome2Route,
   AuthenticatedNdaRoute: AuthenticatedNdaRoute,
   AuthenticatedNovoCorpRoute: AuthenticatedNovoCorpRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,

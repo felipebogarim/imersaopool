@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { isHome2User } from "@/lib/home2";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,11 @@ import backgroundVideoAsset from "@/assets/background-video.mp4.asset.json";
 import newlineLogo from "@/assets/newline-logo.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/home")({
+  // Usuários com Home 2 (acesso reduzido) entram direto nela.
+  beforeLoad: ({ context }) => {
+    const email = (context as { user?: { email?: string | null } }).user?.email;
+    if (isHome2User(email)) throw redirect({ to: "/home-2" as any, replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Dados e tomada de decisão — PoolFlux" },
