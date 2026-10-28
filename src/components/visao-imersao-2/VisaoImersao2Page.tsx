@@ -66,6 +66,16 @@ import {
   Handshake,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  EMPTY_LIST_FILTERS,
+  matchesListFilters,
+  reportClientId,
+  reportListMeta,
+  type ListClient,
+  type ListRep,
+  type ReportListFilters,
+  type ReportListMeta,
+} from "@/lib/visao-imersao-2-list";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -176,6 +186,54 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
       return data ?? [];
     },
   });
+
+  const [listFilters, setListFilters] = useState<ReportListFilters>(EMPTY_LIST_FILTERS);
+
+  const { data: listReps = [] } = useQuery({
+    queryKey: ["vi2-list-reps"],
+    queryFn: async () => {
+      const { data } = await supabase.from("representatives").select("nome, representacao, regiao");
+      return (data ?? []) as ListRep[];
+    },
+  });
+
+  const resolvedIds = useMemo(
+    () => Array.from(new Set((reports as any[]).map((r) => reportClientId(r.structured_data)).filter(Boolean))),
+    [reports],
+  );
+  const { data: listClients = [] } = useQuery({
+    queryKey: ["vi2-list-clients", resolvedIds],
+    enabled: resolvedIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, categoria, representatives:representative_id (nome, representacao, regiao)")
+        .in("id", resolvedIds);
+      return (data ?? []) as unknown as ListClient[];
+    },
+  });
+
+  const rowsMeta = useMemo(() => {
+    const byId = new Map(listClients.map((c) => [c.id, c]));
+    return (reports as any[]).map((r) => ({ r, meta: reportListMeta(r, byId, listReps) }));
+  }, [reports, listClients, listReps]);
+
+  const filteredRows = useMemo(
+    () => rowsMeta.filter(({ r, meta }) => matchesListFilters(r, meta, listFilters)),
+    [rowsMeta, listFilters],
+  );
+
+  const filterOptions = useMemo(() => {
+    const uniq = (pick: (m: ReportListMeta) => string) =>
+      Array.from(new Set(rowsMeta.map((x) => pick(x.meta)).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "pt-BR"),
+      );
+    return {
+      representante: uniq((m) => m.representante),
+      regiao: uniq((m) => m.regiao),
+      categoria: uniq((m) => m.categoria),
+    };
+  }, [rowsMeta]);
 
   /** Abre diretamente o relatório salvo quando a URL traz /visao-imersao-2/<id>. */
   useEffect(() => {
@@ -1043,8 +1101,65 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
               <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Relatórios salvos
               </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[220px] flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={listFilters.busca}
+                    onChange={(e) => setListFilters((f) => ({ ...f, busca: e.target.value }))}
+                    placeholder="Pesquisar por nome ou palavra-chave"
+                    className="pl-8"
+                    aria-label="Pesquisar relatórios"
+                  />
+                </div>
+                {(["representante", "regiao", "categoria"] as const).map((k) => (
+                  <select
+                    key={k}
+                    value={listFilters[k]}
+                    onChange={(e) => setListFilters((f) => ({ ...f, [k]: e.target.value }))}
+                    className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                    aria-label={`Filtrar por ${k === "regiao" ? "região" : k}`}
+                  >
+                    <option value="">
+                      {k === "representante" ? "Todos os representantes" : k === "regiao" ? "Todas as regiões" : "Todas as categorias"}
+                    </option>
+                    {filterOptions[k].map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                ))}
+                <Input
+                  type="date"
+                  value={listFilters.dataDe}
+                  onChange={(e) => setListFilters((f) => ({ ...f, dataDe: e.target.value }))}
+                  className="h-9 w-[140px]"
+                  aria-label="Data da visita a partir de"
+                  title="Data da visita: de"
+                />
+                <Input
+                  type="date"
+                  value={listFilters.dataAte}
+                  onChange={(e) => setListFilters((f) => ({ ...f, dataAte: e.target.value }))}
+                  className="h-9 w-[140px]"
+                  aria-label="Data da visita até"
+                  title="Data da visita: até"
+                />
+                {(listFilters.busca || listFilters.dataDe || listFilters.dataAte || listFilters.representante || listFilters.regiao || listFilters.categoria) && (
+                  <Button variant="ghost" size="sm" onClick={() => setListFilters(EMPTY_LIST_FILTERS)}>
+                    Limpar
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {filteredRows.length} de {rowsMeta.length}
+                </span>
+              </div>
               <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-                {reports.map((r: any) => (
+                {filteredRows.length === 0 && (
+                  <li className="bg-card p-6 text-center text-sm text-muted-foreground">
+                    Nenhum relatório encontrado com os filtros atuais.
+                  </li>
+                )}
+                {filteredRows.map(({ r, meta }) => (
                   <li key={r.id} className="flex items-center justify-between gap-4 bg-card p-4">
                     <div className="min-w-0">
                       <p className="truncate font-medium">
@@ -1058,6 +1173,19 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                       <p className="truncate text-xs text-muted-foreground">
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
+                      {(meta.representante || meta.regiao || meta.categoria) && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {meta.representante && (
+                            <Badge variant="outline" className="text-[10px]">Rep: {meta.representante}</Badge>
+                          )}
+                          {meta.regiao && (
+                            <Badge variant="outline" className="text-[10px]">{meta.regiao}</Badge>
+                          )}
+                          {meta.categoria && (
+                            <Badge variant="secondary" className="text-[10px]">{meta.categoria}</Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
