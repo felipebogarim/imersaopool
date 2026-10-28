@@ -316,3 +316,23 @@ export function findBrandLogo(name: string, structureMarcas?: RepresentadaItem[]
   return undefined;
 }
 
+
+/**
+ * Completa marcas sem logo usando a logo de uma marca de mesmo nome encontrada em `pool`
+ * (estruturas vindas do banco). Evita depender do localStorage de cada computador.
+ */
+export function fillMissingLogos(
+  marcas: RepresentadaItem[],
+  pool: RepresentadaItem[],
+): RepresentadaItem[] {
+  const logos = new Map<string, string>();
+  for (const m of pool) {
+    const key = normalizeBrandKey(m.nome);
+    if (key && m.logo_url && !logos.has(key)) logos.set(key, m.logo_url);
+  }
+  return marcas.map((m) => {
+    if (m.logo_url) return m;
+    const found = logos.get(normalizeBrandKey(m.nome));
+    return found ? { ...m, logo_url: found } : m;
+  });
+}

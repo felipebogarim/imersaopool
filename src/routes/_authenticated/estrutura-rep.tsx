@@ -267,10 +267,11 @@ function EstruturaRepPage() {
 
   // Salva estrutura editada
   const handleSaveStructure = async (updated: RepStructure) => {
-    await saveRepStructure(updated);
+    const persisted = await saveRepStructure(updated);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     await queryClient.invalidateQueries({ queryKey: ["estrutura-reps-list"] });
-    toast.success("Estrutura atualizada com sucesso!");
+    if (persisted) toast.success("Estrutura atualizada com sucesso!");
+    else toast.warning("Salvo só neste navegador: falha ao gravar no banco. Outros computadores não verão as alterações.");
     setEditorOpen(false);
     setEditingRepId(null);
   };
@@ -293,7 +294,8 @@ function EstruturaRepPage() {
       marcas_representadas: updatedMarcas,
     };
 
-    await saveRepStructure(updatedStructure);
+    const persisted = await saveRepStructure(updatedStructure);
+    if (!persisted) toast.warning("Marca salva só neste navegador: falha ao gravar no banco.");
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     await queryClient.invalidateQueries({ queryKey: ["estrutura-reps-list"] });
     setBrandModalOpen(false);

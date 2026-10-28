@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { saveBrandToLibrary, findBrandLogo } from "./brand-library";
+import { saveBrandToLibrary, findBrandLogo, fillMissingLogos } from "./brand-library";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -295,7 +295,7 @@ export function buildDefaultStructure(rep: {
 }
 
 /** Carrega os dados da estrutura de um representante (Supabase -> LocalStorage -> Default) */
-export async function loadRepStructure(rep: {
+async function loadRepStructureBase(rep: {
   id: string;
   nome: string;
   representacao?: string | null;
@@ -439,8 +439,46 @@ export async function loadRepStructure(rep: {
   return defaultStruct;
 }
 
+/**
+ * Carrega a estrutura e completa logos ausentes com as de outras estruturas salvas no banco.
+ * Se a estrutura só existir neste navegador (localStorage), envia ao banco para os demais
+ * computadores a enxergarem.
+ */
+export async function loadRepStructure(rep: {
+  id: string;
+  nome: string;
+  representacao?: string | null;
+  regiao?: string | null;
+  outras_marcas?: string | null;
+}): Promise<RepStructure> {
+  const base = await loadRepStructureBase(rep);
+  try {
+    const { data, error } = await (supabase as any)
+      .from("rep_structures")
+      .select("representative_id, marcas_representadas");
+    if (error || !Array.isArray(data)) return base;
+
+    const pool = data.flatMap((r: any) =>
+      Array.isArray(r.marcas_representadas) ? r.marcas_representadas : [],
+    );
+    const filled = {
+      ...base,
+      marcas_representadas: fillMissingLogos(base.marcas_representadas ?? [], pool),
+    };
+
+    const hasDbRow = data.some((r: any) => r.representative_id === rep.id);
+    const hasLocal =
+      typeof window !== "undefined" && localStorage.getItem(getLocalKey(rep.id)) !== null;
+    if (!hasDbRow && hasLocal) void saveRepStructure(filled).catch(() => {});
+    return filled;
+  } catch {
+    return base;
+  }
+}
+
 /** Salva a estrutura do representante (Supabase + LocalStorage) */
-export async function saveRepStructure(structure: RepStructure): Promise<void> {
+/** Retorna `false` quando só o localStorage foi atualizado (falha ao gravar no banco). */
+export async function saveRepStructure(structure: RepStructure): Promise<boolean> {
   const nowIso = new Date().toISOString();
   // Sincroniza dias_campo_mes em detalhes_municipais
   const detalhesMunicipaisSync = { ...(structure.detalhes_municipais || {}) };
@@ -530,9 +568,12 @@ export async function saveRepStructure(structure: RepStructure): Promise<void> {
 
     if (error) {
       console.warn("[saveRepStructure] Supabase upsert error (fallback kept in localStorage):", error.message);
+      return false;
     }
+    return true;
   } catch (err) {
     console.warn("[saveRepStructure] Supabase network/schema exception (fallback kept in localStorage):", err);
+    return false;
   }
 }
 
@@ -682,6 +723,11 @@ export async function loadAllRepStructures(reps: {
 
     // 4. Fallback padrão
     result[rep.id] = buildDefaultStructure(rep);
+  }
+
+  const logoPool = Object.values(result).flatMap((st) => st.marcas_representadas ?? []);
+  for (const st of Object.values(result)) {
+    st.marcas_representadas = fillMissingLogos(st.marcas_representadas ?? [], logoPool);
   }
 
   return result;

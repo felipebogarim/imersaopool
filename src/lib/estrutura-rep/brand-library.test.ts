@@ -3,6 +3,7 @@ import {
   getSharedBrandLibrary,
   saveBrandToLibrary,
   normalizeBrandKey,
+  fillMissingLogos,
   DEFAULT_BRAND_CATALOG,
 } from "./brand-library";
 import type { RepStructure } from "./types";
@@ -98,5 +99,19 @@ describe("brand-library", () => {
     expect(found).toBeDefined();
     expect(found?.logo_url).toBe("data:image/svg+xml;utf8,logoA");
     expect(found?.origem).toContain("Representante A");
+  });
+});
+
+describe("fillMissingLogos", () => {
+  const m = (nome: string, logo_url?: string) =>
+    ({ id: nome, nome, logo_url, segmento: "", modelo_negocio: "fabricante", canais: [] }) as any;
+
+  it("completa logo ausente com a de outra estrutura e preserva a existente", () => {
+    const out = fillMissingLogos(
+      [m("Stella"), m("Brilia", "own.png")],
+      [m("STELLA ", "data:stella"), m("Brilia", "other.png")],
+    );
+    expect(out[0].logo_url).toBe("data:stella");
+    expect(out[1].logo_url).toBe("own.png");
   });
 });
