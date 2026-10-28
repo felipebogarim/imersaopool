@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -82,32 +82,39 @@ export function EnviarEmailDialog({
       `Relatório Executivo de Imersão · ${data.client.display_name}`,
     ),
   );
-  const [subjectEdited, setSubjectEdited] = useState(false);
+  const subjectEdited = useRef(false);
 
-  // Assunto padrão: região e nome do representante cadastrados (quando há representante vinculado).
+  // Assunto padrão: região e nome do representante (por vínculo ou pelo nome informado no relatório).
+  const informedRep = data.client.representative?.trim() || "";
   useEffect(() => {
-    if (!repId) return;
+    if (!open) return;
+    subjectEdited.current = false;
     let cancelled = false;
-    void supabase
-      .from("representatives")
-      .select("nome, regiao")
-      .eq("id", repId)
-      .maybeSingle()
-      .then(({ data: rep }) => {
-        if (cancelled || !rep || subjectEdited) return;
-        setSubject(
-          buildExecutiveEmailSubject(
-            rep.regiao || data.client.location,
-            rep.nome || data.client.representative,
-            `Relatório Executivo de Imersão · ${data.client.display_name}`,
-          ),
-        );
-      });
+    const fallback = `Relatório Executivo de Imersão · ${data.client.display_name}`;
+    const apply = (nome?: string | null, regiao?: string | null) => {
+      if (cancelled || subjectEdited.current) return;
+      setSubject(
+        buildExecutiveEmailSubject(
+          regiao || data.client.location,
+          nome || informedRep,
+          fallback,
+        ),
+      );
+    };
+    apply();
+    const term = informedRep.replace(/[%,()]/g, " ");
+    const query = supabase.from("representatives").select("nome, regiao");
+    const lookup = repId
+      ? query.eq("id", repId).limit(1)
+      : term.length >= 2
+        ? query.or(`nome.ilike.%${term}%,representacao.ilike.%${term}%`).limit(1)
+        : null;
+    if (lookup) void lookup.then(({ data: rows }) => apply(rows?.[0]?.nome, rows?.[0]?.regiao));
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repId]);
+  }, [open, repId, informedRep]);
   const [message, setMessage] = useState(data.email?.intro ?? "");
   const [attachPdf, setAttachPdf] = useState(true);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -335,7 +342,7 @@ export function EnviarEmailDialog({
             <Input
               value={subject}
               onChange={(e) => {
-                setSubjectEdited(true);
+                subjectEdited.current = true;
                 setSubject(e.target.value);
               }}
             />
