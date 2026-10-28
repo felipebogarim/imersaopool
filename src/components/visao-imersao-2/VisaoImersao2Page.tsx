@@ -1173,11 +1173,6 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                       <p className="truncate text-xs text-muted-foreground">
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
-                      {(meta.representante || meta.regiao || meta.categoria) && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {meta.representante && (
-                            <Badge variant="outline" className="text-[10px]">Rep: {meta.representante}</Badge>
-                          )}
                           {meta.regiao && (
                             <Badge variant="outline" className="text-[10px]">{meta.regiao}</Badge>
                           )}
@@ -1188,6 +1183,22 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <div className="hidden flex-wrap items-center justify-end gap-1 md:flex">
+                        {meta.representante && (
+                          <Badge variant="outline" className="text-[10px]">Rep: {meta.representante}</Badge>
+                        )}
+                        {meta.regiao && (
+                          <Badge variant="outline" className="text-[10px]">{meta.regiao}</Badge>
+                        )}
+                        {meta.categoria && (
+                          <Badge variant="secondary" className="text-[10px]">{meta.categoria}</Badge>
+                        )}
+                        {r.visit_date && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR")}
+                          </Badge>
+                        )}
+                      </div>
                       <Button variant="outline" size="sm" onClick={() => abrirRelatorio(r)}>Abrir</Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
