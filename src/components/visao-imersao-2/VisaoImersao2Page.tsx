@@ -1173,17 +1173,9 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
                       <p className="truncate text-xs text-muted-foreground">
                         {r.visit_date ? new Date(`${r.visit_date}T00:00:00`).toLocaleDateString("pt-BR") : "—"} · {r.source_filename}
                       </p>
-                          {meta.regiao && (
-                            <Badge variant="outline" className="text-[10px]">{meta.regiao}</Badge>
-                          )}
-                          {meta.categoria && (
-                            <Badge variant="secondary" className="text-[10px]">{meta.categoria}</Badge>
-                          )}
-                        </div>
-                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="hidden flex-wrap items-center justify-end gap-1 md:flex">
+                      <div className="flex flex-wrap items-center justify-end gap-1">
                         {meta.representante && (
                           <Badge variant="outline" className="text-[10px]">Rep: {meta.representante}</Badge>
                         )}
