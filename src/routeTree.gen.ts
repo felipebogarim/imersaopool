@@ -33,6 +33,7 @@ import { Route as AuthenticatedVisaoImersao2RouteImport } from './routes/_authen
 import { Route as AuthenticatedVisaoImersaoRouteImport } from './routes/_authenticated/visao-imersao'
 import { Route as AuthenticatedTermosDeUsoRouteImport } from './routes/_authenticated/termos-de-uso'
 import { Route as AuthenticatedRoteirosRouteImport } from './routes/_authenticated/roteiros'
+import { Route as AuthenticatedRelatoriosExecutivosRouteImport } from './routes/_authenticated/relatorios-executivos'
 import { Route as AuthenticatedProjecaoRouteImport } from './routes/_authenticated/projecao'
 import { Route as AuthenticatedPerspectivasRouteImport } from './routes/_authenticated/perspectivas'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
@@ -259,6 +260,12 @@ const AuthenticatedRoteirosRoute = AuthenticatedRoteirosRouteImport.update({
   path: '/roteiros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatoriosExecutivosRoute =
+  AuthenticatedRelatoriosExecutivosRouteImport.update({
+    id: '/relatorios-executivos',
+    path: '/relatorios-executivos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjecaoRoute = AuthenticatedProjecaoRouteImport.update({
   id: '/projecao',
   path: '/projecao',
@@ -867,6 +874,7 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
+  '/relatorios-executivos': typeof AuthenticatedRelatoriosExecutivosRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
@@ -994,6 +1002,7 @@ export interface FileRoutesByTo {
   '/perfil': typeof AuthenticatedPerfilRoute
   '/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/projecao': typeof AuthenticatedProjecaoRoute
+  '/relatorios-executivos': typeof AuthenticatedRelatoriosExecutivosRoute
   '/roteiros': typeof AuthenticatedRoteirosRoute
   '/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
@@ -1123,6 +1132,7 @@ export interface FileRoutesById {
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/perspectivas': typeof AuthenticatedPerspectivasRoute
   '/_authenticated/projecao': typeof AuthenticatedProjecaoRoute
+  '/_authenticated/relatorios-executivos': typeof AuthenticatedRelatoriosExecutivosRoute
   '/_authenticated/roteiros': typeof AuthenticatedRoteirosRoute
   '/_authenticated/termos-de-uso': typeof AuthenticatedTermosDeUsoRoute
   '/_authenticated/visao-imersao': typeof AuthenticatedVisaoImersaoRoute
@@ -1253,6 +1263,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/perspectivas'
     | '/projecao'
+    | '/relatorios-executivos'
     | '/roteiros'
     | '/termos-de-uso'
     | '/visao-imersao'
@@ -1380,6 +1391,7 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/perspectivas'
     | '/projecao'
+    | '/relatorios-executivos'
     | '/roteiros'
     | '/termos-de-uso'
     | '/visao-imersao'
@@ -1508,6 +1520,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfil'
     | '/_authenticated/perspectivas'
     | '/_authenticated/projecao'
+    | '/_authenticated/relatorios-executivos'
     | '/_authenticated/roteiros'
     | '/_authenticated/termos-de-uso'
     | '/_authenticated/visao-imersao'
@@ -1823,6 +1836,13 @@ declare module '@tanstack/react-router' {
       path: '/roteiros'
       fullPath: '/roteiros'
       preLoaderRoute: typeof AuthenticatedRoteirosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorios-executivos': {
+      id: '/_authenticated/relatorios-executivos'
+      path: '/relatorios-executivos'
+      fullPath: '/relatorios-executivos'
+      preLoaderRoute: typeof AuthenticatedRelatoriosExecutivosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/projecao': {
@@ -2685,6 +2705,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedPerspectivasRoute: typeof AuthenticatedPerspectivasRoute
   AuthenticatedProjecaoRoute: typeof AuthenticatedProjecaoRoute
+  AuthenticatedRelatoriosExecutivosRoute: typeof AuthenticatedRelatoriosExecutivosRoute
   AuthenticatedRoteirosRoute: typeof AuthenticatedRoteirosRoute
   AuthenticatedTermosDeUsoRoute: typeof AuthenticatedTermosDeUsoRoute
   AuthenticatedVisaoImersaoRoute: typeof AuthenticatedVisaoImersaoRoute
@@ -2751,6 +2772,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedPerspectivasRoute: AuthenticatedPerspectivasRoute,
   AuthenticatedProjecaoRoute: AuthenticatedProjecaoRoute,
+  AuthenticatedRelatoriosExecutivosRoute:
+    AuthenticatedRelatoriosExecutivosRoute,
   AuthenticatedRoteirosRoute: AuthenticatedRoteirosRoute,
   AuthenticatedTermosDeUsoRoute: AuthenticatedTermosDeUsoRoute,
   AuthenticatedVisaoImersaoRoute: AuthenticatedVisaoImersaoRoute,
