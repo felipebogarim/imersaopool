@@ -186,6 +186,8 @@ export type Database = {
           created_at: string
           details: string | null
           duration_minutes: number
+          ends_at: string
+          event_type: string
           id: string
           owner_id: string
           starts_at: string
@@ -197,6 +199,8 @@ export type Database = {
           created_at?: string
           details?: string | null
           duration_minutes?: number
+          ends_at: string
+          event_type?: string
           id?: string
           owner_id?: string
           starts_at: string
@@ -208,6 +212,8 @@ export type Database = {
           created_at?: string
           details?: string | null
           duration_minutes?: number
+          ends_at?: string
+          event_type?: string
           id?: string
           owner_id?: string
           starts_at?: string
@@ -1215,6 +1221,60 @@ export type Database = {
           target_user_id?: string
         }
         Relationships: []
+      }
+      director_rep_notes: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          general_perception: string | null
+          last_immersion: string | null
+          notes: string | null
+          perceived_opportunities: string | null
+          representative_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          general_perception?: string | null
+          last_immersion?: string | null
+          notes?: string | null
+          perceived_opportunities?: string | null
+          representative_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          general_perception?: string | null
+          last_immersion?: string | null
+          notes?: string | null
+          perceived_opportunities?: string | null
+          representative_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "director_rep_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "director_rep_notes_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: true
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
@@ -2290,6 +2350,1128 @@ export type Database = {
             columns: ["interview_id"]
             isOneToOne: false
             referencedRelation: "interviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_action_tokens: {
+        Row: {
+          action: Database["public"]["Enums"]["internal_ticket_action"]
+          created_at: string
+          expires_at: string
+          id: string
+          intended_email: string | null
+          intended_user_id: string | null
+          metadata: Json
+          ticket_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["internal_ticket_action"]
+          created_at?: string
+          expires_at: string
+          id?: string
+          intended_email?: string | null
+          intended_user_id?: string | null
+          metadata?: Json
+          ticket_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["internal_ticket_action"]
+          created_at?: string
+          expires_at?: string
+          id?: string
+          intended_email?: string | null
+          intended_user_id?: string | null
+          metadata?: Json
+          ticket_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_action_tokens_intended_user_id_fkey"
+            columns: ["intended_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_action_tokens_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_attachments: {
+        Row: {
+          content_disposition: string | null
+          content_id: string | null
+          created_at: string
+          detected_mime_type: string | null
+          download_error: string | null
+          file_name: string
+          id: string
+          message_id: string | null
+          mime_mismatch: boolean
+          mime_type: string | null
+          provider: string | null
+          provider_attachment_id: string | null
+          scan_status: string
+          sha256: string | null
+          size_bytes: number | null
+          storage_path: string | null
+          ticket_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_disposition?: string | null
+          content_id?: string | null
+          created_at?: string
+          detected_mime_type?: string | null
+          download_error?: string | null
+          file_name: string
+          id?: string
+          message_id?: string | null
+          mime_mismatch?: boolean
+          mime_type?: string | null
+          provider?: string | null
+          provider_attachment_id?: string | null
+          scan_status?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          ticket_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_disposition?: string | null
+          content_id?: string | null
+          created_at?: string
+          detected_mime_type?: string | null
+          download_error?: string | null
+          file_name?: string
+          id?: string
+          message_id?: string | null
+          mime_mismatch?: boolean
+          mime_type?: string | null
+          provider?: string | null
+          provider_attachment_id?: string | null
+          scan_status?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+          ticket_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_sector_id: string | null
+          id: string
+          name: string
+          sla_first_response_minutes: number | null
+          sla_resolution_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_sector_id?: string | null
+          id?: string
+          name: string
+          sla_first_response_minutes?: number | null
+          sla_resolution_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_sector_id?: string | null
+          id?: string
+          name?: string
+          sla_first_response_minutes?: number | null
+          sla_resolution_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_categories_default_sector_id_fkey"
+            columns: ["default_sector_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_email_outbox: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          direction: string
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          in_reply_to: string | null
+          last_attempted_at: string | null
+          message_id: string | null
+          provider: string
+          provider_message_id: string | null
+          raw_payload: Json | null
+          recipient_email: string | null
+          reference_ids: string[] | null
+          send_attempt_token: string | null
+          send_lease_expires_at: string | null
+          sender_email: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          template_name: string | null
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          in_reply_to?: string | null
+          last_attempted_at?: string | null
+          message_id?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          reference_ids?: string[] | null
+          send_attempt_token?: string | null
+          send_lease_expires_at?: string | null
+          sender_email?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_name?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          in_reply_to?: string | null
+          last_attempted_at?: string | null
+          message_id?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          reference_ids?: string[] | null
+          send_attempt_token?: string | null
+          send_lease_expires_at?: string | null
+          sender_email?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_name?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      internal_ticket_events: {
+        Row: {
+          author_user_id: string | null
+          created_at: string
+          from_status:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+          id: string
+          metadata: Json
+          observation: string | null
+          origin: Database["public"]["Enums"]["internal_ticket_event_origin"]
+          ticket_id: string
+          to_status:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+        }
+        Insert: {
+          author_user_id?: string | null
+          created_at?: string
+          from_status?:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+          id?: string
+          metadata?: Json
+          observation?: string | null
+          origin: Database["public"]["Enums"]["internal_ticket_event_origin"]
+          ticket_id: string
+          to_status?:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+        }
+        Update: {
+          author_user_id?: string | null
+          created_at?: string
+          from_status?:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+          id?: string
+          metadata?: Json
+          observation?: string | null
+          origin?: Database["public"]["Enums"]["internal_ticket_event_origin"]
+          ticket_id?: string
+          to_status?:
+            | Database["public"]["Enums"]["internal_ticket_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_events_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_message_signals: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          evidence: Json
+          id: string
+          message_id: string
+          model: string | null
+          signal_type: string
+          source: string
+          ticket_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          message_id: string
+          model?: string | null
+          signal_type: string
+          source?: string
+          ticket_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          message_id?: string
+          model?: string | null
+          signal_type?: string
+          source?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_message_signals_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_message_signals_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_messages: {
+        Row: {
+          authentication: Json
+          author_user_id: string | null
+          body_html: string | null
+          body_html_original: string | null
+          body_html_sanitized: string | null
+          body_text: string | null
+          cc_emails: string[]
+          clean_text: string | null
+          created_at: string
+          direction: string
+          id: string
+          in_reply_to: string | null
+          message_id: string | null
+          origin: Database["public"]["Enums"]["internal_ticket_message_origin"]
+          outbox_id: string | null
+          processing_status: string
+          provider: string | null
+          provider_email_id: string | null
+          provider_event_id: string | null
+          quarantine_reason: string | null
+          raw_headers: Json
+          received_at: string | null
+          reference_ids: string[]
+          relay_parent_message_id: string | null
+          sender_email: string | null
+          sender_email_normalized: string | null
+          sender_name: string | null
+          subject: string | null
+          ticket_id: string
+          to_emails: string[]
+        }
+        Insert: {
+          authentication?: Json
+          author_user_id?: string | null
+          body_html?: string | null
+          body_html_original?: string | null
+          body_html_sanitized?: string | null
+          body_text?: string | null
+          cc_emails?: string[]
+          clean_text?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          in_reply_to?: string | null
+          message_id?: string | null
+          origin?: Database["public"]["Enums"]["internal_ticket_message_origin"]
+          outbox_id?: string | null
+          processing_status?: string
+          provider?: string | null
+          provider_email_id?: string | null
+          provider_event_id?: string | null
+          quarantine_reason?: string | null
+          raw_headers?: Json
+          received_at?: string | null
+          reference_ids?: string[]
+          relay_parent_message_id?: string | null
+          sender_email?: string | null
+          sender_email_normalized?: string | null
+          sender_name?: string | null
+          subject?: string | null
+          ticket_id: string
+          to_emails?: string[]
+        }
+        Update: {
+          authentication?: Json
+          author_user_id?: string | null
+          body_html?: string | null
+          body_html_original?: string | null
+          body_html_sanitized?: string | null
+          body_text?: string | null
+          cc_emails?: string[]
+          clean_text?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          in_reply_to?: string | null
+          message_id?: string | null
+          origin?: Database["public"]["Enums"]["internal_ticket_message_origin"]
+          outbox_id?: string | null
+          processing_status?: string
+          provider?: string | null
+          provider_email_id?: string | null
+          provider_event_id?: string | null
+          quarantine_reason?: string | null
+          raw_headers?: Json
+          received_at?: string | null
+          reference_ids?: string[]
+          relay_parent_message_id?: string | null
+          sender_email?: string | null
+          sender_email_normalized?: string | null
+          sender_name?: string | null
+          subject?: string | null
+          ticket_id?: string
+          to_emails?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_messages_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_messages_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_email_outbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_messages_relay_parent_message_id_fkey"
+            columns: ["relay_parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_participants: {
+        Row: {
+          active: boolean
+          added_by_email: boolean
+          automatic: boolean
+          created_at: string
+          display_name: string | null
+          email: string
+          email_normalized: string | null
+          first_seen_at: string
+          id: string
+          is_configured_recipient: boolean
+          is_current_primary: boolean
+          is_requester: boolean
+          last_seen_at: string
+          role: string
+          source: string
+          ticket_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          added_by_email?: boolean
+          automatic?: boolean
+          created_at?: string
+          display_name?: string | null
+          email: string
+          email_normalized?: string | null
+          first_seen_at?: string
+          id?: string
+          is_configured_recipient?: boolean
+          is_current_primary?: boolean
+          is_requester?: boolean
+          last_seen_at?: string
+          role: string
+          source: string
+          ticket_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          added_by_email?: boolean
+          automatic?: boolean
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          email_normalized?: string | null
+          first_seen_at?: string
+          id?: string
+          is_configured_recipient?: boolean
+          is_current_primary?: boolean
+          is_requester?: boolean
+          last_seen_at?: string
+          role?: string
+          source?: string
+          ticket_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_participants_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_products: {
+        Row: {
+          product_id: string
+          ticket_id: string
+        }
+        Insert: {
+          product_id: string
+          ticket_id: string
+        }
+        Update: {
+          product_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "own_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_products_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_recipients: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name_snapshot: string | null
+          role: Database["public"]["Enums"]["internal_ticket_recipient_role"]
+          sector_person_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name_snapshot?: string | null
+          role?: Database["public"]["Enums"]["internal_ticket_recipient_role"]
+          sector_person_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name_snapshot?: string | null
+          role?: Database["public"]["Enums"]["internal_ticket_recipient_role"]
+          sector_person_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_recipients_sector_person_id_fkey"
+            columns: ["sector_person_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sector_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_recipients_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_relay_deliveries: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          first_attempt_at: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          message_id: string
+          provider_message_id: string | null
+          sent_at: string | null
+          source_message_id: string
+          status: string
+          target_email: string
+          target_email_normalized: string | null
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          message_id: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          source_message_id: string
+          status?: string
+          target_email: string
+          target_email_normalized?: string | null
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          message_id?: string
+          provider_message_id?: string | null
+          sent_at?: string | null
+          source_message_id?: string
+          status?: string
+          target_email?: string
+          target_email_normalized?: string | null
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_relay_deliveries_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_relay_deliveries_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_sector_people: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          id: string
+          is_cc: boolean
+          is_escalation_contact: boolean
+          is_primary_recipient: boolean
+          name: string
+          phone: string | null
+          receives_escalations: boolean
+          receives_new_tickets: boolean
+          receives_reminders: boolean
+          role_title: string | null
+          sector_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          is_cc?: boolean
+          is_escalation_contact?: boolean
+          is_primary_recipient?: boolean
+          name: string
+          phone?: string | null
+          receives_escalations?: boolean
+          receives_new_tickets?: boolean
+          receives_reminders?: boolean
+          role_title?: string | null
+          sector_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          is_cc?: boolean
+          is_escalation_contact?: boolean
+          is_primary_recipient?: boolean
+          name?: string
+          phone?: string | null
+          receives_escalations?: boolean
+          receives_new_tickets?: boolean
+          receives_reminders?: boolean
+          role_title?: string | null
+          sector_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_sector_people_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_sector_stops: {
+        Row: {
+          entered_at: string
+          id: string
+          left_at: string | null
+          moved_by: string | null
+          reason: string | null
+          sector_id: string
+          ticket_id: string
+        }
+        Insert: {
+          entered_at?: string
+          id?: string
+          left_at?: string | null
+          moved_by?: string | null
+          reason?: string | null
+          sector_id: string
+          ticket_id: string
+        }
+        Update: {
+          entered_at?: string
+          id?: string
+          left_at?: string | null
+          moved_by?: string | null
+          reason?: string | null
+          sector_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_sector_stops_moved_by_fkey"
+            columns: ["moved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_sector_stops_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_ticket_sector_stops_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "internal_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_sectors: {
+        Row: {
+          active: boolean
+          created_at: string
+          default_sla_first_response_minutes: number | null
+          default_sla_resolution_minutes: number | null
+          id: string
+          manager_person_id: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          default_sla_first_response_minutes?: number | null
+          default_sla_resolution_minutes?: number | null
+          id?: string
+          manager_person_id?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          default_sla_first_response_minutes?: number | null
+          default_sla_resolution_minutes?: number | null
+          id?: string
+          manager_person_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_ticket_sectors_manager_person_id_fkey"
+            columns: ["manager_person_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sector_people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_ticket_webhook_events: {
+        Row: {
+          attempt_count: number
+          error_message: string | null
+          event_type: string
+          id: string
+          lease_expires_at: string | null
+          lease_token: string | null
+          processed_at: string | null
+          provider: string
+          provider_email_id: string | null
+          provider_event_id: string
+          raw_payload: Json
+          received_at: string
+          status: string
+        }
+        Insert: {
+          attempt_count?: number
+          error_message?: string | null
+          event_type: string
+          id?: string
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          processed_at?: string | null
+          provider?: string
+          provider_email_id?: string | null
+          provider_event_id: string
+          raw_payload: Json
+          received_at?: string
+          status?: string
+        }
+        Update: {
+          attempt_count?: number
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          processed_at?: string | null
+          provider?: string
+          provider_email_id?: string | null
+          provider_event_id?: string
+          raw_payload?: Json
+          received_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      internal_tickets: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          category_id: string
+          client_id: string | null
+          commercial_owner_user_id: string
+          company_id: string
+          created_at: string
+          description: string
+          first_response_at: string | null
+          first_response_by: string | null
+          first_response_by_email: string | null
+          first_response_sla_met: boolean | null
+          id: string
+          last_activity_at: string | null
+          last_activity_by: string | null
+          last_activity_by_email: string | null
+          last_message_id: string | null
+          priority: Database["public"]["Enums"]["internal_ticket_priority"]
+          product_id: string | null
+          received_by_sector_at: string | null
+          reopen_count: number
+          reopened_at: string | null
+          requester_user_id: string
+          resolution_proposed_at: string | null
+          resolved_at: string | null
+          sector_id: string
+          sent_at: string | null
+          sequence_number: number
+          sla_first_response_due_at: string | null
+          sla_first_response_minutes: number | null
+          sla_resolution_due_at: string | null
+          sla_resolution_minutes: number | null
+          status: Database["public"]["Enums"]["internal_ticket_status"]
+          ticket_number: string | null
+          title: string
+          updated_at: string
+          validation_started_at: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          category_id: string
+          client_id?: string | null
+          commercial_owner_user_id: string
+          company_id: string
+          created_at?: string
+          description: string
+          first_response_at?: string | null
+          first_response_by?: string | null
+          first_response_by_email?: string | null
+          first_response_sla_met?: boolean | null
+          id?: string
+          last_activity_at?: string | null
+          last_activity_by?: string | null
+          last_activity_by_email?: string | null
+          last_message_id?: string | null
+          priority?: Database["public"]["Enums"]["internal_ticket_priority"]
+          product_id?: string | null
+          received_by_sector_at?: string | null
+          reopen_count?: number
+          reopened_at?: string | null
+          requester_user_id: string
+          resolution_proposed_at?: string | null
+          resolved_at?: string | null
+          sector_id: string
+          sent_at?: string | null
+          sequence_number?: never
+          sla_first_response_due_at?: string | null
+          sla_first_response_minutes?: number | null
+          sla_resolution_due_at?: string | null
+          sla_resolution_minutes?: number | null
+          status?: Database["public"]["Enums"]["internal_ticket_status"]
+          ticket_number?: string | null
+          title: string
+          updated_at?: string
+          validation_started_at?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          category_id?: string
+          client_id?: string | null
+          commercial_owner_user_id?: string
+          company_id?: string
+          created_at?: string
+          description?: string
+          first_response_at?: string | null
+          first_response_by?: string | null
+          first_response_by_email?: string | null
+          first_response_sla_met?: boolean | null
+          id?: string
+          last_activity_at?: string | null
+          last_activity_by?: string | null
+          last_activity_by_email?: string | null
+          last_message_id?: string | null
+          priority?: Database["public"]["Enums"]["internal_ticket_priority"]
+          product_id?: string | null
+          received_by_sector_at?: string | null
+          reopen_count?: number
+          reopened_at?: string | null
+          requester_user_id?: string
+          resolution_proposed_at?: string | null
+          resolved_at?: string | null
+          sector_id?: string
+          sent_at?: string | null
+          sequence_number?: never
+          sla_first_response_due_at?: string | null
+          sla_first_response_minutes?: number | null
+          sla_resolution_due_at?: string | null
+          sla_resolution_minutes?: number | null
+          status?: Database["public"]["Enums"]["internal_ticket_status"]
+          ticket_number?: string | null
+          title?: string
+          updated_at?: string
+          validation_started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_commercial_owner_user_id_fkey"
+            columns: ["commercial_owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_first_response_by_fkey"
+            columns: ["first_response_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_last_activity_by_fkey"
+            columns: ["last_activity_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_last_message_id_fkey"
+            columns: ["last_message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "own_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_requester_user_id_fkey"
+            columns: ["requester_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_tickets_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "internal_ticket_sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -3633,6 +4815,286 @@ export type Database = {
         }
         Relationships: []
       }
+      price_comparison_audit_log: {
+        Row: {
+          action: string
+          after_json: Json | null
+          before_json: Json | null
+          company_id: string
+          created_at: string
+          group_id: string | null
+          id: string
+          item_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          after_json?: Json | null
+          before_json?: Json | null
+          company_id?: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          item_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          action?: string
+          after_json?: Json | null
+          before_json?: Json | null
+          company_id?: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          item_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_comparison_audit_log_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "price_comparison_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_comparison_audit_log_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "price_comparison_group_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_comparison_group_items: {
+        Row: {
+          base_adjustment_percent: number | null
+          base_brand: string
+          base_code: string
+          base_price: number | null
+          base_product_id: string | null
+          classification: string | null
+          company_id: string
+          competitor_a_adjustment_percent: number | null
+          competitor_a_brand: string
+          competitor_a_code: string
+          competitor_a_price: number | null
+          competitor_a_price_date: string | null
+          competitor_a_price_table: string | null
+          competitor_a_product_id: string | null
+          competitor_a_region: string | null
+          competitor_a_source: string | null
+          competitor_b_adjustment_percent: number | null
+          competitor_b_brand: string | null
+          competitor_b_code: string | null
+          competitor_b_price: number | null
+          competitor_b_price_date: string | null
+          competitor_b_price_table: string | null
+          competitor_b_product_id: string | null
+          competitor_b_region: string | null
+          competitor_b_source: string | null
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          is_deleted: boolean
+          notes: string | null
+          position: number
+          specs_snapshot: Json
+          status: string
+          two_competitors: boolean
+          updated_at: string
+          voltage_note: string | null
+        }
+        Insert: {
+          base_adjustment_percent?: number | null
+          base_brand: string
+          base_code: string
+          base_price?: number | null
+          base_product_id?: string | null
+          classification?: string | null
+          company_id?: string
+          competitor_a_adjustment_percent?: number | null
+          competitor_a_brand: string
+          competitor_a_code: string
+          competitor_a_price?: number | null
+          competitor_a_price_date?: string | null
+          competitor_a_price_table?: string | null
+          competitor_a_product_id?: string | null
+          competitor_a_region?: string | null
+          competitor_a_source?: string | null
+          competitor_b_adjustment_percent?: number | null
+          competitor_b_brand?: string | null
+          competitor_b_code?: string | null
+          competitor_b_price?: number | null
+          competitor_b_price_date?: string | null
+          competitor_b_price_table?: string | null
+          competitor_b_product_id?: string | null
+          competitor_b_region?: string | null
+          competitor_b_source?: string | null
+          created_at?: string
+          created_by?: string
+          group_id: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
+          position?: number
+          specs_snapshot?: Json
+          status?: string
+          two_competitors?: boolean
+          updated_at?: string
+          voltage_note?: string | null
+        }
+        Update: {
+          base_adjustment_percent?: number | null
+          base_brand?: string
+          base_code?: string
+          base_price?: number | null
+          base_product_id?: string | null
+          classification?: string | null
+          company_id?: string
+          competitor_a_adjustment_percent?: number | null
+          competitor_a_brand?: string
+          competitor_a_code?: string
+          competitor_a_price?: number | null
+          competitor_a_price_date?: string | null
+          competitor_a_price_table?: string | null
+          competitor_a_product_id?: string | null
+          competitor_a_region?: string | null
+          competitor_a_source?: string | null
+          competitor_b_adjustment_percent?: number | null
+          competitor_b_brand?: string | null
+          competitor_b_code?: string | null
+          competitor_b_price?: number | null
+          competitor_b_price_date?: string | null
+          competitor_b_price_table?: string | null
+          competitor_b_product_id?: string | null
+          competitor_b_region?: string | null
+          competitor_b_source?: string | null
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          is_deleted?: boolean
+          notes?: string | null
+          position?: number
+          specs_snapshot?: Json
+          status?: string
+          two_competitors?: boolean
+          updated_at?: string
+          voltage_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_comparison_group_items_base_product_id_fkey"
+            columns: ["base_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_comparison_group_items_competitor_a_product_id_fkey"
+            columns: ["competitor_a_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_comparison_group_items_competitor_b_product_id_fkey"
+            columns: ["competitor_b_product_id"]
+            isOneToOne: false
+            referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_comparison_group_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "price_comparison_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_comparison_groups: {
+        Row: {
+          base_brand: string
+          base_price_table: string | null
+          categoria: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          destino: string | null
+          familia: string
+          finalized_at: string | null
+          id: string
+          is_deleted: boolean
+          is_official: boolean
+          name: string
+          notes: string | null
+          saved_official_at: string | null
+          saved_specific_at: string | null
+          source_group_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          base_brand: string
+          base_price_table?: string | null
+          categoria?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          destino?: string | null
+          familia: string
+          finalized_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_official?: boolean
+          name: string
+          notes?: string | null
+          saved_official_at?: string | null
+          saved_specific_at?: string | null
+          source_group_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          base_brand?: string
+          base_price_table?: string | null
+          categoria?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          destino?: string | null
+          familia?: string
+          finalized_at?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_official?: boolean
+          name?: string
+          notes?: string | null
+          saved_official_at?: string | null
+          saved_specific_at?: string | null
+          source_group_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_comparison_groups_source_group_id_fkey"
+            columns: ["source_group_id"]
+            isOneToOne: false
+            referencedRelation: "price_comparison_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_comparison_rules: {
         Row: {
           attribute_key: string
@@ -3739,17 +5201,22 @@ export type Database = {
           compared_product_id: string
           cost_benefit_score: number | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           deletion_reason: string | null
           equivalence_level: Database["public"]["Enums"]["price_equivalence_level"]
+          group_id: string | null
           id: string
           incompatibility_reason: string | null
           is_deleted: boolean
           last_manual_edit_at: string | null
           last_manual_edit_by: string | null
           manually_edited: boolean
+          origin: string
           price_score: number | null
+          relation_context: string | null
+          relation_status: string
           status: Database["public"]["Enums"]["price_equivalence_status"]
           technical_differences_json: Json
           technical_score: number | null
@@ -3767,17 +5234,22 @@ export type Database = {
           compared_product_id: string
           cost_benefit_score?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           deletion_reason?: string | null
           equivalence_level?: Database["public"]["Enums"]["price_equivalence_level"]
+          group_id?: string | null
           id?: string
           incompatibility_reason?: string | null
           is_deleted?: boolean
           last_manual_edit_at?: string | null
           last_manual_edit_by?: string | null
           manually_edited?: boolean
+          origin?: string
           price_score?: number | null
+          relation_context?: string | null
+          relation_status?: string
           status?: Database["public"]["Enums"]["price_equivalence_status"]
           technical_differences_json?: Json
           technical_score?: number | null
@@ -3795,17 +5267,22 @@ export type Database = {
           compared_product_id?: string
           cost_benefit_score?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           deletion_reason?: string | null
           equivalence_level?: Database["public"]["Enums"]["price_equivalence_level"]
+          group_id?: string | null
           id?: string
           incompatibility_reason?: string | null
           is_deleted?: boolean
           last_manual_edit_at?: string | null
           last_manual_edit_by?: string | null
           manually_edited?: boolean
+          origin?: string
           price_score?: number | null
+          relation_context?: string | null
+          relation_status?: string
           status?: Database["public"]["Enums"]["price_equivalence_status"]
           technical_differences_json?: Json
           technical_score?: number | null
@@ -3829,6 +5306,13 @@ export type Database = {
             columns: ["compared_product_id"]
             isOneToOne: false
             referencedRelation: "price_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_equivalences_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "price_comparison_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -6226,6 +7710,167 @@ export type Database = {
         }
         Returns: boolean
       }
+      internal_ticket_apply_requester_validation: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
+      internal_ticket_can_access: {
+        Args: { _ticket_id: string; _user_id: string }
+        Returns: boolean
+      }
+      internal_ticket_claim_relay: {
+        Args: { p_relay_id: string }
+        Returns: Json
+      }
+      internal_ticket_claim_webhook: {
+        Args: {
+          p_event_type: string
+          p_provider_email_id: string
+          p_provider_event_id: string
+          p_raw_payload: Json
+        }
+        Returns: Json
+      }
+      internal_ticket_create_atomic: {
+        Args: {
+          p_category_id: string
+          p_client_id: string
+          p_commercial_owner_user_id: string
+          p_company_id: string
+          p_description: string
+          p_outbox_idempotency_key_prefix: string
+          p_outbox_message_id: string
+          p_outbox_sender: string
+          p_priority: Database["public"]["Enums"]["internal_ticket_priority"]
+          p_product_ids: string[]
+          p_sector_id: string
+          p_sla_first_response_due_at: string
+          p_sla_first_response_minutes: number
+          p_sla_resolution_due_at: string
+          p_sla_resolution_minutes: number
+          p_title: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      internal_ticket_create_atomic_authenticated: {
+        Args: {
+          p_category_id: string
+          p_client_id: string
+          p_commercial_owner_user_id: string
+          p_description: string
+          p_priority: Database["public"]["Enums"]["internal_ticket_priority"]
+          p_product_ids: string[]
+          p_sector_id: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      internal_ticket_email_outbox_increment_attempt: {
+        Args: { p_idempotency_key: string }
+        Returns: undefined
+      }
+      internal_ticket_fail_webhook: {
+        Args: { p_error: string; p_event_id: string; p_lease_token: string }
+        Returns: undefined
+      }
+      internal_ticket_finish_relay: {
+        Args: {
+          p_error?: string
+          p_lease_token: string
+          p_provider_message_id: string
+          p_relay_id: string
+        }
+        Returns: Json
+      }
+      internal_ticket_issue_requester_validation_tokens: {
+        Args: {
+          p_confirm_token_hash: string
+          p_expires_at: string
+          p_ticket_id: string
+          p_unresolved_token_hash: string
+        }
+        Returns: Json
+      }
+      internal_ticket_mark_send_failure_authenticated: {
+        Args: {
+          p_attempt_token: string
+          p_error_message: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
+      internal_ticket_mark_send_success_authenticated: {
+        Args: {
+          p_attempt_token: string
+          p_provider_message_id: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
+      internal_ticket_module_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      internal_ticket_prepare_send_authenticated: {
+        Args: { p_ticket_id: string }
+        Returns: Json
+      }
+      internal_ticket_prepare_send_authenticated_base: {
+        Args: { p_ticket_id: string }
+        Returns: Json
+      }
+      internal_ticket_process_inbound: {
+        Args: {
+          p_authentication: Json
+          p_cc: string[]
+          p_clean_text: string
+          p_direct_participants: Json
+          p_event_id: string
+          p_headers: Json
+          p_html_original: string
+          p_html_sanitized: string
+          p_in_reply_to: string
+          p_lease_token: string
+          p_message_id: string
+          p_provider_email_id: string
+          p_quarantine_reason: string
+          p_received_at: string
+          p_references: string[]
+          p_reply_domain: string
+          p_sender_email: string
+          p_sender_name: string
+          p_subject: string
+          p_text: string
+          p_ticket_id: string
+          p_to: string[]
+        }
+        Returns: Json
+      }
+      internal_ticket_quarantine_webhook: {
+        Args: { p_event_id: string; p_lease_token: string; p_reason: string }
+        Returns: undefined
+      }
+      internal_ticket_reassign_authenticated: {
+        Args: { p_reason?: string; p_ticket_id: string; p_to_sector_id: string }
+        Returns: Json
+      }
+      internal_ticket_record_opening_message_authenticated: {
+        Args: { p_ticket_id: string }
+        Returns: undefined
+      }
+      internal_ticket_sync_sector_participants: {
+        Args: { p_sector_id: string; p_ticket_id: string }
+        Returns: undefined
+      }
+      internal_ticket_update_status_authenticated: {
+        Args: {
+          p_observation?: string
+          p_ticket_id: string
+          p_to_status: Database["public"]["Enums"]["internal_ticket_status"]
+        }
+        Returns: Json
+      }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_total_row: { Args: { _name: string }; Returns: boolean }
       kanban_can_access_board: {
@@ -6366,7 +8011,13 @@ export type Database = {
         | "visita"
         | "price"
         | "diagnostico_final"
-      app_role: "admin" | "gestor" | "agente" | "comercial"
+      app_role:
+        | "admin"
+        | "gestor"
+        | "agente"
+        | "comercial"
+        | "gestor_comercial"
+        | "diretoria"
       capitulo_status_revisao:
         | "pendente"
         | "em_revisao"
@@ -6405,6 +8056,39 @@ export type Database = {
         | "oportunidades"
         | "governanca"
         | "adicionais"
+      internal_ticket_action:
+        | "confirmar_recebimento"
+        | "marcar_em_analise"
+        | "solicitar_informacao"
+        | "responder"
+        | "marcar_concluido"
+        | "indicar_conclusao"
+        | "confirmar_conclusao"
+        | "nao_resolvido"
+      internal_ticket_event_origin:
+        | "comercial"
+        | "email"
+        | "sistema"
+        | "acao_publica"
+      internal_ticket_message_origin:
+        | "sistema"
+        | "email"
+        | "manual_presencial"
+        | "manual_telefone"
+      internal_ticket_priority: "baixa" | "normal" | "alta" | "urgente"
+      internal_ticket_recipient_role: "principal" | "copia" | "escalonamento"
+      internal_ticket_status:
+        | "rascunho"
+        | "aberto"
+        | "enviado"
+        | "recebido_pelo_setor"
+        | "em_analise"
+        | "aguardando_info_comercial"
+        | "respondido"
+        | "concluido"
+        | "cancelado"
+        | "aguardando_validacao"
+        | "reaberto"
       kanban_activity_type:
         | "card_created"
         | "card_moved"
@@ -6636,7 +8320,14 @@ export const Constants = {
         "price",
         "diagnostico_final",
       ],
-      app_role: ["admin", "gestor", "agente", "comercial"],
+      app_role: [
+        "admin",
+        "gestor",
+        "agente",
+        "comercial",
+        "gestor_comercial",
+        "diretoria",
+      ],
       capitulo_status_revisao: [
         "pendente",
         "em_revisao",
@@ -6679,6 +8370,43 @@ export const Constants = {
         "oportunidades",
         "governanca",
         "adicionais",
+      ],
+      internal_ticket_action: [
+        "confirmar_recebimento",
+        "marcar_em_analise",
+        "solicitar_informacao",
+        "responder",
+        "marcar_concluido",
+        "indicar_conclusao",
+        "confirmar_conclusao",
+        "nao_resolvido",
+      ],
+      internal_ticket_event_origin: [
+        "comercial",
+        "email",
+        "sistema",
+        "acao_publica",
+      ],
+      internal_ticket_message_origin: [
+        "sistema",
+        "email",
+        "manual_presencial",
+        "manual_telefone",
+      ],
+      internal_ticket_priority: ["baixa", "normal", "alta", "urgente"],
+      internal_ticket_recipient_role: ["principal", "copia", "escalonamento"],
+      internal_ticket_status: [
+        "rascunho",
+        "aberto",
+        "enviado",
+        "recebido_pelo_setor",
+        "em_analise",
+        "aguardando_info_comercial",
+        "respondido",
+        "concluido",
+        "cancelado",
+        "aguardando_validacao",
+        "reaberto",
       ],
       kanban_activity_type: [
         "card_created",
