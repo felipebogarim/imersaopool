@@ -46,6 +46,16 @@ const STATUS_STYLE: Record<ActionStatus, string> = {
   concluido: "bg-emerald-600 text-white border-emerald-600",
 };
 
+/** PGRST205 (cache do PostgREST) / 42P01 (Postgres): tabela kanban_action_* inexistente. */
+function isMissingTable(e: unknown): boolean {
+  const code = (e as { code?: string } | null)?.code;
+  return code === "PGRST205" || code === "42P01";
+}
+
+function errorMessage(e: unknown): string {
+  return (e as { message?: string } | null)?.message ?? "erro desconhecido";
+}
+
 function EvolucaoAcoesPage() {
   const qc = useQueryClient();
   const requestFn = useServerFn(requestActionUpdatesNow);
@@ -221,8 +231,9 @@ function EvolucaoAcoesPage() {
         <p className="text-sm text-muted-foreground">Carregando…</p>
       ) : error ? (
         <p className="text-sm text-destructive">
-          Não foi possível carregar as ações. Se a migration 20261030120000 ainda não foi aplicada,
-          aplique-a no Supabase.
+          {isMissingTable(error)
+            ? "O módulo ainda não foi ativado no banco: aplique a migration 20261030120000_action_tracking.sql no Supabase."
+            : `Não foi possível carregar as ações: ${errorMessage(error)}`}
         </p>
       ) : !filtered.length ? (
         <p className="text-sm text-muted-foreground">
