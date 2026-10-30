@@ -124,6 +124,11 @@ export const NAV_TREE: NavGroup[] = [
       },
       { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
+      {
+        key: "ferramentas.evolucao-acoes",
+        label: "Evolução das Ações",
+        to: "/ferramentas/evolucao-acoes",
+      },
       { key: "ferramentas.agenda", label: "Agenda", to: "/ferramentas/agenda" },
       {
         key: "ferramentas.agenda-trade",

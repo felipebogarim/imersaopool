@@ -25,6 +25,7 @@ import { Route as EventoFalhaRouteImport } from './routes/evento.falha'
 import { Route as EventoCheckoutRouteImport } from './routes/evento.checkout'
 import { Route as EstruturaRepIdRouteImport } from './routes/estrutura.$repId'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AtualizacaoAcoesTokenRouteImport } from './routes/atualizacao-acoes.$token'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeChunkRouteImport } from './routes/api/transcribe-chunk'
 import { Route as AuthenticatedVisaoRep2RouteImport } from './routes/_authenticated/visao-rep-2'
@@ -117,6 +118,7 @@ import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
 import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
+import { Route as AuthenticatedFerramentasEvolucaoAcoesIndexRouteImport } from './routes/_authenticated/ferramentas.evolucao-acoes.index'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -127,9 +129,11 @@ import { Route as ApiPublicInternalTicketsResendWebhookRouteImport } from './rou
 import { Route as ApiPublicInternalTicketsRelaySweeperRouteImport } from './routes/api/public/internal-tickets/relay-sweeper'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
 import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
+import { Route as ApiPublicHooksActionWeeklyReminderRouteImport } from './routes/api/public/hooks/action-weekly-reminder'
 import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
+import { Route as AuthenticatedFerramentasEvolucaoAcoesCardIdRouteImport } from './routes/_authenticated/ferramentas.evolucao-acoes.$cardId'
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_authenticated/clientes.$id.editar'
 import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.$repId.$razao'
@@ -215,6 +219,11 @@ const EstruturaRepIdRoute = EstruturaRepIdRouteImport.update({
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtualizacaoAcoesTokenRoute = AtualizacaoAcoesTokenRouteImport.update({
+  id: '/atualizacao-acoes/$token',
+  path: '/atualizacao-acoes/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTtsRoute = ApiTtsRouteImport.update({
@@ -732,6 +741,12 @@ const AuthenticatedVisaoImersao2ReportIdIndexRoute =
     path: '/visao-imersao-2/$reportId/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFerramentasEvolucaoAcoesIndexRoute =
+  AuthenticatedFerramentasEvolucaoAcoesIndexRouteImport.update({
+    id: '/ferramentas/evolucao-acoes/',
+    path: '/ferramentas/evolucao-acoes/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminCentralMensagensIndexRoute =
   AuthenticatedAdminCentralMensagensIndexRouteImport.update({
     id: '/',
@@ -791,6 +806,12 @@ const ApiPublicHooksMfaDeadlineCheckRoute =
     path: '/api/public/hooks/mfa-deadline-check',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksActionWeeklyReminderRoute =
+  ApiPublicHooksActionWeeklyReminderRouteImport.update({
+    id: '/api/public/hooks/action-weekly-reminder',
+    path: '/api/public/hooks/action-weekly-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedVisaoImersao2ReportIdExecutivoRoute =
   AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport.update({
     id: '/visao-imersao-2_/$reportId/executivo',
@@ -807,6 +828,12 @@ const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
     id: '/permissoes/$type/$id',
     path: '/permissoes/$type/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFerramentasEvolucaoAcoesCardIdRoute =
+  AuthenticatedFerramentasEvolucaoAcoesCardIdRouteImport.update({
+    id: '/ferramentas/evolucao-acoes/$cardId',
+    path: '/ferramentas/evolucao-acoes/$cardId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedEntrevistasIdSessaoRoute =
@@ -883,6 +910,7 @@ export interface FileRoutesByFullPath {
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
+  '/atualizacao-acoes/$token': typeof AtualizacaoAcoesTokenRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
@@ -961,9 +989,11 @@ export interface FileRoutesByFullPath {
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
+  '/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
@@ -974,6 +1004,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/ferramentas/evolucao-acoes/': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
   '/visao-imersao-2/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1011,6 +1042,7 @@ export interface FileRoutesByTo {
   '/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
+  '/atualizacao-acoes/$token': typeof AtualizacaoAcoesTokenRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
@@ -1088,9 +1120,11 @@ export interface FileRoutesByTo {
   '/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
+  '/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
@@ -1101,6 +1135,7 @@ export interface FileRoutesByTo {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/ferramentas/evolucao-acoes': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
   '/visao-imersao-2/$reportId': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1141,6 +1176,7 @@ export interface FileRoutesById {
   '/_authenticated/visao-rep-2': typeof AuthenticatedVisaoRep2Route
   '/api/transcribe-chunk': typeof ApiTranscribeChunkRoute
   '/api/tts': typeof ApiTtsRoute
+  '/atualizacao-acoes/$token': typeof AtualizacaoAcoesTokenRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/estrutura/$repId': typeof EstruturaRepIdRoute
   '/evento/checkout': typeof EventoCheckoutRoute
@@ -1219,9 +1255,11 @@ export interface FileRoutesById {
   '/_authenticated/clientes-bi/$repId/$razao': typeof AuthenticatedClientesBiRepIdRazaoRoute
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
+  '/_authenticated/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
   '/api/public/internal-tickets/relay-sweeper': typeof ApiPublicInternalTicketsRelaySweeperRoute
@@ -1232,6 +1270,7 @@ export interface FileRoutesById {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
+  '/_authenticated/ferramentas/evolucao-acoes/': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
   '/_authenticated/visao-imersao-2_/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/_authenticated/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1272,6 +1311,7 @@ export interface FileRouteTypes {
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
     | '/api/tts'
+    | '/atualizacao-acoes/$token'
     | '/email/unsubscribe'
     | '/estrutura/$repId'
     | '/evento/checkout'
@@ -1350,9 +1390,11 @@ export interface FileRouteTypes {
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
+    | '/ferramentas/evolucao-acoes/$cardId'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
+    | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/internal-tickets/relay-sweeper'
@@ -1363,6 +1405,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens/'
+    | '/ferramentas/evolucao-acoes/'
     | '/visao-imersao-2/$reportId/'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
@@ -1400,6 +1443,7 @@ export interface FileRouteTypes {
     | '/visao-rep-2'
     | '/api/transcribe-chunk'
     | '/api/tts'
+    | '/atualizacao-acoes/$token'
     | '/email/unsubscribe'
     | '/estrutura/$repId'
     | '/evento/checkout'
@@ -1477,9 +1521,11 @@ export interface FileRouteTypes {
     | '/clientes-bi/$repId/$razao'
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
+    | '/ferramentas/evolucao-acoes/$cardId'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
+    | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/internal-tickets/relay-sweeper'
@@ -1490,6 +1536,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens'
+    | '/ferramentas/evolucao-acoes'
     | '/visao-imersao-2/$reportId'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
@@ -1529,6 +1576,7 @@ export interface FileRouteTypes {
     | '/_authenticated/visao-rep-2'
     | '/api/transcribe-chunk'
     | '/api/tts'
+    | '/atualizacao-acoes/$token'
     | '/email/unsubscribe'
     | '/estrutura/$repId'
     | '/evento/checkout'
@@ -1607,9 +1655,11 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes-bi/$repId/$razao'
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
+    | '/_authenticated/ferramentas/evolucao-acoes/$cardId'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
+    | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
     | '/api/public/internal-tickets/relay-sweeper'
@@ -1620,6 +1670,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/_authenticated/admin/central-mensagens/'
+    | '/_authenticated/ferramentas/evolucao-acoes/'
     | '/_authenticated/visao-imersao-2_/$reportId/'
     | '/_authenticated/admin/central-mensagens/template/$id'
     | '/_authenticated/clientes-bi/comparar/$repId/$razao'
@@ -1636,6 +1687,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
   ApiTtsRoute: typeof ApiTtsRoute
+  AtualizacaoAcoesTokenRoute: typeof AtualizacaoAcoesTokenRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   EstruturaRepIdRoute: typeof EstruturaRepIdRoute
   EventoCheckoutRoute: typeof EventoCheckoutRoute
@@ -1655,6 +1707,7 @@ export interface RootRouteChildren {
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   SolicitacoesAcaoTokenRoute: typeof SolicitacoesAcaoTokenRoute
+  ApiPublicHooksActionWeeklyReminderRoute: typeof ApiPublicHooksActionWeeklyReminderRoute
   ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
   ApiPublicInternalTicketsRelaySweeperRoute: typeof ApiPublicInternalTicketsRelaySweeperRoute
@@ -1780,6 +1833,13 @@ declare module '@tanstack/react-router' {
       path: '/email/unsubscribe'
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/atualizacao-acoes/$token': {
+      id: '/atualizacao-acoes/$token'
+      path: '/atualizacao-acoes/$token'
+      fullPath: '/atualizacao-acoes/$token'
+      preLoaderRoute: typeof AtualizacaoAcoesTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tts': {
@@ -2426,6 +2486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVisaoImersao2ReportIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ferramentas/evolucao-acoes/': {
+      id: '/_authenticated/ferramentas/evolucao-acoes/'
+      path: '/ferramentas/evolucao-acoes'
+      fullPath: '/ferramentas/evolucao-acoes/'
+      preLoaderRoute: typeof AuthenticatedFerramentasEvolucaoAcoesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/central-mensagens/': {
       id: '/_authenticated/admin/central-mensagens/'
       path: '/'
@@ -2496,6 +2563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMfaDeadlineCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/action-weekly-reminder': {
+      id: '/api/public/hooks/action-weekly-reminder'
+      path: '/api/public/hooks/action-weekly-reminder'
+      fullPath: '/api/public/hooks/action-weekly-reminder'
+      preLoaderRoute: typeof ApiPublicHooksActionWeeklyReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/visao-imersao-2_/$reportId/executivo': {
       id: '/_authenticated/visao-imersao-2_/$reportId/executivo'
       path: '/visao-imersao-2/$reportId/executivo'
@@ -2515,6 +2589,13 @@ declare module '@tanstack/react-router' {
       path: '/permissoes/$type/$id'
       fullPath: '/permissoes/$type/$id'
       preLoaderRoute: typeof AuthenticatedPermissoesTypeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ferramentas/evolucao-acoes/$cardId': {
+      id: '/_authenticated/ferramentas/evolucao-acoes/$cardId'
+      path: '/ferramentas/evolucao-acoes/$cardId'
+      fullPath: '/ferramentas/evolucao-acoes/$cardId'
+      preLoaderRoute: typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/entrevistas/$id/sessao': {
@@ -2747,9 +2828,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSolicitacoesIndexRoute: typeof AuthenticatedSolicitacoesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
+  AuthenticatedFerramentasEvolucaoAcoesCardIdRoute: typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  AuthenticatedFerramentasEvolucaoAcoesIndexRoute: typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
   AuthenticatedVisaoImersao2ReportIdIndexRoute: typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   AuthenticatedClientesBiCompararRepIdRazaoRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
 }
@@ -2824,10 +2907,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
   AuthenticatedClientesBiRepIdRazaoRoute:
     AuthenticatedClientesBiRepIdRazaoRoute,
+  AuthenticatedFerramentasEvolucaoAcoesCardIdRoute:
+    AuthenticatedFerramentasEvolucaoAcoesCardIdRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute:
     AuthenticatedVisaoImersao2ReportIdExecutivoRoute,
+  AuthenticatedFerramentasEvolucaoAcoesIndexRoute:
+    AuthenticatedFerramentasEvolucaoAcoesIndexRoute,
   AuthenticatedVisaoImersao2ReportIdIndexRoute:
     AuthenticatedVisaoImersao2ReportIdIndexRoute,
   AuthenticatedClientesBiCompararRepIdRazaoRoute:
@@ -2846,6 +2933,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,
   ApiTtsRoute: ApiTtsRoute,
+  AtualizacaoAcoesTokenRoute: AtualizacaoAcoesTokenRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   EstruturaRepIdRoute: EstruturaRepIdRoute,
   EventoCheckoutRoute: EventoCheckoutRoute,
@@ -2865,6 +2953,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   SolicitacoesAcaoTokenRoute: SolicitacoesAcaoTokenRoute,
+  ApiPublicHooksActionWeeklyReminderRoute:
+    ApiPublicHooksActionWeeklyReminderRoute,
   ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
   ApiPublicHooksWeeklySecurityAuditRoute:
     ApiPublicHooksWeeklySecurityAuditRoute,
