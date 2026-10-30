@@ -3598,6 +3598,213 @@ export type Database = {
           },
         ]
       }
+      kanban_action_pendencias: {
+        Row: {
+          assignee_name: string
+          assignee_user_id: string | null
+          card_id: string
+          created_at: string
+          description: string
+          id: string
+          resolved_at: string | null
+          update_id: string | null
+        }
+        Insert: {
+          assignee_name: string
+          assignee_user_id?: string | null
+          card_id: string
+          created_at?: string
+          description: string
+          id?: string
+          resolved_at?: string | null
+          update_id?: string | null
+        }
+        Update: {
+          assignee_name?: string
+          assignee_user_id?: string | null
+          card_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          resolved_at?: string | null
+          update_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_pendencias_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_action_pendencias_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_action_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_action_tracking: {
+        Row: {
+          card_id: string
+          status: string
+          updated_at: string
+          updated_by_name: string | null
+        }
+        Insert: {
+          card_id: string
+          status?: string
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Update: {
+          card_id?: string
+          status?: string
+          updated_at?: string
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_tracking_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_action_update_files: {
+        Row: {
+          card_id: string
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          update_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          update_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          update_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_update_files_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_action_update_files_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_action_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_action_update_requests: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          representative_email: string
+          representative_id: string
+          sent_by: string | null
+          submitted_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          representative_email: string
+          representative_id: string
+          sent_by?: string | null
+          submitted_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          representative_email?: string
+          representative_id?: string
+          sent_by?: string | null
+          submitted_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_update_requests_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_action_updates: {
+        Row: {
+          author_name: string | null
+          card_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          source: string
+          status: string | null
+        }
+        Insert: {
+          author_name?: string | null
+          card_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          source: string
+          status?: string | null
+        }
+        Update: {
+          author_name?: string | null
+          card_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          source?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_updates_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_activities: {
         Row: {
           board_id: string
@@ -7875,6 +8082,10 @@ export type Database = {
       is_total_row: { Args: { _name: string }; Returns: boolean }
       kanban_can_access_board: {
         Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
+      kanban_can_access_card: {
+        Args: { _card_id: string; _user_id: string }
         Returns: boolean
       }
       kanban_is_workspace_member: {
