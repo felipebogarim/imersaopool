@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildDefaultStructure,
-  getLocalKey,
-} from "./storage";
+import { buildDefaultStructure, getLocalKey } from "./storage";
 
 describe("estrutura-rep storage and defaults", () => {
   it("gera chave de storage adequada", () => {
@@ -119,7 +116,9 @@ describe("estrutura-rep storage and defaults", () => {
     expect(structure.performance_comparativo).toBeDefined();
     expect(structure.performance_comparativo?.ano_base).toBe(2025);
     expect(structure.performance_comparativo?.ano_comparado).toBe(2026);
-    expect(structure.performance_comparativo?.meses_selecionados).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(structure.performance_comparativo?.meses_selecionados).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    ]);
     expect(structure.performance_comparativo?.periodo_label).toBe("Jan a Out");
     expect(structure.performance_comparativo?.ano_anterior_valor).toBe(1850000);
     expect(structure.performance_comparativo?.ano_atual_valor).toBe(2140000);
@@ -144,3 +143,43 @@ describe("estrutura-rep storage and defaults", () => {
   });
 });
 
+describe("rowToStructure (leitura do banco)", () => {
+  const rep = { id: "r1", nome: "MATHEUS", representacao: "Novare", regiao: "PR / SC" };
+
+  it("prefere as colunas novas e cai no legado de recursos_operacionais", async () => {
+    const { rowToStructure } = await import("./storage");
+    const s = rowToStructure(
+      {
+        marcas_representadas: [{ id: "b1", nome: "Stella", logo_url: "https://x/y.png" }],
+        treinamentos: [],
+        recursos_operacionais: {
+          pos_venda: true,
+          treinamentos: [{ id: "t-legado" }],
+          frequencia_demais_clientes: 45,
+        },
+        frequencia_demais_clientes: 30,
+        infographic_url: "https://i/1.png",
+        updated_at: "2026-11-03T10:00:00Z",
+      },
+      rep,
+    );
+    expect(s.marcas_representadas[0].logo_url).toBe("https://x/y.png");
+    expect(s.frequencia_demais_clientes).toBe(30);
+    expect(s.treinamentos).toEqual([]);
+    expect(s.recursos_operacionais.pos_venda).toBe(true);
+    expect(s.recursos_operacionais).not.toHaveProperty("frequencia_demais_clientes");
+    expect(s.infographic_url).toBe("https://i/1.png");
+  });
+
+  it("usa o legado quando a coluna nova não existe e não inventa dados", async () => {
+    const { rowToStructure } = await import("./storage");
+    const s = rowToStructure(
+      { recursos_operacionais: { treinamentos: [{ id: "t1" }], dias_campo_por_estado: { PR: 8 } } },
+      rep,
+    );
+    expect(s.treinamentos).toEqual([{ id: "t1" }]);
+    expect(s.dias_campo_por_estado).toEqual({ PR: 8 });
+    expect(s.equipe).toEqual([]);
+    expect(s.frequencia_demais_clientes).toBe(60);
+  });
+});

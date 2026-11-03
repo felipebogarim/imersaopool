@@ -48,7 +48,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
+import { processAndUploadLogo } from "@/lib/estrutura-rep/logo-upload";
 import {
   getSharedBrandLibrary,
   saveBrandToLibrary,
@@ -169,7 +169,7 @@ export function RepStructureEditorDialog({
 
     setUploadingLogo(true);
     try {
-      const url = await processLogoUpload(file);
+      const url = await processAndUploadLogo(file);
       setNovaMarca((m) => ({ ...m, logo_url: url }));
       toast.success("Logomarca carregada com sucesso!");
     } catch (err: any) {
@@ -183,7 +183,7 @@ export function RepStructureEditorDialog({
   const handleUploadLogoForExistingBrand = async (brandId: string, file: File) => {
     setUploadingBrandId(brandId);
     try {
-      const url = await processLogoUpload(file);
+      const url = await processAndUploadLogo(file);
       const updatedMarcas = draft.marcas_representadas.map((m) =>
         m.id === brandId ? { ...m, logo_url: url } : m
       );

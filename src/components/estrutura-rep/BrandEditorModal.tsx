@@ -43,7 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { processLogoUpload } from "@/lib/estrutura-rep/logo-upload";
+import { processAndUploadLogo } from "@/lib/estrutura-rep/logo-upload";
 
 interface BrandEditorModalProps {
   open: boolean;
@@ -131,7 +131,7 @@ export function BrandEditorModal({
 
     setUploading(true);
     try {
-      const dataUrl = await processLogoUpload(file);
+      const dataUrl = await processAndUploadLogo(file);
       setLogoUrl(dataUrl);
       toast.success("Logomarca carregada com sucesso!");
     } catch (err: any) {

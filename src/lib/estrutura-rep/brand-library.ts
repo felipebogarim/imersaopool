@@ -15,31 +15,31 @@ const SHARED_BRAND_STORAGE_KEY = "rep_shared_brand_library";
 
 // Logos padrão em SVG vetorial leve para as principais marcas do setor de iluminação
 const SVG_NEWLINE = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0084a8" letter-spacing="1">newline</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0084a8" letter-spacing="1">newline</text></svg>`,
 )}`;
 
 const SVG_BRILIA = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><circle cx="38" cy="30" r="16" fill="#f97316"/><circle cx="38" cy="30" r="9" fill="#ffffff"/><text x="118" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#1e293b" letter-spacing="0.5">brilia</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><circle cx="38" cy="30" r="16" fill="#f97316"/><circle cx="38" cy="30" r="9" fill="#ffffff"/><text x="118" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#1e293b" letter-spacing="0.5">brilia</text></svg>`,
 )}`;
 
 const SVG_MISTER_LED = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="18" y="14" width="34" height="32" rx="4" fill="#ea580c"/><text x="35" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="#ffffff">ML</text><text x="122" y="33" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="19" text-anchor="middle" fill="#1e293b">MISTER LED</text><text x="122" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="9" text-anchor="middle" fill="#64748b" letter-spacing="2">ILUMINAÇÃO</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="18" y="14" width="34" height="32" rx="4" fill="#ea580c"/><text x="35" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="#ffffff">ML</text><text x="122" y="33" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="19" text-anchor="middle" fill="#1e293b">MISTER LED</text><text x="122" y="46" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="9" text-anchor="middle" fill="#64748b" letter-spacing="2">ILUMINAÇÃO</text></svg>`,
 )}`;
 
 const SVG_ALPERTONE = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="15" y="14" width="170" height="32" rx="6" fill="#dc2626"/><text x="100" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" text-anchor="middle" fill="#ffffff" letter-spacing="1">alpertone</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><rect x="15" y="14" width="170" height="32" rx="6" fill="#dc2626"/><text x="100" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" text-anchor="middle" fill="#ffffff" letter-spacing="1">alpertone</text></svg>`,
 )}`;
 
 const SVG_STELLA = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0f172a" letter-spacing="2">STELLA</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" text-anchor="middle" fill="#0f172a" letter-spacing="2">STELLA</text></svg>`,
 )}`;
 
 const SVG_INTERLIGHT = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="23" text-anchor="middle" fill="#0284c7" letter-spacing="1">INTERLIGHT</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="23" text-anchor="middle" fill="#0284c7" letter-spacing="1">INTERLIGHT</text></svg>`,
 )}`;
 
 const SVG_DRESALL = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#0f172a" letter-spacing="2">DRESALL</text></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60"><rect width="200" height="60" rx="8" fill="#ffffff"/><text x="100" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="22" text-anchor="middle" fill="#0f172a" letter-spacing="2">DRESALL</text></svg>`,
 )}`;
 
 /** Catálogo base de marcas de iluminação com logomarcas vetorizadas */
@@ -139,51 +139,135 @@ export function getSavedSharedBrands(): BrandLibraryItem[] {
   }
 }
 
-/** Salva/atualiza uma marca na biblioteca compartilhada */
+function writeBrandCache(list: BrandLibraryItem[]): void {
+  try {
+    localStorage.setItem(SHARED_BRAND_STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.warn("[brand-library] Falha ao atualizar o cache local:", err);
+  }
+}
+
+/** Mescla `brand` no cache local e devolve o item resultante (ou null se inválido). */
+function mergeBrandIntoCache(
+  brand: Partial<RepresentadaItem> & { nome: string },
+  repNome?: string,
+): BrandLibraryItem | null {
+  if (typeof window === "undefined" || typeof localStorage === "undefined" || !brand.nome?.trim()) {
+    return null;
+  }
+  const current = getSavedSharedBrands();
+  const key = normalizeBrandKey(brand.nome);
+  const existingIdx = current.findIndex((b) => normalizeBrandKey(b.nome) === key);
+  const existing = existingIdx >= 0 ? current[existingIdx] : undefined;
+
+  const item: BrandLibraryItem = {
+    id: brand.id || existing?.id || `lib-${Date.now()}`,
+    nome: brand.nome.trim(),
+    logo_url: brand.logo_url || existing?.logo_url,
+    segmento: brand.segmento || existing?.segmento || "Iluminação & Complementos",
+    modelo_negocio: brand.modelo_negocio || existing?.modelo_negocio || "fabricante",
+    canais: brand.canais && brand.canais.length > 0 ? brand.canais : ["varejo", "projetos"],
+    abrangencia: brand.abrangencia || existing?.abrangencia || "Integral",
+    origem: repNome ? `Cadastrado por ${repNome}` : "Biblioteca Compartilhada",
+  };
+  const next = [...current];
+  if (existingIdx >= 0) next[existingIdx] = { ...existing, ...item };
+  else next.unshift(item);
+  writeBrandCache(next);
+  return item;
+}
+
+// A tabela rep_brand_library ainda não está no types.ts gerado.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dbClient = async (): Promise<any> =>
+  (await import("@/integrations/supabase/client")).supabase;
+
+function toDbRow(b: BrandLibraryItem) {
+  return {
+    nome_key: normalizeBrandKey(b.nome),
+    nome: b.nome,
+    // Data URLs enormes não vão para a biblioteca; a logo continua na própria estrutura.
+    logo_url: b.logo_url ?? null,
+    segmento: b.segmento ?? null,
+    modelo_negocio: b.modelo_negocio ?? null,
+    canais: b.canais ?? [],
+    abrangencia: b.abrangencia ?? null,
+    origem: b.origem ?? null,
+  };
+}
+
+/** Grava marcas na biblioteca compartilhada do banco. Retorna false se falhar. */
+async function pushBrandsToDb(items: BrandLibraryItem[]): Promise<boolean> {
+  const rows = items.filter((b) => normalizeBrandKey(b.nome)).map(toDbRow);
+  if (!rows.length) return true;
+  try {
+    const { error } = await (await dbClient())
+      .from("rep_brand_library")
+      .upsert(rows, { onConflict: "nome_key" });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn("[brand-library] Falha ao gravar a biblioteca no banco:", err);
+    return false;
+  }
+}
+
+/** Salva/atualiza uma marca na biblioteca compartilhada (banco + cache local). */
 export function saveBrandToLibrary(
   brand: Partial<RepresentadaItem> & { nome: string },
-  repNome?: string
+  repNome?: string,
 ): void {
-  if (
-    typeof window === "undefined" ||
-    typeof localStorage === "undefined" ||
-    !brand.nome?.trim()
-  )
-    return;
+  const item = mergeBrandIntoCache(brand, repNome);
+  if (item) void pushBrandsToDb([item]);
+}
 
+/** Versão em lote (uma única gravação no banco) usada ao salvar a estrutura. */
+export async function saveBrandsToLibrary(
+  brands: (Partial<RepresentadaItem> & { nome: string })[],
+  repNome?: string,
+): Promise<boolean> {
+  const items = brands
+    .map((b) => mergeBrandIntoCache(b, repNome))
+    .filter((i): i is BrandLibraryItem => i !== null);
+  return pushBrandsToDb(items);
+}
+
+/**
+ * Sincroniza a biblioteca com o banco (fonte da verdade): baixa as marcas compartilhadas para
+ * o cache e envia ao banco as que só existiam neste navegador (legado do localStorage).
+ */
+export async function syncSharedBrandLibrary(): Promise<BrandLibraryItem[]> {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return [];
   try {
-    const current = getSavedSharedBrands();
-    const key = normalizeBrandKey(brand.nome);
-    const existingIdx = current.findIndex((b) => normalizeBrandKey(b.nome) === key);
-
-    const updatedItem: BrandLibraryItem = {
-      id: brand.id || `lib-${Date.now()}`,
-      nome: brand.nome.trim(),
-      logo_url: brand.logo_url || (existingIdx >= 0 ? current[existingIdx].logo_url : undefined),
-      segmento: brand.segmento || "Iluminação & Complementos",
-      modelo_negocio: brand.modelo_negocio || "fabricante",
-      canais: brand.canais && brand.canais.length > 0 ? brand.canais : ["varejo", "projetos"],
-      abrangencia: brand.abrangencia || "Integral",
-      origem: repNome ? `Cadastrado por ${repNome}` : "Biblioteca Compartilhada",
-    };
-
-    let nextList: BrandLibraryItem[];
-    if (existingIdx >= 0) {
-      // Se já existia, atualiza mas preserva logo_url se o novo não tiver
-      const existing = current[existingIdx];
-      nextList = [...current];
-      nextList[existingIdx] = {
-        ...existing,
-        ...updatedItem,
-        logo_url: updatedItem.logo_url || existing.logo_url,
-      };
-    } else {
-      nextList = [updatedItem, ...current];
+    const { data, error } = await (await dbClient()).from("rep_brand_library").select("*");
+    if (error) throw error;
+    const dbItems: BrandLibraryItem[] = (data ?? []).map(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (r: any) => ({
+        id: r.id,
+        nome: r.nome,
+        logo_url: r.logo_url ?? undefined,
+        segmento: r.segmento ?? "Iluminação & Complementos",
+        modelo_negocio: r.modelo_negocio ?? "fabricante",
+        canais: r.canais ?? [],
+        abrangencia: r.abrangencia ?? undefined,
+        origem: r.origem ?? undefined,
+      }),
+    );
+    const byKey = new Map(dbItems.map((b) => [normalizeBrandKey(b.nome), b]));
+    const localOnly = getSavedSharedBrands().filter((b) => !byKey.has(normalizeBrandKey(b.nome)));
+    if (localOnly.length) {
+      // Legado: marcas que só existiam neste navegador sobem para o banco (e permanecem no cache
+      // mesmo se a gravação falhar, para não perder nada).
+      await pushBrandsToDb(localOnly);
+      for (const b of localOnly) byKey.set(normalizeBrandKey(b.nome), b);
     }
-
-    localStorage.setItem(SHARED_BRAND_STORAGE_KEY, JSON.stringify(nextList));
+    const merged = [...byKey.values()];
+    writeBrandCache(merged);
+    return merged;
   } catch (err) {
-    console.warn("[saveBrandToLibrary] Falha ao persistir na biblioteca compartilhada:", err);
+    console.warn("[brand-library] Sincronização com o banco indisponível:", err);
+    return getSavedSharedBrands();
   }
 }
 
@@ -193,7 +277,7 @@ export function saveBrandToLibrary(
  * todas as marcas cadastradas em qualquer representante na aplicação.
  */
 export function getSharedBrandLibrary(
-  allStructures?: Record<string, RepStructure> | RepStructure[]
+  allStructures?: Record<string, RepStructure> | RepStructure[],
 ): BrandLibraryItem[] {
   const map = new Map<string, BrandLibraryItem>();
 
@@ -222,9 +306,7 @@ export function getSharedBrandLibrary(
 
   // 3. Marcas cadastradas em qualquer representante carregado
   if (allStructures) {
-    const structList = Array.isArray(allStructures)
-      ? allStructures
-      : Object.values(allStructures);
+    const structList = Array.isArray(allStructures) ? allStructures : Object.values(allStructures);
 
     structList.forEach((struct) => {
       const repNome = struct.nome_representante || struct.empresa_representacao;
@@ -275,14 +357,17 @@ export function getSharedBrandLibrary(
  * Busca a melhor logomarca disponível para um determinado nome de marca.
  * Procura primeiro na estrutura local, depois no catálogo padrão e na biblioteca compartilhada.
  */
-export function findBrandLogo(name: string, structureMarcas?: RepresentadaItem[]): string | undefined {
+export function findBrandLogo(
+  name: string,
+  structureMarcas?: RepresentadaItem[],
+): string | undefined {
   if (!name || !name.trim()) return undefined;
   const targetKey = normalizeBrandKey(name);
 
   // 1. Procura na lista informada do próprio representante
   if (structureMarcas && structureMarcas.length > 0) {
     const directMatch = structureMarcas.find(
-      (m) => normalizeBrandKey(m.nome) === targetKey && Boolean(m.logo_url)
+      (m) => normalizeBrandKey(m.nome) === targetKey && Boolean(m.logo_url),
     );
     if (directMatch?.logo_url) return directMatch.logo_url;
   }
@@ -296,7 +381,7 @@ export function findBrandLogo(name: string, structureMarcas?: RepresentadaItem[]
     (b) =>
       normalizeBrandKey(b.nome).includes(targetKey) ||
       targetKey.includes(normalizeBrandKey(b.nome)) ||
-      (targetKey.includes("bril") && normalizeBrandKey(b.nome).includes("bril"))
+      (targetKey.includes("bril") && normalizeBrandKey(b.nome).includes("bril")),
   );
   if (defaultFuzzy?.logo_url) return defaultFuzzy.logo_url;
 
@@ -308,14 +393,15 @@ export function findBrandLogo(name: string, structureMarcas?: RepresentadaItem[]
         (normalizeBrandKey(b.nome) === targetKey ||
           normalizeBrandKey(b.nome).includes(targetKey) ||
           targetKey.includes(normalizeBrandKey(b.nome))) &&
-        Boolean(b.logo_url)
+        Boolean(b.logo_url),
     );
     if (sharedMatch?.logo_url) return sharedMatch.logo_url;
-  } catch {}
+  } catch {
+    // cache local indisponível: segue sem logo da biblioteca
+  }
 
   return undefined;
 }
-
 
 /**
  * Completa marcas sem logo usando a logo de uma marca de mesmo nome encontrada em `pool`

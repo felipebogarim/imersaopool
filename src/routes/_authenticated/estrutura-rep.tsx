@@ -272,6 +272,17 @@ function EstruturaRepPage() {
     setBrandModalOpen(true);
   };
 
+  /** Grava no banco e avisa se não foi confirmado (a cópia fica pendente neste navegador). */
+  const persistOrWarn = async (s: RepStructure): Promise<boolean> => {
+    const ok = await saveRepStructure(s);
+    if (!ok) {
+      toast.warning(
+        "Não foi possível gravar no banco. A alteração ficou pendente neste navegador e será reenviada automaticamente.",
+      );
+    }
+    return ok;
+  };
+
   // Salva estrutura editada
   const handleSaveStructure = async (updated: RepStructure) => {
     const persisted = await saveRepStructure(updated);
@@ -312,7 +323,7 @@ function EstruturaRepPage() {
   // Remove marca da lista de representadas e persiste
   const handleDeleteBrand = async (brandId: string) => {
     if (!structure) return;
-    await saveRepStructure({
+    await persistOrWarn({
       ...structure,
       marcas_representadas: (structure.marcas_representadas || []).filter((m) => m.id !== brandId),
     });
@@ -340,7 +351,7 @@ function EstruturaRepPage() {
       treinamentos: updated,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     setTrainingModalOpen(false);
     setEditingTraining(null);
@@ -358,7 +369,7 @@ function EstruturaRepPage() {
       treinamentos: updated,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     toast.success("Agendamento de treinamento removido.");
   };
@@ -380,7 +391,7 @@ function EstruturaRepPage() {
       treinamentos: updated,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     toast.success(
       newStatus === "realizado"
@@ -398,7 +409,7 @@ function EstruturaRepPage() {
       performance_comparativo: perf,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
   };
 
@@ -412,7 +423,7 @@ function EstruturaRepPage() {
       observacoes_gerais: ranking.observacoes !== undefined ? ranking.observacoes : structure.observacoes_gerais,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
   };
 
@@ -448,7 +459,7 @@ function EstruturaRepPage() {
       },
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
   };
 
@@ -495,7 +506,7 @@ function EstruturaRepPage() {
           : (structure.frequencia_demais_clientes ?? 60),
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     setFreqModalOpen(false);
     setEditingFreq(null);
@@ -513,7 +524,7 @@ function EstruturaRepPage() {
       frequencia_visitas: updated,
     };
 
-    await saveRepStructure(updatedStructure);
+    await persistOrWarn(updatedStructure);
     await queryClient.invalidateQueries({ queryKey: ["rep-structures-all"] });
     toast.success("Cliente removido da lista Top 10.");
   };
@@ -784,9 +795,10 @@ function EstruturaRepPage() {
         {/* ========================================================================= */}
         {tableError && (
           <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            As estruturas não estão sendo gravadas no banco ({tableError}). Elas ficam só neste
-            navegador e não aparecem em outros computadores. Peça para aplicar a migration
-            rep_structures no Lovable Cloud.
+            O banco não respondeu para as estruturas ({tableError}). As alterações ficam pendentes
+            neste navegador e não aparecem em outros computadores. Aplique a migration
+            20261103120000_rep_structures_persistence.sql no Supabase; depois disso as pendências
+            são enviadas automaticamente.
           </div>
         )}
 

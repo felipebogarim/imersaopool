@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { saveBrandToLibrary, findBrandLogo, fillMissingLogos } from "./brand-library";
+import {
+  saveBrandsToLibrary,
+  syncSharedBrandLibrary,
+  findBrandLogo,
+  fillMissingLogos,
+} from "./brand-library";
 import type {
   RepStructure,
   RepresentadaItem,
@@ -61,9 +66,33 @@ function parseEstadosRegiao(regiao?: string | null): string[] {
   if (!regiao) return ["MT", "GO", "DF"]; // Padrão exemplo prático do prompt
 
   const ufs = [
-    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-    "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-    "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+    "AC",
+    "AL",
+    "AP",
+    "AM",
+    "BA",
+    "CE",
+    "DF",
+    "ES",
+    "GO",
+    "MA",
+    "MT",
+    "MS",
+    "MG",
+    "PA",
+    "PB",
+    "PR",
+    "PE",
+    "PI",
+    "RJ",
+    "RN",
+    "RS",
+    "RO",
+    "RR",
+    "SC",
+    "SP",
+    "SE",
+    "TO",
   ];
 
   const upper = regiao.toUpperCase();
@@ -75,7 +104,8 @@ function parseEstadosRegiao(regiao?: string | null): string[] {
   if (encontrados.length > 0) return encontrados;
 
   if (upper.includes("BAHIA")) return ["BA", "SE"];
-  if (upper.includes("CENTRO-OESTE") || upper.includes("CENTRO OESTE")) return ["MT", "GO", "DF", "MS"];
+  if (upper.includes("CENTRO-OESTE") || upper.includes("CENTRO OESTE"))
+    return ["MT", "GO", "DF", "MS"];
   if (upper.includes("MINAS")) return ["MG"];
   if (upper.includes("SUL")) return ["PR", "SC", "RS"];
   if (upper.includes("NORDESTE")) return ["BA", "PE", "CE"];
@@ -83,7 +113,6 @@ function parseEstadosRegiao(regiao?: string | null): string[] {
 
   return ["MT", "GO", "DF"];
 }
-
 
 const LEGACY_DEMO_CLIENTES = new Set([
   "ilustre iluminação",
@@ -187,7 +216,8 @@ export function buildDefaultStructure(rep: {
     apoio_tecnico: true,
     gestao_pedidos: true,
     pos_venda: true,
-    observacoes: "Equipe com rotina de alinhamento semanal e suporte contínuo via WhatsApp e telefone.",
+    observacoes:
+      "Equipe com rotina de alinhamento semanal e suporte contínuo via WhatsApp e telefone.",
   };
 
   const defaultTreinamentos: TreinamentoItem[] = [
@@ -242,19 +272,31 @@ export function buildDefaultStructure(rep: {
     modelo_atuacao: "equipe",
     estados_atendidos: estados,
     detalhes_municipais: {
-      [estados[0] || "MT"]: { tipo: "todos", descricao: "Cobertura integral de todas as mesorregiões", dias_campo_mes: 12 },
-      ...(estados[1] ? { [estados[1]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 8 } } : {}),
-      ...(estados[2] ? { [estados[2]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 4 } } : {}),
+      [estados[0] || "MT"]: {
+        tipo: "todos",
+        descricao: "Cobertura integral de todas as mesorregiões",
+        dias_campo_mes: 12,
+      },
+      ...(estados[1]
+        ? { [estados[1]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 8 } }
+        : {}),
+      ...(estados[2]
+        ? { [estados[2]]: { tipo: "todos", descricao: "Atendimento regional", dias_campo_mes: 4 } }
+        : {}),
     },
-    dias_campo_por_estado: estados.reduce((acc, uf, idx) => {
-      acc[uf] = idx === 0 ? 12 : idx === 1 ? 8 : idx === 2 ? 4 : 5;
-      return acc;
-    }, {} as Record<string, number>),
+    dias_campo_por_estado: estados.reduce(
+      (acc, uf, idx) => {
+        acc[uf] = idx === 0 ? 12 : idx === 1 ? 8 : idx === 2 ? 4 : 5;
+        return acc;
+      },
+      {} as Record<string, number>,
+    ),
     marcas_representadas: marcas,
     modelo_escritorio: "escritorio_fisico",
     recursos_operacionais: defaultRecursos,
     equipe: defaultEquipe,
-    observacoes_gerais: "Operação estruturada com atendimento em campo e retaguarda de backoffice fixa.",
+    observacoes_gerais:
+      "Operação estruturada com atendimento em campo e retaguarda de backoffice fixa.",
     treinamentos: defaultTreinamentos,
     frequencia_visitas: defaultFrequenciaVisitas,
     frequencia_demais_clientes: 60,
@@ -289,198 +331,168 @@ export function buildDefaultStructure(rep: {
         qtd_gold: 11,
         qtd_black: 5,
       },
-      observacoes: "Migração consistente de contas Silver para Gold e ampliação de contas estratégicas Black.",
+      observacoes:
+        "Migração consistente de contas Silver para Gold e ampliação de contas estratégicas Black.",
     },
   };
 }
 
-/** Carrega os dados da estrutura de um representante (Supabase -> LocalStorage -> Default) */
-async function loadRepStructureBase(rep: {
+type RepLite = {
   id: string;
   nome: string;
   representacao?: string | null;
   regiao?: string | null;
   outras_marcas?: string | null;
-}): Promise<RepStructure> {
-  const defaultStruct = buildDefaultStructure(rep);
-
-  // 1. Busca LocalStorage previamente para reconciliação
-  let localData: RepStructure | null = null;
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(getLocalKey(rep.id));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.representative_id === rep.id) {
-          localData = {
-            ...parsed,
-            nome_representante: rep.nome,
-            treinamentos:
-              Array.isArray(parsed.treinamentos) && parsed.treinamentos.length > 0
-                ? parsed.treinamentos
-                : defaultStruct.treinamentos,
-            frequencia_visitas:
-              Array.isArray(parsed.frequencia_visitas) && parsed.frequencia_visitas.length > 0
-                ? parsed.frequencia_visitas
-                : defaultStruct.frequencia_visitas,
-            frequencia_demais_clientes:
-              typeof parsed.frequencia_demais_clientes === "number"
-                ? parsed.frequencia_demais_clientes
-                : (parsed.recursos_operacionais?.frequencia_demais_clientes ?? 60),
-          };
-        }
-      }
-    } catch {}
-  }
-
-  // 2. Tenta carregar do Supabase
-  try {
-    const { data, error } = await (supabase as any)
-      .from("rep_structures")
-      .select("*")
-      .eq("representative_id", rep.id)
-      .maybeSingle();
-
-    if (!error && data) {
-      const dbMarcas = Array.isArray(data.marcas_representadas) ? data.marcas_representadas : [];
-      const marcasFinais =
-        localData?.marcas_representadas && localData.marcas_representadas.length > 0 && dbMarcas.length === 0
-          ? localData.marcas_representadas
-          : dbMarcas;
-
-      const dbTreinamentos = Array.isArray(data.treinamentos) ? data.treinamentos : [];
-      const treinamentosFinais =
-        dbTreinamentos.length > 0
-          ? dbTreinamentos
-          : localData?.treinamentos ?? defaultStruct.treinamentos;
-
-      const dbFreq = Array.isArray(data.frequencia_visitas)
-        ? data.frequencia_visitas
-        : Array.isArray(data.recursos_operacionais?.frequencia_visitas)
-          ? data.recursos_operacionais.frequencia_visitas
-          : [];
-      const freqFinais =
-        dbFreq.length > 0
-          ? dbFreq
-          : localData?.frequencia_visitas ?? defaultStruct.frequencia_visitas;
-
-      const freqDemais =
-        typeof data.frequencia_demais_clientes === "number"
-          ? data.frequencia_demais_clientes
-          : typeof data.recursos_operacionais?.frequencia_demais_clientes === "number"
-            ? data.recursos_operacionais.frequencia_demais_clientes
-            : localData?.frequencia_demais_clientes ?? 60;
-
-      const diasCampo: Record<string, number> = {
-        ...(data.dias_campo_por_estado ?? data.recursos_operacionais?.dias_campo_por_estado ?? localData?.dias_campo_por_estado ?? {}),
-      };
-      if (data.detalhes_municipais && typeof data.detalhes_municipais === "object") {
-        Object.entries(data.detalhes_municipais).forEach(([uf, d]: [string, any]) => {
-          if (typeof d?.dias_campo_mes === "number" && diasCampo[uf] === undefined) {
-            diasCampo[uf] = d.dias_campo_mes;
-          }
-        });
-      }
-
-      return {
-        representative_id: rep.id,
-        nome_representante: rep.nome,
-        empresa_representacao: data.empresa_representacao ?? rep.representacao ?? "",
-        ...sanitizeBase(data.cidade_base, data.estado_base),
-        regiao_principal: data.regiao_principal ?? rep.regiao ?? "",
-        modelo_atuacao: data.modelo_atuacao ?? "equipe",
-        estados_atendidos: Array.isArray(data.estados_atendidos) ? data.estados_atendidos : [],
-        detalhes_municipais: data.detalhes_municipais ?? {},
-        dias_campo_por_estado: Object.keys(diasCampo).length > 0 ? diasCampo : defaultStruct.dias_campo_por_estado,
-        marcas_representadas: marcasFinais,
-        modelo_escritorio: data.modelo_escritorio ?? "escritorio_fisico",
-        recursos_operacionais: data.recursos_operacionais ?? {
-          estrutura_administrativa: false,
-          atendimento_comercial: false,
-          suporte_clientes: false,
-          apoio_tecnico: false,
-          gestao_pedidos: false,
-          pos_venda: false,
-        },
-        equipe: Array.isArray(data.equipe) ? data.equipe : [],
-        observacoes_gerais: data.observacoes_gerais ?? "",
-        treinamentos: treinamentosFinais,
-        frequencia_visitas: stripLegacyDemoFrequencia(freqFinais),
-        frequencia_demais_clientes: freqDemais,
-        performance_comparativo:
-          data.performance_comparativo ??
-          data.recursos_operacionais?.performance_comparativo ??
-          localData?.performance_comparativo,
-        ranking_clientes_comparativo:
-          data.ranking_clientes_comparativo ??
-          data.recursos_operacionais?.ranking_clientes_comparativo ??
-          localData?.ranking_clientes_comparativo,
-        infographic_url:
-          data.infographic_url ??
-          data.recursos_operacionais?.infographic_url ??
-          localData?.infographic_url,
-        infographic_updated_at:
-          data.infographic_updated_at ??
-          data.recursos_operacionais?.infographic_updated_at ??
-          localData?.infographic_updated_at,
-        updated_at: data.updated_at,
-      };
-    }
-  } catch (err) {
-    console.warn("[loadRepStructure] Supabase table query failed, trying local fallback:", err);
-  }
-
-  // 3. Fallback no LocalStorage
-  if (localData) {
-    return cleanLegacyLocal(localData);
-  }
-
-  // 4. Fallback inteligente pré-populado
-  return defaultStruct;
-}
+};
 
 /**
- * Carrega a estrutura e completa logos ausentes com as de outras estruturas salvas no banco.
- * Se a estrutura só existir neste navegador (localStorage), envia ao banco para os demais
- * computadores a enxergarem.
+ * O banco (rep_structures) é a fonte da verdade. O localStorage guarda apenas uma cópia
+ * PENDENTE quando a gravação no banco falhou; ela é reenviada na próxima carga e removida
+ * assim que o banco confirma.
  */
-export async function loadRepStructure(rep: {
-  id: string;
-  nome: string;
-  representacao?: string | null;
-  regiao?: string | null;
-  outras_marcas?: string | null;
-}): Promise<RepStructure> {
-  const base = await loadRepStructureBase(rep);
+function readPendingLocal(repId: string): RepStructure | null {
+  if (typeof window === "undefined") return null;
   try {
-    const { data, error } = await (supabase as any)
-      .from("rep_structures")
-      .select("representative_id, marcas_representadas");
-    if (error || !Array.isArray(data)) return base;
-
-    const pool = data.flatMap((r: any) =>
-      Array.isArray(r.marcas_representadas) ? r.marcas_representadas : [],
-    );
-    const filled = {
-      ...base,
-      marcas_representadas: fillMissingLogos(base.marcas_representadas ?? [], pool),
-    };
-
-    const hasDbRow = data.some((r: any) => r.representative_id === rep.id);
-    const hasLocal =
-      typeof window !== "undefined" && localStorage.getItem(getLocalKey(rep.id)) !== null;
-    if (!hasDbRow && hasLocal) void saveRepStructure(filled).catch(() => {});
-    return filled;
+    const raw = localStorage.getItem(getLocalKey(repId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && parsed.representative_id === repId ? (parsed as RepStructure) : null;
   } catch {
-    return base;
+    return null; // JSON corrompido: ignora a cópia local
   }
 }
 
-/** Salva a estrutura do representante (Supabase + LocalStorage) */
-/** Retorna `false` quando só o localStorage foi atualizado (falha ao gravar no banco). */
+function clearPendingLocal(repId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(getLocalKey(repId));
+  } catch {
+    // storage indisponível: nada a limpar
+  }
+}
+
+function isNewer(a?: string | null, b?: string | null): boolean {
+  const ta = a ? Date.parse(a) : NaN;
+  const tb = b ? Date.parse(b) : NaN;
+  if (Number.isNaN(ta)) return false;
+  return Number.isNaN(tb) || ta > tb;
+}
+
+/** Converte uma linha de rep_structures em RepStructure (colunas novas > legado em recursos_operacionais). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToStructure(row: any, rep: RepLite): RepStructure {
+  const legacy = row.recursos_operacionais ?? {};
+  const dias: Record<string, number> = {
+    ...(legacy.dias_campo_por_estado ?? {}),
+    ...(row.dias_campo_por_estado ?? {}),
+  };
+  if (row.detalhes_municipais && typeof row.detalhes_municipais === "object") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.entries(row.detalhes_municipais).forEach(([uf, d]: [string, any]) => {
+      if (typeof d?.dias_campo_mes === "number" && dias[uf] === undefined)
+        dias[uf] = d.dias_campo_mes;
+    });
+  }
+  const arr = <T>(...cands: unknown[]): T[] => {
+    for (const c of cands) if (Array.isArray(c)) return c as T[];
+    return [];
+  };
+  const {
+    frequencia_visitas: _fv,
+    frequencia_demais_clientes: _fd,
+    treinamentos: _tr,
+    dias_campo_por_estado: _dc,
+    performance_comparativo: _pc,
+    ranking_clientes_comparativo: _rc,
+    infographic_url: _iu,
+    infographic_updated_at: _iua,
+    ...recursos
+  } = legacy;
+
+  return {
+    representative_id: rep.id,
+    nome_representante: rep.nome,
+    empresa_representacao: row.empresa_representacao ?? rep.representacao ?? "",
+    ...sanitizeBase(row.cidade_base, row.estado_base),
+    regiao_principal: row.regiao_principal ?? rep.regiao ?? "",
+    modelo_atuacao: row.modelo_atuacao ?? "equipe",
+    estados_atendidos: Array.isArray(row.estados_atendidos) ? row.estados_atendidos : [],
+    detalhes_municipais: row.detalhes_municipais ?? {},
+    dias_campo_por_estado: dias,
+    marcas_representadas: arr(row.marcas_representadas),
+    modelo_escritorio: row.modelo_escritorio ?? "escritorio_fisico",
+    recursos_operacionais: {
+      estrutura_administrativa: false,
+      atendimento_comercial: false,
+      suporte_clientes: false,
+      apoio_tecnico: false,
+      gestao_pedidos: false,
+      pos_venda: false,
+      ...recursos,
+    },
+    equipe: arr(row.equipe),
+    observacoes_gerais: row.observacoes_gerais ?? "",
+    treinamentos: arr(row.treinamentos, legacy.treinamentos),
+    frequencia_visitas: stripLegacyDemoFrequencia(
+      arr(row.frequencia_visitas, legacy.frequencia_visitas),
+    ),
+    frequencia_demais_clientes:
+      typeof row.frequencia_demais_clientes === "number"
+        ? row.frequencia_demais_clientes
+        : typeof legacy.frequencia_demais_clientes === "number"
+          ? legacy.frequencia_demais_clientes
+          : 60,
+    performance_comparativo:
+      row.performance_comparativo ?? legacy.performance_comparativo ?? undefined,
+    ranking_clientes_comparativo:
+      row.ranking_clientes_comparativo ?? legacy.ranking_clientes_comparativo ?? undefined,
+    infographic_url: row.infographic_url ?? legacy.infographic_url ?? undefined,
+    infographic_updated_at:
+      row.infographic_updated_at ?? legacy.infographic_updated_at ?? undefined,
+    updated_at: row.updated_at,
+  };
+}
+
+/** Decide entre a linha do banco e a cópia pendente local; reenvia a local se for mais nova. */
+function resolveStructure(
+  row: unknown | undefined,
+  rep: RepLite,
+  pendingSync: (s: RepStructure) => void,
+): RepStructure {
+  const local = readPendingLocal(rep.id);
+  const fromDb = row ? rowToStructure(row, rep) : null;
+
+  if (local && (!fromDb || isNewer(local.updated_at, fromDb.updated_at))) {
+    const merged = cleanLegacyLocal({ ...local, nome_representante: rep.nome });
+    pendingSync(merged);
+    return merged;
+  }
+  if (local) clearPendingLocal(rep.id); // banco já está à frente: descarta cópia obsoleta
+  return fromDb ?? buildDefaultStructure(rep);
+}
+
+/** Carrega a estrutura de um representante a partir do banco. */
+export async function loadRepStructure(rep: RepLite): Promise<RepStructure> {
+  const [{ data, error }] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).from("rep_structures").select("*"),
+    syncSharedBrandLibrary(),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = !error && Array.isArray(data) ? data : [];
+  const own = rows.find((r) => r.representative_id === rep.id);
+  const base = resolveStructure(own, rep, (s) => void saveRepStructure(s).catch(() => {}));
+
+  // Completa logos ausentes com as de outras estruturas já gravadas no banco.
+  const pool = rows.flatMap((r) =>
+    Array.isArray(r.marcas_representadas) ? r.marcas_representadas : [],
+  );
+  return { ...base, marcas_representadas: fillMissingLogos(base.marcas_representadas ?? [], pool) };
+}
+
+/** Salva a estrutura no banco. Retorna `false` se o banco não confirmou (cópia fica pendente local). */
 export async function saveRepStructure(structure: RepStructure): Promise<boolean> {
   const nowIso = new Date().toISOString();
-  // Sincroniza dias_campo_mes em detalhes_municipais
   const detalhesMunicipaisSync = { ...(structure.detalhes_municipais || {}) };
   if (structure.dias_campo_por_estado) {
     Object.entries(structure.dias_campo_por_estado).forEach(([uf, dias]) => {
@@ -490,41 +502,25 @@ export async function saveRepStructure(structure: RepStructure): Promise<boolean
       };
     });
   }
-
   const structureToSave: RepStructure = {
     ...structure,
     detalhes_municipais: detalhesMunicipaisSync,
     updated_at: nowIso,
   };
 
-  // 1. Salva no LocalStorage imediatamente para garantir persistência local rápida e sem falhas
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(
-        getLocalKey(structure.representative_id),
-        JSON.stringify(structureToSave)
-      );
-    } catch (e) {
-      console.warn("[saveRepStructure] LocalStorage save failed:", e);
-    }
-  }
+  const repNome = structure.nome_representante || structure.empresa_representacao;
+  const marcas = structure.marcas_representadas ?? [];
+  // Biblioteca compartilhada de marcas/logomarcas (banco + cache).
+  void saveBrandsToLibrary(marcas, repNome);
 
-  // 2. Registra as marcas no catálogo compartilhado para ficarem disponíveis para outros representantes
-  if (structure.marcas_representadas && structure.marcas_representadas.length > 0) {
-    structure.marcas_representadas.forEach((m) => {
-      saveBrandToLibrary(m, structure.nome_representante || structure.empresa_representacao);
-    });
-  }
-
-  // 3. Atualiza representatives.outras_marcas no Supabase para manter o catálogo do representante sincronizado
+  // Mantém representatives.outras_marcas sincronizado com as marcas da estrutura.
   try {
-    const nomesMarcas = (structure.marcas_representadas || [])
+    const nomesMarcas = marcas
       .map((m) => m.nome?.trim())
       .filter(Boolean)
       .join(", ");
-
     if (nomesMarcas) {
-      await (supabase as any)
+      await supabase
         .from("representatives")
         .update({ outras_marcas: nomesMarcas })
         .eq("id", structure.representative_id);
@@ -533,8 +529,20 @@ export async function saveRepStructure(structure: RepStructure): Promise<boolean
     console.warn("[saveRepStructure] representatives.outras_marcas update error:", err);
   }
 
-  // 4. Tenta persistir na tabela rep_structures (caso já provisionada no Supabase)
+  const markPending = () => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        getLocalKey(structure.representative_id),
+        JSON.stringify(structureToSave),
+      );
+    } catch (e) {
+      console.warn("[saveRepStructure] Falha ao guardar cópia pendente:", e);
+    }
+  };
+
   try {
+    const { data: sess } = await supabase.auth.getSession();
     const payload = {
       representative_id: structure.representative_id,
       empresa_representacao: structure.empresa_representacao || null,
@@ -544,192 +552,74 @@ export async function saveRepStructure(structure: RepStructure): Promise<boolean
       modelo_atuacao: structure.modelo_atuacao,
       estados_atendidos: structure.estados_atendidos,
       detalhes_municipais: detalhesMunicipaisSync,
-      marcas_representadas: structure.marcas_representadas,
+      marcas_representadas: marcas,
       modelo_escritorio: structure.modelo_escritorio,
-      recursos_operacionais: {
-        ...structure.recursos_operacionais,
-        frequencia_visitas: structure.frequencia_visitas,
-        frequencia_demais_clientes: structure.frequencia_demais_clientes,
-        treinamentos: structure.treinamentos,
-        dias_campo_por_estado: structure.dias_campo_por_estado,
-        performance_comparativo: structure.performance_comparativo,
-        ranking_clientes_comparativo: structure.ranking_clientes_comparativo,
-        infographic_url: structure.infographic_url,
-        infographic_updated_at: structure.infographic_updated_at,
-      },
-      equipe: structure.equipe,
+      recursos_operacionais: structure.recursos_operacionais ?? {},
+      equipe: structure.equipe ?? [],
       observacoes_gerais: structure.observacoes_gerais || null,
+      treinamentos: structure.treinamentos ?? [],
+      frequencia_visitas: structure.frequencia_visitas ?? [],
+      frequencia_demais_clientes: structure.frequencia_demais_clientes ?? null,
+      dias_campo_por_estado: structure.dias_campo_por_estado ?? {},
+      performance_comparativo: structure.performance_comparativo ?? null,
+      ranking_clientes_comparativo: structure.ranking_clientes_comparativo ?? null,
+      infographic_url: structure.infographic_url ?? null,
+      infographic_updated_at: structure.infographic_updated_at ?? null,
+      updated_by: sess.session?.user.id ?? null,
       updated_at: nowIso,
     };
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("rep_structures")
       .upsert(payload, { onConflict: "representative_id" });
-
     if (error) {
-      console.warn("[saveRepStructure] Supabase upsert error (fallback kept in localStorage):", error.message);
+      console.warn("[saveRepStructure] Falha ao gravar no banco:", error.message);
+      markPending();
       return false;
     }
+    clearPendingLocal(structure.representative_id);
     return true;
   } catch (err) {
-    console.warn("[saveRepStructure] Supabase network/schema exception (fallback kept in localStorage):", err);
+    console.warn("[saveRepStructure] Exceção ao gravar no banco:", err);
+    markPending();
     return false;
   }
 }
 
-/** Carrega as estruturas de todos os representantes informados */
-export async function loadAllRepStructures(reps: {
-  id: string;
-  nome: string;
-  representacao?: string | null;
-  regiao?: string | null;
-  outras_marcas?: string | null;
-  email?: string | null;
-  telefone?: string | null;
-}[]): Promise<Record<string, RepStructure>> {
+/** Carrega as estruturas de todos os representantes informados (banco = fonte da verdade). */
+export async function loadAllRepStructures(
+  reps: (RepLite & { email?: string | null; telefone?: string | null })[],
+): Promise<Record<string, RepStructure>> {
   const result: Record<string, RepStructure> = {};
   if (!reps || reps.length === 0) return result;
 
-  let supabaseData: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rows: any[] = [];
   try {
-    const { data, error } = await (supabase as any)
-      .from("rep_structures")
-      .select("*");
-    if (!error && Array.isArray(data)) {
-      supabaseData = data;
-    }
+    const [{ data, error }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from("rep_structures").select("*"),
+      syncSharedBrandLibrary(),
+    ]);
+    if (!error && Array.isArray(data)) rows = data;
   } catch (e) {
-    console.warn("[loadAllRepStructures] Batch query failed, using fallbacks:", e);
+    console.warn("[loadAllRepStructures] Falha ao consultar o banco:", e);
   }
+  const byRep = new Map(rows.map((r) => [r.representative_id, r]));
 
-  const supabaseMap = new Map<string, any>();
-  for (const item of supabaseData) {
-    if (item.representative_id) {
-      supabaseMap.set(item.representative_id, item);
-    }
-  }
-
+  const toSync: RepStructure[] = [];
   for (const rep of reps) {
-    // 1. Busca dados no localStorage
-    let localData: RepStructure | null = null;
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem(getLocalKey(rep.id));
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.representative_id === rep.id) {
-            localData = { ...parsed, nome_representante: rep.nome };
-          }
-        }
-      } catch {}
-    }
-
-    const dbItem = supabaseMap.get(rep.id);
-
-    // 2. Se houver item no banco
-    if (dbItem) {
-      const dbMarcas = Array.isArray(dbItem.marcas_representadas) ? dbItem.marcas_representadas : [];
-      // Se o localStorage tiver marcas mais recentes ou o banco estiver com marcas vazias, preserva as marcas locais
-      const marcasFinais =
-        localData?.marcas_representadas && localData.marcas_representadas.length > 0 && dbMarcas.length === 0
-          ? localData.marcas_representadas
-          : dbMarcas;
-
-      const dbTreinamentos = Array.isArray(dbItem.treinamentos) ? dbItem.treinamentos : [];
-      const treinamentosFinais =
-        dbTreinamentos.length > 0
-          ? dbTreinamentos
-          : localData?.treinamentos ?? buildDefaultStructure(rep).treinamentos;
-
-      const dbFreq = Array.isArray(dbItem.frequencia_visitas)
-        ? dbItem.frequencia_visitas
-        : Array.isArray(dbItem.recursos_operacionais?.frequencia_visitas)
-          ? dbItem.recursos_operacionais.frequencia_visitas
-          : [];
-      const freqFinais =
-        dbFreq.length > 0
-          ? dbFreq
-          : localData?.frequencia_visitas ?? buildDefaultStructure(rep).frequencia_visitas;
-
-      const freqDemais =
-        typeof dbItem.frequencia_demais_clientes === "number"
-          ? dbItem.frequencia_demais_clientes
-          : typeof dbItem.recursos_operacionais?.frequencia_demais_clientes === "number"
-            ? dbItem.recursos_operacionais.frequencia_demais_clientes
-            : localData?.frequencia_demais_clientes ?? 60;
-
-      const diasCampo: Record<string, number> = {
-        ...(dbItem.dias_campo_por_estado ?? dbItem.recursos_operacionais?.dias_campo_por_estado ?? localData?.dias_campo_por_estado ?? {}),
-      };
-      if (dbItem.detalhes_municipais && typeof dbItem.detalhes_municipais === "object") {
-        Object.entries(dbItem.detalhes_municipais).forEach(([uf, d]: [string, any]) => {
-          if (typeof d?.dias_campo_mes === "number" && diasCampo[uf] === undefined) {
-            diasCampo[uf] = d.dias_campo_mes;
-          }
-        });
-      }
-
-      result[rep.id] = {
-        representative_id: rep.id,
-        nome_representante: rep.nome,
-        empresa_representacao: dbItem.empresa_representacao ?? rep.representacao ?? "",
-        ...sanitizeBase(dbItem.cidade_base, dbItem.estado_base),
-        regiao_principal: dbItem.regiao_principal ?? rep.regiao ?? "",
-        modelo_atuacao: dbItem.modelo_atuacao ?? "equipe",
-        estados_atendidos: Array.isArray(dbItem.estados_atendidos) ? dbItem.estados_atendidos : [],
-        detalhes_municipais: dbItem.detalhes_municipais ?? {},
-        dias_campo_por_estado: Object.keys(diasCampo).length > 0 ? diasCampo : buildDefaultStructure(rep).dias_campo_por_estado,
-        marcas_representadas: marcasFinais,
-        modelo_escritorio: dbItem.modelo_escritorio ?? "escritorio_fisico",
-        recursos_operacionais: dbItem.recursos_operacionais ?? {
-          estrutura_administrativa: false,
-          atendimento_comercial: false,
-          suporte_clientes: false,
-          apoio_tecnico: false,
-          gestao_pedidos: false,
-          pos_venda: false,
-        },
-        equipe: Array.isArray(dbItem.equipe) ? dbItem.equipe : [],
-        observacoes_gerais: dbItem.observacoes_gerais ?? "",
-        treinamentos: treinamentosFinais,
-        frequencia_visitas: stripLegacyDemoFrequencia(freqFinais),
-        frequencia_demais_clientes: freqDemais,
-        performance_comparativo:
-          dbItem.performance_comparativo ??
-          dbItem.recursos_operacionais?.performance_comparativo ??
-          localData?.performance_comparativo,
-        ranking_clientes_comparativo:
-          dbItem.ranking_clientes_comparativo ??
-          dbItem.recursos_operacionais?.ranking_clientes_comparativo ??
-          localData?.ranking_clientes_comparativo,
-        infographic_url:
-          dbItem.infographic_url ??
-          dbItem.recursos_operacionais?.infographic_url ??
-          localData?.infographic_url,
-        infographic_updated_at:
-          dbItem.infographic_updated_at ??
-          dbItem.recursos_operacionais?.infographic_updated_at ??
-          localData?.infographic_updated_at,
-        updated_at: dbItem.updated_at,
-      };
-      continue;
-    }
-
-    // 3. Se não houver no banco mas houver no localStorage
-    if (localData) {
-      result[rep.id] = cleanLegacyLocal(localData);
-      continue;
-    }
-
-    // 4. Fallback padrão
-    result[rep.id] = buildDefaultStructure(rep);
+    result[rep.id] = resolveStructure(byRep.get(rep.id), rep, (s) => toSync.push(s));
   }
+  // Reenvio sequencial das cópias pendentes (não bloqueia a renderização).
+  void (async () => {
+    for (const s of toSync) await saveRepStructure(s).catch(() => false);
+  })();
 
   const logoPool = Object.values(result).flatMap((st) => st.marcas_representadas ?? []);
   for (const st of Object.values(result)) {
     st.marcas_representadas = fillMissingLogos(st.marcas_representadas ?? [], logoPool);
   }
-
   return result;
 }
 
@@ -746,19 +636,13 @@ export async function deleteRepStructure(repId: string): Promise<void> {
 
   // 2. Remove de rep_structures
   try {
-    await (supabase as any)
-      .from("rep_structures")
-      .delete()
-      .eq("representative_id", repId);
+    await (supabase as any).from("rep_structures").delete().eq("representative_id", repId);
   } catch (err) {
     console.warn("[deleteRepStructure] Supabase rep_structures delete failed:", err);
   }
 
   // 3. Remove de representatives
-  const { error } = await supabase
-    .from("representatives")
-    .delete()
-    .eq("id", repId);
+  const { error } = await supabase.from("representatives").delete().eq("id", repId);
 
   if (error) {
     throw new Error(error.message);
@@ -830,21 +714,21 @@ export async function createRepresentativeWithStructure(params: {
       params.estados_atendidos && params.estados_atendidos.length > 0
         ? params.estados_atendidos
         : defaultBase.estados_atendidos,
-    dias_campo_por_estado:
-      params.dias_campo_por_estado ||
-      defaultBase.dias_campo_por_estado ||
-      {},
+    dias_campo_por_estado: params.dias_campo_por_estado || defaultBase.dias_campo_por_estado || {},
     detalhes_municipais:
       params.detalhes_municipais ||
       (params.estados_atendidos && params.estados_atendidos.length > 0
-        ? params.estados_atendidos.reduce((acc, uf) => {
-            acc[uf] = {
-              tipo: "todos",
-              descricao: "Cobertura integral",
-              dias_campo_mes: params.dias_campo_por_estado?.[uf] ?? 0,
-            };
-            return acc;
-          }, {} as Record<string, import("./types").DetalheMunicipal>)
+        ? params.estados_atendidos.reduce(
+            (acc, uf) => {
+              acc[uf] = {
+                tipo: "todos",
+                descricao: "Cobertura integral",
+                dias_campo_mes: params.dias_campo_por_estado?.[uf] ?? 0,
+              };
+              return acc;
+            },
+            {} as Record<string, import("./types").DetalheMunicipal>,
+          )
         : defaultBase.detalhes_municipais),
     marcas_representadas:
       params.marcas_representadas && params.marcas_representadas.length > 0
@@ -858,7 +742,11 @@ export async function createRepresentativeWithStructure(params: {
               id: "member-1",
               nome: params.nome.trim(),
               cargo: "Representante Titular / Gestor Comercial",
-              responsabilidades: ["Negociações estratégicas", "Abertura de contas-chave", "Atendimento em campo"],
+              responsabilidades: [
+                "Negociações estratégicas",
+                "Abertura de contas-chave",
+                "Atendimento em campo",
+              ],
               vinculo: "socio",
               modalidade: "hibrido",
               nivel: "titular",
