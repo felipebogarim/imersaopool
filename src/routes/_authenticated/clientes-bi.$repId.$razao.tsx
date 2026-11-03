@@ -104,7 +104,7 @@ function ClientBIPage() {
               </Link>
             </Button>
             <Button variant="ghost" asChild>
-              <Link to="/representantes/performance">
+              <Link to="/representantes/performance" search={{ rep: repId }}>
                 <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
               </Link>
             </Button>

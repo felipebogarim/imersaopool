@@ -115,7 +115,11 @@ export function PerformancePageContent() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const [repId, setRepId] = useState<string>(search.rep ?? "");
+  // O representante vive na URL (?rep=<id>): cada representante tem endereço próprio e o "voltar"
+  // de uma análise de cliente retorna para a performance dele, não para a lista.
+  const repId = search.rep ?? "";
+  const setRepId = (id: string) =>
+    navigate({ to: "/representantes/performance", search: { rep: id || undefined } });
   const [uploadId, setUploadId] = useState<string>("");
   const [dlgOpen, setDlgOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
