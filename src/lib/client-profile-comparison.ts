@@ -9,9 +9,7 @@ import {
   normalizeFamilyName,
   normalizeTrafficLightGroup,
   toPercent,
-  validateFamilias,
   type ClientBIData,
-  type FamiliaResultado,
 } from "./client-bi-familias";
 import { FAROL_LABEL, FAROL_ORDER, statusFromPercent, type FarolStatus } from "./performance-farol";
 
@@ -115,13 +113,18 @@ export function generalPercent(bi: ClientBIData | null | undefined): number | nu
 export function familyPercentMap(bi: ClientBIData | null | undefined): Record<string, number> | null {
   if (!bi) return null;
   const fams = getFamiliasCliente(bi);
-  if (validateFamilias(fams as FamiliaResultado[]) !== null) return null;
+  if (fams.length !== CANONICAL_FAMILIES.length) return null;
+  // Validação só estrutural (7 famílias distintas). A checagem estrita
+  // atingimento×farol de validateFamilias reprovava clientes reais por arredondamento/escala.
   const map: Record<string, number> = {};
+  const seen = new Set<string>();
   for (const f of fams) {
     const canon = normalizeFamilyName(f.familia);
     const pct = toPercent(f.atingimento);
-    if (!canon || pct == null) return null;
-    map[canon] = pct;
+    if (!canon || seen.has(canon)) return null;
+    seen.add(canon);
+    // Família "Sem dado" (sem meta) fica fora do mapa: não entra nas médias nem nas diferenças.
+    if (pct != null && Number.isFinite(pct)) map[canon] = pct;
   }
   return map;
 }
