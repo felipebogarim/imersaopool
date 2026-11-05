@@ -152,6 +152,12 @@ export function ClientFamiliasChart({
     }
   }
 
+  // Eixo com passos "redondos": evita rótulos quebrados (ex.: 3999%) quando há atingimento muito alto.
+  const peak = Math.max(120, ...chartData.map((d) => Number(d.atingimento) || 0));
+  const yStep = peak <= 150 ? 25 : peak <= 300 ? 50 : peak <= 600 ? 100 : peak <= 1500 ? 250 : 500;
+  const yMax = Math.ceil(peak / yStep) * yStep;
+  const yTicks = Array.from({ length: yMax / yStep + 1 }, (_, i) => i * yStep);
+
   return (
     <div className="surface rounded-xl overflow-hidden">
       <div className="w-full px-4 py-3 border-b border-border flex items-center justify-between">
@@ -204,7 +210,8 @@ export function ClientFamiliasChart({
                 />
                 <YAxis
                   tickFormatter={(v) => `${v}%`}
-                  domain={[0, (max: number) => Math.max(120, max)]}
+                  domain={[0, yMax]}
+                  ticks={yTicks}
                 />
                 <Tooltip content={<PerformanceTooltip />} />
                 <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" />

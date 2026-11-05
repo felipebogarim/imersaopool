@@ -232,7 +232,7 @@ export function calculateClientBI(
     const farol = classifyFarol(ratio);
     const coef = getFarolCoefficient(farol);
     const meta = familyMetaWeight(version, row.categoria, familia, familias.length);
-    if (farol == null) erros.push(`Família "${familia}" sem atingimento e sem farol.`);
+    // Família sem dado (sem meta/compra informada) é legítima: fica "—" e fora da distribuição.
     return {
       familia,
       atingimento_ratio: ratio,
@@ -279,9 +279,11 @@ export function calculateClientBI(
     quantidade: counts.get(s) as number,
   }));
   const somaDistrib = distribuicao_farol.reduce((s, g) => s + g.quantidade, 0);
-  if (somaDistrib !== itens.length)
+  const avaliadas = itens.filter((f) => f.farol != null).length;
+  if (itens.length && avaliadas === 0) erros.push("Nenhuma família com atingimento informado.");
+  if (somaDistrib !== avaliadas)
     erros.push(
-      `Distribuição do farol soma ${somaDistrib}, mas o cliente possui ${itens.length} famílias.`,
+      `Distribuição do farol soma ${somaDistrib}, mas o cliente possui ${avaliadas} famílias avaliadas.`,
     );
 
   return {
@@ -466,7 +468,8 @@ export function validateClientBIResult(bi: ClientBIResult): string[] {
       problemas.push(`Índice ponderado incoerente em "${f.familia}".`);
   }
   const soma = bi.distribuicao_farol.reduce((s, g) => s + g.quantidade, 0);
-  if (bi.familias.length && soma !== bi.familias.length)
+  const avaliadas = bi.familias.filter((f) => f.farol != null).length;
+  if (avaliadas && soma !== avaliadas)
     problemas.push(`Distribuição do farol não cobre todas as famílias.`);
   if (bi.calculation_version !== CALCULATION_VERSION)
     problemas.push(`Versão da metodologia divergente.`);
