@@ -300,6 +300,23 @@ export async function saveExecutiveTopics(
   if (error) throw new Error(error.message);
 }
 
+/** Texto de introdução da Leitura executiva (resumo no modelo compacto, leitura no atual). */
+export async function saveExecutiveIntro(
+  reportId: string,
+  field: "executive_summary" | "executive_reading",
+  text: string,
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update(
+      field === "executive_summary"
+        ? { executive_summary: text.trim() }
+        : { executive_reading: text.trim() },
+    )
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
+
 /** compact_v2: capítulo Evidências e recomendações. */
 export async function saveEvidenceRecommendations(
   reportId: string,

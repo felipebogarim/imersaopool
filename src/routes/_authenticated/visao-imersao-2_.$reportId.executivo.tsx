@@ -53,7 +53,6 @@ import { buildExecutiveReadingFromImmersion } from "@/lib/executive-report/synth
 import { extractTradeName } from "@/lib/executive-report/trade-name";
 import { resolveClientCommercialData } from "@/lib/client-commercial-resolver";
 
-
 import {
   createExecutiveReport,
   deleteExecutiveReport,
@@ -63,6 +62,7 @@ import {
   reopenReport,
   saveDecisionBlocks,
   saveEvidenceRecommendations,
+  saveExecutiveIntro,
   saveExecutiveTopics,
   saveDoNotPrioritize,
   updateAction,
@@ -74,7 +74,6 @@ import {
   type ExecutiveAction,
   type ExecutiveReportData,
 } from "@/lib/executive-report/types";
-
 
 export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId/executivo")({
   head: ({ params }) => {
@@ -92,9 +91,9 @@ export const Route = createFileRoute("/_authenticated/visao-imersao-2_/$reportId
 
     const ogImageUrl = isClara
       ? "https://poolflux.app/og-charts/0ab3e2a1-f172-43a5-a633-9c347c09f06f.png"
-      : (reportId
-          ? `https://poolflux.app/api/og-executivo/${reportId}.png`
-          : "https://poolflux.app/og-charts/default.png");
+      : reportId
+        ? `https://poolflux.app/api/og-executivo/${reportId}.png`
+        : "https://poolflux.app/og-charts/default.png";
 
     return {
       meta: [
@@ -136,6 +135,8 @@ function RelatorioExecutivoPage() {
   const [blockEditing, setBlockEditing] = useState<any | null>(null);
   const [blockForm, setBlockForm] = useState({ title: "", fact: "", cause: "", impact: "" });
   const [blockDeleting, setBlockDeleting] = useState<any | null>(null);
+  const [introEditing, setIntroEditing] = useState(false);
+  const [introText, setIntroText] = useState("");
   const [topicEditing, setTopicEditing] = useState<number | null>(null);
   const [topicForm, setTopicForm] = useState({ title: "", bullets: "" });
   const [topicDeleting, setTopicDeleting] = useState<number | null>(null);
@@ -153,7 +154,6 @@ function RelatorioExecutivoPage() {
   });
   const [erDeleting, setErDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-
 
   const { data: me } = useQuery({
     queryKey: ["exec-me"],
@@ -267,7 +267,13 @@ function RelatorioExecutivoPage() {
               cleanCorp(parentClientName),
             ]
               .filter((s): s is string => Boolean(s && s.trim().length >= 3))
-              .map((s) => s.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
+              .map((s) =>
+                s
+                  .trim()
+                  .toUpperCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, ""),
+              ),
           ),
         );
 
@@ -361,8 +367,6 @@ function RelatorioExecutivoPage() {
     };
   }, [data, closed, commercial, fullReading, activeCompanyName, parent]);
 
-
-
   const { data: emailLogs = [] } = useQuery({
     queryKey: ["exec-email-logs", data?.id, historyOpen],
     queryFn: () => (data?.id ? listEmailLogs(data.id) : Promise.resolve([])),
@@ -421,7 +425,12 @@ function RelatorioExecutivoPage() {
     }
   }
 
-  async function mutate(action: ExecutiveAction, patch: Partial<ExecutiveAction>, label: string, note?: string) {
+  async function mutate(
+    action: ExecutiveAction,
+    patch: Partial<ExecutiveAction>,
+    label: string,
+    note?: string,
+  ) {
     setBusy(true);
     try {
       await updateAction(action, patch, { userId: me?.userId ?? null, label, note });
@@ -472,6 +481,22 @@ function RelatorioExecutivoPage() {
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveIntro() {
+    if (!data?.id) return;
+    const field = isCompactLayout(data) ? "executive_summary" : "executive_reading";
+    setBusy(true);
+    try {
+      await saveExecutiveIntro(data.id, field, introText);
+      await refetch();
+      setIntroEditing(false);
+      toast.success("Texto atualizado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o texto.");
     } finally {
       setBusy(false);
     }
@@ -607,7 +632,6 @@ function RelatorioExecutivoPage() {
     }
   }
 
-
   const clientName = parent?.client_name ?? data?.client.display_name ?? "Cliente";
 
   // Distingue ações já previstas no relatório de imersão original (espelho da
@@ -627,7 +651,6 @@ function RelatorioExecutivoPage() {
     };
   }, [existingActions]);
 
-
   return (
     <div className="mx-auto w-full max-w-4xl px-4 pb-16">
       <PageHeader
@@ -640,7 +663,10 @@ function RelatorioExecutivoPage() {
                 {viewData && (
                   <ListenReportButton
                     data={viewData}
-                    autoStart={typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ouvir") === "1"}
+                    autoStart={
+                      typeof window !== "undefined" &&
+                      new URLSearchParams(window.location.search).get("ouvir") === "1"
+                    }
                   />
                 )}
                 <Button size="sm" onClick={() => viewData && exportExecutiveReportPdf(viewData)}>
@@ -655,7 +681,8 @@ function RelatorioExecutivoPage() {
                   onClick={() => setWhatsappOpen(true)}
                   className="hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-colors"
                 >
-                  <MessageCircle className="mr-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Enviar por WhatsApp
+                  <MessageCircle className="mr-1 h-4 w-4 text-emerald-600 dark:text-emerald-400" />{" "}
+                  Enviar por WhatsApp
                 </Button>
                 {closed && (
                   <Button size="sm" variant="outline" onClick={() => void handleRevisar()}>
@@ -700,7 +727,6 @@ function RelatorioExecutivoPage() {
               </Link>
             </Button>
           </div>
-
         }
       />
 
@@ -754,6 +780,14 @@ function RelatorioExecutivoPage() {
           <LeituraChapter
             data={viewData}
             readOnly={closed}
+            onEditIntro={() => {
+              setIntroText(
+                (isCompactLayout(viewData)
+                  ? viewData.executive_summary
+                  : viewData.executive_reading) ?? "",
+              );
+              setIntroEditing(true);
+            }}
             onEditTopic={(i) => {
               const t = (viewData.executive_topics ?? [])[i];
               setTopicEditing(i);
@@ -845,8 +879,24 @@ function RelatorioExecutivoPage() {
             onDeleteItem={(i) => setDnpDeleting(i)}
           />
         </div>
-
       )}
+
+      <Dialog open={introEditing} onOpenChange={setIntroEditing}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar texto de introdução</DialogTitle>
+          </DialogHeader>
+          <Textarea rows={14} value={introText} onChange={(e) => setIntroText(e.target.value)} />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIntroEditing(false)}>
+              Cancelar
+            </Button>
+            <Button disabled={busy} onClick={() => void handleSaveIntro()}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={topicEditing !== null} onOpenChange={(v) => !v && setTopicEditing(null)}>
         <DialogContent>
@@ -1089,8 +1139,8 @@ function RelatorioExecutivoPage() {
             <DialogTitle>Excluir relatório executivo</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Esta ação remove o relatório executivo desta imersão, incluindo ações e versões. A
-            Visão Imersão 2 original não é afetada.
+            Esta ação remove o relatório executivo desta imersão, incluindo ações e versões. A Visão
+            Imersão 2 original não é afetada.
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
@@ -1104,7 +1154,6 @@ function RelatorioExecutivoPage() {
       </Dialog>
 
       <ActionEditDialog
-
         action={editing}
         open={!!editing}
         onOpenChange={(v) => !v && setEditing(null)}

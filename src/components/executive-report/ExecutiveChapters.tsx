@@ -20,7 +20,6 @@ import {
 import { ActionCard } from "./ActionCard";
 import { MarkdownView } from "@/components/MarkdownView";
 
-
 export function ChapterHeader({ num, title }: { num: string; title: string }) {
   return (
     <div className="mb-4 rounded-lg bg-primary/95 px-4 py-3 text-primary-foreground">
@@ -33,7 +32,9 @@ export function ChapterHeader({ num, title }: { num: string; title: string }) {
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
       <p className="text-sm">{value || "—"}</p>
     </div>
   );
@@ -76,11 +77,13 @@ export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
 export function LeituraChapter({
   data,
   readOnly,
+  onEditIntro,
   onEditTopic,
   onDeleteTopic,
 }: {
   data: ExecutiveReportData;
   readOnly?: boolean;
+  onEditIntro?: () => void;
   onEditTopic?: (index: number) => void;
   onDeleteTopic?: (index: number) => void;
 }) {
@@ -95,9 +98,30 @@ export function LeituraChapter({
         <Card>
           <CardContent className="space-y-6 p-5">
             {data.executive_summary && (
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {data.executive_summary}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {data.executive_summary}
+                </p>
+                {!readOnly && onEditIntro && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground"
+                        aria-label="Opções do texto de introdução"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={onEditIntro}>
+                        <Pencil className="mr-2 h-4 w-4" /> Editar texto
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             )}
             {topics.map((t, i) => (
               <div key={`${t.title}-${i}`}>
@@ -155,14 +179,32 @@ export function LeituraChapter({
     <section>
       <ChapterHeader num="02" title="Leitura executiva" />
       <Card>
-        <CardContent className="p-5">
+        <CardContent className="flex items-start justify-between gap-2 p-5">
           <MarkdownView markdown={data.executive_reading} className="text-[15px]" />
+          {!readOnly && onEditIntro && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground"
+                  aria-label="Opções do texto de introdução"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEditIntro}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar texto
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </CardContent>
       </Card>
     </section>
   );
 }
-
 
 export function DiagnosticoChapter({
   data,
@@ -183,7 +225,6 @@ export function DiagnosticoChapter({
   onEditBlock?: (b: ExecutiveReportData["decision_blocks"][number]) => void;
   onDeleteBlock?: (b: ExecutiveReportData["decision_blocks"][number]) => void;
 }) {
-
   const compact = isCompactLayout(data);
   const orphans = compact ? [] : unassignedActions(data);
 
@@ -288,7 +329,6 @@ export function DiagnosticoChapter({
                         onReject={() => onReject?.(a)}
                       />
                     ))}
-
                   </div>
                 )}
               </CardContent>
