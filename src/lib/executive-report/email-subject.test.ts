@@ -5,6 +5,11 @@ describe("buildExecutiveEmailSubject", () => {
   it("monta Imersão [região] - [representante]", () => {
     expect(buildExecutiveEmailSubject("PR / SC", "NOVARE")).toBe("Imersão PR / SC - NOVARE");
   });
+  it("começa pelo nome do cliente quando informado", () => {
+    expect(buildExecutiveEmailSubject("Belo Horizonte, MG", "APTA", "X", "Loja Elétrica")).toBe(
+      "Loja Elétrica - Imersão Belo Horizonte, MG - APTA",
+    );
+  });
   it("omite o que falta e usa o fallback sem nada", () => {
     expect(buildExecutiveEmailSubject("", "NOVARE")).toBe("Imersão - NOVARE");
     expect(buildExecutiveEmailSubject("Curitiba", " ")).toBe("Imersão Curitiba");

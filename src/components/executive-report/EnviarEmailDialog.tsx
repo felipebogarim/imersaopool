@@ -56,7 +56,12 @@ export function EnviarEmailDialog({
   onOpenChange: (v: boolean) => void;
   data: ExecutiveReportData;
   appUrl: string;
-  onSent: (args: { recipients: string[]; subject: string; attachPdf: boolean; error?: string }) => void;
+  onSent: (args: {
+    recipients: string[];
+    subject: string;
+    attachPdf: boolean;
+    error?: string;
+  }) => void;
   repId?: string | null;
   razaoSocial?: string | null;
 }) {
@@ -80,6 +85,7 @@ export function EnviarEmailDialog({
       data.client.location,
       data.client.representative,
       `Relatório Executivo de Imersão · ${data.client.display_name}`,
+      data.client.trade_name || data.client.display_name,
     ),
   );
   const subjectEdited = useRef(false);
@@ -98,6 +104,7 @@ export function EnviarEmailDialog({
           regiao || data.client.location,
           nome || informedRep,
           fallback,
+          data.client.trade_name || data.client.display_name,
         ),
       );
     };
@@ -128,9 +135,13 @@ export function EnviarEmailDialog({
     if (!list) return;
     const picked = Array.from(list);
     const tooBig = picked.filter((f) => f.size > MAX_FILE_BYTES);
-    if (tooBig.length) toast.error(`Arquivo acima de 25 MB: ${tooBig.map((f) => f.name).join(", ")}`);
+    if (tooBig.length)
+      toast.error(`Arquivo acima de 25 MB: ${tooBig.map((f) => f.name).join(", ")}`);
     const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES);
-    setFiles((cur) => [...cur, ...ok.filter((f) => !cur.some((c) => c.name === f.name && c.size === f.size))]);
+    setFiles((cur) => [
+      ...cur,
+      ...ok.filter((f) => !cur.some((c) => c.name === f.name && c.size === f.size)),
+    ]);
   }
 
   async function uploadFiles(): Promise<EmailAttachment[]> {
@@ -143,12 +154,16 @@ export function EnviarEmailDialog({
         const path = `${data.id}/${crypto.randomUUID()}-${safe}`;
         const { error: upErr } = await supabase.storage
           .from("email-anexos")
-          .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+          .upload(path, file, {
+            contentType: file.type || "application/octet-stream",
+            upsert: false,
+          });
         if (upErr) throw new Error(`${file.name}: ${upErr.message}`);
         const { data: signed, error: signErr } = await supabase.storage
           .from("email-anexos")
           .createSignedUrl(path, LINK_TTL_SECONDS, { download: file.name });
-        if (signErr || !signed?.signedUrl) throw new Error(`${file.name}: não foi possível gerar o link`);
+        if (signErr || !signed?.signedUrl)
+          throw new Error(`${file.name}: não foi possível gerar o link`);
         const url = signed.signedUrl.startsWith("http")
           ? signed.signedUrl
           : `${window.location.origin}${signed.signedUrl}`;
@@ -212,7 +227,12 @@ export function EnviarEmailDialog({
         import("@/lib/email-templates/relatorio-executivo"),
       ]);
       const html = await render(
-        <ExecutiveReportEmail report={finalData} message={message} appUrl={appUrl} families={families} />,
+        <ExecutiveReportEmail
+          report={finalData}
+          message={message}
+          appUrl={appUrl}
+          families={families}
+        />,
       );
       setPreviewHtml(html);
     } catch (err) {
@@ -412,7 +432,12 @@ export function EnviarEmailDialog({
 
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => void buildPreview()} disabled={rendering}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void buildPreview()}
+                disabled={rendering}
+              >
                 {rendering ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
                 Pré-visualizar e-mail
               </Button>
