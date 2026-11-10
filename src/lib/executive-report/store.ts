@@ -300,6 +300,19 @@ export async function saveExecutiveTopics(
   if (error) throw new Error(error.message);
 }
 
+/** Briefing executivo (capítulo 01): campos do cliente e marcas observadas, editados à mão. */
+export async function saveExecutiveBriefing(
+  reportId: string,
+  client: ExecutiveReportData["client"],
+  brands: string[],
+) {
+  const { error } = await supabase
+    .from("executive_reports")
+    .update({ client: client as any, brands_observed: brands as any })
+    .eq("id", reportId);
+  if (error) throw new Error(error.message);
+}
+
 /** Texto de introdução da Leitura executiva (resumo no modelo compacto, leitura no atual). */
 export async function saveExecutiveIntro(
   reportId: string,

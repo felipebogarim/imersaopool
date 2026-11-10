@@ -94,7 +94,6 @@ export type ExecutiveEvidenceRecommendation = {
   opportunity?: string | null;
 };
 
-
 export type ExecutiveNonPriority = {
   id?: string;
   title: string;
@@ -111,6 +110,8 @@ export type ExecutiveClient = {
   consultant?: string | null;
   category?: string | null;
   attainment?: string | null;
+  /** Campos editados manualmente: não são sobrescritos pelos dados comerciais calculados. */
+  manual_fields?: string[];
 };
 
 export type ExecutiveReportData = {
@@ -174,7 +175,6 @@ export function toEmailData(data: ExecutiveReportData): ExecutiveReportData {
     })),
   };
 }
-
 
 export function canClose(actions: ExecutiveAction[]) {
   return actions.length > 0 && actions.every((a) => a.status !== "suggested");

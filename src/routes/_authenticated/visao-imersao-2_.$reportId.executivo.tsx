@@ -41,6 +41,7 @@ import { ClientFamiliasChart } from "@/components/ClientFamiliasChart";
 import { ActionEditDialog } from "@/components/executive-report/ActionEditDialog";
 import { EnviarEmailDialog } from "@/components/executive-report/EnviarEmailDialog";
 import { EnviarWhatsappDialog } from "@/components/executive-report/EnviarWhatsappDialog";
+import { BriefingEditDialog } from "@/components/executive-report/BriefingEditDialog";
 import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
 import { ValidateActionKanbanDialog } from "@/components/executive-report/ValidateActionKanbanDialog";
 import { parseExecutiveReportFile } from "@/lib/executive-report/parse";
@@ -62,6 +63,7 @@ import {
   reopenReport,
   saveDecisionBlocks,
   saveEvidenceRecommendations,
+  saveExecutiveBriefing,
   saveExecutiveIntro,
   saveExecutiveTopics,
   saveDoNotPrioritize,
@@ -135,6 +137,7 @@ function RelatorioExecutivoPage() {
   const [blockEditing, setBlockEditing] = useState<any | null>(null);
   const [blockForm, setBlockForm] = useState({ title: "", fact: "", cause: "", impact: "" });
   const [blockDeleting, setBlockDeleting] = useState<any | null>(null);
+  const [briefingEditing, setBriefingEditing] = useState(false);
   const [introEditing, setIntroEditing] = useState(false);
   const [introText, setIntroText] = useState("");
   const [topicEditing, setTopicEditing] = useState<number | null>(null);
@@ -324,8 +327,10 @@ function RelatorioExecutivoPage() {
   const viewData = useMemo<ExecutiveReportData | null>(() => {
     if (!data) return null;
     const base = closed ? toFinalData(data) : data;
-    const attainment =
-      commercial?.geralPct != null
+    const manual = new Set(base.client.manual_fields ?? []);
+    const attainment = manual.has("attainment")
+      ? base.client.attainment || null
+      : commercial?.geralPct != null
         ? `${commercial.geralPct.toFixed(1).replace(".", ",")}% · ${commercial.periodoLabel}`
         : base.client.attainment || null;
     // No modelo compacto a leitura vem do próprio arquivo (resumo + tópicos).
@@ -362,7 +367,9 @@ function RelatorioExecutivoPage() {
         ...base.client,
         trade_name: resolvedTradeName,
         attainment,
-        category: commercial?.categoria || base.client.category || null,
+        category: manual.has("category")
+          ? base.client.category || null
+          : commercial?.categoria || base.client.category || null,
       },
     };
   }, [data, closed, commercial, fullReading, activeCompanyName, parent]);
@@ -481,6 +488,21 @@ function RelatorioExecutivoPage() {
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível salvar o bloco.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSaveBriefing(client: ExecutiveReportData["client"], brands: string[]) {
+    if (!data?.id) return;
+    setBusy(true);
+    try {
+      await saveExecutiveBriefing(data.id, client, brands);
+      await refetch();
+      setBriefingEditing(false);
+      toast.success("Briefing atualizado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o briefing.");
     } finally {
       setBusy(false);
     }
@@ -776,7 +798,11 @@ function RelatorioExecutivoPage() {
 
       {viewData && (
         <div className="mt-6 space-y-8">
-          <BriefingChapter data={viewData} />
+          <BriefingChapter
+            data={viewData}
+            readOnly={closed}
+            onEdit={() => setBriefingEditing(true)}
+          />
           <LeituraChapter
             data={viewData}
             readOnly={closed}
@@ -879,6 +905,17 @@ function RelatorioExecutivoPage() {
             onDeleteItem={(i) => setDnpDeleting(i)}
           />
         </div>
+      )}
+
+      {data && (
+        <BriefingEditDialog
+          open={briefingEditing}
+          onOpenChange={setBriefingEditing}
+          client={data.client}
+          brands={data.brands_observed}
+          busy={busy}
+          onSave={(c, b) => void handleSaveBriefing(c, b)}
+        />
       )}
 
       <Dialog open={introEditing} onOpenChange={setIntroEditing}>

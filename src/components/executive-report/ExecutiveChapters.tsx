@@ -40,12 +40,39 @@ function Info({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-export function BriefingChapter({ data }: { data: ExecutiveReportData }) {
+export function BriefingChapter({
+  data,
+  readOnly,
+  onEdit,
+}: {
+  data: ExecutiveReportData;
+  readOnly?: boolean;
+  onEdit?: () => void;
+}) {
   return (
     <section>
       <ChapterHeader num="01" title="Briefing executivo" />
       <Card>
-        <CardContent className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="relative grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+          {!readOnly && onEdit && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-2 h-7 w-7 text-muted-foreground"
+                  aria-label="Opções do briefing"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar briefing
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Info label="Razão social" value={data.client.display_name} />
           <Info label="Nome fantasia" value={data.client.trade_name} />
           <Info label="Data da imersão" value={formatVisitDate(data.client.visit_date)} />
