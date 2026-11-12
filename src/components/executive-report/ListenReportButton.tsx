@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -33,6 +33,25 @@ export function ListenReportButton({
   const indexRef = useRef(0);
   const stopRef = useRef(false);
   const started = useRef(false);
+
+  // O áudio é gerado a partir do texto atual; se qualquer campo do relatório mudar, o áudio
+  // preparado deixa de valer: descarta e a próxima reprodução/download usa o texto novo.
+  const scriptKey = useMemo(() => JSON.stringify(buildSpeechScript(data)), [data]);
+  const lastKey = useRef(scriptKey);
+  useEffect(() => {
+    if (lastKey.current === scriptKey) return;
+    lastKey.current = scriptKey;
+    stopRef.current = true;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    tracksRef.current.forEach((t) => URL.revokeObjectURL(t.url));
+    tracksRef.current = [];
+    indexRef.current = 0;
+    setProgress(0);
+    setTotal(0);
+    setSeeking(null);
+    setState("idle");
+  }, [scriptKey]);
 
   useEffect(() => {
     return () => {
