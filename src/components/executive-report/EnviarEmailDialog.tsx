@@ -109,14 +109,39 @@ export function EnviarEmailDialog({
       );
     };
     apply();
-    const term = informedRep.replace(/[%,()]/g, " ");
-    const query = supabase.from("representatives").select("nome, regiao");
+    // "Márcio (Apta)": nome + representação entre parênteses. Nomes parecidos existem em
+    // regiões diferentes, então só aceitamos um vínculo inequívoco.
+    const paren = informedRep.match(/\(([^)]*)\)/)?.[1]?.trim() ?? "";
+    const term = informedRep
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[%,()]/g, " ")
+      .trim();
+    const norm = (v?: string | null) =>
+      (v ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    const query = supabase.from("representatives").select("nome, regiao, representacao");
     const lookup = repId
       ? query.eq("id", repId).limit(1)
       : term.length >= 2
-        ? query.or(`nome.ilike.%${term}%,representacao.ilike.%${term}%`).limit(1)
+        ? query.ilike("nome", `%${term}%`).limit(20)
         : null;
-    if (lookup) void lookup.then(({ data: rows }) => apply(rows?.[0]?.nome, rows?.[0]?.regiao));
+    if (lookup)
+      void lookup.then(({ data: rows }) => {
+        const list = rows ?? [];
+        if (repId) return apply(list[0]?.nome, list[0]?.regiao);
+        const byRep = paren
+          ? list.filter(
+              (r) =>
+                norm(r.representacao).includes(norm(paren)) ||
+                norm(paren).includes(norm(r.representacao)),
+            )
+          : [];
+        const pick = byRep.length === 1 ? byRep[0] : !paren && list.length === 1 ? list[0] : null;
+        if (pick) apply(pick.nome, pick.regiao);
+      });
     return () => {
       cancelled = true;
     };
@@ -152,12 +177,10 @@ export function EnviarEmailDialog({
       for (const file of files) {
         const safe = file.name.replace(/[^\w.\-]+/g, "_");
         const path = `${data.id}/${crypto.randomUUID()}-${safe}`;
-        const { error: upErr } = await supabase.storage
-          .from("email-anexos")
-          .upload(path, file, {
-            contentType: file.type || "application/octet-stream",
-            upsert: false,
-          });
+        const { error: upErr } = await supabase.storage.from("email-anexos").upload(path, file, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
         if (upErr) throw new Error(`${file.name}: ${upErr.message}`);
         const { data: signed, error: signErr } = await supabase.storage
           .from("email-anexos")
