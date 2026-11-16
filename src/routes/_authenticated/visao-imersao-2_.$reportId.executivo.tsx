@@ -286,19 +286,48 @@ function RelatorioExecutivoPage() {
 
         const { data: cands } = await supabase
           .from("clients")
-          .select("id, razao_social, nome_fantasia, categoria, representative_id")
+          .select(
+            "id, razao_social, nome_fantasia, categoria, representative_id, cidade, municipio, estado",
+          )
           .or(orClause)
-          .limit(5);
+          .limit(30);
 
         if (cands && cands.length >= 1) {
-          // Se houver 1 ou se algum corresponder exatamente ao trade_name
-          const exact = cands.find(
-            (c) =>
-              parentTradeName &&
-              (cleanCorp(c.nome_fantasia || "") === cleanCorp(parentTradeName) ||
-                cleanCorp(c.razao_social || "") === cleanCorp(parentTradeName)),
+          // Nomes parecidos existem em regiões diferentes: nunca pegar o "primeiro" da lista.
+          const fold = (v?: string | null) =>
+            (v ?? "")
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .toUpperCase()
+              .trim();
+          const loc = String(
+            (parent?.structured_data as any)?.data?.client?.location ??
+              (parent?.structured_data as any)?.data?.client?.city ??
+              (parent?.structured_data as any)?.data?.location ??
+              "",
           );
-          clientRow = exact || cands[0];
+          const locCity = fold(loc.split(",")[0]);
+          const locUf = fold(loc.match(/\b([A-Za-z]{2})\s*$/)?.[1]);
+          const sameUf = (c: any) => !locUf || fold(c.estado) === locUf;
+          const sameCity = (c: any) =>
+            !locCity || fold(c.cidade) === locCity || fold(c.municipio) === locCity;
+          const byPlace = cands.filter((c) => sameUf(c) && sameCity(c));
+          const byUf = cands.filter(sameUf);
+          const isExact = (c: any) =>
+            Boolean(parentTradeName) &&
+            (cleanCorp(c.nome_fantasia || "") === cleanCorp(parentTradeName) ||
+              cleanCorp(c.razao_social || "") === cleanCorp(parentTradeName));
+          const isExactCorp = (c: any) =>
+            cleanCorp(c.razao_social || "") === cleanCorp(parentClientName);
+          const pickFrom = (list: any[]) =>
+            list.length === 1
+              ? list[0]
+              : list.filter(isExactCorp).length === 1
+                ? list.find(isExactCorp)
+                : list.filter(isExact).length === 1
+                  ? list.find(isExact)
+                  : null;
+          clientRow = pickFrom(byPlace) ?? pickFrom(byUf) ?? null;
         }
       }
       if (!clientRow) return null;
