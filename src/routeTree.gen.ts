@@ -99,6 +99,8 @@ import { Route as AuthenticatedPricePricingRouteImport } from './routes/_authent
 import { Route as AuthenticatedPriceTabelasRouteImport } from './routes/_authenticated/price/tabelas'
 import { Route as AuthenticatedPriceValidacaoRouteImport } from './routes/_authenticated/price/validacao'
 import { Route as AuthenticatedProdutosIndexRouteImport } from './routes/_authenticated/produtos.index'
+import { Route as AuthenticatedRelatorioGeralIndexRouteImport } from './routes/_authenticated/relatorio-geral.index'
+import { Route as AuthenticatedRelatorioGeralIdRouteImport } from './routes/_authenticated/relatorio-geral.$id'
 import { Route as AuthenticatedRepresentantesIndexRouteImport } from './routes/_authenticated/representantes.index'
 import { Route as AuthenticatedRepresentantesPerformanceRouteImport } from './routes/_authenticated/representantes.performance'
 import { Route as AuthenticatedSinteseTiposRouteImport } from './routes/_authenticated/sintese.tipos'
@@ -636,6 +638,18 @@ const AuthenticatedProdutosIndexRoute =
     path: '/produtos/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRelatorioGeralIndexRoute =
+  AuthenticatedRelatorioGeralIndexRouteImport.update({
+    id: '/relatorio-geral/',
+    path: '/relatorio-geral/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRelatorioGeralIdRoute =
+  AuthenticatedRelatorioGeralIdRouteImport.update({
+    id: '/relatorio-geral/$id',
+    path: '/relatorio-geral/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRepresentantesIndexRoute =
   AuthenticatedRepresentantesIndexRouteImport.update({
     id: '/representantes/',
@@ -959,6 +973,7 @@ export interface FileRoutesByFullPath {
   '/price/pricing': typeof AuthenticatedPricePricingRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
+  '/relatorio-geral/$id': typeof AuthenticatedRelatorioGeralIdRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -983,6 +998,7 @@ export interface FileRoutesByFullPath {
   '/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
   '/produtos/': typeof AuthenticatedProdutosIndexRoute
+  '/relatorio-geral/': typeof AuthenticatedRelatorioGeralIndexRoute
   '/representantes/': typeof AuthenticatedRepresentantesIndexRoute
   '/solicitacoes/': typeof AuthenticatedSolicitacoesIndexRoute
   '/tarefas/': typeof AuthenticatedTarefasIndexRoute
@@ -1090,6 +1106,7 @@ export interface FileRoutesByTo {
   '/price/pricing': typeof AuthenticatedPricePricingRoute
   '/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/price/validacao': typeof AuthenticatedPriceValidacaoRoute
+  '/relatorio-geral/$id': typeof AuthenticatedRelatorioGeralIdRoute
   '/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -1114,6 +1131,7 @@ export interface FileRoutesByTo {
   '/mapa-acoes': typeof AuthenticatedMapaAcoesIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
   '/produtos': typeof AuthenticatedProdutosIndexRoute
+  '/relatorio-geral': typeof AuthenticatedRelatorioGeralIndexRoute
   '/representantes': typeof AuthenticatedRepresentantesIndexRoute
   '/solicitacoes': typeof AuthenticatedSolicitacoesIndexRoute
   '/tarefas': typeof AuthenticatedTarefasIndexRoute
@@ -1225,6 +1243,7 @@ export interface FileRoutesById {
   '/_authenticated/price/pricing': typeof AuthenticatedPricePricingRoute
   '/_authenticated/price/tabelas': typeof AuthenticatedPriceTabelasRoute
   '/_authenticated/price/validacao': typeof AuthenticatedPriceValidacaoRoute
+  '/_authenticated/relatorio-geral/$id': typeof AuthenticatedRelatorioGeralIdRoute
   '/_authenticated/representantes/performance': typeof AuthenticatedRepresentantesPerformanceRoute
   '/_authenticated/sintese/tipos': typeof AuthenticatedSinteseTiposRoute
   '/_authenticated/solicitacoes/$ticketId': typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -1249,6 +1268,7 @@ export interface FileRoutesById {
   '/_authenticated/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
   '/_authenticated/produtos/': typeof AuthenticatedProdutosIndexRoute
+  '/_authenticated/relatorio-geral/': typeof AuthenticatedRelatorioGeralIndexRoute
   '/_authenticated/representantes/': typeof AuthenticatedRepresentantesIndexRoute
   '/_authenticated/solicitacoes/': typeof AuthenticatedSolicitacoesIndexRoute
   '/_authenticated/tarefas/': typeof AuthenticatedTarefasIndexRoute
@@ -1360,6 +1380,7 @@ export interface FileRouteTypes {
     | '/price/pricing'
     | '/price/tabelas'
     | '/price/validacao'
+    | '/relatorio-geral/$id'
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
@@ -1384,6 +1405,7 @@ export interface FileRouteTypes {
     | '/mapa-acoes/'
     | '/price/'
     | '/produtos/'
+    | '/relatorio-geral/'
     | '/representantes/'
     | '/solicitacoes/'
     | '/tarefas/'
@@ -1491,6 +1513,7 @@ export interface FileRouteTypes {
     | '/price/pricing'
     | '/price/tabelas'
     | '/price/validacao'
+    | '/relatorio-geral/$id'
     | '/representantes/performance'
     | '/sintese/tipos'
     | '/solicitacoes/$ticketId'
@@ -1515,6 +1538,7 @@ export interface FileRouteTypes {
     | '/mapa-acoes'
     | '/price'
     | '/produtos'
+    | '/relatorio-geral'
     | '/representantes'
     | '/solicitacoes'
     | '/tarefas'
@@ -1625,6 +1649,7 @@ export interface FileRouteTypes {
     | '/_authenticated/price/pricing'
     | '/_authenticated/price/tabelas'
     | '/_authenticated/price/validacao'
+    | '/_authenticated/relatorio-geral/$id'
     | '/_authenticated/representantes/performance'
     | '/_authenticated/sintese/tipos'
     | '/_authenticated/solicitacoes/$ticketId'
@@ -1649,6 +1674,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mapa-acoes/'
     | '/_authenticated/price/'
     | '/_authenticated/produtos/'
+    | '/_authenticated/relatorio-geral/'
     | '/_authenticated/representantes/'
     | '/_authenticated/solicitacoes/'
     | '/_authenticated/tarefas/'
@@ -2353,6 +2379,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relatorio-geral/': {
+      id: '/_authenticated/relatorio-geral/'
+      path: '/relatorio-geral'
+      fullPath: '/relatorio-geral/'
+      preLoaderRoute: typeof AuthenticatedRelatorioGeralIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/relatorio-geral/$id': {
+      id: '/_authenticated/relatorio-geral/$id'
+      path: '/relatorio-geral/$id'
+      fullPath: '/relatorio-geral/$id'
+      preLoaderRoute: typeof AuthenticatedRelatorioGeralIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/representantes/': {
       id: '/_authenticated/representantes/'
       path: '/representantes'
@@ -2810,6 +2850,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerformanceRepsRoute: typeof AuthenticatedPerformanceRepsRoute
   AuthenticatedPrecosMapaRoute: typeof AuthenticatedPrecosMapaRoute
   AuthenticatedPrecosSimuladorRoute: typeof AuthenticatedPrecosSimuladorRoute
+  AuthenticatedRelatorioGeralIdRoute: typeof AuthenticatedRelatorioGeralIdRoute
   AuthenticatedRepresentantesPerformanceRoute: typeof AuthenticatedRepresentantesPerformanceRoute
   AuthenticatedSinteseTiposRoute: typeof AuthenticatedSinteseTiposRoute
   AuthenticatedSolicitacoesTicketIdRoute: typeof AuthenticatedSolicitacoesTicketIdRoute
@@ -2824,6 +2865,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedManuaisIndexRoute: typeof AuthenticatedManuaisIndexRoute
   AuthenticatedMapaAcoesIndexRoute: typeof AuthenticatedMapaAcoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
+  AuthenticatedRelatorioGeralIndexRoute: typeof AuthenticatedRelatorioGeralIndexRoute
   AuthenticatedRepresentantesIndexRoute: typeof AuthenticatedRepresentantesIndexRoute
   AuthenticatedSolicitacoesIndexRoute: typeof AuthenticatedSolicitacoesIndexRoute
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
@@ -2885,6 +2927,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerformanceRepsRoute: AuthenticatedPerformanceRepsRoute,
   AuthenticatedPrecosMapaRoute: AuthenticatedPrecosMapaRoute,
   AuthenticatedPrecosSimuladorRoute: AuthenticatedPrecosSimuladorRoute,
+  AuthenticatedRelatorioGeralIdRoute: AuthenticatedRelatorioGeralIdRoute,
   AuthenticatedRepresentantesPerformanceRoute:
     AuthenticatedRepresentantesPerformanceRoute,
   AuthenticatedSinteseTiposRoute: AuthenticatedSinteseTiposRoute,
@@ -2902,6 +2945,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedManuaisIndexRoute: AuthenticatedManuaisIndexRoute,
   AuthenticatedMapaAcoesIndexRoute: AuthenticatedMapaAcoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
+  AuthenticatedRelatorioGeralIndexRoute: AuthenticatedRelatorioGeralIndexRoute,
   AuthenticatedRepresentantesIndexRoute: AuthenticatedRepresentantesIndexRoute,
   AuthenticatedSolicitacoesIndexRoute: AuthenticatedSolicitacoesIndexRoute,
   AuthenticatedTarefasIndexRoute: AuthenticatedTarefasIndexRoute,
