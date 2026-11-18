@@ -9,9 +9,11 @@ import {
   ACTION_REQUEST_MIN_INTERVAL_DAYS,
   ACTION_REQUEST_TTL_DAYS,
   ACTION_STATUS_LABEL,
+  acceptanceOrDefault,
   formatPrazo,
   readActionMeta,
   statusOrDefault,
+  type ActionAcceptance,
   type ActionStatus,
 } from "@/lib/action-tracking";
 
@@ -121,6 +123,7 @@ export type OpenAction = {
   due_date: string | null;
   board_id: string;
   status: ActionStatus;
+  acceptance: ActionAcceptance;
   metadata: Record<string, unknown>;
 };
 
@@ -135,16 +138,30 @@ export async function listActionsForRep(repId: string, opts?: { includeDone?: bo
   if (error) throw new Error(error.message);
   const ids = (cards ?? []).map((c: { id: string }) => c.id);
   const status = new Map<string, ActionStatus>();
+  const acceptance = new Map<string, ActionAcceptance>();
   if (ids.length) {
-    const { data: rows } = await admin
+    // Tolerante: se a migration das sugestões ainda não rodou, a coluna `acceptance` não existe.
+    let rows: { card_id: string; status: string; acceptance?: string }[] | null = null;
+    const r1 = await admin
       .from("kanban_action_tracking")
-      .select("card_id, status")
+      .select("card_id, status, acceptance")
       .in("card_id", ids);
-    for (const r of rows ?? []) status.set(r.card_id, statusOrDefault(r.status));
+    if (r1.error) {
+      const r2 = await admin
+        .from("kanban_action_tracking")
+        .select("card_id, status")
+        .in("card_id", ids);
+      rows = r2.data;
+    } else rows = r1.data;
+    for (const r of rows ?? []) {
+      status.set(r.card_id, statusOrDefault(r.status));
+      acceptance.set(r.card_id, acceptanceOrDefault(r.acceptance));
+    }
   }
-  const all: OpenAction[] = (cards ?? []).map((c: Omit<OpenAction, "status">) => ({
+  const all: OpenAction[] = (cards ?? []).map((c: Omit<OpenAction, "status" | "acceptance">) => ({
     ...c,
     status: status.get(c.id) ?? "nao_iniciado",
+    acceptance: acceptance.get(c.id) ?? "nao_enviada",
   }));
   return opts?.includeDone ? all : all.filter((a) => a.status !== "concluido");
 }
@@ -213,6 +230,73 @@ export async function sendRequestToRep(
   if (!res.sent) {
     await admin.from("kanban_action_update_requests").delete().eq("id", reqRow.id);
     return { repId, sent: false, reason: res.reason };
+  }
+  return { repId, sent: true };
+}
+
+/**
+ * Envia ao representante as ações escolhidas COMO SUGESTÃO (nenhuma é obrigatória) e marca
+ * `acceptance = 'enviada'`. O link leva ao mesmo formulário por token, onde ele aceita ou recusa.
+ */
+export async function sendSuggestionToRep(
+  repId: string,
+  cardIds: string[],
+  opts?: { sentBy?: string | null },
+): Promise<RequestResult> {
+  const { data: rep } = await admin
+    .from("representatives")
+    .select("id, nome, email")
+    .eq("id", repId)
+    .maybeSingle();
+  if (!rep?.email) return { repId, sent: false, reason: "rep_without_email" };
+
+  const wanted = new Set(cardIds);
+  const actions = (await listActionsForRep(repId, { includeDone: true })).filter((a) =>
+    wanted.has(a.id),
+  );
+  if (!actions.length) return { repId, sent: false, reason: "no_actions" };
+
+  const raw = randomBytes(32).toString("hex");
+  const expires = new Date(Date.now() + ACTION_REQUEST_TTL_DAYS * 86_400_000);
+  const { data: reqRow, error } = await admin
+    .from("kanban_action_update_requests")
+    .insert({
+      token_hash: hashToken(raw),
+      representative_id: repId,
+      representative_email: rep.email,
+      expires_at: expires.toISOString(),
+      sent_by: opts?.sentBy ?? null,
+    })
+    .select("id")
+    .single();
+  if (error) return { repId, sent: false, reason: "token_insert_failed" };
+
+  const res = await sendSystemEmail({
+    templateName: "acao-sugestao",
+    to: rep.email,
+    idempotencyKey: `acao-sug-${reqRow.id}`,
+    templateData: {
+      repName: rep.nome,
+      actions: actions.map((a) => ({
+        title: a.title,
+        client: readActionMeta(a.metadata).client_name,
+        prazo: a.due_date ? formatPrazo(a.due_date) : undefined,
+      })),
+      link: `${origin()}/atualizacao-acoes/${raw}`,
+      expiresLabel: expires.toLocaleDateString("pt-BR"),
+    },
+  });
+  if (!res.sent) {
+    await admin.from("kanban_action_update_requests").delete().eq("id", reqRow.id);
+    return { repId, sent: false, reason: res.reason };
+  }
+  const now = new Date().toISOString();
+  for (const a of actions) {
+    // Reenvio de ação já aceita/recusada não zera a resposta.
+    if (a.acceptance === "aceita" || a.acceptance === "recusada") continue;
+    await admin
+      .from("kanban_action_tracking")
+      .upsert({ card_id: a.id, acceptance: "enviada", suggested_at: now, updated_at: now });
   }
   return { repId, sent: true };
 }

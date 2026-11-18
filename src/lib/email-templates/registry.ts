@@ -11,6 +11,7 @@ import { template as agendaConvite } from "./agenda-convite";
 import { template as centralMensagens } from "./central-mensagens";
 import { template as acaoSolicitacaoAtualizacao } from "./acao-solicitacao-atualizacao";
 import { template as acaoAtualizacaoRecebida } from "./acao-atualizacao-recebida";
+import { template as acaoSugestao } from "./acao-sugestao";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -34,4 +35,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "central-mensagens": centralMensagens,
   "acao-solicitacao-atualizacao": acaoSolicitacaoAtualizacao,
   "acao-atualizacao-recebida": acaoAtualizacaoRecebida,
+  "acao-sugestao": acaoSugestao,
 };

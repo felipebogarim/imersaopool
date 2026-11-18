@@ -43,7 +43,11 @@ export const NAV_TREE: NavGroup[] = [
     children: [
       { key: "analises.visao-rep-2", label: "Visão Reps", to: "/visao-rep-2" },
       { key: "analises.visao-imersao-2", label: "Visão Imersões em Campo", to: "/visao-imersao-2" },
-      { key: "analises.relatorios-executivos", label: "Relatórios Executivos", to: "/relatorios-executivos" },
+      {
+        key: "analises.relatorios-executivos",
+        label: "Relatórios Executivos",
+        to: "/relatorios-executivos",
+      },
       { key: "analises.relatorio-geral", label: "Relatório Geral", to: "/relatorio-geral" },
       { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
       { key: "analises.estrutura-rep", label: "Estrutura Rep", to: "/estrutura-rep" },
@@ -125,6 +129,7 @@ export const NAV_TREE: NavGroup[] = [
       },
       { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
+      { key: "ferramentas.acoes-reps", label: "Ações Reps", to: "/ferramentas/acoes-reps" },
       {
         key: "ferramentas.evolucao-acoes",
         label: "Evolução das Ações",

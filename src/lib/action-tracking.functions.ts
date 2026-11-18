@@ -6,6 +6,7 @@ import {
   ACTION_MAX_FILE_BYTES,
   ACTION_STATUS_LABEL,
   ACTION_STATUSES,
+  type ActionAcceptance,
   hasUpdateContent,
   readActionMeta,
   sanitizeFileName,
@@ -56,6 +57,7 @@ export type PublicActionForm =
         client?: string;
         due_date: string | null;
         status: ActionStatus;
+        acceptance: ActionAcceptance;
         people: { id: string; name: string }[];
       }[];
     }
@@ -80,6 +82,7 @@ export const getPublicActionForm = createServerFn({ method: "POST" })
         client: readActionMeta(a.metadata).client_name,
         due_date: a.due_date,
         status: a.status,
+        acceptance: a.acceptance,
         people: people.get(a.id) ?? [],
       })),
     };
@@ -246,4 +249,114 @@ export const submitPublicActionUpdate = createServerFn({ method: "POST" })
       });
     }
     return { saved: notified.length };
+  });
+
+/** Envia ações escolhidas ao representante como SUGESTÃO (só admin/gestor). */
+export const sendActionSuggestions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ cardIds: z.array(z.string().uuid()).min(1).max(200) }))
+  .handler(async ({ data, context }) => {
+    const roles = await Promise.all(
+      (["admin", "gestor"] as const).map((role) =>
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
+      ),
+    );
+    if (!roles.some((r) => r.data === true))
+      throw new Error("Sem permissão para enviar sugestões.");
+
+    // Os cards são lidos com o cliente do usuário (RLS): só quem enxerga o card pode sugeri-lo.
+    const { data: cards, error } = await context.supabase
+      .from("kanban_cards")
+      .select("id, metadata")
+      .in("id", data.cardIds);
+    if (error) throw new Error(error.message);
+    const byRep = new Map<string, string[]>();
+    for (const c of cards ?? []) {
+      const repId = readActionMeta(c.metadata).rep_id;
+      if (repId) byRep.set(repId, [...(byRep.get(repId) ?? []), c.id]);
+    }
+    const { sendSuggestionToRep } = await import("@/lib/action-tracking.server");
+    const results = [];
+    for (const [repId, ids] of byRep) {
+      try {
+        results.push(await sendSuggestionToRep(repId, ids, { sentBy: context.userId }));
+      } catch (e) {
+        results.push({ repId, sent: false, reason: e instanceof Error ? e.message : "error" });
+      }
+    }
+    return {
+      sent: results.filter((r) => r.sent).length,
+      skipped: results
+        .filter((r) => !r.sent)
+        .map((r) => ({ repId: r.repId, reason: r.reason ?? "unknown" })),
+    };
+  });
+
+/** O representante aceita ou recusa uma sugestão (pelo link pessoal). */
+export const respondPublicSuggestion = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      token: tokenSchema,
+      cardId: z.string().uuid(),
+      decision: z.enum(["aceita", "recusada"]),
+      note: z.string().max(2000).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { lookupRequest, listActionsForRep, notifySubmission } =
+      await import("@/lib/action-tracking.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin as any;
+
+    const req = await lookupRequest(data.token);
+    if (!req.valid) throw new Error("Link inválido ou expirado.");
+    const actions = await listActionsForRep(req.repId, { includeDone: true });
+    const card = actions.find((a) => a.id === data.cardId);
+    if (!card) throw new Error("Ação não encontrada.");
+
+    const note = data.note?.trim() || null;
+    const now = new Date().toISOString();
+    const { error } = await admin.from("kanban_action_tracking").upsert({
+      card_id: card.id,
+      acceptance: data.decision,
+      responded_at: now,
+      response_note: note,
+      updated_at: now,
+      updated_by_name: req.repName,
+    });
+    if (error) throw new Error("Falha ao registrar a resposta.");
+    const label = data.decision === "aceita" ? "Sugestão aceita" : "Sugestão recusada";
+    await admin.from("kanban_action_updates").insert({
+      card_id: card.id,
+      source: "representante",
+      author_name: req.repName,
+      note: note ? `${label}: ${note}` : label,
+    });
+
+    const meta = readActionMeta(card.metadata);
+    const { data: created } = await admin
+      .from("kanban_cards")
+      .select("created_by")
+      .eq("id", card.id)
+      .maybeSingle();
+    await notifySubmission({
+      submissionId: crypto.randomUUID(),
+      repName: req.repName,
+      repEmail: null,
+      items: [
+        {
+          cardId: card.id,
+          title: card.title,
+          client: meta.client_name,
+          statusLabel: label,
+          note: note ?? undefined,
+          pendencias: [],
+          files: 0,
+          responsibleId: meta.responsible_id,
+          createdBy: created?.created_by ?? undefined,
+        },
+      ],
+    });
+    return { acceptance: data.decision as ActionAcceptance };
   });

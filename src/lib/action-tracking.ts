@@ -86,3 +86,48 @@ export function hasUpdateContent(u: ActionUpdateInput, currentStatus: ActionStat
     u.files?.length,
   );
 }
+
+export const ACTION_ACCEPTANCES = ["nao_enviada", "enviada", "aceita", "recusada"] as const;
+export type ActionAcceptance = (typeof ACTION_ACCEPTANCES)[number];
+
+export function acceptanceOrDefault(v: unknown): ActionAcceptance {
+  return (ACTION_ACCEPTANCES as readonly string[]).includes(v as string)
+    ? (v as ActionAcceptance)
+    : "nao_enviada";
+}
+
+/** Colunas do Kanban "Ações Reps". A ação é sempre uma SUGESTÃO ao representante. */
+export const ACTION_BOARD_COLUMNS = [
+  { key: "sugerida", label: "Sugerida", hint: "Ainda não enviada ao representante" },
+  {
+    key: "aguardando",
+    label: "Aguardando aceite",
+    hint: "Enviada; o representante ainda não respondeu",
+  },
+  { key: "aceita", label: "Aceita", hint: "Representante aceitou a sugestão" },
+  { key: "andamento", label: "Em andamento", hint: "Em execução" },
+  { key: "concluida", label: "Concluída", hint: "Executada" },
+  { key: "recusada", label: "Recusada", hint: "Representante não aceitou a sugestão" },
+] as const;
+export type ActionBoardColumn = (typeof ACTION_BOARD_COLUMNS)[number]["key"];
+
+export function boardColumnFor(
+  status: ActionStatus,
+  acceptance: ActionAcceptance,
+): ActionBoardColumn {
+  if (acceptance === "recusada") return "recusada";
+  if (status === "concluido") return "concluida";
+  if (status === "em_andamento") return "andamento";
+  if (acceptance === "aceita") return "aceita";
+  if (acceptance === "enviada") return "aguardando";
+  return "sugerida";
+}
+
+/** Dias (inteiros) até o prazo; negativo = vencida; null = sem prazo. */
+export function daysUntil(due: string | null | undefined, now = new Date()): number | null {
+  if (!due) return null;
+  const d = new Date(`${due.slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  return Math.round((d.getTime() - base.getTime()) / 86_400_000);
+}

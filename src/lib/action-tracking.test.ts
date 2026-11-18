@@ -44,3 +44,23 @@ describe("action-tracking", () => {
     expect(sanitizeFileName("foto obra #1.jpg")).toBe("foto_obra_1.jpg");
   });
 });
+
+import { boardColumnFor, daysUntil } from "./action-tracking";
+
+describe("Kanban Ações Reps", () => {
+  it("posiciona a ação conforme aceite e status", () => {
+    expect(boardColumnFor("nao_iniciado", "nao_enviada")).toBe("sugerida");
+    expect(boardColumnFor("nao_iniciado", "enviada")).toBe("aguardando");
+    expect(boardColumnFor("nao_iniciado", "aceita")).toBe("aceita");
+    expect(boardColumnFor("em_andamento", "aceita")).toBe("andamento");
+    expect(boardColumnFor("concluido", "aceita")).toBe("concluida");
+    expect(boardColumnFor("em_andamento", "recusada")).toBe("recusada");
+  });
+
+  it("calcula dias até o prazo", () => {
+    const now = new Date(2026, 10, 19, 9);
+    expect(daysUntil("2026-11-24", now)).toBe(5);
+    expect(daysUntil("2026-11-18", now)).toBe(-1);
+    expect(daysUntil(null, now)).toBeNull();
+  });
+});

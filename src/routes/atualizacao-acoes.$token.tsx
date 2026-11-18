@@ -19,6 +19,7 @@ import {
 import {
   createPublicActionUpload,
   getPublicActionForm,
+  respondPublicSuggestion,
   submitPublicActionUpdate,
   type PublicActionForm,
 } from "@/lib/action-tracking.functions";
@@ -48,6 +49,10 @@ function PublicActionUpdatePage() {
   const loadFn = useServerFn(getPublicActionForm);
   const uploadFn = useServerFn(createPublicActionUpload);
   const submitFn = useServerFn(submitPublicActionUpdate);
+  const respondFn = useServerFn(respondPublicSuggestion);
+  const [responding, setResponding] = useState<string | null>(null);
+  const [declineFor, setDeclineFor] = useState<string | null>(null);
+  const [declineNote, setDeclineNote] = useState("");
 
   const [form, setForm] = useState<PublicActionForm | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
@@ -78,6 +83,30 @@ function PublicActionUpdatePage() {
 
   const patch = (id: string, p: Partial<Draft>) =>
     setDrafts((d) => ({ ...d, [id]: { ...d[id], ...p } }));
+
+  async function respond(cardId: string, decision: "aceita" | "recusada", note?: string) {
+    setResponding(cardId);
+    setError(null);
+    try {
+      const r = await respondFn({ data: { token, cardId, decision, note } });
+      setForm((f) =>
+        f && f.valid
+          ? {
+              ...f,
+              actions: f.actions.map((a) =>
+                a.id === cardId ? { ...a, acceptance: r.acceptance } : a,
+              ),
+            }
+          : f,
+      );
+      setDeclineFor(null);
+      setDeclineNote("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível registrar a resposta.");
+    } finally {
+      setResponding(null);
+    }
+  }
 
   async function addFiles(cardId: string, list: FileList | null) {
     if (!list?.length) return;
@@ -189,6 +218,56 @@ function PublicActionUpdatePage() {
                         {a.client ? `${a.client} · ` : ""}Prazo: {formatPrazo(a.due_date)}
                       </p>
                     </div>
+
+                    {a.acceptance === "enviada" || a.acceptance === "nao_enviada" ? (
+                      <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+                        <p>
+                          Esta ação é uma <strong>sugestão</strong>. Você decide se aceita; prazos
+                          podem ser ajustados em conjunto com a equipe.
+                        </p>
+                        {declineFor === a.id ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              placeholder="Se quiser, explique o motivo (opcional)…"
+                              value={declineNote}
+                              onChange={(e) => setDeclineNote(e.target.value)}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={responding === a.id}
+                                onClick={() => void respond(a.id, "recusada", declineNote)}
+                              >
+                                Confirmar recusa
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => setDeclineFor(null)}>
+                                Voltar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              disabled={responding === a.id}
+                              onClick={() => void respond(a.id, "aceita")}
+                            >
+                              Aceitar sugestão
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setDeclineFor(a.id)}>
+                              Recusar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {a.acceptance === "aceita"
+                          ? "✓ Você aceitou esta sugestão."
+                          : "Você recusou esta sugestão."}
+                      </p>
+                    )}
 
                     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Status">
                       {ACTION_STATUSES.map((s) => (
