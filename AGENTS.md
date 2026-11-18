@@ -33,3 +33,4 @@ For project work:
 
 Global reusable rules belong in the Global Brain.
 Project-specific durable context belongs in `ai/PROJECT_BRAIN.md`.
+- Relatório Geral: planilhas chegam à IA via `sheetMaterial` (resumo + análise calculada atual × anterior com líquido/perdas brutas/ganhos brutos + linhas); a IA nunca soma de cabeça, para não contradizer a planilha.

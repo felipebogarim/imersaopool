@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectKind,
   normalizeReport,
+  periodAnalysis,
   pickBlock,
   prepareSheet,
   resolveChart,
@@ -131,5 +132,39 @@ describe("gráficos com filtro e coluna calculada", () => {
       { sheets: new Map(), imageIds: new Set() },
     );
     expect(b).toEqual({ type: "kpis", items: [{ label: "Clientes em crescimento", value: "22" }] });
+  });
+});
+
+describe("periodAnalysis (atual × anterior)", () => {
+  const carteira: ParsedSheet = {
+    name: "Export",
+    headers: ["Grupo Cliente", "UF", "Média (R$)", "Média LY (R$)", "% Var (R$)"],
+    rows: [
+      ["A&M", "DF", 34854, 55339, -0.37],
+      ["AMX", "DF", 29006, 18679, 0.55],
+      ["Lumi", "DF", 23529, 18512, 0.27],
+      ["Rovaris", "MT", 20469, 43006, -0.52],
+    ],
+    rowCount: 4,
+    truncated: false,
+  };
+
+  it("pareia a coluna atual com a LY e ignora colunas de %", () => {
+    const text = periodAnalysis(carteira);
+    expect(text).toContain('"Média (R$)" (atual) × "Média LY (R$)" (anterior)');
+  });
+
+  it("mostra a queda individual que o líquido do estado esconde", () => {
+    const text = periodAnalysis(carteira);
+    const df = text.split("\n").find((l) => l.includes("· DF:"))!;
+    // líquido DF = 87.389 − 92.530 = −5.141; perdas brutas −20.485 (A&M); ganhos +15.344
+    expect(df).toContain("líquida -5.141");
+    expect(df).toContain("perdas brutas -20.485 (1)");
+    expect(df).toContain("ganhos brutos +15.344 (2)");
+    expect(df).toContain("A&M -20.485");
+  });
+
+  it("sem par de períodos não gera análise", () => {
+    expect(periodAnalysis(sheet)).toBe("");
   });
 });

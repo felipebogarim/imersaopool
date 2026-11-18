@@ -516,3 +516,168 @@ export function pickBlock(raw: unknown, ctx: NormalizeCtx): ReportBlock | null {
   }
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Análise determinística de comparação de períodos (atual × anterior)
+// ---------------------------------------------------------------------------
+const PREV_RE = /\b(ly|ano anterior|anterior|aa|py)\b/i;
+const pairKey = (h: string) =>
+  h
+    .toLowerCase()
+    .replace(/\b(ly|ano anterior|anterior|atual|aa|py)\b/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([).])/g, "$1")
+    .trim();
+
+function isNumericCol(sheet: ParsedSheet, i: number) {
+  const vals = sheet.rows.map((r) => r[i]).filter((v) => v !== null);
+  return vals.length > 0 && vals.map(num).filter((n) => n !== null).length / vals.length > 0.8;
+}
+
+/** Pares de colunas numéricas "atual" × "anterior" (ex.: "Média (R$)" × "Média LY (R$)"). */
+export function findPeriodPairs(sheet: ParsedSheet): Array<{ cur: number; prev: number }> {
+  const out: Array<{ cur: number; prev: number }> = [];
+  sheet.headers.forEach((h, pi) => {
+    if (!PREV_RE.test(h) || /%|var/i.test(h) || !isNumericCol(sheet, pi)) return;
+    const key = pairKey(h);
+    const ci = sheet.headers.findIndex(
+      (o, i) => i !== pi && !PREV_RE.test(o) && pairKey(o) === key && isNumericCol(sheet, i),
+    );
+    if (ci >= 0) out.push({ cur: ci, prev: pi });
+  });
+  // valores em R$ primeiro
+  return out.sort(
+    (a, b) =>
+      Number(/r\$|valor|fatur/i.test(sheet.headers[b.cur])) -
+      Number(/r\$|valor|fatur/i.test(sheet.headers[a.cur])),
+  );
+}
+
+const fmt = (n: number) => Math.round(n).toLocaleString("pt-BR");
+const pct = (a: number, b: number) =>
+  b ? `${((a / b - 1) * 100).toFixed(1).replace(".", ",")}%` : "n/a";
+
+interface Delta {
+  label: string;
+  cur: number;
+  prev: number;
+  d: number;
+}
+function stats(items: Delta[]) {
+  const cur = items.reduce((s, i) => s + i.cur, 0);
+  const prev = items.reduce((s, i) => s + i.prev, 0);
+  const down = items.filter((i) => i.d < 0).sort((a, b) => a.d - b.d);
+  const up = items.filter((i) => i.d > 0).sort((a, b) => b.d - a.d);
+  return {
+    cur,
+    prev,
+    net: cur - prev,
+    loss: down.reduce((s, i) => s + i.d, 0),
+    gain: up.reduce((s, i) => s + i.d, 0),
+    down,
+    up,
+    n: items.length,
+  };
+}
+const who = (list: Delta[], k: number) =>
+  list
+    .slice(0, k)
+    .map((i) => `${i.label} ${i.d > 0 ? "+" : ""}${fmt(i.d)} (${fmt(i.prev)}→${fmt(i.cur)})`)
+    .join("; ") || "nenhum";
+
+/**
+ * Calcula, a partir das linhas reais, a comparação atual × anterior no total e por grupo (UF,
+ * categoria, cidade...): variação líquida, perdas brutas, ganhos brutos e os maiores ofensores.
+ * Assim a IA não precisa somar de cabeça e não confunde variação líquida com quedas individuais.
+ */
+export function periodAnalysis(sheet: ParsedSheet): string {
+  const pairs = findPeriodPairs(sheet).slice(0, 2);
+  if (!pairs.length) return "";
+  const textCols = sheet.headers
+    .map((_, i) => i)
+    .filter((i) => !isNumericCol(sheet, i));
+  const distinct = (i: number) =>
+    new Set(sheet.rows.map((r) => r[i]).filter((v) => v !== null && v !== "")).size;
+  const labelCol =
+    textCols.sort((a, b) => distinct(b) - distinct(a))[0] ?? -1;
+  const rows = sheet.rows.filter(
+    (r) => !/^\s*(total|soma|geral)\b/i.test(String(labelCol >= 0 ? (r[labelCol] ?? "") : "")),
+  );
+  const groupCols = sheet.headers
+    .map((_, i) => i)
+    .filter((i) => !isNumericCol(sheet, i) && i !== labelCol)
+    .filter((i) => {
+      const d = distinct(i);
+      const filled = rows.filter((r) => r[i] !== null && r[i] !== "").length;
+      return d >= 2 && d <= 20 && filled >= rows.length * 0.6;
+    })
+    .slice(0, 4);
+
+  const out: string[] = [];
+  for (const { cur, prev } of pairs) {
+    const items: Delta[] = rows
+      .map((r) => {
+        const c = num(r[cur]) ?? 0;
+        const p = num(r[prev]) ?? 0;
+        return {
+          label: labelCol >= 0 ? String(r[labelCol] ?? "(sem nome)") : "",
+          cur: c,
+          prev: p,
+          d: c - p,
+          row: r,
+        };
+      })
+      .filter((i) => i.cur || i.prev);
+    const all = stats(items);
+    const hc = sheet.headers[cur];
+    const hp = sheet.headers[prev];
+    out.push(
+      `ANÁLISE CALCULADA (exata, use estes números) — "${hc}" (atual) × "${hp}" (anterior), aba "${sheet.name}", ${all.n} registros:`,
+      `- TOTAL: anterior ${fmt(all.prev)} → atual ${fmt(all.cur)} | variação LÍQUIDA ${fmt(all.net)} (${pct(all.cur, all.prev)}) | perdas BRUTAS ${fmt(all.loss)} em ${all.down.length} registros | ganhos BRUTOS +${fmt(all.gain)} em ${all.up.length} registros`,
+      `- Maiores quedas: ${who(all.down, 8)}`,
+      `- Maiores crescimentos: ${who(all.up, 8)}`,
+    );
+    for (const gi of groupCols) {
+      const groups = new Map<string, Delta[]>();
+      for (const it of items) {
+        const k = String((it as any).row[gi] ?? "(vazio)");
+        groups.set(k, [...(groups.get(k) ?? []), it]);
+      }
+      out.push(`- Por "${sheet.headers[gi]}":`);
+      for (const [k, list] of [...groups.entries()].sort(
+        (a, b) => stats(a[1]).net - stats(b[1]).net,
+      )) {
+        const s = stats(list);
+        out.push(
+          `  · ${k}: ${s.n} registros | anterior ${fmt(s.prev)} → atual ${fmt(s.cur)} | líquida ${fmt(s.net)} (${pct(s.cur, s.prev)}) | perdas brutas ${fmt(s.loss)} (${s.down.length}) | ganhos brutos +${fmt(s.gain)} (${s.up.length}) | quedas: ${who(s.down, 3)} | crescimentos: ${who(s.up, 3)}`,
+        );
+      }
+    }
+  }
+  return out.join("\n");
+}
+
+/** Todas as linhas da aba (até maxChars), para a IA enxergar cada registro e não só a amostra. */
+export function sheetRowsText(sheet: ParsedSheet, maxChars = 30000): string {
+  const cell = (c: Cell) =>
+    c === null ? "" : typeof c === "number" ? String(round(c)) : String(c).slice(0, 140);
+  const lines = [`Linhas da aba "${sheet.name}" (${sheet.headers.join(" ; ")}):`];
+  let size = lines[0].length;
+  let shown = 0;
+  for (const r of sheet.rows) {
+    const line = r.map(cell).join(" ; ");
+    if (size + line.length > maxChars) break;
+    lines.push(line);
+    size += line.length + 1;
+    shown += 1;
+  }
+  if (shown < sheet.rows.length) lines.push(`(+${sheet.rows.length - shown} linhas não listadas)`);
+  return lines.join("\n");
+}
+
+/** Texto completo de uma aba para a IA: resumo de colunas, análise calculada e linhas. */
+export function sheetMaterial(sheet: ParsedSheet, maxChars = 30000): string {
+  const analysis = periodAnalysis(sheet);
+  const head = [summarizeSheet(sheet), analysis].filter(Boolean).join("\n");
+  return `${head}\n${sheetRowsText(sheet, Math.max(4000, maxChars - head.length))}`;
+}

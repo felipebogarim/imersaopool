@@ -4,6 +4,7 @@ import {
   normalizeReport,
   pickBlock,
   parseSpreadsheet,
+  sheetMaterial,
   summarizeSheet,
   type GeneralFileKind,
   type GeneralReportContent,
@@ -13,7 +14,10 @@ import {
 const BUCKET = "general-reports";
 const MAX_AI_BYTES = 20 * 1024 * 1024;
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+/** Leitura de arquivos (transcrição, imagens, PDFs): modelo rápido. */
 const MODEL = "google/gemini-3.8-flash";
+/** Análise e redação do relatório (gerar, revisar, criar bloco): modelo de alta capacidade. */
+const ANALYSIS_MODEL = "google/gemini-4-argon";
 
 async function callGateway(body: Record<string, unknown>): Promise<string> {
   const key = process.env.LOVABLE_API_KEY;
@@ -29,6 +33,53 @@ async function callGateway(body: Record<string, unknown>): Promise<string> {
   }
   const json = await res.json();
   return String(json?.choices?.[0]?.message?.content ?? "").trim();
+}
+
+/**
+ * Chamada de análise com o modelo de alta capacidade, em streaming (o raciocínio pode levar
+ * minutos; o stream evita que a conexão caia antes do fim). Devolve o texto final acumulado.
+ */
+async function callAnalysis(body: Record<string, unknown>): Promise<string> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) throw new Error("LOVABLE_API_KEY ausente");
+  const res = await fetch(GATEWAY, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: ANALYSIS_MODEL, reasoning_effort: "high", stream: true, ...body }),
+  });
+  if (!res.ok || !res.body) {
+    const t = await res.text().catch(() => "");
+    if (res.status === 402)
+      throw new Error("Créditos de IA esgotados. Adicione créditos em Configurações → Planos.");
+    if (res.status === 429)
+      throw new Error("Muitas solicitações à IA agora. Aguarde um minuto e tente de novo.");
+    throw new Error(`IA indisponível (${res.status}) ${t.slice(0, 200)}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let out = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (payload === "[DONE]") continue;
+      try {
+        const j = JSON.parse(payload);
+        if (j?.error) throw new Error(`IA: ${String(j.error.message ?? j.error).slice(0, 200)}`);
+        out += j?.choices?.[0]?.delta?.content ?? "";
+      } catch (e: any) {
+        if (String(e?.message).startsWith("IA:")) throw e;
+      }
+    }
+  }
+  return out.trim();
 }
 
 const toB64 = (buf: ArrayBuffer) => Buffer.from(buf).toString("base64");
@@ -147,6 +198,8 @@ Regras:
 - Gráficos podem filtrar linhas e calcular colunas a partir das colunas reais: "where":[{"column":"Média (R$)","op":">","value":{"column":"Média LY (R$)"}}] (op: > >= < <= = !=; value é número, texto ou {"column":...}) e "computed":[{"name":"Crescimento (R$)","a":"Média (R$)","op":"-","b":"Média LY (R$)"}] (op: - + * /; b é coluna ou número). A coluna calculada pode ser usada em ys, where e x. Barras e pizza já saem ordenadas do maior para o menor (curva de Pareto).
 - Para cada planilha relevante, crie ao menos 1 gráfico (idealmente 2–4 com ângulos diferentes) e acompanhe de um "insight" curto dizendo o que o gráfico mostra.
 - Para cada imagem relevante, crie um bloco image (fileId exato) com caption e observations (o que se vê, pontos fortes e de atenção).
+- Rigor analítico (obrigatório): planilhas trazem uma "ANÁLISE CALCULADA" com totais exatos. Use esses números em kpis, tabelas e textos — nunca some, subtraia ou estime de cabeça. Ao comparar períodos por grupo (UF, cidade, categoria), mostre sempre a variação LÍQUIDA junto com as perdas BRUTAS e os ganhos BRUTOS, e cite os maiores ofensores e os maiores crescimentos. Nunca deixe a variação líquida esconder quedas individuais relevantes: se um grupo cai pouco no líquido, mas tem cliente com queda forte compensada por outros que cresceram, diga isso explicitamente (ex.: "DF −4,8% no líquido, mas A&M caiu R$ 20,5 mil/mês, compensado por AMX e Lumi Dutra").
+- Antes de responder, confira cada número citado contra a ANÁLISE CALCULADA ou as linhas da planilha; textos, insights e tabelas não podem se contradizer.
 - Se algo estiver ilegível, ausente ou contraditório, registre em "gaps".
 
 Responda SOMENTE com JSON:
@@ -165,6 +218,19 @@ Responda SOMENTE com JSON:
  "gaps": [string]
 }`;
 
+/**
+ * Texto de um arquivo para a IA. Planilhas são remontadas a partir das linhas lidas: resumo das
+ * colunas, análise calculada (atual × anterior, perdas e ganhos brutos por grupo) e todas as linhas.
+ */
+function fileText(f: any, maxChars = 60000): string {
+  const parsed = f.kind === "sheet" ? (f.extracted?.sheets as ParsedSheet[] | undefined) : undefined;
+  if (parsed?.length) {
+    const per = Math.floor(maxChars / parsed.length);
+    return parsed.map((sh) => sheetMaterial(sh, per)).join("\n\n").slice(0, maxChars);
+  }
+  return String(f.extracted?.text ?? "").slice(0, maxChars);
+}
+
 /** Carrega o material já lido (texto por arquivo, planilhas e ids de imagens) de um relatório. */
 async function loadMaterial(supabase: any, reportId: string) {
   const { data: files } = await supabase
@@ -175,11 +241,11 @@ async function loadMaterial(supabase: any, reportId: string) {
   const ready = (files ?? []).filter((f: any) => f.status === "lido" && f.extracted);
   const sheets = new Map<string, ParsedSheet[]>();
   const imageIds = new Set<string>();
-  let budget = 120000;
+  let budget = 200000;
   const sections = ready.map((f: any) => {
     if (f.kind === "sheet") sheets.set(f.id, f.extracted.sheets as ParsedSheet[]);
     if (f.kind === "image") imageIds.add(f.id);
-    const text = String(f.extracted.text ?? "").slice(0, Math.max(2000, Math.min(30000, budget)));
+    const text = fileText(f).slice(0, Math.max(4000, Math.min(60000, budget)));
     budget -= text.length;
     return `### ARQUIVO fileId="${f.id}" nome="${f.file_name}" tipo=${f.kind}\n${text}`;
   });
@@ -231,7 +297,7 @@ const BLOCK_FORMATS = SYSTEM.slice(SYSTEM.indexOf('{"type":"text"'), SYSTEM.inde
   .trim()
   .replace(/,\s*$/, "");
 /** Instruções comuns para criar/revisar UM bloco: formato de bloco único, nunca relatório inteiro. */
-const BLOCK_RULES = `Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes EXATOS de colunas da aba escolhida. Para mostrar só parte das linhas (ex.: clientes que cresceram) use "where"; para valores derivados (ex.: crescimento = atual − anterior) use "computed" — nunca filtre ou calcule de cabeça. Barras e pizza saem ordenadas do maior para o menor (Pareto); ajuste "limit" (até 30). Em tabelas e kpis, copie valores do material sem inventar.
+const BLOCK_RULES = `Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes EXATOS de colunas da aba escolhida. Para mostrar só parte das linhas (ex.: clientes que cresceram) use "where"; para valores derivados (ex.: crescimento = atual − anterior) use "computed" — nunca filtre ou calcule de cabeça. Barras e pizza saem ordenadas do maior para o menor (Pareto); ajuste "limit" (até 30). Em tabelas e kpis, copie valores do material sem inventar — use os números da "ANÁLISE CALCULADA" (líquido, perdas brutas, ganhos brutos, maiores quedas/crescimentos) em vez de calcular de cabeça; ao comparar grupos, mostre perdas e ganhos brutos ao lado do líquido.
 Responda SOMENTE com o JSON de UM bloco (objeto com "type"), sem título de relatório, sem "chapters". Formatos aceitos, um por vez:
 ${BLOCK_FORMATS}`;
 
@@ -253,7 +319,7 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
       const user = `Representante: ${repName || "não informado"}\nData da imersão: ${report.report_date}\n${
         data.instructions?.trim() ? `Instruções do usuário: ${data.instructions.trim()}\n` : ""
       }\nMATERIAL:\n\n${material}`;
-      const raw = await callGateway({
+      const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
@@ -298,7 +364,7 @@ export const reviseGeneralReport = createServerFn({ method: "POST" })
       if (!report.report) throw new Error("Gere o relatório antes de revisar.");
       const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
       const user = `Representante: ${repName || "não informado"}\nData: ${report.report_date}\n\nORIENTAÇÕES DE REVISÃO (obrigatórias):\n${data.instructions.trim()}\n\nRELATÓRIO ATUAL (JSON; gráficos trazem "spec" com fileId/sheet/x/ys/agg — reaproveite-os no formato de entrada, sem digitar números):\n${JSON.stringify(report.report).slice(0, 60000)}\n\nMATERIAL ORIGINAL:\n\n${material}`;
-      const raw = await callGateway({
+      const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
           {
@@ -352,19 +418,19 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
       const fileId = (block as any).spec?.fileId ?? (block as any).fileId;
       const file = ready.find((f: any) => f.id === fileId);
       if (file)
-        source = `FONTE DO BLOCO (fileId="${file.id}" nome="${file.file_name}"):\n${String(file.extracted.text ?? "").slice(0, 20000)}`;
+        source = `FONTE DO BLOCO (fileId="${file.id}" nome="${file.file_name}"):\n${fileText(file, 60000)}`;
       else
         source = `MATERIAL:\n${ready
           .map(
             (f: any) =>
-              `### fileId="${f.id}" ${f.file_name}\n${String(f.extracted.text ?? "").slice(0, 6000)}`,
+              `### fileId="${f.id}" ${f.file_name}\n${fileText(f, 20000)}`,
           )
           .join("\n\n")
-          .slice(0, 40000)}`;
+          .slice(0, 120000)}`;
 
       const system = `Você revisa UM bloco de um relatório comercial, em português, de forma objetiva. Altere SOMENTE este bloco conforme o pedido, sem inventar dados que não estejam na fonte. ${BLOCK_RULES}`;
       const user = `Capítulo: ${chapter.title}\n\nBLOCO ATUAL:\n${JSON.stringify(block)}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\n${source}`;
-      const raw = await callGateway({
+      const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
@@ -412,7 +478,7 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
       const outline = content.chapters
         .map((c, i) => `${i + 1}. ${c.title}${c.summary ? ` — ${c.summary}` : ""}`)
         .join("\n");
-      const raw = await callGateway({
+      const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
           {
@@ -422,7 +488,7 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
           },
           {
             role: "user",
-            content: `DATA DO RELATÓRIO: ${report.report_date}\nREPRESENTANTE: ${repName || "não informado"}\n\nINTRODUÇÃO ATUAL:\n${JSON.stringify({ title: content.title, subtitle: content.subtitle ?? "", executive_summary: content.executive_summary })}\n\nCAPÍTULOS:\n${outline}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\nMATERIAL:\n${material.slice(0, 50000)}`,
+            content: `DATA DO RELATÓRIO: ${report.report_date}\nREPRESENTANTE: ${repName || "não informado"}\n\nINTRODUÇÃO ATUAL:\n${JSON.stringify({ title: content.title, subtitle: content.subtitle ?? "", executive_summary: content.executive_summary })}\n\nCAPÍTULOS:\n${outline}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\nMATERIAL:\n${material.slice(0, 150000)}`,
           },
         ],
       });
@@ -487,7 +553,7 @@ export const createGeneralReportBlock = createServerFn({ method: "POST" })
       const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
       const system = `Você cria UM bloco novo para um relatório comercial, em português, objetivo e visual, conforme o pedido do usuário. Use SOMENTE dados do material enviado; não invente. Escolha o tipo de bloco que melhor atende ao pedido (text|bullets|kpis|chart|table|image|callout). Para imagem, use o fileId exato. ${BLOCK_RULES}`;
       const user = `Capítulo onde o bloco entrará: ${chapter.title}\nBlocos já existentes no capítulo (resumo): ${chapter.blocks.map((b) => b.type).join(", ")}\n\nPEDIDO DO USUÁRIO:\n${data.instruction.trim()}\n\nMATERIAL:\n\n${material}`;
-      const raw = await callGateway({
+      const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
