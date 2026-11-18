@@ -3716,6 +3716,63 @@ export type Database = {
           },
         ]
       }
+      kanban_action_extension_requests: {
+        Row: {
+          card_id: string
+          created_at: string
+          current_due: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          justification: string
+          representative_id: string
+          requested_due: string
+          status: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          current_due?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          justification: string
+          representative_id: string
+          requested_due: string
+          status?: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          current_due?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          justification?: string
+          representative_id?: string
+          requested_due?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_action_extension_requests_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_action_extension_requests_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_action_pendencias: {
         Row: {
           assignee_name: string
@@ -6651,6 +6708,7 @@ export type Database = {
           telefone: string | null
           tempo_relacionamento: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           company_id?: string | null
@@ -6666,6 +6724,7 @@ export type Database = {
           telefone?: string | null
           tempo_relacionamento?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           company_id?: string | null
@@ -6681,6 +6740,7 @@ export type Database = {
           telefone?: string | null
           tempo_relacionamento?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -8209,6 +8269,7 @@ export type Database = {
         Returns: Json
       }
       is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
+      is_external_rep: { Args: { _user_id: string }; Returns: boolean }
       is_total_row: { Args: { _name: string }; Returns: boolean }
       kanban_can_access_board: {
         Args: { _board_id: string; _user_id: string }
@@ -8359,6 +8420,7 @@ export type Database = {
         | "comercial"
         | "gestor_comercial"
         | "diretoria"
+        | "representante"
       capitulo_status_revisao:
         | "pendente"
         | "em_revisao"
@@ -8668,6 +8730,7 @@ export const Constants = {
         "comercial",
         "gestor_comercial",
         "diretoria",
+        "representante",
       ],
       capitulo_status_revisao: [
         "pendente",

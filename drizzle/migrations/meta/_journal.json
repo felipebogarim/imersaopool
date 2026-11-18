@@ -50,6 +50,20 @@
       "when": 1795033732971,
       "tag": "0006_action_suggestions",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795035525678,
+      "tag": "0007_rep_portal_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795035554942,
+      "tag": "0008_rep_portal",
+      "breakpoints": true
     }
   ]
 }
