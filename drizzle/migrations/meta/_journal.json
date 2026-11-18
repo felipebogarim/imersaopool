@@ -43,6 +43,13 @@
       "when": 1795032552133,
       "tag": "0005_bind_general_reports_storage_to_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795033732971,
+      "tag": "0006_action_suggestions",
+      "breakpoints": true
     }
   ]
 }

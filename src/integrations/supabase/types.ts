@@ -3766,20 +3766,32 @@ export type Database = {
       }
       kanban_action_tracking: {
         Row: {
+          acceptance: string
           card_id: string
+          responded_at: string | null
+          response_note: string | null
           status: string
+          suggested_at: string | null
           updated_at: string
           updated_by_name: string | null
         }
         Insert: {
+          acceptance?: string
           card_id: string
+          responded_at?: string | null
+          response_note?: string | null
           status?: string
+          suggested_at?: string | null
           updated_at?: string
           updated_by_name?: string | null
         }
         Update: {
+          acceptance?: string
           card_id?: string
+          responded_at?: string | null
+          response_note?: string | null
           status?: string
+          suggested_at?: string | null
           updated_at?: string
           updated_by_name?: string | null
         }
