@@ -12,6 +12,7 @@ import { template as centralMensagens } from "./central-mensagens";
 import { template as acaoSolicitacaoAtualizacao } from "./acao-solicitacao-atualizacao";
 import { template as acaoAtualizacaoRecebida } from "./acao-atualizacao-recebida";
 import { template as acaoSugestao } from "./acao-sugestao";
+import { template as acaoVencimento } from "./acao-vencimento";
 import { template as repPortalBoasVindas } from "./rep-portal-boas-vindas";
 import { template as acaoProrrogacaoDecisao } from "./acao-prorrogacao-decisao";
 
@@ -38,6 +39,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "acao-solicitacao-atualizacao": acaoSolicitacaoAtualizacao,
   "acao-atualizacao-recebida": acaoAtualizacaoRecebida,
   "acao-sugestao": acaoSugestao,
+  "acao-vencimento": acaoVencimento,
   "rep-portal-boas-vindas": repPortalBoasVindas,
   "acao-prorrogacao-decisao": acaoProrrogacaoDecisao,
 };
