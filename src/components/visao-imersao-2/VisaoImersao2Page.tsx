@@ -1,4 +1,5 @@
 import { type PerfResumo } from "@/lib/visao-rep";
+import { describeSaveError, normalizeVisitDate } from "@/lib/visao-imersao-2-save";
 
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -364,9 +365,18 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           (avulso.data.client as any)?.client_id ||
           undefined;
 
+      const clientName = String(avulso.data.client.name ?? "").trim();
+      if (!clientName) throw new Error("Nome do cliente ausente no arquivo.");
+      const visitDate = normalizeVisitDate(avulso.data.client.visit_date);
+      if (!visitDate) {
+        throw new Error(
+          `Data da visita inválida no arquivo: "${avulso.data.client.visit_date ?? ""}". Use AAAA-MM-DD ou DD/MM/AAAA.`,
+        );
+      }
+
       const payload = {
-        client_name: avulso.data.client.name,
-        visit_date: avulso.data.client.visit_date,
+        client_name: clientName,
+        visit_date: visitDate,
         source_filename: avulso.arquivo,
         content_markdown: avulso.markdown,
         structured_data: {
@@ -417,7 +427,8 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
       setDuplicata(null);
       toast.success("Relatório salvo. Disponível na lista de Visão Imersão 2.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao salvar a Visão Imersão 2.");
+      console.error("[visao-imersao-2] save failed", error);
+      toast.error(describeSaveError(error));
     } finally {
       setSalvando(false);
     }
