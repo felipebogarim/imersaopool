@@ -15,7 +15,7 @@ const COLOR_PROPS = [
 const MODERN_COLOR = /(?:oklch|oklab|lab|lch|color)\([^)]*\)/g;
 
 /**
- * html2canvas 1.4 não entende as cores modernas do Tailwind v4 (oklch, oklab, color()).
+ * O html2canvas pode não entender as cores modernas do Tailwind v4 (oklch, oklab, color()).
  * No clone usado para a captura, troca cada uma pelo rgb equivalente calculado pelo navegador.
  */
 function toRgbColors(clone: Document) {
@@ -54,7 +54,7 @@ function toRgbColors(clone: Document) {
  */
 export async function exportGeneralReportPdf(root: HTMLElement, fileName: string) {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import("html2canvas"),
+    import("html2canvas-pro"),
     import("jspdf"),
   ]);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
