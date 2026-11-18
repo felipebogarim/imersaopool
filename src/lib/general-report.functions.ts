@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
-  normalizeBlock,
   normalizeReport,
+  pickBlock,
   parseSpreadsheet,
   summarizeSheet,
   type GeneralFileKind,
@@ -13,7 +13,7 @@ import {
 const BUCKET = "general-reports";
 const MAX_AI_BYTES = 20 * 1024 * 1024;
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const MODEL = "google/gemini-3.8-flash";
 
 async function callGateway(body: Record<string, unknown>): Promise<string> {
   const key = process.env.LOVABLE_API_KEY;
@@ -144,6 +144,7 @@ Regras:
 - Seja objetivo: frases curtas, sem enrolação, sem repetir o que os blocos já mostram.
 - Priorize blocos visuais: kpis, charts, tables, callouts. Use texto corrido só quando necessário.
 - Nunca invente dados. Gráficos: você NÃO digita números; indique fileId, aba (sheet), coluna do eixo X (x), colunas numéricas (ys), agregação (agg: sum|avg|count|none) e tipo (kind: bar|line|area|pie), usando SOMENTE nomes exatos de colunas informados. Prefira line/area para séries no tempo, bar para rankings, pie para até 6 fatias.
+- Gráficos podem filtrar linhas e calcular colunas a partir das colunas reais: "where":[{"column":"Média (R$)","op":">","value":{"column":"Média LY (R$)"}}] (op: > >= < <= = !=; value é número, texto ou {"column":...}) e "computed":[{"name":"Crescimento (R$)","a":"Média (R$)","op":"-","b":"Média LY (R$)"}] (op: - + * /; b é coluna ou número). A coluna calculada pode ser usada em ys, where e x. Barras e pizza já saem ordenadas do maior para o menor (curva de Pareto).
 - Para cada planilha relevante, crie ao menos 1 gráfico (idealmente 2–4 com ângulos diferentes) e acompanhe de um "insight" curto dizendo o que o gráfico mostra.
 - Para cada imagem relevante, crie um bloco image (fileId exato) com caption e observations (o que se vê, pontos fortes e de atenção).
 - Se algo estiver ilegível, ausente ou contraditório, registre em "gaps".
@@ -156,7 +157,7 @@ Responda SOMENTE com JSON:
      {"type":"text","text":string},
      {"type":"bullets","title":string,"items":[string]},
      {"type":"kpis","items":[{"label":string,"value":string,"hint":string}]},
-     {"type":"chart","kind":"bar|line|area|pie","title":string,"fileId":string,"sheet":string,"x":string,"ys":[string],"agg":"sum|avg|count|none","limit":number,"insight":string},
+     {"type":"chart","kind":"bar|line|area|pie","title":string,"fileId":string,"sheet":string,"x":string,"ys":[string],"agg":"sum|avg|count|none","limit":number,"insight":string,"computed"?:[{"name":string,"a":string,"op":"-|+|*|/","b":string|number}],"where"?:[{"column":string,"op":">|>=|<|<=|=|!=","value":number|string|{"column":string}}]},
      {"type":"table","title":string,"columns":[string],"rows":[[string]]},
      {"type":"image","fileId":string,"caption":string,"observations":[string]},
      {"type":"callout","tone":"destaque|atencao|oportunidade","text":string}
@@ -226,7 +227,13 @@ function sameBlock(a: unknown, b: unknown) {
   return stableJson(a) === stableJson(b);
 }
 
-const SCHEMA_HINT = SYSTEM.slice(SYSTEM.indexOf("Responda SOMENTE"));
+const BLOCK_FORMATS = SYSTEM.slice(SYSTEM.indexOf('{"type":"text"'), SYSTEM.indexOf("   ] } ],"))
+  .trim()
+  .replace(/,\s*$/, "");
+/** Instruções comuns para criar/revisar UM bloco: formato de bloco único, nunca relatório inteiro. */
+const BLOCK_RULES = `Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes EXATOS de colunas da aba escolhida. Para mostrar só parte das linhas (ex.: clientes que cresceram) use "where"; para valores derivados (ex.: crescimento = atual − anterior) use "computed" — nunca filtre ou calcule de cabeça. Barras e pizza saem ordenadas do maior para o menor (Pareto); ajuste "limit" (até 30). Em tabelas e kpis, copie valores do material sem inventar.
+Responda SOMENTE com o JSON de UM bloco (objeto com "type"), sem título de relatório, sem "chapters". Formatos aceitos, um por vez:
+${BLOCK_FORMATS}`;
 
 /** Gera o relatório por capítulos a partir de todos os arquivos já lidos. */
 export const generateGeneralReport = createServerFn({ method: "POST" })
@@ -355,7 +362,7 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
           .join("\n\n")
           .slice(0, 40000)}`;
 
-      const system = `Você revisa UM bloco de um relatório comercial, em português, de forma objetiva. Altere SOMENTE este bloco conforme o pedido, sem inventar dados que não estejam na fonte. Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes exatos de colunas. Responda SOMENTE com o JSON de um bloco, no mesmo formato dos blocos do relatório (type: text|bullets|kpis|chart|table|image|callout).\n${SCHEMA_HINT}`;
+      const system = `Você revisa UM bloco de um relatório comercial, em português, de forma objetiva. Altere SOMENTE este bloco conforme o pedido, sem inventar dados que não estejam na fonte. ${BLOCK_RULES}`;
       const user = `Capítulo: ${chapter.title}\n\nBLOCO ATUAL:\n${JSON.stringify(block)}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\n${source}`;
       const raw = await callGateway({
         response_format: { type: "json_object" },
@@ -365,7 +372,7 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
         ],
       });
       const parsed = parseJson(raw);
-      const next = normalizeBlock(parsed?.block ?? parsed, { sheets, imageIds });
+      const next = pickBlock(parsed, { sheets, imageIds });
       if (!next) throw new Error("A IA não devolveu um bloco válido. Reformule o pedido.");
       if (sameBlock(block, next))
         return {
@@ -478,7 +485,7 @@ export const createGeneralReportBlock = createServerFn({ method: "POST" })
       if (!content || !chapter)
         throw new Error("Capítulo não encontrado (o relatório mudou). Recarregue a página.");
       const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
-      const system = `Você cria UM bloco novo para um relatório comercial, em português, objetivo e visual, conforme o pedido do usuário. Use SOMENTE dados do material enviado; não invente. Escolha o tipo de bloco que melhor atende ao pedido (text|bullets|kpis|chart|table|image|callout). Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes exatos de colunas. Para imagem, use o fileId exato. Responda SOMENTE com o JSON do bloco.\n${SCHEMA_HINT}`;
+      const system = `Você cria UM bloco novo para um relatório comercial, em português, objetivo e visual, conforme o pedido do usuário. Use SOMENTE dados do material enviado; não invente. Escolha o tipo de bloco que melhor atende ao pedido (text|bullets|kpis|chart|table|image|callout). Para imagem, use o fileId exato. ${BLOCK_RULES}`;
       const user = `Capítulo onde o bloco entrará: ${chapter.title}\nBlocos já existentes no capítulo (resumo): ${chapter.blocks.map((b) => b.type).join(", ")}\n\nPEDIDO DO USUÁRIO:\n${data.instruction.trim()}\n\nMATERIAL:\n\n${material}`;
       const raw = await callGateway({
         response_format: { type: "json_object" },
@@ -488,7 +495,7 @@ export const createGeneralReportBlock = createServerFn({ method: "POST" })
         ],
       });
       const parsed = parseJson(raw);
-      const block = normalizeBlock(parsed?.block ?? parsed, { sheets, imageIds });
+      const block = pickBlock(parsed, { sheets, imageIds });
       if (!block)
         throw new Error(
           "A IA não conseguiu montar o bloco com o material disponível. Reformule o pedido.",

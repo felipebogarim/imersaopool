@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { detectKind, normalizeReport, resolveChart, type ParsedSheet } from "./general-report-lib";
+import {
+  detectKind,
+  normalizeReport,
+  pickBlock,
+  prepareSheet,
+  resolveChart,
+  type ParsedSheet,
+} from "./general-report-lib";
 
 const sheet: ParsedSheet = {
   name: "Vendas",
@@ -67,5 +74,62 @@ describe("general-report-lib", () => {
     );
     expect(r.chapters).toHaveLength(1);
     expect(r.chapters[0].blocks.map((b) => b.type)).toEqual(["text", "chart"]);
+  });
+});
+
+describe("gráficos com filtro e coluna calculada", () => {
+  const carteira: ParsedSheet = {
+    name: "Export",
+    headers: ["Cliente", "Média (R$)", "Média LY (R$)"],
+    rows: [
+      ["A", 100, 300],
+      ["B", 500, 200],
+      ["C", 250, 240],
+      ["D", 80, 0],
+    ],
+    rowCount: 4,
+    truncated: false,
+  };
+
+  it("mostra só quem faturou mais que no período anterior, ordenado pelo crescimento", () => {
+    const c = resolveChart(
+      {
+        kind: "bar",
+        fileId: "f",
+        sheet: "Export",
+        x: "Cliente",
+        ys: ["Crescimento (R$)"],
+        agg: "sum",
+        computed: [{ name: "Crescimento (R$)", a: "Média (R$)", op: "-", b: "Média LY (R$)" }],
+        where: [{ column: "Média (R$)", op: ">", value: { column: "Média LY (R$)" } }],
+      },
+      carteira,
+    )!;
+    expect(c.data).toEqual([
+      { Cliente: "B", "Crescimento (R$)": 300 },
+      { Cliente: "D", "Crescimento (R$)": 80 },
+      { Cliente: "C", "Crescimento (R$)": 10 },
+    ]);
+    expect(c.spec?.where).toHaveLength(1);
+  });
+
+  it("rejeita filtro em coluna inexistente", () => {
+    expect(prepareSheet(carteira, [], [{ column: "Nope", op: ">", value: 0 }])).toBeNull();
+  });
+
+  it("aproveita o bloco mesmo quando a IA devolve um relatório inteiro", () => {
+    const b = pickBlock(
+      { title: "x", chapters: [{ title: "c", blocks: [{ type: "text", text: "ok" }] }] },
+      { sheets: new Map(), imageIds: new Set() },
+    );
+    expect(b).toEqual({ type: "text", text: "ok" });
+  });
+
+  it("aceita números em kpis e tabelas", () => {
+    const b = pickBlock(
+      { type: "kpis", items: [{ label: "Clientes em crescimento", value: 22 }] },
+      { sheets: new Map(), imageIds: new Set() },
+    );
+    expect(b).toEqual({ type: "kpis", items: [{ label: "Clientes em crescimento", value: "22" }] });
   });
 });

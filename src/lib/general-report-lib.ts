@@ -2,7 +2,15 @@ import * as XLSX from "xlsx";
 
 /** Tipos de material aceitos pelo Relatório Geral. */
 export type GeneralFileKind =
-  "sheet" | "image" | "audio" | "video" | "presentation" | "pdf" | "document" | "text" | "outro";
+  | "sheet"
+  | "image"
+  | "audio"
+  | "video"
+  | "presentation"
+  | "pdf"
+  | "document"
+  | "text"
+  | "outro";
 
 const EXT_KIND: Record<string, GeneralFileKind> = {
   xlsx: "sheet",
@@ -142,8 +150,24 @@ function round(n: number) {
 
 export type ChartKind = "bar" | "line" | "area" | "pie";
 export type ChartAgg = "sum" | "avg" | "count" | "none";
+export type FilterOp = ">" | ">=" | "<" | "<=" | "=" | "!=";
+/** Coluna calculada linha a linha: a (op) b, onde b é outra coluna ou um número. */
+export interface ComputedColumn {
+  name: string;
+  a: string;
+  op: "-" | "+" | "*" | "/";
+  b: string | number;
+}
+/** Filtro de linhas: column (op) value, onde value é número, texto ou {column} para comparar colunas. */
+export interface RowFilter {
+  column: string;
+  op: FilterOp;
+  value: string | number | { column: string };
+}
 export interface ChartSpecInput {
   kind: ChartKind;
+  computed?: ComputedColumn[];
+  where?: RowFilter[];
   title?: string;
   fileId: string;
   sheet: string;
@@ -162,14 +186,88 @@ export interface ResolvedChart {
   insight?: string;
   source?: string;
   /** Referência para recalcular o gráfico a partir da planilha (revisão por IA). */
-  spec?: Pick<ChartSpecInput, "fileId" | "sheet" | "x" | "ys" | "agg" | "limit">;
+  spec?: Pick<
+    ChartSpecInput,
+    "fileId" | "sheet" | "x" | "ys" | "agg" | "limit" | "computed" | "where"
+  >;
 }
 
 /**
  * Monta os dados de um gráfico a partir da planilha real — a IA só escolhe colunas e agregação,
  * nunca digita os números. Devolve null quando a referência é inválida.
  */
-export function resolveChart(spec: ChartSpecInput, sheet: ParsedSheet): ResolvedChart | null {
+const FILTER_OPS: FilterOp[] = [">", ">=", "<", "<=", "=", "!="];
+const COMPUTE_OPS = ["-", "+", "*", "/"] as const;
+
+/** Acrescenta colunas calculadas e aplica filtros de linha, sempre sobre os dados reais da planilha. */
+export function prepareSheet(
+  sheet: ParsedSheet,
+  computed: ComputedColumn[] = [],
+  where: RowFilter[] = [],
+): ParsedSheet | null {
+  const headers = [...sheet.headers];
+  let rows = sheet.rows.map((r) => [...r]);
+  for (const c of computed) {
+    if (!c?.name || headers.includes(c.name) || !COMPUTE_OPS.includes(c.op as any)) return null;
+    const ai = headers.indexOf(c.a);
+    const bi = typeof c.b === "string" ? headers.indexOf(c.b) : -1;
+    const bConst = typeof c.b === "number" ? c.b : num(c.b as Cell);
+    if (ai < 0 || (bi < 0 && bConst === null)) return null;
+    headers.push(c.name);
+    rows = rows.map((r) => {
+      const a = num(r[ai]);
+      const b = bi >= 0 ? num(r[bi]) : bConst;
+      let v: number | null = null;
+      if (a !== null && b !== null) {
+        v = c.op === "-" ? a - b : c.op === "+" ? a + b : c.op === "*" ? a * b : b ? a / b : null;
+      }
+      return [...r, v === null ? null : round(v)];
+    });
+  }
+  for (const f of where) {
+    const ci = headers.indexOf(f?.column);
+    if (ci < 0 || !FILTER_OPS.includes(f.op)) return null;
+    const other =
+      f.value && typeof f.value === "object" ? headers.indexOf((f.value as any).column) : -1;
+    if (f.value && typeof f.value === "object" && other < 0) return null;
+    rows = rows.filter((r) => {
+      const left = r[ci];
+      const right = other >= 0 ? r[other] : (f.value as string | number);
+      const ln = num(left);
+      const rn = typeof right === "number" ? right : num(right as Cell);
+      if (ln !== null && rn !== null) {
+        switch (f.op) {
+          case ">":
+            return ln > rn;
+          case ">=":
+            return ln >= rn;
+          case "<":
+            return ln < rn;
+          case "<=":
+            return ln <= rn;
+          case "=":
+            return ln === rn;
+          case "!=":
+            return ln !== rn;
+        }
+      }
+      if (f.op !== "=" && f.op !== "!=") return false;
+      const eq =
+        String(left ?? "")
+          .trim()
+          .toLowerCase() ===
+        String(right ?? "")
+          .trim()
+          .toLowerCase();
+      return f.op === "=" ? eq : !eq;
+    });
+  }
+  return { ...sheet, headers, rows };
+}
+
+export function resolveChart(spec: ChartSpecInput, original: ParsedSheet): ResolvedChart | null {
+  const sheet = prepareSheet(original, spec.computed, spec.where);
+  if (!sheet) return null;
   const xi = sheet.headers.indexOf(spec.x);
   const yis = (spec.ys ?? []).map((y) => sheet.headers.indexOf(y)).filter((i) => i >= 0);
   const agg: ChartAgg = spec.agg ?? "sum";
@@ -241,6 +339,8 @@ export function resolveChart(spec: ChartSpecInput, sheet: ParsedSheet): Resolved
       ys: spec.ys ?? [],
       agg,
       limit: spec.limit,
+      ...(spec.computed?.length ? { computed: spec.computed } : {}),
+      ...(spec.where?.length ? { where: spec.where } : {}),
     },
   };
 }
@@ -270,7 +370,12 @@ export interface GeneralReportContent {
   gaps?: string[];
 }
 
-const str = (v: unknown, max = 2000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+const str = (v: unknown, max = 2000) =>
+  typeof v === "string"
+    ? v.trim().slice(0, max)
+    : typeof v === "number" && Number.isFinite(v)
+      ? String(v)
+      : "";
 const strs = (v: unknown, max = 20) =>
   Array.isArray(v)
     ? v
@@ -329,6 +434,8 @@ export function normalizeReport(raw: any, ctx: NormalizeCtx): GeneralReportConte
               agg: ["sum", "avg", "count", "none"].includes(b.agg) ? b.agg : "sum",
               limit: Number(b.limit) || undefined,
               insight: str(b.insight, 400),
+              computed: Array.isArray(b.computed) ? b.computed.slice(0, 3) : undefined,
+              where: Array.isArray(b.where) ? b.where.slice(0, 4) : undefined,
             },
             sheet,
           );
@@ -385,4 +492,27 @@ export function normalizeReport(raw: any, ctx: NormalizeCtx): GeneralReportConte
 export function normalizeBlock(raw: unknown, ctx: NormalizeCtx): ReportBlock | null {
   const r = normalizeReport({ chapters: [{ title: "x", blocks: [raw] }] }, ctx);
   return r.chapters[0]?.blocks[0] ?? null;
+}
+
+/**
+ * Extrai os blocos candidatos de uma resposta da IA, que pode vir como bloco solto,
+ * {block}, {blocks:[...]} ou até um relatório inteiro ({chapters:[{blocks}]}).
+ */
+export function candidateBlocks(raw: any): unknown[] {
+  if (!raw || typeof raw !== "object") return [];
+  if (Array.isArray(raw)) return raw.flatMap(candidateBlocks);
+  if (typeof raw.type === "string") return [raw];
+  if (raw.block) return candidateBlocks(raw.block);
+  if (Array.isArray(raw.blocks)) return raw.blocks;
+  if (Array.isArray(raw.chapters)) return raw.chapters.flatMap((c: any) => c?.blocks ?? []);
+  return [];
+}
+
+/** Primeiro bloco válido da resposta da IA (ver candidateBlocks). */
+export function pickBlock(raw: unknown, ctx: NormalizeCtx): ReportBlock | null {
+  for (const c of candidateBlocks(raw)) {
+    const b = normalizeBlock(c, ctx);
+    if (b) return b;
+  }
+  return null;
 }
