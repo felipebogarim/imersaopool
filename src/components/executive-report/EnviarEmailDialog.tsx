@@ -25,8 +25,8 @@ type Person = { id: string; name: string; email: string };
 
 export type EmailAttachment = { name: string; url: string; size: number };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const GRUPO_DIRETORIA = [
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const GRUPO_DIRETORIA = [
   "felipebogarim@gmail.com",
   "marcos@newline.ind.br",
   "angelica.galan@newline.ind.br",

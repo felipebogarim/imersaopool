@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  normalizeBlock,
   normalizeReport,
   parseSpreadsheet,
   summarizeSheet,
   type GeneralFileKind,
+  type GeneralReportContent,
   type ParsedSheet,
 } from "@/lib/general-report-lib";
 
@@ -162,60 +164,74 @@ Responda SOMENTE com JSON:
  "gaps": [string]
 }`;
 
+/** Carrega o material já lido (texto por arquivo, planilhas e ids de imagens) de um relatório. */
+async function loadMaterial(supabase: any, reportId: string) {
+  const { data: files } = await supabase
+    .from("general_report_files")
+    .select("id, file_name, kind, status, extracted")
+    .eq("report_id", reportId)
+    .order("created_at");
+  const ready = (files ?? []).filter((f: any) => f.status === "lido" && f.extracted);
+  const sheets = new Map<string, ParsedSheet[]>();
+  const imageIds = new Set<string>();
+  let budget = 120000;
+  const sections = ready.map((f: any) => {
+    if (f.kind === "sheet") sheets.set(f.id, f.extracted.sheets as ParsedSheet[]);
+    if (f.kind === "image") imageIds.add(f.id);
+    const text = String(f.extracted.text ?? "").slice(0, Math.max(2000, Math.min(30000, budget)));
+    budget -= text.length;
+    return `### ARQUIVO fileId="${f.id}" nome="${f.file_name}" tipo=${f.kind}\n${text}`;
+  });
+  return { ready, sheets, imageIds, material: sections.join("\n\n") };
+}
+
+function parseJson(raw: string): any {
+  try {
+    return JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  } catch {
+    throw new Error("A IA devolveu uma resposta em formato inválido. Tente novamente.");
+  }
+}
+
+async function loadReport(supabase: any, reportId: string) {
+  const { data: report, error } = await supabase
+    .from("general_reports")
+    .select("id, report_date, representative_id, report")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (error || !report) throw new Error(error?.message ?? "Relatório não encontrado");
+  let repName = "";
+  if (report.representative_id) {
+    const { data: rep } = await supabase
+      .from("representatives")
+      .select("nome")
+      .eq("id", report.representative_id)
+      .maybeSingle();
+    repName = rep?.nome ?? "";
+  }
+  return { report, repName };
+}
+
+const SCHEMA_HINT = SYSTEM.slice(SYSTEM.indexOf("Responda SOMENTE"));
+
 /** Gera o relatório por capítulos a partir de todos os arquivos já lidos. */
 export const generateGeneralReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { reportId: string; instructions?: string }) => d)
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { data: report, error } = await supabase
-      .from("general_reports")
-      .select("id, report_date, representative_id")
-      .eq("id", data.reportId)
-      .maybeSingle();
-    if (error || !report) throw new Error(error?.message ?? "Relatório não encontrado");
-
-    const { data: files } = await supabase
-      .from("general_report_files")
-      .select("id, file_name, kind, status, extracted")
-      .eq("report_id", report.id)
-      .order("created_at");
-    const ready = (files ?? []).filter((f: any) => f.status === "lido" && f.extracted);
+    const { report, repName } = await loadReport(supabase, data.reportId);
+    const { ready, sheets, imageIds, material } = await loadMaterial(supabase, report.id);
     if (!ready.length) throw new Error("Nenhum arquivo foi lido ainda. Envie ao menos um arquivo.");
-
-    let repName = "";
-    if (report.representative_id) {
-      const { data: rep } = await supabase
-        .from("representatives")
-        .select("nome")
-        .eq("id", report.representative_id)
-        .maybeSingle();
-      repName = rep?.nome ?? "";
-    }
 
     await supabase
       .from("general_reports")
       .update({ status: "gerando", error_message: null })
       .eq("id", report.id);
     try {
-      const sheets = new Map<string, ParsedSheet[]>();
-      const imageIds = new Set<string>();
-      let budget = 120000;
-      const sections = ready.map((f: any) => {
-        if (f.kind === "sheet") sheets.set(f.id, f.extracted.sheets as ParsedSheet[]);
-        if (f.kind === "image") imageIds.add(f.id);
-        const text = String(f.extracted.text ?? "").slice(
-          0,
-          Math.max(2000, Math.min(30000, budget)),
-        );
-        budget -= text.length;
-        return `### ARQUIVO fileId="${f.id}" nome="${f.file_name}" tipo=${f.kind}\n${text}`;
-      });
-
       const user = `Representante: ${repName || "não informado"}\nData da imersão: ${report.report_date}\n${
         data.instructions?.trim() ? `Instruções do usuário: ${data.instructions.trim()}\n` : ""
-      }\nMATERIAL:\n\n${sections.join("\n\n")}`;
-
+      }\nMATERIAL:\n\n${material}`;
       const raw = await callGateway({
         response_format: { type: "json_object" },
         messages: [
@@ -223,16 +239,9 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
           { role: "user", content: user },
         ],
       });
-      let parsed: any;
-      try {
-        parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/g, ""));
-      } catch {
-        throw new Error("A IA devolveu um relatório em formato inválido. Tente gerar novamente.");
-      }
-      const content = normalizeReport(parsed, { sheets, imageIds });
+      const content = normalizeReport(parseJson(raw), { sheets, imageIds });
       if (!content.chapters.length)
         throw new Error("A IA não produziu capítulos aproveitáveis. Tente gerar novamente.");
-
       await supabase
         .from("general_reports")
         .update({
@@ -252,5 +261,110 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
         .update({ status: "erro", error_message: message })
         .eq("id", report.id);
       return { ok: false as const, error: message };
+    }
+  });
+
+/** Revisão GERAL: a IA reescreve o relatório inteiro seguindo as orientações, sem sair do material. */
+export const reviseGeneralReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { reportId: string; instructions: string }) => d)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    if (!data.instructions?.trim())
+      return { ok: false as const, error: "Escreva as orientações para a IA." };
+    try {
+      const { report, repName } = await loadReport(supabase, data.reportId);
+      if (!report.report) throw new Error("Gere o relatório antes de revisar.");
+      const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
+      const user = `Representante: ${repName || "não informado"}\nData: ${report.report_date}\n\nORIENTAÇÕES DE REVISÃO (obrigatórias):\n${data.instructions.trim()}\n\nRELATÓRIO ATUAL (JSON; gráficos trazem "spec" com fileId/sheet/x/ys/agg — reaproveite-os no formato de entrada, sem digitar números):\n${JSON.stringify(report.report).slice(0, 60000)}\n\nMATERIAL ORIGINAL:\n\n${material}`;
+      const raw = await callGateway({
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `${SYSTEM}\n\nVocê está REVISANDO um relatório existente: aplique as orientações, mantenha o que estiver correto e devolva o relatório COMPLETO atualizado.`,
+          },
+          { role: "user", content: user },
+        ],
+      });
+      const content = normalizeReport(parseJson(raw), { sheets, imageIds });
+      if (!content.chapters.length)
+        throw new Error(
+          "A revisão não produziu capítulos aproveitáveis. Tente reformular as orientações.",
+        );
+      await supabase
+        .from("general_reports")
+        .update({
+          report: content,
+          title: content.title,
+          updated_at: new Date().toISOString(),
+          error_message: null,
+        })
+        .eq("id", report.id);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
+    }
+  });
+
+/** Revisão de UM bloco: a IA recebe só o bloco (e a fonte dele) e devolve o bloco substituto. */
+export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { reportId: string; chapterIdx: number; blockIdx: number; instruction: string }) => d,
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    if (!data.instruction?.trim())
+      return { ok: false as const, error: "Escreva o que deve ser alterado." };
+    try {
+      const { report } = await loadReport(supabase, data.reportId);
+      const content = report.report as GeneralReportContent | null;
+      const chapter = content?.chapters?.[data.chapterIdx];
+      const block = chapter?.blocks?.[data.blockIdx];
+      if (!content || !chapter || !block)
+        throw new Error("Bloco não encontrado (o relatório mudou). Recarregue a página.");
+
+      const { ready, sheets, imageIds } = await loadMaterial(supabase, report.id);
+      // Fonte do bloco: planilha do gráfico ou descrição da imagem; nos demais, o texto dos arquivos.
+      let source = "";
+      const fileId = (block as any).spec?.fileId ?? (block as any).fileId;
+      const file = ready.find((f: any) => f.id === fileId);
+      if (file)
+        source = `FONTE DO BLOCO (fileId="${file.id}" nome="${file.file_name}"):\n${String(file.extracted.text ?? "").slice(0, 20000)}`;
+      else
+        source = `MATERIAL:\n${ready
+          .map(
+            (f: any) =>
+              `### fileId="${f.id}" ${f.file_name}\n${String(f.extracted.text ?? "").slice(0, 6000)}`,
+          )
+          .join("\n\n")
+          .slice(0, 40000)}`;
+
+      const system = `Você revisa UM bloco de um relatório comercial, em português, de forma objetiva. Altere SOMENTE este bloco conforme o pedido, sem inventar dados que não estejam na fonte. Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes exatos de colunas. Responda SOMENTE com o JSON de um bloco, no mesmo formato dos blocos do relatório (type: text|bullets|kpis|chart|table|image|callout).\n${SCHEMA_HINT}`;
+      const user = `Capítulo: ${chapter.title}\n\nBLOCO ATUAL:\n${JSON.stringify(block)}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\n${source}`;
+      const raw = await callGateway({
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
+      const parsed = parseJson(raw);
+      const next = normalizeBlock(parsed?.block ?? parsed, { sheets, imageIds });
+      if (!next) throw new Error("A IA não devolveu um bloco válido. Reformule o pedido.");
+
+      const chapters = content.chapters.map((c, ci) =>
+        ci === data.chapterIdx
+          ? { ...c, blocks: c.blocks.map((b, bi) => (bi === data.blockIdx ? next : b)) }
+          : c,
+      );
+      await supabase
+        .from("general_reports")
+        .update({ report: { ...content, chapters }, updated_at: new Date().toISOString() })
+        .eq("id", report.id);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
     }
   });

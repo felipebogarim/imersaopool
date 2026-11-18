@@ -5,11 +5,15 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft,
   CheckCircle2,
+  FileDown,
   Loader2,
+  Mail,
+  MessageCircle,
   Paperclip,
-  Printer,
   Sparkles,
   Trash2,
+  Undo2,
+  Wand2,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,13 +22,24 @@ import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportView } from "@/components/general-report/ReportView";
+import { BlockEditDialog } from "@/components/general-report/BlockEditDialog";
+import { InstructionDialog } from "@/components/general-report/InstructionDialog";
+import { EnviarEmailGeralDialog } from "@/components/general-report/EnviarEmailGeralDialog";
+import { EnviarWhatsappGeralDialog } from "@/components/general-report/EnviarWhatsappGeralDialog";
+import { exportGeneralReportPdf } from "@/lib/general-report-pdf";
 import {
   detectKind,
   KIND_LABEL,
   type GeneralFileKind,
   type GeneralReportContent,
+  type ReportBlock,
 } from "@/lib/general-report-lib";
-import { generateGeneralReport, processGeneralReportFile } from "@/lib/general-report.functions";
+import {
+  generateGeneralReport,
+  processGeneralReportFile,
+  reviseGeneralReport,
+  reviseGeneralReportBlock,
+} from "@/lib/general-report.functions";
 
 export const Route = createFileRoute("/_authenticated/relatorio-geral/$id")({
   head: () => ({ meta: [{ title: "Relatório Geral | PoolFlux" }] }),
@@ -41,9 +56,19 @@ function RelatorioGeralDetail() {
   const inputRef = useRef<HTMLInputElement>(null);
   const processFile = useServerFn(processGeneralReportFile);
   const generate = useServerFn(generateGeneralReport);
+  const reviseAll = useServerFn(reviseGeneralReport);
+  const reviseBlock = useServerFn(reviseGeneralReportBlock);
   const [queue, setQueue] = useState<string[]>([]); // nomes em envio (um a um)
   const [generating, setGenerating] = useState(false);
   const [instructions, setInstructions] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [previous, setPrevious] = useState<GeneralReportContent | null>(null);
+  const [editing, setEditing] = useState<{ c: number; b: number } | null>(null);
+  const [askAt, setAskAt] = useState<{ c: number; b: number } | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [whatsOpen, setWhatsOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const { data: report } = useQuery({
     queryKey: ["general-report", id],
@@ -137,6 +162,76 @@ function RelatorioGeralDetail() {
     }
   }
 
+  async function saveContent(next: GeneralReportContent) {
+    const { error } = await db
+      .from("general_reports")
+      .update({ report: next, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    refresh();
+  }
+
+  function mapBlocks(c: number, fn: (blocks: ReportBlock[]) => ReportBlock[]) {
+    const cur = report?.report as GeneralReportContent;
+    return {
+      ...cur,
+      chapters: cur.chapters
+        .map((ch, i) => (i === c ? { ...ch, blocks: fn(ch.blocks) } : ch))
+        .filter((ch) => ch.blocks.length),
+    };
+  }
+
+  async function onReviewAll(text: string) {
+    setReviewBusy(true);
+    const before = report?.report as GeneralReportContent;
+    try {
+      const r = await reviseAll({ data: { reportId: id, instructions: text } });
+      if (!r.ok) return toast.error(r.error);
+      setPrevious(before);
+      setReviewOpen(false);
+      toast.success("Relatório revisado.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha na revisão.");
+    } finally {
+      setReviewBusy(false);
+      refresh();
+    }
+  }
+
+  async function onAskBlock(text: string) {
+    if (!askAt) return;
+    setReviewBusy(true);
+    try {
+      const r = await reviseBlock({
+        data: { reportId: id, chapterIdx: askAt.c, blockIdx: askAt.b, instruction: text },
+      });
+      if (!r.ok) return toast.error(r.error);
+      setAskAt(null);
+      toast.success("Bloco atualizado.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha na revisão do bloco.");
+    } finally {
+      setReviewBusy(false);
+      refresh();
+    }
+  }
+
+  async function onPdf() {
+    const root = document.getElementById("general-report-article");
+    if (!root) return;
+    setPdfBusy(true);
+    try {
+      await exportGeneralReportPdf(
+        root,
+        `relatorio-geral-${(report?.representatives?.nome ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${report?.report_date ?? ""}`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível gerar o PDF.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   const readyCount = files.filter((f) => f.status === "lido").length;
   const busy = queue.length > 0 || files.some((f) => f.status === "processando");
   const content = report?.report as GeneralReportContent | null;
@@ -153,10 +248,28 @@ function RelatorioGeralDetail() {
         actions={
           <>
             {content && (
-              <Button variant="outline" onClick={() => window.print()}>
-                <Printer className="h-4 w-4 mr-1" />
-                Imprimir / PDF
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setReviewOpen(true)}>
+                  <Wand2 className="h-4 w-4 mr-1" />
+                  Solicitar revisão
+                </Button>
+                <Button variant="outline" onClick={() => void onPdf()} disabled={pdfBusy}>
+                  {pdfBusy ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <FileDown className="h-4 w-4 mr-1" />
+                  )}
+                  Gerar PDF
+                </Button>
+                <Button variant="outline" onClick={() => setEmailOpen(true)}>
+                  <Mail className="h-4 w-4 mr-1" />
+                  E-mail
+                </Button>
+                <Button variant="outline" onClick={() => setWhatsOpen(true)}>
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  WhatsApp
+                </Button>
+              </>
             )}
             <Button variant="outline" asChild>
               <Link to="/relatorio-geral">
@@ -262,7 +375,83 @@ function RelatorioGeralDetail() {
             A IA está analisando todo o material… isso pode levar alguns minutos.
           </p>
         )}
-        {content && <ReportView report={content} />}
+        {previous && content && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await saveContent(previous);
+              setPrevious(null);
+              toast.success("Revisão desfeita.");
+            }}
+          >
+            <Undo2 className="h-4 w-4 mr-1" />
+            Desfazer última revisão geral
+          </Button>
+        )}
+        {content && (
+          <ReportView
+            report={content}
+            actions={{
+              onEdit: (c, b) => setEditing({ c, b }),
+              onAskAi: (c, b) => setAskAt({ c, b }),
+              onDelete: (c, b) => {
+                if (!confirm("Excluir este bloco?")) return;
+                void saveContent(mapBlocks(c, (bl) => bl.filter((_, i) => i !== b)));
+              },
+            }}
+          />
+        )}
+        {content && report && (
+          <>
+            <BlockEditDialog
+              open={!!editing}
+              onOpenChange={(v) => !v && setEditing(null)}
+              block={editing ? (content.chapters[editing.c]?.blocks[editing.b] ?? null) : null}
+              onSave={(nb) => {
+                if (!editing) return;
+                void saveContent(
+                  mapBlocks(editing.c, (bl) => bl.map((x, i) => (i === editing.b ? nb : x))),
+                );
+                setEditing(null);
+              }}
+            />
+            <InstructionDialog
+              open={reviewOpen}
+              onOpenChange={setReviewOpen}
+              title="Solicitar revisão geral"
+              description="A IA revisa o relatório inteiro seguindo suas orientações, sem sair do material enviado. Você poderá desfazer."
+              placeholder="Ex.: deixe mais curto, destaque os riscos, inclua um capítulo de próximos passos e use mais gráficos."
+              busy={reviewBusy}
+              onSubmit={(t) => void onReviewAll(t)}
+            />
+            <InstructionDialog
+              open={!!askAt}
+              onOpenChange={(v) => !v && setAskAt(null)}
+              title="Pedir alteração deste bloco"
+              description="A IA altera somente este bloco, usando a fonte dele."
+              placeholder="Ex.: mostre apenas os 5 maiores; troque para gráfico de pizza; resuma em 3 tópicos."
+              busy={reviewBusy}
+              onSubmit={(t) => void onAskBlock(t)}
+            />
+            <EnviarEmailGeralDialog
+              open={emailOpen}
+              onOpenChange={setEmailOpen}
+              reportId={id}
+              report={content}
+              representative={report.representatives?.nome ?? ""}
+              dateLabel={new Date(report.report_date + "T12:00:00").toLocaleDateString("pt-BR")}
+            />
+            <EnviarWhatsappGeralDialog
+              open={whatsOpen}
+              onOpenChange={setWhatsOpen}
+              reportId={id}
+              report={content}
+              representative={report.representatives?.nome ?? ""}
+              dateLabel={new Date(report.report_date + "T12:00:00").toLocaleDateString("pt-BR")}
+            />
+          </>
+        )}
       </div>
     </div>
   );

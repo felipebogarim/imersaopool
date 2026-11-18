@@ -2,15 +2,7 @@ import * as XLSX from "xlsx";
 
 /** Tipos de material aceitos pelo Relatório Geral. */
 export type GeneralFileKind =
-  | "sheet"
-  | "image"
-  | "audio"
-  | "video"
-  | "presentation"
-  | "pdf"
-  | "document"
-  | "text"
-  | "outro";
+  "sheet" | "image" | "audio" | "video" | "presentation" | "pdf" | "document" | "text" | "outro";
 
 const EXT_KIND: Record<string, GeneralFileKind> = {
   xlsx: "sheet",
@@ -169,6 +161,8 @@ export interface ResolvedChart {
   data: Array<Record<string, string | number>>;
   insight?: string;
   source?: string;
+  /** Referência para recalcular o gráfico a partir da planilha (revisão por IA). */
+  spec?: Pick<ChartSpecInput, "fileId" | "sheet" | "x" | "ys" | "agg" | "limit">;
 }
 
 /**
@@ -240,6 +234,14 @@ export function resolveChart(spec: ChartSpecInput, sheet: ParsedSheet): Resolved
     data,
     insight: spec.insight?.trim() || undefined,
     source: `${sheet.name}`,
+    spec: {
+      fileId: spec.fileId,
+      sheet: sheet.name,
+      x: spec.x,
+      ys: spec.ys ?? [],
+      agg,
+      limit: spec.limit,
+    },
   };
 }
 
@@ -377,4 +379,10 @@ export function normalizeReport(raw: any, ctx: NormalizeCtx): GeneralReportConte
     chapters,
     gaps: strs(raw?.gaps, 10),
   };
+}
+
+/** Normaliza um único bloco devolvido pela IA (revisão de bloco). */
+export function normalizeBlock(raw: unknown, ctx: NormalizeCtx): ReportBlock | null {
+  const r = normalizeReport({ chapters: [{ title: "x", blocks: [raw] }] }, ctx);
+  return r.chapters[0]?.blocks[0] ?? null;
 }

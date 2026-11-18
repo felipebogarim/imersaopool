@@ -16,7 +16,23 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, Lightbulb, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  Lightbulb,
+  MoreVertical,
+  Pencil,
+  Sparkles,
+  Trash2,
+  Wand2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import type { GeneralReportContent, ReportBlock } from "@/lib/general-report-lib";
 
@@ -237,10 +253,64 @@ function Block({ b }: { b: ReportBlock }) {
   }
 }
 
-export function ReportView({ report }: { report: GeneralReportContent }) {
+export interface BlockActions {
+  onEdit: (chapterIdx: number, blockIdx: number) => void;
+  onDelete: (chapterIdx: number, blockIdx: number) => void;
+  onAskAi: (chapterIdx: number, blockIdx: number) => void;
+}
+
+function BlockKebab({
+  onEdit,
+  onDelete,
+  onAskAi,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  onAskAi: () => void;
+}) {
   return (
-    <article className="space-y-8">
-      <header className="rounded-2xl bg-primary text-primary-foreground p-6">
+    <div className="absolute right-1 top-1 z-10 print:hidden" data-pdf-ignore>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-7 w-7 opacity-70 hover:opacity-100"
+            aria-label="Ações do bloco"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onAskAi}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Pedir alteração à IA
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+export function ReportView({
+  report,
+  actions,
+}: {
+  report: GeneralReportContent;
+  actions?: BlockActions;
+}) {
+  return (
+    <article className="space-y-8" id="general-report-article">
+      <header className="rounded-2xl bg-primary text-primary-foreground p-6" data-pdf-block>
         <h2 className="text-2xl font-bold">{report.title}</h2>
         {report.subtitle && <p className="opacity-90 mt-1">{report.subtitle}</p>}
         {report.executive_summary && (
@@ -249,7 +319,7 @@ export function ReportView({ report }: { report: GeneralReportContent }) {
       </header>
       {report.chapters.map((ch, i) => (
         <section key={i} className="space-y-4">
-          <div className="border-l-4 border-primary pl-3">
+          <div className="border-l-4 border-primary pl-3" data-pdf-block>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               Capítulo {String(i + 1).padStart(2, "0")}
             </div>
@@ -257,12 +327,21 @@ export function ReportView({ report }: { report: GeneralReportContent }) {
             {ch.summary && <p className="text-sm text-muted-foreground">{ch.summary}</p>}
           </div>
           {ch.blocks.map((b, k) => (
-            <Block key={k} b={b} />
+            <div key={k} className="relative group" data-pdf-block>
+              {actions && (
+                <BlockKebab
+                  onEdit={() => actions.onEdit(i, k)}
+                  onDelete={() => actions.onDelete(i, k)}
+                  onAskAi={() => actions.onAskAi(i, k)}
+                />
+              )}
+              <Block b={b} />
+            </div>
           ))}
         </section>
       ))}
       {report.gaps && report.gaps.length > 0 && (
-        <section className="rounded-xl border border-dashed border-border p-4">
+        <section className="rounded-xl border border-dashed border-border p-4" data-pdf-block>
           <h4 className="text-sm font-semibold mb-1">Lacunas e limitações do material</h4>
           <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
             {report.gaps.map((g, i) => (
