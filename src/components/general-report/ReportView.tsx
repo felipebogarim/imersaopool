@@ -257,6 +257,9 @@ export interface BlockActions {
   onEdit: (chapterIdx: number, blockIdx: number) => void;
   onDelete: (chapterIdx: number, blockIdx: number) => void;
   onAskAi: (chapterIdx: number, blockIdx: number) => void;
+  onEditIntro?: () => void;
+  onDeleteIntro?: () => void;
+  onAskAiIntro?: () => void;
 }
 
 function BlockKebab({
@@ -310,7 +313,17 @@ export function ReportView({
 }) {
   return (
     <article className="space-y-8" id="general-report-article">
-      <header className="rounded-2xl bg-primary text-primary-foreground p-6" data-pdf-block>
+      <header
+        className="relative rounded-2xl bg-primary text-primary-foreground p-6"
+        data-pdf-block
+      >
+        {actions?.onEditIntro && actions.onDeleteIntro && actions.onAskAiIntro && (
+          <BlockKebab
+            onEdit={actions.onEditIntro}
+            onDelete={actions.onDeleteIntro}
+            onAskAi={actions.onAskAiIntro}
+          />
+        )}
         <h2 className="text-2xl font-bold">{report.title}</h2>
         {report.subtitle && <p className="opacity-90 mt-1">{report.subtitle}</p>}
         {report.executive_summary && (

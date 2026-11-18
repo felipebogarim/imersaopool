@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ReportView } from "@/components/general-report/ReportView";
 import { BlockEditDialog } from "@/components/general-report/BlockEditDialog";
+import { IntroEditDialog } from "@/components/general-report/IntroEditDialog";
 import { InstructionDialog } from "@/components/general-report/InstructionDialog";
 import { EnviarEmailGeralDialog } from "@/components/general-report/EnviarEmailGeralDialog";
 import { EnviarWhatsappGeralDialog } from "@/components/general-report/EnviarWhatsappGeralDialog";
@@ -39,6 +40,7 @@ import {
   processGeneralReportFile,
   reviseGeneralReport,
   reviseGeneralReportBlock,
+  reviseGeneralReportIntro,
 } from "@/lib/general-report.functions";
 
 export const Route = createFileRoute("/_authenticated/relatorio-geral/$id")({
@@ -58,6 +60,7 @@ function RelatorioGeralDetail() {
   const generate = useServerFn(generateGeneralReport);
   const reviseAll = useServerFn(reviseGeneralReport);
   const reviseBlock = useServerFn(reviseGeneralReportBlock);
+  const reviseIntro = useServerFn(reviseGeneralReportIntro);
   const [queue, setQueue] = useState<string[]>([]); // nomes em envio (um a um)
   const [generating, setGenerating] = useState(false);
   const [instructions, setInstructions] = useState("");
@@ -65,6 +68,8 @@ function RelatorioGeralDetail() {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [previous, setPrevious] = useState<GeneralReportContent | null>(null);
   const [editing, setEditing] = useState<{ c: number; b: number } | null>(null);
+  const [introEdit, setIntroEdit] = useState(false);
+  const [askIntro, setAskIntro] = useState(false);
   const [askAt, setAskAt] = useState<{ c: number; b: number } | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
   const [whatsOpen, setWhatsOpen] = useState(false);
@@ -210,6 +215,21 @@ function RelatorioGeralDetail() {
       toast.success("Bloco atualizado.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na revisão do bloco.");
+    } finally {
+      setReviewBusy(false);
+      refresh();
+    }
+  }
+
+  async function onAskIntro(text: string) {
+    setReviewBusy(true);
+    try {
+      const r = await reviseIntro({ data: { reportId: id, instruction: text } });
+      if (!r.ok) return toast.error(r.error);
+      setAskIntro(false);
+      toast.success("Introdução atualizada.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha na revisão da introdução.");
     } finally {
       setReviewBusy(false);
       refresh();
@@ -393,6 +413,12 @@ function RelatorioGeralDetail() {
           <ReportView
             report={content}
             actions={{
+              onEditIntro: () => setIntroEdit(true),
+              onAskAiIntro: () => setAskIntro(true),
+              onDeleteIntro: () => {
+                if (!confirm("Remover subtítulo e resumo da introdução?")) return;
+                void saveContent({ ...content, subtitle: undefined, executive_summary: "" });
+              },
               onEdit: (c, b) => setEditing({ c, b }),
               onAskAi: (c, b) => setAskAt({ c, b }),
               onDelete: (c, b) => {
@@ -415,6 +441,24 @@ function RelatorioGeralDetail() {
                 );
                 setEditing(null);
               }}
+            />
+            <IntroEditDialog
+              open={introEdit}
+              onOpenChange={setIntroEdit}
+              intro={content}
+              onSave={(i) => {
+                void saveContent({ ...content, ...i });
+                setIntroEdit(false);
+              }}
+            />
+            <InstructionDialog
+              open={askIntro}
+              onOpenChange={setAskIntro}
+              title="Pedir alteração da introdução"
+              description="A IA altera somente o título, o subtítulo e o resumo."
+              placeholder="Ex.: deixe o resumo mais curto e destaque a queda de faturamento."
+              busy={reviewBusy}
+              onSubmit={(t) => void onAskIntro(t)}
             />
             <InstructionDialog
               open={reviewOpen}

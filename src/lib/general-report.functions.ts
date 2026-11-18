@@ -368,3 +368,61 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
       return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
     }
   });
+
+/** Revisão só da introdução (título, subtítulo e resumo), usando os capítulos e o material como fonte. */
+export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { reportId: string; instruction: string }) => d)
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    if (!data.instruction?.trim())
+      return { ok: false as const, error: "Escreva o que deve ser alterado." };
+    try {
+      const { report } = await loadReport(supabase, data.reportId);
+      const content = report.report as GeneralReportContent | null;
+      if (!content) throw new Error("Gere o relatório antes de revisar.");
+      const { material } = await loadMaterial(supabase, report.id);
+      const outline = content.chapters
+        .map((c, i) => `${i + 1}. ${c.title}${c.summary ? ` — ${c.summary}` : ""}`)
+        .join("\n");
+      const raw = await callGateway({
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. Responda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
+          },
+          {
+            role: "user",
+            content: `INTRODUÇÃO ATUAL:\n${JSON.stringify({ title: content.title, subtitle: content.subtitle ?? "", executive_summary: content.executive_summary })}\n\nCAPÍTULOS:\n${outline}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\nMATERIAL:\n${material.slice(0, 50000)}`,
+          },
+        ],
+      });
+      const p = parseJson(raw);
+      const title = String(p?.title ?? "")
+        .trim()
+        .slice(0, 200);
+      const summary = String(p?.executive_summary ?? "")
+        .trim()
+        .slice(0, 3000);
+      if (!title || !summary)
+        throw new Error("A IA não devolveu uma introdução válida. Reformule o pedido.");
+      const next = {
+        ...content,
+        title,
+        subtitle:
+          String(p?.subtitle ?? "")
+            .trim()
+            .slice(0, 300) || undefined,
+        executive_summary: summary,
+      };
+      await supabase
+        .from("general_reports")
+        .update({ report: next, title, updated_at: new Date().toISOString() })
+        .eq("id", report.id);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
+    }
+  });
