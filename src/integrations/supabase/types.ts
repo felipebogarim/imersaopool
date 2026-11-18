@@ -2117,6 +2117,106 @@ export type Database = {
         }
         Relationships: []
       }
+      general_report_files: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          extracted: Json | null
+          file_name: string
+          id: string
+          kind: string
+          mime_type: string | null
+          report_id: string
+          size_bytes: number | null
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          extracted?: Json | null
+          file_name: string
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          report_id: string
+          size_bytes?: number | null
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          extracted?: Json | null
+          file_name?: string
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          report_id?: string
+          size_bytes?: number | null
+          status?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_report_files_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "general_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      general_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          error_message: string | null
+          generated_at: string | null
+          id: string
+          report: Json | null
+          report_date: string
+          representative_id: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          report?: Json | null
+          report_date: string
+          representative_id?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          generated_at?: string | null
+          id?: string
+          report?: Json | null
+          report_date?: string
+          representative_id?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_reports_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gerador_performance_salvos: {
         Row: {
           categoria_metas: Json | null
