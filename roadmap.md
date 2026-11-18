@@ -6,3 +6,5 @@
 - [x] Exibir N/D em painéis e exportações
 - [x] Adicionar testes e validar fluxos
 - [x] Corrigir leitura de RESULTADO por célula antes da faixa e da cor
+- [x] Revisar migração pendente de imersões (cliente/parceiro) sem executar
+- [ ] Aplicar a migração revisada de imersões — aguardando aprovação do usuário

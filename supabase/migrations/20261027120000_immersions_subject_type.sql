@@ -1,5 +1,8 @@
 -- Imersões podem pertencer a um cliente da base ou a um parceiro especificador
 -- (arquiteto, light designer, outro). Parceiros não são clientes: client_id fica nulo.
+-- A coluna client_id passa a aceitar NULL, mas o CHECK de consistência exige
+-- client_id para imersões de cliente e o proíbe para imersões de parceiro.
+-- A chave estrangeira immersions_client_id_fkey e as políticas de acesso não são alteradas.
 ALTER TABLE public.immersions
   ALTER COLUMN client_id DROP NOT NULL,
   ADD COLUMN IF NOT EXISTS subject_type text NOT NULL DEFAULT 'client',
@@ -17,13 +20,16 @@ ALTER TABLE public.immersions DROP CONSTRAINT IF EXISTS immersions_partner_type_
 ALTER TABLE public.immersions ADD CONSTRAINT immersions_partner_type_check
   CHECK (partner_type IS NULL OR partner_type IN ('arquiteto', 'light_designer', 'outro'));
 
--- Parceiro: sem cliente e com identificação. Cliente: sem dados de parceiro.
--- (A obrigatoriedade de client_id para subject_type = 'client' é regra de aplicação,
--- pois há registros legados que não a respeitam.)
+-- Cliente: client_id obrigatório e sem tipo de parceiro.
+-- Parceiro: sem cliente, com tipo e com nome não vazio.
 ALTER TABLE public.immersions DROP CONSTRAINT IF EXISTS immersions_subject_consistency_check;
 ALTER TABLE public.immersions ADD CONSTRAINT immersions_subject_consistency_check
   CHECK (
-    (subject_type = 'client' AND partner_type IS NULL)
+    (
+      subject_type = 'client'
+      AND client_id IS NOT NULL
+      AND partner_type IS NULL
+    )
     OR (
       subject_type = 'partner'
       AND client_id IS NULL
