@@ -348,14 +348,17 @@ export function resolveChart(spec: ChartSpecInput, original: ParsedSheet): Resol
 // ---------------------------------------------------------------------------
 // Relatório (estrutura devolvida pela IA, normalizada)
 // ---------------------------------------------------------------------------
-export type ReportBlock =
+/** Bloco do usuário: "criado" (Novo bloco) ou "editado" (edição manual). Sobrevive a regerar/revisar. */
+export type BlockLock = "criado" | "editado";
+export type ReportBlock = (
   | { type: "text"; text: string }
   | { type: "bullets"; title?: string; items: string[] }
   | { type: "kpis"; items: Array<{ label: string; value: string; hint?: string }> }
   | ({ type: "chart" } & ResolvedChart)
   | { type: "table"; title?: string; columns: string[]; rows: string[][] }
   | { type: "image"; fileId: string; caption: string; observations: string[] }
-  | { type: "callout"; tone: "destaque" | "atencao" | "oportunidade"; text: string };
+  | { type: "callout"; tone: "destaque" | "atencao" | "oportunidade"; text: string }
+) & { locked?: BlockLock };
 
 export interface ReportChapter {
   title: string;
@@ -368,6 +371,8 @@ export interface GeneralReportContent {
   executive_summary: string;
   chapters: ReportChapter[];
   gaps?: string[];
+  /** Introdução editada à mão pelo usuário: regerar/revisar mantém título, subtítulo e resumo. */
+  intro_locked?: boolean;
 }
 
 const str = (v: unknown, max = 2000) =>
@@ -593,13 +598,10 @@ const who = (list: Delta[], k: number) =>
 export function periodAnalysis(sheet: ParsedSheet): string {
   const pairs = findPeriodPairs(sheet).slice(0, 2);
   if (!pairs.length) return "";
-  const textCols = sheet.headers
-    .map((_, i) => i)
-    .filter((i) => !isNumericCol(sheet, i));
+  const textCols = sheet.headers.map((_, i) => i).filter((i) => !isNumericCol(sheet, i));
   const distinct = (i: number) =>
     new Set(sheet.rows.map((r) => r[i]).filter((v) => v !== null && v !== "")).size;
-  const labelCol =
-    textCols.sort((a, b) => distinct(b) - distinct(a))[0] ?? -1;
+  const labelCol = textCols.sort((a, b) => distinct(b) - distinct(a))[0] ?? -1;
   const rows = sheet.rows.filter(
     (r) => !/^\s*(total|soma|geral)\b/i.test(String(labelCol >= 0 ? (r[labelCol] ?? "") : "")),
   );
@@ -680,4 +682,94 @@ export function sheetMaterial(sheet: ParsedSheet, maxChars = 30000): string {
   const analysis = periodAnalysis(sheet);
   const head = [summarizeSheet(sheet), analysis].filter(Boolean).join("\n");
   return `${head}\n${sheetRowsText(sheet, Math.max(4000, maxChars - head.length))}`;
+}
+
+// ---------------------------------------------------------------------------
+// Preservação das alterações do usuário ao regerar / revisar
+// ---------------------------------------------------------------------------
+export interface LockedBlock {
+  chapterIdx: number;
+  chapterTitle: string;
+  blockIdx: number;
+  block: ReportBlock;
+}
+
+/** Blocos criados ou editados pelo usuário, com a posição original. */
+export function lockedBlocks(content: GeneralReportContent | null | undefined): LockedBlock[] {
+  const out: LockedBlock[] = [];
+  content?.chapters?.forEach((ch, ci) =>
+    ch.blocks.forEach((b, bi) => {
+      if (b.locked) out.push({ chapterIdx: ci, chapterTitle: ch.title, blockIdx: bi, block: b });
+    }),
+  );
+  return out;
+}
+
+/** Cópia do relatório sem os blocos do usuário (para a IA reescrever só o resto). */
+export function withoutLocked(content: GeneralReportContent): GeneralReportContent {
+  return {
+    ...content,
+    chapters: content.chapters
+      .map((ch) => ({ ...ch, blocks: ch.blocks.filter((b) => !b.locked) }))
+      .filter((ch) => ch.blocks.length),
+  };
+}
+
+const normTitle = (t: string) =>
+  t
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+/**
+ * Junta o relatório novo da IA com as alterações do usuário do relatório anterior: blocos
+ * criados/editados voltam ao capítulo de mesmo título (ou de mesma posição; se não houver, a um
+ * capítulo com o título antigo) na posição original; introdução editada à mão é mantida.
+ */
+export function mergeUserChanges(
+  prev: GeneralReportContent | null | undefined,
+  next: GeneralReportContent,
+): GeneralReportContent {
+  if (!prev) return next;
+  const chapters = next.chapters.map((c) => ({ ...c, blocks: [...c.blocks] }));
+  for (const lb of lockedBlocks(prev)) {
+    let target = chapters.find((c) => normTitle(c.title) === normTitle(lb.chapterTitle));
+    if (!target) target = chapters[lb.chapterIdx];
+    if (!target) {
+      target = { title: lb.chapterTitle, blocks: [] };
+      chapters.push(target);
+    }
+    target.blocks.splice(Math.min(lb.blockIdx, target.blocks.length), 0, lb.block);
+  }
+  const merged: GeneralReportContent = { ...next, chapters };
+  if (prev.intro_locked) {
+    merged.title = prev.title;
+    merged.subtitle = prev.subtitle;
+    merged.executive_summary = prev.executive_summary;
+    merged.intro_locked = true;
+  }
+  return merged;
+}
+
+/** Texto para o prompt: o que o usuário fez e que será mantido (a IA não deve repetir). */
+export function userChangesPrompt(prev: GeneralReportContent | null | undefined): string {
+  if (!prev) return "";
+  const blocks = lockedBlocks(prev);
+  const parts: string[] = [];
+  if (prev.intro_locked)
+    parts.push(
+      `INTRODUÇÃO ESCRITA PELO USUÁRIO (será mantida como está; alinhe o relatório a ela): ${JSON.stringify({ title: prev.title, subtitle: prev.subtitle ?? "", executive_summary: prev.executive_summary })}`,
+    );
+  if (blocks.length)
+    parts.push(
+      `BLOCOS DO USUÁRIO (serão mantidos como estão, nos capítulos indicados; NÃO crie blocos que repitam o mesmo conteúdo):\n${blocks
+        .map((b) => {
+          const { data: _d, ...rest } = b.block as any;
+          return `- capítulo "${b.chapterTitle}": ${JSON.stringify(rest).slice(0, 1500)}`;
+        })
+        .join("\n")}`,
+    );
+  return parts.join("\n\n");
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectKind,
   normalizeReport,
+  mergeUserChanges,
   periodAnalysis,
   pickBlock,
   prepareSheet,
@@ -166,5 +167,72 @@ describe("periodAnalysis (atual × anterior)", () => {
 
   it("sem par de períodos não gera análise", () => {
     expect(periodAnalysis(sheet)).toBe("");
+  });
+});
+
+describe("mergeUserChanges (regerar mantém o que o usuário fez)", () => {
+  const prev = {
+    title: "Título do usuário",
+    executive_summary: "Resumo escrito à mão",
+    intro_locked: true,
+    chapters: [
+      {
+        title: "Panorama",
+        blocks: [
+          { type: "text" as const, text: "texto da IA" },
+          { type: "text" as const, text: "meu texto", locked: "editado" as const },
+        ],
+      },
+      {
+        title: "Capítulo que sumiu",
+        blocks: [
+          {
+            type: "callout" as const,
+            tone: "destaque" as const,
+            text: "meu bloco",
+            locked: "criado" as const,
+          },
+        ],
+      },
+    ],
+  };
+  const fresh = {
+    title: "Título novo da IA",
+    executive_summary: "Resumo novo",
+    chapters: [
+      { title: "Panorama", blocks: [{ type: "text" as const, text: "novo texto da IA" }] },
+    ],
+  };
+
+  it("mantém blocos editados e criados e descarta os blocos antigos da IA", () => {
+    const m = mergeUserChanges(prev, fresh);
+    const all = m.chapters.flatMap((c) => c.blocks.map((b: any) => b.text));
+    expect(all).toContain("meu texto");
+    expect(all).toContain("meu bloco");
+    expect(all).toContain("novo texto da IA");
+    expect(all).not.toContain("texto da IA");
+  });
+
+  it("bloco cujo capítulo sumiu volta no de mesma posição, ou num capítulo com o título antigo", () => {
+    const m = mergeUserChanges(prev, fresh);
+    expect(m.chapters.map((c) => c.title)).toEqual(["Panorama", "Capítulo que sumiu"]);
+    expect(m.chapters[0].blocks.map((b: any) => b.text)).toEqual(["novo texto da IA", "meu texto"]);
+    const m2 = mergeUserChanges(prev, {
+      ...fresh,
+      chapters: [
+        ...fresh.chapters,
+        { title: "Outro", blocks: [{ type: "text" as const, text: "x" }] },
+      ],
+    });
+    expect(m2.chapters[1].blocks.map((b: any) => b.text)).toEqual(["meu bloco", "x"]);
+  });
+
+  it("introdução editada à mão é mantida", () => {
+    const m = mergeUserChanges(prev, fresh);
+    expect(m.title).toBe("Título do usuário");
+    expect(m.executive_summary).toBe("Resumo escrito à mão");
+    expect(mergeUserChanges({ ...prev, intro_locked: false }, fresh).title).toBe(
+      "Título novo da IA",
+    );
   });
 });

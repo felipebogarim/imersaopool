@@ -336,6 +336,15 @@ export function ReportView({
             onAskAi={actions.onAskAiIntro}
           />
         )}
+        {actions && report.intro_locked && (
+          <span
+            className="absolute left-4 -top-2 z-10 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground print:hidden"
+            data-pdf-ignore
+            title="Mantida quando o relatório é gerado ou revisado de novo"
+          >
+            Editada por você
+          </span>
+        )}
         <h2 className="text-2xl font-bold">{report.title}</h2>
         {report.subtitle && <p className="opacity-90 mt-1">{report.subtitle}</p>}
         {report.executive_summary && (
@@ -360,6 +369,15 @@ export function ReportView({
                   onAskAi={() => actions.onAskAi(i, k)}
                   onAdd={actions.onAdd ? () => actions.onAdd!(i, k) : undefined}
                 />
+              )}
+              {actions && b.locked && (
+                <span
+                  className="absolute left-2 -top-2 z-10 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium text-muted-foreground print:hidden"
+                  data-pdf-ignore
+                  title="Mantido quando o relatório é gerado ou revisado de novo"
+                >
+                  {b.locked === "criado" ? "Criado por você" : "Editado por você"}
+                </span>
               )}
               <Block b={b} />
             </div>

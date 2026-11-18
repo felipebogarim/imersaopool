@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  mergeUserChanges,
   normalizeReport,
+  userChangesPrompt,
+  withoutLocked,
   pickBlock,
   parseSpreadsheet,
   sheetMaterial,
@@ -45,7 +48,12 @@ async function callAnalysis(body: Record<string, unknown>): Promise<string> {
   const res = await fetch(GATEWAY, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: ANALYSIS_MODEL, reasoning_effort: "high", stream: true, ...body }),
+    body: JSON.stringify({
+      model: ANALYSIS_MODEL,
+      reasoning_effort: "high",
+      stream: true,
+      ...body,
+    }),
   });
   if (!res.ok || !res.body) {
     const t = await res.text().catch(() => "");
@@ -223,10 +231,14 @@ Responda SOMENTE com JSON:
  * colunas, análise calculada (atual × anterior, perdas e ganhos brutos por grupo) e todas as linhas.
  */
 function fileText(f: any, maxChars = 60000): string {
-  const parsed = f.kind === "sheet" ? (f.extracted?.sheets as ParsedSheet[] | undefined) : undefined;
+  const parsed =
+    f.kind === "sheet" ? (f.extracted?.sheets as ParsedSheet[] | undefined) : undefined;
   if (parsed?.length) {
     const per = Math.floor(maxChars / parsed.length);
-    return parsed.map((sh) => sheetMaterial(sh, per)).join("\n\n").slice(0, maxChars);
+    return parsed
+      .map((sh) => sheetMaterial(sh, per))
+      .join("\n\n")
+      .slice(0, maxChars);
   }
   return String(f.extracted?.text ?? "").slice(0, maxChars);
 }
@@ -316,9 +328,11 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
       .update({ status: "gerando", error_message: null })
       .eq("id", report.id);
     try {
+      const prev = report.report as GeneralReportContent | null;
+      const kept = userChangesPrompt(prev);
       const user = `Representante: ${repName || "não informado"}\nData da imersão: ${report.report_date}\n${
         data.instructions?.trim() ? `Instruções do usuário: ${data.instructions.trim()}\n` : ""
-      }\nMATERIAL:\n\n${material}`;
+      }${kept ? `\n${kept}\n` : ""}\nMATERIAL:\n\n${material}`;
       const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
@@ -326,9 +340,10 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
           { role: "user", content: user },
         ],
       });
-      const content = normalizeReport(parseJson(raw), { sheets, imageIds });
-      if (!content.chapters.length)
+      const fresh = normalizeReport(parseJson(raw), { sheets, imageIds });
+      if (!fresh.chapters.length)
         throw new Error("A IA não produziu capítulos aproveitáveis. Tente gerar novamente.");
+      const content = mergeUserChanges(prev, fresh);
       await supabase
         .from("general_reports")
         .update({
@@ -363,7 +378,9 @@ export const reviseGeneralReport = createServerFn({ method: "POST" })
       const { report, repName } = await loadReport(supabase, data.reportId);
       if (!report.report) throw new Error("Gere o relatório antes de revisar.");
       const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
-      const user = `Representante: ${repName || "não informado"}\nData: ${report.report_date}\n\nORIENTAÇÕES DE REVISÃO (obrigatórias):\n${data.instructions.trim()}\n\nRELATÓRIO ATUAL (JSON; gráficos trazem "spec" com fileId/sheet/x/ys/agg — reaproveite-os no formato de entrada, sem digitar números):\n${JSON.stringify(report.report).slice(0, 60000)}\n\nMATERIAL ORIGINAL:\n\n${material}`;
+      const prev = report.report as GeneralReportContent;
+      const kept = userChangesPrompt(prev);
+      const user = `Representante: ${repName || "não informado"}\nData: ${report.report_date}\n\nORIENTAÇÕES DE REVISÃO (obrigatórias):\n${data.instructions.trim()}\n${kept ? `\n${kept}\n` : ""}\nRELATÓRIO ATUAL (JSON, sem os blocos do usuário; gráficos trazem "spec" com fileId/sheet/x/ys/agg — reaproveite-os no formato de entrada, sem digitar números):\n${JSON.stringify(withoutLocked(prev)).slice(0, 60000)}\n\nMATERIAL ORIGINAL:\n\n${material}`;
       const raw = await callAnalysis({
         response_format: { type: "json_object" },
         messages: [
@@ -374,11 +391,12 @@ export const reviseGeneralReport = createServerFn({ method: "POST" })
           { role: "user", content: user },
         ],
       });
-      const content = normalizeReport(parseJson(raw), { sheets, imageIds });
-      if (!content.chapters.length)
+      const fresh = normalizeReport(parseJson(raw), { sheets, imageIds });
+      if (!fresh.chapters.length)
         throw new Error(
           "A revisão não produziu capítulos aproveitáveis. Tente reformular as orientações.",
         );
+      const content = mergeUserChanges(prev, fresh);
       await supabase
         .from("general_reports")
         .update({
@@ -421,10 +439,7 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
         source = `FONTE DO BLOCO (fileId="${file.id}" nome="${file.file_name}"):\n${fileText(file, 60000)}`;
       else
         source = `MATERIAL:\n${ready
-          .map(
-            (f: any) =>
-              `### fileId="${f.id}" ${f.file_name}\n${fileText(f, 20000)}`,
-          )
+          .map((f: any) => `### fileId="${f.id}" ${f.file_name}\n${fileText(f, 20000)}`)
           .join("\n\n")
           .slice(0, 120000)}`;
 
@@ -438,8 +453,9 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
         ],
       });
       const parsed = parseJson(raw);
-      const next = pickBlock(parsed, { sheets, imageIds });
-      if (!next) throw new Error("A IA não devolveu um bloco válido. Reformule o pedido.");
+      const picked = pickBlock(parsed, { sheets, imageIds });
+      if (!picked) throw new Error("A IA não devolveu um bloco válido. Reformule o pedido.");
+      const next = block.locked ? { ...picked, locked: block.locked } : picked;
       if (sameBlock(block, next))
         return {
           ok: false as const,
@@ -567,9 +583,10 @@ export const createGeneralReportBlock = createServerFn({ method: "POST" })
           "A IA não conseguiu montar o bloco com o material disponível. Reformule o pedido.",
         );
       const at = Math.min(Math.max(data.afterIdx + 1, 0), chapter.blocks.length);
+      const created = { ...block, locked: "criado" as const };
       const chapters = content.chapters.map((c, ci) =>
         ci === data.chapterIdx
-          ? { ...c, blocks: [...c.blocks.slice(0, at), block, ...c.blocks.slice(at)] }
+          ? { ...c, blocks: [...c.blocks.slice(0, at), created, ...c.blocks.slice(at)] }
           : c,
       );
       await supabase

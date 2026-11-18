@@ -480,7 +480,11 @@ function RelatorioGeralDetail() {
               onSave={(nb) => {
                 if (!editing) return;
                 void saveContent(
-                  mapBlocks(editing.c, (bl) => bl.map((x, i) => (i === editing.b ? nb : x))),
+                  mapBlocks(editing.c, (bl) =>
+                    bl.map((x, i) =>
+                      i === editing.b ? { ...nb, locked: x.locked ?? ("editado" as const) } : x,
+                    ),
+                  ),
                 );
                 setEditing(null);
               }}
@@ -501,7 +505,7 @@ function RelatorioGeralDetail() {
               onOpenChange={setIntroEdit}
               intro={content}
               onSave={(i) => {
-                void saveContent({ ...content, ...i });
+                void saveContent({ ...content, ...i, intro_locked: true });
                 setIntroEdit(false);
               }}
             />
