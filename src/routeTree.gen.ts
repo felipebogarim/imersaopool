@@ -131,6 +131,7 @@ import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_aut
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
 import { Route as AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.executivo'
+import { Route as ApiPublicHooksActionDueAlertsRouteImport } from './routes/api/public/hooks/action-due-alerts'
 import { Route as ApiPublicHooksActionWeeklyReminderRouteImport } from './routes/api/public/hooks/action-weekly-reminder'
 import { Route as ApiPublicHooksMfaDeadlineCheckRouteImport } from './routes/api/public/hooks/mfa-deadline-check'
 import { Route as ApiPublicHooksWeeklySecurityAuditRouteImport } from './routes/api/public/hooks/weekly-security-audit'
@@ -822,6 +823,12 @@ const AuthenticatedVisaoImersao2ReportIdExecutivoRoute =
     path: '/visao-imersao-2/$reportId/executivo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksActionDueAlertsRoute =
+  ApiPublicHooksActionDueAlertsRouteImport.update({
+    id: '/api/public/hooks/action-due-alerts',
+    path: '/api/public/hooks/action-due-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksActionWeeklyReminderRoute =
   ApiPublicHooksActionWeeklyReminderRouteImport.update({
     id: '/api/public/hooks/action-weekly-reminder',
@@ -1024,6 +1031,7 @@ export interface FileRoutesByFullPath {
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-due-alerts': typeof ApiPublicHooksActionDueAlertsRoute
   '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
@@ -1159,6 +1167,7 @@ export interface FileRoutesByTo {
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-due-alerts': typeof ApiPublicHooksActionDueAlertsRoute
   '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
@@ -1298,6 +1307,7 @@ export interface FileRoutesById {
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
+  '/api/public/hooks/action-due-alerts': typeof ApiPublicHooksActionDueAlertsRoute
   '/api/public/hooks/action-weekly-reminder': typeof ApiPublicHooksActionWeeklyReminderRoute
   '/api/public/hooks/mfa-deadline-check': typeof ApiPublicHooksMfaDeadlineCheckRoute
   '/api/public/hooks/weekly-security-audit': typeof ApiPublicHooksWeeklySecurityAuditRoute
@@ -1437,6 +1447,7 @@ export interface FileRouteTypes {
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
+    | '/api/public/hooks/action-due-alerts'
     | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
@@ -1572,6 +1583,7 @@ export interface FileRouteTypes {
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
+    | '/api/public/hooks/action-due-alerts'
     | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
@@ -1710,6 +1722,7 @@ export interface FileRouteTypes {
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
+    | '/api/public/hooks/action-due-alerts'
     | '/api/public/hooks/action-weekly-reminder'
     | '/api/public/hooks/mfa-deadline-check'
     | '/api/public/hooks/weekly-security-audit'
@@ -1759,6 +1772,7 @@ export interface RootRouteChildren {
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   SolicitacoesAcaoTokenRoute: typeof SolicitacoesAcaoTokenRoute
+  ApiPublicHooksActionDueAlertsRoute: typeof ApiPublicHooksActionDueAlertsRoute
   ApiPublicHooksActionWeeklyReminderRoute: typeof ApiPublicHooksActionWeeklyReminderRoute
   ApiPublicHooksMfaDeadlineCheckRoute: typeof ApiPublicHooksMfaDeadlineCheckRoute
   ApiPublicHooksWeeklySecurityAuditRoute: typeof ApiPublicHooksWeeklySecurityAuditRoute
@@ -2629,6 +2643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/action-due-alerts': {
+      id: '/api/public/hooks/action-due-alerts'
+      path: '/api/public/hooks/action-due-alerts'
+      fullPath: '/api/public/hooks/action-due-alerts'
+      preLoaderRoute: typeof ApiPublicHooksActionDueAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/action-weekly-reminder': {
       id: '/api/public/hooks/action-weekly-reminder'
       path: '/api/public/hooks/action-weekly-reminder'
@@ -3041,6 +3062,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   SolicitacoesAcaoTokenRoute: SolicitacoesAcaoTokenRoute,
+  ApiPublicHooksActionDueAlertsRoute: ApiPublicHooksActionDueAlertsRoute,
   ApiPublicHooksActionWeeklyReminderRoute:
     ApiPublicHooksActionWeeklyReminderRoute,
   ApiPublicHooksMfaDeadlineCheckRoute: ApiPublicHooksMfaDeadlineCheckRoute,
