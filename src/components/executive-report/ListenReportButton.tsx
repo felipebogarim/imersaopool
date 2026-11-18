@@ -19,10 +19,17 @@ function fmt(s: number) {
 export function ListenReportButton({
   data,
   autoStart,
+  script,
+  fileName,
 }: {
-  data: ExecutiveReportData;
+  data?: ExecutiveReportData;
   autoStart?: boolean;
+  /** Roteiro pronto (usado pelo Relatório Geral); sem ele, usa o roteiro do relatório executivo. */
+  script?: string[];
+  /** Nome do arquivo .mp3 baixado (sem extensão). */
+  fileName?: string;
 }) {
+  const getScript = () => script ?? (data ? buildSpeechScript(data) : []);
   const [state, setState] = useState<"idle" | "loading" | "playing" | "paused">("idle");
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
@@ -36,7 +43,8 @@ export function ListenReportButton({
 
   // O áudio é gerado a partir do texto atual; se qualquer campo do relatório mudar, o áudio
   // preparado deixa de valer: descarta e a próxima reprodução/download usa o texto novo.
-  const scriptKey = useMemo(() => JSON.stringify(buildSpeechScript(data)), [data]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const scriptKey = useMemo(() => JSON.stringify(getScript()), [data, script]);
   const lastKey = useRef(scriptKey);
   useEffect(() => {
     if (lastKey.current === scriptKey) return;
@@ -95,7 +103,7 @@ export function ListenReportButton({
   async function prepareTracks() {
     if (tracksRef.current.length) return tracksRef.current;
 
-    const chunks = buildSpeechScript(data);
+    const chunks = getScript();
     const blobs: (Blob | null)[] = new Array(chunks.length).fill(null);
     let done = 0;
     let cursor = 0;
@@ -197,14 +205,16 @@ export function ListenReportButton({
       );
       const url = URL.createObjectURL(file);
       const link = document.createElement("a");
-      const client = data.client.display_name
+      const client = (data?.client.display_name ?? "")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-zA-Z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .toLowerCase();
       link.href = url;
-      link.download = `relatorio-executivo-${client || "cliente"}.mp3`;
+      link.download = fileName
+        ? `${fileName}.mp3`
+        : `relatorio-executivo-${client || "cliente"}.mp3`;
       document.body.appendChild(link);
       link.click();
       link.remove();

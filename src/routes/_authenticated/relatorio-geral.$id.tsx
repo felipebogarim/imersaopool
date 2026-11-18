@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -27,6 +27,8 @@ import { IntroEditDialog } from "@/components/general-report/IntroEditDialog";
 import { InstructionDialog } from "@/components/general-report/InstructionDialog";
 import { EnviarEmailGeralDialog } from "@/components/general-report/EnviarEmailGeralDialog";
 import { EnviarWhatsappGeralDialog } from "@/components/general-report/EnviarWhatsappGeralDialog";
+import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
+import { buildGeneralSpeechScript } from "@/lib/general-report-speech";
 import { exportGeneralReportPdf } from "@/lib/general-report-pdf";
 import {
   detectKind,
@@ -273,6 +275,17 @@ function RelatorioGeralDetail() {
     }
   }
 
+  const speechScript = useMemo(
+    () =>
+      report?.report
+        ? buildGeneralSpeechScript(report.report as GeneralReportContent, {
+            representative: report.representatives?.nome ?? "",
+            dateLabel: new Date(report.report_date + "T12:00:00").toLocaleDateString("pt-BR"),
+          })
+        : [],
+    [report],
+  );
+
   const readyCount = files.filter((f) => f.status === "lido").length;
   const busy = queue.length > 0 || files.some((f) => f.status === "processando");
   const content = report?.report as GeneralReportContent | null;
@@ -290,6 +303,14 @@ function RelatorioGeralDetail() {
           <>
             {content && (
               <>
+                <ListenReportButton
+                  script={speechScript}
+                  fileName={`relatorio-geral-${(report?.representatives?.nome ?? "")
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")}-${report?.report_date ?? ""}`}
+                />
                 <Button variant="outline" onClick={() => setReviewOpen(true)}>
                   <Wand2 className="h-4 w-4 mr-1" />
                   Solicitar revisão
