@@ -120,6 +120,10 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
 
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
+  /** Data informada à mão quando o arquivo não traz a data da visita. */
+  const [dataManual, setDataManual] = useState<string | null>(null);
+  const [pedirData, setPedirData] = useState(false);
+  const [dataDigitada, setDataDigitada] = useState("");
   const [excluir, setExcluir] = useState<any | null>(null);
 
   const [vincularOpen, setVincularOpen] = useState(false);
@@ -336,6 +340,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         setPartnerAsked(Boolean(fromFile));
       }
       setAvulso(preview);
+      setDataManual(null);
       setDirty(true);
       setPreview(null);
       toast.success("Relatório carregado. Clique em Salvar para publicar na lista.");
@@ -344,8 +349,19 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
     }
   }
 
-  async function salvarRelatorio(opts?: { replaceId?: string }) {
+  async function salvarRelatorio(opts?: { replaceId?: string; visitDate?: string }) {
     if (!avulso) return;
+    const visitDate =
+      normalizeVisitDate(opts?.visitDate) ??
+      normalizeVisitDate(avulso.data.client.visit_date) ??
+      normalizeVisitDate(dataManual);
+    if (!visitDate) {
+      // Arquivo sem data da visita: pede a data antes de salvar.
+      setDataDigitada(new Date().toISOString().slice(0, 10));
+      setPedirData(true);
+      return;
+    }
+    if (opts?.visitDate) setDataManual(visitDate);
     setSalvando(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -367,12 +383,6 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
 
       const clientName = String(avulso.data.client.name ?? "").trim();
       if (!clientName) throw new Error("Nome do cliente ausente no arquivo.");
-      const visitDate = normalizeVisitDate(avulso.data.client.visit_date);
-      if (!visitDate) {
-        throw new Error(
-          `Data da visita inválida no arquivo: "${avulso.data.client.visit_date ?? ""}". Use AAAA-MM-DD ou DD/MM/AAAA.`,
-        );
-      }
 
       const payload = {
         client_name: clientName,
@@ -384,6 +394,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           block: "visao_imersao_2",
           data: {
             ...avulso.data,
+            client: { ...avulso.data.client, visit_date: visitDate },
             resolved_client_id: resolvedId,
           },
           resolved_client_id: resolvedId,
@@ -425,6 +436,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
       setDirty(false);
       setAvulso(null);
       setDuplicata(null);
+      setDataManual(null);
       toast.success("Relatório salvo. Disponível na lista de Visão Imersão 2.");
     } catch (error) {
       console.error("[visao-imersao-2] save failed", error);
@@ -1034,6 +1046,41 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
         onCancel={() => setPreview(null)}
         onConfirm={() => void confirmarImportacao()}
       />
+      <Dialog open={pedirData} onOpenChange={(o) => { if (!salvando) setPedirData(o); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Data da visita não informada</DialogTitle>
+            <DialogDescription>
+              O arquivo não traz a data da visita. Informe a data para salvar o relatório.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="vi2-data-visita">Data da visita</Label>
+            <Input
+              id="vi2-data-visita"
+              type="date"
+              value={dataDigitada}
+              onChange={(e) => setDataDigitada(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPedirData(false)} disabled={salvando}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={salvando || !normalizeVisitDate(dataDigitada)}
+              onClick={() => {
+                const d = normalizeVisitDate(dataDigitada);
+                if (!d) return;
+                setPedirData(false);
+                void salvarRelatorio({ visitDate: d });
+              }}
+            >
+              Salvar com esta data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={Boolean(duplicata)} onOpenChange={(o) => { if (!o) setDuplicata(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1053,7 +1100,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
               onClick={(e) => {
                 e.preventDefault();
                 const id = duplicata?.id;
-                if (id) void salvarRelatorio({ replaceId: id });
+                if (id) void salvarRelatorio({ replaceId: id, visitDate: dataManual ?? undefined });
               }}
             >
               {salvando ? "Substituindo…" : "Substituir anterior"}
