@@ -2171,52 +2171,70 @@ export type Database = {
       immersions: {
         Row: {
           agente_id: string | null
-          client_id: string
+          client_id: string | null
           company_id: string | null
           created_at: string
           created_by: string | null
           data_visita: string | null
           id: string
           observacoes: string | null
+          partner_description: string | null
+          partner_details: Json
+          partner_name: string | null
+          partner_type: string | null
+          partner_type_label: string | null
           representative_id: string | null
           representative_token: string | null
           representative_token_expires_at: string | null
           roteiro_id: string | null
           status: Database["public"]["Enums"]["immersion_status"]
+          subject_type: string
           titulo: string
           updated_at: string
         }
         Insert: {
           agente_id?: string | null
-          client_id: string
+          client_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
           id?: string
           observacoes?: string | null
+          partner_description?: string | null
+          partner_details?: Json
+          partner_name?: string | null
+          partner_type?: string | null
+          partner_type_label?: string | null
           representative_id?: string | null
           representative_token?: string | null
           representative_token_expires_at?: string | null
           roteiro_id?: string | null
           status?: Database["public"]["Enums"]["immersion_status"]
+          subject_type?: string
           titulo: string
           updated_at?: string
         }
         Update: {
           agente_id?: string | null
-          client_id?: string
+          client_id?: string | null
           company_id?: string | null
           created_at?: string
           created_by?: string | null
           data_visita?: string | null
           id?: string
           observacoes?: string | null
+          partner_description?: string | null
+          partner_details?: Json
+          partner_name?: string | null
+          partner_type?: string | null
+          partner_type_label?: string | null
           representative_id?: string | null
           representative_token?: string | null
           representative_token_expires_at?: string | null
           roteiro_id?: string | null
           status?: Database["public"]["Enums"]["immersion_status"]
+          subject_type?: string
           titulo?: string
           updated_at?: string
         }
