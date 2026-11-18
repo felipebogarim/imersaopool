@@ -303,60 +303,18 @@ export const respondPublicSuggestion = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const { lookupRequest, listActionsForRep, notifySubmission } =
+    const { lookupRequest, listActionsForRep, recordSuggestionResponse } =
       await import("@/lib/action-tracking.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const admin = supabaseAdmin as any;
-
     const req = await lookupRequest(data.token);
     if (!req.valid) throw new Error("Link inválido ou expirado.");
     const actions = await listActionsForRep(req.repId, { includeDone: true });
     const card = actions.find((a) => a.id === data.cardId);
     if (!card) throw new Error("Ação não encontrada.");
-
-    const note = data.note?.trim() || null;
-    const now = new Date().toISOString();
-    const { error } = await admin.from("kanban_action_tracking").upsert({
-      card_id: card.id,
-      acceptance: data.decision,
-      responded_at: now,
-      response_note: note,
-      updated_at: now,
-      updated_by_name: req.repName,
-    });
-    if (error) throw new Error("Falha ao registrar a resposta.");
-    const label = data.decision === "aceita" ? "Sugestão aceita" : "Sugestão recusada";
-    await admin.from("kanban_action_updates").insert({
-      card_id: card.id,
-      source: "representante",
-      author_name: req.repName,
-      note: note ? `${label}: ${note}` : label,
-    });
-
-    const meta = readActionMeta(card.metadata);
-    const { data: created } = await admin
-      .from("kanban_cards")
-      .select("created_by")
-      .eq("id", card.id)
-      .maybeSingle();
-    await notifySubmission({
-      submissionId: crypto.randomUUID(),
+    await recordSuggestionResponse({
+      card,
       repName: req.repName,
-      repEmail: null,
-      items: [
-        {
-          cardId: card.id,
-          title: card.title,
-          client: meta.client_name,
-          statusLabel: label,
-          note: note ?? undefined,
-          pendencias: [],
-          files: 0,
-          responsibleId: meta.responsible_id,
-          createdBy: created?.created_by ?? undefined,
-        },
-      ],
+      decision: data.decision,
+      note: data.note,
     });
     return { acceptance: data.decision as ActionAcceptance };
   });

@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
+import { KeyRound, Loader2, Plus } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { createRepPortalAccess } from "@/lib/rep-portal.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ type Rep = {
   email: string | null;
   telefone: string | null;
   regiao: string | null;
+  user_id?: string | null;
 };
 
 /** Cadastro rápido de representantes: o e-mail é o que permite enviar as sugestões. */
@@ -42,12 +45,20 @@ export function RepsPanel({
     queryKey: ["acoes-reps-reps"],
     enabled: open,
     queryFn: async (): Promise<Rep[]> => {
-      const { data, error } = await supabase
+      // `user_id` só existe depois da migration do portal; sem ela, segue sem o vínculo.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabase as any;
+      let res = await db
         .from("representatives")
-        .select("id, nome, email, telefone, regiao")
+        .select("id, nome, email, telefone, regiao, user_id")
         .order("nome");
-      if (error) throw error;
-      return data as Rep[];
+      if (res.error)
+        res = await db
+          .from("representatives")
+          .select("id, nome, email, telefone, regiao")
+          .order("nome");
+      if (res.error) throw res.error;
+      return res.data as Rep[];
     },
   });
 
@@ -81,6 +92,16 @@ export function RepsPanel({
         const { [v.id]: _omit, ...rest } = d;
         return rest;
       });
+      done();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const accessFn = useServerFn(createRepPortalAccess);
+  const access = useMutation({
+    mutationFn: (repId: string) => accessFn({ data: { repId } }),
+    onSuccess: (r) => {
+      toast.success(`Convite enviado para ${r.email}.`);
       done();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -187,6 +208,27 @@ export function RepsPanel({
                     onClick={() => saveEmail.mutate({ id: r.id, email: value })}
                   >
                     Salvar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Cria o login do representante e envia o convite para ele definir a senha"
+                    disabled={!r.email || dirty || (access.isPending && access.variables === r.id)}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `${r.user_id ? "Reenviar o convite de acesso" : "Criar o acesso ao portal"} para ${r.email}?`,
+                        )
+                      )
+                        access.mutate(r.id);
+                    }}
+                  >
+                    {access.isPending && access.variables === r.id ? (
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="mr-1 h-4 w-4" />
+                    )}
+                    {r.user_id ? "Reenviar convite" : "Criar acesso"}
                   </Button>
                 </li>
               );

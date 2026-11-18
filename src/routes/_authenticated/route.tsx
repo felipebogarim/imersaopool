@@ -17,6 +17,10 @@ export const Route = createFileRoute("/_authenticated")({
     // apenas deixa a rota atual renderizar para o usuário poder tentar de novo.
     if (gate.degraded) return { user };
     const roleList = gate.roles;
+    // Representante (externo) só enxerga o portal, que fica fora desta área autenticada.
+    if (roleList.length > 0 && roleList.every((r: string) => r === "representante")) {
+      throw redirect({ to: "/portal-rep" });
+    }
     const isComercialOnly =
       roleList.length > 0 && roleList.every((r: string) => r === "comercial");
 

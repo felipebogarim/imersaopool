@@ -42,13 +42,24 @@ async function load(userId: string): Promise<AuthGateData> {
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
 
-  if (profileResult.error) throw profileResult.error;
   if (rolesResult.error) throw rolesResult.error;
+  const roleList = (rolesResult.data ?? []).map((r: any) => r.role as string);
 
+  // Representante (usuário externo): o banco bloqueia o perfil dele de propósito. Não há termos,
+  // NDA, empresa ou MFA — ele só usa o portal (/portal-rep).
+  if (roleList.length > 0 && roleList.every((r) => r === "representante")) {
+    return {
+      userId,
+      roles: roleList,
+      activeCompanyId: null,
+      ndaAcceptedAt: new Date().toISOString(),
+      termsOk: true,
+      mustEnrollMfa: false,
+    };
+  }
+
+  if (profileResult.error) throw profileResult.error;
   const p = profileResult.data;
-  const roles = rolesResult.data;
-
-  const roleList = (roles ?? []).map((r: any) => r.role as string);
   const isComercialOnly =
     roleList.length > 0 && roleList.every((r) => r === "comercial");
 

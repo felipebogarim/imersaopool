@@ -131,3 +131,29 @@ export function daysUntil(due: string | null | undefined, now = new Date()): num
   const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
   return Math.round((d.getTime() - base.getTime()) / 86_400_000);
 }
+
+/** Valida o novo prazo pedido pelo representante: data válida, futura e posterior ao prazo atual. */
+export function validateExtensionDate(
+  requested: string,
+  currentDue: string | null | undefined,
+  now = new Date(),
+): string | null {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(requested) ||
+    Number.isNaN(new Date(`${requested}T12:00:00Z`).getTime())
+  )
+    return "Informe uma data válida.";
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    .toISOString()
+    .slice(0, 10);
+  if (requested <= today) return "O novo prazo deve ser uma data futura.";
+  if (currentDue && requested <= currentDue.slice(0, 10))
+    return "O novo prazo deve ser posterior ao prazo atual.";
+  return null;
+}
+
+export const EXTENSION_STATUS_LABEL = {
+  pendente: "Prorrogação solicitada",
+  aprovada: "Prorrogação aprovada",
+  recusada: "Prorrogação recusada",
+} as const;

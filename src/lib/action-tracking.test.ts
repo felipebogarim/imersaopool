@@ -64,3 +64,18 @@ describe("Kanban Ações Reps", () => {
     expect(daysUntil(null, now)).toBeNull();
   });
 });
+
+import { validateExtensionDate } from "./action-tracking";
+
+describe("pedido de prorrogação", () => {
+  const now = new Date(2026, 10, 20, 9);
+  it("aceita data futura e posterior ao prazo atual", () => {
+    expect(validateExtensionDate("2026-12-10", "2026-11-30", now)).toBeNull();
+    expect(validateExtensionDate("2026-12-10", null, now)).toBeNull();
+  });
+  it("recusa data inválida, passada ou anterior ao prazo atual", () => {
+    expect(validateExtensionDate("10/12/2026", null, now)).not.toBeNull();
+    expect(validateExtensionDate("2026-11-20", null, now)).not.toBeNull();
+    expect(validateExtensionDate("2026-12-01", "2026-12-05", now)).not.toBeNull();
+  });
+});

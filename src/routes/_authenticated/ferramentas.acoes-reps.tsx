@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Loader2, MoreVertical, Send, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, Loader2, MoreVertical, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -36,6 +36,7 @@ import {
 } from "@/lib/action-tracking";
 import { sendActionSuggestions } from "@/lib/action-tracking.functions";
 import { RepsPanel } from "@/components/acoes-reps/RepsPanel";
+import { ExtensionsDialog, type PendingExtension } from "@/components/acoes-reps/ExtensionsDialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ferramentas/acoes-reps")({
@@ -71,6 +72,7 @@ function AcoesRepsPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [repsOpen, setRepsOpen] = useState(false);
+  const [extOpen, setExtOpen] = useState(false);
   const [highlightRep, setHighlightRep] = useState<string | null>(null);
 
   const {
@@ -123,6 +125,24 @@ function AcoesRepsPage() {
       });
     },
   });
+
+  // Pedidos de prorrogação pendentes (tabela criada na Fase 2; sem ela, a lista fica vazia).
+  const { data: pendingExt = [] } = useQuery({
+    queryKey: ["acoes-reps-ext"],
+    queryFn: async (): Promise<Omit<PendingExtension, "title" | "rep">[]> => {
+      const { data, error: e } = await db()
+        .from("kanban_action_extension_requests")
+        .select("id, card_id, current_due, requested_due, justification, created_at")
+        .eq("status", "pendente")
+        .order("created_at");
+      return e ? [] : (data ?? []);
+    },
+  });
+  const extItems: PendingExtension[] = pendingExt.map((x) => {
+    const r = rows.find((c) => c.id === x.card_id);
+    return { ...x, title: r?.title ?? "Ação", rep: r?.rep ?? "—" };
+  });
+  const extCards = new Set(pendingExt.map((x) => x.card_id));
 
   const repOptions = useMemo(() => {
     const m = new Map<string, string>();
@@ -200,6 +220,12 @@ function AcoesRepsPage() {
         subtitle="Ações sugeridas aos representantes e a evolução de cada uma. O representante decide se aceita."
         actions={
           <>
+            {extItems.length > 0 && (
+              <Button variant="outline" onClick={() => setExtOpen(true)}>
+                <CalendarClock className="mr-1 h-4 w-4" />
+                Prorrogações ({extItems.length})
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setRepsOpen(true)}>
               <Users className="mr-1 h-4 w-4" />
               Representantes
@@ -346,6 +372,11 @@ function AcoesRepsPage() {
                           {soon ? (d === 0 ? " · vence hoje" : ` · em ${d} dia(s)`) : ""}
                           {late ? ` · atrasada ${Math.abs(d!)} dia(s)` : ""}
                         </span>
+                        {extCards.has(r.id) && (
+                          <Badge variant="outline" className="text-[10px]">
+                            Prorrogação pedida
+                          </Badge>
+                        )}
                       </div>
                     </article>
                   );
@@ -358,6 +389,7 @@ function AcoesRepsPage() {
           ))}
         </div>
       </div>
+      <ExtensionsDialog open={extOpen} onOpenChange={setExtOpen} items={extItems} />
       <RepsPanel open={repsOpen} onOpenChange={setRepsOpen} highlightRepId={highlightRep} />
     </div>
   );

@@ -448,3 +448,56 @@ export async function notifySubmission(args: {
 }
 
 export { ACTION_STATUS_LABEL };
+
+/** Registra o aceite/recusa de uma sugestão (link por token ou portal) e avisa a equipe. */
+export async function recordSuggestionResponse(args: {
+  card: OpenAction;
+  repName: string;
+  decision: "aceita" | "recusada";
+  note?: string | null;
+}) {
+  const { card, repName, decision } = args;
+  const note = args.note?.trim() || null;
+  const now = new Date().toISOString();
+  const { error } = await admin.from("kanban_action_tracking").upsert({
+    card_id: card.id,
+    acceptance: decision,
+    responded_at: now,
+    response_note: note,
+    updated_at: now,
+    updated_by_name: repName,
+  });
+  if (error) throw new Error("Falha ao registrar a resposta.");
+  const label = decision === "aceita" ? "Sugestão aceita" : "Sugestão recusada";
+  await admin.from("kanban_action_updates").insert({
+    card_id: card.id,
+    source: "representante",
+    author_name: repName,
+    note: note ? `${label}: ${note}` : label,
+  });
+  const meta = readActionMeta(card.metadata);
+  const { data: created } = await admin
+    .from("kanban_cards")
+    .select("created_by")
+    .eq("id", card.id)
+    .maybeSingle();
+  await notifySubmission({
+    submissionId: crypto.randomUUID(),
+    repName,
+    repEmail: null,
+    items: [
+      {
+        cardId: card.id,
+        title: card.title,
+        client: meta.client_name,
+        statusLabel: label,
+        note: note ?? undefined,
+        pendencias: [],
+        files: 0,
+        responsibleId: meta.responsible_id,
+        createdBy: created?.created_by ?? undefined,
+      },
+    ],
+  });
+  return decision;
+}
