@@ -41,6 +41,7 @@ import {
   reviseGeneralReport,
   reviseGeneralReportBlock,
   reviseGeneralReportIntro,
+  createGeneralReportBlock,
 } from "@/lib/general-report.functions";
 
 export const Route = createFileRoute("/_authenticated/relatorio-geral/$id")({
@@ -61,6 +62,7 @@ function RelatorioGeralDetail() {
   const reviseAll = useServerFn(reviseGeneralReport);
   const reviseBlock = useServerFn(reviseGeneralReportBlock);
   const reviseIntro = useServerFn(reviseGeneralReportIntro);
+  const createBlock = useServerFn(createGeneralReportBlock);
   const [queue, setQueue] = useState<string[]>([]); // nomes em envio (um a um)
   const [generating, setGenerating] = useState(false);
   const [instructions, setInstructions] = useState("");
@@ -68,6 +70,7 @@ function RelatorioGeralDetail() {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [previous, setPrevious] = useState<GeneralReportContent | null>(null);
   const [editing, setEditing] = useState<{ c: number; b: number } | null>(null);
+  const [addAt, setAddAt] = useState<{ c: number; after: number } | null>(null);
   const [introEdit, setIntroEdit] = useState(false);
   const [askIntro, setAskIntro] = useState(false);
   const [askAt, setAskAt] = useState<{ c: number; b: number } | null>(null);
@@ -215,6 +218,24 @@ function RelatorioGeralDetail() {
       toast.success("Bloco atualizado.");
     } catch (e: any) {
       toast.error(e?.message ?? "Falha na revisão do bloco.");
+    } finally {
+      setReviewBusy(false);
+      refresh();
+    }
+  }
+
+  async function onCreateBlock(text: string) {
+    if (!addAt) return;
+    setReviewBusy(true);
+    try {
+      const r = await createBlock({
+        data: { reportId: id, chapterIdx: addAt.c, afterIdx: addAt.after, instruction: text },
+      });
+      if (!r.ok) return toast.error(r.error);
+      setAddAt(null);
+      toast.success("Bloco criado.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao criar o bloco.");
     } finally {
       setReviewBusy(false);
       refresh();
@@ -413,6 +434,7 @@ function RelatorioGeralDetail() {
           <ReportView
             report={content}
             actions={{
+              onAdd: (c, after) => setAddAt({ c, after }),
               onEditIntro: () => setIntroEdit(true),
               onAskAiIntro: () => setAskIntro(true),
               onDeleteIntro: () => {
@@ -441,6 +463,17 @@ function RelatorioGeralDetail() {
                 );
                 setEditing(null);
               }}
+            />
+            <InstructionDialog
+              open={!!addAt}
+              onOpenChange={(v) => !v && setAddAt(null)}
+              title="Novo bloco"
+              description="Explique o que você quer neste bloco. A IA escolhe o formato (texto, tópicos, indicadores, gráfico, tabela, imagem ou destaque) e usa o material enviado."
+              placeholder="Ex.: gráfico de pizza com a participação de cada marca nas vendas; ou: tabela com os 5 maiores riscos e a ação sugerida."
+              busy={reviewBusy}
+              submitLabel="Criar bloco"
+              busyLabel="A IA está criando…"
+              onSubmit={(t) => void onCreateBlock(t)}
             />
             <IntroEditDialog
               open={introEdit}

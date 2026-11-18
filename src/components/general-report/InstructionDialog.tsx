@@ -19,6 +19,8 @@ export function InstructionDialog({
   description,
   placeholder,
   busy,
+  submitLabel = "Solicitar revisão",
+  busyLabel = "A IA está revisando…",
   onSubmit,
 }: {
   open: boolean;
@@ -27,6 +29,8 @@ export function InstructionDialog({
   description: string;
   placeholder: string;
   busy: boolean;
+  submitLabel?: string;
+  busyLabel?: string;
   onSubmit: (text: string) => void;
 }) {
   const [text, setText] = useState("");
@@ -57,7 +61,7 @@ export function InstructionDialog({
             ) : (
               <Sparkles className="h-4 w-4 mr-1" />
             )}
-            {busy ? "A IA está revisando…" : "Solicitar revisão"}
+            {busy ? busyLabel : submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

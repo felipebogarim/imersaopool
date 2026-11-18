@@ -426,3 +426,51 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
       return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
     }
   });
+
+/** Cria um bloco NOVO no capítulo a partir do que o usuário descreve, usando o material enviado como fonte. */
+export const createGeneralReportBlock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { reportId: string; chapterIdx: number; afterIdx: number; instruction: string }) => d,
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    if (!data.instruction?.trim())
+      return { ok: false as const, error: "Descreva o que você quer neste bloco." };
+    try {
+      const { report } = await loadReport(supabase, data.reportId);
+      const content = report.report as GeneralReportContent | null;
+      const chapter = content?.chapters?.[data.chapterIdx];
+      if (!content || !chapter)
+        throw new Error("Capítulo não encontrado (o relatório mudou). Recarregue a página.");
+      const { sheets, imageIds, material } = await loadMaterial(supabase, report.id);
+      const system = `Você cria UM bloco novo para um relatório comercial, em português, objetivo e visual, conforme o pedido do usuário. Use SOMENTE dados do material enviado; não invente. Escolha o tipo de bloco que melhor atende ao pedido (text|bullets|kpis|chart|table|image|callout). Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes exatos de colunas. Para imagem, use o fileId exato. Responda SOMENTE com o JSON do bloco.\n${SCHEMA_HINT}`;
+      const user = `Capítulo onde o bloco entrará: ${chapter.title}\nBlocos já existentes no capítulo (resumo): ${chapter.blocks.map((b) => b.type).join(", ")}\n\nPEDIDO DO USUÁRIO:\n${data.instruction.trim()}\n\nMATERIAL:\n\n${material}`;
+      const raw = await callGateway({
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
+      const parsed = parseJson(raw);
+      const block = normalizeBlock(parsed?.block ?? parsed, { sheets, imageIds });
+      if (!block)
+        throw new Error(
+          "A IA não conseguiu montar o bloco com o material disponível. Reformule o pedido.",
+        );
+      const at = Math.min(Math.max(data.afterIdx + 1, 0), chapter.blocks.length);
+      const chapters = content.chapters.map((c, ci) =>
+        ci === data.chapterIdx
+          ? { ...c, blocks: [...c.blocks.slice(0, at), block, ...c.blocks.slice(at)] }
+          : c,
+      );
+      await supabase
+        .from("general_reports")
+        .update({ report: { ...content, chapters }, updated_at: new Date().toISOString() })
+        .eq("id", report.id);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
+    }
+  });

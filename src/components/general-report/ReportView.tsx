@@ -17,6 +17,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  Plus,
   AlertTriangle,
   Lightbulb,
   MoreVertical,
@@ -257,6 +258,8 @@ export interface BlockActions {
   onEdit: (chapterIdx: number, blockIdx: number) => void;
   onDelete: (chapterIdx: number, blockIdx: number) => void;
   onAskAi: (chapterIdx: number, blockIdx: number) => void;
+  /** Cria um bloco novo no capítulo, logo após `afterIdx` (-1 = no início). */
+  onAdd?: (chapterIdx: number, afterIdx: number) => void;
   onEditIntro?: () => void;
   onDeleteIntro?: () => void;
   onAskAiIntro?: () => void;
@@ -266,10 +269,12 @@ function BlockKebab({
   onEdit,
   onDelete,
   onAskAi,
+  onAdd,
 }: {
   onEdit: () => void;
   onDelete: () => void;
   onAskAi: () => void;
+  onAdd?: () => void;
 }) {
   return (
     <div className="absolute right-1 top-1 z-10 print:hidden" data-pdf-ignore>
@@ -293,6 +298,12 @@ function BlockKebab({
             <Wand2 className="h-4 w-4 mr-2" />
             Pedir alteração à IA
           </DropdownMenuItem>
+          {onAdd && (
+            <DropdownMenuItem onClick={onAdd}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo bloco abaixo
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
             <Trash2 className="h-4 w-4 mr-2" />
@@ -346,11 +357,24 @@ export function ReportView({
                   onEdit={() => actions.onEdit(i, k)}
                   onDelete={() => actions.onDelete(i, k)}
                   onAskAi={() => actions.onAskAi(i, k)}
+                  onAdd={actions.onAdd ? () => actions.onAdd!(i, k) : undefined}
                 />
               )}
               <Block b={b} />
             </div>
           ))}
+          {actions?.onAdd && (
+            <div className="print:hidden" data-pdf-ignore>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => actions.onAdd!(i, ch.blocks.length - 1)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Novo bloco
+              </Button>
+            </div>
+          )}
         </section>
       ))}
       {report.gaps && report.gaps.length > 0 && (
