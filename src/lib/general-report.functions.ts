@@ -212,6 +212,20 @@ async function loadReport(supabase: any, reportId: string) {
   return { report, repName };
 }
 
+/** Compara dois blocos pelo conteúdo (ordem das chaves não importa). */
+function stableJson(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  if (v && typeof v === "object")
+    return `{${Object.keys(v as object)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableJson((v as any)[k])}`)
+      .join(",")}}`;
+  return JSON.stringify(v ?? null);
+}
+function sameBlock(a: unknown, b: unknown) {
+  return stableJson(a) === stableJson(b);
+}
+
 const SCHEMA_HINT = SYSTEM.slice(SYSTEM.indexOf("Responda SOMENTE"));
 
 /** Gera o relatório por capítulos a partir de todos os arquivos já lidos. */
@@ -353,6 +367,12 @@ export const reviseGeneralReportBlock = createServerFn({ method: "POST" })
       const parsed = parseJson(raw);
       const next = normalizeBlock(parsed?.block ?? parsed, { sheets, imageIds });
       if (!next) throw new Error("A IA não devolveu um bloco válido. Reformule o pedido.");
+      if (sameBlock(block, next))
+        return {
+          ok: false as const,
+          error:
+            "A IA devolveu o bloco sem nenhuma mudança. Descreva com mais detalhe o que deve mudar.",
+        };
 
       const chapters = content.chapters.map((c, ci) =>
         ci === data.chapterIdx
@@ -378,7 +398,7 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
     if (!data.instruction?.trim())
       return { ok: false as const, error: "Escreva o que deve ser alterado." };
     try {
-      const { report } = await loadReport(supabase, data.reportId);
+      const { report, repName } = await loadReport(supabase, data.reportId);
       const content = report.report as GeneralReportContent | null;
       if (!content) throw new Error("Gere o relatório antes de revisar.");
       const { material } = await loadMaterial(supabase, report.id);
@@ -391,11 +411,11 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. Responda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
+              'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. O PEDIDO DE ALTERAÇÃO é obrigatório: aplique-o de forma visível e nunca devolva o texto igual ao atual. Se o pedido pedir um dado (por exemplo, o período da análise) e o material não trouxer o valor exato, use o que houver no material e na data do relatório (por exemplo, "acumulado do ano até <mês/ano>") em vez de omitir. Responda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
           },
           {
             role: "user",
-            content: `INTRODUÇÃO ATUAL:\n${JSON.stringify({ title: content.title, subtitle: content.subtitle ?? "", executive_summary: content.executive_summary })}\n\nCAPÍTULOS:\n${outline}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\nMATERIAL:\n${material.slice(0, 50000)}`,
+            content: `DATA DO RELATÓRIO: ${report.report_date}\nREPRESENTANTE: ${repName || "não informado"}\n\nINTRODUÇÃO ATUAL:\n${JSON.stringify({ title: content.title, subtitle: content.subtitle ?? "", executive_summary: content.executive_summary })}\n\nCAPÍTULOS:\n${outline}\n\nPEDIDO DE ALTERAÇÃO:\n${data.instruction.trim()}\n\nMATERIAL:\n${material.slice(0, 50000)}`,
           },
         ],
       });
@@ -417,6 +437,20 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
             .slice(0, 300) || undefined,
         executive_summary: summary,
       };
+      const norm = (v: unknown) =>
+        String(v ?? "")
+          .replace(/\s+/g, " ")
+          .trim();
+      if (
+        norm(next.title) === norm(content.title) &&
+        norm(next.subtitle) === norm(content.subtitle) &&
+        norm(next.executive_summary) === norm(content.executive_summary)
+      )
+        return {
+          ok: false as const,
+          error:
+            "A IA devolveu a introdução sem nenhuma mudança. Descreva com mais detalhe o que deve mudar.",
+        };
       await supabase
         .from("general_reports")
         .update({ report: next, title, updated_at: new Date().toISOString() })

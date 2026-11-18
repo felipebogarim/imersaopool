@@ -57,22 +57,23 @@ function fmt(v: unknown) {
 
 function ChartBlockView({ b }: { b: ChartBlock }) {
   const common = { data: b.data, margin: { top: 8, right: 12, left: 0, bottom: 4 } };
-  const axes = (
-    <>
-      <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,.25)" />
-      <XAxis
-        dataKey={b.x}
-        tick={{ fontSize: 11 }}
-        interval={0}
-        angle={b.data.length > 6 ? -25 : 0}
-        textAnchor={b.data.length > 6 ? "end" : "middle"}
-        height={b.data.length > 6 ? 60 : 30}
-      />
-      <YAxis tick={{ fontSize: 11 }} tickFormatter={fmt} width={60} />
-      <Tooltip formatter={(v) => fmt(v)} />
-      {b.series.length > 1 && <Legend />}
-    </>
-  );
+  // Lista (e não Fragment): o recharts 2 não enxerga eixos dentro de <>...</> com React 19,
+  // e o gráfico sairia sem nomes no eixo X (ex.: os estados), sem escala e sem legenda.
+  const axes = [
+    <CartesianGrid key="grid" strokeDasharray="3 3" stroke="rgba(128,128,128,.25)" />,
+    <XAxis
+      key="x"
+      dataKey={b.x}
+      tick={{ fontSize: 11 }}
+      interval={0}
+      angle={b.data.length > 6 ? -25 : 0}
+      textAnchor={b.data.length > 6 ? "end" : "middle"}
+      height={b.data.length > 6 ? 60 : 30}
+    />,
+    <YAxis key="y" tick={{ fontSize: 11 }} tickFormatter={fmt} width={60} />,
+    <Tooltip key="tip" formatter={(v) => fmt(v)} />,
+    ...(b.series.length > 1 ? [<Legend key="legend" />] : []),
+  ];
   return (
     <figure className="rounded-xl border border-border bg-card p-4 break-inside-avoid">
       <figcaption className="text-sm font-semibold mb-2">{b.title}</figcaption>
