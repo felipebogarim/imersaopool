@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   INTRO_STANDARD_PROMPT,
+  REPORT_FOCUS_PROMPT,
   applyIntroStandards,
   mergeUserChanges,
   normalizeReport,
@@ -212,6 +213,8 @@ Regras:
 - Antes de responder, confira cada número citado contra a ANÁLISE CALCULADA ou as linhas da planilha; textos, insights e tabelas não podem se contradizer.
 - Se algo estiver ilegível, ausente ou contraditório, registre em "gaps".
 
+${REPORT_FOCUS_PROMPT}
+
 ${INTRO_STANDARD_PROMPT}
 
 Responda SOMENTE com JSON:
@@ -313,7 +316,7 @@ const BLOCK_FORMATS = SYSTEM.slice(SYSTEM.indexOf('{"type":"text"'), SYSTEM.inde
   .trim()
   .replace(/,\s*$/, "");
 /** Instruções comuns para criar/revisar UM bloco: formato de bloco único, nunca relatório inteiro. */
-const BLOCK_RULES = `Para gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes EXATOS de colunas da aba escolhida. Para mostrar só parte das linhas (ex.: clientes que cresceram) use "where"; para valores derivados (ex.: crescimento = atual − anterior) use "computed" — nunca filtre ou calcule de cabeça. Barras e pizza saem ordenadas do maior para o menor (Pareto); ajuste "limit" (até 30). Em tabelas e kpis, copie valores do material sem inventar — use os números da "ANÁLISE CALCULADA" (líquido, perdas brutas, ganhos brutos, maiores quedas/crescimentos) em vez de calcular de cabeça; ao comparar grupos, mostre perdas e ganhos brutos ao lado do líquido.
+const BLOCK_RULES = `${REPORT_FOCUS_PROMPT}\nPara gráficos, não digite números: informe fileId, sheet, x, ys, agg (sum|avg|count|none), kind (bar|line|area|pie), title, limit e insight com nomes EXATOS de colunas da aba escolhida. Para mostrar só parte das linhas (ex.: clientes que cresceram) use "where"; para valores derivados (ex.: crescimento = atual − anterior) use "computed" — nunca filtre ou calcule de cabeça. Barras e pizza saem ordenadas do maior para o menor (Pareto); ajuste "limit" (até 30). Em tabelas e kpis, copie valores do material sem inventar — use os números da "ANÁLISE CALCULADA" (líquido, perdas brutas, ganhos brutos, maiores quedas/crescimentos) em vez de calcular de cabeça; ao comparar grupos, mostre perdas e ganhos brutos ao lado do líquido.
 Responda SOMENTE com o JSON de UM bloco (objeto com "type"), sem título de relatório, sem "chapters". Formatos aceitos, um por vez:
 ${BLOCK_FORMATS}`;
 
@@ -511,6 +514,8 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
             role: "system",
             content:
               'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. O PEDIDO DE ALTERAÇÃO é obrigatório: aplique-o de forma visível e nunca devolva o texto igual ao atual. Se o pedido pedir um dado (por exemplo, o período da análise) e o material não trouxer o valor exato, use o que houver no material e na data do relatório (por exemplo, "acumulado do ano até <mês/ano>") em vez de omitir. Siga o PADRÃO DA INTRODUÇÃO abaixo, exceto no que o pedido alterar expressamente.\n\n' +
+              REPORT_FOCUS_PROMPT +
+              "\n\n" +
               INTRO_STANDARD_PROMPT +
               '\n\nResponda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
           },
