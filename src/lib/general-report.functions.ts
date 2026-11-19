@@ -633,7 +633,15 @@ export const setGeneralReportShare = createServerFn({ method: "POST" })
       .select("id, status, share_token")
       .eq("id", data.id)
       .maybeSingle();
-    if (e0 || !cur) throw new Error("Relatório não encontrado.");
+    if (e0) {
+      // Coluna ausente = migration do link público ainda não aplicada (não é "relatório não encontrado").
+      if (/share_token|column|schema cache/i.test(e0.message ?? ""))
+        throw new Error(
+          "O link público ainda não está habilitado no banco (migration pendente). Avise o administrador.",
+        );
+      throw new Error(`Não foi possível ler o relatório: ${e0.message}`);
+    }
+    if (!cur) throw new Error("Relatório não encontrado.");
     if (!data.enabled) {
       await db
         .from("general_reports")
