@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "report_id": "exemplo-2026-11",
+  "title": "Relatório de Performance Comercial — Representante Exemplo",
+  "representative_name": "Representante Exemplo",
+  "company": "Empresa Exemplo",
+  "period": {
+    "label": "Baseado em comparativo dos últimos 12 meses: Novembro de 2025 a Outubro de 2026 versus mesmo período ano anterior.",
+    "start": "2025-11-01",
+    "end": "2026-10-31"
+  },
+  "blocks": [
+    {
+      "type": "intro",
+      "themes": [
+        {
+          "headline": "A carteira registrou retração líquida de 15,0%.",
+          "detail": "Caiu de R$ 100.000,00 para R$ 85.000,00, saldo líquido de −R$ 15.000,00/mês."
+        },
+        {
+          "headline": "Houve crescimento em 3 contas.",
+          "detail": "Trazendo +R$ 9.000,00/mês."
+        },
+        { "headline": "No geral a queda é rastreável, permitindo buscar solução objetiva para cada caso." }
+      ]
+    },
+    {
+      "type": "overall_result",
+      "previous_cents": 10000000,
+      "current_cents": 8500000,
+      "change_cents": -1500000,
+      "change_pct": -15.0
+    },
+    {
+      "type": "monthly_by_state",
+      "items": [
+        { "uf": "MT", "previous_cents": 5000000, "current_cents": 4000000, "change_cents": -1000000, "change_pct": -20.0 },
+        { "uf": "GO", "previous_cents": 3000000, "current_cents": 2900000, "change_cents": -100000, "change_pct": -3.3 },
+        { "uf": "DF", "previous_cents": 2000000, "current_cents": 1600000, "change_cents": -400000, "change_pct": -20.0 }
+      ]
+    },
+    {
+      "type": "loss_concentration",
+      "scope_gross_loss_cents": 2400000,
+      "scope_share_pct": 81.3,
+      "scope_records": 3,
+      "rows": [
+        {
+          "position": 1,
+          "account": "LOJA ALFA",
+          "uf": "MT",
+          "previous_cents": 1200000,
+          "current_cents": 700000,
+          "change_cents": -500000,
+          "change_pct": -41.7,
+          "note": "Desova de estoque e foco em concorrente financiado."
+        },
+        {
+          "position": 2,
+          "account": "LOJA BETA",
+          "uf": "DF",
+          "previous_cents": 900000,
+          "current_cents": 600000,
+          "change_cents": -300000,
+          "change_pct": -33.3,
+          "note": "Dados ainda não inputados"
+        },
+        {
+          "position": 3,
+          "account": "LOJA GAMA",
+          "uf": "GO",
+          "previous_cents": 800000,
+          "current_cents": 600000,
+          "change_cents": -200000,
+          "change_pct": -25.0
+        }
+      ]
+    },
+    {
+      "type": "top10_growth",
+      "items": [
+        { "account": "LOJA DELTA", "uf": "MT", "gain_cents": 400000 },
+        { "account": "LOJA ÉPSILON", "uf": "GO", "gain_cents": 300000 },
+        { "account": "LOJA ZETA", "uf": "DF", "gain_cents": 200000 }
+      ],
+      "no_base": [{ "account": "LOJA NOVA", "uf": "MT", "current_cents": 150000 }]
+    },
+    {
+      "type": "top6_comparison",
+      "items": [
+        { "account": "LOJA DELTA", "uf": "MT", "previous_cents": 600000, "current_cents": 1000000, "gain_cents": 400000, "gain_pct": 66.7 },
+        { "account": "LOJA ÉPSILON", "uf": "GO", "previous_cents": 500000, "current_cents": 800000, "gain_cents": 300000, "gain_pct": 60.0 },
+        { "account": "LOJA ZETA", "uf": "DF", "previous_cents": 400000, "current_cents": 600000, "gain_cents": 200000, "gain_pct": 50.0 }
+      ]
+    },
+    {
+      "type": "top6_reasons",
+      "items": [
+        { "account": "LOJA DELTA", "uf": "MT", "previous_cents": 600000, "current_cents": 1000000, "gain_cents": 400000, "note": "Ampliou a exposição de produto e abriu novo ponto de venda." },
+        { "account": "LOJA ÉPSILON", "uf": "GO", "previous_cents": 500000, "current_cents": 800000, "gain_cents": 300000, "note": "Dados ainda não inputados" },
+        { "account": "LOJA ZETA", "uf": "DF", "previous_cents": 400000, "current_cents": 600000, "gain_cents": 200000, "note": "Campanha por portfólio com bom giro." }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { FileUp, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImportReportDialog } from "@/components/general-report/ImportReportDialog";
 import {
   Select,
   SelectContent,
@@ -39,7 +40,9 @@ const db = supabase as any;
 function RelatorioGeralList() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false); // formulário "Gerar com IA"
+  const [chooseOpen, setChooseOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [repId, setRepId] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
@@ -52,12 +55,19 @@ function RelatorioGeralList() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["general-reports"],
     queryFn: async () => {
-      const { data, error } = await db
+      // Colunas de importação só existem depois da migration; sem ela a lista segue como antes.
+      const base = "id, title, report_date, status, representative_id, representatives(nome)";
+      let res = await db
         .from("general_reports")
-        .select("id, title, report_date, status, representative_id, representatives(nome)")
+        .select(`${base}, source, import_rep:import_data->>representative_name`)
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as any[];
+      if (res.error)
+        res = await db
+          .from("general_reports")
+          .select(base)
+          .order("created_at", { ascending: false });
+      if (res.error) throw res.error;
+      return res.data as any[];
     },
   });
 
@@ -82,8 +92,15 @@ function RelatorioGeralList() {
       .from("general_report_files")
       .select("storage_path")
       .eq("report_id", id);
-    if (files?.length)
-      await supabase.storage.from("general-reports").remove(files.map((f: any) => f.storage_path));
+    const paths: string[] = (files ?? []).map((f: any) => f.storage_path);
+    // PDF original de relatório importado (coluna ausente antes da migration: ignora).
+    const { data: imp } = await db
+      .from("general_reports")
+      .select("import_pdf_path")
+      .eq("id", id)
+      .maybeSingle();
+    if (imp?.import_pdf_path) paths.push(imp.import_pdf_path);
+    if (paths.length) await supabase.storage.from("general-reports").remove(paths);
     const { error } = await db.from("general_reports").delete().eq("id", id);
     if (error) return toast.error(error.message);
     void qc.invalidateQueries({ queryKey: ["general-reports"] });
@@ -93,9 +110,9 @@ function RelatorioGeralList() {
     <div>
       <PageHeader
         title="Relatório Geral"
-        subtitle="Envie planilhas, imagens, áudios, vídeos e apresentações — a IA lê tudo e monta o relatório."
+        subtitle="Gere um relatório com IA a partir dos seus materiais ou importe um relatório pronto."
         actions={
-          <Button onClick={() => setOpen(true)}>
+          <Button onClick={() => setChooseOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
             Novo relatório
           </Button>
@@ -118,10 +135,15 @@ function RelatorioGeralList() {
                 {r.title || `Relatório — ${r.representatives?.nome ?? "sem representante"}`}
               </div>
               <div className="text-xs text-muted-foreground">
-                {r.representatives?.nome ?? "—"} ·{" "}
+                {r.representatives?.nome ?? r.import_rep ?? "—"} ·{" "}
                 {new Date(r.report_date + "T12:00:00").toLocaleDateString("pt-BR")}
               </div>
             </Link>
+            {r.source === "importado" && (
+              <span className="text-xs rounded-full bg-primary/10 text-primary px-2 py-0.5 font-medium">
+                Importado
+              </span>
+            )}
             <span className="text-xs rounded-full border border-border px-2 py-0.5">
               {STATUS[r.status] ?? r.status}
             </span>
@@ -131,6 +153,45 @@ function RelatorioGeralList() {
           </div>
         ))}
       </div>
+
+      <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo relatório</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              className="rounded-xl border border-border p-4 text-left hover:bg-muted/50 space-y-1"
+              onClick={() => {
+                setChooseOpen(false);
+                setOpen(true);
+              }}
+            >
+              <Sparkles className="h-5 w-5 text-primary" />
+              <div className="font-semibold">Gerar com IA</div>
+              <div className="text-xs text-muted-foreground">
+                Anexe planilhas, imagens, áudios e vídeos e a IA monta o relatório.
+              </div>
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-border p-4 text-left hover:bg-muted/50 space-y-1"
+              onClick={() => {
+                setChooseOpen(false);
+                setImportOpen(true);
+              }}
+            >
+              <FileUp className="h-5 w-5 text-primary" />
+              <div className="font-semibold">Importar relatório pronto</div>
+              <div className="text-xs text-muted-foreground">
+                Anexe o JSON (gráficos e quadros) e o PDF do relatório já conferido.
+              </div>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <ImportReportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

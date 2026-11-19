@@ -663,10 +663,20 @@ export const getPublicGeneralReport = createServerFn({ method: "POST" })
     const admin = supabaseAdmin as any;
     const { data: r } = await admin
       .from("general_reports")
-      .select("id, title, report_date, status, report, representatives(nome)")
+      .select("id, title, report_date, status, report, source, import_data, representatives(nome)")
       .eq("share_token", data.token)
       .eq("status", "pronto")
       .maybeSingle();
+    // Importado: só os blocos (o PDF original continua privado).
+    if (r?.source === "importado" && r.import_data)
+      return {
+        title: (r.title as string | null) ?? null,
+        report_date: r.report_date as string,
+        rep: (r.import_data.representative_name as string | null) ?? null,
+        report: null,
+        imported: r.import_data as any,
+        imageUrls: {} as Record<string, string>,
+      };
     if (!r?.report) throw new Error("Link inválido ou desativado.");
 
     const ids = new Set<string>();
@@ -693,6 +703,7 @@ export const getPublicGeneralReport = createServerFn({ method: "POST" })
       report_date: r.report_date as string,
       rep: (r.representatives?.nome as string | null) ?? null,
       report: r.report,
+      imported: null as any,
       imageUrls,
     };
   });

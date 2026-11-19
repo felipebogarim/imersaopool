@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Printer } from "lucide-react";
 import { BrandLogo } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
+import { ImportedReportView } from "@/components/general-report/ImportedReportView";
+import type { ImportedReport } from "@/lib/general-report-import";
 import { PublicImageUrls, ReportView } from "@/components/general-report/ReportView";
 import { getPublicGeneralReport } from "@/lib/general-report.functions";
 
@@ -57,7 +59,11 @@ function PublicGeneralReport() {
               {new Date(`${data.report_date}T12:00:00`).toLocaleDateString("pt-BR")}
             </p>
             <PublicImageUrls.Provider value={data.imageUrls}>
-              <ReportView report={data.report} />
+              {data.imported ? (
+                <ImportedReportView report={data.imported as ImportedReport} />
+              ) : (
+                <ReportView report={data.report} />
+              )}
             </PublicImageUrls.Provider>
           </div>
         )}

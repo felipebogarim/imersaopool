@@ -27,6 +27,7 @@ import { BlockEditDialog } from "@/components/general-report/BlockEditDialog";
 import { IntroEditDialog } from "@/components/general-report/IntroEditDialog";
 import { InstructionDialog } from "@/components/general-report/InstructionDialog";
 import { EnviarEmailGeralDialog } from "@/components/general-report/EnviarEmailGeralDialog";
+import { ImportedDetail, type ImportedMeta } from "@/components/general-report/ImportedDetail";
 import { ShareLinkDialog } from "@/components/general-report/ShareLinkDialog";
 import { EnviarWhatsappGeralDialog } from "@/components/general-report/EnviarWhatsappGeralDialog";
 import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
@@ -50,7 +51,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/relatorio-geral/$id")({
   head: () => ({ meta: [{ title: "Relatório Geral | PoolFlux" }] }),
-  component: RelatorioGeralDetail,
+  component: RelatorioGeralRoute,
 });
 
 const STANDARDIZE_INTRO =
@@ -59,7 +60,7 @@ const BUCKET = "general-reports";
 const MAX_BYTES = 50 * 1024 * 1024;
 const db = supabase as any;
 
-function RelatorioGeralDetail() {
+function AiReportDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -568,4 +569,25 @@ function RelatorioGeralDetail() {
       </div>
     </div>
   );
+}
+
+/** Relatório importado abre a tela de leitura; os demais seguem o fluxo de IA de sempre. */
+function RelatorioGeralRoute() {
+  const { id } = Route.useParams();
+  const { data, isLoading } = useQuery({
+    queryKey: ["general-report-import-meta", id],
+    queryFn: async (): Promise<ImportedMeta | null> => {
+      // Colunas novas (migration pendente => erro => trata como relatório de IA).
+      const { data: row, error } = await db
+        .from("general_reports")
+        .select("id, source, import_data, import_pdf_path, import_pdf_name, import_pdf_sha256")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !row || row.source !== "importado" || !row.import_data) return null;
+      return row as ImportedMeta;
+    },
+  });
+  if (isLoading) return <p className="p-8 text-sm text-muted-foreground">Carregando…</p>;
+  if (data) return <ImportedDetail meta={data} />;
+  return <AiReportDetail />;
 }
