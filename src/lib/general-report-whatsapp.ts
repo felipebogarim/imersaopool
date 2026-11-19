@@ -1,4 +1,4 @@
-import type { GeneralReportContent } from "./general-report-lib";
+import { splitSummary, type GeneralReportContent } from "./general-report-lib";
 
 export interface GeneralWhatsappOptions {
   representative?: string;
@@ -17,7 +17,10 @@ export function formatGeneralReportForWhatsapp(
   out.push(`*${r.title}*`);
   const meta = [o.representative, o.dateLabel].filter(Boolean).join(" · ");
   if (meta) out.push(`_${meta}_`);
-  if (r.executive_summary) out.push("", r.executive_summary);
+  for (const t of splitSummary(r.executive_summary)) {
+    out.push("", `*${t.headline}*`);
+    if (t.detail) out.push(t.detail);
+  }
   r.chapters.forEach((ch, i) => {
     out.push("", `*${i + 1}. ${ch.title}*`);
     if (ch.summary) out.push(ch.summary);

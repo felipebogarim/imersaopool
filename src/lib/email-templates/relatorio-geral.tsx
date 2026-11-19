@@ -11,7 +11,11 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
-import type { GeneralReportContent, ReportBlock } from "@/lib/general-report-lib";
+import {
+  splitSummary,
+  type GeneralReportContent,
+  type ReportBlock,
+} from "@/lib/general-report-lib";
 
 const BRAND = "#062838";
 const TEXT = "#0E1C28";
@@ -231,7 +235,17 @@ export const GeneralReportEmail = ({
           {report.executive_summary ? (
             <Section style={{ ...box, marginTop: 14 }}>
               <Text style={boxTitle}>RESUMO</Text>
-              <Text style={{ ...p, margin: 0 }}>{report.executive_summary}</Text>
+              {splitSummary(report.executive_summary).map((t, i) => (
+                <Text key={i} style={{ ...p, margin: i ? "14px 0 0" : 0 }}>
+                  <strong>{t.headline}</strong>
+                  {t.detail ? (
+                    <>
+                      <br />
+                      {t.detail}
+                    </>
+                  ) : null}
+                </Text>
+              ))}
             </Section>
           ) : null}
           {report.chapters.map((ch, i) => (

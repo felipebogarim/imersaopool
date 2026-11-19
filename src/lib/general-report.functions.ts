@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  INTRO_STANDARD_PROMPT,
+  applyIntroStandards,
   mergeUserChanges,
   normalizeReport,
   userChangesPrompt,
@@ -210,9 +212,11 @@ Regras:
 - Antes de responder, confira cada número citado contra a ANÁLISE CALCULADA ou as linhas da planilha; textos, insights e tabelas não podem se contradizer.
 - Se algo estiver ilegível, ausente ou contraditório, registre em "gaps".
 
+${INTRO_STANDARD_PROMPT}
+
 Responda SOMENTE com JSON:
 {
- "title": string, "subtitle": string, "executive_summary": string (3-5 frases),
+ "title": string, "subtitle": string, "executive_summary": string (3 a 6 temas, ver PADRÃO DA INTRODUÇÃO),
  "chapters": [ { "title": string, "summary": string (1 frase),
    "blocks": [
      {"type":"text","text":string},
@@ -340,7 +344,10 @@ export const generateGeneralReport = createServerFn({ method: "POST" })
           { role: "user", content: user },
         ],
       });
-      const fresh = normalizeReport(parseJson(raw), { sheets, imageIds });
+      const fresh = applyIntroStandards(
+        normalizeReport(parseJson(raw), { sheets, imageIds }),
+        repName,
+      );
       if (!fresh.chapters.length)
         throw new Error("A IA não produziu capítulos aproveitáveis. Tente gerar novamente.");
       const content = mergeUserChanges(prev, fresh);
@@ -391,7 +398,10 @@ export const reviseGeneralReport = createServerFn({ method: "POST" })
           { role: "user", content: user },
         ],
       });
-      const fresh = normalizeReport(parseJson(raw), { sheets, imageIds });
+      const fresh = applyIntroStandards(
+        normalizeReport(parseJson(raw), { sheets, imageIds }),
+        repName,
+      );
       if (!fresh.chapters.length)
         throw new Error(
           "A revisão não produziu capítulos aproveitáveis. Tente reformular as orientações.",
@@ -500,7 +510,9 @@ export const reviseGeneralReportIntro = createServerFn({ method: "POST" })
           {
             role: "system",
             content:
-              'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. O PEDIDO DE ALTERAÇÃO é obrigatório: aplique-o de forma visível e nunca devolva o texto igual ao atual. Se o pedido pedir um dado (por exemplo, o período da análise) e o material não trouxer o valor exato, use o que houver no material e na data do relatório (por exemplo, "acumulado do ano até <mês/ano>") em vez de omitir. Responda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
+              'Você revisa a INTRODUÇÃO de um relatório comercial, em português, objetiva e sem inventar dados que não estejam no material. O PEDIDO DE ALTERAÇÃO é obrigatório: aplique-o de forma visível e nunca devolva o texto igual ao atual. Se o pedido pedir um dado (por exemplo, o período da análise) e o material não trouxer o valor exato, use o que houver no material e na data do relatório (por exemplo, "acumulado do ano até <mês/ano>") em vez de omitir. Siga o PADRÃO DA INTRODUÇÃO abaixo, exceto no que o pedido alterar expressamente.\n\n' +
+              INTRO_STANDARD_PROMPT +
+              '\n\nResponda SOMENTE com JSON: {"title": string, "subtitle": string, "executive_summary": string}.',
           },
           {
             role: "user",

@@ -36,7 +36,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import type { GeneralReportContent, ReportBlock } from "@/lib/general-report-lib";
+import {
+  splitSummary,
+  type GeneralReportContent,
+  type ReportBlock,
+} from "@/lib/general-report-lib";
 
 const PALETTE = [
   "#3a8fb0",
@@ -355,7 +359,19 @@ export function ReportView({
         <h2 className="text-2xl font-bold">{report.title}</h2>
         {report.subtitle && <p className="opacity-90 mt-1">{report.subtitle}</p>}
         {report.executive_summary && (
-          <p className="mt-4 text-sm leading-relaxed opacity-95">{report.executive_summary}</p>
+          <div className="mt-5 space-y-5 text-sm leading-relaxed opacity-95">
+            {splitSummary(report.executive_summary).map((t, i) => (
+              <p key={i}>
+                <strong className="font-bold">{t.headline}</strong>
+                {t.detail && (
+                  <>
+                    <br />
+                    {t.detail}
+                  </>
+                )}
+              </p>
+            ))}
+          </div>
         )}
       </header>
       {report.chapters.map((ch, i) => (

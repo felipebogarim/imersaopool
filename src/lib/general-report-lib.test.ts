@@ -236,3 +236,36 @@ describe("mergeUserChanges (regerar mantém o que o usuário fez)", () => {
     );
   });
 });
+
+import { applyIntroStandards, splitSummary, standardTitle } from "./general-report-lib";
+
+describe("padrão da introdução", () => {
+  it("título padrão com o nome do representante", () => {
+    expect(standardTitle("Anderson Basso")).toBe(
+      "Relatório de Performance Comercial — Anderson Basso",
+    );
+    expect(standardTitle("")).toBe("Relatório de Performance Comercial");
+  });
+  it("aplica o título, mas respeita a introdução editada à mão", () => {
+    const base = { title: "X", executive_summary: "", chapters: [] } as any;
+    expect(applyIntroStandards(base, "Ana").title).toBe("Relatório de Performance Comercial — Ana");
+    expect(applyIntroStandards({ ...base, intro_locked: true }, "Ana").title).toBe("X");
+    expect(applyIntroStandards(base, "").title).toBe("X");
+  });
+  it("divide o resumo em temas com destaque e detalhe", () => {
+    const t = splitSummary(
+      "A queda foi de 18,3%.\nCaiu de R$ 573.200 para R$ 468.186.\n\nConclusão final.",
+    );
+    expect(t).toEqual([
+      { headline: "A queda foi de 18,3%.", detail: "Caiu de R$ 573.200 para R$ 468.186." },
+      { headline: "Conclusão final.", detail: "" },
+    ]);
+  });
+  it("texto antigo em um só parágrafo usa a primeira frase como destaque", () => {
+    const [t] = splitSummary(
+      "Houve queda de 18,3% no período. Caiu de R$ 573.200 para R$ 468.186.",
+    );
+    expect(t.headline).toBe("Houve queda de 18,3% no período.");
+    expect(t.detail).toBe("Caiu de R$ 573.200 para R$ 468.186.");
+  });
+});

@@ -773,3 +773,57 @@ export function userChangesPrompt(prev: GeneralReportContent | null | undefined)
     );
   return parts.join("\n\n");
 }
+
+/* ---------- Padrão da introdução (primeiro bloco) ---------- */
+
+export const REPORT_TITLE_PREFIX = "Relatório de Performance Comercial";
+
+/** Título padrão do primeiro bloco: "Relatório de Performance Comercial — [representante]". */
+export function standardTitle(repName: string): string {
+  const n = repName.trim();
+  return n ? `${REPORT_TITLE_PREFIX} — ${n}` : REPORT_TITLE_PREFIX;
+}
+
+/** Aplica o título padrão, a menos que o usuário tenha editado a introdução à mão. */
+export function applyIntroStandards<T extends GeneralReportContent>(
+  content: T,
+  repName: string,
+): T {
+  if (content.intro_locked || !repName.trim()) return content;
+  return { ...content, title: standardTitle(repName) };
+}
+
+export interface SummaryTheme {
+  headline: string;
+  detail: string;
+}
+
+/**
+ * Divide o resumo executivo em temas (separados por linha em branco). Cada tema tem uma frase de
+ * destaque (primeira linha) e o detalhe logo abaixo. Texto antigo, sem quebras, usa a primeira frase.
+ */
+export function splitSummary(summary: string | undefined | null): SummaryTheme[] {
+  const themes: SummaryTheme[] = [];
+  for (const para of String(summary ?? "").split(/\n\s*\n/)) {
+    const lines = para
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (!lines.length) continue;
+    if (lines.length > 1) {
+      themes.push({ headline: lines[0], detail: lines.slice(1).join(" ") });
+      continue;
+    }
+    const m = lines[0].match(/^(.+?[.!?])\s+(?=[A-ZÀ-Ý0-9])(.+)$/s);
+    themes.push(m ? { headline: m[1], detail: m[2] } : { headline: lines[0], detail: "" });
+  }
+  return themes;
+}
+
+/** Regras de forma da introdução, reaproveitadas nos prompts de geração, revisão e introdução. */
+export const INTRO_STANDARD_PROMPT = `PADRÃO DA INTRODUÇÃO (obrigatório):
+- "title": exatamente "Relatório de Performance Comercial — <nome do representante>".
+- "subtitle": explica o período analisado, no formato "Baseado em comparativo dos últimos 12 meses: Novembro de 2025 a Outubro de 2026 versus mesmo período ano anterior." Deduza o período das colunas/abas/datas do material; se o material não trouxer o período, diga o que há (ex.: "Baseado nos dados enviados em <mês/ano>") sem inventar datas.
+- "executive_summary": de 3 a 6 TEMAS separados por uma linha em branco (use "\\n\\n" entre eles). Cada tema tem a frase de destaque na primeira linha (o fato com o número principal, curta, terminando em ponto) e, na linha seguinte ("\\n"), o detalhe em 1–2 frases com os números de apoio. O último tema é uma conclusão de uma única frase, sem detalhe. Nível de objetividade máximo: nada de introdução vaga, adjetivos ou repetição; só fato, número e conclusão, conferidos contra a ANÁLISE CALCULADA.
+  Exemplo:
+  "A carteira registrou retração líquida de 18,3%.\\nCaiu de R$ 573.200 para R$ 468.186, saldo líquido de -R$ 105.014/mês.\\n\\nHouve crescimento em 22 clientes.\\nTrazendo +R$ 83.825/mês.\\n\\nNo geral a queda é rastreável, nos permitindo buscar solução objetiva para cada caso."`;
