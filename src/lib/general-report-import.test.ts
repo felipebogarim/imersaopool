@@ -10,7 +10,9 @@ import {
   validateImport,
 } from "./general-report-import";
 
-const example = () => JSON.parse(readFileSync("docs/relatorio-geral-import-exemplo.json", "utf8"));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const example = (): any =>
+  JSON.parse(readFileSync("docs/relatorio-geral-import-exemplo.json", "utf8"));
 const paths = (r: ReturnType<typeof validateImport>) => r.issues.map((i) => i.path);
 
 describe("importação — contrato", () => {
@@ -22,7 +24,9 @@ describe("importação — contrato", () => {
     const raw = example();
     const r = validateImport(raw);
     expect(r.ok && r.data).toEqual(raw);
-    expect(r.ok && r.data.blocks.map((b) => b.type)).toEqual(raw.blocks.map((b: any) => b.type));
+    expect(r.ok && r.data.blocks.map((b) => b.type)).toEqual(
+      raw.blocks.map((b: { type: string }) => b.type),
+    );
   });
   it("JSON com erro de sintaxe é recusado com mensagem", () => {
     const r = parseImportJson("{ nao é json");
@@ -66,7 +70,7 @@ describe("importação — contrato", () => {
   });
   it("Top 6: motivos devem ter as mesmas contas na mesma ordem do comparativo", () => {
     const raw = example();
-    const reasons = raw.blocks.find((b: any) => b.type === "top6_reasons");
+    const reasons = raw.blocks.find((b: { type: string }) => b.type === "top6_reasons");
     [reasons.items[0], reasons.items[1]] = [reasons.items[1], reasons.items[0]];
     const r = validateImport(raw);
     expect(r.ok).toBe(false);
@@ -76,7 +80,7 @@ describe("importação — contrato", () => {
   });
   it("Top 6: um bloco sem o outro é erro", () => {
     const raw = example();
-    raw.blocks = raw.blocks.filter((b: any) => b.type !== "top6_reasons");
+    raw.blocks = raw.blocks.filter((b: { type: string }) => b.type !== "top6_reasons");
     expect(validateImport(raw).ok).toBe(false);
   });
 });

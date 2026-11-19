@@ -27,6 +27,7 @@ import {
 const BUCKET = "general-reports";
 const MAX_JSON = 5 * 1024 * 1024;
 const MAX_PDF = 50 * 1024 * 1024;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
 const BLOCK_LABEL: Record<string, string> = {
@@ -124,12 +125,12 @@ export function ImportReportDialog({
       onOpenChange(false);
       reset();
       void navigate({ to: "/relatorio-geral/$id", params: { id } });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Não deixa um relatório incompleto salvo.
       if (path) await supabase.storage.from(BUCKET).remove([path]);
       if (id) await db.from("general_reports").delete().eq("id", id);
       toast.error(
-        `Não foi possível salvar${e?.message ? `: ${e.message}` : ""}. Nada foi gravado.`,
+        `Não foi possível salvar${e instanceof Error && e.message ? `: ${e.message}` : ""}. Nada foi gravado.`,
       );
     } finally {
       setSaving(false);

@@ -328,7 +328,7 @@ export function validateImport(raw: unknown): ImportResult {
 export function parseImportJson(text: string): ImportResult {
   let raw: unknown;
   try {
-    raw = JSON.parse(text.replace(/^﻿/, ""));
+    raw = JSON.parse(text.replace(/^\uFEFF/, ""));
   } catch (e) {
     return {
       ok: false,
