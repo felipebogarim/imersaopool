@@ -2181,6 +2181,8 @@ export type Database = {
           report: Json | null
           report_date: string
           representative_id: string | null
+          share_token: string | null
+          shared_at: string | null
           source: string
           status: string
           title: string | null
@@ -2199,6 +2201,8 @@ export type Database = {
           report?: Json | null
           report_date: string
           representative_id?: string | null
+          share_token?: string | null
+          shared_at?: string | null
           source?: string
           status?: string
           title?: string | null
@@ -2217,6 +2221,8 @@ export type Database = {
           report?: Json | null
           report_date?: string
           representative_id?: string | null
+          share_token?: string | null
+          shared_at?: string | null
           source?: string
           status?: string
           title?: string | null
