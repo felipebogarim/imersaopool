@@ -9,14 +9,32 @@ import type { ImportedReport } from "@/lib/general-report-import";
 import { PublicImageUrls, ReportView } from "@/components/general-report/ReportView";
 import { getPublicGeneralReport } from "@/lib/general-report.functions";
 
+const SITE = "https://poolflux.app";
+
 export const Route = createFileRoute("/relatorio/$token")({
-  ssr: false,
-  head: () => ({
-    meta: [
-      { title: "Relatório de Imersão Comercial | PoolFlux" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  head: ({ params }) => {
+    const title = "Relatório de Performance Comercial | PoolFlux";
+    const description = "Veja o relatório online, com gráficos e quadros.";
+    const image = `${SITE}/api/og-relatorio/${String((params as { token?: string })?.token ?? "")}.png`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { name: "robots", content: "noindex, nofollow" },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:image", content: image },
+        { property: "og:image:secure_url", content: image },
+        { property: "og:image:type", content: "image/png" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:image", content: image },
+      ],
+    };
+  },
   component: PublicGeneralReport,
 });
 

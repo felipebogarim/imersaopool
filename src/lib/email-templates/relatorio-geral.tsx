@@ -30,6 +30,8 @@ export interface GeneralEmailProps {
   date?: string;
   appUrl?: string;
   reportId?: string;
+  /** Link próprio (ex.: link público). "" = sem link; ausente = link interno do sistema. */
+  linkUrl?: string;
   /** fileId -> URL assinada (válida por 90 dias) das imagens do relatório. */
   imageUrls?: Record<string, string>;
   attachments?: Array<{ name: string; url: string; size: number }>;
@@ -200,6 +202,7 @@ export const GeneralReportEmail = ({
   date,
   appUrl,
   reportId,
+  linkUrl,
   imageUrls,
   attachments,
 }: GeneralEmailProps) => {
@@ -284,7 +287,13 @@ export const GeneralReportEmail = ({
               </Text>
             </Section>
           ) : null}
-          {origin && reportId ? (
+          {linkUrl ? (
+            <Text style={{ fontSize: 13 }}>
+              <a href={linkUrl} style={{ color: BRAND }}>
+                Ver o relatório online
+              </a>
+            </Text>
+          ) : linkUrl === undefined && origin && reportId ? (
             <Text style={{ fontSize: 13 }}>
               <a href={`${origin}/relatorio-geral/${reportId}`} style={{ color: BRAND }}>
                 Abrir no sistema

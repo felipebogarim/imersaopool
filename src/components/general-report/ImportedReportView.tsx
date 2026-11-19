@@ -26,9 +26,10 @@ const TREND_BOX: Record<Trend, string> = {
 };
 const GAIN = "#2E8B57";
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
     <section
+      id={id}
       className="rounded-2xl border border-border bg-card p-5 space-y-4 break-inside-avoid"
       data-pdf-block
     >
@@ -112,7 +113,7 @@ function OverallResult({ b }: { b: Extract<ImportBlock, { type: "overall_result"
   const t = trendOf(b.change_cents);
   const max = Math.max(b.previous_cents, b.current_cents, 0);
   return (
-    <Card title={b.title ?? "Resultado geral"}>
+    <Card title={b.title ?? "Resultado geral"} id="imported-overall-result">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-stretch">
         <div className="flex h-64 w-full max-w-sm flex-1 items-end justify-center gap-3 border-b border-border pt-2">
           <VBar

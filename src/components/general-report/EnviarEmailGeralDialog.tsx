@@ -32,6 +32,8 @@ export function EnviarEmailGeralDialog({
   report,
   representative,
   dateLabel,
+  linkUrl,
+  defaultSubject,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -39,6 +41,9 @@ export function EnviarEmailGeralDialog({
   report: GeneralReportContent;
   representative: string;
   dateLabel: string;
+  /** Link próprio no e-mail (ex.: link público). "" = sem link; omitido = link interno. */
+  linkUrl?: string;
+  defaultSubject?: string;
 }) {
   const [recipients, setRecipients] = useState<string[]>([]);
   const [query, setQuery] = useState("");
@@ -53,7 +58,10 @@ export function EnviarEmailGeralDialog({
 
   useEffect(() => {
     if (!open) return;
-    setSubject(`${representative ? `${representative} - ` : ""}${report.title} - ${dateLabel}`);
+    setSubject(
+      defaultSubject ??
+        `${representative ? `${representative} - ` : ""}${report.title} - ${dateLabel}`,
+    );
     setPreviewHtml(null);
     void (async () => {
       const { data: rows } = await supabase
@@ -67,7 +75,7 @@ export function EnviarEmailGeralDialog({
           .map((r: any) => ({ id: r.id, name: r.full_name ?? r.email, email: r.email })),
       );
     })();
-  }, [open, representative, report.title, dateLabel]);
+  }, [open, representative, report.title, dateLabel, defaultSubject]);
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -150,6 +158,7 @@ export function EnviarEmailGeralDialog({
           date={dateLabel}
           appUrl={window.location.href}
           reportId={reportId}
+          linkUrl={linkUrl}
         />,
       );
       setPreviewHtml(html);
@@ -189,6 +198,7 @@ export function EnviarEmailGeralDialog({
               date: dateLabel,
               appUrl: window.location.href,
               reportId,
+              linkUrl,
               imageUrls,
               attachments,
             },

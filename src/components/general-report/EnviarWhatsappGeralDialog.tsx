@@ -29,6 +29,7 @@ export function EnviarWhatsappGeralDialog({
   report,
   representative,
   dateLabel,
+  textBuilder,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -36,6 +37,8 @@ export function EnviarWhatsappGeralDialog({
   report: GeneralReportContent;
   representative: string;
   dateLabel: string;
+  /** Monta a mensagem de outro jeito (ex.: relatório importado, com link público). */
+  textBuilder?: (intro: string) => string;
 }) {
   const [destination, setDestination] = useState<"desktop" | "web">(() => {
     try {
@@ -52,16 +55,18 @@ export function EnviarWhatsappGeralDialog({
 
   const text = useMemo(
     () =>
-      formatGeneralReportForWhatsapp(report, {
-        representative,
-        dateLabel,
-        introMessage: intro,
-        link:
-          typeof window !== "undefined"
-            ? `${window.location.origin}/relatorio-geral/${reportId}`
-            : undefined,
-      }),
-    [report, representative, dateLabel, intro, reportId],
+      textBuilder
+        ? textBuilder(intro)
+        : formatGeneralReportForWhatsapp(report, {
+            representative,
+            dateLabel,
+            introMessage: intro,
+            link:
+              typeof window !== "undefined"
+                ? `${window.location.origin}/relatorio-geral/${reportId}`
+                : undefined,
+          }),
+    [report, representative, dateLabel, intro, reportId, textBuilder],
   );
 
   function pick(d: "desktop" | "web") {
