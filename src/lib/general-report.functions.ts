@@ -598,3 +598,84 @@ export const createGeneralReportBlock = createServerFn({ method: "POST" })
       return { ok: false as const, error: String(e?.message ?? e).slice(0, 400) };
     }
   });
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Dono (ou admin, via RLS) liga/desliga o link público. Ligar gera um token novo; desligar revoga. */
+export const setGeneralReportShare = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; enabled: boolean }) => {
+    if (!UUID_RE.test(String(d?.id))) throw new Error("Relatório inválido.");
+    return { id: d.id, enabled: d.enabled === true };
+  })
+  .handler(async ({ data, context }) => {
+    const { randomBytes } = await import("node:crypto");
+    const db = context.supabase as any;
+    const { data: cur, error: e0 } = await db
+      .from("general_reports")
+      .select("id, status, share_token")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (e0 || !cur) throw new Error("Relatório não encontrado.");
+    if (!data.enabled) {
+      await db
+        .from("general_reports")
+        .update({ share_token: null, shared_at: null })
+        .eq("id", data.id);
+      return { token: null as string | null };
+    }
+    if (cur.status !== "pronto") throw new Error("Gere o relatório antes de compartilhar.");
+    if (cur.share_token) return { token: cur.share_token as string };
+    const token = randomBytes(24).toString("hex");
+    const { error } = await db
+      .from("general_reports")
+      .update({ share_token: token, shared_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error("Não foi possível criar o link.");
+    return { token };
+  });
+
+/** Leitura pública pelo token: só relatório pronto; imagens vão com URL assinada de 6h. */
+export const getPublicGeneralReport = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string }) => {
+    if (!/^[a-f0-9]{48}$/.test(String(d?.token))) throw new Error("Link inválido ou desativado.");
+    return { token: d.token };
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+    const { data: r } = await admin
+      .from("general_reports")
+      .select("id, title, report_date, status, report, representatives(nome)")
+      .eq("share_token", data.token)
+      .eq("status", "pronto")
+      .maybeSingle();
+    if (!r?.report) throw new Error("Link inválido ou desativado.");
+
+    const ids = new Set<string>();
+    for (const ch of r.report.chapters ?? [])
+      for (const b of ch.blocks ?? []) if (b?.type === "image" && b.fileId) ids.add(b.fileId);
+    const imageUrls: Record<string, string> = {};
+    if (ids.size) {
+      const { data: files } = await admin
+        .from("general_report_files")
+        .select("id, storage_path")
+        .eq("report_id", r.id)
+        .in("id", [...ids]);
+      await Promise.all(
+        (files ?? []).map(async (f: { id: string; storage_path: string }) => {
+          const { data: s } = await admin.storage
+            .from("general-reports")
+            .createSignedUrl(f.storage_path, 6 * 3600);
+          if (s?.signedUrl) imageUrls[f.id] = s.signedUrl;
+        }),
+      );
+    }
+    return {
+      title: (r.title as string | null) ?? null,
+      report_date: r.report_date as string,
+      rep: (r.representatives?.nome as string | null) ?? null,
+      report: r.report,
+      imageUrls,
+    };
+  });

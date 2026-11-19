@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   FileDown,
+  Link2,
   Loader2,
   Mail,
   MessageCircle,
@@ -26,6 +27,7 @@ import { BlockEditDialog } from "@/components/general-report/BlockEditDialog";
 import { IntroEditDialog } from "@/components/general-report/IntroEditDialog";
 import { InstructionDialog } from "@/components/general-report/InstructionDialog";
 import { EnviarEmailGeralDialog } from "@/components/general-report/EnviarEmailGeralDialog";
+import { ShareLinkDialog } from "@/components/general-report/ShareLinkDialog";
 import { EnviarWhatsappGeralDialog } from "@/components/general-report/EnviarWhatsappGeralDialog";
 import { ListenReportButton } from "@/components/executive-report/ListenReportButton";
 import { buildGeneralSpeechScript } from "@/lib/general-report-speech";
@@ -78,6 +80,7 @@ function RelatorioGeralDetail() {
   const [askAt, setAskAt] = useState<{ c: number; b: number } | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
   const [whatsOpen, setWhatsOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
 
   const { data: report } = useQuery({
@@ -331,6 +334,10 @@ function RelatorioGeralDetail() {
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp
                 </Button>
+                <Button variant="outline" onClick={() => setLinkOpen(true)}>
+                  <Link2 className="h-4 w-4 mr-1" />
+                  Link público
+                </Button>
               </>
             )}
             <Button variant="outline" asChild>
@@ -552,6 +559,7 @@ function RelatorioGeralDetail() {
               representative={report.representatives?.nome ?? ""}
               dateLabel={new Date(report.report_date + "T12:00:00").toLocaleDateString("pt-BR")}
             />
+            <ShareLinkDialog reportId={id} open={linkOpen} onOpenChange={setLinkOpen} />
           </>
         )}
       </div>

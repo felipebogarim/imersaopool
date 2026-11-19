@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
@@ -137,9 +138,14 @@ function ChartBlockView({ b }: { b: ChartBlock }) {
   );
 }
 
+/** Página pública: URLs das imagens já assinadas pelo servidor (visitante não tem acesso ao banco). */
+export const PublicImageUrls = createContext<Record<string, string> | null>(null);
+
 function ImageBlockView({ b }: { b: Extract<ReportBlock, { type: "image" }> }) {
-  const { data: url } = useQuery({
+  const publicUrls = useContext(PublicImageUrls);
+  const { data: fetched } = useQuery({
     queryKey: ["general-report-image", b.fileId],
+    enabled: !publicUrls,
     staleTime: 50 * 60 * 1000,
     queryFn: async () => {
       const db = supabase as any;
@@ -155,6 +161,7 @@ function ImageBlockView({ b }: { b: Extract<ReportBlock, { type: "image" }> }) {
       return data?.signedUrl ?? null;
     },
   });
+  const url = publicUrls ? (publicUrls[b.fileId] ?? null) : fetched;
   return (
     <figure className="rounded-xl border border-border bg-card overflow-hidden break-inside-avoid">
       {url ? (
