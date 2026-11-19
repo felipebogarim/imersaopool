@@ -275,6 +275,8 @@ export interface BlockActions {
   onEditIntro?: () => void;
   onDeleteIntro?: () => void;
   onAskAiIntro?: () => void;
+  /** Reescreve a introdução no padrão (temas com destaque), mantendo os mesmos dados. */
+  onStandardizeIntro?: () => void;
 }
 
 function BlockKebab({
@@ -282,11 +284,13 @@ function BlockKebab({
   onDelete,
   onAskAi,
   onAdd,
+  onStandardize,
 }: {
   onEdit: () => void;
   onDelete: () => void;
   onAskAi: () => void;
   onAdd?: () => void;
+  onStandardize?: () => void;
 }) {
   return (
     <div className="absolute right-1 top-1 z-10 print:hidden" data-pdf-ignore>
@@ -310,6 +314,12 @@ function BlockKebab({
             <Wand2 className="h-4 w-4 mr-2" />
             Pedir alteração à IA
           </DropdownMenuItem>
+          {onStandardize && (
+            <DropdownMenuItem onClick={onStandardize}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Padronizar no formato do relatório
+            </DropdownMenuItem>
+          )}
           {onAdd && (
             <DropdownMenuItem onClick={onAdd}>
               <Plus className="h-4 w-4 mr-2" />
@@ -345,6 +355,7 @@ export function ReportView({
             onEdit={actions.onEditIntro}
             onDelete={actions.onDeleteIntro}
             onAskAi={actions.onAskAiIntro}
+            onStandardize={actions.onStandardizeIntro}
           />
         )}
         {actions && report.intro_locked && (

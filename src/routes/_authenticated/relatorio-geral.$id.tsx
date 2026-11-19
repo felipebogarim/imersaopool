@@ -53,6 +53,8 @@ export const Route = createFileRoute("/_authenticated/relatorio-geral/$id")({
   component: RelatorioGeralDetail,
 });
 
+const STANDARDIZE_INTRO =
+  "Reescreva a introdução no PADRÃO DA INTRODUÇÃO: título e subtítulo no padrão; quebre o resumo atual em temas curtos (um assunto por tema), cada um com frase de destaque de até 25 palavras e detalhe de no máximo 2 frases curtas, terminando com uma conclusão de uma frase. Mantenha exatamente os mesmos números e fatos do texto atual, sem acrescentar nem remover informação relevante.";
 const BUCKET = "general-reports";
 const MAX_BYTES = 50 * 1024 * 1024;
 const db = supabase as any;
@@ -465,6 +467,7 @@ function RelatorioGeralDetail() {
               onAdd: (c, after) => setAddAt({ c, after }),
               onEditIntro: () => setIntroEdit(true),
               onAskAiIntro: () => setAskIntro(true),
+              onStandardizeIntro: () => void onAskIntro(STANDARDIZE_INTRO),
               onDeleteIntro: () => {
                 if (!confirm("Remover subtítulo e resumo da introdução?")) return;
                 void saveContent({ ...content, subtitle: undefined, executive_summary: "" });
