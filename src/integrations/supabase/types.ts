@@ -2174,9 +2174,14 @@ export type Database = {
           error_message: string | null
           generated_at: string | null
           id: string
+          import_data: Json | null
+          import_pdf_name: string | null
+          import_pdf_path: string | null
+          import_pdf_sha256: string | null
           report: Json | null
           report_date: string
           representative_id: string | null
+          source: string
           status: string
           title: string | null
           updated_at: string
@@ -2187,9 +2192,14 @@ export type Database = {
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          import_data?: Json | null
+          import_pdf_name?: string | null
+          import_pdf_path?: string | null
+          import_pdf_sha256?: string | null
           report?: Json | null
           report_date: string
           representative_id?: string | null
+          source?: string
           status?: string
           title?: string | null
           updated_at?: string
@@ -2200,9 +2210,14 @@ export type Database = {
           error_message?: string | null
           generated_at?: string | null
           id?: string
+          import_data?: Json | null
+          import_pdf_name?: string | null
+          import_pdf_path?: string | null
+          import_pdf_sha256?: string | null
           report?: Json | null
           report_date?: string
           representative_id?: string | null
+          source?: string
           status?: string
           title?: string | null
           updated_at?: string

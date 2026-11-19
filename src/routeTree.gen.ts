@@ -53,6 +53,7 @@ import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as GraficoReportIdRouteImport } from './routes/grafico.$reportId'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as RelatorioTokenRouteImport } from './routes/relatorio.$token'
 import { Route as AuthenticatedAdminAuditoriaSegurancaRouteImport } from './routes/_authenticated/admin.auditoria-seguranca'
 import { Route as AuthenticatedAdminBackupRouteImport } from './routes/_authenticated/admin.backup'
 import { Route as AuthenticatedAdminCentralMensagensRouteImport } from './routes/_authenticated/admin.central-mensagens'
@@ -372,6 +373,11 @@ const MSlugRoute = MSlugRouteImport.update({
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatorioTokenRoute = RelatorioTokenRouteImport.update({
+  id: '/relatorio/$token',
+  path: '/relatorio/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminAuditoriaSegurancaRoute =
@@ -956,6 +962,7 @@ export interface FileRoutesByFullPath {
   '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -1093,6 +1100,7 @@ export interface FileRoutesByTo {
   '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/admin/conformidade': typeof AuthenticatedAdminConformidadeRoute
@@ -1232,6 +1240,7 @@ export interface FileRoutesById {
   '/grafico/$reportId': typeof GraficoReportIdRoute
   '/m/$slug': typeof MSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/_authenticated/admin/auditoria-seguranca': typeof AuthenticatedAdminAuditoriaSegurancaRoute
   '/_authenticated/admin/backup': typeof AuthenticatedAdminBackupRoute
   '/_authenticated/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensRouteWithChildren
@@ -1372,6 +1381,7 @@ export interface FileRouteTypes {
     | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/central-mensagens'
@@ -1509,6 +1519,7 @@ export interface FileRouteTypes {
     | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/admin/auditoria-seguranca'
     | '/admin/backup'
     | '/admin/conformidade'
@@ -1647,6 +1658,7 @@ export interface FileRouteTypes {
     | '/grafico/$reportId'
     | '/m/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/_authenticated/admin/auditoria-seguranca'
     | '/_authenticated/admin/backup'
     | '/_authenticated/admin/central-mensagens'
@@ -1763,6 +1775,7 @@ export interface RootRouteChildren {
   GraficoReportIdRoute: typeof GraficoReportIdRoute
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
+  RelatorioTokenRoute: typeof RelatorioTokenRoute
   ApiOgEstruturaRepIdRoute: typeof ApiOgEstruturaRepIdRoute
   ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
@@ -2095,6 +2108,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$token'
       fullPath: '/r/$token'
       preLoaderRoute: typeof RTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorio/$token': {
+      id: '/relatorio/$token'
+      path: '/relatorio/$token'
+      fullPath: '/relatorio/$token'
+      preLoaderRoute: typeof RelatorioTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/auditoria-seguranca': {
@@ -3053,6 +3073,7 @@ const rootRouteChildren: RootRouteChildren = {
   GraficoReportIdRoute: GraficoReportIdRoute,
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
+  RelatorioTokenRoute: RelatorioTokenRoute,
   ApiOgEstruturaRepIdRoute: ApiOgEstruturaRepIdRoute,
   ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
