@@ -83,14 +83,6 @@ export const NAV_TREE: NavGroup[] = [
     ],
   },
   {
-    key: "inputs-relatorios",
-    label: "Inputs e Relatórios",
-    children: [
-      { key: "inputs.fontes", label: "Fontes de Insight", to: "/fontes" },
-      { key: "inputs.entrevistas", label: "Entrevistas", to: "/entrevistas" },
-    ],
-  },
-  {
     key: "bases",
     label: "Bases",
     children: [
@@ -181,6 +173,8 @@ export const NAV_TREE: NavGroup[] = [
         to: "/ferramentas/agenda-trade",
       },
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
+      { key: "inputs.fontes", label: "Fontes de Insight", to: "/fontes" },
+      { key: "inputs.entrevistas", label: "Entrevistas", to: "/entrevistas" },
     ],
   },
 ];
