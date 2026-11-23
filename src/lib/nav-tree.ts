@@ -94,16 +94,6 @@ export const NAV_TREE: NavGroup[] = [
     ],
   },
   {
-    key: "solicitacoes-internas",
-    label: "Solicitações Internas",
-    children: [
-      { key: "solicitacoes-internas.dashboard", label: "Dashboard", to: "/solicitacoes/dashboard" },
-      { key: "solicitacoes-internas.lista", label: "Tickets", to: "/solicitacoes" },
-      { key: "solicitacoes-internas.novo", label: "Novo Ticket", to: "/solicitacoes/novo" },
-      { key: "solicitacoes-internas.admin", label: "Adm", to: "/solicitacoes/admin" },
-    ],
-  },
-  {
     key: "ferramentas",
     label: "Ferramentas",
     children: [
@@ -175,6 +165,22 @@ export const NAV_TREE: NavGroup[] = [
       { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
       { key: "inputs.fontes", label: "Fontes de Insight", to: "/fontes" },
       { key: "inputs.entrevistas", label: "Entrevistas", to: "/entrevistas" },
+      {
+        key: "solicitacoes-internas.dashboard",
+        label: "Solicitações · Dashboard",
+        to: "/solicitacoes/dashboard",
+      },
+      { key: "solicitacoes-internas.lista", label: "Solicitações · Tickets", to: "/solicitacoes" },
+      {
+        key: "solicitacoes-internas.novo",
+        label: "Solicitações · Novo Ticket",
+        to: "/solicitacoes/novo",
+      },
+      {
+        key: "solicitacoes-internas.admin",
+        label: "Solicitações · Adm",
+        to: "/solicitacoes/admin",
+      },
     ],
   },
 ];
