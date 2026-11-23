@@ -129,6 +129,8 @@ import { Route as AuthenticatedClientesIdEditarRouteImport } from './routes/_aut
 import { Route as AuthenticatedEntrevistasIdSessaoRouteImport } from './routes/_authenticated/entrevistas.$id.sessao'
 import { Route as AuthenticatedFerramentasEvolucaoAcoesIndexRouteImport } from './routes/_authenticated/ferramentas.evolucao-acoes.index'
 import { Route as AuthenticatedFerramentasEvolucaoAcoesCardIdRouteImport } from './routes/_authenticated/ferramentas.evolucao-acoes.$cardId'
+import { Route as AuthenticatedPerformanceMetasIndexRouteImport } from './routes/_authenticated/performance.metas.index'
+import { Route as AuthenticatedPerformanceMetasRowIdRouteImport } from './routes/_authenticated/performance.metas.$rowId'
 import { Route as AuthenticatedPermissoesTypeIdRouteImport } from './routes/_authenticated/permissoes.$type.$id'
 import { Route as AuthenticatedTarefasBBoardIdRouteImport } from './routes/_authenticated/tarefas.b.$boardId'
 import { Route as AuthenticatedVisaoImersao2ReportIdIndexRouteImport } from './routes/_authenticated/visao-imersao-2_.$reportId.index'
@@ -811,6 +813,18 @@ const AuthenticatedFerramentasEvolucaoAcoesCardIdRoute =
     path: '/ferramentas/evolucao-acoes/$cardId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPerformanceMetasIndexRoute =
+  AuthenticatedPerformanceMetasIndexRouteImport.update({
+    id: '/performance/metas/',
+    path: '/performance/metas/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerformanceMetasRowIdRoute =
+  AuthenticatedPerformanceMetasRowIdRouteImport.update({
+    id: '/performance/metas/$rowId',
+    path: '/performance/metas/$rowId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPermissoesTypeIdRoute =
   AuthenticatedPermissoesTypeIdRouteImport.update({
     id: '/permissoes/$type/$id',
@@ -1042,6 +1056,7 @@ export interface FileRoutesByFullPath {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
+  '/performance/metas/$rowId': typeof AuthenticatedPerformanceMetasRowIdRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -1058,6 +1073,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/ferramentas/evolucao-acoes/': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
+  '/performance/metas/': typeof AuthenticatedPerformanceMetasIndexRoute
   '/visao-imersao-2/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1180,6 +1196,7 @@ export interface FileRoutesByTo {
   '/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
+  '/performance/metas/$rowId': typeof AuthenticatedPerformanceMetasRowIdRoute
   '/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/visao-imersao-2/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -1196,6 +1213,7 @@ export interface FileRoutesByTo {
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/central-mensagens': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/ferramentas/evolucao-acoes': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
+  '/performance/metas': typeof AuthenticatedPerformanceMetasIndexRoute
   '/visao-imersao-2/$reportId': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1322,6 +1340,7 @@ export interface FileRoutesById {
   '/_authenticated/clientes/$id/editar': typeof AuthenticatedClientesIdEditarRoute
   '/_authenticated/entrevistas/$id/sessao': typeof AuthenticatedEntrevistasIdSessaoRoute
   '/_authenticated/ferramentas/evolucao-acoes/$cardId': typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
+  '/_authenticated/performance/metas/$rowId': typeof AuthenticatedPerformanceMetasRowIdRoute
   '/_authenticated/permissoes/$type/$id': typeof AuthenticatedPermissoesTypeIdRoute
   '/_authenticated/tarefas/b/$boardId': typeof AuthenticatedTarefasBBoardIdRoute
   '/_authenticated/visao-imersao-2_/$reportId/executivo': typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
@@ -1338,6 +1357,7 @@ export interface FileRoutesById {
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/admin/central-mensagens/': typeof AuthenticatedAdminCentralMensagensIndexRoute
   '/_authenticated/ferramentas/evolucao-acoes/': typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
+  '/_authenticated/performance/metas/': typeof AuthenticatedPerformanceMetasIndexRoute
   '/_authenticated/visao-imersao-2_/$reportId/': typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   '/_authenticated/admin/central-mensagens/template/$id': typeof AuthenticatedAdminCentralMensagensTemplateIdRoute
   '/_authenticated/clientes-bi/comparar/$repId/$razao': typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
@@ -1464,6 +1484,7 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/ferramentas/evolucao-acoes/$cardId'
+    | '/performance/metas/$rowId'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
@@ -1480,6 +1501,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens/'
     | '/ferramentas/evolucao-acoes/'
+    | '/performance/metas/'
     | '/visao-imersao-2/$reportId/'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
@@ -1602,6 +1624,7 @@ export interface FileRouteTypes {
     | '/clientes/$id/editar'
     | '/entrevistas/$id/sessao'
     | '/ferramentas/evolucao-acoes/$cardId'
+    | '/performance/metas/$rowId'
     | '/permissoes/$type/$id'
     | '/tarefas/b/$boardId'
     | '/visao-imersao-2/$reportId/executivo'
@@ -1618,6 +1641,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/send'
     | '/admin/central-mensagens'
     | '/ferramentas/evolucao-acoes'
+    | '/performance/metas'
     | '/visao-imersao-2/$reportId'
     | '/admin/central-mensagens/template/$id'
     | '/clientes-bi/comparar/$repId/$razao'
@@ -1743,6 +1767,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clientes/$id/editar'
     | '/_authenticated/entrevistas/$id/sessao'
     | '/_authenticated/ferramentas/evolucao-acoes/$cardId'
+    | '/_authenticated/performance/metas/$rowId'
     | '/_authenticated/permissoes/$type/$id'
     | '/_authenticated/tarefas/b/$boardId'
     | '/_authenticated/visao-imersao-2_/$reportId/executivo'
@@ -1759,6 +1784,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/send'
     | '/_authenticated/admin/central-mensagens/'
     | '/_authenticated/ferramentas/evolucao-acoes/'
+    | '/_authenticated/performance/metas/'
     | '/_authenticated/visao-imersao-2_/$reportId/'
     | '/_authenticated/admin/central-mensagens/template/$id'
     | '/_authenticated/clientes-bi/comparar/$repId/$razao'
@@ -2655,6 +2681,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/performance/metas/': {
+      id: '/_authenticated/performance/metas/'
+      path: '/performance/metas'
+      fullPath: '/performance/metas/'
+      preLoaderRoute: typeof AuthenticatedPerformanceMetasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/performance/metas/$rowId': {
+      id: '/_authenticated/performance/metas/$rowId'
+      path: '/performance/metas/$rowId'
+      fullPath: '/performance/metas/$rowId'
+      preLoaderRoute: typeof AuthenticatedPerformanceMetasRowIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/permissoes/$type/$id': {
       id: '/_authenticated/permissoes/$type/$id'
       path: '/permissoes/$type/$id'
@@ -2973,10 +3013,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTarefasIndexRoute: typeof AuthenticatedTarefasIndexRoute
   AuthenticatedClientesBiRepIdRazaoRoute: typeof AuthenticatedClientesBiRepIdRazaoRoute
   AuthenticatedFerramentasEvolucaoAcoesCardIdRoute: typeof AuthenticatedFerramentasEvolucaoAcoesCardIdRoute
+  AuthenticatedPerformanceMetasRowIdRoute: typeof AuthenticatedPerformanceMetasRowIdRoute
   AuthenticatedPermissoesTypeIdRoute: typeof AuthenticatedPermissoesTypeIdRoute
   AuthenticatedTarefasBBoardIdRoute: typeof AuthenticatedTarefasBBoardIdRoute
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute: typeof AuthenticatedVisaoImersao2ReportIdExecutivoRoute
   AuthenticatedFerramentasEvolucaoAcoesIndexRoute: typeof AuthenticatedFerramentasEvolucaoAcoesIndexRoute
+  AuthenticatedPerformanceMetasIndexRoute: typeof AuthenticatedPerformanceMetasIndexRoute
   AuthenticatedVisaoImersao2ReportIdIndexRoute: typeof AuthenticatedVisaoImersao2ReportIdIndexRoute
   AuthenticatedClientesBiCompararRepIdRazaoRoute: typeof AuthenticatedClientesBiCompararRepIdRazaoRoute
 }
@@ -3057,12 +3099,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedClientesBiRepIdRazaoRoute,
   AuthenticatedFerramentasEvolucaoAcoesCardIdRoute:
     AuthenticatedFerramentasEvolucaoAcoesCardIdRoute,
+  AuthenticatedPerformanceMetasRowIdRoute:
+    AuthenticatedPerformanceMetasRowIdRoute,
   AuthenticatedPermissoesTypeIdRoute: AuthenticatedPermissoesTypeIdRoute,
   AuthenticatedTarefasBBoardIdRoute: AuthenticatedTarefasBBoardIdRoute,
   AuthenticatedVisaoImersao2ReportIdExecutivoRoute:
     AuthenticatedVisaoImersao2ReportIdExecutivoRoute,
   AuthenticatedFerramentasEvolucaoAcoesIndexRoute:
     AuthenticatedFerramentasEvolucaoAcoesIndexRoute,
+  AuthenticatedPerformanceMetasIndexRoute:
+    AuthenticatedPerformanceMetasIndexRoute,
   AuthenticatedVisaoImersao2ReportIdIndexRoute:
     AuthenticatedVisaoImersao2ReportIdIndexRoute,
   AuthenticatedClientesBiCompararRepIdRazaoRoute:
