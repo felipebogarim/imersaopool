@@ -26,6 +26,7 @@ import {
   VisaoImersao2Importer,
   type VisaoImersao2Import,
 } from "@/components/visao-imersao-2/VisaoImersao2Importer";
+import { VisaoImersao2ExportDialog } from "@/components/visao-imersao-2/VisaoImersao2ExportDialog";
 import { VisaoImersao2ImportPreview } from "@/components/visao-imersao-2/VisaoImersao2ImportPreview";
 import { AcoesComerciaisCliente } from "@/components/visao-imersao-2/AcoesComerciaisCliente";
 import { ExecutiveReportButton } from "@/components/executive-report/ExecutiveReportButton";
@@ -65,6 +66,7 @@ import {
   Building2,
   Loader2,
   Handshake,
+  Download,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -117,6 +119,7 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
   const [salvando, setSalvando] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [preview, setPreview] = useState<VisaoImersao2Import | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const [dirty, setDirty] = useState(false);
   const [duplicata, setDuplicata] = useState<any | null>(null);
@@ -1141,8 +1144,26 @@ export function VisaoImersao2Page({ reportId }: { reportId?: string }) {
           title="Visão Imersão 2" 
           subtitle="Nova arquitetura de diagnóstico comercial (Experimental)" 
           actions={
-            <VisaoImersao2Importer onValidated={setPreview} />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setExportOpen(true)}
+                disabled={reports.length === 0}
+                className="gap-2"
+                title="Exportar relatórios em massa como PDF ou Markdown"
+              >
+                <Download className="h-4 w-4" />
+                Exportar em massa
+              </Button>
+              <VisaoImersao2Importer onValidated={setPreview} />
+            </div>
           }
+        />
+        <VisaoImersao2ExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          rowsMeta={rowsMeta}
+          filterOptions={filterOptions}
         />
         <div className="p-4 sm:p-8">
           {reports.length === 0 ? (
