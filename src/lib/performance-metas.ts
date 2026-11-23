@@ -322,10 +322,56 @@ export function displayPercents(
   return Object.fromEntries(scaled.map((e) => [e.k, e.floor / factor]));
 }
 
+// ======================= Atingimento sobre a meta oficial =====================
+
+/**
+ * O frontend não recebe o realizado em R$ (privacidade). Ele é ESTIMADO a partir
+ * do atingimento oficial, que foi calculado sobre a meta padrão da categoria:
+ *
+ *   realizado estimado = atingimento oficial × meta padrão
+ *   atingimento projetado = realizado estimado ÷ meta oficial
+ *
+ * Quando a meta oficial é igual à padrão, o projetado coincide com o oficial.
+ * Sem atingimento, sem referência ou com meta oficial ≤ 0 → null.
+ */
+export function estimatedRealizado(
+  draft: Pick<FamilyMetaDraft, "referencia">,
+  atingimentoOficial: number | null,
+): number | null {
+  if (atingimentoOficial == null || draft.referencia == null) return null;
+  return atingimentoOficial * draft.referencia;
+}
+
+export function projectedAttainment(
+  draft: Pick<FamilyMetaDraft, "referencia" | "metaOficial">,
+  atingimentoOficial: number | null,
+): number | null {
+  const realizado = estimatedRealizado(draft, atingimentoOficial);
+  if (realizado == null || draft.metaOficial == null || draft.metaOficial <= 0) return null;
+  return realizado / draft.metaOficial;
+}
+
+/** Atingimento total projetado: Σ realizado estimado ÷ Σ meta oficial (mesmos portfólios). */
+export function projectedTotalAttainment(
+  drafts: FamilyMetaDraft[],
+  atingimento: Record<string, number | null>,
+): number | null {
+  let realizado = 0;
+  let meta = 0;
+  for (const d of drafts) {
+    const r = estimatedRealizado(d, atingimento[d.familia] ?? null);
+    if (r == null || d.metaOficial == null || d.metaOficial <= 0) continue;
+    realizado += r;
+    meta += d.metaOficial;
+  }
+  return meta > 0 ? realizado / meta : null;
+}
+
 // ============================ Comparativo visual =============================
 
 /**
- * Ponto do gráfico de um portfólio. A barra é a performance atual (atingimento);
+ * Ponto do gráfico de um portfólio. A barra é o atingimento sobre a meta oficial
+ * (recalculado a cada edição — ver `projectedAttainment`);
  * metas aparecem no tooltip como participação no total, para não depender da
  * meta padrão na visão do representante.
  *
@@ -335,13 +381,17 @@ export function displayPercents(
 export type ComparativoPoint = {
   familia: CanonicalFamily;
   label: string;
-  /** Atingimento atual em pontos percentuais (62.5 = 62,5%). */
+  /** Atingimento sobre a meta oficial, em pontos percentuais (62.5 = 62,5%). */
   performancePct: number | null;
+  /** Atingimento oficial (sobre a meta padrão). Só visão gestor. */
+  performanceOficialPct: number | null;
   metaPct: number | null;
   metaValor: number | null;
   referenciaPct: number | null;
   referenciaValor: number | null;
 };
+
+const pctOrNull = (ratio: number | null) => (ratio == null ? null : ratio * 100);
 
 export function buildComparativo(
   drafts: FamilyMetaDraft[],
@@ -355,7 +405,8 @@ export function buildComparativo(
     return {
       familia: d.familia,
       label: METAS_FAMILY_LABEL[d.familia],
-      performancePct: ratio == null ? null : ratio * 100,
+      performancePct: pctOrNull(projectedAttainment(d, ratio)),
+      performanceOficialPct: vis.verMetaPadrao ? pctOrNull(ratio) : null,
       metaPct: total > 0 ? ((d.metaOficial ?? 0) / total) * 100 : null,
       metaValor: d.metaOficial,
       referenciaPct:
@@ -369,6 +420,120 @@ export function buildComparativo(
 
 export function categoryLabel(categoria: unknown): PortfolioCategory | null {
   return normalizePortfolioCategory(categoria);
+}
+
+// ============================== Salvamento ===================================
+
+const GESTOR_FIELDS = ["metaOficial", "comentarioGestor", "origem", "sugestaoIa"] as const;
+const REP_FIELDS = ["sugestaoRep", "justificativaRep"] as const;
+
+/** Campos que cada perfil salva (espelha a separação de permissões planejada). */
+export function savableFields(role?: MetasViewerRole): readonly (keyof FamilyMetaDraft)[] {
+  if (role === "gestor") return GESTOR_FIELDS;
+  if (role === "representante") return REP_FIELDS;
+  return [...GESTOR_FIELDS, ...REP_FIELDS];
+}
+
+/** Portfólios com alterações não salvas (nos campos do perfil, ou em todos). */
+export function changedFamilies(
+  saved: FamilyMetaDraft[],
+  current: FamilyMetaDraft[],
+  role?: MetasViewerRole,
+): CanonicalFamily[] {
+  const fields = savableFields(role);
+  const byFam = new Map(saved.map((d) => [d.familia, d]));
+  return current
+    .filter((d) => {
+      const s = byFam.get(d.familia);
+      return !s || fields.some((f) => JSON.stringify(s[f]) !== JSON.stringify(d[f]));
+    })
+    .map((d) => d.familia);
+}
+
+/** Novo estado "salvo": copia do atual só os campos que o perfil pode gravar. */
+export function mergeSaved(
+  saved: FamilyMetaDraft[],
+  current: FamilyMetaDraft[],
+  role: MetasViewerRole,
+): FamilyMetaDraft[] {
+  const fields = savableFields(role);
+  const byFam = new Map(current.map((d) => [d.familia, d]));
+  return saved.map((s) => {
+    const d = byFam.get(s.familia);
+    if (!d) return s;
+    const next = { ...s } as Record<string, unknown>;
+    for (const f of fields) next[f] = d[f];
+    return next as FamilyMetaDraft;
+  });
+}
+
+/**
+ * Payload de gravação, separado por perfil (espelha as permissões planejadas):
+ * - gestor: meta oficial + comentário + origem, e registro das sugestões da IA;
+ * - representante: apenas a própria sugestão e justificativa.
+ */
+export type SavePayload =
+  | {
+      perfil: "gestor";
+      metas: Array<{
+        familia: CanonicalFamily;
+        meta_oficial: number | null;
+        comentario_gestor: string;
+        origem: MetaOrigem;
+        referencia: number | null;
+      }>;
+      sugestoes_ia: Array<{
+        familia: CanonicalFamily;
+        valor: number;
+        justificativa: string;
+        tag: AiSuggestionTag;
+        simulada: boolean;
+      }>;
+    }
+  | {
+      perfil: "representante";
+      sugestoes: Array<{ familia: CanonicalFamily; valor: number | null; justificativa: string }>;
+    };
+
+export function buildSavePayload(
+  drafts: FamilyMetaDraft[],
+  role: MetasViewerRole,
+  only?: readonly CanonicalFamily[],
+): SavePayload {
+  const sel = only ? drafts.filter((d) => only.includes(d.familia)) : drafts;
+  if (role === "representante") {
+    return {
+      perfil: "representante",
+      sugestoes: sel.map((d) => ({
+        familia: d.familia,
+        valor: d.sugestaoRep,
+        justificativa: d.justificativaRep,
+      })),
+    };
+  }
+  return {
+    perfil: "gestor",
+    metas: sel.map((d) => ({
+      familia: d.familia,
+      meta_oficial: d.metaOficial,
+      comentario_gestor: d.comentarioGestor,
+      origem: d.origem,
+      referencia: d.referencia,
+    })),
+    sugestoes_ia: sel.flatMap((d) =>
+      d.sugestaoIa
+        ? [
+            {
+              familia: d.familia,
+              valor: d.sugestaoIa.valor,
+              justificativa: d.sugestaoIa.justificativa,
+              tag: d.sugestaoIa.tag,
+              simulada: d.sugestaoIa.simulada,
+            },
+          ]
+        : [],
+    ),
+  };
 }
 
 // =============================== Formatação ==================================

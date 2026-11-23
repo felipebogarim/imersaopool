@@ -3,6 +3,11 @@ import {
   applyAiSuggestion,
   buildComparativo,
   buildInitialDrafts,
+  buildSavePayload,
+  changedFamilies,
+  mergeSaved,
+  projectedAttainment,
+  projectedTotalAttainment,
   copyRepSuggestion,
   displayPercents,
   metasVisibility,
@@ -118,7 +123,9 @@ describe("performance-metas (simulação local)", () => {
   it("comparativo: barra = performance; metas como participação no total", () => {
     const drafts = withMetas([150, 100, 100, 100, 100, 100, 100]);
     const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor);
-    expect(pts[0].performancePct).toBeCloseTo(60, 10);
+    // meta oficial 150 sobre padrão 100: realizado estimado 60 → 40% da nova meta
+    expect(pts[0].performancePct).toBeCloseTo(40, 10);
+    expect(pts[0].performanceOficialPct).toBeCloseTo(60, 10);
     expect(pts[0].metaPct).toBeCloseTo((150 / 750) * 100, 10);
     expect(pts[0].metaValor).toBe(150);
     expect(pts[0].referenciaPct).toBeCloseTo((100 / 700) * 100, 10);
@@ -131,6 +138,7 @@ describe("performance-metas (simulação local)", () => {
     const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, rep);
     expect(pts[0].referenciaValor).toBeNull();
     expect(pts[0].referenciaPct).toBeNull();
+    expect(pts[0].performanceOficialPct).toBeNull();
     expect(pts[0].metaPct).toBeCloseTo((150 / 750) * 100, 10);
   });
 
@@ -152,5 +160,66 @@ describe("performance-metas (simulação local)", () => {
     expect(rep.editarMetaOficial).toBe(false);
     expect(rep.editarSugestaoRep).toBe(true);
     expect(gestor.verMetaPadrao && gestor.verSugestaoIa && gestor.editarMetaOficial).toBe(true);
+  });
+  it("atingimento é recalculado sobre a meta oficial a partir do realizado estimado", () => {
+    const d = { referencia: 1000, metaOficial: 1000 };
+    expect(projectedAttainment(d, 0.8)).toBeCloseTo(0.8, 10);
+    expect(projectedAttainment({ ...d, metaOficial: 800 }, 0.8)).toBeCloseTo(1, 10);
+    expect(projectedAttainment({ ...d, metaOficial: 1600 }, 0.8)).toBeCloseTo(0.5, 10);
+    expect(projectedAttainment({ ...d, metaOficial: 0 }, 0.8)).toBeNull();
+    expect(projectedAttainment(d, null)).toBeNull();
+    expect(projectedAttainment({ ...d, referencia: null }, 0.8)).toBeNull();
+    expect(projectedAttainment(d, 0)).toBe(0);
+  });
+
+  it("atingimento total projetado pondera pelo realizado estimado", () => {
+    const drafts = withMetas([100, 200, 100, 100, 100, 100, 100]);
+    // só dois portfólios com atingimento: (0.5×100 + 1×100) ÷ (100 + 200)
+    const r = projectedTotalAttainment(drafts, { "DECOR NEWLINE": 0.5, "DECOR STUDIO": 1 });
+    expect(r).toBeCloseTo(150 / 300, 10);
+    expect(projectedTotalAttainment(drafts, {})).toBeNull();
+  });
+
+  it("detecta portfólios alterados e monta o payload por perfil", () => {
+    const saved = simulateAiSuggestions(withMetas([100, 100, 100, 100, 100, 100, 100]));
+    let cur = setMetaOficial(saved, "PERFIL", 130);
+    cur = cur.map((x) => (x.familia === "PRO LED" ? { ...x, justificativaRep: "obra" } : x));
+    expect(changedFamilies(saved, cur)).toEqual(["PRO LED", "PERFIL"]);
+    expect(changedFamilies(saved, saved)).toEqual([]);
+
+    const g = buildSavePayload(cur, "gestor", ["PERFIL"]);
+    expect(g.perfil).toBe("gestor");
+    if (g.perfil === "gestor") {
+      expect(g.metas).toEqual([
+        {
+          familia: "PERFIL",
+          meta_oficial: 130,
+          comentario_gestor: "",
+          origem: "gestor",
+          referencia: 100,
+        },
+      ]);
+      expect(g.sugestoes_ia).toHaveLength(1);
+    }
+    const r = buildSavePayload(cur, "representante", ["PRO LED"]);
+    expect(r).toEqual({
+      perfil: "representante",
+      sugestoes: [{ familia: "PRO LED", valor: null, justificativa: "obra" }],
+    });
+    // o payload do representante nunca carrega meta padrão nem sugestão da IA
+    expect(JSON.stringify(r)).not.toMatch(/referencia|sugestoes_ia/);
+  });
+  it("salvar separa os campos do gestor e do representante", () => {
+    const saved = withMetas([100, 100, 100, 100, 100, 100, 100]);
+    let cur = setMetaOficial(saved, "PERFIL", 130);
+    cur = cur.map((x) => (x.familia === "PRO LED" ? { ...x, sugestaoRep: 90 } : x));
+    expect(changedFamilies(saved, cur, "gestor")).toEqual(["PERFIL"]);
+    expect(changedFamilies(saved, cur, "representante")).toEqual(["PRO LED"]);
+
+    const afterRep = mergeSaved(saved, cur, "representante");
+    expect(changedFamilies(afterRep, cur, "representante")).toEqual([]);
+    expect(changedFamilies(afterRep, cur, "gestor")).toEqual(["PERFIL"]);
+    const afterBoth = mergeSaved(afterRep, cur, "gestor");
+    expect(changedFamilies(afterBoth, cur)).toEqual([]);
   });
 });

@@ -39,7 +39,7 @@ export type PortfolioPanelActions = {
 export function PortfolioMetaPanel({
   draft,
   point,
-  atingimento,
+  unsaved,
   vis,
   selected,
   onSelect,
@@ -48,14 +48,16 @@ export function PortfolioMetaPanel({
 }: {
   draft: FamilyMetaDraft;
   point: ComparativoPoint;
-  atingimento: number | null;
+  /** Portfólios com alterações ainda não salvas. */
+  unsaved: readonly CanonicalFamily[];
   vis: MetasVisibility;
   selected: CanonicalFamily;
   onSelect: (familia: CanonicalFamily) => void;
   swatches: string[];
   actions: PortfolioPanelActions;
 }) {
-  const status = statusFromRatio(atingimento);
+  const ratio = point.performancePct == null ? null : point.performancePct / 100;
+  const status = statusFromRatio(ratio);
   const diff =
     vis.verMetaPadrao && draft.referencia != null
       ? (draft.metaOficial ?? 0) - draft.referencia
@@ -78,6 +80,12 @@ export function PortfolioMetaPanel({
           >
             <span className={cn("h-2 w-2 rounded-sm", swatches[i])} />
             {METAS_FAMILY_LABEL[f]}
+            {unsaved.includes(f) && (
+              <span
+                className="h-1.5 w-1.5 rounded-full bg-amber-500"
+                title="Alterações não salvas"
+              />
+            )}
           </button>
         ))}
       </div>
@@ -92,13 +100,18 @@ export function PortfolioMetaPanel({
             </p>
           )}
         </div>
-        <Stat label="Performance atual">
+        <Stat label="Atingimento s/ meta oficial">
           <span className={cn("rounded px-1.5 py-0.5", status && FAROL_CELL_CLASS[status])}>
-            {fmtPct(atingimento)}
+            {fmtPct(ratio)}
           </span>
           {status && (
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               {FAROL_LABEL[status]}
+            </span>
+          )}
+          {vis.verMetaPadrao && point.performanceOficialPct != null && (
+            <span className="block text-[11px] font-normal text-muted-foreground">
+              oficial (meta padrão): {fmtPoints(point.performanceOficialPct)}
             </span>
           )}
         </Stat>

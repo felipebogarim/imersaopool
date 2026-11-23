@@ -2,8 +2,9 @@
 // Três partes: dashboard fixo no topo → gráfico comparativo → cards de edição.
 // Nenhum valor é persistido; recarregar a página descarta a simulação.
 
-import { useMemo, useState } from "react";
-import { FlaskConical, Link2, Mail, RotateCcw, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { FlaskConical, Link2, Mail, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,10 @@ import {
   METAS_FAMILY_LABEL,
   applyAiSuggestion,
   buildComparativo,
+  buildSavePayload,
+  changedFamilies,
+  mergeSaved,
+  projectedTotalAttainment,
   buildInitialDrafts,
   copyRepSuggestion,
   displayPercents,
@@ -31,6 +36,7 @@ import {
   type MetaOrigem,
   type MetasViewerRole,
 } from "@/lib/performance-metas";
+import { persistMetasDraft } from "@/lib/performance-metas-persistence";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
@@ -79,9 +85,12 @@ export function MetasPainel({
 }) {
   const vis = metasVisibility(role);
   // Sugestões IA já vêm preenchidas (simulação) para o painel não começar vazio.
-  const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(() =>
+  const [initialDrafts] = useState<FamilyMetaDraft[]>(() =>
     simulateAiSuggestions(buildInitialDrafts(cliente.categoria)),
   );
+  const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
+  const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
+  const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
   const [vinculoOpen, setVinculoOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
@@ -100,8 +109,38 @@ export function MetasPainel({
     [drafts, atingimento, vis],
   );
   const semReferencia = drafts.every((d) => d.referencia == null);
-  const totalRatio = sanitizeRatio(cliente.totalPct);
-  const totalStatus = statusFromRatio(totalRatio);
+  const totalOficial = sanitizeRatio(cliente.totalPct);
+  const totalProjetado = useMemo(
+    () => projectedTotalAttainment(drafts, atingimento),
+    [drafts, atingimento],
+  );
+  const totalStatus = statusFromRatio(totalProjetado);
+  const unsaved = useMemo(
+    () => changedFamilies(savedDrafts, drafts, role),
+    [savedDrafts, drafts, role],
+  );
+
+  // Aviso ao sair da página com alterações não salvas.
+  useEffect(() => {
+    if (unsaved.length === 0) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [unsaved.length]);
+
+  async function handleSave() {
+    if (unsaved.length === 0) return;
+    setSaving(true);
+    try {
+      await persistMetasDraft(buildSavePayload(drafts, role, unsaved));
+      setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
+      toast.success(`${unsaved.length} portfólio(s) salvo(s) nesta sessão.`, {
+        description: "A gravação no banco será habilitada após a aprovação da migration.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const patch = (familia: CanonicalFamily, p: Partial<FamilyMetaDraft>) =>
     setDrafts((prev) => prev.map((d) => (d.familia === familia ? { ...d, ...p } : d)));
@@ -111,10 +150,15 @@ export function MetasPainel({
       {/* ================= 1. Dashboard fixo ================= */}
       <div className="sticky top-0 z-30 -mx-3 space-y-3 border-b border-border bg-background/95 px-3 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={handleSave} disabled={saving || unsaved.length === 0}>
+            <Save className="mr-1.5 h-4 w-4" />
+            {unsaved.length > 0 ? `Salvar (${unsaved.length})` : "Salvo"}
+          </Button>
           {vis.usarControlesGestao && (
             <>
               <Button
                 size="sm"
+                variant="outline"
                 onClick={() => setDrafts((d) => applyAiSuggestion(simulateAiSuggestions(d)))}
                 title="Aplica a sugestão IA (simulada) como meta oficial em todos os portfólios"
               >
@@ -142,7 +186,7 @@ export function MetasPainel({
           )}
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 sm:flex">
-              <FlaskConical className="h-3.5 w-3.5" /> Simulação local · nada é salvo
+              <FlaskConical className="h-3.5 w-3.5" /> Simulação local · banco ainda não habilitado
             </span>
             {canPreview && (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -156,7 +200,7 @@ export function MetasPainel({
         <div
           className={cn(
             "grid gap-2 sm:grid-cols-2",
-            vis.verMetaPadrao ? "lg:grid-cols-5" : "lg:grid-cols-3",
+            vis.verMetaPadrao ? "lg:grid-cols-6" : "lg:grid-cols-3",
           )}
         >
           <Tile label="Meta mensal personalizada">
@@ -235,21 +279,23 @@ export function MetasPainel({
                   .join(" · ")}
               </p>
             </Tile>
-          ) : (
-            <Tile label="Atingimento atual">
-              <span
-                className={cn(
-                  "inline-flex rounded-md px-2 py-0.5 text-xl font-semibold tabular-nums",
-                  totalStatus && FAROL_CELL_CLASS[totalStatus],
-                )}
-              >
-                {fmtPct(totalRatio)}
-              </span>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {cliente.periodoLabel ?? "Versão mais recente"}
-              </p>
-            </Tile>
-          )}
+          ) : null}
+
+          <Tile label="Atingimento s/ meta oficial">
+            <span
+              className={cn(
+                "inline-flex rounded-md px-2 py-0.5 text-xl font-semibold tabular-nums",
+                totalStatus && FAROL_CELL_CLASS[totalStatus],
+              )}
+            >
+              {fmtPct(totalProjetado)}
+            </span>
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              {vis.verMetaPadrao
+                ? `Oficial (meta padrão): ${fmtPct(totalOficial)}`
+                : (cliente.periodoLabel ?? "Versão mais recente")}
+            </p>
+          </Tile>
         </div>
       </div>
 
@@ -277,7 +323,7 @@ export function MetasPainel({
           <PortfolioMetaPanel
             draft={d}
             point={comparativo[idx]}
-            atingimento={atingimento[fam]}
+            unsaved={unsaved}
             vis={vis}
             selected={selected}
             onSelect={setSelected}

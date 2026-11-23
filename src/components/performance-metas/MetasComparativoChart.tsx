@@ -47,7 +47,10 @@ export function MetasComparativoChart({
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold">Performance atual por portfólio</h2>
+        <h2 className="text-sm font-semibold">
+          Atingimento por portfólio sobre a meta oficial
+          <span className="ml-1 font-normal text-muted-foreground">(recalculado ao editar)</span>
+        </h2>
         <p className="text-[11px] text-muted-foreground">
           Clique em um portfólio para editar a meta
         </p>
@@ -137,10 +140,13 @@ function ComparativoTooltip({
   return (
     <div className="min-w-[200px] rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
       <p className="mb-1.5 font-semibold">{d.label}</p>
-      <Row label="Performance atual">
+      <Row label="Atingimento s/ meta oficial">
         {d.performancePct == null ? "Sem informação" : fmtPoints(d.performancePct)}
         {st ? <span className="text-muted-foreground"> · {FAROL_LABEL[st]}</span> : null}
       </Row>
+      {vis.verMetaPadrao && d.performanceOficialPct != null && (
+        <Row label="Atingimento oficial (padrão)">{fmtPoints(d.performanceOficialPct)}</Row>
+      )}
       <Row label="Meta oficial (% do total)">{fmtPoints(d.metaPct)}</Row>
       <Row label="Meta oficial (R$)">{fmtBRL(d.metaValor)}</Row>
       {vis.verMetaPadrao && (
