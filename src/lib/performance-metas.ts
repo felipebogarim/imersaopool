@@ -325,22 +325,21 @@ export function displayPercents(
 // ============================ Comparativo visual =============================
 
 /**
- * Ponto do gráfico comparativo de um portfólio, em percentual.
+ * Ponto do gráfico de um portfólio. A barra é a performance atual (atingimento);
+ * metas aparecem no tooltip como participação no total, para não depender da
+ * meta padrão na visão do representante.
  *
- * Visão gestor (escala = % da meta padrão, a mesma base do atingimento oficial):
- *   performance = atingimento atual;  meta = meta oficial ÷ meta padrão;
- *   marcador da meta padrão = 100%.
- * Visão representante (sem meta padrão, para não revelá-la):
- *   performance = atingimento atual;  meta = participação no total do cliente.
+ *   metaPct       = meta oficial do portfólio ÷ meta personalizada total
+ *   referenciaPct = meta padrão do portfólio ÷ meta padrão total  (só gestão)
  */
 export type ComparativoPoint = {
   familia: CanonicalFamily;
   label: string;
+  /** Atingimento atual em pontos percentuais (62.5 = 62,5%). */
   performancePct: number | null;
   metaPct: number | null;
-  /** R$ estimado da performance (atingimento × referência). Só visão gestor. */
-  performanceValor: number | null;
   metaValor: number | null;
+  referenciaPct: number | null;
   referenciaValor: number | null;
 };
 
@@ -350,23 +349,19 @@ export function buildComparativo(
   vis: MetasVisibility,
 ): ComparativoPoint[] {
   const total = drafts.reduce((s, d) => s + (d.metaOficial ?? 0), 0);
+  const refTotal = drafts.reduce((s, d) => s + (d.referencia ?? 0), 0);
   return drafts.map((d) => {
     const ratio = atingimento[d.familia] ?? null;
-    const meta = d.metaOficial ?? 0;
-    let metaPct: number | null = null;
-    if (vis.verMetaPadrao) {
-      if (d.referencia && d.referencia > 0) metaPct = (meta / d.referencia) * 100;
-    } else if (total > 0) {
-      metaPct = (meta / total) * 100;
-    }
     return {
       familia: d.familia,
       label: METAS_FAMILY_LABEL[d.familia],
       performancePct: ratio == null ? null : ratio * 100,
-      metaPct,
-      performanceValor:
-        vis.verMetaPadrao && ratio != null && d.referencia != null ? ratio * d.referencia : null,
+      metaPct: total > 0 ? ((d.metaOficial ?? 0) / total) * 100 : null,
       metaValor: d.metaOficial,
+      referenciaPct:
+        vis.verMetaPadrao && d.referencia != null && refTotal > 0
+          ? (d.referencia / refTotal) * 100
+          : null,
       referenciaValor: vis.verMetaPadrao ? d.referencia : null,
     };
   });

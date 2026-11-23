@@ -5,7 +5,6 @@
 import { useMemo, useState } from "react";
 import { FlaskConical, Link2, Mail, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
@@ -32,7 +31,7 @@ import {
   type MetaOrigem,
   type MetasViewerRole,
 } from "@/lib/performance-metas";
-import { FamiliaMetaCard } from "./FamiliaMetaCard";
+import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -79,9 +78,11 @@ export function MetasPainel({
   onPreviewChange: (v: boolean) => void;
 }) {
   const vis = metasVisibility(role);
+  // Sugestões IA já vêm preenchidas (simulação) para o painel não começar vazio.
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(() =>
-    buildInitialDrafts(cliente.categoria),
+    simulateAiSuggestions(buildInitialDrafts(cliente.categoria)),
   );
+  const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
   const [vinculoOpen, setVinculoOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
 
@@ -98,10 +99,6 @@ export function MetasPainel({
     () => buildComparativo(drafts, atingimento, vis),
     [drafts, atingimento, vis],
   );
-  const scaleMax = Math.max(
-    120,
-    ...comparativo.map((p) => Math.max(p.performancePct ?? 0, p.metaPct ?? 0)),
-  );
   const semReferencia = drafts.every((d) => d.referencia == null);
   const totalRatio = sanitizeRatio(cliente.totalPct);
   const totalStatus = statusFromRatio(totalRatio);
@@ -116,7 +113,11 @@ export function MetasPainel({
         <div className="flex flex-wrap items-center gap-2">
           {vis.usarControlesGestao && (
             <>
-              <Button size="sm" onClick={() => setDrafts(simulateAiSuggestions)}>
+              <Button
+                size="sm"
+                onClick={() => setDrafts((d) => applyAiSuggestion(simulateAiSuggestions(d)))}
+                title="Aplica a sugestão IA (simulada) como meta oficial em todos os portfólios"
+              >
                 <Sparkles className="mr-1.5 h-4 w-4" /> Sugestão IA
               </Button>
               <Button
@@ -260,37 +261,44 @@ export function MetasPainel({
       )}
 
       {/* ================= 2. Gráfico principal ================= */}
-      <MetasComparativoChart data={comparativo} vis={vis} />
+      <MetasComparativoChart
+        data={comparativo}
+        vis={vis}
+        selected={selected}
+        onSelect={setSelected}
+      />
 
-      {/* ================= 3. Edição por portfólio ================= */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Edição por portfólio</h2>
-          <Badge variant="secondary" className="text-[9px] uppercase">
-            Simulação
-          </Badge>
-        </div>
-        {drafts.map((d, i) => (
-          <FamiliaMetaCard
-            key={d.familia}
+      {/* ================= 3. Painel do portfólio selecionado ================= */}
+      {(() => {
+        const idx = drafts.findIndex((d) => d.familia === selected);
+        const d = drafts[idx];
+        const fam = d.familia;
+        return (
+          <PortfolioMetaPanel
             draft={d}
-            point={comparativo[i]}
-            atingimento={atingimento[d.familia]}
-            scaleMax={scaleMax}
-            swatch={FAMILY_SWATCH[i]}
+            point={comparativo[idx]}
+            atingimento={atingimento[fam]}
             vis={vis}
+            selected={selected}
+            onSelect={setSelected}
+            swatches={FAMILY_SWATCH}
             actions={{
-              setMetaOficial: (v) => setDrafts((prev) => setMetaOficial(prev, d.familia, v)),
-              setComentarioGestor: (t) => patch(d.familia, { comentarioGestor: t }),
-              setSugestaoRep: (v) => patch(d.familia, { sugestaoRep: v }),
-              setJustificativaRep: (t) => patch(d.familia, { justificativaRep: t }),
-              usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, d.familia)),
-              restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, d.familia)),
-              copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, d.familia)),
+              setMetaOficial: (v) => setDrafts((prev) => setMetaOficial(prev, fam, v)),
+              setComentarioGestor: (t) => patch(fam, { comentarioGestor: t }),
+              setSugestaoRep: (v) => patch(fam, { sugestaoRep: v }),
+              setJustificativaRep: (t) => patch(fam, { justificativaRep: t }),
+              gerarIa: () =>
+                setDrafts((prev) => {
+                  const sim = simulateAiSuggestions(prev);
+                  return prev.map((x, i) => (x.familia === fam ? sim[i] : x));
+                }),
+              usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, fam)),
+              restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, fam)),
+              copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, fam)),
             }}
           />
-        ))}
-      </div>
+        );
+      })()}
 
       <RevisarVinculoDialog
         open={vinculoOpen}

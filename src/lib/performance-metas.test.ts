@@ -115,16 +115,14 @@ describe("performance-metas (simulação local)", () => {
     );
   });
 
-  it("comparativo do gestor usa a meta padrão como base (100%)", () => {
+  it("comparativo: barra = performance; metas como participação no total", () => {
     const drafts = withMetas([150, 100, 100, 100, 100, 100, 100]);
     const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor);
-    expect(pts[0]).toMatchObject({
-      performancePct: 60,
-      metaPct: 150,
-      performanceValor: 60,
-      metaValor: 150,
-      referenciaValor: 100,
-    });
+    expect(pts[0].performancePct).toBeCloseTo(60, 10);
+    expect(pts[0].metaPct).toBeCloseTo((150 / 750) * 100, 10);
+    expect(pts[0].metaValor).toBe(150);
+    expect(pts[0].referenciaPct).toBeCloseTo((100 / 700) * 100, 10);
+    expect(pts[0].referenciaValor).toBe(100);
     expect(pts[1].performancePct).toBeNull();
   });
 
@@ -132,7 +130,7 @@ describe("performance-metas (simulação local)", () => {
     const drafts = withMetas([150, 100, 100, 100, 100, 100, 100]);
     const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, rep);
     expect(pts[0].referenciaValor).toBeNull();
-    expect(pts[0].performanceValor).toBeNull();
+    expect(pts[0].referenciaPct).toBeNull();
     expect(pts[0].metaPct).toBeCloseTo((150 / 750) * 100, 10);
   });
 

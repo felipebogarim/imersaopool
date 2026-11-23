@@ -1,18 +1,18 @@
-// Gráfico principal: duas barras por portfólio (performance atual × meta oficial).
-// A meta padrão aparece só para gestor/admin, como linha de referência em 100%.
+// Gráfico principal: uma barra por portfólio = performance atual, na cor do farol.
+// Clicar numa barra (ou no rótulo) seleciona o portfólio do painel de edição.
+// Metas aparecem só no tooltip; meta padrão apenas para gestor/admin.
 
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import type { CanonicalFamily } from "@/lib/client-bi-familias";
 import { FAROL_HEX, FAROL_LABEL, statusFromRatio } from "@/lib/performance-farol";
 import {
   fmtBRL,
@@ -21,46 +21,72 @@ import {
   type MetasVisibility,
 } from "@/lib/performance-metas";
 
-const META_COLOR = "hsl(var(--primary))";
+const statusOf = (pct: number | null) => statusFromRatio(pct == null ? null : pct / 100);
 
 export function MetasComparativoChart({
   data,
   vis,
+  selected,
+  onSelect,
 }: {
   data: ComparativoPoint[];
   vis: MetasVisibility;
+  selected: CanonicalFamily;
+  onSelect: (familia: CanonicalFamily) => void;
 }) {
-  const peak = Math.max(120, ...data.map((d) => Math.max(d.performancePct ?? 0, d.metaPct ?? 0)));
+  const peak = Math.max(120, ...data.map((d) => d.performancePct ?? 0));
   const step = peak <= 150 ? 25 : peak <= 300 ? 50 : 100;
   const yMax = Math.ceil(peak / step) * step;
-  const metaName = vis.verMetaPadrao ? "Meta oficial (% da padrão)" : "Meta oficial (% do total)";
+  const chartData = data.map((d) => ({ ...d, perf: d.performancePct ?? 0 }));
 
-  const chartData = data.map((d) => ({
-    ...d,
-    perf: d.performancePct ?? 0,
-    meta: d.metaPct ?? 0,
-  }));
+  const selectByLabel = (label: unknown) => {
+    const hit = data.find((d) => d.label === label);
+    if (hit) onSelect(hit.familia);
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold">Performance atual × meta oficial por portfólio</h2>
+        <h2 className="text-sm font-semibold">Performance atual por portfólio</h2>
         <p className="text-[11px] text-muted-foreground">
-          {vis.verMetaPadrao
-            ? "Escala em % da meta padrão da categoria · linha tracejada = meta padrão"
-            : "Performance em % de atingimento · meta em % do total do cliente"}
+          Clique em um portfólio para editar a meta
         </p>
       </div>
-      <div className="h-[320px] w-full">
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} barGap={4} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+          <BarChart
+            data={chartData}
+            margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+            onClick={(e) => selectByLabel(e?.activeLabel)}
+          >
+            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11 }}
               interval={0}
               tickLine={false}
               axisLine={false}
+              tick={(props) => {
+                const { x, y, payload } = props as {
+                  x: number;
+                  y: number;
+                  payload: { value: string };
+                };
+                const isSel = data.find((d) => d.label === payload.value)?.familia === selected;
+                return (
+                  <text
+                    x={x}
+                    y={y + 12}
+                    textAnchor="middle"
+                    fontSize={11}
+                    fontWeight={isSel ? 700 : 400}
+                    className={isSel ? "fill-foreground" : "fill-muted-foreground"}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => selectByLabel(payload.value)}
+                  >
+                    {payload.value}
+                  </text>
+                );
+              }}
             />
             <YAxis
               domain={[0, yMax]}
@@ -71,40 +97,24 @@ export function MetasComparativoChart({
               axisLine={false}
             />
             <Tooltip
-              cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+              cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
               content={<ComparativoTooltip vis={vis} />}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            {vis.verMetaPadrao && (
-              <ReferenceLine
-                y={100}
-                stroke="currentColor"
-                strokeDasharray="4 4"
-                className="text-muted-foreground"
-                label={{ value: "Meta padrão", position: "insideTopRight", fontSize: 10 }}
-              />
-            )}
-            <Bar dataKey="perf" name="Performance atual" radius={[4, 4, 0, 0]} maxBarSize={36}>
+            <Bar dataKey="perf" radius={[4, 4, 0, 0]} maxBarSize={56} style={{ cursor: "pointer" }}>
               {chartData.map((d) => {
-                const st = statusFromRatio(
-                  d.performancePct == null ? null : d.performancePct / 100,
-                );
+                const st = statusOf(d.performancePct);
+                const isSel = d.familia === selected;
                 return (
                   <Cell
                     key={d.familia}
                     fill={st ? `#${FAROL_HEX[st]}` : "transparent"}
-                    stroke={st ? "rgba(0,0,0,0.15)" : "transparent"}
+                    fillOpacity={isSel ? 1 : 0.55}
+                    stroke={isSel ? "hsl(var(--foreground))" : "transparent"}
+                    strokeWidth={isSel ? 1.5 : 0}
                   />
                 );
               })}
             </Bar>
-            <Bar
-              dataKey="meta"
-              name={metaName}
-              fill={META_COLOR}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={36}
-            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -123,34 +133,31 @@ function ComparativoTooltip({
 }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const st = statusFromRatio(d.performancePct == null ? null : d.performancePct / 100);
+  const st = statusOf(d.performancePct);
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md space-y-1.5">
-      <p className="font-semibold">{d.label}</p>
-      <div>
-        <p className="text-muted-foreground">Performance atual</p>
-        <p className="font-medium tabular-nums">
-          {d.performancePct == null ? "Sem informação" : fmtPoints(d.performancePct)}
-          {st ? ` · ${FAROL_LABEL[st]}` : ""}
-        </p>
-        {d.performanceValor != null && (
-          <p className="text-muted-foreground tabular-nums">
-            ≈ {fmtBRL(d.performanceValor)} (estimado sobre a meta padrão)
-          </p>
-        )}
-      </div>
-      <div>
-        <p className="text-muted-foreground">Meta oficial</p>
-        <p className="font-medium tabular-nums">
-          {fmtPoints(d.metaPct)} {vis.verMetaPadrao ? "da meta padrão" : "do total"}
-        </p>
-        <p className="text-muted-foreground tabular-nums">{fmtBRL(d.metaValor)} / mês</p>
-      </div>
+    <div className="min-w-[200px] rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
+      <p className="mb-1.5 font-semibold">{d.label}</p>
+      <Row label="Performance atual">
+        {d.performancePct == null ? "Sem informação" : fmtPoints(d.performancePct)}
+        {st ? <span className="text-muted-foreground"> · {FAROL_LABEL[st]}</span> : null}
+      </Row>
+      <Row label="Meta oficial (% do total)">{fmtPoints(d.metaPct)}</Row>
+      <Row label="Meta oficial (R$)">{fmtBRL(d.metaValor)}</Row>
       {vis.verMetaPadrao && (
-        <p className="border-t border-border pt-1 text-muted-foreground tabular-nums">
-          Meta padrão: {fmtBRL(d.referenciaValor)}
-        </p>
+        <div className="mt-1 border-t border-border pt-1 text-muted-foreground">
+          <Row label="Meta padrão (% do total)">{fmtPoints(d.referenciaPct)}</Row>
+          <Row label="Meta padrão (R$)">{fmtBRL(d.referenciaValor)}</Row>
+        </div>
       )}
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-0.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums">{children}</span>
     </div>
   );
 }
