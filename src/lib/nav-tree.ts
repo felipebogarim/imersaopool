@@ -42,7 +42,6 @@ export const NAV_TREE: NavGroup[] = [
     label: "Imersões",
     children: [
       { key: "inputs.imersoes", label: "Imersões em Campo", to: "/imersoes" },
-      { key: "analises.visao-rep-2", label: "Visão Reps", to: "/visao-rep-2" },
       { key: "analises.visao-imersao-2", label: "Visão Imersões em Campo", to: "/visao-imersao-2" },
       {
         key: "analises.relatorios-executivos",
@@ -50,8 +49,9 @@ export const NAV_TREE: NavGroup[] = [
         to: "/relatorios-executivos",
       },
       { key: "analises.relatorio-geral", label: "Relatório Geral", to: "/relatorio-geral" },
-      { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
       { key: "analises.estrutura-rep", label: "Estrutura Rep", to: "/estrutura-rep" },
+      { key: "analises.visao-rep-2", label: "Visão Reps", to: "/visao-rep-2" },
+      { key: "analises.sintese-tipos", label: "Visões Consolidadas", to: "/sintese/tipos" },
     ],
   },
   {
