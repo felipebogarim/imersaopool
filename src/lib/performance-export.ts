@@ -284,15 +284,23 @@ export function exportAllPerformanceXlsx(opts: {
     totals: { perFamilia: Record<string, number>; grand: number };
   }>;
 }) {
+  // Caracteres proibidos em nomes de aba do Excel: \ / ? * [ ] :
+  const sanitizeSheetName = (s: string) =>
+    s
+      .replace(/[\\/?*[\]:]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
+
   const wb = XLSXStyle.utils.book_new();
   const usedNames = new Set<string>();
   for (const rep of opts.reps) {
     const ws = buildPerformanceSheet({ ...rep, periodo: rep.periodo ?? opts.periodo });
-    let name = rep.representante.slice(0, 31);
+    let base = sanitizeSheetName(rep.representante).slice(0, 31) || "Rep";
+    let name = base;
     if (usedNames.has(name)) {
       let i = 2;
-      while (usedNames.has(`${rep.representante.slice(0, 28)} (${i})`)) i++;
-      name = `${rep.representante.slice(0, 28)} (${i})`;
+      while (usedNames.has(`${base.slice(0, 28)} (${i})`)) i++;
+      name = `${base.slice(0, 28)} (${i})`;
     }
     usedNames.add(name);
     XLSXStyle.utils.book_append_sheet(wb, ws, name);
