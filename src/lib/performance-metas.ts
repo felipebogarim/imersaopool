@@ -1,5 +1,5 @@
 // ============================================================================
-// PERFORMANCE → METAS (Etapa 1: estrutura visual + simulação local)
+// PERFORMANCE → METAS (simulação local)
 //
 // Módulo ISOLADO dos cálculos oficiais de Performance. Nada aqui grava no banco,
 // altera metas vigentes, faróis ou o motor do BI. Todo valor editado vive apenas
@@ -18,7 +18,7 @@ import {
 
 export const METAS_FAMILIES: readonly CanonicalFamily[] = CANONICAL_FAMILIES;
 
-/** Rótulos de exibição das sete famílias. */
+/** Rótulos de exibição dos sete portfólios. */
 export const METAS_FAMILY_LABEL: Record<CanonicalFamily, string> = {
   "DECOR NEWLINE": "Decor Newline",
   "DECOR STUDIO": "Decor Studio",
@@ -39,15 +39,15 @@ export const METAS_FAMILY_LABEL: Record<CanonicalFamily, string> = {
 export type MetasViewerRole = "gestor" | "representante";
 
 export type MetasVisibility = {
-  /** Vê a meta padrão da categoria e a variação contra ela. */
+  /** Vê a meta padrão da categoria e a diferença contra ela. */
   verMetaPadrao: boolean;
-  /** Vê os valores e a justificativa da sugestão interna da IA. */
+  /** Vê valores, justificativa e origem da sugestão interna da IA. */
   verSugestaoIa: boolean;
-  /** Edita a meta oficial (gestor) e a justificativa. */
+  /** Edita a meta oficial e vê o comentário do gestor. */
   editarMetaOficial: boolean;
   /** Edita a própria sugestão de representante. */
   editarSugestaoRep: boolean;
-  /** Pode acionar Sugestão IA / Restaurar padrão / Revisar vínculo. */
+  /** Pode acionar Sugestão IA / Restaurar padrão / Convite / Revisar vínculo. */
   usarControlesGestao: boolean;
 };
 
@@ -77,12 +77,30 @@ export function viewerRoleFromRoles(roles: readonly string[]): MetasViewerRole {
 
 // ============================== Rascunho local ===============================
 
-export type AiSuggestionOrigin = "simulacao_local";
+/** Base da sugestão da IA. */
+export type AiSuggestionTag = "imersao" | "tendencia";
+
+export const AI_TAG_LABEL: Record<AiSuggestionTag, string> = {
+  imersao: "Imersão",
+  tendencia: "Tendência",
+};
 
 export type AiSuggestion = {
   valor: number;
   justificativa: string;
-  origem: AiSuggestionOrigin;
+  tag: AiSuggestionTag;
+  /** Nesta etapa toda sugestão é demonstrativa. */
+  simulada: true;
+};
+
+/** De onde veio o valor atual da meta oficial. */
+export type MetaOrigem = "padrao" | "ia" | "representante" | "gestor";
+
+export const META_ORIGEM_LABEL: Record<MetaOrigem, string> = {
+  padrao: "Padrão",
+  ia: "IA",
+  representante: "Representante",
+  gestor: "Gestor",
 };
 
 export type FamilyMetaDraft = {
@@ -91,17 +109,14 @@ export type FamilyMetaDraft = {
   referencia: number | null;
   sugestaoIa: AiSuggestion | null;
   sugestaoRep: number | null;
-  comentarioRep: string;
-  /** Meta mensal definida pelo gestor (R$). */
-  metaGestor: number | null;
-  justificativaGestor: string;
+  justificativaRep: string;
+  /** Meta mensal oficial definida pelo gestor (R$). */
+  metaOficial: number | null;
+  comentarioGestor: string;
+  origem: MetaOrigem;
 };
 
-export const AI_ORIGIN_LABEL: Record<AiSuggestionOrigin, string> = {
-  simulacao_local: "Simulação local — nenhum modelo de IA foi consultado",
-};
-
-/** Rascunho inicial: meta do gestor parte da referência padrão da categoria. */
+/** Rascunho inicial: meta oficial parte da referência padrão da categoria. */
 export function buildInitialDrafts(categoria: unknown): FamilyMetaDraft[] {
   return METAS_FAMILIES.map((familia) => {
     const referencia = getPerformancePortfolioTarget(categoria, familia);
@@ -110,35 +125,96 @@ export function buildInitialDrafts(categoria: unknown): FamilyMetaDraft[] {
       referencia,
       sugestaoIa: null,
       sugestaoRep: null,
-      comentarioRep: "",
-      metaGestor: referencia,
-      justificativaGestor: "",
+      justificativaRep: "",
+      metaOficial: referencia,
+      comentarioGestor: "",
+      origem: "padrao",
     };
   });
 }
 
-/** Volta a meta do gestor à distribuição padrão; preserva sugestões do representante. */
-export function restoreDefaultDrafts(drafts: FamilyMetaDraft[]): FamilyMetaDraft[] {
-  return drafts.map((d) => ({ ...d, metaGestor: d.referencia, justificativaGestor: "" }));
-}
+// ------------------------------- Ações ---------------------------------------
+
+/** Padrão FIXO e fictício só para demonstrar a interface (não é recomendação). */
+const DEMO_FACTORS = [1.1, 0.95, 1.05, 0.9, 1, 1.15, 0.95];
+const DEMO_TAGS: AiSuggestionTag[] = [
+  "tendencia",
+  "imersao",
+  "tendencia",
+  "imersao",
+  "tendencia",
+  "imersao",
+  "tendencia",
+];
+
+const roundTo50 = (v: number) => Math.round(v / 50) * 50;
 
 /**
- * Sugestão IA DEMONSTRATIVA. Não gera recomendação: replica a referência padrão
- * e identifica explicitamente a origem como simulação.
+ * Sugestão IA DEMONSTRATIVA. Os valores são fictícios (variação fixa sobre a
+ * referência) e servem só para visualizar a interface — nenhum modelo é consultado.
  */
 export function simulateAiSuggestions(drafts: FamilyMetaDraft[]): FamilyMetaDraft[] {
-  return drafts.map((d) => ({
+  return drafts.map((d, i) => ({
     ...d,
     sugestaoIa:
       d.referencia == null
         ? null
         : {
-            valor: d.referencia,
+            valor: roundTo50(d.referencia * DEMO_FACTORS[i % DEMO_FACTORS.length]),
             justificativa:
-              "Valor demonstrativo igual à referência da categoria. A sugestão real da IA será conectada em etapa futura.",
-            origem: "simulacao_local",
+              "Valor fictício de demonstração. A sugestão real da IA será conectada em etapa futura.",
+            tag: DEMO_TAGS[i % DEMO_TAGS.length],
+            simulada: true,
           },
   }));
+}
+
+const mapFamily = (
+  drafts: FamilyMetaDraft[],
+  familia: CanonicalFamily | null,
+  fn: (d: FamilyMetaDraft) => FamilyMetaDraft,
+) => drafts.map((d) => (familia == null || d.familia === familia ? fn(d) : d));
+
+/** Volta a meta oficial à referência (um portfólio ou todos). Preserva sugestões. */
+export function restoreDefault(
+  drafts: FamilyMetaDraft[],
+  familia: CanonicalFamily | null = null,
+): FamilyMetaDraft[] {
+  return mapFamily(drafts, familia, (d) => ({
+    ...d,
+    metaOficial: d.referencia,
+    comentarioGestor: "",
+    origem: "padrao",
+  }));
+}
+
+/** Usa a sugestão da IA como meta oficial (onde houver sugestão). */
+export function applyAiSuggestion(
+  drafts: FamilyMetaDraft[],
+  familia: CanonicalFamily | null = null,
+): FamilyMetaDraft[] {
+  return mapFamily(drafts, familia, (d) =>
+    d.sugestaoIa ? { ...d, metaOficial: d.sugestaoIa.valor, origem: "ia" } : d,
+  );
+}
+
+/** Copia a sugestão do representante para a meta oficial (onde houver sugestão). */
+export function copyRepSuggestion(
+  drafts: FamilyMetaDraft[],
+  familia: CanonicalFamily | null = null,
+): FamilyMetaDraft[] {
+  return mapFamily(drafts, familia, (d) =>
+    d.sugestaoRep != null ? { ...d, metaOficial: d.sugestaoRep, origem: "representante" } : d,
+  );
+}
+
+/** Edição manual da meta oficial pelo gestor. */
+export function setMetaOficial(
+  drafts: FamilyMetaDraft[],
+  familia: CanonicalFamily,
+  valor: number | null,
+): FamilyMetaDraft[] {
+  return mapFamily(drafts, familia, (d) => ({ ...d, metaOficial: valor, origem: "gestor" }));
 }
 
 // ============================== Entrada numérica =============================
@@ -162,33 +238,48 @@ export function parseMetaInput(input: string): number | null {
 
 // ================================ Resumo =====================================
 
+export type SimulationStatus = {
+  /** Origem única dos sete portfólios, ou "misto". */
+  origem: MetaOrigem | "misto";
+  contagem: Record<MetaOrigem, number>;
+};
+
 export type MetasSummary = {
-  /** Soma das metas do gestor nas sete famílias. */
+  /** Soma das metas oficiais nos sete portfólios. */
   total: number;
   /** Soma da referência padrão (null se a categoria não tiver referência). */
   referenciaTotal: number | null;
-  variacaoAbs: number | null;
+  diferencaAbs: number | null;
   /** (total − referência) / referência. */
-  variacaoPct: number | null;
-  /** Participação de cada família no total (soma 1). `null` quando total ≤ 0. */
+  diferencaPct: number | null;
+  /** Participação de cada portfólio no total (soma 1). `null` quando total ≤ 0. */
   composicao: Record<CanonicalFamily, number> | null;
-  familiasComMeta: number;
+  /** Portfólios com meta oficial positiva. */
+  portfoliosComMeta: number;
+  status: SimulationStatus;
 };
 
+export function simulationStatus(drafts: FamilyMetaDraft[]): SimulationStatus {
+  const contagem: Record<MetaOrigem, number> = { padrao: 0, ia: 0, representante: 0, gestor: 0 };
+  for (const d of drafts) contagem[d.origem] += 1;
+  const usadas = (Object.keys(contagem) as MetaOrigem[]).filter((k) => contagem[k] > 0);
+  return { origem: usadas.length === 1 ? usadas[0] : "misto", contagem };
+}
+
 export function summarizeDrafts(drafts: FamilyMetaDraft[]): MetasSummary {
-  const total = drafts.reduce((s, d) => s + (d.metaGestor ?? 0), 0);
+  const total = drafts.reduce((s, d) => s + (d.metaOficial ?? 0), 0);
   const refs = drafts.map((d) => d.referencia);
   const referenciaTotal = refs.some((r) => r == null)
     ? null
     : refs.reduce<number>((s, r) => s + (r as number), 0);
-  const variacaoAbs = referenciaTotal == null ? null : total - referenciaTotal;
-  const variacaoPct =
+  const diferencaAbs = referenciaTotal == null ? null : total - referenciaTotal;
+  const diferencaPct =
     referenciaTotal == null || referenciaTotal <= 0
       ? null
       : (total - referenciaTotal) / referenciaTotal;
   const composicao =
     total > 0
-      ? (Object.fromEntries(drafts.map((d) => [d.familia, (d.metaGestor ?? 0) / total])) as Record<
+      ? (Object.fromEntries(drafts.map((d) => [d.familia, (d.metaOficial ?? 0) / total])) as Record<
           CanonicalFamily,
           number
         >)
@@ -196,10 +287,11 @@ export function summarizeDrafts(drafts: FamilyMetaDraft[]): MetasSummary {
   return {
     total,
     referenciaTotal,
-    variacaoAbs,
-    variacaoPct,
+    diferencaAbs,
+    diferencaPct,
     composicao,
-    familiasComMeta: drafts.filter((d) => (d.metaGestor ?? 0) > 0).length,
+    portfoliosComMeta: drafts.filter((d) => (d.metaOficial ?? 0) > 0).length,
+    status: simulationStatus(drafts),
   };
 }
 
@@ -230,6 +322,56 @@ export function displayPercents(
   return Object.fromEntries(scaled.map((e) => [e.k, e.floor / factor]));
 }
 
+// ============================ Comparativo visual =============================
+
+/**
+ * Ponto do gráfico comparativo de um portfólio, em percentual.
+ *
+ * Visão gestor (escala = % da meta padrão, a mesma base do atingimento oficial):
+ *   performance = atingimento atual;  meta = meta oficial ÷ meta padrão;
+ *   marcador da meta padrão = 100%.
+ * Visão representante (sem meta padrão, para não revelá-la):
+ *   performance = atingimento atual;  meta = participação no total do cliente.
+ */
+export type ComparativoPoint = {
+  familia: CanonicalFamily;
+  label: string;
+  performancePct: number | null;
+  metaPct: number | null;
+  /** R$ estimado da performance (atingimento × referência). Só visão gestor. */
+  performanceValor: number | null;
+  metaValor: number | null;
+  referenciaValor: number | null;
+};
+
+export function buildComparativo(
+  drafts: FamilyMetaDraft[],
+  atingimento: Record<string, number | null>,
+  vis: MetasVisibility,
+): ComparativoPoint[] {
+  const total = drafts.reduce((s, d) => s + (d.metaOficial ?? 0), 0);
+  return drafts.map((d) => {
+    const ratio = atingimento[d.familia] ?? null;
+    const meta = d.metaOficial ?? 0;
+    let metaPct: number | null = null;
+    if (vis.verMetaPadrao) {
+      if (d.referencia && d.referencia > 0) metaPct = (meta / d.referencia) * 100;
+    } else if (total > 0) {
+      metaPct = (meta / total) * 100;
+    }
+    return {
+      familia: d.familia,
+      label: METAS_FAMILY_LABEL[d.familia],
+      performancePct: ratio == null ? null : ratio * 100,
+      metaPct,
+      performanceValor:
+        vis.verMetaPadrao && ratio != null && d.referencia != null ? ratio * d.referencia : null,
+      metaValor: d.metaOficial,
+      referenciaValor: vis.verMetaPadrao ? d.referencia : null,
+    };
+  });
+}
+
 export function categoryLabel(categoria: unknown): PortfolioCategory | null {
   return normalizePortfolioCategory(categoria);
 }
@@ -244,7 +386,14 @@ const BRL = new Intl.NumberFormat("pt-BR", {
 
 export const fmtBRL = (v: number | null | undefined) => (v == null ? "—" : BRL.format(v));
 
+export const fmtSignedBRL = (v: number | null | undefined) =>
+  v == null ? "—" : `${v > 0 ? "+" : ""}${BRL.format(v)}`;
+
 export const fmtPct = (ratio: number | null | undefined, decimals = 1) =>
   ratio == null || Number.isNaN(ratio)
     ? "—"
     : `${(ratio * 100).toFixed(decimals).replace(".", ",")}%`;
+
+/** Formata um valor já em pontos percentuais (ex.: 62.5 → "62,5%"). */
+export const fmtPoints = (pct: number | null | undefined, decimals = 1) =>
+  pct == null || Number.isNaN(pct) ? "—" : `${pct.toFixed(decimals).replace(".", ",")}%`;

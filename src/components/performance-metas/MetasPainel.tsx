@@ -1,28 +1,40 @@
-// Painel individual de metas do cliente (Etapa 1: simulação local).
+// Painel individual de metas do cliente (simulação local).
+// Três partes: dashboard fixo no topo → gráfico comparativo → cards de edição.
 // Nenhum valor é persistido; recarregar a página descarta a simulação.
 
 import { useMemo, useState } from "react";
-import { FlaskConical, Link2, RotateCcw, Sparkles } from "lucide-react";
+import { FlaskConical, Link2, Mail, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { FAROL_CELL_CLASS, FAROL_LABEL, statusFromRatio } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
+import { type CanonicalFamily } from "@/lib/client-bi-familias";
 import {
+  META_ORIGEM_LABEL,
   METAS_FAMILIES,
   METAS_FAMILY_LABEL,
+  applyAiSuggestion,
+  buildComparativo,
   buildInitialDrafts,
+  copyRepSuggestion,
   displayPercents,
   fmtBRL,
   fmtPct,
+  fmtSignedBRL,
   metasVisibility,
-  restoreDefaultDrafts,
+  restoreDefault,
+  setMetaOficial,
   simulateAiSuggestions,
   summarizeDrafts,
   type FamilyMetaDraft,
+  type MetaOrigem,
   type MetasViewerRole,
 } from "@/lib/performance-metas";
 import { FamiliaMetaCard } from "./FamiliaMetaCard";
+import { MetasComparativoChart } from "./MetasComparativoChart";
+import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 
 const FAMILY_SWATCH = [
@@ -34,6 +46,14 @@ const FAMILY_SWATCH = [
   "bg-rose-500",
   "bg-teal-500",
 ];
+
+const STATUS_CLASS: Record<MetaOrigem | "misto", string> = {
+  padrao: "bg-muted text-foreground",
+  ia: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  representante: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  gestor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  misto: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+};
 
 export type MetasClienteInfo = {
   razaoSocial: string;
@@ -48,33 +68,188 @@ export type MetasClienteInfo = {
 export function MetasPainel({
   cliente,
   role,
+  canPreview,
+  previewRep,
+  onPreviewChange,
 }: {
   cliente: MetasClienteInfo;
   role: MetasViewerRole;
+  canPreview: boolean;
+  previewRep: boolean;
+  onPreviewChange: (v: boolean) => void;
 }) {
   const vis = metasVisibility(role);
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(() =>
     buildInitialDrafts(cliente.categoria),
   );
   const [vinculoOpen, setVinculoOpen] = useState(false);
+  const [conviteOpen, setConviteOpen] = useState(false);
 
+  const atingimento = useMemo(
+    () =>
+      Object.fromEntries(
+        METAS_FAMILIES.map((f) => [f, sanitizeRatio(cliente.familiaPct[f])]),
+      ) as Record<string, number | null>,
+    [cliente.familiaPct],
+  );
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
+  const comparativo = useMemo(
+    () => buildComparativo(drafts, atingimento, vis),
+    [drafts, atingimento, vis],
+  );
+  const scaleMax = Math.max(
+    120,
+    ...comparativo.map((p) => Math.max(p.performancePct ?? 0, p.metaPct ?? 0)),
+  );
   const semReferencia = drafts.every((d) => d.referencia == null);
+  const totalRatio = sanitizeRatio(cliente.totalPct);
+  const totalStatus = statusFromRatio(totalRatio);
 
-  const update = (familia: string, patch: Partial<FamilyMetaDraft>) =>
-    setDrafts((prev) => prev.map((d) => (d.familia === familia ? { ...d, ...patch } : d)));
-
-  const totalStatus = statusFromRatio(sanitizeRatio(cliente.totalPct));
+  const patch = (familia: CanonicalFamily, p: Partial<FamilyMetaDraft>) =>
+    setDrafts((prev) => prev.map((d) => (d.familia === familia ? { ...d, ...p } : d)));
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
-        <FlaskConical className="h-4 w-4 shrink-0" />
-        <span>
-          <strong>Simulação local.</strong> Os valores editados não são salvos e não alteram as
-          metas oficiais, os faróis nem o BI de Performance.
-        </span>
+      {/* ================= 1. Dashboard fixo ================= */}
+      <div className="sticky top-0 z-30 -mx-3 space-y-3 border-b border-border bg-background/95 px-3 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex flex-wrap items-center gap-2">
+          {vis.usarControlesGestao && (
+            <>
+              <Button size="sm" onClick={() => setDrafts(simulateAiSuggestions)}>
+                <Sparkles className="mr-1.5 h-4 w-4" /> Sugestão IA
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setDrafts((d) => restoreDefault(d))}
+              >
+                <RotateCcw className="mr-1.5 h-4 w-4" /> Restaurar padrão
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConviteOpen(true)}>
+                <Mail className="mr-1.5 h-4 w-4" /> Convidar representante
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => setVinculoOpen(true)}
+              >
+                <Link2 className="mr-1.5 h-4 w-4" /> Revisar vínculo
+              </Button>
+            </>
+          )}
+          <div className="ml-auto flex items-center gap-3">
+            <span className="hidden items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 sm:flex">
+              <FlaskConical className="h-3.5 w-3.5" /> Simulação local · nada é salvo
+            </span>
+            {canPreview && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Switch checked={previewRep} onCheckedChange={onPreviewChange} />
+                Ver como representante
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "grid gap-2 sm:grid-cols-2",
+            vis.verMetaPadrao ? "lg:grid-cols-5" : "lg:grid-cols-3",
+          )}
+        >
+          <Tile label="Meta mensal personalizada">
+            <p className="text-2xl font-semibold tabular-nums">{fmtBRL(summary.total)}</p>
+            <p className="text-[10px] text-muted-foreground">Soma dos 7 portfólios</p>
+          </Tile>
+
+          {vis.verMetaPadrao && (
+            <Tile label="Meta padrão" muted>
+              <p className="text-base font-medium tabular-nums text-muted-foreground">
+                {fmtBRL(summary.referenciaTotal)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Categoria {cliente.categoria ?? "—"}
+              </p>
+            </Tile>
+          )}
+
+          {vis.verMetaPadrao && (
+            <Tile label="Diferença">
+              <p
+                className={cn(
+                  "text-xl font-semibold tabular-nums",
+                  (summary.diferencaAbs ?? 0) > 0 && "text-emerald-600 dark:text-emerald-400",
+                  (summary.diferencaAbs ?? 0) < 0 && "text-red-600 dark:text-red-400",
+                )}
+              >
+                {fmtSignedBRL(summary.diferencaAbs)}
+              </p>
+              <p className="text-[10px] text-muted-foreground tabular-nums">
+                {summary.diferencaPct == null
+                  ? "Sem referência"
+                  : `${summary.diferencaPct > 0 ? "+" : ""}${fmtPct(summary.diferencaPct)} vs. padrão`}
+              </p>
+            </Tile>
+          )}
+
+          <Tile label="Distribuição entre portfólios">
+            {percents ? (
+              <>
+                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  {METAS_FAMILIES.map((f, i) => (
+                    <div
+                      key={f}
+                      className={FAMILY_SWATCH[i]}
+                      style={{ width: `${percents[f] ?? 0}%` }}
+                      title={`${METAS_FAMILY_LABEL[f]}: ${String(percents[f]).replace(".", ",")}%`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  100% distribuído · {summary.portfoliosComMeta}/7 com meta
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem meta positiva</p>
+            )}
+          </Tile>
+
+          {vis.verMetaPadrao ? (
+            <Tile label="Status da simulação">
+              <span
+                className={cn(
+                  "inline-flex rounded-md px-2 py-0.5 text-sm font-semibold",
+                  STATUS_CLASS[summary.status.origem],
+                )}
+              >
+                {summary.status.origem === "misto"
+                  ? "Misto"
+                  : META_ORIGEM_LABEL[summary.status.origem]}
+              </span>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {(Object.keys(summary.status.contagem) as MetaOrigem[])
+                  .filter((k) => summary.status.contagem[k] > 0)
+                  .map((k) => `${META_ORIGEM_LABEL[k]} ${summary.status.contagem[k]}`)
+                  .join(" · ")}
+              </p>
+            </Tile>
+          ) : (
+            <Tile label="Atingimento atual">
+              <span
+                className={cn(
+                  "inline-flex rounded-md px-2 py-0.5 text-xl font-semibold tabular-nums",
+                  totalStatus && FAROL_CELL_CLASS[totalStatus],
+                )}
+              >
+                {fmtPct(totalRatio)}
+              </span>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {cliente.periodoLabel ?? "Versão mais recente"}
+              </p>
+            </Tile>
+          )}
+        </div>
       </div>
 
       {semReferencia && (
@@ -84,119 +259,35 @@ export function MetasPainel({
         </div>
       )}
 
-      {/* Dashboard */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Meta mensal personalizada" hint="Soma das sete famílias">
-          <p className="text-2xl font-semibold tabular-nums">{fmtBRL(summary.total)}</p>
-          {vis.verMetaPadrao && (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Referência da categoria: {fmtBRL(summary.referenciaTotal)}
-            </p>
-          )}
-        </KpiCard>
+      {/* ================= 2. Gráfico principal ================= */}
+      <MetasComparativoChart data={comparativo} vis={vis} />
 
-        {vis.verMetaPadrao ? (
-          <KpiCard label="Variação vs. referência" hint="Meta personalizada ÷ referência − 1">
-            <p
-              className={cn(
-                "text-2xl font-semibold tabular-nums",
-                summary.variacaoAbs == null || summary.variacaoAbs === 0
-                  ? ""
-                  : summary.variacaoAbs > 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-red-600 dark:text-red-400",
-              )}
-            >
-              {summary.variacaoPct == null
-                ? "—"
-                : `${summary.variacaoPct > 0 ? "+" : ""}${fmtPct(summary.variacaoPct)}`}
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-              {summary.variacaoAbs == null
-                ? "Sem referência"
-                : `${summary.variacaoAbs > 0 ? "+" : ""}${fmtBRL(summary.variacaoAbs)} no mês`}
-            </p>
-          </KpiCard>
-        ) : (
-          <KpiCard label="Famílias com meta" hint="Famílias com meta mensal positiva">
-            <p className="text-2xl font-semibold tabular-nums">{summary.familiasComMeta} / 7</p>
-          </KpiCard>
-        )}
-
-        <KpiCard label="Atingimento atual" hint={cliente.periodoLabel ?? "Versão mais recente"}>
-          <span
-            className={cn(
-              "inline-flex rounded-md px-2 py-0.5 text-2xl font-semibold tabular-nums",
-              totalStatus && FAROL_CELL_CLASS[totalStatus],
-            )}
-          >
-            {fmtPct(sanitizeRatio(cliente.totalPct))}
-          </span>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            {totalStatus ? FAROL_LABEL[totalStatus] : "Sem informação"}
-          </p>
-        </KpiCard>
-
-        <KpiCard label="Composição da meta" hint="Participação de cada família (soma 100%)">
-          {percents ? (
-            <>
-              <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
-                {METAS_FAMILIES.map((f, i) => (
-                  <div
-                    key={f}
-                    className={FAMILY_SWATCH[i]}
-                    style={{ width: `${percents[f] ?? 0}%` }}
-                    title={`${METAS_FAMILY_LABEL[f]}: ${percents[f]}%`}
-                  />
-                ))}
-              </div>
-              <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-                {METAS_FAMILIES.map((f, i) => (
-                  <li key={f} className="flex items-center gap-1 truncate">
-                    <span className={cn("h-2 w-2 shrink-0 rounded-sm", FAMILY_SWATCH[i])} />
-                    <span className="truncate">{METAS_FAMILY_LABEL[f]}</span>
-                    <span className="ml-auto tabular-nums">
-                      {String(percents[f] ?? 0).replace(".", ",")}%
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">Sem meta positiva.</p>
-          )}
-        </KpiCard>
-      </div>
-
-      {/* Controles */}
-      {vis.usarControlesGestao && (
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDrafts(simulateAiSuggestions)}>
-            <Sparkles className="mr-1.5 h-4 w-4" /> Sugestão IA
-            <Badge variant="secondary" className="ml-2 text-[9px] uppercase">
-              Simulação
-            </Badge>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setDrafts(restoreDefaultDrafts)}>
-            <RotateCcw className="mr-1.5 h-4 w-4" /> Restaurar padrão
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setVinculoOpen(true)}>
-            <Link2 className="mr-1.5 h-4 w-4" /> Revisar vínculo
-          </Button>
+      {/* ================= 3. Edição por portfólio ================= */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Edição por portfólio</h2>
+          <Badge variant="secondary" className="text-[9px] uppercase">
+            Simulação
+          </Badge>
         </div>
-      )}
-
-      {/* Matriz das sete famílias */}
-      <div className="grid gap-3 lg:grid-cols-2">
         {drafts.map((d, i) => (
           <FamiliaMetaCard
             key={d.familia}
             draft={d}
+            point={comparativo[i]}
+            atingimento={atingimento[d.familia]}
+            scaleMax={scaleMax}
             swatch={FAMILY_SWATCH[i]}
             vis={vis}
-            atingimento={sanitizeRatio(cliente.familiaPct[d.familia])}
-            share={percents?.[d.familia] ?? null}
-            onChange={(patch) => update(d.familia, patch)}
+            actions={{
+              setMetaOficial: (v) => setDrafts((prev) => setMetaOficial(prev, d.familia, v)),
+              setComentarioGestor: (t) => patch(d.familia, { comentarioGestor: t }),
+              setSugestaoRep: (v) => patch(d.familia, { sugestaoRep: v }),
+              setJustificativaRep: (t) => patch(d.familia, { justificativaRep: t }),
+              usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, d.familia)),
+              restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, d.familia)),
+              copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, d.familia)),
+            }}
           />
         ))}
       </div>
@@ -209,26 +300,36 @@ export function MetasPainel({
         repId={cliente.repId}
         repName={cliente.repName}
       />
+      <ConviteRepresentanteDialog
+        open={conviteOpen}
+        onOpenChange={setConviteOpen}
+        repName={cliente.repName}
+        clienteNome={cliente.razaoSocial}
+      />
     </div>
   );
 }
 
-function KpiCard({
+function Tile({
   label,
-  hint,
+  muted,
   children,
 }: {
   label: string;
-  hint?: string;
+  muted?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+    <div
+      className={cn(
+        "rounded-lg border border-border px-3 py-2",
+        muted ? "bg-muted/30" : "bg-card shadow-sm",
+      )}
+    >
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <div className="mt-2">{children}</div>
-      {hint && <p className="mt-2 text-[10px] text-muted-foreground/80">{hint}</p>}
+      <div className="mt-1">{children}</div>
     </div>
   );
 }

@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyAiSuggestion,
+  buildComparativo,
   buildInitialDrafts,
+  copyRepSuggestion,
   displayPercents,
   metasVisibility,
   parseMetaInput,
-  restoreDefaultDrafts,
+  restoreDefault,
+  setMetaOficial,
   simulateAiSuggestions,
   summarizeDrafts,
   viewerRoleFromRoles,
@@ -14,33 +18,38 @@ import {
 // Valores sintéticos: nenhum dado financeiro real de cliente.
 const withMetas = (values: Array<number | null>, referencia: number | null = 100) =>
   buildInitialDrafts("Gold").map(
-    (d, i): FamilyMetaDraft => ({ ...d, referencia, metaGestor: values[i] ?? null }),
+    (d, i): FamilyMetaDraft => ({ ...d, referencia, metaOficial: values[i] ?? null }),
   );
 
+const gestor = metasVisibility("gestor");
+const rep = metasVisibility("representante");
+
 describe("performance-metas (simulação local)", () => {
-  it("rascunho inicial parte da referência da categoria nas sete famílias", () => {
+  it("rascunho inicial parte da referência da categoria nos sete portfólios", () => {
     const drafts = buildInitialDrafts("gold");
     expect(drafts).toHaveLength(7);
-    expect(drafts.every((d) => d.metaGestor === d.referencia && d.referencia != null)).toBe(true);
-    expect(summarizeDrafts(drafts).variacaoAbs).toBe(0);
+    expect(drafts.every((d) => d.metaOficial === d.referencia && d.referencia != null)).toBe(true);
+    const s = summarizeDrafts(drafts);
+    expect(s.diferencaAbs).toBe(0);
+    expect(s.status.origem).toBe("padrao");
   });
 
   it("categoria desconhecida não presume referência", () => {
     const drafts = buildInitialDrafts("Bronze");
-    expect(drafts.every((d) => d.referencia == null && d.metaGestor == null)).toBe(true);
+    expect(drafts.every((d) => d.referencia == null && d.metaOficial == null)).toBe(true);
     const s = summarizeDrafts(drafts);
     expect(s.total).toBe(0);
     expect(s.referenciaTotal).toBeNull();
-    expect(s.variacaoPct).toBeNull();
+    expect(s.diferencaPct).toBeNull();
     expect(s.composicao).toBeNull();
   });
 
-  it("total é a soma das famílias e a variação é relativa à referência", () => {
+  it("total é a soma dos portfólios e a diferença é relativa à referência", () => {
     const s = summarizeDrafts(withMetas([100, 100, 100, 100, 100, 100, 160]));
     expect(s.total).toBe(760);
     expect(s.referenciaTotal).toBe(700);
-    expect(s.variacaoAbs).toBe(60);
-    expect(s.variacaoPct).toBeCloseTo(60 / 700, 10);
+    expect(s.diferencaAbs).toBe(60);
+    expect(s.diferencaPct).toBeCloseTo(60 / 700, 10);
   });
 
   it("composição soma 100% quando o total é positivo", () => {
@@ -57,26 +66,74 @@ describe("performance-metas (simulação local)", () => {
     expect(displayPercents(null)).toBeNull();
   });
 
-  it("restaurar padrão devolve a referência e preserva a sugestão do representante", () => {
-    const edited = withMetas([5, 5, 5, 5, 5, 5, 5]).map((d) => ({
-      ...d,
-      sugestaoRep: 42,
-      justificativaGestor: "x",
-    }));
-    const restored = restoreDefaultDrafts(edited);
-    expect(restored.every((d) => d.metaGestor === 100 && d.justificativaGestor === "")).toBe(true);
-    expect(restored.every((d) => d.sugestaoRep === 42)).toBe(true);
+  it("ações registram a origem e o status fica misto quando combinadas", () => {
+    let d = simulateAiSuggestions(withMetas([100, 100, 100, 100, 100, 100, 100]));
+    d = d.map((x) => ({ ...x, sugestaoRep: 120 }));
+    d = applyAiSuggestion(d, "PERFIL");
+    d = copyRepSuggestion(d, "PRO LED");
+    d = setMetaOficial(d, "PRO LAMP", 80);
+    const byFam = Object.fromEntries(d.map((x) => [x.familia, x]));
+    expect(byFam["PERFIL"].origem).toBe("ia");
+    expect(byFam["PERFIL"].metaOficial).toBe(byFam["PERFIL"].sugestaoIa?.valor);
+    expect(byFam["PRO LED"]).toMatchObject({ origem: "representante", metaOficial: 120 });
+    expect(byFam["PRO LAMP"]).toMatchObject({ origem: "gestor", metaOficial: 80 });
+    const status = summarizeDrafts(d).status;
+    expect(status.origem).toBe("misto");
+    expect(status.contagem).toEqual({ padrao: 4, ia: 1, representante: 1, gestor: 1 });
   });
 
-  it("sugestão IA é demonstrativa e identificada como simulação", () => {
+  it("aplicar IA ou copiar representante sem sugestão não altera a meta", () => {
+    const d = withMetas([100, 100, 100, 100, 100, 100, 100]);
+    expect(applyAiSuggestion(d)).toEqual(d);
+    expect(copyRepSuggestion(d)).toEqual(d);
+  });
+
+  it("restaurar padrão devolve a referência e preserva as sugestões", () => {
+    const edited = withMetas([5, 5, 5, 5, 5, 5, 5]).map((x) => ({
+      ...x,
+      sugestaoRep: 42,
+      comentarioGestor: "x",
+      origem: "gestor" as const,
+    }));
+    const one = restoreDefault(edited, "PERFIL");
+    expect(one.find((x) => x.familia === "PERFIL")?.metaOficial).toBe(100);
+    expect(one.find((x) => x.familia === "PRO LED")?.metaOficial).toBe(5);
+    const all = restoreDefault(edited);
+    expect(all.every((x) => x.metaOficial === 100 && x.origem === "padrao")).toBe(true);
+    expect(all.every((x) => x.sugestaoRep === 42)).toBe(true);
+  });
+
+  it("sugestão IA é demonstrativa, marcada como simulada e com tag de origem", () => {
     const sim = simulateAiSuggestions(withMetas([1, 2, 3, 4, 5, 6, 7]));
     for (const d of sim) {
-      expect(d.sugestaoIa?.origem).toBe("simulacao_local");
-      expect(d.sugestaoIa?.valor).toBe(d.referencia);
+      expect(d.sugestaoIa?.simulada).toBe(true);
+      expect(["imersao", "tendencia"]).toContain(d.sugestaoIa?.tag);
+      expect((d.sugestaoIa?.valor ?? 0) % 50).toBe(0);
     }
     expect(simulateAiSuggestions(buildInitialDrafts(null)).every((d) => d.sugestaoIa == null)).toBe(
       true,
     );
+  });
+
+  it("comparativo do gestor usa a meta padrão como base (100%)", () => {
+    const drafts = withMetas([150, 100, 100, 100, 100, 100, 100]);
+    const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor);
+    expect(pts[0]).toMatchObject({
+      performancePct: 60,
+      metaPct: 150,
+      performanceValor: 60,
+      metaValor: 150,
+      referenciaValor: 100,
+    });
+    expect(pts[1].performancePct).toBeNull();
+  });
+
+  it("comparativo do representante não expõe a meta padrão", () => {
+    const drafts = withMetas([150, 100, 100, 100, 100, 100, 100]);
+    const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, rep);
+    expect(pts[0].referenciaValor).toBeNull();
+    expect(pts[0].performanceValor).toBeNull();
+    expect(pts[0].metaPct).toBeCloseTo((150 / 750) * 100, 10);
   });
 
   it("entrada numérica aceita formato brasileiro e rejeita negativos", () => {
@@ -92,12 +149,10 @@ describe("performance-metas (simulação local)", () => {
     expect(viewerRoleFromRoles(["agente"])).toBe("representante");
     expect(viewerRoleFromRoles(["gestor"])).toBe("gestor");
     expect(viewerRoleFromRoles(["admin"])).toBe("gestor");
-    const rep = metasVisibility("representante");
     expect(rep.verMetaPadrao).toBe(false);
     expect(rep.verSugestaoIa).toBe(false);
     expect(rep.editarMetaOficial).toBe(false);
     expect(rep.editarSugestaoRep).toBe(true);
-    const gestor = metasVisibility("gestor");
     expect(gestor.verMetaPadrao && gestor.verSugestaoIa && gestor.editarMetaOficial).toBe(true);
   });
 });

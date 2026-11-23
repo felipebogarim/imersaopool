@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
-import { Switch } from "@/components/ui/switch";
 import { MetasPainel, type MetasClienteInfo } from "@/components/performance-metas/MetasPainel";
 import { useMetasViewer } from "@/components/performance-metas/use-metas-viewer";
 
@@ -70,14 +69,6 @@ function MetasClientePage() {
             ? `${cliente.repName} · ${cliente.categoria ?? "Sem categoria"} · Metas mensais`
             : undefined
         }
-        actions={
-          isGestor ? (
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Switch checked={previewRep} onCheckedChange={setPreviewRep} />
-              Pré-visualizar como representante
-            </label>
-          ) : undefined
-        }
       />
       <div className="p-3 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-4">
         <Link
@@ -98,7 +89,13 @@ function MetasClientePage() {
             Este cliente não pertence à sua carteira.
           </p>
         ) : (
-          <MetasPainel cliente={cliente} role={role} />
+          <MetasPainel
+            cliente={cliente}
+            role={role}
+            canPreview={isGestor}
+            previewRep={previewRep}
+            onPreviewChange={setPreviewRep}
+          />
         )}
       </div>
     </div>
