@@ -57,12 +57,6 @@ export const NAV_TREE: NavGroup[] = [
     key: "precos",
     label: "Preços",
     children: [
-      { key: "price.equivalencias", label: "Pricing · Equivalências", to: "/price/equivalencias" },
-      {
-        key: "price.validacao",
-        label: "Pricing · Validação de Comparáveis",
-        to: "/price/validacao",
-      },
       {
         key: "price.comparativos-especificos",
         label: "Painel Price",
@@ -71,8 +65,6 @@ export const NAV_TREE: NavGroup[] = [
       { key: "price.competidores", label: "Competidores", to: "/price/competidores" },
       { key: "price.tabelas", label: "Tabelas", to: "/price/tabelas" },
       // Telas antigas, mantidas até a decisão de descontinuação (não excluir ainda).
-      { key: "price.pricing", label: "Pricing (legado)", to: "/price/pricing" },
-      { key: "price.comparativos", label: "Comparativos (legado)", to: "/price/comparativos" },
       { key: "price.mapa", label: "Mapa de Preços (legado)", to: "/price/mapa" },
       {
         key: "price.simulador",
@@ -82,19 +74,12 @@ export const NAV_TREE: NavGroup[] = [
     ],
   },
   {
-    key: "mapa-acoes",
-    label: "Mapa de Ações",
-    to: "/mapa-acoes",
-    children: [],
-  },
-  {
     key: "inputs-relatorios",
     label: "Inputs e Relatórios",
     children: [
       { key: "inputs.imersoes", label: "Imersões em Campo", to: "/imersoes" },
       { key: "inputs.fontes", label: "Fontes de Insight", to: "/fontes" },
       { key: "inputs.entrevistas", label: "Entrevistas", to: "/entrevistas" },
-      { key: "inputs.forms", label: "Forms", to: "/forms" },
     ],
   },
   {
@@ -130,18 +115,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "ferramentas.transcricao", label: "Transcrição", to: "/ferramentas/transcricao" },
       { key: "ferramentas.tarefas", label: "Gestão de Tarefas", to: "/tarefas" },
       { key: "ferramentas.acoes-reps", label: "Ações Reps", to: "/ferramentas/acoes-reps" },
-      {
-        key: "ferramentas.evolucao-acoes",
-        label: "Evolução das Ações",
-        to: "/ferramentas/evolucao-acoes",
-      },
       { key: "ferramentas.agenda", label: "Agenda", to: "/ferramentas/agenda" },
-      {
-        key: "ferramentas.agenda-trade",
-        label: "Agenda de Trade",
-        to: "/ferramentas/agenda-trade",
-      },
-      { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
       { key: "ferramentas.tabela-precos", label: "Tabela de Preços", to: "/price/tabelas" },
     ],
   },
@@ -174,6 +148,33 @@ export const NAV_TREE: NavGroup[] = [
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
       { key: "admin.agentes", label: "Agentes", to: "/agentes" },
       { key: "admin.permissoes", label: "Permissões", to: "/admin/permissoes" },
+    ],
+  },
+  {
+    key: "em-revisao",
+    label: "Em revisão",
+    children: [
+      { key: "price.equivalencias", label: "Pricing · Equivalências", to: "/price/equivalencias" },
+      {
+        key: "price.validacao",
+        label: "Pricing · Validação de Comparáveis",
+        to: "/price/validacao",
+      },
+      { key: "price.pricing", label: "Pricing (legado)", to: "/price/pricing" },
+      { key: "price.comparativos", label: "Comparativos (legado)", to: "/price/comparativos" },
+      { key: "mapa-acoes", label: "Mapa de Ações", to: "/mapa-acoes" },
+      { key: "inputs.forms", label: "Forms", to: "/forms" },
+      {
+        key: "ferramentas.evolucao-acoes",
+        label: "Evolução das Ações",
+        to: "/ferramentas/evolucao-acoes",
+      },
+      {
+        key: "ferramentas.agenda-trade",
+        label: "Agenda de Trade",
+        to: "/ferramentas/agenda-trade",
+      },
+      { key: "ferramentas.manuais", label: "Manuais", to: "/manuais" },
     ],
   },
 ];

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ALL_NAV_KEYS } from "@/lib/nav-tree";
+import { ALL_NAV_KEYS, NAV_TREE } from "@/lib/nav-tree";
 
 export type NavAccess = {
   isAdmin: boolean;
@@ -49,6 +49,13 @@ export function useNavAccess(): NavAccess {
       // Agenda é uma ferramenta pessoal disponível a todos os usuários autenticados.
       base.add("ferramentas");
       base.add("ferramentas.agenda");
+
+      // Propaga permissão de grupo: se o usuário tem acesso a algum item filho de um grupo, garante acesso ao grupo pai
+      for (const g of NAV_TREE) {
+        if (g.children.some((c) => base.has(c.key))) {
+          base.add(g.key);
+        }
+      }
 
       return { isAdmin, keys: Array.from(base) };
     },

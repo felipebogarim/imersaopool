@@ -11,7 +11,7 @@ describe("home2", () => {
   it("lista só os setores e itens liberados, sem home e admin", () => {
     const allowed = new Set(["home", "performance.reps", "mapa-acoes", "admin.usuarios"]);
     const out = buildHome2Sections((k) => allowed.has(k));
-    expect(out.map((s) => s.key)).toEqual(["performance", "mapa-acoes"]);
+    expect(out.map((s) => s.key)).toEqual(["performance", "em-revisao"]);
     expect(out[0].links.map((l) => l.key)).toEqual(["performance.reps"]);
     expect(out[1].links[0].to).toBe("/mapa-acoes");
   });
