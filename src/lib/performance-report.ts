@@ -381,7 +381,13 @@ export function exportPerformanceReport(opts: {
 
 export function exportAllPerformanceReport(opts: {
   periodo: string;
-  reps: Array<{ representante: string; familias: string[]; rows: ReportRow[] }>;
+  reps: Array<{
+    representante: string;
+    /** Sobrescreve o período global quando cada rep tem um período diferente. */
+    periodo?: string;
+    familias: string[];
+    rows: ReportRow[];
+  }>;
 }) {
   const { periodo, reps } = opts;
 
@@ -444,7 +450,8 @@ export function exportAllPerformanceReport(opts: {
   ).join("");
 
   const sections = reps
-    .map(({ representante, familias, rows }) => {
+    .map(({ representante, periodo: repPeriodo, familias, rows }) => {
+      const repLabel = repPeriodo ?? periodo;
       const rep = calculateRepresentativeMetrics(
         rows.map((r) => ({
           razao_social: r.razao_social,
@@ -499,7 +506,7 @@ export function exportAllPerformanceReport(opts: {
       <div class="rep-section">
         <header>
           <h1>Relatório Gerencial de Performance</h1>
-          <div class="sub"><strong>${esc(representante)}</strong> • Período: ${esc(periodo)} • Gerado em ${new Date().toLocaleString("pt-BR")}</div>
+          <div class="sub"><strong>${esc(representante)}</strong> • Período: ${esc(repLabel)} • Gerado em ${new Date().toLocaleString("pt-BR")}</div>
         </header>
 
         <div class="grid">

@@ -16,11 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { exportAllPerformanceXlsx } from "@/lib/performance-export";
 import { exportAllPerformanceReport } from "@/lib/performance-report";
+import { getLatestActiveVersionByRep } from "@/lib/performance-periods";
 import type { FarolStatus } from "@/lib/performance-farol";
 
 type Rep = { id: string; nome: string };
@@ -37,6 +38,16 @@ type ExportRow = {
   total_pct_status: FarolStatus | null;
   total_meta: number | null;
 };
+
+type RepData = {
+  representante: string;
+  periodo: string;
+  familias: string[];
+  rows: ExportRow[];
+  totals: { perFamilia: Record<string, number>; grand: number };
+};
+
+const LATEST = "__latest__";
 
 export function ExportacaoMassaDialog({
   open,
@@ -66,6 +77,40 @@ export function ExportacaoMassaDialog({
     enabled: open,
   });
 
+  async function fetchRowsForUpload(
+    uploadId: string,
+    familias: string[],
+  ): Promise<{ rows: ExportRow[]; totals: { perFamilia: Record<string, number>; grand: number } }> {
+    const { data: dbRows } = await supabase
+      .from("rep_performance_rows")
+      .select("*")
+      .eq("upload_id", uploadId)
+      .order("ordem");
+
+    const rows: ExportRow[] = (dbRows ?? []).map((r: any) => ({
+      razao_social: r.razao_social,
+      categoria: r.categoria,
+      metas: r.metas ?? {},
+      metas_status: r.metas_status ?? {},
+      metas_cores: r.metas_cores ?? {},
+      realizado: r.realizado ?? {},
+      familia_pct: r.familia_pct ?? {},
+      total_pct: r.total_pct ?? null,
+      total_pct_status: r.total_pct_status ?? null,
+      total_meta: r.total_meta,
+    }));
+
+    const perFamilia: Record<string, number> = {};
+    let grand = 0;
+    for (const r of rows) {
+      for (const f of familias) perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
+      grand +=
+        familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0) || Number(r.total_meta) || 0;
+    }
+
+    return { rows, totals: { perFamilia, grand } };
+  }
+
   async function handleExport() {
     if (!periodoLabel) {
       toast.error("Selecione o período.");
@@ -73,62 +118,58 @@ export function ExportacaoMassaDialog({
     }
     setBusy(true);
     try {
-      const { data: uploads } = await supabase
-        .from("rep_performance_uploads")
-        .select("id, representative_id, familias")
-        .is("substituida_em", null)
-        .eq("periodo_label", periodoLabel);
+      const repData: RepData[] = [];
 
-      if (!uploads?.length) {
-        toast.error("Nenhum representante com dados para o período selecionado.");
-        return;
-      }
+      if (periodoLabel === LATEST) {
+        // Busca o upload mais recente ativo de cada representante (qualquer período).
+        const { data: allUploads } = await supabase
+          .from("rep_performance_uploads")
+          .select("id, representative_id, periodo_label, periodo_fim, created_at, familias")
+          .is("substituida_em", null)
+          .order("periodo_fim", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false });
 
-      const repData: Array<{
-        representante: string;
-        familias: string[];
-        rows: ExportRow[];
-        totals: { perFamilia: Record<string, number>; grand: number };
-      }> = [];
+        const byRep = getLatestActiveVersionByRep(allUploads ?? []);
 
-      for (const up of uploads) {
-        const rep = reps.find((r) => r.id === up.representative_id);
-        if (!rep) continue;
+        for (const [repId, upload] of byRep.entries()) {
+          const rep = reps.find((r) => r.id === repId);
+          if (!rep) continue;
+          const fams: string[] = (upload.familias as string[]) ?? [];
+          const { rows, totals } = await fetchRowsForUpload(upload.id, fams);
+          repData.push({
+            representante: rep.nome,
+            periodo: upload.periodo_label ?? "—",
+            familias: fams,
+            rows,
+            totals,
+          });
+        }
+      } else {
+        // Busca todos os uploads com o período exato selecionado.
+        const { data: uploads } = await supabase
+          .from("rep_performance_uploads")
+          .select("id, representative_id, familias")
+          .is("substituida_em", null)
+          .eq("periodo_label", periodoLabel);
 
-        const { data: dbRows } = await supabase
-          .from("rep_performance_rows")
-          .select("*")
-          .eq("upload_id", up.id)
-          .order("ordem");
-
-        const fams: string[] = (up.familias as string[]) ?? [];
-        const rows: ExportRow[] = (dbRows ?? []).map((r: any) => ({
-          razao_social: r.razao_social,
-          categoria: r.categoria,
-          metas: r.metas ?? {},
-          metas_status: r.metas_status ?? {},
-          metas_cores: r.metas_cores ?? {},
-          realizado: r.realizado ?? {},
-          familia_pct: r.familia_pct ?? {},
-          total_pct: r.total_pct ?? null,
-          total_pct_status: r.total_pct_status ?? null,
-          total_meta: r.total_meta,
-        }));
-
-        const perFamilia: Record<string, number> = {};
-        let grand = 0;
-        for (const r of rows) {
-          for (const f of fams) perFamilia[f] = (perFamilia[f] ?? 0) + (Number(r.metas?.[f]) || 0);
-          grand +=
-            fams.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0) || Number(r.total_meta) || 0;
+        if (!uploads?.length) {
+          toast.error("Nenhum representante com dados para o período selecionado.");
+          return;
         }
 
-        repData.push({
-          representante: rep.nome,
-          familias: fams,
-          rows,
-          totals: { perFamilia, grand },
-        });
+        for (const up of uploads) {
+          const rep = reps.find((r) => r.id === up.representative_id);
+          if (!rep) continue;
+          const fams: string[] = (up.familias as string[]) ?? [];
+          const { rows, totals } = await fetchRowsForUpload(up.id, fams);
+          repData.push({
+            representante: rep.nome,
+            periodo: periodoLabel,
+            familias: fams,
+            rows,
+            totals,
+          });
+        }
       }
 
       if (!repData.length) {
@@ -136,17 +177,24 @@ export function ExportacaoMassaDialog({
         return;
       }
 
-      const slug = periodoLabel.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      const slug =
+        periodoLabel === LATEST
+          ? "mais-recente"
+          : periodoLabel.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+
+      // Período global para o nome do arquivo; cada rep já carrega o seu próprio.
+      const globalPeriodo =
+        periodoLabel === LATEST ? "Mais recente de cada representante" : periodoLabel;
 
       if (format === "excel") {
         exportAllPerformanceXlsx({
           filename: `performance-em-massa-${slug}`,
-          periodo: periodoLabel,
+          periodo: globalPeriodo,
           reps: repData,
         });
         toast.success(`${repData.length} relatório(s) exportado(s) em um arquivo Excel.`);
       } else {
-        exportAllPerformanceReport({ periodo: periodoLabel, reps: repData });
+        exportAllPerformanceReport({ periodo: globalPeriodo, reps: repData });
         toast.success(`${repData.length} relatório(s) abertos para impressão como PDF.`);
       }
     } catch (e: any) {
@@ -155,6 +203,8 @@ export function ExportacaoMassaDialog({
       setBusy(false);
     }
   }
+
+  const isLatest = periodoLabel === LATEST;
 
   return (
     <Dialog open={open} onOpenChange={(v) => (!busy ? onOpenChange(v) : null)}>
@@ -171,22 +221,23 @@ export function ExportacaoMassaDialog({
                 <SelectValue placeholder="Selecione o período" />
               </SelectTrigger>
               <SelectContent>
-                {periodos.length === 0 ? (
-                  <SelectItem value="__none__" disabled>
-                    Nenhum período disponível
+                <SelectItem value={LATEST}>
+                  <span className="flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5 text-amber-500" />
+                    Período mais recente de cada representante
+                  </span>
+                </SelectItem>
+                {periodos.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
                   </SelectItem>
-                ) : (
-                  periodos.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))
-                )}
+                ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              Serão exportados todos os representantes com performance ativa para o período
-              escolhido.
+              {isLatest
+                ? "Cada representante será exportado com o seu período mais recente ativo, independentemente do período."
+                : "Serão exportados todos os representantes com performance ativa para o período escolhido."}
             </p>
           </div>
 

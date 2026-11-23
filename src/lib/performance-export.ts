@@ -277,6 +277,8 @@ export function exportAllPerformanceXlsx(opts: {
   periodo: string;
   reps: Array<{
     representante: string;
+    /** Sobrescreve o período global quando cada rep tem um período diferente. */
+    periodo?: string;
     familias: string[];
     rows: ExportRow[];
     totals: { perFamilia: Record<string, number>; grand: number };
@@ -285,7 +287,7 @@ export function exportAllPerformanceXlsx(opts: {
   const wb = XLSXStyle.utils.book_new();
   const usedNames = new Set<string>();
   for (const rep of opts.reps) {
-    const ws = buildPerformanceSheet({ ...rep, periodo: opts.periodo });
+    const ws = buildPerformanceSheet({ ...rep, periodo: rep.periodo ?? opts.periodo });
     let name = rep.representante.slice(0, 31);
     if (usedNames.has(name)) {
       let i = 2;
