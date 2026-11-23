@@ -41,8 +41,9 @@ CREATE UNIQUE INDEX pgc_um_ativo_por_cliente
   WHERE status = 'ativo';
 CREATE INDEX pgc_rep_idx ON public.performance_goal_cycles (representative_id, cliente_key);
 
--- Meta mensal por portfólio. Alterar a meta durante a vigência cria uma nova linha a partir do
--- mês corrente (vigente_desde); a meta de um mês M é a linha com maior vigente_desde <= M.
+-- Meta mensal por portfólio. Alterar a meta durante a vigência cria uma nova linha a partir da
+-- competência escolhida pelo gestor (vigente_desde); a meta de um mês M é a linha com maior
+-- vigente_desde <= M. Versões anteriores permanecem (e cada alteração vai para o histórico).
 CREATE TABLE public.performance_goal_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id uuid NOT NULL REFERENCES public.companies(id),
@@ -80,7 +81,8 @@ CREATE TABLE public.performance_goal_ai_suggestions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id uuid NOT NULL REFERENCES public.companies(id),
   cycle_id uuid NOT NULL REFERENCES public.performance_goal_cycles(id) ON DELETE CASCADE,
-  familia text NOT NULL,
+  familia text NOT NULL CHECK (familia IN ('DECOR NEWLINE', 'DECOR STUDIO', 'SISTEMAS E MÓDULOS',
+    'PRO LED', 'PRO LAMP', 'PERFIL', 'FITAS E FONTES')),
   valor numeric(14,2) NOT NULL CHECK (valor >= 0),
   justificativa text NOT NULL DEFAULT '',
   tag text NOT NULL CHECK (tag IN ('imersao', 'tendencia')),
@@ -235,10 +237,13 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
     WHERE company_id = (_ctx->>'company_id')::uuid
       AND representative_id = (_ctx->>'representative_id')::uuid
       AND cliente_key = _ctx->>'cliente_key' AND status = 'ativo'
-  ), items AS (
+  ), items AS (  -- versão vigente no mês corrente (ou no 1º mês, se o ciclo ainda não começou)
     SELECT DISTINCT ON (i.familia) i.* FROM public.performance_goal_items i JOIN c ON c.id = i.cycle_id
     WHERE i.vigente_desde <= GREATEST(public.performance_goal_month(), c.inicio)
     ORDER BY i.familia, i.vigente_desde DESC
+  ), agendadas AS (  -- versões que passam a valer em competências futuras
+    SELECT i.* FROM public.performance_goal_items i JOIN c ON c.id = i.cycle_id
+    WHERE i.vigente_desde > GREATEST(public.performance_goal_month(), c.inicio)
   ), ai AS (
     SELECT DISTINCT ON (a.familia) a.* FROM public.performance_goal_ai_suggestions a
     JOIN c ON c.id = a.cycle_id ORDER BY a.familia, a.created_at DESC
@@ -252,6 +257,9 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
                 'comentario_gestor', comentario_gestor, 'vigente_desde', vigente_desde)
               ELSE jsonb_build_object('familia', familia, 'meta_mensal', meta_mensal) END)
               FROM items), '[]'::jsonb),
+    'agendadas', CASE WHEN _staff THEN COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                'familia', familia, 'meta_mensal', meta_mensal, 'vigente_desde', vigente_desde)
+                ORDER BY vigente_desde) FROM agendadas), '[]'::jsonb) ELSE '[]'::jsonb END,
     'rep_suggestions', COALESCE((SELECT jsonb_agg(jsonb_build_object(
                 'familia', s.familia, 'valor', s.valor, 'justificativa', s.justificativa))
               FROM public.performance_goal_rep_suggestions s JOIN c ON c.id = s.cycle_id), '[]'::jsonb),
@@ -293,15 +301,22 @@ END $$;
 
 -- _metas: [{familia, meta_mensal, origem, comentario_gestor, referencia}]
 -- _sugestoes_ia: [{familia, valor, justificativa, tag, origem}]
-CREATE OR REPLACE FUNCTION public.save_performance_goals(_row_id uuid, _metas jsonb, _sugestoes_ia jsonb)
+-- _vigente_desde: competência a partir da qual as metas valem (padrão: mês corrente);
+-- precisa estar dentro do ciclo ativo.
+CREATE OR REPLACE FUNCTION public.save_performance_goals(
+  _row_id uuid, _metas jsonb, _sugestoes_ia jsonb, _vigente_desde date DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   _ctx jsonb := public.performance_goal_staff_ctx(_row_id);
   _uid uuid := auth.uid();
   _c public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, _uid);
-  _desde date := GREATEST(public.performance_goal_month(), _c.inicio);
+  _desde date := COALESCE(public.performance_goal_month(_vigente_desde),
+                          GREATEST(public.performance_goal_month(), _c.inicio));
   _m jsonb;
 BEGIN
+  IF _desde < _c.inicio OR _desde > _c.fim THEN
+    RAISE EXCEPTION 'Competência fora do ciclo vigente.';
+  END IF;
   FOR _m IN SELECT * FROM jsonb_array_elements(COALESCE(_metas, '[]'::jsonb)) LOOP
     INSERT INTO public.performance_goal_items
       (company_id, cycle_id, familia, vigente_desde, meta_mensal, origem, comentario_gestor,
@@ -424,12 +439,12 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION public.get_performance_goals(uuid) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.save_performance_goals(uuid, jsonb, jsonb) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.save_performance_goals(uuid, jsonb, jsonb, date) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.renew_performance_goal_cycle(uuid, int) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.extend_performance_goal_cycle(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.confirm_performance_goal_link(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_performance_goals(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.save_performance_goals(uuid, jsonb, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.save_performance_goals(uuid, jsonb, jsonb, date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.renew_performance_goal_cycle(uuid, int) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.extend_performance_goal_cycle(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.confirm_performance_goal_link(uuid, uuid) TO authenticated;

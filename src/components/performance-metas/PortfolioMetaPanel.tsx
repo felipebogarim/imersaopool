@@ -24,6 +24,7 @@ import {
   type FamilyMetaDraft,
   type MetasVisibility,
 } from "@/lib/performance-metas";
+import { monthLabel } from "@/lib/performance-metas-persistence";
 
 export type PortfolioPanelActions = {
   setMetaOficial: (valor: number | null) => void;
@@ -39,6 +40,7 @@ export type PortfolioPanelActions = {
 export function PortfolioMetaPanel({
   draft,
   point,
+  agendadas = [],
   unsaved,
   vis,
   selected,
@@ -48,6 +50,8 @@ export function PortfolioMetaPanel({
 }: {
   draft: FamilyMetaDraft;
   point: ComparativoPoint;
+  /** Metas deste portfólio já gravadas para competências futuras. */
+  agendadas?: Array<{ meta_mensal: number | null; vigente_desde: string }>;
   /** Portfólios com alterações ainda não salvas. */
   unsaved: readonly CanonicalFamily[];
   vis: MetasVisibility;
@@ -107,7 +111,8 @@ export function PortfolioMetaPanel({
           {status && (
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               {FAROL_LABEL[status]}
-              {point.estimado ? " · estimado" : ""}
+              {point.fonte === "media" ? " · média histórica" : ""}
+              {point.fonte === "estimado" ? " · estimado" : ""}
             </span>
           )}
           {vis.verMetaPadrao && point.performanceOficialPct != null && (
@@ -215,6 +220,16 @@ export function PortfolioMetaPanel({
               <ValueText value={draft.metaOficial} />
             )}
           </Field>
+          {vis.editarMetaOficial && agendadas.length > 0 && (
+            <p className="text-[11px] text-sky-700 dark:text-sky-400">
+              {agendadas
+                .map(
+                  (a) =>
+                    `Agendada: ${fmtBRL(a.meta_mensal)} a partir de ${monthLabel(a.vigente_desde)}`,
+                )
+                .join(" · ")}
+            </p>
+          )}
           {vis.editarMetaOficial && (
             <>
               <Field label="Comentário do gestor">

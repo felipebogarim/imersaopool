@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
+  competenciasDoCiclo,
   cycleInfo,
+  monthLabel,
   type GoalsState,
   type MetasLoadResult,
 } from "@/lib/performance-metas-persistence";
@@ -125,5 +127,37 @@ export function MetasCicloControl({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** Competência a partir da qual as metas salvas passam a valer (dentro do ciclo). */
+export function CompetenciaSelect({
+  cycle,
+  value,
+  onChange,
+}: {
+  cycle: GoalsState["cycle"];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { meses } = competenciasDoCiclo(cycle);
+  return (
+    <label
+      className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+      title="As versões anteriores da meta são preservadas no histórico"
+    >
+      Vale a partir de
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-7 rounded-md border border-input bg-background px-1.5 text-[11px] text-foreground"
+      >
+        {meses.map((m) => (
+          <option key={m} value={m}>
+            {monthLabel(m)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

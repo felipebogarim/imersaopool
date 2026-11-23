@@ -1,49 +1,53 @@
-# Performance → METAS — persistência (migration AGUARDANDO APROVAÇÃO)
+# Performance → METAS — persistência
 
-Migration: `supabase/migrations/20261124120000_performance_goals.sql` — **não aplicada**.
-Validada num Postgres 16 descartável com stubs das dependências (aplicação + teste de
-gravação, histórico, renovação, extensão, vínculo e bloqueios de permissão).
+Migration: `supabase/migrations/20261124120000_performance_goals.sql` (aplicação manual no
+Lovable Cloud, somente após aprovação). Não altera nenhuma tabela, função ou policy existente.
 
-## Decisões
+## Modelo
 
-- **Meta mensal dentro de ciclo de vigência**: ciclo padrão de 6 meses, criado ao primeiro
-  salvamento; pode ser estendido até 12 meses ou renovado (novo ciclo de 6 ou 12 meses que
-  copia as metas vigentes). Alterar a meta durante o ciclo cria uma nova versão a partir do
-  mês corrente (`vigente_desde`); a meta de um mês M é a versão com maior `vigente_desde <= M`.
-- **Cliente**: identificado como na importação (`upper(btrim(razao_social))` + representante).
-  Vínculo manual com `clients` é opcional (Revisar vínculo → Confirmar), sem alterar cadastros.
-- **Permissões**: admin/gestor (empresa ativa) via RPC; representante só por server functions
-  (service role) restritas à própria carteira, sem meta padrão, comentário do gestor nem IA.
-- **Isolamento**: metas salvas NÃO substituem as metas oficiais do BI (integração: próxima etapa).
-- **Recálculo**: valor vendido real do backend (`performance_private.rep_row_values`:
-  realizado → média). Sem eles: atingimento × meta do upload, marcado como **estimado**;
-  sem banco: atingimento × meta padrão (estimado).
+- **Cliente**: identificado como na importação — representante + `upper(btrim(razao_social))`
+  da linha de Performance. O vínculo com `clients` é opcional e manual ("Revisar vínculo" →
+  "Confirmar vínculo"), gravado no ciclo, sem alterar o cadastro de clientes.
+- **Ciclo de vigência** (`performance_goal_cycles`): criado no primeiro salvamento com 6 meses a
+  partir do mês corrente; um ciclo ativo por cliente. O gestor pode estender o ciclo ativo para
+  12 meses ou renovar (encerra o atual e abre um novo de 6 ou 12 meses, a partir do mês seguinte
+  ao fim do atual, copiando as metas vigentes).
+- **Meta mensal por portfólio** (`performance_goal_items`): cada salvamento grava a meta a partir
+  da **competência escolhida pelo gestor** (`vigente_desde`, dentro do ciclo; padrão = mês
+  corrente). A meta de um mês M é a versão com maior `vigente_desde <= M`; versões anteriores
+  permanecem. Metas de competências futuras aparecem na tela como "agendadas".
+- **Sugestão do representante** (`performance_goal_rep_suggestions`): versão vigente por
+  portfólio; versões anteriores ficam no histórico.
+- **Sugestões da IA** (`performance_goal_ai_suggestions`): só inserção, sem repetir a última igual.
+- **Histórico** (`performance_goal_history`): trigger em ciclos, metas e sugestões do
+  representante grava ação, valores antes/depois, autor e data. Imutável.
 
-## Objetos criados
+## Permissões
 
-| Objeto | Função |
+| Perfil | Acesso |
 |---|---|
-| `performance_goal_cycles` | ciclo por cliente (início/fim, status, vínculo confirmado, renovado_de) |
-| `performance_goal_items` | meta mensal por portfólio e versão (`vigente_desde`), origem, comentário, snapshot do padrão |
-| `performance_goal_rep_suggestions` | sugestão vigente do representante |
-| `performance_goal_ai_suggestions` | sugestões da IA, só inserção (sem duplicar a última igual) |
-| `performance_goal_history` | auditoria imutável (trigger em ciclos, metas e sugestões) |
-| RPCs gestão | `get_performance_goals`, `save_performance_goals`, `renew_performance_goal_cycle`, `extend_performance_goal_cycle`, `confirm_performance_goal_link` |
-| RPCs representante (só service_role) | `rep_get_performance_goals`, `rep_save_goal_suggestions` |
-| `role_permissions` | `performance.metas`: gestor = sim, agente/comercial = não |
+| admin / gestor | Empresa ativa (`current_company_id()`): leitura por RLS e escrita pelas RPCs `get_performance_goals`, `save_performance_goals`, `renew_performance_goal_cycle`, `extend_performance_goal_cycle`, `confirm_performance_goal_link` |
+| representante | Só pelo servidor (service role): `rep_get_performance_goals`, `rep_save_goal_suggestions`, restritas à própria carteira. Recebe meta oficial, as próprias sugestões e o atingimento já calculado — nunca meta padrão, comentário do gestor, IA ou valores do upload |
+| agente / comercial / demais | Sem acesso (dados e menu) |
 
-RLS: leitura direta só admin/gestor da empresa ativa; nenhuma escrita direta (só RPC);
-`block_external_rep` em todas as tabelas novas.
+Nenhuma escrita direta nas tabelas; `block_external_rep` em todas elas.
+
+## Recálculo do atingimento
+
+Base comparável à meta mensal, com a origem identificada na interface:
+
+1. **Venda realizada** — realizado em R$ do upload (`performance_private.rep_row_values`).
+2. **Média histórica** — média em R$ do upload; sinalizada como "média histórica".
+3. **Estimado** — atingimento × meta do upload (ou × meta padrão, sem banco); sinalizado.
 
 ## Código
 
 - `src/lib/performance-metas.functions.ts` — server functions (gestão e representante).
-- `src/lib/performance-metas-persistence.ts` — conversões puras banco ↔ tela, visão do representante.
-- Sem a migration aplicada, a tela funciona em simulação local (detecta função inexistente).
+- `src/lib/performance-metas-persistence.ts` — conversões banco ↔ tela, competências, visão do representante.
+- Sem a migration aplicada, a tela funciona em simulação local.
 
 ## Pendências
 
-- Aplicar a migration (após aprovação) e regenerar `src/integrations/supabase/types.ts`.
-- Tela do representante no portal (`/portal-rep`): as funções `repGetMetasGoals` /
-  `repSaveMetasSuggestions` já existem; falta o ponto de entrada no portal.
+- Regenerar `src/integrations/supabase/types.ts` após aplicar.
+- Entrada da tela do representante no portal (`/portal-rep`); as funções já existem.
 - Integração das metas salvas com o BI oficial (próxima etapa).

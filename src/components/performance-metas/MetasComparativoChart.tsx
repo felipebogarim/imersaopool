@@ -144,9 +144,11 @@ function ComparativoTooltip({
         {d.performancePct == null ? "Sem informação" : fmtPoints(d.performancePct)}
         {st ? <span className="text-muted-foreground"> · {FAROL_LABEL[st]}</span> : null}
       </Row>
-      {d.estimado && d.performancePct != null && (
+      {d.fonte && d.fonte !== "realizado" && d.performancePct != null && (
         <p className="pb-0.5 text-[10px] text-amber-700 dark:text-amber-400">
-          Estimado: sem valor vendido real para este portfólio
+          {d.fonte === "media"
+            ? "Base: média histórica (não é venda realizada)"
+            : "Estimado: sem venda realizada nem média histórica"}
         </p>
       )}
       {vis.verMetaPadrao && d.performanceOficialPct != null && (

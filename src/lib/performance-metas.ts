@@ -343,10 +343,27 @@ export function estimatedRealizado(
 }
 
 /**
- * Valor vendido comparável à meta mensal, vindo do backend (R$ reais).
- * `estimado` = sem realizado/média no upload: derivado de atingimento × meta.
+ * Base do recálculo, comparável à meta mensal, com a origem explícita:
+ * - `realizado`: venda efetivamente realizada (R$ do upload);
+ * - `media`: média histórica de compras (R$ do upload) — não é venda realizada;
+ * - `estimado`: sem nenhum dos dois; atingimento × meta (do upload ou padrão).
  */
-export type BaseValor = { valor: number; estimado: boolean };
+export type BaseFonte = "realizado" | "media" | "estimado";
+export type BaseValor = { valor: number; fonte: BaseFonte };
+
+export const BASE_FONTE_LABEL: Record<BaseFonte, string> = {
+  realizado: "Venda realizada",
+  media: "Média histórica",
+  estimado: "Estimado",
+};
+
+/** Origem combinada de vários portfólios: a menos confiável prevalece. */
+export function combineFontes(fontes: BaseFonte[]): BaseFonte | null {
+  if (fontes.length === 0) return null;
+  if (fontes.includes("estimado")) return "estimado";
+  if (fontes.includes("media")) return "media";
+  return "realizado";
+}
 export type BaseFinanceira = Partial<Record<CanonicalFamily, BaseValor | null>>;
 
 /** Valor vendido do portfólio: backend quando houver; senão estimativa local. */
@@ -357,7 +374,7 @@ export function realizadoBase(
 ): BaseValor | null {
   if (base) return base;
   const est = estimatedRealizado(draft, atingimentoOficial);
-  return est == null ? null : { valor: est, estimado: true };
+  return est == null ? null : { valor: est, fonte: "estimado" };
 }
 
 export function projectedAttainment(
@@ -375,18 +392,18 @@ export function projectedTotalAttainment(
   drafts: FamilyMetaDraft[],
   atingimento: Record<string, number | null>,
   base: BaseFinanceira = {},
-): { ratio: number | null; estimado: boolean } {
+): { ratio: number | null; fonte: BaseFonte | null } {
   let realizado = 0;
   let meta = 0;
-  let estimado = false;
+  const fontes: BaseFonte[] = [];
   for (const d of drafts) {
     const r = realizadoBase(d, atingimento[d.familia] ?? null, base[d.familia]);
     if (r == null || d.metaOficial == null || d.metaOficial <= 0) continue;
     realizado += r.valor;
     meta += d.metaOficial;
-    estimado ||= r.estimado;
+    fontes.push(r.fonte);
   }
-  return { ratio: meta > 0 ? realizado / meta : null, estimado };
+  return { ratio: meta > 0 ? realizado / meta : null, fonte: combineFontes(fontes) };
 }
 
 // ============================ Comparativo visual =============================
@@ -411,8 +428,8 @@ export type ComparativoPoint = {
   metaValor: number | null;
   referenciaPct: number | null;
   referenciaValor: number | null;
-  /** Atingimento calculado sem valor vendido real (estimativa). */
-  estimado: boolean;
+  /** Origem da base do atingimento (venda realizada, média histórica ou estimativa). */
+  fonte: BaseFonte | null;
 };
 
 const pctOrNull = (ratio: number | null) => (ratio == null ? null : ratio * 100);
@@ -432,7 +449,7 @@ export function buildComparativo(
       familia: d.familia,
       label: METAS_FAMILY_LABEL[d.familia],
       performancePct: pctOrNull(projectedAttainment(d, ratio, r)),
-      estimado: r?.estimado ?? false,
+      fonte: r?.fonte ?? null,
       performanceOficialPct: vis.verMetaPadrao ? pctOrNull(ratio) : null,
       metaPct: total > 0 ? ((d.metaOficial ?? 0) / total) * 100 : null,
       metaValor: d.metaOficial,

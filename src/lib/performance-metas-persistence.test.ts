@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildInitialDrafts, buildSavePayload, setMetaOficial } from "./performance-metas";
 import {
   baseFromBackend,
+  competenciasDoCiclo,
   cycleInfo,
   gestorRpcArgs,
   hydrateDrafts,
@@ -31,9 +32,9 @@ const state: GoalsState = {
 describe("performance-metas-persistence", () => {
   it("base financeira: realizado → média → atingimento × meta do upload (estimado)", () => {
     const b = baseFromBackend(state.base);
-    expect(b.PERFIL).toEqual({ valor: 600, estimado: false });
-    expect(b["PRO LAMP"]).toEqual({ valor: 300, estimado: false });
-    expect(b["PRO LED"]).toEqual({ valor: 400, estimado: true });
+    expect(b.PERFIL).toEqual({ valor: 600, fonte: "realizado" });
+    expect(b["PRO LAMP"]).toEqual({ valor: 300, fonte: "media" });
+    expect(b["PRO LED"]).toEqual({ valor: 400, fonte: "estimado" });
     expect(b["DECOR NEWLINE"]).toBeUndefined();
     expect(baseFromBackend(undefined)).toEqual({});
   });
@@ -61,10 +62,10 @@ describe("performance-metas-persistence", () => {
 
   it("visão do representante: atingimento pronto, sem base financeira nem IA", () => {
     const v = repView(state);
-    expect(v.atingimento.PERFIL).toEqual({ ratio: 0.5, estimado: false });
-    expect(v.atingimento["PRO LED"]).toEqual({ ratio: 0.8, estimado: true });
+    expect(v.atingimento.PERFIL).toEqual({ ratio: 0.5, fonte: "realizado" });
+    expect(v.atingimento["PRO LED"]).toEqual({ ratio: 0.8, fonte: "estimado" });
     const json = JSON.stringify(v);
-    expect(json).not.toMatch(/comentario_gestor|ai_suggestions|realizado|familia_pct|client_id/);
+    expect(json).not.toMatch(/comentario_gestor|ai_suggestions|agendadas|"base"|familia_pct|client_id/);
     expect(json).not.toMatch(/"origem"/);
   });
 
@@ -77,6 +78,26 @@ describe("performance-metas-persistence", () => {
       expect.objectContaining({ familia: "PERFIL", meta_mensal: 1300, origem: "gestor" }),
     ]);
     expect(args.sugestoes_ia[0]).toMatchObject({ origem: "simulacao", tag: "imersao" });
+  });
+
+  it("competências: meses do ciclo, padrão no mês corrente", () => {
+    const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
+    const r = competenciasDoCiclo(c, new Date(2027, 0, 15));
+    expect(r.meses).toHaveLength(6);
+    expect(r.meses[0]).toBe("2026-11-01");
+    expect(r.padrao).toBe("2027-01-01");
+    expect(competenciasDoCiclo(c, new Date(2026, 5, 1)).padrao).toBe("2026-11-01");
+    expect(competenciasDoCiclo(c, new Date(2028, 0, 1)).padrao).toBe("2027-04-01");
+    const novo = competenciasDoCiclo(null, new Date(2026, 10, 23));
+    expect(novo.meses).toEqual([
+      "2026-11-01",
+      "2026-12-01",
+      "2027-01-01",
+      "2027-02-01",
+      "2027-03-01",
+      "2027-04-01",
+    ]);
+    expect(novo.padrao).toBe("2026-11-01");
   });
 
   it("ciclo: rótulo, duração e vencimento", () => {

@@ -13,6 +13,7 @@ import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
 import { type CanonicalFamily } from "@/lib/client-bi-familias";
 import {
+  BASE_FONTE_LABEL,
   META_ORIGEM_LABEL,
   METAS_FAMILIES,
   METAS_FAMILY_LABEL,
@@ -39,13 +40,14 @@ import {
 } from "@/lib/performance-metas";
 import {
   baseFromBackend,
+  competenciasDoCiclo,
   gestorRpcArgs,
   hydrateDrafts,
   type GoalsState,
   type MetasLoadResult,
 } from "@/lib/performance-metas-persistence";
 import { saveMetasGoals } from "@/lib/performance-metas.functions";
-import { MetasCicloControl } from "./MetasCicloControl";
+import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
@@ -108,6 +110,10 @@ export function MetasPainel({
     return persisted.available ? hydrateDrafts(base, persisted.state) : base;
   });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
+  // Competência escolhida pelo gestor para as metas salvas (padrão: mês corrente do ciclo).
+  const [competencia, setCompetencia] = useState(
+    () => competenciasDoCiclo(persisted.available ? persisted.state.cycle : null).padrao,
+  );
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
@@ -157,11 +163,21 @@ export function MetasPainel({
       // Grava só a gestão com o banco habilitado; a prévia "ver como representante" não grava.
       const res =
         dbEnabled && payload.perfil === "gestor"
-          ? await saveMetasGoals({ data: { rowId, ...gestorRpcArgs(payload) } })
+          ? await saveMetasGoals({
+              data: { rowId, ...gestorRpcArgs(payload), vigenteDesde: competencia },
+            })
           : null;
-      if (res?.available) setGoals(res.state);
-      setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
-      if (res?.available) toast.success(`${unsaved.length} portfólio(s) salvo(s).`);
+      if (res?.available) {
+        // Volta ao que vale hoje; metas de competências futuras aparecem como agendadas.
+        const hydrated = hydrateDrafts(drafts, res.state);
+        setGoals(res.state);
+        setDrafts((prev) => mergeSaved(prev, hydrated, role));
+        setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
+      } else setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
+      if (res?.available)
+        toast.success(`${unsaved.length} portfólio(s) salvo(s).`, {
+          description: `Valendo a partir de ${competencia.slice(5, 7)}/${competencia.slice(0, 4)}.`,
+        });
       else
         toast.success(`${unsaved.length} portfólio(s) salvo(s) nesta sessão.`, {
           description: previewRep
@@ -187,6 +203,13 @@ export function MetasPainel({
             <Save className="mr-1.5 h-4 w-4" />
             {unsaved.length > 0 ? `Salvar (${unsaved.length})` : "Salvo"}
           </Button>
+          {dbEnabled && vis.editarMetaOficial && (
+            <CompetenciaSelect
+              cycle={goals?.cycle ?? null}
+              value={competencia}
+              onChange={setCompetencia}
+            />
+          )}
           {vis.usarControlesGestao && (
             <>
               <Button
@@ -328,7 +351,11 @@ export function MetasPainel({
               {fmtPct(totalProjetado.ratio)}
             </span>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              {totalProjetado.estimado && totalProjetado.ratio != null ? "Estimado · " : ""}
+              {totalProjetado.ratio != null &&
+              totalProjetado.fonte &&
+              totalProjetado.fonte !== "realizado"
+                ? `${BASE_FONTE_LABEL[totalProjetado.fonte]} · `
+                : ""}
               {vis.verMetaPadrao
                 ? `Oficial (meta padrão): ${fmtPct(totalOficial)}`
                 : (cliente.periodoLabel ?? "Versão mais recente")}
@@ -361,6 +388,7 @@ export function MetasPainel({
           <PortfolioMetaPanel
             draft={d}
             point={comparativo[idx]}
+            agendadas={(goals?.agendadas ?? []).filter((a) => a.familia === fam)}
             unsaved={unsaved}
             vis={vis}
             selected={selected}

@@ -6,6 +6,7 @@ import { CANONICAL_FAMILIES, type CanonicalFamily } from "./client-bi-familias";
 import type {
   AiSuggestionTag,
   BaseFinanceira,
+  BaseFonte,
   FamilyMetaDraft,
   MetaOrigem,
   SavePayload,
@@ -30,6 +31,8 @@ export type GoalsState = {
     comentario_gestor?: string;
     vigente_desde?: string;
   }>;
+  /** Versões já gravadas que passam a valer em competências futuras (só gestão). */
+  agendadas?: Array<{ familia: string; meta_mensal: number | null; vigente_desde: string }>;
   rep_suggestions: Array<{ familia: string; valor: number | null; justificativa: string }>;
   ai_suggestions: Array<{
     familia: string;
@@ -52,7 +55,7 @@ const num = (v: unknown): number | null => {
 
 /**
  * Valor vendido comparável à meta mensal, por portfólio, a partir do backend:
- * realizado (R$) → média (R$) → atingimento × meta do upload (marcado como estimado).
+ * venda realizada (R$) → média histórica (R$) → atingimento × meta do upload (estimado).
  */
 export function baseFromBackend(base: GoalsState["base"]): BaseFinanceira {
   const out: BaseFinanceira = {};
@@ -62,10 +65,10 @@ export function baseFromBackend(base: GoalsState["base"]): BaseFinanceira {
     const media = num(base.media?.[f]);
     const pct = num(base.familia_pct?.[f]);
     const meta = num(base.metas?.[f]);
-    if (real != null && real >= 0) out[f] = { valor: real, estimado: false };
-    else if (media != null && media >= 0) out[f] = { valor: media, estimado: false };
+    if (real != null && real >= 0) out[f] = { valor: real, fonte: "realizado" };
+    else if (media != null && media >= 0) out[f] = { valor: media, fonte: "media" };
     else if (pct != null && pct >= 0 && meta != null && meta > 0)
-      out[f] = { valor: pct * meta, estimado: true };
+      out[f] = { valor: pct * meta, fonte: "estimado" };
   }
   return out;
 }
@@ -122,8 +125,8 @@ export function gestorRpcArgs(payload: Extract<SavePayload, { perfil: "gestor" }
   };
 }
 
-export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions"> & {
-  atingimento: Partial<Record<CanonicalFamily, { ratio: number; estimado: boolean }>>;
+export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendadas"> & {
+  atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
 };
 
 /**
@@ -136,7 +139,7 @@ export function repView(state: GoalsState): RepGoalsView {
   for (const it of state.items) {
     const b = isFamily(it.familia) ? base[it.familia] : null;
     if (b && it.meta_mensal != null && it.meta_mensal > 0 && isFamily(it.familia))
-      atingimento[it.familia] = { ratio: b.valor / it.meta_mensal, estimado: b.estimado };
+      atingimento[it.familia] = { ratio: b.valor / it.meta_mensal, fonte: b.fonte };
   }
   return {
     cycle: state.cycle && { id: state.cycle.id, inicio: state.cycle.inicio, fim: state.cycle.fim },
@@ -147,7 +150,7 @@ export function repView(state: GoalsState): RepGoalsView {
 }
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-const monthLabel = (iso: string) => {
+export const monthLabel = (iso: string) => {
   const [y, m] = iso.split("-").map(Number);
   return `${MESES[m - 1]}/${String(y).slice(-2)}`;
 };
@@ -164,4 +167,19 @@ export function cycleInfo(cycle: GoalsCycle, today = new Date()) {
     vencido: y2 * 12 + (m2 - 1) < atual,
     podeEstender: meses < 12,
   };
+}
+
+/** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo, ou de um
+ *  ciclo de 6 meses a partir do mês corrente quando ainda não há ciclo. */
+export function competenciasDoCiclo(cycle: GoalsCycle | null, today = new Date()) {
+  const iso = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const atual = today.getFullYear() * 12 + today.getMonth();
+  const [y1, m1] = cycle ? cycle.inicio.split("-").map(Number) : [0, 0];
+  const [y2, m2] = cycle ? cycle.fim.split("-").map(Number) : [0, 0];
+  const ini = cycle ? y1 * 12 + m1 - 1 : atual;
+  const fim = cycle ? y2 * 12 + m2 - 1 : atual + 5;
+  const meses = [];
+  for (let k = ini; k <= fim; k++) meses.push(iso(Math.floor(k / 12), k % 12));
+  const padrao = iso(Math.floor(Math.max(atual, ini) / 12), Math.max(atual, ini) % 12);
+  return { meses, padrao: meses.includes(padrao) ? padrao : meses[meses.length - 1] };
 }

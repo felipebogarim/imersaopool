@@ -177,19 +177,28 @@ describe("performance-metas (simulação local)", () => {
     // só dois portfólios com atingimento: (0.5×100 + 1×100) ÷ (100 + 200)
     const r = projectedTotalAttainment(drafts, { "DECOR NEWLINE": 0.5, "DECOR STUDIO": 1 });
     expect(r.ratio).toBeCloseTo(150 / 300, 10);
-    expect(r.estimado).toBe(true);
+    expect(r.fonte).toBe("estimado");
     expect(projectedTotalAttainment(drafts, {}).ratio).toBeNull();
   });
 
-  it("com valor vendido real do backend, o atingimento deixa de ser estimado", () => {
+  it("com venda realizada do backend, o atingimento deixa de ser estimado", () => {
     const drafts = withMetas([200, 100, 100, 100, 100, 100, 100]);
-    const base = { "DECOR NEWLINE": { valor: 150, estimado: false } };
+    const base = { "DECOR NEWLINE": { valor: 150, fonte: "realizado" as const } };
     const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor, base);
     expect(pts[0].performancePct).toBeCloseTo(75, 10); // 150 ÷ 200, ignora 0,6 × padrão
-    expect(pts[0].estimado).toBe(false);
-    expect(buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor)[0].estimado).toBe(true);
+    expect(pts[0].fonte).toBe("realizado");
+    expect(buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor)[0].fonte).toBe("estimado");
     const tot = projectedTotalAttainment(drafts, { "DECOR NEWLINE": 0.6 }, base);
-    expect(tot).toEqual({ ratio: 150 / 200, estimado: false });
+    expect(tot).toEqual({ ratio: 150 / 200, fonte: "realizado" });
+    const mix = projectedTotalAttainment(
+      drafts,
+      { "DECOR STUDIO": 1 },
+      {
+        ...base,
+        "DECOR STUDIO": { valor: 90, fonte: "media" },
+      },
+    );
+    expect(mix.fonte).toBe("media");
   });
 
   it("detecta portfólios alterados e monta o payload por perfil", () => {

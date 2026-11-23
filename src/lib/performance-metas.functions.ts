@@ -79,6 +79,11 @@ export const saveMetasGoals = createServerFn({ method: "POST" })
           }),
         )
         .max(7),
+      /** Competência a partir da qual as metas valem (YYYY-MM-01); padrão: mês corrente. */
+      vigenteDesde: z
+        .string()
+        .regex(/^\d{4}-\d{2}-01$/)
+        .optional(),
     }),
   )
   .handler(({ data, context }) =>
@@ -86,6 +91,7 @@ export const saveMetasGoals = createServerFn({ method: "POST" })
       _row_id: data.rowId,
       _metas: data.metas,
       _sugestoes_ia: data.sugestoes_ia,
+      _vigente_desde: data.vigenteDesde ?? null,
     }),
   );
 
