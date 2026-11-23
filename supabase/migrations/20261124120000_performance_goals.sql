@@ -14,7 +14,10 @@
 -- =============================================================================
 
 -- Ciclo de vigência (normalmente 6 meses; pode ser estendido até 12 ou renovado).
--- inicio/fim = 1º dia do primeiro e do último mês do ciclo.
+-- inicio/fim = 1º dia do primeiro e do último mês do ciclo. Os ciclos de um cliente são
+-- sequenciais e sem sobreposição: o vigente é o que contém o mês corrente; a renovação
+-- antecipada cria o próximo, que começa no mês seguinte ao fim do atual (o atual segue
+-- vigente até o fim previsto). Revisar metas dentro do ciclo é outra operação (items).
 CREATE TABLE public.performance_goal_cycles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id uuid NOT NULL REFERENCES public.companies(id),
@@ -27,18 +30,15 @@ CREATE TABLE public.performance_goal_cycles (
   vinculo_confirmado_em timestamptz,
   inicio date NOT NULL,
   fim date NOT NULL,
-  status text NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'encerrado')),
   renovado_de uuid REFERENCES public.performance_goal_cycles(id),
   created_by uuid REFERENCES auth.users(id),
   updated_by uuid REFERENCES auth.users(id),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT pgc_meses CHECK (extract(day FROM inicio) = 1 AND extract(day FROM fim) = 1),
-  CONSTRAINT pgc_duracao CHECK (fim >= inicio AND fim <= (inicio + interval '11 months')::date)
+  CONSTRAINT pgc_duracao CHECK (fim >= inicio AND fim <= (inicio + interval '11 months')::date),
+  CONSTRAINT pgc_inicio_unico UNIQUE (company_id, representative_id, cliente_key, inicio)
 );
-CREATE UNIQUE INDEX pgc_um_ativo_por_cliente
-  ON public.performance_goal_cycles (company_id, representative_id, cliente_key)
-  WHERE status = 'ativo';
 CREATE INDEX pgc_rep_idx ON public.performance_goal_cycles (representative_id, cliente_key);
 
 -- Meta mensal por portfólio. Alterar a meta durante a vigência cria uma nova linha a partir da
@@ -207,17 +207,36 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
   WHERE r.id = _row_id
 $$;
 
--- Ciclo ativo do cliente; cria um de 6 meses a partir do mês corrente se não houver.
+-- Ciclo vigente do cliente: o que contém o mês corrente; se o último já venceu, o último;
+-- se só houver ciclos futuros, o primeiro deles.
+CREATE OR REPLACE FUNCTION public.performance_goal_current_cycle(_ctx jsonb)
+RETURNS SETOF public.performance_goal_cycles LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public AS $$
+  SELECT * FROM public.performance_goal_cycles
+  WHERE company_id = (_ctx->>'company_id')::uuid
+    AND representative_id = (_ctx->>'representative_id')::uuid
+    AND cliente_key = _ctx->>'cliente_key'
+  ORDER BY CASE WHEN inicio <= public.performance_goal_month() THEN 0 ELSE 1 END,
+           CASE WHEN inicio <= public.performance_goal_month() THEN inicio END DESC NULLS LAST,
+           inicio
+  LIMIT 1
+$$;
+
+-- Serializa operações de ciclo do mesmo cliente (evita ciclos duplicados em concorrência).
+CREATE OR REPLACE FUNCTION public.performance_goal_lock(_ctx jsonb)
+RETURNS void LANGUAGE sql VOLATILE AS $$
+  SELECT pg_advisory_xact_lock(hashtextextended(
+    (_ctx->>'company_id') || '|' || (_ctx->>'representative_id') || '|' || (_ctx->>'cliente_key'), 0))
+$$;
+
+-- Ciclo vigente; cria um de 6 meses a partir do mês corrente se o cliente não tiver nenhum.
 CREATE OR REPLACE FUNCTION public.performance_goal_ensure_cycle(_ctx jsonb, _actor uuid)
 RETURNS public.performance_goal_cycles LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE _c public.performance_goal_cycles; _m date := public.performance_goal_month();
 BEGIN
-  SELECT * INTO _c FROM public.performance_goal_cycles
-  WHERE company_id = (_ctx->>'company_id')::uuid
-    AND representative_id = (_ctx->>'representative_id')::uuid
-    AND cliente_key = _ctx->>'cliente_key' AND status = 'ativo'
-  FOR UPDATE;
-  IF FOUND THEN RETURN _c; END IF;
+  PERFORM public.performance_goal_lock(_ctx);
+  SELECT * INTO _c FROM public.performance_goal_current_cycle(_ctx);
+  IF _c.id IS NOT NULL THEN RETURN _c; END IF;
   INSERT INTO public.performance_goal_cycles
     (company_id, representative_id, cliente_key, razao_social, categoria, inicio, fim,
      created_by, updated_by)
@@ -233,17 +252,24 @@ END $$;
 CREATE OR REPLACE FUNCTION public.performance_goal_state(_ctx jsonb, _staff boolean)
 RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   WITH c AS (
-    SELECT * FROM public.performance_goal_cycles
-    WHERE company_id = (_ctx->>'company_id')::uuid
-      AND representative_id = (_ctx->>'representative_id')::uuid
-      AND cliente_key = _ctx->>'cliente_key' AND status = 'ativo'
+    SELECT * FROM public.performance_goal_current_cycle(_ctx)
+  ), n AS (  -- próximo ciclo (renovação antecipada), começa no mês seguinte ao fim do vigente
+    SELECT p.* FROM public.performance_goal_cycles p, c
+    WHERE p.company_id = c.company_id AND p.representative_id = c.representative_id
+      AND p.cliente_key = c.cliente_key AND p.inicio > c.fim
+    ORDER BY p.inicio LIMIT 1
   ), items AS (  -- versão vigente no mês corrente (ou no 1º mês, se o ciclo ainda não começou)
     SELECT DISTINCT ON (i.familia) i.* FROM public.performance_goal_items i JOIN c ON c.id = i.cycle_id
     WHERE i.vigente_desde <= GREATEST(public.performance_goal_month(), c.inicio)
     ORDER BY i.familia, i.vigente_desde DESC
-  ), agendadas AS (  -- versões que passam a valer em competências futuras
-    SELECT i.* FROM public.performance_goal_items i JOIN c ON c.id = i.cycle_id
-    WHERE i.vigente_desde > GREATEST(public.performance_goal_month(), c.inicio)
+  ), versoes AS (  -- versões do ciclo vigente e do próximo, com o valor anterior
+    SELECT i.*, lag(i.meta_mensal) OVER (PARTITION BY i.familia ORDER BY i.vigente_desde) AS anterior
+    FROM public.performance_goal_items i
+    WHERE i.cycle_id IN (SELECT id FROM c UNION ALL SELECT id FROM n)
+  ), agendadas AS (  -- mudanças de meta em competências futuras
+    SELECT v.* FROM versoes v, c
+    WHERE v.vigente_desde > GREATEST(public.performance_goal_month(), c.inicio)
+      AND v.meta_mensal IS DISTINCT FROM v.anterior
   ), ai AS (
     SELECT DISTINCT ON (a.familia) a.* FROM public.performance_goal_ai_suggestions a
     JOIN c ON c.id = a.cycle_id ORDER BY a.familia, a.created_at DESC
@@ -252,6 +278,8 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
     'cycle', (SELECT jsonb_build_object('id', id, 'inicio', inicio, 'fim', fim,
                 'client_id', CASE WHEN _staff THEN client_id END,
                 'vinculo_confirmado_em', CASE WHEN _staff THEN vinculo_confirmado_em END) FROM c),
+    'proximo', CASE WHEN _staff THEN (SELECT jsonb_build_object('id', id, 'inicio', inicio,
+                'fim', fim) FROM n) END,
     'items', COALESCE((SELECT jsonb_agg(CASE WHEN _staff THEN jsonb_build_object(
                 'familia', familia, 'meta_mensal', meta_mensal, 'origem', origem,
                 'comentario_gestor', comentario_gestor, 'vigente_desde', vigente_desde)
@@ -273,6 +301,8 @@ $$;
 
 REVOKE ALL ON FUNCTION public.performance_goal_row_context(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.performance_goal_ensure_cycle(jsonb, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.performance_goal_current_cycle(jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.performance_goal_lock(jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.performance_goal_state(jsonb, boolean) FROM PUBLIC, anon, authenticated;
 
 -- Contexto da linha + checagem de gestão (admin/gestor da empresa ativa).
@@ -301,20 +331,25 @@ END $$;
 
 -- _metas: [{familia, meta_mensal, origem, comentario_gestor, referencia}]
 -- _sugestoes_ia: [{familia, valor, justificativa, tag, origem}]
--- _vigente_desde: competência a partir da qual as metas valem (padrão: mês corrente);
--- precisa estar dentro do ciclo ativo.
+-- _vigente_desde: competência a partir da qual as metas valem (padrão: mês corrente do ciclo
+-- vigente); precisa estar dentro do ciclo vigente ou do próximo (já renovado).
 CREATE OR REPLACE FUNCTION public.save_performance_goals(
   _row_id uuid, _metas jsonb, _sugestoes_ia jsonb, _vigente_desde date DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   _ctx jsonb := public.performance_goal_staff_ctx(_row_id);
   _uid uuid := auth.uid();
-  _c public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, _uid);
+  _cur public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, _uid);
   _desde date := COALESCE(public.performance_goal_month(_vigente_desde),
-                          GREATEST(public.performance_goal_month(), _c.inicio));
+                          GREATEST(public.performance_goal_month(), _cur.inicio));
+  _c public.performance_goal_cycles;
   _m jsonb;
 BEGIN
-  IF _desde < _c.inicio OR _desde > _c.fim THEN
+  SELECT * INTO _c FROM public.performance_goal_cycles
+  WHERE company_id = _cur.company_id AND representative_id = _cur.representative_id
+    AND cliente_key = _cur.cliente_key AND inicio >= _cur.inicio
+    AND _desde BETWEEN inicio AND fim;
+  IF _c.id IS NULL THEN
     RAISE EXCEPTION 'Competência fora do ciclo vigente.';
   END IF;
   FOR _m IN SELECT * FROM jsonb_array_elements(COALESCE(_metas, '[]'::jsonb)) LOOP
@@ -342,49 +377,65 @@ BEGIN
   RETURN public.performance_goal_state(_ctx, true);
 END $$;
 
--- Renova: encerra o ciclo atual e abre outro (6 ou 12 meses) copiando as metas vigentes.
+-- Renovação: cria o PRÓXIMO ciclo (6 ou 12 meses), começando no mês seguinte ao fim do último
+-- ciclo do cliente, sem interrupção, com cópia das metas vigentes ao final dele. O ciclo atual
+-- não é alterado e segue vigente até o fim previsto. Só um ciclo futuro por vez.
 CREATE OR REPLACE FUNCTION public.renew_performance_goal_cycle(_row_id uuid, _meses int)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   _ctx jsonb := public.performance_goal_staff_ctx(_row_id);
   _uid uuid := auth.uid();
-  _old public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, _uid);
-  _inicio date := GREATEST(public.performance_goal_month(), (_old.fim + interval '1 month')::date);
+  _cur public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, _uid);
+  _last public.performance_goal_cycles;
+  _inicio date;
   _new_id uuid;
 BEGIN
   IF _meses NOT IN (6, 12) THEN RAISE EXCEPTION 'Ciclo deve ter 6 ou 12 meses.'; END IF;
-  UPDATE public.performance_goal_cycles SET status = 'encerrado', updated_by = _uid WHERE id = _old.id;
+  SELECT * INTO _last FROM public.performance_goal_cycles
+  WHERE company_id = _cur.company_id AND representative_id = _cur.representative_id
+    AND cliente_key = _cur.cliente_key
+  ORDER BY inicio DESC LIMIT 1;
+  IF _last.inicio > public.performance_goal_month() THEN
+    RAISE EXCEPTION 'Já existe um próximo ciclo programado.';
+  END IF;
+  _inicio := (_last.fim + interval '1 month')::date;
   INSERT INTO public.performance_goal_cycles
     (company_id, representative_id, cliente_key, razao_social, categoria, client_id,
      vinculo_confirmado_por, vinculo_confirmado_em, inicio, fim, renovado_de, created_by, updated_by)
-  VALUES (_old.company_id, _old.representative_id, _old.cliente_key, _ctx->>'razao_social',
-     _ctx->>'categoria', _old.client_id, _old.vinculo_confirmado_por, _old.vinculo_confirmado_em,
-     _inicio, (_inicio + make_interval(months => _meses - 1))::date, _old.id, _uid, _uid)
+  VALUES (_last.company_id, _last.representative_id, _last.cliente_key, _ctx->>'razao_social',
+     _ctx->>'categoria', _last.client_id, _last.vinculo_confirmado_por, _last.vinculo_confirmado_em,
+     _inicio, (_inicio + make_interval(months => _meses - 1))::date, _last.id, _uid, _uid)
   RETURNING id INTO _new_id;
   INSERT INTO public.performance_goal_items
     (company_id, cycle_id, familia, vigente_desde, meta_mensal, origem, comentario_gestor,
      referencia_snapshot, updated_by)
   SELECT DISTINCT ON (familia) company_id, _new_id, familia, _inicio, meta_mensal, origem,
          comentario_gestor, referencia_snapshot, _uid
-  FROM public.performance_goal_items WHERE cycle_id = _old.id
+  FROM public.performance_goal_items WHERE cycle_id = _last.id
   ORDER BY familia, vigente_desde DESC;
   RETURN public.performance_goal_state(_ctx, true);
 END $$;
 
--- Estende o ciclo ativo para 12 meses a partir do início.
+-- Estende o ciclo vigente para 12 meses a partir do início (se ainda não houver próximo ciclo).
 CREATE OR REPLACE FUNCTION public.extend_performance_goal_cycle(_row_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   _ctx jsonb := public.performance_goal_staff_ctx(_row_id);
   _c public.performance_goal_cycles := public.performance_goal_ensure_cycle(_ctx, auth.uid());
 BEGIN
+  IF EXISTS (SELECT 1 FROM public.performance_goal_cycles
+             WHERE company_id = _c.company_id AND representative_id = _c.representative_id
+               AND cliente_key = _c.cliente_key AND inicio > _c.fim) THEN
+    RAISE EXCEPTION 'Já existe um próximo ciclo programado; não é possível estender o atual.';
+  END IF;
   UPDATE public.performance_goal_cycles
   SET fim = (_c.inicio + interval '11 months')::date, updated_by = auth.uid()
   WHERE id = _c.id;
   RETURN public.performance_goal_state(_ctx, true);
 END $$;
 
--- Confirma manualmente o vínculo da linha de Performance com um cadastro de cliente.
+-- Confirma manualmente o vínculo da linha de Performance com um cadastro de cliente
+-- (no ciclo vigente e nos seguintes).
 CREATE OR REPLACE FUNCTION public.confirm_performance_goal_link(_row_id uuid, _client_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
@@ -398,7 +449,8 @@ BEGIN
   UPDATE public.performance_goal_cycles
   SET client_id = _client_id, vinculo_confirmado_por = auth.uid(),
       vinculo_confirmado_em = now(), updated_by = auth.uid()
-  WHERE id = _c.id;
+  WHERE company_id = _c.company_id AND representative_id = _c.representative_id
+    AND cliente_key = _c.cliente_key AND inicio >= _c.inicio;
   RETURN public.performance_goal_state(_ctx, true);
 END $$;
 

@@ -23,7 +23,10 @@ export type GoalsCycle = {
 type RawJson = Record<string, number | string | null>;
 
 export type GoalsState = {
+  /** Ciclo vigente (contém o mês corrente; ou o último, se vencido). */
   cycle: GoalsCycle | null;
+  /** Próximo ciclo, já criado por renovação antecipada (só gestão). */
+  proximo?: GoalsCycle | null;
   items: Array<{
     familia: string;
     meta_mensal: number | null;
@@ -125,7 +128,7 @@ export function gestorRpcArgs(payload: Extract<SavePayload, { perfil: "gestor" }
   };
 }
 
-export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendadas"> & {
+export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendadas" | "proximo"> & {
   atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
 };
 
@@ -169,17 +172,26 @@ export function cycleInfo(cycle: GoalsCycle, today = new Date()) {
   };
 }
 
-/** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo, ou de um
- *  ciclo de 6 meses a partir do mês corrente quando ainda não há ciclo. */
-export function competenciasDoCiclo(cycle: GoalsCycle | null, today = new Date()) {
-  const iso = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, "0")}-01`;
+/** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo vigente e do
+ *  próximo (se já renovado), ou de um ciclo de 6 meses a partir do mês corrente quando ainda
+ *  não há ciclo. Padrão: mês corrente (ou o primeiro mês disponível depois dele). */
+export function competenciasDoCiclo(
+  cycle: GoalsCycle | null,
+  proximo: GoalsCycle | null = null,
+  today = new Date(),
+) {
+  const idx = (iso: string) => {
+    const [y, m] = iso.split("-").map(Number);
+    return y * 12 + m - 1;
+  };
+  const iso = (k: number) => `${Math.floor(k / 12)}-${String((k % 12) + 1).padStart(2, "0")}-01`;
   const atual = today.getFullYear() * 12 + today.getMonth();
-  const [y1, m1] = cycle ? cycle.inicio.split("-").map(Number) : [0, 0];
-  const [y2, m2] = cycle ? cycle.fim.split("-").map(Number) : [0, 0];
-  const ini = cycle ? y1 * 12 + m1 - 1 : atual;
-  const fim = cycle ? y2 * 12 + m2 - 1 : atual + 5;
-  const meses = [];
-  for (let k = ini; k <= fim; k++) meses.push(iso(Math.floor(k / 12), k % 12));
-  const padrao = iso(Math.floor(Math.max(atual, ini) / 12), Math.max(atual, ini) % 12);
-  return { meses, padrao: meses.includes(padrao) ? padrao : meses[meses.length - 1] };
+  const faixas: Array<[number, number]> = cycle
+    ? [[idx(cycle.inicio), idx(cycle.fim)]]
+    : [[atual, atual + 5]];
+  if (cycle && proximo) faixas.push([idx(proximo.inicio), idx(proximo.fim)]);
+  const meses: string[] = [];
+  for (const [a, b] of faixas) for (let k = a; k <= b; k++) meses.push(iso(k));
+  const padrao = meses.find((m) => idx(m) >= atual) ?? meses[meses.length - 1];
+  return { meses, padrao };
 }

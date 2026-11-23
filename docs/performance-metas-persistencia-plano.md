@@ -9,12 +9,15 @@ Lovable Cloud, somente após aprovação). Não altera nenhuma tabela, função 
   da linha de Performance. O vínculo com `clients` é opcional e manual ("Revisar vínculo" →
   "Confirmar vínculo"), gravado no ciclo, sem alterar o cadastro de clientes.
 - **Ciclo de vigência** (`performance_goal_cycles`): criado no primeiro salvamento com 6 meses a
-  partir do mês corrente; um ciclo ativo por cliente. O gestor pode estender o ciclo ativo para
-  12 meses ou renovar (encerra o atual e abre um novo de 6 ou 12 meses, a partir do mês seguinte
-  ao fim do atual, copiando as metas vigentes).
+  partir do mês corrente. Os ciclos de um cliente são sequenciais e sem sobreposição; o vigente é
+  o que contém o mês corrente. O gestor pode estender o ciclo vigente para 12 meses (enquanto não
+  houver próximo ciclo) ou **renovar**: a renovação programa o próximo ciclo (6 ou 12 meses) a
+  partir do mês seguinte ao fim do último, sem interrupção, copiando as metas vigentes ao final
+  dele; o ciclo atual não é alterado e segue até o fim previsto. Um ciclo futuro por vez.
+  Revisar metas dentro de um ciclo é outra operação (abaixo).
 - **Meta mensal por portfólio** (`performance_goal_items`): cada salvamento grava a meta a partir
-  da **competência escolhida pelo gestor** (`vigente_desde`, dentro do ciclo; padrão = mês
-  corrente). A meta de um mês M é a versão com maior `vigente_desde <= M`; versões anteriores
+  da **competência escolhida pelo gestor** (`vigente_desde`, dentro do ciclo vigente ou do
+  próximo já programado; padrão = mês corrente). A meta de um mês M é a versão com maior `vigente_desde <= M`; versões anteriores
   permanecem. Metas de competências futuras aparecem na tela como "agendadas".
 - **Sugestão do representante** (`performance_goal_rep_suggestions`): versão vigente por
   portfólio; versões anteriores ficam no histórico.

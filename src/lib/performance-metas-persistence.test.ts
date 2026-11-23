@@ -65,7 +65,9 @@ describe("performance-metas-persistence", () => {
     expect(v.atingimento.PERFIL).toEqual({ ratio: 0.5, fonte: "realizado" });
     expect(v.atingimento["PRO LED"]).toEqual({ ratio: 0.8, fonte: "estimado" });
     const json = JSON.stringify(v);
-    expect(json).not.toMatch(/comentario_gestor|ai_suggestions|agendadas|"base"|familia_pct|client_id/);
+    expect(json).not.toMatch(
+      /comentario_gestor|ai_suggestions|agendadas|"base"|familia_pct|client_id/,
+    );
     expect(json).not.toMatch(/"origem"/);
   });
 
@@ -82,13 +84,19 @@ describe("performance-metas-persistence", () => {
 
   it("competências: meses do ciclo, padrão no mês corrente", () => {
     const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
-    const r = competenciasDoCiclo(c, new Date(2027, 0, 15));
+    const r = competenciasDoCiclo(c, null, new Date(2027, 0, 15));
     expect(r.meses).toHaveLength(6);
     expect(r.meses[0]).toBe("2026-11-01");
     expect(r.padrao).toBe("2027-01-01");
-    expect(competenciasDoCiclo(c, new Date(2026, 5, 1)).padrao).toBe("2026-11-01");
-    expect(competenciasDoCiclo(c, new Date(2028, 0, 1)).padrao).toBe("2027-04-01");
-    const novo = competenciasDoCiclo(null, new Date(2026, 10, 23));
+    expect(competenciasDoCiclo(c, null, new Date(2026, 5, 1)).padrao).toBe("2026-11-01");
+    expect(competenciasDoCiclo(c, null, new Date(2028, 0, 1)).padrao).toBe("2027-04-01");
+    // renovado: o próximo ciclo continua a sequência, sem interrupção
+    const prox = { id: "p", inicio: "2027-05-01", fim: "2027-10-01" };
+    const r2 = competenciasDoCiclo(c, prox, new Date(2027, 0, 15));
+    expect(r2.meses).toHaveLength(12);
+    expect(r2.meses[6]).toBe("2027-05-01");
+    expect(r2.padrao).toBe("2027-01-01");
+    const novo = competenciasDoCiclo(null, null, new Date(2026, 10, 23));
     expect(novo.meses).toEqual([
       "2026-11-01",
       "2026-12-01",

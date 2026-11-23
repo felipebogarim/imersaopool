@@ -112,7 +112,11 @@ export function MetasPainel({
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   // Competência escolhida pelo gestor para as metas salvas (padrão: mês corrente do ciclo).
   const [competencia, setCompetencia] = useState(
-    () => competenciasDoCiclo(persisted.available ? persisted.state.cycle : null).padrao,
+    () =>
+      competenciasDoCiclo(
+        persisted.available ? persisted.state.cycle : null,
+        persisted.available ? (persisted.state.proximo ?? null) : null,
+      ).padrao,
   );
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
@@ -206,6 +210,7 @@ export function MetasPainel({
           {dbEnabled && vis.editarMetaOficial && (
             <CompetenciaSelect
               cycle={goals?.cycle ?? null}
+              proximo={goals?.proximo ?? null}
               value={competencia}
               onChange={setCompetencia}
             />
@@ -244,6 +249,7 @@ export function MetasPainel({
             <MetasCicloControl
               rowId={rowId}
               cycle={goals?.cycle ?? null}
+              proximo={goals?.proximo ?? null}
               enabled={dbEnabled}
               canManage={vis.usarControlesGestao}
               onChange={setGoals}

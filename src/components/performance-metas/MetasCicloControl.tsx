@@ -25,12 +25,14 @@ import { extendMetasCycle, renewMetasCycle } from "@/lib/performance-metas.funct
 export function MetasCicloControl({
   rowId,
   cycle,
+  proximo = null,
   enabled,
   canManage,
   onChange,
 }: {
   rowId: string;
   cycle: GoalsState["cycle"];
+  proximo?: GoalsState["cycle"];
   /** Banco habilitado (migration aplicada). */
   enabled: boolean;
   canManage: boolean;
@@ -47,8 +49,11 @@ export function MetasCicloControl({
   }
 
   const info = cycle ? cycleInfo(cycle) : null;
+  const prox = proximo ? cycleInfo(proximo) : null;
   const label = info
-    ? `Ciclo ${info.label} · ${info.meses} meses${info.vencido ? " · vencido" : ""}`
+    ? `Ciclo ${info.label} · ${info.meses} meses${info.vencido && !prox ? " · vencido" : ""}${
+        prox ? ` · próximo ${prox.label}` : ""
+      }`
     : "Ciclo de 6 meses inicia ao salvar";
 
   async function run(fn: () => Promise<MetasLoadResult>, ok: string) {
@@ -93,10 +98,12 @@ export function MetasCicloControl({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          Alterações preservam o histórico. As metas vigentes são copiadas na renovação.
+          {prox
+            ? `Próximo ciclo já programado (${prox.label}). Para revisar metas, use "Vale a partir de".`
+            : "A renovação programa o próximo ciclo logo após o fim do atual, copiando as metas vigentes. O ciclo atual segue até o fim previsto."}
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {info?.podeEstender && (
+        {!prox && <DropdownMenuSeparator />}
+        {!prox && info?.podeEstender && (
           <DropdownMenuItem
             onClick={() =>
               run(() => extendMetasCycle({ data: { rowId } }), "Ciclo estendido para 12 meses.")
@@ -105,26 +112,30 @@ export function MetasCicloControl({
             Estender este ciclo para 12 meses
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          onClick={() =>
-            run(
-              () => renewMetasCycle({ data: { rowId, meses: 6 } }),
-              "Novo ciclo de 6 meses criado.",
-            )
-          }
-        >
-          Renovar: novo ciclo de 6 meses
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            run(
-              () => renewMetasCycle({ data: { rowId, meses: 12 } }),
-              "Novo ciclo de 12 meses criado.",
-            )
-          }
-        >
-          Renovar: novo ciclo de 12 meses
-        </DropdownMenuItem>
+        {!prox && (
+          <>
+            <DropdownMenuItem
+              onClick={() =>
+                run(
+                  () => renewMetasCycle({ data: { rowId, meses: 6 } }),
+                  "Novo ciclo de 6 meses criado.",
+                )
+              }
+            >
+              Renovar: novo ciclo de 6 meses
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                run(
+                  () => renewMetasCycle({ data: { rowId, meses: 12 } }),
+                  "Novo ciclo de 12 meses criado.",
+                )
+              }
+            >
+              Renovar: novo ciclo de 12 meses
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -133,14 +144,16 @@ export function MetasCicloControl({
 /** Competência a partir da qual as metas salvas passam a valer (dentro do ciclo). */
 export function CompetenciaSelect({
   cycle,
+  proximo = null,
   value,
   onChange,
 }: {
   cycle: GoalsState["cycle"];
+  proximo?: GoalsState["cycle"];
   value: string;
   onChange: (v: string) => void;
 }) {
-  const { meses } = competenciasDoCiclo(cycle);
+  const { meses } = competenciasDoCiclo(cycle, proximo);
   return (
     <label
       className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
