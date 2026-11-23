@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { MetasPainel, type MetasClienteInfo } from "@/components/performance-metas/MetasPainel";
 import { useMetasViewer } from "@/components/performance-metas/use-metas-viewer";
+import { getMetasGoals } from "@/lib/performance-metas.functions";
 
 export const Route = createFileRoute("/_authenticated/performance/metas/$rowId")({
   head: () => ({ meta: [{ title: "Metas do cliente — PoolFlux" }] }),
@@ -53,6 +54,13 @@ function MetasClientePage() {
   });
 
   const isGestor = viewer.role === "gestor";
+  // Metas gravadas (gestão). Sem a migration aplicada → { available: false } (simulação local).
+  const { data: persisted, isLoading: loadingGoals } = useQuery({
+    queryKey: ["performance-metas", "goals", rowId],
+    enabled: !viewer.loading && isGestor,
+    staleTime: Infinity,
+    queryFn: () => getMetasGoals({ data: { rowId } }),
+  });
   const role = isGestor && !previewRep ? "gestor" : "representante";
   const forbidden =
     !viewer.loading &&
@@ -78,7 +86,7 @@ function MetasClientePage() {
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar para a carteira
         </Link>
 
-        {isLoading || viewer.loading ? (
+        {isLoading || viewer.loading || (isGestor && loadingGoals) ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
@@ -90,6 +98,8 @@ function MetasClientePage() {
           </p>
         ) : (
           <MetasPainel
+            rowId={rowId}
+            persisted={persisted ?? { available: false }}
             cliente={cliente}
             role={role}
             canPreview={isGestor}

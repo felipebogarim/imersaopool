@@ -1,9 +1,9 @@
 // ============================================================================
-// PERFORMANCE → METAS (simulação local)
+// PERFORMANCE → METAS (lógica pura)
 //
-// Módulo ISOLADO dos cálculos oficiais de Performance. Nada aqui grava no banco,
-// altera metas vigentes, faróis ou o motor do BI. Todo valor editado vive apenas
-// no estado local da tela e é descartado ao sair.
+// Módulo ISOLADO dos cálculos oficiais de Performance: as metas personalizadas
+// são gravadas em tabelas próprias (performance_goal_*) e NÃO alteram as metas
+// oficiais, faróis ou o motor do BI. Gravação: performance-metas.functions.ts.
 //
 // A "referência padrão" vem da matriz já publicada em
 // `performance-portfolio-targets.ts` (somente leitura).
@@ -89,8 +89,8 @@ export type AiSuggestion = {
   valor: number;
   justificativa: string;
   tag: AiSuggestionTag;
-  /** Nesta etapa toda sugestão é demonstrativa. */
-  simulada: true;
+  /** `true` = sugestão demonstrativa (ainda sem modelo de IA real). */
+  simulada: boolean;
 };
 
 /** De onde veio o valor atual da meta oficial. */
@@ -342,29 +342,51 @@ export function estimatedRealizado(
   return atingimentoOficial * draft.referencia;
 }
 
+/**
+ * Valor vendido comparável à meta mensal, vindo do backend (R$ reais).
+ * `estimado` = sem realizado/média no upload: derivado de atingimento × meta.
+ */
+export type BaseValor = { valor: number; estimado: boolean };
+export type BaseFinanceira = Partial<Record<CanonicalFamily, BaseValor | null>>;
+
+/** Valor vendido do portfólio: backend quando houver; senão estimativa local. */
+export function realizadoBase(
+  draft: Pick<FamilyMetaDraft, "referencia">,
+  atingimentoOficial: number | null,
+  base?: BaseValor | null,
+): BaseValor | null {
+  if (base) return base;
+  const est = estimatedRealizado(draft, atingimentoOficial);
+  return est == null ? null : { valor: est, estimado: true };
+}
+
 export function projectedAttainment(
   draft: Pick<FamilyMetaDraft, "referencia" | "metaOficial">,
   atingimentoOficial: number | null,
+  base?: BaseValor | null,
 ): number | null {
-  const realizado = estimatedRealizado(draft, atingimentoOficial);
-  if (realizado == null || draft.metaOficial == null || draft.metaOficial <= 0) return null;
-  return realizado / draft.metaOficial;
+  const r = realizadoBase(draft, atingimentoOficial, base);
+  if (r == null || draft.metaOficial == null || draft.metaOficial <= 0) return null;
+  return r.valor / draft.metaOficial;
 }
 
-/** Atingimento total projetado: Σ realizado estimado ÷ Σ meta oficial (mesmos portfólios). */
+/** Atingimento total projetado: Σ realizado ÷ Σ meta oficial (mesmos portfólios). */
 export function projectedTotalAttainment(
   drafts: FamilyMetaDraft[],
   atingimento: Record<string, number | null>,
-): number | null {
+  base: BaseFinanceira = {},
+): { ratio: number | null; estimado: boolean } {
   let realizado = 0;
   let meta = 0;
+  let estimado = false;
   for (const d of drafts) {
-    const r = estimatedRealizado(d, atingimento[d.familia] ?? null);
+    const r = realizadoBase(d, atingimento[d.familia] ?? null, base[d.familia]);
     if (r == null || d.metaOficial == null || d.metaOficial <= 0) continue;
-    realizado += r;
+    realizado += r.valor;
     meta += d.metaOficial;
+    estimado ||= r.estimado;
   }
-  return meta > 0 ? realizado / meta : null;
+  return { ratio: meta > 0 ? realizado / meta : null, estimado };
 }
 
 // ============================ Comparativo visual =============================
@@ -389,6 +411,8 @@ export type ComparativoPoint = {
   metaValor: number | null;
   referenciaPct: number | null;
   referenciaValor: number | null;
+  /** Atingimento calculado sem valor vendido real (estimativa). */
+  estimado: boolean;
 };
 
 const pctOrNull = (ratio: number | null) => (ratio == null ? null : ratio * 100);
@@ -397,15 +421,18 @@ export function buildComparativo(
   drafts: FamilyMetaDraft[],
   atingimento: Record<string, number | null>,
   vis: MetasVisibility,
+  base: BaseFinanceira = {},
 ): ComparativoPoint[] {
   const total = drafts.reduce((s, d) => s + (d.metaOficial ?? 0), 0);
   const refTotal = drafts.reduce((s, d) => s + (d.referencia ?? 0), 0);
   return drafts.map((d) => {
     const ratio = atingimento[d.familia] ?? null;
+    const r = realizadoBase(d, ratio, base[d.familia]);
     return {
       familia: d.familia,
       label: METAS_FAMILY_LABEL[d.familia],
-      performancePct: pctOrNull(projectedAttainment(d, ratio)),
+      performancePct: pctOrNull(projectedAttainment(d, ratio, r)),
+      estimado: r?.estimado ?? false,
       performanceOficialPct: vis.verMetaPadrao ? pctOrNull(ratio) : null,
       metaPct: total > 0 ? ((d.metaOficial ?? 0) / total) * 100 : null,
       metaValor: d.metaOficial,

@@ -1,10 +1,11 @@
-// Painel individual de metas do cliente (simulação local).
-// Três partes: dashboard fixo no topo → gráfico comparativo → cards de edição.
-// Nenhum valor é persistido; recarregar a página descarta a simulação.
+// Painel individual de metas do cliente.
+// Três partes: dashboard fixo no topo → gráfico comparativo → painel do portfólio.
+// Com a migration aplicada, grava em performance_goal_* (sem tocar nas metas oficiais
+// do BI); antes disso funciona como simulação local.
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FlaskConical, Link2, Mail, RotateCcw, Save, Sparkles } from "lucide-react";
+import { Link2, Mail, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,15 @@ import {
   type MetaOrigem,
   type MetasViewerRole,
 } from "@/lib/performance-metas";
-import { persistMetasDraft } from "@/lib/performance-metas-persistence";
+import {
+  baseFromBackend,
+  gestorRpcArgs,
+  hydrateDrafts,
+  type GoalsState,
+  type MetasLoadResult,
+} from "@/lib/performance-metas-persistence";
+import { saveMetasGoals } from "@/lib/performance-metas.functions";
+import { MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
@@ -71,12 +80,16 @@ export type MetasClienteInfo = {
 };
 
 export function MetasPainel({
+  rowId,
+  persisted,
   cliente,
   role,
   canPreview,
   previewRep,
   onPreviewChange,
 }: {
+  rowId: string;
+  persisted: MetasLoadResult;
   cliente: MetasClienteInfo;
   role: MetasViewerRole;
   canPreview: boolean;
@@ -84,10 +97,16 @@ export function MetasPainel({
   onPreviewChange: (v: boolean) => void;
 }) {
   const vis = metasVisibility(role);
-  // Sugestões IA já vêm preenchidas (simulação) para o painel não começar vazio.
-  const [initialDrafts] = useState<FamilyMetaDraft[]>(() =>
-    simulateAiSuggestions(buildInitialDrafts(cliente.categoria)),
+  const dbEnabled = persisted.available;
+  const [goals, setGoals] = useState<GoalsState | null>(
+    persisted.available ? persisted.state : null,
   );
+  // Sugestões IA já vêm preenchidas (simulação) para o painel não começar vazio;
+  // o que estiver gravado no banco prevalece.
+  const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
+    const base = simulateAiSuggestions(buildInitialDrafts(cliente.categoria));
+    return persisted.available ? hydrateDrafts(base, persisted.state) : base;
+  });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
@@ -102,19 +121,21 @@ export function MetasPainel({
       ) as Record<string, number | null>,
     [cliente.familiaPct],
   );
+  // Valor vendido real (R$) do backend; sem ele o atingimento é marcado como estimado.
+  const base = useMemo(() => baseFromBackend(goals?.base), [goals?.base]);
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
   const comparativo = useMemo(
-    () => buildComparativo(drafts, atingimento, vis),
-    [drafts, atingimento, vis],
+    () => buildComparativo(drafts, atingimento, vis, base),
+    [drafts, atingimento, vis, base],
   );
   const semReferencia = drafts.every((d) => d.referencia == null);
   const totalOficial = sanitizeRatio(cliente.totalPct);
   const totalProjetado = useMemo(
-    () => projectedTotalAttainment(drafts, atingimento),
-    [drafts, atingimento],
+    () => projectedTotalAttainment(drafts, atingimento, base),
+    [drafts, atingimento, base],
   );
-  const totalStatus = statusFromRatio(totalProjetado);
+  const totalStatus = statusFromRatio(totalProjetado.ratio);
   const unsaved = useMemo(
     () => changedFamilies(savedDrafts, drafts, role),
     [savedDrafts, drafts, role],
@@ -132,11 +153,23 @@ export function MetasPainel({
     if (unsaved.length === 0) return;
     setSaving(true);
     try {
-      await persistMetasDraft(buildSavePayload(drafts, role, unsaved));
+      const payload = buildSavePayload(drafts, role, unsaved);
+      // Grava só a gestão com o banco habilitado; a prévia "ver como representante" não grava.
+      const res =
+        dbEnabled && payload.perfil === "gestor"
+          ? await saveMetasGoals({ data: { rowId, ...gestorRpcArgs(payload) } })
+          : null;
+      if (res?.available) setGoals(res.state);
       setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
-      toast.success(`${unsaved.length} portfólio(s) salvo(s) nesta sessão.`, {
-        description: "A gravação no banco será habilitada após a aprovação da migration.",
-      });
+      if (res?.available) toast.success(`${unsaved.length} portfólio(s) salvo(s).`);
+      else
+        toast.success(`${unsaved.length} portfólio(s) salvo(s) nesta sessão.`, {
+          description: previewRep
+            ? "Pré-visualização do representante: nada é gravado."
+            : "Banco ainda não habilitado: a migration não foi aplicada.",
+        });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -185,9 +218,13 @@ export function MetasPainel({
             </>
           )}
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 sm:flex">
-              <FlaskConical className="h-3.5 w-3.5" /> Simulação local · banco ainda não habilitado
-            </span>
+            <MetasCicloControl
+              rowId={rowId}
+              cycle={goals?.cycle ?? null}
+              enabled={dbEnabled}
+              canManage={vis.usarControlesGestao}
+              onChange={setGoals}
+            />
             {canPreview && (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Switch checked={previewRep} onCheckedChange={onPreviewChange} />
@@ -288,9 +325,10 @@ export function MetasPainel({
                 totalStatus && FAROL_CELL_CLASS[totalStatus],
               )}
             >
-              {fmtPct(totalProjetado)}
+              {fmtPct(totalProjetado.ratio)}
             </span>
             <p className="mt-1 text-[10px] text-muted-foreground">
+              {totalProjetado.estimado && totalProjetado.ratio != null ? "Estimado · " : ""}
               {vis.verMetaPadrao
                 ? `Oficial (meta padrão): ${fmtPct(totalOficial)}`
                 : (cliente.periodoLabel ?? "Versão mais recente")}
@@ -353,6 +391,10 @@ export function MetasPainel({
         categoria={cliente.categoria}
         repId={cliente.repId}
         repName={cliente.repName}
+        rowId={rowId}
+        enabled={dbEnabled}
+        confirmedClientId={goals?.cycle?.client_id ?? null}
+        onConfirmed={setGoals}
       />
       <ConviteRepresentanteDialog
         open={conviteOpen}

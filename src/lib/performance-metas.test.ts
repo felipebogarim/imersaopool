@@ -176,8 +176,20 @@ describe("performance-metas (simulação local)", () => {
     const drafts = withMetas([100, 200, 100, 100, 100, 100, 100]);
     // só dois portfólios com atingimento: (0.5×100 + 1×100) ÷ (100 + 200)
     const r = projectedTotalAttainment(drafts, { "DECOR NEWLINE": 0.5, "DECOR STUDIO": 1 });
-    expect(r).toBeCloseTo(150 / 300, 10);
-    expect(projectedTotalAttainment(drafts, {})).toBeNull();
+    expect(r.ratio).toBeCloseTo(150 / 300, 10);
+    expect(r.estimado).toBe(true);
+    expect(projectedTotalAttainment(drafts, {}).ratio).toBeNull();
+  });
+
+  it("com valor vendido real do backend, o atingimento deixa de ser estimado", () => {
+    const drafts = withMetas([200, 100, 100, 100, 100, 100, 100]);
+    const base = { "DECOR NEWLINE": { valor: 150, estimado: false } };
+    const pts = buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor, base);
+    expect(pts[0].performancePct).toBeCloseTo(75, 10); // 150 ÷ 200, ignora 0,6 × padrão
+    expect(pts[0].estimado).toBe(false);
+    expect(buildComparativo(drafts, { "DECOR NEWLINE": 0.6 }, gestor)[0].estimado).toBe(true);
+    const tot = projectedTotalAttainment(drafts, { "DECOR NEWLINE": 0.6 }, base);
+    expect(tot).toEqual({ ratio: 150 / 200, estimado: false });
   });
 
   it("detecta portfólios alterados e monta o payload por perfil", () => {

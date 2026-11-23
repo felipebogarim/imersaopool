@@ -1,4 +1,4 @@
-// Gráfico principal: uma barra por portfólio = performance atual, na cor do farol.
+// Gráfico principal: uma barra por portfólio = atingimento sobre a meta oficial, cor do farol.
 // Clicar numa barra (ou no rótulo) seleciona o portfólio do painel de edição.
 // Metas aparecem só no tooltip; meta padrão apenas para gestor/admin.
 
@@ -144,6 +144,11 @@ function ComparativoTooltip({
         {d.performancePct == null ? "Sem informação" : fmtPoints(d.performancePct)}
         {st ? <span className="text-muted-foreground"> · {FAROL_LABEL[st]}</span> : null}
       </Row>
+      {d.estimado && d.performancePct != null && (
+        <p className="pb-0.5 text-[10px] text-amber-700 dark:text-amber-400">
+          Estimado: sem valor vendido real para este portfólio
+        </p>
+      )}
       {vis.verMetaPadrao && d.performanceOficialPct != null && (
         <Row label="Atingimento oficial (padrão)">{fmtPoints(d.performanceOficialPct)}</Row>
       )}

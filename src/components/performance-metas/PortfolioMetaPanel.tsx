@@ -1,4 +1,4 @@
-// Painel dinâmico do portfólio selecionado (simulação local).
+// Painel dinâmico do portfólio selecionado.
 // Seções: sugestão do representante | sugestão IA (só gestão) | meta do gestor,
 // sempre com valor e comentário em campos separados.
 
@@ -107,6 +107,7 @@ export function PortfolioMetaPanel({
           {status && (
             <span className="ml-1.5 text-xs font-normal text-muted-foreground">
               {FAROL_LABEL[status]}
+              {point.estimado ? " · estimado" : ""}
             </span>
           )}
           {vis.verMetaPadrao && point.performanceOficialPct != null && (
