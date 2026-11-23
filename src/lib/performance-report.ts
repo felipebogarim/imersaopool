@@ -6,12 +6,7 @@
 // Cada bloco declara explicitamente qual métrica está exibindo; número, faixa e
 // ordenação sempre derivam da MESMA métrica.
 // IMPORTANTE: nunca exibe valores monetários — apenas percentuais, faixas e faróis.
-import {
-  FAROL_HEX,
-  FAROL_LABEL,
-  FAROL_ORDER,
-  type FarolStatus,
-} from "./performance-farol";
+import { FAROL_HEX, FAROL_LABEL, FAROL_ORDER, type FarolStatus } from "./performance-farol";
 import {
   METRIC_DEFS,
   calculateRepresentativeMetrics,
@@ -34,7 +29,10 @@ export type ReportRow = {
 };
 
 const esc = (s: unknown) =>
-  String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]!));
+  String(s ?? "").replace(
+    /[<>&"]/g,
+    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!,
+  );
 
 /** Ratio (1 = 100%) → texto percentual. */
 const pctR = (n: number | null | undefined) =>
@@ -159,7 +157,6 @@ export function exportPerformanceReport(opts: {
     </tr>`,
     )
     .join("");
-
 
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>Relatório Gerencial — ${esc(representante)}</title>
@@ -373,6 +370,175 @@ export function exportPerformanceReport(opts: {
 </script>
 </body></html>`;
 
+  const w = window.open("", "_blank");
+  if (!w) {
+    alert("Bloqueado pelo navegador. Permita pop-ups para gerar o relatório.");
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+}
+
+export function exportAllPerformanceReport(opts: {
+  periodo: string;
+  reps: Array<{ representante: string; familias: string[]; rows: ReportRow[] }>;
+}) {
+  const { periodo, reps } = opts;
+
+  const CSS = `
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; color: #0f172a; background: #f8fafc; }
+  .rep-section { padding: 28px 32px 48px; }
+  header { border-bottom: 3px solid #0f172a; padding-bottom: 14px; margin-bottom: 22px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.02em; }
+  .sub { color: #64748b; font-size: 13px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: #334155; margin: 28px 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; }
+  .kpi-l { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+  .kpi-v { font-size: 28px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -.03em; }
+  .kpi-s { font-size: 11px; color: #94a3b8; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 6px 14px 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 7px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  td.nm { font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .small { color: #64748b; font-weight: 400; }
+  .barcell { width: 28%; }
+  .hbar { background: #f1f5f9; border-radius: 999px; height: 8px; overflow: hidden; }
+  .hbar span { display: block; height: 8px; background: linear-gradient(90deg,#0ea5e9,#10b981); border-radius: 999px; }
+  .bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: #f1f5f9; }
+  .bar .seg { display: block; height: 10px; }
+  .bar.empty { background: #f1f5f9; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 4px; font-size: 11px; color: #475569; }
+  .lg { display: inline-flex; align-items: center; gap: 5px; }
+  .lg i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 600; color: #0f172a; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .note { margin-top: 26px; font-size: 10.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+  .toolbar { position: fixed; top: 14px; right: 18px; }
+  .toolbar button { background: #0f172a; color: #fff; border: 0; border-radius: 8px; padding: 9px 14px; font-size: 12px; cursor: pointer; }
+  @page { margin: 12mm 10mm; }
+  @media print {
+    body { background: #f8fafc; padding: 0 6px; }
+    .toolbar { display: none !important; }
+    .rep-section { page-break-before: always; }
+    .rep-section:first-child { page-break-before: auto; }
+    .card, .kpi { break-inside: avoid; background: #fff !important; border-color: #e2e8f0 !important; }
+    .bar, .hbar, .bar .seg, .hbar span, .pill, .lg i { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    h2 { break-after: avoid; }
+  }
+  @media (max-width: 780px) { .grid { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } }
+  `;
+
+  const kpi = (label: string, value: string, sub: string, tip = "") =>
+    `<div class="kpi"${tip ? ` title="${esc(tip)}"` : ""}><div class="kpi-l">${label}</div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`;
+
+  const pct = (n: number) => `${n.toFixed(1).replace(".", ",")}%`;
+  const pctR = (n: number | null | undefined) =>
+    n == null || Number.isNaN(n) ? "—" : `${(n * 100).toFixed(1).replace(".", ",")}%`;
+
+  const legenda = FAROL_ORDER.map(
+    (s) => `<span class="lg"><i style="background:#${FAROL_HEX[s]}"></i>${FAROL_LABEL[s]}</span>`,
+  ).join("");
+
+  const sections = reps
+    .map(({ representante, familias, rows }) => {
+      const rep = calculateRepresentativeMetrics(
+        rows.map((r) => ({
+          razao_social: r.razao_social,
+          categoria: r.categoria,
+          metas: r.metas ?? null,
+          realizado: r.realizado ?? null,
+          familia_pct: r.familia_pct ?? null,
+          metas_status: r.metas_status ?? null,
+          total_pct: r.total_pct ?? null,
+        })),
+        familias,
+      );
+
+      const geral = rep.distribuicao_clientes;
+      const comStatus = rep.universo_clientes;
+      const naMeta = clientesNaMeta(rep.clientes).length;
+      const criticos = clientesCriticos(rep.clientes).length;
+      const semCompra = geral.sem_compra;
+
+      const famOrdenadas = [...rep.familias_metrics].sort(
+        (a, b) => (b.metrics.real_achievement ?? -1) - (a.metrics.real_achievement ?? -1),
+      );
+
+      const famRows = famOrdenadas
+        .map(
+          (f) => `<tr>
+          <td class="nm">${esc(f.familia)}</td>
+          <td class="num">${pctR(f.metrics.real_achievement)}</td>
+          <td class="num">${pctR(f.metrics.portfolio_balance_index)}</td>
+          <td class="barcell">${distBar(f.distribuicao, f.universo)}</td>
+          <td class="num small">${f.clientes_que_compraram}</td>
+        </tr>`,
+        )
+        .join("");
+
+      const destaques = rankTopPerformers(rep.clientes, 5);
+      const piores = rankLowestAchievement(rep.clientes, 5);
+
+      const listRows = (arr: ClientMetrics[]) =>
+        arr
+          .map(
+            (r) => `<tr>
+            <td class="nm">${esc(r.razao_social)}</td>
+            <td class="small">${esc(r.categoria ?? "—")}</td>
+            <td class="num">${pctR(r.metrics.real_achievement)}</td>
+            <td><span class="pill" style="background:#${r.farol ? FAROL_HEX[r.farol] : "E5E5E5"}">${r.farol ? FAROL_LABEL[r.farol] : "—"}</span></td>
+          </tr>`,
+          )
+          .join("");
+
+      return `
+      <div class="rep-section">
+        <header>
+          <h1>Relatório Gerencial de Performance</h1>
+          <div class="sub"><strong>${esc(representante)}</strong> • Período: ${esc(periodo)} • Gerado em ${new Date().toLocaleString("pt-BR")}</div>
+        </header>
+
+        <div class="grid">
+          ${kpi("Clientes na base", String(rep.clientes.length), `${familias.length} famílias avaliadas`)}
+          ${kpi("Atingimento real geral", pctR(rep.metrics.real_achievement), METRIC_DEFS.real_achievement.formula, METRIC_DEFS.real_achievement.tooltip)}
+          ${kpi("Clientes na meta ou acima", comStatus ? pct((naMeta / comStatus) * 100) : "—", `${naMeta} de ${comStatus} clientes`)}
+          ${kpi("Clientes críticos", comStatus ? pct((criticos / comStatus) * 100) : "—", `${semCompra} sem compra`)}
+        </div>
+
+        <h2>Performance por família de produto</h2>
+        <div class="card">
+          <table><thead><tr><th>Família</th><th style="text-align:right">Atingimento real</th><th style="text-align:right">Índice de equilíbrio</th><th>Distribuição</th><th style="text-align:right">Compradores</th></tr></thead>
+          <tbody>${famRows || `<tr><td colspan="5" class="small">Sem dados de família.</td></tr>`}</tbody></table>
+          <div class="legend">${legenda}</div>
+        </div>
+
+        <h2>Rankings de desempenho</h2>
+        <div class="two">
+          <div class="card">
+            <h2 style="margin:12px 0 4px">Top 5 — melhor desempenho</h2>
+            <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento</th><th>Faixa</th></tr></thead>
+            <tbody>${listRows(destaques) || `<tr><td colspan="4" class="small">Sem dados.</td></tr>`}</tbody></table>
+          </div>
+          <div class="card">
+            <h2 style="margin:12px 0 4px">Top 5 — menor atingimento</h2>
+            <table><thead><tr><th>Cliente</th><th>Categoria</th><th style="text-align:right">Atingimento</th><th>Faixa</th></tr></thead>
+            <tbody>${listRows(piores) || `<tr><td colspan="4" class="small">Sem dados.</td></tr>`}</tbody></table>
+          </div>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>Relatórios de Performance — ${esc(periodo)}</title>
+<style>${CSS}</style></head><body>
+<div class="toolbar"><button onclick="window.print()">Salvar como PDF</button></div>
+${sections}
+</body></html>`;
 
   const w = window.open("", "_blank");
   if (!w) {

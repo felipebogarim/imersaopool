@@ -115,6 +115,7 @@ import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_aut
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
 import { Route as ApiOgEstruturaRepIdRouteImport } from './routes/api/og-estrutura.$repId'
 import { Route as ApiOgExecutivoReportIdRouteImport } from './routes/api/og-executivo.$reportId'
+import { Route as ApiOgRelatorioTokenRouteImport } from './routes/api/og-relatorio.$token'
 import { Route as ApiPublicBackupAuditRouteImport } from './routes/api/public/backup-audit'
 import { Route as ApiPublicBackupCodigoRouteImport } from './routes/api/public/backup-codigo'
 import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public/backup-download'
@@ -734,6 +735,11 @@ const ApiOgExecutivoReportIdRoute = ApiOgExecutivoReportIdRouteImport.update({
   path: '/api/og-executivo/$reportId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgRelatorioTokenRoute = ApiOgRelatorioTokenRouteImport.update({
+  id: '/api/og-relatorio/$token',
+  path: '/api/og-relatorio/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicBackupAuditRoute = ApiPublicBackupAuditRouteImport.update({
   id: '/api/public/backup-audit',
   path: '/api/public/backup-audit',
@@ -1011,6 +1017,7 @@ export interface FileRoutesByFullPath {
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
+  '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1148,6 +1155,7 @@ export interface FileRoutesByTo {
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
+  '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1289,6 +1297,7 @@ export interface FileRoutesById {
   '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
+  '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
   '/api/public/backup-audit': typeof ApiPublicBackupAuditRoute
   '/api/public/backup-codigo': typeof ApiPublicBackupCodigoRoute
   '/api/public/backup-download': typeof ApiPublicBackupDownloadRoute
@@ -1430,6 +1439,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/novo'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
+    | '/api/og-relatorio/$token'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1567,6 +1577,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/novo'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
+    | '/api/og-relatorio/$token'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1707,6 +1718,7 @@ export interface FileRouteTypes {
     | '/_authenticated/solicitacoes/novo'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
+    | '/api/og-relatorio/$token'
     | '/api/public/backup-audit'
     | '/api/public/backup-codigo'
     | '/api/public/backup-download'
@@ -1778,6 +1790,7 @@ export interface RootRouteChildren {
   RelatorioTokenRoute: typeof RelatorioTokenRoute
   ApiOgEstruturaRepIdRoute: typeof ApiOgEstruturaRepIdRoute
   ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
+  ApiOgRelatorioTokenRoute: typeof ApiOgRelatorioTokenRoute
   ApiPublicBackupAuditRoute: typeof ApiPublicBackupAuditRoute
   ApiPublicBackupCodigoRoute: typeof ApiPublicBackupCodigoRoute
   ApiPublicBackupDownloadRoute: typeof ApiPublicBackupDownloadRoute
@@ -2544,6 +2557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOgExecutivoReportIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og-relatorio/$token': {
+      id: '/api/og-relatorio/$token'
+      path: '/api/og-relatorio/$token'
+      fullPath: '/api/og-relatorio/$token'
+      preLoaderRoute: typeof ApiOgRelatorioTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/backup-audit': {
       id: '/api/public/backup-audit'
       path: '/api/public/backup-audit'
@@ -3076,6 +3096,7 @@ const rootRouteChildren: RootRouteChildren = {
   RelatorioTokenRoute: RelatorioTokenRoute,
   ApiOgEstruturaRepIdRoute: ApiOgEstruturaRepIdRoute,
   ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,
+  ApiOgRelatorioTokenRoute: ApiOgRelatorioTokenRoute,
   ApiPublicBackupAuditRoute: ApiPublicBackupAuditRoute,
   ApiPublicBackupCodigoRoute: ApiPublicBackupCodigoRoute,
   ApiPublicBackupDownloadRoute: ApiPublicBackupDownloadRoute,

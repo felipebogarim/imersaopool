@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Upload, RefreshCw, Trash2, Pencil, Save, XCircle, FileDown, FileText, RotateCcw, Undo2, MoreVertical, ChevronLeft, ChevronRight, Search, X, BarChart3, Users, Lightbulb } from "lucide-react";
 import { AcoesSugeridasDialog } from "@/components/AcoesSugeridasDialog";
 import { EnvioMassaDialog } from "@/components/performance/EnvioMassaDialog";
+import { ExportacaoMassaDialog } from "@/components/performance/ExportacaoMassaDialog";
 import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
@@ -135,6 +136,7 @@ export function PerformancePageContent() {
   const [pwdTargetRep, setPwdTargetRep] = useState<string>("");
   const [acoesOpen, setAcoesOpen] = useState(false);
   const [massaOpen, setMassaOpen] = useState(false);
+  const [exportacaoMassaOpen, setExportacaoMassaOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "meta";
     return ((localStorage.getItem(VIEW_KEY) as ViewMode) ?? "meta");
@@ -980,6 +982,9 @@ export function PerformancePageContent() {
                 <Button size="sm" variant="outline" onClick={() => setMassaOpen(true)}>
                   <Upload className="h-4 w-4 mr-1" /> Envio em massa
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setExportacaoMassaOpen(true)}>
+                  <FileDown className="h-4 w-4 mr-1" /> Exportar em massa
+                </Button>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -1522,6 +1527,12 @@ export function PerformancePageContent() {
           qc.invalidateQueries({ queryKey: ["perf-all-versions"] });
           qc.invalidateQueries({ queryKey: ["perf-rep-list"] });
         }}
+      />
+
+      <ExportacaoMassaDialog
+        open={exportacaoMassaOpen}
+        onOpenChange={setExportacaoMassaOpen}
+        reps={(reps as any[]).map((r) => ({ id: r.id, nome: r.nome }))}
       />
     </div>
   );
