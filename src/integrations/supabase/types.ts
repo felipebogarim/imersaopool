@@ -4983,6 +4983,384 @@ export type Database = {
           },
         ]
       }
+      performance_goal_ai_suggestions: {
+        Row: {
+          analise_id: string | null
+          base: Json
+          company_id: string
+          confianca: string | null
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          familia: string
+          id: string
+          justificativa: string
+          modelo: string | null
+          origem: string
+          participacao: number | null
+          tag: string
+          valor: number
+        }
+        Insert: {
+          analise_id?: string | null
+          base?: Json
+          company_id: string
+          confianca?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          familia: string
+          id?: string
+          justificativa?: string
+          modelo?: string | null
+          origem: string
+          participacao?: number | null
+          tag: string
+          valor: number
+        }
+        Update: {
+          analise_id?: string | null
+          base?: Json
+          company_id?: string
+          confianca?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          familia?: string
+          id?: string
+          justificativa?: string
+          modelo?: string | null
+          origem?: string
+          participacao?: number | null
+          tag?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_ai_suggestions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_ai_suggestions_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goal_cycles: {
+        Row: {
+          categoria: string | null
+          client_id: string | null
+          cliente_key: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          fim: string
+          id: string
+          inicio: string
+          razao_social: string
+          renovado_de: string | null
+          representative_id: string
+          updated_at: string
+          updated_by: string | null
+          vinculo_confirmado_em: string | null
+          vinculo_confirmado_por: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          client_id?: string | null
+          cliente_key: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          fim: string
+          id?: string
+          inicio: string
+          razao_social: string
+          renovado_de?: string | null
+          representative_id: string
+          updated_at?: string
+          updated_by?: string | null
+          vinculo_confirmado_em?: string | null
+          vinculo_confirmado_por?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          client_id?: string | null
+          cliente_key?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          fim?: string
+          id?: string
+          inicio?: string
+          razao_social?: string
+          renovado_de?: string | null
+          representative_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          vinculo_confirmado_em?: string | null
+          vinculo_confirmado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_cycles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_cycles_renovado_de_fkey"
+            columns: ["renovado_de"]
+            isOneToOne: false
+            referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_cycles_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goal_history: {
+        Row: {
+          acao: string
+          changed_at: string
+          changed_by: string | null
+          company_id: string
+          cycle_id: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          familia: string | null
+          id: number
+          tabela: string
+        }
+        Insert: {
+          acao: string
+          changed_at?: string
+          changed_by?: string | null
+          company_id: string
+          cycle_id: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          familia?: string | null
+          id?: never
+          tabela: string
+        }
+        Update: {
+          acao?: string
+          changed_at?: string
+          changed_by?: string | null
+          company_id?: string
+          cycle_id?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          familia?: string | null
+          id?: never
+          tabela?: string
+        }
+        Relationships: []
+      }
+      performance_goal_items: {
+        Row: {
+          comentario_gestor: string
+          company_id: string
+          created_at: string
+          cycle_id: string
+          familia: string
+          id: string
+          meta_mensal: number | null
+          origem: string
+          referencia_snapshot: number | null
+          updated_at: string
+          updated_by: string | null
+          vigente_desde: string
+        }
+        Insert: {
+          comentario_gestor?: string
+          company_id: string
+          created_at?: string
+          cycle_id: string
+          familia: string
+          id?: string
+          meta_mensal?: number | null
+          origem: string
+          referencia_snapshot?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          vigente_desde: string
+        }
+        Update: {
+          comentario_gestor?: string
+          company_id?: string
+          created_at?: string
+          cycle_id?: string
+          familia?: string
+          id?: string
+          meta_mensal?: number | null
+          origem?: string
+          referencia_snapshot?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_items_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goal_rep_reviews: {
+        Row: {
+          company_id: string
+          created_at: string
+          cycle_id: string
+          id: string
+          invited_at: string
+          invited_by: string | null
+          reopen_request_note: string
+          reopen_requested_at: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          representative_id: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cycle_id: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          reopen_request_note?: string
+          reopen_requested_at?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          representative_id: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cycle_id?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          reopen_request_note?: string
+          reopen_requested_at?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          representative_id?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_rep_reviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_rep_reviews_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: true
+            referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_rep_reviews_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goal_rep_suggestions: {
+        Row: {
+          company_id: string
+          created_at: string
+          cycle_id: string
+          familia: string
+          id: string
+          justificativa: string
+          updated_at: string
+          updated_by: string | null
+          valor: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          cycle_id: string
+          familia: string
+          id?: string
+          justificativa?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          cycle_id?: string
+          familia?: string
+          id?: string
+          justificativa?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_rep_suggestions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_rep_suggestions_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       performance_import_audit: {
         Row: {
           categorias: string[]
@@ -8067,6 +8445,10 @@ export type Database = {
       }
       assert_aal2: { Args: never; Returns: boolean }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
+      confirm_performance_goal_link: {
+        Args: { _client_id: string; _row_id: string }
+        Returns: Json
+      }
       current_company_id: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -8076,6 +8458,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      extend_performance_goal_cycle: {
+        Args: { _row_id: string }
+        Returns: Json
       }
       get_active_form_by_slug: {
         Args: { _slug: string }
@@ -8121,6 +8507,8 @@ export type Database = {
           status: string
         }[]
       }
+      get_performance_goals: { Args: { _row_id: string }; Returns: Json }
+      get_performance_goals_bi: { Args: { _row_ids: string[] }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -8371,6 +8759,77 @@ export type Database = {
         }
         Returns: number
       }
+      performance_goal_ai_comparaveis: {
+        Args: { _cat: string; _company: string; _key: string; _regiao: string }
+        Returns: Json
+      }
+      performance_goal_ai_context: { Args: { _row_id: string }; Returns: Json }
+      performance_goal_current_cycle: {
+        Args: { _ctx: Json }
+        Returns: {
+          categoria: string | null
+          client_id: string | null
+          cliente_key: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          fim: string
+          id: string
+          inicio: string
+          razao_social: string
+          renovado_de: string | null
+          representative_id: string
+          updated_at: string
+          updated_by: string | null
+          vinculo_confirmado_em: string | null
+          vinculo_confirmado_por: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "performance_goal_cycles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      performance_goal_ensure_cycle: {
+        Args: { _actor: string; _ctx: Json }
+        Returns: {
+          categoria: string | null
+          client_id: string | null
+          cliente_key: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          fim: string
+          id: string
+          inicio: string
+          razao_social: string
+          renovado_de: string | null
+          representative_id: string
+          updated_at: string
+          updated_by: string | null
+          vinculo_confirmado_em: string | null
+          vinculo_confirmado_por: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "performance_goal_cycles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      performance_goal_lock: { Args: { _ctx: Json }; Returns: undefined }
+      performance_goal_month: { Args: { _d?: string }; Returns: string }
+      performance_goal_review_state: {
+        Args: { _row_id: string }
+        Returns: Json
+      }
+      performance_goal_row_context: { Args: { _row_id: string }; Returns: Json }
+      performance_goal_staff_ctx: { Args: { _row_id: string }; Returns: Json }
+      performance_goal_state: {
+        Args: { _ctx: Json; _staff: boolean }
+        Returns: Json
+      }
       reactivate_last_performance_upload: {
         Args: { _rep_id: string }
         Returns: Json
@@ -8387,12 +8846,57 @@ export type Database = {
         Args: { _session_id?: string; _user_agent?: string }
         Returns: string
       }
+      record_performance_goal_ai_suggestions: {
+        Args: { _modelo: string; _row_id: string; _sugestoes: Json }
+        Returns: Json
+      }
       record_terms_acceptance: {
         Args: { _session_id?: string; _user_agent?: string }
         Returns: string
       }
+      renew_performance_goal_cycle: {
+        Args: { _meses: number; _row_id: string }
+        Returns: Json
+      }
+      reopen_performance_goal_review: {
+        Args: { _row_id: string }
+        Returns: Json
+      }
+      rep_get_performance_goals: {
+        Args: { _representative_id: string; _row_id: string }
+        Returns: Json
+      }
+      rep_goal_revenue_ranks: {
+        Args: { _representative_id: string; _row_ids: string[] }
+        Returns: {
+          row_id: string
+          top10_rank: number
+        }[]
+      }
+      rep_request_goal_review_reopen: {
+        Args: { _note: string; _representative_id: string; _row_id: string }
+        Returns: Json
+      }
+      rep_save_goal_suggestions: {
+        Args: {
+          _representative_id: string
+          _row_id: string
+          _sugestoes: Json
+          _user_id: string
+        }
+        Returns: Json
+      }
       reprocessar_fontes_entrevistas: { Args: never; Returns: Json }
       require_admin_aal2: { Args: never; Returns: undefined }
+      save_performance_goals: {
+        Args: {
+          _metas: Json
+          _row_id: string
+          _sugestoes_ia: Json
+          _vigente_desde?: string
+        }
+        Returns: Json
+      }
       sec_intrusion_summary: {
         Args: { _hours?: number }
         Returns: {
@@ -8402,6 +8906,10 @@ export type Database = {
           total: number
           ultimo: string
         }[]
+      }
+      start_performance_goal_review: {
+        Args: { _row_id: string }
+        Returns: Json
       }
       submit_form_response: {
         Args: { _answers: Json; _slug: string; _user_agent?: string }
