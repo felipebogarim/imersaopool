@@ -22,6 +22,7 @@ import {
 } from "@/lib/performance-metas-ai";
 import {
   repView,
+  type GoalReview,
   type GoalsState,
   type MetasLoadResult,
   type RepGoalsView,
@@ -55,6 +56,21 @@ const money = z.number().nonnegative().max(1e11).nullable();
 const text = z.string().max(4000);
 const rowInput = z.object({ rowId: z.string().uuid() });
 
+type ReviewResult = { available: false } | { available: true; review: GoalReview | null };
+
+async function reviewRpc(
+  client: unknown,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<ReviewResult> {
+  const { data, error } = await (client as RpcClient).rpc(fn, args);
+  if (error) {
+    if (NOT_MIGRATED.has(error.code ?? "")) return { available: false };
+    throw new Error(error.message);
+  }
+  return { available: true, review: data as GoalReview | null };
+}
+
 // ------------------------------- Gestão --------------------------------------
 
 export const getMetasGoals = createServerFn({ method: "POST" })
@@ -62,6 +78,20 @@ export const getMetasGoals = createServerFn({ method: "POST" })
   .inputValidator(rowInput)
   .handler(({ data, context }) =>
     callRpc(context.supabase, "get_performance_goals", { _row_id: data.rowId }),
+  );
+
+export const getMetasReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput)
+  .handler(({ data, context }) =>
+    reviewRpc(context.supabase, "performance_goal_review_state", { _row_id: data.rowId }),
+  );
+
+export const reopenMetasReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput)
+  .handler(({ data, context }) =>
+    reviewRpc(context.supabase, "reopen_performance_goal_review", { _row_id: data.rowId }),
   );
 
 export const saveMetasGoals = createServerFn({ method: "POST" })
@@ -190,8 +220,21 @@ export const inviteRepToMetas = createServerFn({ method: "POST" })
     // O representante revisa sobre metas oficiais já gravadas (e o cliente aparece no portal).
     if (!check.state.cycle)
       throw new Error("Salve as metas do cliente antes de convidar o representante.");
+    const workflow = await reviewRpc(context.supabase, "performance_goal_review_state", {
+      _row_id: data.rowId,
+    });
+    if (!workflow.available)
+      throw new Error("Aplique a migration 20261125150000 antes de enviar novos convites.");
     const { inviteRepToMetasRow } = await import("@/lib/rep-portal.server");
-    return inviteRepToMetasRow(data.rowId, data.mensagem);
+    const sent = await inviteRepToMetasRow(data.rowId, data.mensagem);
+    const review = await reviewRpc(context.supabase, "start_performance_goal_review", {
+      _row_id: data.rowId,
+    });
+    if (!review.available)
+      throw new Error(
+        "Convite enviado, mas o fluxo de revisão ainda não está disponível no banco. Aplique a migration 20261125150000.",
+      );
+    return sent;
   });
 
 // ---------------------------- Representante ----------------------------------
@@ -227,9 +270,12 @@ async function repCall(
     .select("razao_social, categoria")
     .eq("id", String(args._row_id))
     .maybeSingle();
+  const baseView = repView(res.state);
+  const { reviewForCycle } = await import("@/lib/rep-portal.server");
+  const review = await reviewForCycle(baseView.cycle?.id ?? null);
   return {
     available: true,
-    view: { ...repView(res.state), cliente: String(row?.razao_social ?? "").trim() },
+    view: { ...baseView, review, cliente: String(row?.razao_social ?? "").trim() },
   };
 }
 
@@ -254,6 +300,23 @@ export const repSaveMetasSuggestions = createServerFn({ method: "POST" })
       _sugestoes: data.sugestoes,
     }),
   );
+
+export const repRequestMetasReopen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput.extend({ justificativa: z.string().trim().min(3).max(1000) }))
+  .handler(async ({ data, context }) => {
+    const { repForUser } = await import("@/lib/rep-portal.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const rep = await repForUser(context.userId);
+    const result = await reviewRpc(supabaseAdmin, "rep_request_goal_review_reopen", {
+      _row_id: data.rowId,
+      _representative_id: rep.id,
+      _note: data.justificativa,
+    });
+    if (!result.available)
+      throw new Error("Fluxo de reabertura indisponível. Aplique a migration 20261125150000.");
+    return result;
+  });
 
 /** Clientes da carteira do representante com metas em ciclo (para o portal). */
 export const repListMetas = createServerFn({ method: "POST" })

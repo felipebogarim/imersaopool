@@ -21,6 +21,22 @@ export type GoalsCycle = {
   vinculo_confirmado_em?: string | null;
 };
 
+export type GoalReviewStatus =
+  | "nao_convidado"
+  | "pendente"
+  | "respondido"
+  | "reabertura_solicitada"
+  | "reaberto";
+
+export type GoalReview = {
+  status: GoalReviewStatus;
+  invited_at?: string | null;
+  submitted_at?: string | null;
+  reopen_requested_at?: string | null;
+  reopen_request_note?: string | null;
+  reopened_at?: string | null;
+};
+
 type RawJson = Record<string, number | string | null>;
 
 export type GoalsState = {
@@ -196,6 +212,7 @@ export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendad
   atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
   /** Razão social do cliente (preenchida pelo servidor do portal). */
   cliente?: string;
+  review: GoalReview;
 };
 
 /**
@@ -215,6 +232,7 @@ export function repView(state: GoalsState): RepGoalsView {
     items: state.items.map((i) => ({ familia: i.familia, meta_mensal: i.meta_mensal })),
     rep_suggestions: state.rep_suggestions,
     atingimento,
+    review: { status: "nao_convidado" },
   };
 }
 

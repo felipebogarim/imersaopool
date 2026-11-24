@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link2, Mail, RotateCcw, Save, Wand2 } from "lucide-react";
+import { Link2, Loader2, Mail, RotateCcw, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -43,9 +43,15 @@ import {
   gestorRpcArgs,
   hydrateDrafts,
   type GoalsState,
+  type GoalReview,
   type MetasLoadResult,
 } from "@/lib/performance-metas-persistence";
-import { generateMetasAiSuggestions, saveMetasGoals } from "@/lib/performance-metas.functions";
+import {
+  generateMetasAiSuggestions,
+  getMetasReview,
+  reopenMetasReview,
+  saveMetasGoals,
+} from "@/lib/performance-metas.functions";
 import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
@@ -124,6 +130,29 @@ export function MetasPainel({
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
   const [vinculoOpen, setVinculoOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
+  const [review, setReview] = useState<GoalReview | null>(null);
+  const [reopening, setReopening] = useState(false);
+
+  useEffect(() => {
+    if (!vis.usarControlesGestao) return;
+    void getMetasReview({ data: { rowId } })
+      .then((result) => result.available && setReview(result.review))
+      .catch(() => undefined);
+  }, [rowId, vis.usarControlesGestao]);
+
+  async function handleReopen() {
+    setReopening(true);
+    try {
+      const result = await reopenMetasReview({ data: { rowId } });
+      if (!result.available) throw new Error("Fluxo de revisão indisponível no banco.");
+      setReview(result.review);
+      toast.success("Edição reaberta para o representante.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível reabrir a edição.");
+    } finally {
+      setReopening(false);
+    }
+  }
 
   const atingimento = useMemo(
     () =>
@@ -222,6 +251,24 @@ export function MetasPainel({
 
   return (
     <div className="space-y-5">
+      {review?.status === "reabertura_solicitada" && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">O representante solicitou reabertura da edição</p>
+            <p className="text-xs opacity-80">
+              {review.reopen_request_note || "Nenhuma justificativa informada."}
+            </p>
+          </div>
+          <Button size="sm" onClick={() => void handleReopen()} disabled={reopening}>
+            {reopening ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Unlock className="mr-1.5 h-4 w-4" />
+            )}
+            Reabrir edição
+          </Button>
+        </div>
+      )}
       {/* ================= 1. Dashboard fixo ================= */}
       <div className="sticky top-0 z-30 -mx-3 space-y-3 border-b border-border bg-background/95 px-3 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-2">

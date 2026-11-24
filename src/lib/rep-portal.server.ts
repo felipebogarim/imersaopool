@@ -10,6 +10,7 @@ import {
 } from "@/lib/action-tracking";
 import { listActionsForRep, notifySubmission, sendSystemEmail } from "@/lib/action-tracking.server";
 import { needsRepFirstAccess } from "@/lib/rep-first-access";
+import type { GoalReview, GoalReviewStatus } from "@/lib/performance-metas-persistence";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const admin = supabaseAdmin as any;
@@ -419,29 +420,46 @@ export async function inviteRepToMetasRow(
   return { email: user.email, incluiLinkSenha: true };
 }
 
-export type RepMetasRow = { rowId: string; cliente: string; periodo: string | null };
+export type RepMetasRow = {
+  rowId: string;
+  cliente: string;
+  categoria: string | null;
+  periodo: string | null;
+  hasGoals: boolean;
+  reviewStatus: GoalReviewStatus;
+  top10Rank: number | null;
+};
 
-/**
- * Clientes da carteira do representante que têm ciclo de metas, apontando para a linha do
- * upload vigente mais recente de cada cliente.
- */
+export async function reviewForCycle(cycleId: string | null): Promise<GoalReview> {
+  if (!cycleId) return { status: "nao_convidado" };
+  const { data, error } = await admin
+    .from("performance_goal_rep_reviews")
+    .select(
+      "status, invited_at, submitted_at, reopen_requested_at, reopen_request_note, reopened_at",
+    )
+    .eq("cycle_id", cycleId)
+    .maybeSingle();
+  if (error) return { status: "nao_convidado" };
+  return data ? (data as GoalReview) : { status: "nao_convidado" };
+}
+
+/** Todos os clientes do upload vigente mais recente do representante, com estado da revisão. */
 export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
   const { data: cycles } = await admin
     .from("performance_goal_cycles")
-    .select("cliente_key")
+    .select("id, cliente_key, inicio")
     .eq("representative_id", repId);
-  const keys = new Set<string>((cycles ?? []).map((c: { cliente_key: string }) => c.cliente_key));
-  if (keys.size === 0) return [];
   const { data: rows } = await admin
     .from("rep_performance_rows")
     .select(
-      "id, razao_social, rep_performance_uploads!inner(representative_id, substituida_em, periodo_label, periodo_inicio, created_at)",
+      "id, razao_social, categoria, rep_performance_uploads!inner(representative_id, substituida_em, periodo_label, periodo_inicio, created_at)",
     )
     .eq("rep_performance_uploads.representative_id", repId)
     .is("rep_performance_uploads.substituida_em", null);
   type Row = {
     id: string;
     razao_social: string;
+    categoria: string | null;
     rep_performance_uploads: {
       periodo_label: string | null;
       periodo_inicio: string | null;
@@ -453,15 +471,57 @@ export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
     `${r.rep_performance_uploads.periodo_inicio ?? ""}|${r.rep_performance_uploads.created_at}`;
   for (const r of (rows ?? []) as Row[]) {
     const key = r.razao_social.trim().toUpperCase();
-    if (!keys.has(key)) continue;
+    if (["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"].some((p) => key.startsWith(p)))
+      continue;
     const cur = best.get(key);
     if (!cur || ordem(r) > ordem(cur)) best.set(key, r);
   }
-  return [...best.values()]
-    .map((r) => ({
-      rowId: r.id,
-      cliente: r.razao_social.trim(),
-      periodo: r.rep_performance_uploads.periodo_label,
-    }))
+  type Cycle = { id: string; cliente_key: string; inicio: string };
+  const cycleByKey = new Map<string, Cycle>();
+  const today = new Date();
+  const currentMonth = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  for (const c of (cycles ?? []) as Cycle[]) {
+    const old = cycleByKey.get(c.cliente_key);
+    if (
+      !old ||
+      (c.inicio <= currentMonth && (old.inicio > currentMonth || c.inicio > old.inicio)) ||
+      (c.inicio > currentMonth && old.inicio > currentMonth && c.inicio < old.inicio)
+    )
+      cycleByKey.set(c.cliente_key, c);
+  }
+  const cycleIds = [...cycleByKey.values()].map((c) => c.id);
+  const reviewByCycle = new Map<string, GoalReviewStatus>();
+  if (cycleIds.length) {
+    const { data: reviews } = await admin
+      .from("performance_goal_rep_reviews")
+      .select("cycle_id, status")
+      .in("cycle_id", cycleIds);
+    for (const r of reviews ?? []) reviewByCycle.set(r.cycle_id, r.status as GoalReviewStatus);
+  }
+
+  const latestRows = [...best.values()];
+  const rank = new Map<string, number>();
+  if (latestRows.length) {
+    const { data: ranks } = await admin.rpc("rep_goal_revenue_ranks", {
+      _representative_id: repId,
+      _row_ids: latestRows.map((r) => r.id),
+    });
+    for (const r of ranks ?? []) rank.set(r.row_id, r.top10_rank);
+  }
+
+  return latestRows
+    .map((r) => {
+      const key = r.razao_social.trim().toUpperCase();
+      const cycle = cycleByKey.get(key);
+      return {
+        rowId: r.id,
+        cliente: r.razao_social.trim(),
+        categoria: r.categoria,
+        periodo: r.rep_performance_uploads.periodo_label,
+        hasGoals: Boolean(cycle),
+        reviewStatus: cycle ? (reviewByCycle.get(cycle.id) ?? "nao_convidado") : "nao_convidado",
+        top10Rank: rank.get(r.id) ?? null,
+      } satisfies RepMetasRow;
+    })
     .sort((a, b) => a.cliente.localeCompare(b.cliente, "pt-BR"));
 }

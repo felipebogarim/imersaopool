@@ -6,7 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Save, Target } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  Loader2,
+  PencilLine,
+  Search,
+  Send,
+  Target,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +37,10 @@ import { cycleInfo, type RepGoalsView } from "@/lib/performance-metas-persistenc
 import {
   repGetMetasGoals,
   repListMetas,
+  repRequestMetasReopen,
   repSaveMetasSuggestions,
 } from "@/lib/performance-metas.functions";
+import type { GoalReviewStatus } from "@/lib/performance-metas-persistence";
 
 type Sugestao = { valor: number | null; justificativa: string };
 type Sugestoes = Record<CanonicalFamily, Sugestao>;
@@ -44,6 +57,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
   const qc = useQueryClient();
   const getFn = useServerFn(repGetMetasGoals);
   const saveFn = useServerFn(repSaveMetasSuggestions);
+  const reopenFn = useServerFn(repRequestMetasReopen);
   const { data, isLoading, error } = useQuery({
     queryKey: ["rep-metas", rowId],
     queryFn: () => getFn({ data: { rowId } }),
@@ -52,6 +66,9 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
   const [salvo, setSalvo] = useState<Sugestoes>(() => fromView(null));
   const [edit, setEdit] = useState<Sugestoes>(() => fromView(null));
   const [saving, setSaving] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [showReopen, setShowReopen] = useState(false);
+  const [reopenNote, setReopenNote] = useState("");
 
   useEffect(() => {
     if (!view) return;
@@ -85,6 +102,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
         available: true,
         view: { ...res.view, cliente: view?.cliente },
       });
+      void qc.invalidateQueries({ queryKey: ["rep-metas-lista"] });
       toast.success("Sugestões enviadas ao gestor.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar.");
@@ -93,7 +111,26 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
     }
   }
 
+  async function solicitarReabertura() {
+    setRequesting(true);
+    try {
+      await reopenFn({ data: { rowId, justificativa: reopenNote } });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["rep-metas", rowId] }),
+        qc.invalidateQueries({ queryKey: ["rep-metas-lista"] }),
+      ]);
+      setShowReopen(false);
+      setReopenNote("");
+      toast.success("Pedido enviado ao gestor.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível solicitar a reabertura.");
+    } finally {
+      setRequesting(false);
+    }
+  }
+
   const ciclo = view?.cycle ? cycleInfo(view.cycle) : null;
+  const canEdit = view?.review.status === "pendente" || view?.review.status === "reaberto";
 
   return (
     <div className="space-y-4">
@@ -174,6 +211,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
                           }))
                         }
                         className="pl-9 tabular-nums"
+                        disabled={!canEdit}
                       />
                     </div>
                     <Textarea
@@ -184,6 +222,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
                         setEdit((p) => ({ ...p, [f]: { ...p[f], justificativa: e.target.value } }))
                       }
                       className="min-h-[60px] text-sm"
+                      disabled={!canEdit}
                     />
                   </div>
                 </div>
@@ -191,51 +230,226 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
             })}
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t px-5 py-3">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t px-5 py-3">
             <span className="text-xs text-muted-foreground">
-              {alterados.length > 0
-                ? `${alterados.length} portfólio(s) alterado(s)`
-                : "Sugestões em dia"}
+              {!canEdit
+                ? view.review.status === "reabertura_solicitada"
+                  ? "Pedido de reabertura aguardando o gestor"
+                  : view.review.status === "respondido"
+                    ? "Sugestões enviadas e edição encerrada"
+                    : "Aguardando convite do gestor"
+                : alterados.length > 0
+                  ? `${alterados.length} portfólio(s) alterado(s)`
+                  : "Sugestões em dia"}
             </span>
-            <Button size="sm" onClick={() => void salvar()} disabled={saving || !alterados.length}>
-              {saving ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-4 w-4" />
-              )}
-              Enviar sugestões
-            </Button>
+            {canEdit && (
+              <Button
+                size="sm"
+                onClick={() => void salvar()}
+                disabled={saving || !alterados.length}
+              >
+                {saving ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-1.5 h-4 w-4" />
+                )}
+                Enviar sugestões
+              </Button>
+            )}
+            {view.review.status === "respondido" && (
+              <Button size="sm" variant="outline" onClick={() => setShowReopen((v) => !v)}>
+                <PencilLine className="mr-1.5 h-4 w-4" /> Solicitar reabertura
+              </Button>
+            )}
           </div>
+          {showReopen && view.review.status === "respondido" && (
+            <div className="space-y-2 border-t bg-muted/30 px-5 py-4">
+              <label className="text-sm font-medium">
+                Por que você precisa alterar a sugestão?
+              </label>
+              <Textarea
+                value={reopenNote}
+                onChange={(e) => setReopenNote(e.target.value)}
+                maxLength={1000}
+                placeholder="Explique brevemente ao gestor o que precisa ser revisado."
+              />
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setShowReopen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => void solicitarReabertura()}
+                  disabled={requesting || reopenNote.trim().length < 3}
+                >
+                  {requesting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                  Enviar pedido
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-/** Lista de clientes com metas para revisar (página inicial do portal). */
+const STATUS_LABEL: Record<GoalReviewStatus, string> = {
+  nao_convidado: "Sem convite",
+  pendente: "Aguardando sua revisão",
+  respondido: "Sugestão enviada",
+  reabertura_solicitada: "Reabertura solicitada",
+  reaberto: "Edição reaberta",
+};
+
+type Filter = "todos" | "pendentes" | "respondidos" | "top10";
+
+/** Painel de metas de toda a carteira do representante. */
 export function RepMetasLista() {
   const listFn = useServerFn(repListMetas);
-  const { data } = useQuery({ queryKey: ["rep-metas-lista"], queryFn: () => listFn() });
-  if (!data?.length) return null;
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["rep-metas-lista"],
+    queryFn: () => listFn(),
+  });
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("todos");
+  const visible = useMemo(() => {
+    const q = search.trim().toLocaleLowerCase("pt-BR");
+    const filtered = data.filter((r) => {
+      if (q && !r.cliente.toLocaleLowerCase("pt-BR").includes(q)) return false;
+      if (filter === "top10") return r.top10Rank != null;
+      if (filter === "pendentes")
+        return r.reviewStatus === "pendente" || r.reviewStatus === "reaberto";
+      if (filter === "respondidos")
+        return r.reviewStatus === "respondido" || r.reviewStatus === "reabertura_solicitada";
+      return true;
+    });
+    return filter === "top10"
+      ? [...filtered].sort((a, b) => (a.top10Rank ?? 99) - (b.top10Rank ?? 99))
+      : filtered;
+  }, [data, filter, search]);
+  const pendentes = data.filter(
+    (r) => r.reviewStatus === "pendente" || r.reviewStatus === "reaberto",
+  ).length;
+  const respondidos = data.filter(
+    (r) => r.reviewStatus === "respondido" || r.reviewStatus === "reabertura_solicitada",
+  ).length;
+  const comMetas = data.filter((r) => r.hasGoals).length;
+
   return (
-    <div className="rounded-lg border bg-background p-4">
-      <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-        <Target className="h-4 w-4" /> Metas para revisar
-      </p>
-      <ul className="space-y-1">
-        {data.map((r) => (
-          <li key={r.rowId}>
-            <Link
-              to="/portal-rep/metas/$rowId"
-              params={{ rowId: r.rowId }}
-              className="text-sm text-primary hover:underline"
-            >
-              {r.cliente}
-            </Link>
-            {r.periodo && <span className="ml-2 text-xs text-muted-foreground">{r.periodo}</span>}
-          </li>
-        ))}
-      </ul>
+    <section className="space-y-4">
+      <div>
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Target className="h-5 w-5 text-primary" /> Gestão de metas da carteira
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Consulte todos os clientes, acompanhe convites e registre suas sugestões de meta.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi icon={Users} label="Clientes na carteira" value={data.length} />
+        <Kpi icon={Target} label="Com metas definidas" value={comMetas} />
+        <Kpi icon={Clock3} label="Convites pendentes" value={pendentes} highlight />
+        <Kpi icon={CheckCircle2} label="Sugestões enviadas" value={respondidos} />
+      </div>
+
+      <div className="rounded-xl border bg-background shadow-sm">
+        <div className="space-y-3 border-b p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar cliente..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["todos", "Todos"],
+                ["pendentes", `Pendentes (${pendentes})`],
+                ["respondidos", `Enviados (${respondidos})`],
+                ["top10", "Top 10 faturamento"],
+              ] as const
+            ).map(([key, label]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={filter === key ? "default" : "outline"}
+                onClick={() => setFilter(key)}
+              >
+                {key === "top10" && <Trophy className="mr-1.5 h-3.5 w-3.5" />}
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p className="p-6 text-sm text-muted-foreground">Carregando carteira…</p>
+        ) : error ? (
+          <p className="p-6 text-sm text-destructive">Não foi possível carregar os clientes.</p>
+        ) : !visible.length ? (
+          <p className="p-6 text-sm text-muted-foreground">
+            Nenhum cliente encontrado para este filtro.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {visible.map((r) => (
+              <li key={r.rowId} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                {r.top10Rank != null && (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">
+                    {r.top10Rank}º
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{r.cliente}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[r.categoria, r.periodo, STATUS_LABEL[r.reviewStatus]]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                {r.hasGoals ? (
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/portal-rep/metas/$rowId" params={{ rowId: r.rowId }}>
+                      Analisar metas
+                    </Link>
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Metas não configuradas</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  highlight = false,
+}: {
+  icon: typeof Target;
+  label: string;
+  value: number;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={cn("rounded-xl border bg-background p-3", highlight && "border-primary/50")}>
+      <Icon className={cn("mb-2 h-4 w-4 text-muted-foreground", highlight && "text-primary")} />
+      <p className="text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
   );
 }

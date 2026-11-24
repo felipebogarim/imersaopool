@@ -94,7 +94,7 @@ function PortalRep() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <BrandMark className="h-8 w-8" />
             <div>
@@ -109,12 +109,7 @@ function PortalRep() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-6">
-        <p className="text-sm text-muted-foreground">
-          Estas ações são <strong>sugestões</strong>: você decide se aceita. Depois de aceitar,
-          registre o andamento, anexe fotos, áudios ou vídeos e, se precisar, peça mais prazo.
-        </p>
-
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
         {error && (
           <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
@@ -126,6 +121,13 @@ function PortalRep() {
 
         {data && (
           <>
+            <div className="border-t pt-6">
+              <h2 className="text-lg font-semibold">Plano de ações</h2>
+              <p className="text-sm text-muted-foreground">
+                Estas ações são <strong>sugestões</strong>: você decide se aceita. Depois de
+                aceitar, registre o andamento, anexe evidências e, se precisar, peça mais prazo.
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2" role="tablist">
               {TABS.map((t) => (
                 <button
