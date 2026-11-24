@@ -7,8 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { FarolStatus } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
 import { getLatestActiveVersionByRep } from "@/lib/performance-periods";
-
-const SUMMARY_PREFIXES = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
+import { isClientRow } from "@/lib/client-row-filter";
 
 export type CarteiraRow = {
   id: string;
@@ -62,12 +61,7 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
     const repById = new Map(reps.map((r) => [r.id, r.nome]));
     const repByUpload = new Map(uploads.map((u) => [u.id, u.representative_id]));
     return allRows
-      .filter((r) => {
-        const u = String(r.razao_social ?? "")
-          .trim()
-          .toUpperCase();
-        return !SUMMARY_PREFIXES.some((p) => u.startsWith(p));
-      })
+      .filter((r) => isClientRow(r))
       .map((r) => {
         const repId = repByUpload.get(r.upload_id) ?? null;
         return {

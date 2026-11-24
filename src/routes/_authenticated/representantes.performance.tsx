@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { cn, famLabel } from "@/lib/utils";
 import { parseWorkbook, validatePerformanceStatusCoverage } from "@/lib/performance-parser";
 import { conflictMessage, CONFLICT_LABEL } from "@/lib/performance-cell-status";
+import { isClientRow } from "@/lib/client-row-filter";
 
 /** SHA-256 do arquivo, usado para identificar reimportações do mesmo arquivo. */
 async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
@@ -242,10 +243,7 @@ export function PerformancePageContent() {
   const rows: Row[] = useMemo(
     () =>
       (dbRows as any[])
-        .filter((r) => {
-          const u = String(r.razao_social ?? "").trim().toUpperCase();
-          return !SUMMARY_PREFIXES.some((p) => u.startsWith(p));
-        })
+        .filter((r) => isClientRow(r))
         .map((r) => ({
           id: r.id,
           ordem: r.ordem,
@@ -508,7 +506,7 @@ export function PerformancePageContent() {
         targets_matrix: targetsMatrix,
         conflitos: parsed.conflitos ?? [],
         diagnostic_summary: performanceDiagnosticSummary(parsed),
-        rows: parsed.rows.map((r) => ({
+        rows: parsed.rows.filter((r) => isClientRow(r)).map((r) => ({
           razao_social: r.razao_social,
           categoria: r.categoria,
           metas: r.metas ?? {},
@@ -621,7 +619,7 @@ export function PerformancePageContent() {
         .eq("id", currentUpload.id);
 
 
-      const payload = draft.map((r) => {
+      const payload = draft.filter((r) => isClientRow(r)).map((r) => {
         const total = familias.reduce((s, f) => s + (Number(r.metas?.[f]) || 0), 0);
         return {
           upload_id: up.id,
@@ -742,7 +740,7 @@ export function PerformancePageContent() {
         .from("rep_performance_rows")
         .select("*")
         .eq("upload_id", v.id);
-      const payload = (srcRows ?? []).map((r: any) => ({
+      const payload = (srcRows ?? []).filter((r: any) => isClientRow(r)).map((r: any) => ({
         upload_id: up.id,
         ordem: r.ordem,
         razao_social: r.razao_social,

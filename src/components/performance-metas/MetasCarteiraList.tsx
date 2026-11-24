@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, catBadge, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
 import { METAS_FAMILIES, METAS_FAMILY_LABEL, fmtPct } from "@/lib/performance-metas";
+import { isClientRow } from "@/lib/client-row-filter";
 import { FilterChip } from "./FilterChip";
 import { useMetasCarteira } from "./use-metas-carteira";
 import { ConviteMassaDialog } from "./ConviteMassaDialog";
@@ -41,6 +42,7 @@ export function MetasCarteiraList({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (!isClientRow(r)) return false;
       if (
         q &&
         !r.razao_social.toLowerCase().includes(q) &&
@@ -303,13 +305,17 @@ export function MetasCarteiraList({
                         );
                       })}
                       <td className="px-3 py-2.5 text-center">
-                        <Link
-                          to="/performance/metas/$rowId"
-                          params={{ rowId: row.id }}
-                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted"
-                        >
-                          <Target className="h-3.5 w-3.5" /> Abrir
-                        </Link>
+                        {isClientRow(row) && row.id ? (
+                          <Link
+                            to="/performance/metas/$rowId"
+                            params={{ rowId: row.id }}
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted"
+                          >
+                            <Target className="h-3.5 w-3.5" /> Abrir
+                          </Link>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">—</span>
+                        )}
                       </td>
                     </tr>
                   );

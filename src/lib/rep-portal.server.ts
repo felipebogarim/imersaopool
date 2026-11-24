@@ -11,11 +11,15 @@ import {
 import { listActionsForRep, notifySubmission, sendSystemEmail } from "@/lib/action-tracking.server";
 import { needsRepFirstAccess } from "@/lib/rep-first-access";
 import { METAS_FAMILIES } from "@/lib/performance-metas";
+import { buildRepMetasAccessUrl } from "@/lib/rep-metas-access";
+import { isClientRow } from "@/lib/client-row-filter";
 import {
+  groupRepSuggestionHistory,
   repView,
   type GoalReview,
   type GoalReviewStatus,
   type GoalsState,
+  type RepGoalsView,
 } from "@/lib/performance-metas-persistence";
 import type { RepMetasBiBackendFact } from "@/lib/performance-metas-bi";
 
@@ -406,12 +410,13 @@ export async function inviteRepToMetasRow(
   if (!row || !repId) throw new Error("Cliente não encontrado.");
   const rep = await loadRep(repId);
   const user = await ensureRepUser(rep);
-  // O convite pode ser aberto em um navegador com uma sessão interna já ativa. Um link novo de
-  // senha garante que o destinatário assuma a conta correta antes de entrar nas metas.
   const metasPath = `/portal-rep/metas/${rowId}`;
-  const passwordLink = new URL(user.senhaUrl ?? (await firstAccessLink(user.uid)));
-  passwordLink.searchParams.set("next", metasPath);
-  const senhaUrl = passwordLink.toString();
+  const accessUrl = buildRepMetasAccessUrl({
+    appOrigin: origin(),
+    email: user.email,
+    next: metasPath,
+    firstAccessUrl: user.senhaUrl,
+  });
   const res = await sendSystemEmail({
     templateName: "metas-convite",
     to: user.email,
@@ -420,11 +425,12 @@ export async function inviteRepToMetasRow(
       name: rep.nome,
       cliente: String(row.razao_social ?? "").trim(),
       mensagem: mensagem.trim(),
-      senhaUrl,
+      accessUrl,
+      primeiroAcesso: Boolean(user.senhaUrl),
     },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
-  return { email: user.email, incluiLinkSenha: true };
+  return { email: user.email, incluiLinkSenha: Boolean(user.senhaUrl) };
 }
 
 /**
@@ -460,12 +466,14 @@ export async function inviteRepToMetasRows(
   const rep = await loadRep([...repIds][0] as string);
   const user = await ensureRepUser(rep);
   const portalPath = "/portal-rep";
-  let senhaUrl: string | null = null;
-  if (user.senhaUrl) {
-    const link = new URL(user.senhaUrl);
-    link.searchParams.set("next", portalPath);
-    senhaUrl = link.toString();
-  }
+  const accessUrl = buildRepMetasAccessUrl({
+    appOrigin: origin(),
+    email: user.email,
+    next: portalPath,
+    firstAccessUrl: user.senhaUrl,
+  });
+  const senhaUrl = user.senhaUrl ? accessUrl : null;
+  const portalUrl = user.senhaUrl ? `${origin()}${portalPath}` : accessUrl;
   const clientes = list
     .map((r) => ({
       nome: String(r.razao_social ?? "").trim(),
@@ -481,7 +489,7 @@ export async function inviteRepToMetasRows(
       mensagem: mensagem.trim(),
       clientes,
       senhaUrl,
-      portalUrl: `${origin()}${portalPath}`,
+      portalUrl,
     },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
@@ -511,6 +519,49 @@ export async function reviewForCycle(cycleId: string | null): Promise<GoalReview
   return data ? (data as GoalReview) : { status: "nao_convidado" };
 }
 
+/** Metadados e histórico seguros do detalhe de metas, sempre escopados ao representante. */
+export async function loadRepMetasDetailExtras(
+  repId: string,
+  rowId: string,
+  cycleId: string | null,
+): Promise<Pick<RepGoalsView, "cliente" | "performance_period" | "suggestion_history">> {
+  const { data: row, error } = await admin
+    .from("rep_performance_rows")
+    .select(
+      "razao_social, rep_performance_uploads!inner(representative_id, periodo_label, periodo_inicio, periodo_fim)",
+    )
+    .eq("id", rowId)
+    .eq("rep_performance_uploads.representative_id", repId)
+    .maybeSingle();
+  if (error || !row) throw new Error("Cliente fora da carteira.");
+
+  const upload = Array.isArray(row.rep_performance_uploads)
+    ? row.rep_performance_uploads[0]
+    : row.rep_performance_uploads;
+  let suggestionHistory: RepGoalsView["suggestion_history"] = [];
+  if (cycleId) {
+    const { data: history, error: historyError } = await admin
+      .from("performance_goal_history")
+      .select("changed_at, familia, dados_novos")
+      .eq("cycle_id", cycleId)
+      .eq("tabela", "performance_goal_rep_suggestions")
+      .in("acao", ["insert", "update"])
+      .order("changed_at", { ascending: false });
+    if (historyError) throw new Error("Não foi possível carregar o histórico de sugestões.");
+    suggestionHistory = groupRepSuggestionHistory(history ?? []);
+  }
+
+  return {
+    cliente: String(row.razao_social ?? "").trim(),
+    performance_period: {
+      label: upload?.periodo_label ?? null,
+      inicio: upload?.periodo_inicio ?? null,
+      fim: upload?.periodo_fim ?? null,
+    },
+    suggestion_history: suggestionHistory,
+  };
+}
+
 /** Todos os clientes do upload vigente mais recente do representante, com estado da revisão. */
 export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
   const { data: cycles } = await admin
@@ -538,9 +589,8 @@ export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
   const ordem = (r: Row) =>
     `${r.rep_performance_uploads.periodo_inicio ?? ""}|${r.rep_performance_uploads.created_at}`;
   for (const r of (rows ?? []) as Row[]) {
+    if (!isClientRow(r)) continue;
     const key = r.razao_social.trim().toUpperCase();
-    if (["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"].some((p) => key.startsWith(p)))
-      continue;
     const cur = best.get(key);
     if (!cur || ordem(r) > ordem(cur)) best.set(key, r);
   }

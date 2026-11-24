@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isClientRow, isTotalRowName, splitClientRows } from "./client-row-filter";
 
 describe("isTotalRowName", () => {
-  it("identifica linhas de totalização/legenda", () => {
+  it("identifica linhas de totalização/legenda e vazios de planilhas", () => {
     for (const v of [
       "TOTAL",
       "Total Geral",
@@ -14,6 +14,9 @@ describe("isTotalRowName", () => {
       "LEGENDA",
       "Participação estimada na venda",
       "ATINGIMENTO ESTIMADO DA META",
+      "(vazio)",
+      "(VAZIO)",
+      "vazio",
       "",
       null,
     ]) {
@@ -34,11 +37,15 @@ describe("isTotalRowName", () => {
 });
 
 describe("isClientRow", () => {
-  it("exige categoria válida", () => {
+  it("exige categoria válida e razão social não-nula/não-vazia", () => {
     expect(isClientRow({ razao_social: "CLIENTE X", categoria: "Silver" })).toBe(true);
     expect(isClientRow({ razao_social: "CLIENTE X", categoria: "" })).toBe(false);
     expect(isClientRow({ razao_social: "CLIENTE X", categoria: null })).toBe(false);
     expect(isClientRow({ razao_social: "TOTAL GERAL DA META", categoria: "Black" })).toBe(false);
+    expect(isClientRow({ razao_social: "(vazio)", categoria: "(vazio)" })).toBe(false);
+    expect(isClientRow({ razao_social: "CLIENTE X", categoria: "(vazio)" })).toBe(false);
+    expect(isClientRow({ razao_social: "CLIENTE X", categoria: "Consumidor Final" })).toBe(false);
+    expect(isClientRow({ razao_social: "10 XD SOLUCOES EM COMERCIO", categoria: "Consumidor Final" })).toBe(false);
   });
 });
 

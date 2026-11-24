@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, FAROL_MIDPOINT, type FarolStatus } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
 import { getLatestActiveVersionByRep } from "@/lib/performance-periods";
+import { isClientRow } from "@/lib/client-row-filter";
 
 
 export const Route = createFileRoute("/_authenticated/performance/bi-clientes")({
@@ -76,10 +77,7 @@ function BIClientesPage() {
     ];
 
     return allRows
-      .filter((r) => {
-        const u = String(r.razao_social ?? "").trim().toUpperCase();
-        return !SUMMARY_PREFIXES.some((p) => u.startsWith(p));
-      })
+      .filter((r) => isClientRow(r))
       .map((r) => {
         const upload = uploads.find((u) => u.id === r.upload_id);
         const rep = reps.find((rp) => rp.id === upload?.representative_id);

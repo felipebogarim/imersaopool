@@ -34,6 +34,8 @@ const EXACT = new Set([
   "OBSERVACOES",
   "FAIXA",
   "FAIXA %",
+  "(VAZIO)",
+  "VAZIO",
 ]);
 
 const PREFIX =
@@ -41,19 +43,36 @@ const PREFIX =
 
 /** true quando a razão social indica linha de totalização/legenda (não é cliente). */
 export function isTotalRowName(razaoSocial: unknown): boolean {
+  const raw = String(razaoSocial ?? "").trim();
+  if (!raw || /^\(?\s*vazio\s*\)?$/i.test(raw)) return true;
   const v = normalizeName(razaoSocial);
   if (!v) return true;
   if (EXACT.has(v)) return true;
+  if (v.includes("(VAZIO)") || v.includes("VAZIO")) return true;
   return PREFIX.test(v);
 }
 
-const INVALID_CAT = new Set(["", "NONE", "NULL", "NAN", "-", "UNDEFINED"]);
+const INVALID_CAT = new Set([
+  "",
+  "NONE",
+  "NULL",
+  "NAN",
+  "-",
+  "UNDEFINED",
+  "(VAZIO)",
+  "VAZIO",
+  "CONSUMIDOR FINAL",
+  "CONSUMIDOR",
+]);
 
 /** Linha só é cliente se tiver razão social válida e categoria explicitamente preenchida. */
 export function isClientRow(row: { razao_social?: unknown; categoria?: unknown }): boolean {
   if (isTotalRowName(row?.razao_social)) return false;
   const cat = String(row?.categoria ?? "").trim().toUpperCase();
-  return !INVALID_CAT.has(cat);
+  if (INVALID_CAT.has(cat) || cat.includes("VAZIO") || cat.includes("(VAZIO)")) return false;
+  const rz = normalizeName(row?.razao_social);
+  if (rz.startsWith("10 XD SOLUCOES")) return false;
+  return true;
 }
 
 export type IgnoredRow = { razao_social: string; motivo: string };
