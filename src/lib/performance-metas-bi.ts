@@ -137,11 +137,19 @@ export const monthShortLabel = (key: string) =>
   `${MESES[Number(key.slice(5, 7)) - 1]}/${key.slice(2, 4)}`;
 
 /** Rótulo do período: "nov/26", "Ano 2026", "3 meses (set/26 – nov/26)". */
+/** Competências de um semestre (1 = jan–jun, 2 = jul–dez). */
+export function semesterMonths(year: number, semester: 1 | 2): string[] {
+  return yearMonths(year).slice((semester - 1) * 6, semester * 6);
+}
+
 export function periodLabel(months: readonly string[], year?: number): string {
   if (months.length === 0) return "Nenhum mês";
   const sorted = [...months].sort();
-  if (year != null && sorted.length === 12 && sorted.every((m) => m.startsWith(`${year}-`)))
-    return `Ano ${year}`;
+  if (year != null && sorted.every((m) => m.startsWith(`${year}-`))) {
+    if (sorted.length === 12) return `Ano ${year}`;
+    for (const sem of [1, 2] as const)
+      if (sorted.join() === semesterMonths(year, sem).join()) return `${sem}º semestre ${year}`;
+  }
   if (sorted.length === 1) return monthShortLabel(sorted[0]);
   return `${sorted.length} meses (${monthShortLabel(sorted[0])} – ${monthShortLabel(sorted[sorted.length - 1])})`;
 }

@@ -9,6 +9,7 @@ import {
   matrixMetasBi,
   totalMetasBi,
   savedGoalForMonth,
+  semesterMonths,
   yearMonths,
   periodLabel,
   type MetasBiBackendRow,
@@ -209,5 +210,13 @@ describe("período (meses)", () => {
     expect(dn(yearMonths(2027)).metaAtual).toBe(3500 * 4 + 2500 * 8);
     expect(periodLabel(yearMonths(2027), 2027)).toBe("Ano 2027");
     expect(periodLabel(["2026-11-01"])).toBe("nov/26");
+  });
+
+  it("semestre = 6 competências", () => {
+    expect(semesterMonths(2027, 1)).toEqual(yearMonths(2027).slice(0, 6));
+    expect(semesterMonths(2027, 2)[0]).toBe("2027-07-01");
+    // jan–mar com 3500 (ciclo até abr), abr–jun padrão.
+    expect(dn(semesterMonths(2027, 1)).metaAtual).toBe(3500 * 4 + 2500 * 2);
+    expect(periodLabel(semesterMonths(2027, 2), 2027)).toBe("2º semestre 2027");
   });
 });

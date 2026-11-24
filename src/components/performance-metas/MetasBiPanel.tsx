@@ -25,6 +25,7 @@ import {
   monthKey,
   monthShortLabel,
   periodLabel,
+  semesterMonths,
   yearMonths,
   matrixMetasBi,
   totalMetasBi,
@@ -88,14 +89,20 @@ export function MetasBiPanel() {
   const [matrixDim, setMatrixDim] = useState<MatrixDim>("representante");
   const [metric, setMetric] = useState<MatrixMetric>("meta");
 
-  // Período: ano inteiro ou meses escolhidos (soma das metas mensais).
+  // Período: meses escolhidos, semestre ou ano inteiro (soma das metas mensais).
   const thisYear = new Date().getFullYear();
-  const [mode, setMode] = useState<"mes" | "ano">("mes");
+  const [mode, setMode] = useState<"mes" | "semestre" | "ano">("mes");
   const [year, setYear] = useState(thisYear);
   const [months, setMonths] = useState<string[]>(() => [currentMonthKey()]);
+  const [semester, setSemester] = useState<1 | 2>(() => (new Date().getMonth() < 6 ? 1 : 2));
   const periodMonths = useMemo(
-    () => (mode === "ano" ? yearMonths(year) : months),
-    [mode, year, months],
+    () =>
+      mode === "ano"
+        ? yearMonths(year)
+        : mode === "semestre"
+          ? semesterMonths(year, semester)
+          : months,
+    [mode, year, months, semester],
   );
   const changeYear = (y: number) => {
     setYear(y);
@@ -181,6 +188,7 @@ export function MetasBiPanel() {
             {(
               [
                 ["mes", "Mês"],
+                ["semestre", "Semestre"],
                 ["ano", "Ano"],
               ] as const
             ).map(([m, l]) => (
@@ -203,6 +211,16 @@ export function MetasBiPanel() {
             onChange={(v) => changeYear(Number(v))}
             options={[thisYear - 1, thisYear, thisYear + 1].map((y) => [String(y), String(y)])}
           />
+          {mode === "semestre" && (
+            <InlineSelect
+              value={String(semester)}
+              onChange={(v) => setSemester(v === "2" ? 2 : 1)}
+              options={[
+                ["1", "1º semestre"],
+                ["2", "2º semestre"],
+              ]}
+            />
+          )}
           {mode === "mes" && (
             <MultiFilter
               label={months.length === 1 ? monthShortLabel(months[0]) : "Meses"}
