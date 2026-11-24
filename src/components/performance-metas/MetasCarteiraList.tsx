@@ -4,8 +4,9 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Loader2, Search, Target, X } from "lucide-react";
+import { Loader2, Mail, Search, Target, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -20,6 +21,7 @@ import { sanitizeRatio } from "@/lib/performance-metrics";
 import { METAS_FAMILIES, METAS_FAMILY_LABEL, fmtPct } from "@/lib/performance-metas";
 import { FilterChip } from "./FilterChip";
 import { useMetasCarteira } from "./use-metas-carteira";
+import { ConviteMassaDialog } from "./ConviteMassaDialog";
 
 export function MetasCarteiraList({
   restrictToRepIds,
@@ -32,6 +34,7 @@ export function MetasCarteiraList({
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [familyFilter, setFamilyFilter] = useState<string[]>([]);
   const [zeroFilter, setZeroFilter] = useState(false);
+  const [conviteMassa, setConviteMassa] = useState(false);
 
   const { rows, visibleReps, isLoading } = useMetasCarteira(restrictToRepIds);
 
@@ -62,11 +65,41 @@ export function MetasCarteiraList({
     });
   }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter]);
 
+  // Convite em massa: só na visão da gestão e com um representante filtrado.
+  const repSelecionado =
+    restrictToRepIds == null && repFilter !== "all"
+      ? (visibleReps.find((r) => r.id === repFilter) ?? null)
+      : null;
+
   const toggle = (list: string[], v: string) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {repSelecionado && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">{repSelecionado.nome}</span>
+            <span className="text-muted-foreground">
+              {" "}
+              · {filtered.length} cliente(s) no filtro atual
+            </span>
+          </p>
+          <Button
+            size="sm"
+            onClick={() => setConviteMassa(true)}
+            disabled={isLoading || filtered.length === 0}
+          >
+            <Mail className="mr-1.5 h-4 w-4" /> Enviar convite em massa ao rep
+          </Button>
+          <ConviteMassaDialog
+            open={conviteMassa}
+            onOpenChange={setConviteMassa}
+            repName={repSelecionado.nome}
+            clientes={filtered.map((r) => ({ id: r.id, razao_social: r.razao_social }))}
+          />
+        </div>
+      )}
       <div className="bg-card p-4 rounded-xl border border-border shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
           <div className="flex-1 min-w-0 space-y-1.5">

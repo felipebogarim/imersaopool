@@ -427,6 +427,67 @@ export async function inviteRepToMetasRow(
   return { email: user.email, incluiLinkSenha: true };
 }
 
+/**
+ * Convite em massa: um único e-mail ao representante listando todos os clientes enviados para
+ * revisão. Quem chama já conferiu a gestão de cada linha. Todas as linhas precisam ser do mesmo
+ * representante. Primeiro acesso: o botão principal leva a definir a senha e depois ao portal.
+ */
+export async function inviteRepToMetasRows(
+  rowIds: readonly string[],
+  mensagem: string,
+): Promise<{ email: string; enviados: number }> {
+  const { data: rows, error } = await admin
+    .from("rep_performance_rows")
+    .select("id, razao_social, rep_performance_uploads!inner(representative_id)")
+    .in("id", [...rowIds]);
+  if (error) throw new Error("Não foi possível carregar os clientes do convite.");
+  const list = (rows ?? []) as Array<{
+    id: string;
+    razao_social: string | null;
+    rep_performance_uploads: { representative_id: string } | Array<{ representative_id: string }>;
+  }>;
+  if (list.length !== rowIds.length) throw new Error("Cliente não encontrado.");
+  const repIds = new Set(
+    list.map((r) => {
+      const u = Array.isArray(r.rep_performance_uploads)
+        ? r.rep_performance_uploads[0]
+        : r.rep_performance_uploads;
+      return u?.representative_id;
+    }),
+  );
+  if (repIds.size !== 1 || repIds.has(undefined as unknown as string))
+    throw new Error("O convite em massa deve conter clientes de um único representante.");
+  const rep = await loadRep([...repIds][0] as string);
+  const user = await ensureRepUser(rep);
+  const portalPath = "/portal-rep";
+  let senhaUrl: string | null = null;
+  if (user.senhaUrl) {
+    const link = new URL(user.senhaUrl);
+    link.searchParams.set("next", portalPath);
+    senhaUrl = link.toString();
+  }
+  const clientes = list
+    .map((r) => ({
+      nome: String(r.razao_social ?? "").trim(),
+      url: `${origin()}/portal-rep/metas/${r.id}`,
+    }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const res = await sendSystemEmail({
+    templateName: "metas-convite-massa",
+    to: user.email,
+    idempotencyKey: `metas-convite-massa-${rep.id}-${user.uid}-${Date.now()}`,
+    templateData: {
+      name: rep.nome,
+      mensagem: mensagem.trim(),
+      clientes,
+      senhaUrl,
+      portalUrl: `${origin()}${portalPath}`,
+    },
+  });
+  if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
+  return { email: user.email, enviados: clientes.length };
+}
+
 export type RepMetasRow = {
   rowId: string;
   cliente: string;

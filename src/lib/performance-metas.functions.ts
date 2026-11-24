@@ -29,6 +29,7 @@ import {
   type RepGoalsView,
 } from "@/lib/performance-metas-persistence";
 import type { MetasBiBackendRow, RepMetasBiBackendFact } from "@/lib/performance-metas-bi";
+import { aiFillForMissing, bulkRowStatus, type BulkRowStatus } from "@/lib/performance-metas-bulk";
 
 type RpcClient = {
   rpc: (
@@ -180,87 +181,87 @@ export const confirmMetasLink = createServerFn({ method: "POST" })
  * Sugestão IA: UMA análise do cliente (7 famílias) com saída estruturada, validada no servidor
  * e gravada com origem, confiança, participação e base. Nunca altera a meta oficial.
  */
+/** Gera (ou reaproveita, sem novos inputs) a análise IA dos 7 portfólios de uma linha. */
+async function runAiAnalysis(client: RpcClient, data: { rowId: string; force?: boolean }) {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) throw new Error("IA indisponível neste ambiente (LOVABLE_API_KEY ausente).");
+
+  const { data: raw, error } = await client.rpc("performance_goal_ai_context", {
+    _row_id: data.rowId,
+  });
+  if (error) {
+    if (NOT_MIGRATED.has(error.code ?? ""))
+      throw new Error("Banco desatualizado: aplique a migration da sugestão IA (20261125120000).");
+    throw new Error(error.message);
+  }
+  const ctx = raw as AiContext;
+
+  // Consulta se já há sugestão anterior registrada
+  const currentGoals = await callRpc(client, "get_performance_goals", { _row_id: data.rowId });
+  const aiSug = currentGoals.available
+    ? currentGoals.state.ai_suggestions.filter((s) => s.origem === "modelo")
+    : [];
+  const lastGeneratedAt = aiSug[0]?.created_at;
+
+  // Se já foi gerada e não foi pedido reavaliação forçada: consulta se houve novos inputs
+  if (currentGoals.available && lastGeneratedAt && !data.force) {
+    const repSugs = currentGoals.state.rep_suggestions;
+    const check = hasNewInputsForAi(ctx, repSugs, lastGeneratedAt);
+    if (!check.hasNewInputs) {
+      return {
+        available: true as const,
+        state: currentGoals.state,
+        hasNewInputs: false,
+        lastGeneratedAt,
+        motivo: check.motivo,
+      };
+    }
+  }
+
+  const refs = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
+  const { system, user } = buildAiPrompt(ctx, refs);
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: AI_MODEL,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      tools: [AI_TOOL],
+      tool_choice: { type: "function", function: { name: AI_TOOL.function.name } },
+    }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new Error("Limite de requisições da IA. Tente em instantes.");
+    if (res.status === 402) throw new Error("Créditos de IA esgotados no workspace.");
+    throw new Error(`Falha na IA (${res.status}).`);
+  }
+  const json = (await res.json()) as {
+    choices?: Array<{ message?: Parameters<typeof extractAnalysis>[0] }>;
+  };
+  const parsed = extractAnalysis(json.choices?.[0]?.message ?? {});
+  if (!parsed) throw new Error("A IA não retornou uma análise válida. Tente novamente.");
+  const { sugestoes } = validateAnalysis(parsed, ctx, refs);
+  if (sugestoes.length === 0)
+    throw new Error("Sem dados para recomendar metas deste cliente (categoria sem referência).");
+  const saveRes = await callRpc(client, "record_performance_goal_ai_suggestions", {
+    _row_id: data.rowId,
+    _sugestoes: sugestoes,
+    _modelo: AI_MODEL,
+  });
+  return {
+    ...saveRes,
+    hasNewInputs: true,
+    lastGeneratedAt: new Date().toISOString(),
+  };
+}
+
 export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ rowId: z.string().uuid(), force: z.boolean().optional() }))
-  .handler(async ({ data, context }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("IA indisponível neste ambiente (LOVABLE_API_KEY ausente).");
-    const client = context.supabase as unknown as RpcClient;
-
-    const { data: raw, error } = await client.rpc("performance_goal_ai_context", {
-      _row_id: data.rowId,
-    });
-    if (error) {
-      if (NOT_MIGRATED.has(error.code ?? ""))
-        throw new Error(
-          "Banco desatualizado: aplique a migration da sugestão IA (20261125120000).",
-        );
-      throw new Error(error.message);
-    }
-    const ctx = raw as AiContext;
-
-    // Consulta se já há sugestão anterior registrada
-    const currentGoals = await callRpc(client, "get_performance_goals", { _row_id: data.rowId });
-    const aiSug = currentGoals.available
-      ? currentGoals.state.ai_suggestions.filter((s) => s.origem === "modelo")
-      : [];
-    const lastGeneratedAt = aiSug[0]?.created_at;
-
-    // Se já foi gerada e não foi pedido reavaliação forçada: consulta se houve novos inputs
-    if (currentGoals.available && lastGeneratedAt && !data.force) {
-      const repSugs = currentGoals.state.rep_suggestions;
-      const check = hasNewInputsForAi(ctx, repSugs, lastGeneratedAt);
-      if (!check.hasNewInputs) {
-        return {
-          available: true as const,
-          state: currentGoals.state,
-          hasNewInputs: false,
-          lastGeneratedAt,
-          motivo: check.motivo,
-        };
-      }
-    }
-
-    const refs = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
-    const { system, user } = buildAiPrompt(ctx, refs);
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-        tools: [AI_TOOL],
-        tool_choice: { type: "function", function: { name: AI_TOOL.function.name } },
-      }),
-    });
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("Limite de requisições da IA. Tente em instantes.");
-      if (res.status === 402) throw new Error("Créditos de IA esgotados no workspace.");
-      throw new Error(`Falha na IA (${res.status}).`);
-    }
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: Parameters<typeof extractAnalysis>[0] }>;
-    };
-    const parsed = extractAnalysis(json.choices?.[0]?.message ?? {});
-    if (!parsed) throw new Error("A IA não retornou uma análise válida. Tente novamente.");
-    const { sugestoes } = validateAnalysis(parsed, ctx, refs);
-    if (sugestoes.length === 0)
-      throw new Error("Sem dados para recomendar metas deste cliente (categoria sem referência).");
-    const saveRes = await callRpc(client, "record_performance_goal_ai_suggestions", {
-      _row_id: data.rowId,
-      _sugestoes: sugestoes,
-      _modelo: AI_MODEL,
-    });
-    return {
-      ...saveRes,
-      hasNewInputs: true,
-      lastGeneratedAt: new Date().toISOString(),
-    };
-  });
+  .handler(({ data, context }) => runAiAnalysis(context.supabase as unknown as RpcClient, data));
 
 /** Convida o representante da linha para revisar as metas do cliente (e-mail real). */
 export const inviteRepToMetas = createServerFn({ method: "POST" })
@@ -288,6 +289,106 @@ export const inviteRepToMetas = createServerFn({ method: "POST" })
         "Convite enviado, mas o fluxo de revisão ainda não está disponível no banco. Aplique a migration 20261125150000.",
       );
     return sent;
+  });
+
+// --------------------------- Convite em massa --------------------------------
+
+const rowIdsInput = z.object({ rowIds: z.array(z.string().uuid()).min(1).max(500) });
+
+/** Executa `fn` em lotes para não abrir centenas de requisições simultâneas. */
+async function inBatches<T, R>(items: readonly T[], size: number, fn: (t: T) => Promise<R>) {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size)
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+  return out;
+}
+
+/** Situação das metas de cada cliente (o gestor já gravou os 7 portfólios?). */
+export const getMetasBulkStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowIdsInput)
+  .handler(
+    async ({ data, context }): Promise<BulkRowStatus[]> =>
+      inBatches(data.rowIds, 8, async (rowId) => {
+        try {
+          const res = await callRpc(context.supabase, "get_performance_goals", { _row_id: rowId });
+          if (!res.available) throw new Error("Persistência das metas indisponível.");
+          return bulkRowStatus(rowId, res.state);
+        } catch (e) {
+          return {
+            ...bulkRowStatus(rowId, null),
+            erro: e instanceof Error ? e.message : "Falha ao consultar.",
+          };
+        }
+      }),
+  );
+
+/**
+ * Completa as metas que faltam com a sugestão IA (gera a análise se ainda não houver).
+ * Só grava portfólios sem meta do gestor; o que ele já revisou não é alterado.
+ */
+export const completeMetasWithAi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput)
+  .handler(async ({ data, context }): Promise<BulkRowStatus> => {
+    const client = context.supabase as unknown as RpcClient;
+    let res = await callRpc(client, "get_performance_goals", { _row_id: data.rowId });
+    if (!res.available) throw new Error("Persistência das metas indisponível.");
+    const status = bulkRowStatus(data.rowId, res.state);
+    if (status.faltandoComIa.length < status.faltando.length) {
+      const gen = await runAiAnalysis(client, { rowId: data.rowId });
+      if (!gen.available) throw new Error("Persistência das metas indisponível.");
+      res = gen;
+    }
+    const metas = aiFillForMissing(res.state);
+    if (metas.length > 0) {
+      res = await callRpc(client, "save_performance_goals", {
+        _row_id: data.rowId,
+        _metas: metas,
+        _sugestoes_ia: [],
+        _vigente_desde: null,
+      });
+      if (!res.available) throw new Error("Persistência das metas indisponível.");
+    }
+    return bulkRowStatus(data.rowId, res.state);
+  });
+
+/**
+ * Convite em massa: um único e-mail ao representante com todos os clientes enviados. Cada
+ * cliente precisa ter metas gravadas (ciclo) e pertencer ao mesmo representante.
+ */
+export const inviteRepToMetasBulk = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowIdsInput.extend({ mensagem: z.string().trim().min(1).max(2000) }))
+  .handler(async ({ data, context }) => {
+    // Mesma checagem do convite individual, cliente a cliente (gestão da empresa da linha).
+    const checks = await inBatches(data.rowIds, 8, async (rowId) => {
+      const res = await callRpc(context.supabase, "get_performance_goals", { _row_id: rowId });
+      if (!res.available) throw new Error("Persistência das metas indisponível.");
+      return { rowId, temCiclo: res.state.cycle != null };
+    });
+    const semMeta = checks.filter((c) => !c.temCiclo);
+    if (semMeta.length > 0)
+      throw new Error(
+        `${semMeta.length} cliente(s) ainda sem metas salvas; revise antes de enviar.`,
+      );
+    const workflow = await reviewRpc(context.supabase, "performance_goal_review_state", {
+      _row_id: data.rowIds[0],
+    });
+    if (!workflow.available)
+      throw new Error("Aplique a migration 20261125150000 antes de enviar novos convites.");
+
+    const { inviteRepToMetasRows } = await import("@/lib/rep-portal.server");
+    const sent = await inviteRepToMetasRows(data.rowIds, data.mensagem);
+    const falhas: string[] = [];
+    await inBatches(data.rowIds, 8, async (rowId) => {
+      try {
+        await reviewRpc(context.supabase, "start_performance_goal_review", { _row_id: rowId });
+      } catch {
+        falhas.push(rowId);
+      }
+    });
+    return { ...sent, revisaoNaoIniciada: falhas.length };
   });
 
 // ---------------------------- Representante ----------------------------------
