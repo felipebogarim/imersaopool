@@ -85,12 +85,13 @@ export const AI_TAG_LABEL: Record<AiSuggestionTag, string> = {
   tendencia: "Tendência",
 };
 
+/** Sugestão gerada pelo modelo de IA e registrada no banco (performance_goal_ai_suggestions). */
 export type AiSuggestion = {
   valor: number;
   justificativa: string;
   tag: AiSuggestionTag;
-  /** `true` = sugestão demonstrativa (ainda sem modelo de IA real). */
-  simulada: boolean;
+  /** Resumo da base usada (ex.: "Imersão 12/10/26 · 3 entrevistas · 4 períodos de histórico"). */
+  fundamento?: string;
 };
 
 /** De onde veio o valor atual da meta oficial. */
@@ -134,40 +135,6 @@ export function buildInitialDrafts(categoria: unknown): FamilyMetaDraft[] {
 }
 
 // ------------------------------- Ações ---------------------------------------
-
-/** Padrão FIXO e fictício só para demonstrar a interface (não é recomendação). */
-const DEMO_FACTORS = [1.1, 0.95, 1.05, 0.9, 1, 1.15, 0.95];
-const DEMO_TAGS: AiSuggestionTag[] = [
-  "tendencia",
-  "imersao",
-  "tendencia",
-  "imersao",
-  "tendencia",
-  "imersao",
-  "tendencia",
-];
-
-const roundTo50 = (v: number) => Math.round(v / 50) * 50;
-
-/**
- * Sugestão IA DEMONSTRATIVA. Os valores são fictícios (variação fixa sobre a
- * referência) e servem só para visualizar a interface — nenhum modelo é consultado.
- */
-export function simulateAiSuggestions(drafts: FamilyMetaDraft[]): FamilyMetaDraft[] {
-  return drafts.map((d, i) => ({
-    ...d,
-    sugestaoIa:
-      d.referencia == null
-        ? null
-        : {
-            valor: roundTo50(d.referencia * DEMO_FACTORS[i % DEMO_FACTORS.length]),
-            justificativa:
-              "Valor fictício de demonstração. A sugestão real da IA será conectada em etapa futura.",
-            tag: DEMO_TAGS[i % DEMO_TAGS.length],
-            simulada: true,
-          },
-  }));
-}
 
 const mapFamily = (
   drafts: FamilyMetaDraft[],
@@ -238,7 +205,7 @@ export function parseMetaInput(input: string): number | null {
 
 // ================================ Resumo =====================================
 
-export type SimulationStatus = {
+export type OrigemStatus = {
   /** Origem única dos sete portfólios, ou "misto". */
   origem: MetaOrigem | "misto";
   contagem: Record<MetaOrigem, number>;
@@ -256,10 +223,10 @@ export type MetasSummary = {
   composicao: Record<CanonicalFamily, number> | null;
   /** Portfólios com meta oficial positiva. */
   portfoliosComMeta: number;
-  status: SimulationStatus;
+  status: OrigemStatus;
 };
 
-export function simulationStatus(drafts: FamilyMetaDraft[]): SimulationStatus {
+export function origemStatus(drafts: FamilyMetaDraft[]): OrigemStatus {
   const contagem: Record<MetaOrigem, number> = { padrao: 0, ia: 0, representante: 0, gestor: 0 };
   for (const d of drafts) contagem[d.origem] += 1;
   const usadas = (Object.keys(contagem) as MetaOrigem[]).filter((k) => contagem[k] > 0);
@@ -291,7 +258,7 @@ export function summarizeDrafts(drafts: FamilyMetaDraft[]): MetasSummary {
     diferencaPct,
     composicao,
     portfoliosComMeta: drafts.filter((d) => (d.metaOficial ?? 0) > 0).length,
-    status: simulationStatus(drafts),
+    status: origemStatus(drafts),
   };
 }
 
@@ -468,7 +435,8 @@ export function categoryLabel(categoria: unknown): PortfolioCategory | null {
 
 // ============================== Salvamento ===================================
 
-const GESTOR_FIELDS = ["metaOficial", "comentarioGestor", "origem", "sugestaoIa"] as const;
+// A sugestão da IA é registrada no banco no momento em que é gerada (não entra no Salvar).
+const GESTOR_FIELDS = ["metaOficial", "comentarioGestor", "origem"] as const;
 const REP_FIELDS = ["sugestaoRep", "justificativaRep"] as const;
 
 /** Campos que cada perfil salva (espelha a separação de permissões planejada). */
@@ -513,7 +481,7 @@ export function mergeSaved(
 
 /**
  * Payload de gravação, separado por perfil (espelha as permissões planejadas):
- * - gestor: meta oficial + comentário + origem, e registro das sugestões da IA;
+ * - gestor: meta oficial + comentário + origem;
  * - representante: apenas a própria sugestão e justificativa.
  */
 export type SavePayload =
@@ -525,13 +493,6 @@ export type SavePayload =
         comentario_gestor: string;
         origem: MetaOrigem;
         referencia: number | null;
-      }>;
-      sugestoes_ia: Array<{
-        familia: CanonicalFamily;
-        valor: number;
-        justificativa: string;
-        tag: AiSuggestionTag;
-        simulada: boolean;
       }>;
     }
   | {
@@ -564,19 +525,6 @@ export function buildSavePayload(
       origem: d.origem,
       referencia: d.referencia,
     })),
-    sugestoes_ia: sel.flatMap((d) =>
-      d.sugestaoIa
-        ? [
-            {
-              familia: d.familia,
-              valor: d.sugestaoIa.valor,
-              justificativa: d.sugestaoIa.justificativa,
-              tag: d.sugestaoIa.tag,
-              simulada: d.sugestaoIa.simulada,
-            },
-          ]
-        : [],
-    ),
   };
 }
 
