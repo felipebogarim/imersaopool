@@ -728,6 +728,8 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
         atingimento: ating,
         status,
         clientes: found?.clientes ?? 0,
+        // Ticket médio = faturamento realizado no período ÷ clientes da categoria.
+        ticketMedio: found?.clientes ? real / found.clientes : null,
         diferenca: found?.diferenca ?? 0,
       };
     });
@@ -780,6 +782,10 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                       )}
                     />
                     <span>{c.label}</span>
+                    <span className="text-[11px] font-normal text-muted-foreground tabular-nums">
+                      · {c.clientes} {c.clientes === 1 ? "cliente" : "clientes"} · Ticket médio{" "}
+                      {c.ticketMedio != null ? fmtCompactBRL(c.ticketMedio) : "—"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-muted-foreground tabular-nums">
@@ -896,6 +902,7 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                 <tr className="border-b">
                   <th className="px-4 py-2.5 text-left">Categoria</th>
                   <th className="px-4 py-2.5 text-right">Clientes</th>
+                  <th className="px-4 py-2.5 text-right">Ticket médio</th>
                   <th className="px-4 py-2.5 text-right">Meta Atual</th>
                   <th className="px-4 py-2.5 text-right">Realizado</th>
                   <th className="px-4 py-2.5 text-right">Atingimento</th>
@@ -908,6 +915,9 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                     <td className="px-4 py-2.5 font-medium">{c.label}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                       {c.clientes}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">
+                      {c.ticketMedio != null ? fmtBRL(c.ticketMedio) : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-right font-medium tabular-nums">
                       {fmtBRL(c.metaAtual)}
