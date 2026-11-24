@@ -14,32 +14,39 @@ import type { TemplateEntry } from "./registry";
 
 interface Props {
   name?: string;
-  link?: string;
+  accessUrl?: string;
+  primeiroAcesso?: boolean;
   portalUrl?: string;
 }
 
-const Email = ({ name, link, portalUrl }: Props) => (
+export const RepPortalBoasVindasEmail = ({
+  name,
+  accessUrl,
+  primeiroAcesso = false,
+  portalUrl,
+}: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
     <Preview>Seu acesso ao portal do representante</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Bem-vindo(a) ao portal do representante</Heading>
+        <Heading style={h1}>Acesso ao portal do representante</Heading>
         <Text style={text}>Olá{name ? `, ${name}` : ""}!</Text>
         <Text style={text}>
-          Criamos o seu acesso para acompanhar as ações sugeridas, registrar o andamento (com
-          comentários, fotos, áudios e vídeos) e, se precisar, pedir mais prazo. As ações são
-          sugestões: você decide se aceita.
+          Use o portal para acompanhar as ações sugeridas, registrar o andamento (com comentários,
+          fotos, áudios e vídeos) e, se precisar, pedir mais prazo. As ações são sugestões: você
+          decide se aceita.
         </Text>
         <Section style={{ margin: "24px 0" }}>
-          <Button href={link} style={button}>
-            Cadastrar minha senha
+          <Button href={accessUrl} style={button}>
+            {primeiroAcesso ? "Cadastrar minha senha" : "Entrar no portal"}
           </Button>
         </Section>
-        <Text style={muted}>{link}</Text>
+        <Text style={muted}>{accessUrl}</Text>
         <Text style={text}>
-          Depois de cadastrar a senha, entre sempre em {portalUrl ?? "poolflux.app"}. O convite é
-          pessoal e vale por 14 dias.
+          {primeiroAcesso
+            ? `Depois de cadastrar a senha, entre sempre em ${portalUrl ?? "poolflux.app"}. O convite é pessoal e vale por 14 dias.`
+            : "Entre com o seu e-mail e a senha já cadastrada. Sua senha atual não será alterada."}
         </Text>
         <Text style={muted}>PoolFlux · Imersão Comercial</Text>
       </Container>
@@ -47,13 +54,15 @@ const Email = ({ name, link, portalUrl }: Props) => (
   </Html>
 );
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const template = {
-  component: Email,
+  component: RepPortalBoasVindasEmail,
   subject: "Seu acesso ao portal do representante",
   displayName: "Boas-vindas ao portal do representante",
   previewData: {
     name: "Matheus",
-    link: "https://poolflux.app/definir-senha?t=exemplo",
+    accessUrl: "https://poolflux.app/definir-senha?t=exemplo",
+    primeiroAcesso: true,
     portalUrl: "https://poolflux.app/portal-rep",
   },
 } satisfies TemplateEntry;

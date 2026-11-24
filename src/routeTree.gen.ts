@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as PortalRepRouteImport } from './routes/portal-rep'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as AuthenticatedAceiteTermosRouteImport } from './routes/_authenticated/aceite-termos'
@@ -174,6 +175,11 @@ const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
 const PortalRepRoute = PortalRepRouteImport.update({
   id: '/portal-rep',
   path: '/portal-rep',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -949,6 +955,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/portal-rep': typeof PortalRepRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/price': typeof AuthenticatedPriceRouteRouteWithChildren
@@ -1092,6 +1099,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/portal-rep': typeof PortalRepRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/aceite-termos': typeof AuthenticatedAceiteTermosRoute
@@ -1235,6 +1243,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/portal-rep': typeof PortalRepRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/price': typeof AuthenticatedPriceRouteRouteWithChildren
@@ -1380,6 +1389,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/definir-senha'
     | '/portal-rep'
+    | '/recuperar-senha'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/price'
@@ -1523,6 +1533,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/definir-senha'
     | '/portal-rep'
+    | '/recuperar-senha'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/aceite-termos'
@@ -1665,6 +1676,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/definir-senha'
     | '/portal-rep'
+    | '/recuperar-senha'
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/_authenticated/price'
@@ -1810,6 +1822,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DefinirSenhaRoute: typeof DefinirSenhaRoute
   PortalRepRoute: typeof PortalRepRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ApiTranscribeChunkRoute: typeof ApiTranscribeChunkRoute
@@ -1887,6 +1900,13 @@ declare module '@tanstack/react-router' {
       path: '/portal-rep'
       fullPath: '/portal-rep'
       preLoaderRoute: typeof PortalRepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -3144,6 +3164,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DefinirSenhaRoute: DefinirSenhaRoute,
   PortalRepRoute: PortalRepRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ApiTranscribeChunkRoute: ApiTranscribeChunkRoute,

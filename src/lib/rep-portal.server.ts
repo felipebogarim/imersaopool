@@ -375,18 +375,28 @@ async function firstAccessLink(uid: string): Promise<string> {
   return `${origin()}/definir-senha?t=${token}`;
 }
 
-/** Cria (ou reaproveita) o usuário do representante e envia o convite para definir a senha. */
+/** Cria (ou reaproveita) o usuário e envia cadastro de senha ou login, conforme a conta. */
 export async function provisionRepAccess(
   repId: string,
 ): Promise<{ email: string; created: boolean }> {
   const rep = await loadRep(repId);
   const user = await ensureRepUser(rep);
-  const link = user.senhaUrl ?? (await firstAccessLink(user.uid));
+  const accessUrl = buildRepMetasAccessUrl({
+    appOrigin: origin(),
+    email: user.email,
+    next: "/portal-rep",
+    firstAccessUrl: user.senhaUrl,
+  });
   const res = await sendSystemEmail({
     templateName: "rep-portal-boas-vindas",
     to: user.email,
     idempotencyKey: `rep-portal-${user.uid}-${Date.now()}`,
-    templateData: { name: rep.nome, link, portalUrl: `${origin()}/portal-rep` },
+    templateData: {
+      name: rep.nome,
+      accessUrl,
+      primeiroAcesso: Boolean(user.senhaUrl),
+      portalUrl: `${origin()}/portal-rep`,
+    },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
   return { email: user.email, created: user.created };
@@ -477,7 +487,12 @@ export async function inviteRepToMetasRows(
   const clientes = list
     .map((r) => ({
       nome: String(r.razao_social ?? "").trim(),
-      url: `${origin()}/portal-rep/metas/${r.id}`,
+      url: buildRepMetasAccessUrl({
+        appOrigin: origin(),
+        email: user.email,
+        next: `/portal-rep/metas/${r.id}`,
+        firstAccessUrl: user.senhaUrl,
+      }),
     }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   const res = await sendSystemEmail({

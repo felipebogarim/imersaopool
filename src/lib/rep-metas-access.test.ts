@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRepMetasAccessUrl } from "./rep-metas-access";
+import { buildRepMetasAccessUrl, resolveRepInviteSession } from "./rep-metas-access";
 
 describe("buildRepMetasAccessUrl", () => {
   it("leva conta existente ao login normal com o destino da revisão", () => {
@@ -33,5 +33,23 @@ describe("buildRepMetasAccessUrl", () => {
     expect(link.searchParams.get("t")).toBe("token");
     expect(link.searchParams.get("next")).toBe("/portal-rep/metas/cliente-1");
     expect(link.searchParams.get("conviteRep")).toBeNull();
+  });
+});
+
+describe("resolveRepInviteSession", () => {
+  it("abre o cliente diretamente quando a sessão já é do destinatário", () => {
+    expect(resolveRepInviteSession(" REP@teste.com ", "rep@TESTE.com")).toBe("open_destination");
+  });
+
+  it("mostra o login quando não existe sessão", () => {
+    expect(resolveRepInviteSession(null, "rep@teste.com")).toBe("show_login");
+  });
+
+  it("exige troca de conta quando a sessão pertence a outra pessoa", () => {
+    expect(resolveRepInviteSession("gestor@teste.com", "rep@teste.com")).toBe("switch_account");
+  });
+
+  it("não reaproveita sessão quando o destinatário foi removido do link", () => {
+    expect(resolveRepInviteSession("rep@teste.com", null)).toBe("switch_account");
   });
 });
