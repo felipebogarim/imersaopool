@@ -619,6 +619,94 @@ function fmtCompactBRL(v: number): string {
   return fmtBRL(v);
 }
 
+// Cores únicas dos gráficos Meta × Realizado (cards compactos e expandidos).
+const META_HEX = "#94a3b8";
+const farolFill = (ating: number | null | undefined) =>
+  `#${FAROL_HEX[statusFromRatio(ating) ?? "sem_compra"]}`;
+const CHART_CURSOR = { fill: "var(--muted)", fillOpacity: 0.5 };
+
+type MetaRealDatum = {
+  label: string;
+  metaAtual: number;
+  realizado: number;
+  atingimento: number | null;
+};
+
+/** Tooltip legível: fundo do popover, texto na cor do tema e amostras de cor ao lado. */
+function MetaRealTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<{ payload?: MetaRealDatum }>;
+}) {
+  const d = payload?.[0]?.payload;
+  if (!active || !d) return null;
+  const status = statusFromRatio(d.atingimento);
+  return (
+    <div className="min-w-[200px] rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg">
+      <p className="mb-1.5 font-semibold">{d.label}</p>
+      <div className="space-y-1 tabular-nums">
+        <p className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: META_HEX }} />
+            Meta atual
+          </span>
+          <span className="font-medium">{fmtBRL(d.metaAtual)}</span>
+        </p>
+        <p className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: farolFill(d.atingimento) }}
+            />
+            Realizado
+          </span>
+          <span className="font-medium">{fmtBRL(d.realizado)}</span>
+        </p>
+        <p className="flex items-center justify-between gap-4 border-t border-border/60 pt-1">
+          <span>Atingimento</span>
+          <span className="flex items-center gap-1.5 font-semibold">
+            {d.atingimento != null ? fmtPct(d.atingimento) : "—"}
+            {status && (
+              <span className={cn("rounded px-1.5 py-0.5 text-[10px]", FAROL_CELL_CLASS[status])}>
+                {FAROL_LABEL[status]}
+              </span>
+            )}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const LEGEND_FAROL: FarolStatus[] = [
+  "abaixo_meta",
+  "pode_melhorar",
+  "proximo",
+  "otimo",
+  "excelente",
+];
+
+/** Legenda comum: meta em cinza; realizado na cor do farol do atingimento. */
+function MetaRealLegend({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1", className)}>
+      <span className="flex items-center gap-1">
+        <span className="h-1.5 w-3 rounded-full" style={{ backgroundColor: META_HEX }} /> Meta atual
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="flex h-1.5 w-6 overflow-hidden rounded-full">
+          {LEGEND_FAROL.map((st) => (
+            <span key={st} className="flex-1" style={{ backgroundColor: `#${FAROL_HEX[st]}` }} />
+          ))}
+        </span>
+        Realizado (cor do farol)
+      </span>
+    </div>
+  );
+}
+
 function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[] }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -712,24 +800,15 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                 <div className="space-y-0.5">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                     <div
-                      className="h-full rounded-full bg-slate-400/80 transition-all duration-300"
-                      style={{ width: `${metaPct}%` }}
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${metaPct}%`, backgroundColor: META_HEX }}
                       title={`Meta: ${fmtBRL(c.metaAtual)}`}
                     />
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
                     <div
-                      className={cn(
-                        "h-full rounded-full transition-all duration-300",
-                        c.status === "excelente"
-                          ? "bg-emerald-500"
-                          : c.status === "otimo"
-                            ? "bg-lime-500"
-                            : c.status === "proximo"
-                              ? "bg-amber-500"
-                              : "bg-red-500",
-                      )}
-                      style={{ width: `${realPct}%` }}
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${realPct}%`, backgroundColor: farolFill(c.atingimento) }}
                       title={`Realizado: ${fmtBRL(c.realizado)}`}
                     />
                   </div>
@@ -741,15 +820,8 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
 
         {/* Rodapé compacto */}
         <div className="flex items-center justify-between border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-3 rounded-full bg-slate-400/80" /> Meta
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-3 rounded-full bg-primary" /> Realizado
-            </span>
-          </div>
-          <span>3 categorias</span>
+          <MetaRealLegend />
+          <span className="shrink-0">3 categorias</span>
         </div>
       </div>
 
@@ -783,7 +855,7 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                 data={categoriesData}
                 margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
               >
-                <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <CartesianGrid horizontal={false} stroke="var(--border)" strokeOpacity={0.5} />
                 <XAxis
                   type="number"
                   tickFormatter={fmtCompactBRL}
@@ -799,35 +871,23 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                   className="text-xs font-semibold"
                   width={60}
                 />
-                <Tooltip
-                  formatter={(val: unknown, name: unknown) => [
-                    fmtBRL(Number(val)),
-                    name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
-                  ]}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    borderColor: "hsl(var(--border))",
-                    borderRadius: "0.5rem",
-                    fontSize: "0.75rem",
-                  }}
-                />
+                <Tooltip cursor={CHART_CURSOR} content={<MetaRealTooltip />} />
                 <Bar
                   dataKey="metaAtual"
-                  name="Meta Atual"
-                  fill="#94a3b8"
+                  name="Meta atual"
+                  fill={META_HEX}
                   radius={[0, 4, 4, 0]}
                   barSize={16}
                 />
-                <Bar
-                  dataKey="realizado"
-                  name="Faturamento Realizado"
-                  fill="#0ea5e9"
-                  radius={[0, 4, 4, 0]}
-                  barSize={16}
-                />
+                <Bar dataKey="realizado" name="Realizado" radius={[0, 4, 4, 0]} barSize={16}>
+                  {categoriesData.map((c) => (
+                    <Cell key={c.key} fill={farolFill(c.atingimento)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <MetaRealLegend className="justify-center text-[11px] text-muted-foreground" />
 
           {/* Tabela analítica no modal expandido */}
           <div className="mt-4 rounded-lg border overflow-hidden">
@@ -852,7 +912,7 @@ function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[
                     <td className="px-4 py-2.5 text-right font-medium tabular-nums">
                       {fmtBRL(c.metaAtual)}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <td className="px-4 py-2.5 text-right font-medium tabular-nums">
                       {fmtBRL(c.realizado)}
                     </td>
                     <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
@@ -923,7 +983,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
             topReps.map((r, i) => {
               const realPct = Math.min(100, (r.realizado / maxReal) * 100);
               const metaPct = Math.min(100, (r.metaAtual / maxReal) * 100);
-              const barColor = `#${FAROL_HEX[statusFromRatio(r.atingimento) ?? "sem_compra"]}`;
+              const barColor = farolFill(r.atingimento);
 
               return (
                 <div key={r.key} className="space-y-0.5">
@@ -945,8 +1005,8 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                   </div>
                   <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/40">
                     <div
-                      className="absolute left-0 top-0 h-full rounded-full bg-slate-400/50"
-                      style={{ width: `${metaPct}%` }}
+                      className="absolute left-0 top-0 h-full rounded-full opacity-60"
+                      style={{ width: `${metaPct}%`, backgroundColor: META_HEX }}
                     />
                     <div
                       className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
@@ -960,7 +1020,8 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
         </div>
 
         {/* Rodapé compacto */}
-        <div className="flex items-center justify-between border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
+        <MetaRealLegend className="border-t border-border/50 pt-2 text-[10px] text-muted-foreground" />
+        <div className="flex items-center justify-between pt-1 text-[10px] text-muted-foreground">
           <span className="truncate">
             Top 10: {fmtBRL(topReps.reduce((acc, r) => acc + r.realizado, 0))}
           </span>
@@ -998,10 +1059,11 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                 data={topReps.map((r, idx) => ({
                   ...r,
                   rankName: `#${idx + 1} ${r.label}`,
+                  label: `${idx + 1}º ${r.label}`,
                 }))}
                 margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
               >
-                <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <CartesianGrid horizontal={false} stroke="var(--border)" strokeOpacity={0.5} />
                 <XAxis
                   type="number"
                   tickFormatter={fmtCompactBRL}
@@ -1017,41 +1079,23 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                   className="text-xs font-medium"
                   width={120}
                 />
-                <Tooltip
-                  formatter={(val: unknown, name: unknown) => [
-                    fmtBRL(Number(val)),
-                    name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
-                  ]}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    borderColor: "hsl(var(--border))",
-                    borderRadius: "0.5rem",
-                    fontSize: "0.75rem",
-                  }}
-                />
+                <Tooltip cursor={CHART_CURSOR} content={<MetaRealTooltip />} />
                 <Bar
                   dataKey="metaAtual"
-                  name="Meta Atual"
-                  fill="#94a3b8"
+                  name="Meta atual"
+                  fill={META_HEX}
                   radius={[0, 4, 4, 0]}
                   barSize={12}
                 />
-                <Bar
-                  dataKey="realizado"
-                  name="Faturamento Realizado"
-                  radius={[0, 4, 4, 0]}
-                  barSize={12}
-                >
+                <Bar dataKey="realizado" name="Realizado" radius={[0, 4, 4, 0]} barSize={12}>
                   {topReps.map((r) => (
-                    <Cell
-                      key={r.key}
-                      fill={`#${FAROL_HEX[statusFromRatio(r.atingimento) ?? "sem_compra"]}`}
-                    />
+                    <Cell key={r.key} fill={farolFill(r.atingimento)} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <MetaRealLegend className="justify-center text-[11px] text-muted-foreground" />
 
           {/* Tabela analítica no modal expandido */}
           <div className="mt-4 rounded-lg border overflow-hidden">
