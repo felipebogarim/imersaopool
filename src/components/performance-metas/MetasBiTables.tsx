@@ -173,6 +173,8 @@ export function BreakdownTable({
   active,
   onToggle,
   limit,
+  showComparison = true,
+  clientRoute = "gestao",
 }: {
   rows: MetasBiAggregate[];
   dimension: MetasBiDimension;
@@ -180,6 +182,9 @@ export function BreakdownTable({
   active: string[];
   onToggle: (key: string) => void;
   limit?: number;
+  /** Representante não vê meta padrão nem diferença contra a matriz interna. */
+  showComparison?: boolean;
+  clientRoute?: "gestao" | "portal";
 }) {
   const [all, setAll] = useState(false);
   const shown = limit && !all ? rows.slice(0, limit) : rows;
@@ -189,9 +194,11 @@ export function BreakdownTable({
         <thead>
           <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="py-2 pr-2 text-left font-medium">{labelFor(dimension)}</th>
-            <th className="px-2 py-2 text-right font-medium">Meta original</th>
-            <th className="px-2 py-2 text-left font-medium">Meta atual</th>
-            <th className="px-2 py-2 text-right font-medium">Dif. original</th>
+            {showComparison && <th className="px-2 py-2 text-right font-medium">Meta original</th>}
+            <th className="px-2 py-2 text-left font-medium">
+              {showComparison ? "Meta atual" : "Meta oficial"}
+            </th>
+            {showComparison && <th className="px-2 py-2 text-right font-medium">Dif. original</th>}
             <th className="py-2 pl-2 text-right font-medium">Ating.</th>
           </tr>
         </thead>
@@ -208,14 +215,25 @@ export function BreakdownTable({
               >
                 <td className="max-w-[220px] py-2 pr-2">
                   {dimension === "cliente" ? (
-                    <Link
-                      to="/performance/metas/$rowId"
-                      params={{ rowId: r.key }}
-                      className="block truncate font-medium hover:text-primary hover:underline"
-                      title={r.label}
-                    >
-                      {r.label}
-                    </Link>
+                    clientRoute === "portal" ? (
+                      <Link
+                        to="/portal-rep/metas/$rowId"
+                        params={{ rowId: r.key }}
+                        className="block truncate font-medium hover:text-primary hover:underline"
+                        title={r.label}
+                      >
+                        {r.label}
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/performance/metas/$rowId"
+                        params={{ rowId: r.key }}
+                        className="block truncate font-medium hover:text-primary hover:underline"
+                        title={r.label}
+                      >
+                        {r.label}
+                      </Link>
+                    )
                   ) : (
                     <button
                       onClick={() => onToggle(r.key)}
@@ -229,21 +247,25 @@ export function BreakdownTable({
                     </button>
                   )}
                 </td>
-                <td className="px-2 py-2 text-right text-xs tabular-nums text-muted-foreground">
-                  {fmtBRL(r.metaPadrao)}
-                </td>
+                {showComparison && (
+                  <td className="px-2 py-2 text-right text-xs tabular-nums text-muted-foreground">
+                    {fmtBRL(r.metaPadrao)}
+                  </td>
+                )}
                 <td className="min-w-[160px] px-2 py-2">
                   <span className="font-semibold tabular-nums">{fmtBRL(r.metaAtual)}</span>
                   <AtingBar ratio={r.atingimento} />
                 </td>
-                <td
-                  className={cn(
-                    "px-2 py-2 text-right text-xs tabular-nums",
-                    diffClass(r.diferenca),
-                  )}
-                >
-                  {fmtSignedShort(r.diferenca)}
-                </td>
+                {showComparison && (
+                  <td
+                    className={cn(
+                      "px-2 py-2 text-right text-xs tabular-nums",
+                      diffClass(r.diferenca),
+                    )}
+                  >
+                    {fmtSignedShort(r.diferenca)}
+                  </td>
+                )}
                 <td className="py-2 pl-2 text-right">
                   <AtingCell agg={r} />
                 </td>
@@ -252,7 +274,10 @@ export function BreakdownTable({
           })}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={5} className="py-8 text-center text-xs text-muted-foreground">
+              <td
+                colSpan={showComparison ? 5 : 3}
+                className="py-8 text-center text-xs text-muted-foreground"
+              >
                 Sem dados para os filtros selecionados.
               </td>
             </tr>

@@ -27,7 +27,7 @@ import {
   type MetasLoadResult,
   type RepGoalsView,
 } from "@/lib/performance-metas-persistence";
-import type { MetasBiBackendRow } from "@/lib/performance-metas-bi";
+import type { MetasBiBackendRow, RepMetasBiBackendFact } from "@/lib/performance-metas-bi";
 
 type RpcClient = {
   rpc: (
@@ -307,6 +307,22 @@ export const repGetMetasGoals = createServerFn({ method: "POST" })
   .inputValidator(rowInput)
   .handler(({ data, context }) =>
     repCall(context.userId, "rep_get_performance_goals", { _row_id: data.rowId }),
+  );
+
+/** BI da própria carteira, já sanitizada no servidor (sem padrão, IA ou base financeira bruta). */
+export const repGetMetasBi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      facts: RepMetasBiBackendFact[];
+      totalClientes: number;
+    }> => {
+      const { repForUser, loadRepMetasBi } = await import("@/lib/rep-portal.server");
+      const rep = await repForUser(context.userId);
+      return loadRepMetasBi(rep);
+    },
   );
 
 export const repSaveMetasSuggestions = createServerFn({ method: "POST" })

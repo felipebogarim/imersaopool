@@ -68,6 +68,44 @@ export type MetasBiFact = {
   fonte: BaseFonte | null;
 };
 
+/** Fato já sanitizado pelo servidor do portal: nunca contém meta padrão, IA ou base bruta. */
+export type RepMetasBiBackendFact = {
+  rowId: string;
+  cliente: string;
+  categoria: string | null;
+  familia: CanonicalFamily;
+  metaOficial: number | null;
+  atingimento: number | null;
+  fonte: BaseFonte | null;
+};
+
+/**
+ * Adapta a visão segura do representante às agregações compartilhadas do BI. O numerador do
+ * atingimento é reconstituído somente a partir de meta oficial × percentual, dados que o portal
+ * individual já exibe; nenhum valor financeiro privado do upload atravessa o servidor.
+ */
+export function buildRepMetasBiFacts(rows: readonly RepMetasBiBackendFact[]): MetasBiFact[] {
+  return rows.map((r) => ({
+    rowId: r.rowId,
+    cliente: r.cliente,
+    repId: null,
+    repName: "Minha carteira",
+    regiao: "Minha carteira",
+    uf: SEM_UF,
+    categoria: clean(r.categoria) || SEM_CATEGORIA,
+    familia: r.familia,
+    metaAtual: r.metaOficial,
+    // Não é exibida no portal; igualar evita inferência ou comparação com a matriz padrão.
+    metaPadrao: r.metaOficial,
+    origem: "padrao",
+    realizado:
+      r.metaOficial != null && r.metaOficial > 0 && r.atingimento != null
+        ? r.metaOficial * r.atingimento
+        : null,
+    fonte: r.fonte,
+  }));
+}
+
 export const SEM_REGIAO = "Sem região";
 export const SEM_UF = "Sem UF";
 export const SEM_CATEGORIA = "Sem categoria";

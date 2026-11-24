@@ -39,7 +39,7 @@ import {
 } from "@/lib/rep-portal.functions";
 import type { PortalAction } from "@/lib/rep-portal.server";
 import { cn } from "@/lib/utils";
-import { RepMetasLista } from "@/components/performance-metas/RepMetasPortal";
+import { RepMetasArea } from "@/components/performance-metas/RepMetasArea";
 
 export const Route = createFileRoute("/portal-rep")({
   ssr: false,
@@ -117,7 +117,7 @@ function PortalRep() {
           </p>
         )}
 
-        <RepMetasLista />
+        <RepMetasArea />
 
         {data && (
           <>

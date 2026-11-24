@@ -4,6 +4,7 @@ import {
   aggregateMetasBi,
   applyMetasBiFilters,
   buildMetasBiFacts,
+  buildRepMetasBiFacts,
   dimensionOptions,
   matrixMetasBi,
   totalMetasBi,
@@ -127,6 +128,35 @@ describe("agregações", () => {
       { key: "r1", label: "REP 1" },
       { key: "r2", label: "REP 2" },
     ]);
+  });
+});
+
+describe("BI seguro do representante", () => {
+  it("agrega atingimento ponderado usando apenas meta oficial e percentual", () => {
+    const repFacts = buildRepMetasBiFacts([
+      {
+        rowId: "a",
+        cliente: "ALFA",
+        categoria: "Gold",
+        familia: "DECOR NEWLINE",
+        metaOficial: 100,
+        atingimento: 1,
+        fonte: "realizado",
+      },
+      {
+        rowId: "b",
+        cliente: "BETA",
+        categoria: "Silver",
+        familia: "DECOR NEWLINE",
+        metaOficial: 300,
+        atingimento: 0.5,
+        fonte: "realizado",
+      },
+    ]);
+    const total = totalMetasBi(repFacts);
+    expect(total.metaAtual).toBe(400);
+    expect(total.atingimento).toBeCloseTo(250 / 400);
+    expect(total.diferenca).toBe(0);
   });
 });
 

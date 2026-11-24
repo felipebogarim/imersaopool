@@ -103,6 +103,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
         view: { ...res.view, cliente: view?.cliente },
       });
       void qc.invalidateQueries({ queryKey: ["rep-metas-lista"] });
+      void qc.invalidateQueries({ queryKey: ["rep-metas-bi"] });
       toast.success("Sugestões enviadas ao gestor.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar.");

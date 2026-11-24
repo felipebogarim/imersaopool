@@ -10,7 +10,14 @@ import {
 } from "@/lib/action-tracking";
 import { listActionsForRep, notifySubmission, sendSystemEmail } from "@/lib/action-tracking.server";
 import { needsRepFirstAccess } from "@/lib/rep-first-access";
-import type { GoalReview, GoalReviewStatus } from "@/lib/performance-metas-persistence";
+import { METAS_FAMILIES } from "@/lib/performance-metas";
+import {
+  repView,
+  type GoalReview,
+  type GoalReviewStatus,
+  type GoalsState,
+} from "@/lib/performance-metas-persistence";
+import type { RepMetasBiBackendFact } from "@/lib/performance-metas-bi";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const admin = supabaseAdmin as any;
@@ -524,4 +531,50 @@ export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
       } satisfies RepMetasRow;
     })
     .sort((a, b) => a.cliente.localeCompare(b.cliente, "pt-BR"));
+}
+
+/**
+ * BI seguro do representante. A RPC lê a base privada no servidor; `repView` a transforma em
+ * percentuais e este retorno contém somente o que já aparece no detalhe individual.
+ */
+export async function loadRepMetasBi(rep: PortalRep): Promise<{
+  facts: RepMetasBiBackendFact[];
+  totalClientes: number;
+}> {
+  const rows = await listRepMetasRows(rep.id);
+  const targets = rows.filter((r) => r.hasGoals);
+  const facts: RepMetasBiBackendFact[] = [];
+
+  // Evita rajada de RPCs em carteiras grandes, preservando uma latência razoável.
+  for (let start = 0; start < targets.length; start += 12) {
+    const batch = targets.slice(start, start + 12);
+    const states = await Promise.all(
+      batch.map(async (row) => {
+        const { data, error } = await admin.rpc("rep_get_performance_goals", {
+          _row_id: row.rowId,
+          _representative_id: rep.id,
+        });
+        if (error) throw new Error("Não foi possível consolidar as metas da carteira.");
+        return { row, view: repView(data as GoalsState) };
+      }),
+    );
+    for (const { row, view } of states) {
+      for (const familia of METAS_FAMILIES) {
+        const item = view.items.find((i) => i.familia === familia);
+        if (!item) continue;
+        const atingimento = view.atingimento[familia];
+        facts.push({
+          rowId: row.rowId,
+          cliente: row.cliente,
+          categoria: row.categoria,
+          familia,
+          metaOficial: item.meta_mensal,
+          atingimento: atingimento?.ratio ?? null,
+          fonte: atingimento?.fonte ?? null,
+        });
+      }
+    }
+  }
+
+  return { facts, totalClientes: rows.length };
 }
