@@ -1,12 +1,11 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { LogOut } from "lucide-react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { BrandMark } from "@/components/Brand";
-import { Button } from "@/components/ui/button";
 import { RepMetasCliente } from "@/components/performance-metas/RepMetasPortal";
+import { RepPortalChrome, useRepPortalData } from "@/components/rep-portal/RepPortalChrome";
 
 // Portal do representante → metas de um cliente (link do convite de revisão de metas).
-// O servidor só devolve clientes da carteira do representante logado.
+// O servidor só devolve clientes da carteira do representante logado. Mesmo cabeçalho e menu
+// do portal; a aba "Metas" fica ativa e as demais levam à aba correspondente do portal.
 export const Route = createFileRoute("/portal-rep_/metas/$rowId")({
   ssr: false,
   head: () => ({
@@ -21,25 +20,15 @@ export const Route = createFileRoute("/portal-rep_/metas/$rowId")({
 
 function RepMetasPage() {
   const { rowId } = Route.useParams();
-  const navigate = useNavigate();
-  async function signOut() {
-    await supabase.auth.signOut();
-    void navigate({ to: "/auth" });
-  }
+  const { data, pendingCount, acceptedCount } = useRepPortalData();
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <BrandMark className="h-8 w-8" />
-            <h1 className="text-base font-semibold leading-tight">Painel de Metas</h1>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => void signOut()}>
-            <LogOut className="mr-1 h-4 w-4" />
-            Sair
-          </Button>
-        </div>
-      </header>
+      <RepPortalChrome
+        activeTab="metas"
+        repName={data?.rep.nome}
+        pendingCount={pendingCount}
+        acceptedCount={acceptedCount}
+      />
       <main className="mx-auto max-w-6xl px-4 py-6">
         <RepMetasCliente rowId={rowId} />
       </main>
