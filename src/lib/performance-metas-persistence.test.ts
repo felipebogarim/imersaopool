@@ -4,6 +4,7 @@ import {
   baseFromBackend,
   competenciasDoCiclo,
   cycleInfo,
+  groupRepSuggestionHistory,
   gestorRpcArgs,
   hydrateDrafts,
   repView,
@@ -102,6 +103,36 @@ describe("performance-metas-persistence", () => {
       /comentario_gestor|ai_suggestions|agendadas|"base"|familia_pct|client_id/,
     );
     expect(json).not.toMatch(/"origem"/);
+  });
+
+  it("agrupa o histórico de sugestões por envio e remove campos internos", () => {
+    const history = groupRepSuggestionHistory([
+      {
+        changed_at: "2026-11-24T10:00:00Z",
+        familia: "PERFIL",
+        dados_novos: { valor: "1200.00", justificativa: "Novo projeto", company_id: "privado" },
+      },
+      {
+        changed_at: "2026-11-24T10:00:00Z",
+        familia: "PRO LED",
+        dados_novos: { valor: 800, justificativa: "Reposição" },
+      },
+      {
+        changed_at: "2026-11-20T09:00:00Z",
+        familia: "INVALIDA",
+        dados_novos: { valor: 1 },
+      },
+    ]);
+    expect(history).toEqual([
+      {
+        sent_at: "2026-11-24T10:00:00Z",
+        items: [
+          { familia: "PERFIL", valor: 1200, justificativa: "Novo projeto" },
+          { familia: "PRO LED", valor: 800, justificativa: "Reposição" },
+        ],
+      },
+    ]);
+    expect(JSON.stringify(history)).not.toContain("company_id");
   });
 
   it("argumentos da RPC do gestor", () => {

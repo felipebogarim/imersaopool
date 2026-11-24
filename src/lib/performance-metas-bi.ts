@@ -106,6 +106,22 @@ export function buildRepMetasBiFacts(rows: readonly RepMetasBiBackendFact[]): Me
   }));
 }
 
+/** Reescala as metas para um objetivo mensal, preservando a distribuição relativa dos fatos. */
+export function scaleMetasBiFactsToMonthlyTarget(
+  facts: readonly MetasBiFact[],
+  monthlyTarget: number,
+  monthCount: number,
+): MetasBiFact[] {
+  const currentTotal = facts.reduce((sum, fact) => sum + (fact.metaAtual ?? 0), 0);
+  if (currentTotal <= 0 || monthlyTarget <= 0 || monthCount <= 0) return [...facts];
+  const scale = (monthlyTarget * monthCount) / currentTotal;
+  return facts.map((fact) => ({
+    ...fact,
+    metaAtual: fact.metaAtual == null ? null : Math.round(fact.metaAtual * scale),
+    metaPadrao: fact.metaPadrao == null ? null : Math.round(fact.metaPadrao * scale),
+  }));
+}
+
 export const SEM_REGIAO = "Sem região";
 export const SEM_UF = "Sem UF";
 export const SEM_CATEGORIA = "Sem categoria";

@@ -41,6 +41,7 @@ import {
   repSaveMetasSuggestions,
 } from "@/lib/performance-metas.functions";
 import type { GoalReviewStatus } from "@/lib/performance-metas-persistence";
+import { RepMetasPerformanceChart, RepSuggestionHistory } from "./RepMetasClientVisuals";
 
 type Sugestao = { valor: number | null; justificativa: string };
 type Sugestoes = Record<CanonicalFamily, Sugestao>;
@@ -69,6 +70,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
   const [requesting, setRequesting] = useState(false);
   const [showReopen, setShowReopen] = useState(false);
   const [reopenNote, setReopenNote] = useState("");
+  const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
 
   useEffect(() => {
     if (!view) return;
@@ -155,144 +157,224 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
       )}
 
       {view && (
-        <div className="rounded-xl border bg-background shadow-sm">
-          <div className="border-b px-5 py-4">
-            <h2 className="text-lg font-semibold">{view.cliente || "Cliente"}</h2>
-            <p className="text-xs text-muted-foreground">
-              {ciclo ? `Ciclo ${ciclo.label} · ${ciclo.meses} meses` : "Ciclo ainda não iniciado"}
-              {" · "}metas mensais por portfólio
-            </p>
-          </div>
+        <>
+          <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
+            <div className="border-b px-5 py-4">
+              <h2 className="text-lg font-semibold">{view.cliente || "Cliente"}</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <PeriodCard
+                  label="Período de performance avaliado"
+                  value={performancePeriodLabel(view.performance_period)}
+                  detail="Período usado no cálculo dos resultados e atingimentos"
+                />
+                <PeriodCard
+                  label="Vigência das metas"
+                  value={
+                    ciclo ? `${ciclo.label} · ${ciclo.meses} meses` : "Ciclo ainda não iniciado"
+                  }
+                  detail="Período em que estas metas mensais estarão vigentes"
+                />
+              </div>
+            </div>
 
-          <div className="divide-y">
-            {METAS_FAMILIES.map((f) => {
-              const item = view.items.find((i) => i.familia === f);
-              const at = view.atingimento[f];
-              const status = statusFromRatio(at?.ratio ?? null);
-              return (
-                <div key={f} className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_1.4fr]">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold">{METAS_FAMILY_LABEL[f]}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Meta oficial:{" "}
-                      <span className="font-medium text-foreground tabular-nums">
-                        {fmtBRL(item?.meta_mensal ?? null)}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Atingimento:{" "}
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 font-medium tabular-nums",
-                          status && FAROL_CELL_CLASS[status],
+            <div className="border-b p-4 sm:p-5">
+              <RepMetasPerformanceChart view={view} selected={selected} onSelect={setSelected} />
+            </div>
+
+            <div className="flex gap-1 overflow-x-auto border-b px-3 pt-3">
+              {METAS_FAMILIES.map((family, index) => (
+                <button
+                  key={family}
+                  type="button"
+                  onClick={() => setSelected(family)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-t-md border-b-2 px-3 py-2 text-xs transition-colors",
+                    selected === family
+                      ? "border-primary font-semibold text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <span className={cn("h-2 w-2 rounded-sm", FAMILY_SWATCH[index])} />
+                  {METAS_FAMILY_LABEL[family]}
+                  {alterados.includes(family) && (
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-amber-500"
+                      title="Alteração não enviada"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              {[selected].map((f) => {
+                const item = view.items.find((i) => i.familia === f);
+                const at = view.atingimento[f];
+                const status = statusFromRatio(at?.ratio ?? null);
+                return (
+                  <div key={f} className="grid gap-4 px-5 py-5 sm:grid-cols-[1fr_1.4fr]">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">{METAS_FAMILY_LABEL[f]}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Meta oficial:{" "}
+                        <span className="font-medium text-foreground tabular-nums">
+                          {fmtBRL(item?.meta_mensal ?? null)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Atingimento:{" "}
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 font-medium tabular-nums",
+                            status && FAROL_CELL_CLASS[status],
+                          )}
+                        >
+                          {fmtPct(at?.ratio ?? null)}
+                        </span>
+                        {at && at.fonte !== "realizado" && (
+                          <span className="ml-1">· {BASE_FONTE_LABEL[at.fonte].toLowerCase()}</span>
                         )}
-                      >
-                        {fmtPct(at?.ratio ?? null)}
-                      </span>
-                      {at && at.fonte !== "realizado" && (
-                        <span className="ml-1">· {BASE_FONTE_LABEL[at.fonte].toLowerCase()}</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        R$
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        step={50}
-                        placeholder="Sua sugestão de meta mensal"
-                        value={edit[f].valor ?? ""}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          R$
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={50}
+                          placeholder="Sua sugestão de meta mensal"
+                          value={edit[f].valor ?? ""}
+                          onChange={(e) =>
+                            setEdit((p) => ({
+                              ...p,
+                              [f]: { ...p[f], valor: parseMetaInput(e.target.value) },
+                            }))
+                          }
+                          className="pl-9 tabular-nums"
+                          disabled={!canEdit}
+                        />
+                      </div>
+                      <Textarea
+                        placeholder="Justificativa"
+                        value={edit[f].justificativa}
+                        maxLength={4000}
                         onChange={(e) =>
                           setEdit((p) => ({
                             ...p,
-                            [f]: { ...p[f], valor: parseMetaInput(e.target.value) },
+                            [f]: { ...p[f], justificativa: e.target.value },
                           }))
                         }
-                        className="pl-9 tabular-nums"
+                        className="min-h-[60px] text-sm"
                         disabled={!canEdit}
                       />
                     </div>
-                    <Textarea
-                      placeholder="Justificativa"
-                      value={edit[f].justificativa}
-                      maxLength={4000}
-                      onChange={(e) =>
-                        setEdit((p) => ({ ...p, [f]: { ...p[f], justificativa: e.target.value } }))
-                      }
-                      className="min-h-[60px] text-sm"
-                      disabled={!canEdit}
-                    />
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t px-5 py-3">
-            <span className="text-xs text-muted-foreground">
-              {!canEdit
-                ? view.review.status === "reabertura_solicitada"
-                  ? "Pedido de reabertura aguardando o gestor"
-                  : view.review.status === "respondido"
-                    ? "Sugestões enviadas e edição encerrada"
-                    : "Aguardando convite do gestor"
-                : alterados.length > 0
-                  ? `${alterados.length} portfólio(s) alterado(s)`
-                  : "Sugestões em dia"}
-            </span>
-            {canEdit && (
-              <Button
-                size="sm"
-                onClick={() => void salvar()}
-                disabled={saving || !alterados.length}
-              >
-                {saving ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-1.5 h-4 w-4" />
-                )}
-                Enviar sugestões
-              </Button>
-            )}
-            {view.review.status === "respondido" && (
-              <Button size="sm" variant="outline" onClick={() => setShowReopen((v) => !v)}>
-                <PencilLine className="mr-1.5 h-4 w-4" /> Solicitar reabertura
-              </Button>
-            )}
-          </div>
-          {showReopen && view.review.status === "respondido" && (
-            <div className="space-y-2 border-t bg-muted/30 px-5 py-4">
-              <label className="text-sm font-medium">
-                Por que você precisa alterar a sugestão?
-              </label>
-              <Textarea
-                value={reopenNote}
-                onChange={(e) => setReopenNote(e.target.value)}
-                maxLength={1000}
-                placeholder="Explique brevemente ao gestor o que precisa ser revisado."
-              />
-              <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost" onClick={() => setShowReopen(false)}>
-                  Cancelar
-                </Button>
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t px-5 py-3">
+              <span className="text-xs text-muted-foreground">
+                {!canEdit
+                  ? view.review.status === "reabertura_solicitada"
+                    ? "Pedido de reabertura aguardando o gestor"
+                    : view.review.status === "respondido"
+                      ? "Sugestões enviadas e edição encerrada"
+                      : "Aguardando convite do gestor"
+                  : alterados.length > 0
+                    ? `${alterados.length} portfólio(s) alterado(s)`
+                    : "Sugestões em dia"}
+              </span>
+              {canEdit && (
                 <Button
                   size="sm"
-                  onClick={() => void solicitarReabertura()}
-                  disabled={requesting || reopenNote.trim().length < 3}
+                  onClick={() => void salvar()}
+                  disabled={saving || !alterados.length}
                 >
-                  {requesting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                  Enviar pedido
+                  {saving ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-1.5 h-4 w-4" />
+                  )}
+                  Enviar sugestões
                 </Button>
-              </div>
+              )}
+              {view.review.status === "respondido" && (
+                <Button size="sm" variant="outline" onClick={() => setShowReopen((v) => !v)}>
+                  <PencilLine className="mr-1.5 h-4 w-4" /> Solicitar reabertura
+                </Button>
+              )}
             </div>
-          )}
-        </div>
+            {showReopen && view.review.status === "respondido" && (
+              <div className="space-y-2 border-t bg-muted/30 px-5 py-4">
+                <label className="text-sm font-medium">
+                  Por que você precisa alterar a sugestão?
+                </label>
+                <Textarea
+                  value={reopenNote}
+                  onChange={(e) => setReopenNote(e.target.value)}
+                  maxLength={1000}
+                  placeholder="Explique brevemente ao gestor o que precisa ser revisado."
+                />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setShowReopen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void solicitarReabertura()}
+                    disabled={requesting || reopenNote.trim().length < 3}
+                  >
+                    {requesting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                    Enviar pedido
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <RepSuggestionHistory history={view.suggestion_history ?? []} />
+        </>
       )}
     </div>
   );
+}
+
+const FAMILY_SWATCH = [
+  "bg-sky-500",
+  "bg-indigo-500",
+  "bg-violet-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-rose-500",
+  "bg-teal-500",
+];
+
+function PeriodCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-lg border bg-muted/25 px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm font-semibold">{value}</p>
+      <p className="mt-0.5 text-[10px] text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function performancePeriodLabel(period: RepGoalsView["performance_period"]): string {
+  if (!period) return "Período não informado";
+  const range = [formatShortDate(period.inicio), formatShortDate(period.fim)].filter(Boolean);
+  if (period.label && range.length === 2) return `${period.label} · ${range.join(" a ")}`;
+  return period.label || (range.length === 2 ? range.join(" a ") : "Período não informado");
+}
+
+function formatShortDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const [year, month, day] = iso.slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : null;
 }
 
 const STATUS_LABEL: Record<GoalReviewStatus, string> = {

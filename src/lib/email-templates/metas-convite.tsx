@@ -16,11 +16,18 @@ interface Props {
   name?: string;
   cliente?: string;
   mensagem?: string;
-  /** Link único para cadastrar/redefinir a senha e seguir às metas do cliente. */
-  senhaUrl?: string;
+  /** Primeiro acesso: cadastro de senha; acessos seguintes: login normal. */
+  accessUrl?: string;
+  primeiroAcesso?: boolean;
 }
 
-export const MetasConviteEmail = ({ name, cliente, mensagem, senhaUrl }: Props) => (
+export const MetasConviteEmail = ({
+  name,
+  cliente,
+  mensagem,
+  accessUrl,
+  primeiroAcesso = false,
+}: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
     <Preview>Revisão das metas mensais{cliente ? ` · ${cliente}` : ""}</Preview>
@@ -29,19 +36,20 @@ export const MetasConviteEmail = ({ name, cliente, mensagem, senhaUrl }: Props) 
         <Heading style={h1}>Revisão de metas{cliente ? ` · ${cliente}` : ""}</Heading>
         <Text style={text}>Olá{name ? `, ${name}` : ""}!</Text>
         {mensagem ? <Text style={quote}>{mensagem}</Text> : null}
-        {senhaUrl ? (
+        {accessUrl ? (
           <>
             <Text style={text}>
-              Acesse o portal para cadastrar ou redefinir sua senha e avaliar as metas deste
-              cliente:
+              {primeiroAcesso
+                ? "Cadastre sua senha para acessar o portal e avaliar as metas deste cliente:"
+                : "Entre com seu e-mail e sua senha para avaliar as metas deste cliente:"}
             </Text>
             <Section style={{ margin: "8px 0 20px" }}>
-              <Button href={senhaUrl} style={button}>
-                Cadastrar ou redefinir senha e avaliar metas
+              <Button href={accessUrl} style={button}>
+                {primeiroAcesso ? "Cadastrar senha e avaliar metas" : "Entrar e avaliar metas"}
               </Button>
             </Section>
             <Text style={text}>
-              Após concluir, você será direcionado automaticamente ao painel de revisão das metas.
+              Após entrar, você será direcionado automaticamente ao painel de revisão das metas.
             </Text>
           </>
         ) : null}
@@ -65,7 +73,9 @@ export const template = {
     name: "Matheus",
     cliente: "Cliente Exemplo Ltda",
     mensagem: "Gostaríamos da sua colaboração na revisão das metas mensais deste cliente.",
-    senhaUrl: "https://poolflux.app/definir-senha?t=exemplo&next=%2Fportal-rep%2Fmetas%2Fexemplo",
+    accessUrl:
+      "https://poolflux.app/auth?e=matheus%40exemplo.com&next=%2Fportal-rep%2Fmetas%2Fexemplo",
+    primeiroAcesso: false,
   },
 } satisfies TemplateEntry;
 

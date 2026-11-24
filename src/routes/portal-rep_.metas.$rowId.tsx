@@ -29,10 +29,10 @@ function RepMetasPage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <BrandMark className="h-8 w-8" />
-            <h1 className="text-base font-semibold leading-tight">Portal do Representante</h1>
+            <h1 className="text-base font-semibold leading-tight">Painel de Metas</h1>
           </div>
           <Button variant="outline" size="sm" onClick={() => void signOut()}>
             <LogOut className="mr-1 h-4 w-4" />
@@ -40,7 +40,7 @@ function RepMetasPage() {
           </Button>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-4 py-6">
         <RepMetasCliente rowId={rowId} />
       </main>
     </div>

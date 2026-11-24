@@ -212,8 +212,55 @@ export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendad
   atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
   /** Razão social do cliente (preenchida pelo servidor do portal). */
   cliente?: string;
+  /** Período da Performance usada para calcular o atingimento. */
+  performance_period?: {
+    label: string | null;
+    inicio: string | null;
+    fim: string | null;
+  };
+  /** Envios anteriores, sanitizados e agrupados por transação. */
+  suggestion_history?: RepSuggestionSubmission[];
   review: GoalReview;
 };
+
+export type RepSuggestionSubmission = {
+  sent_at: string;
+  items: Array<{
+    familia: CanonicalFamily;
+    valor: number | null;
+    justificativa: string;
+  }>;
+};
+
+export type RepSuggestionHistorySource = {
+  changed_at: string;
+  familia: string | null;
+  dados_novos: unknown;
+};
+
+/** Agrupa as linhas do histórico gravadas na mesma transação em um único envio seguro. */
+export function groupRepSuggestionHistory(
+  rows: readonly RepSuggestionHistorySource[],
+): RepSuggestionSubmission[] {
+  const groups = new Map<string, RepSuggestionSubmission>();
+  for (const row of rows) {
+    if (!row.familia || !isFamily(row.familia) || !row.changed_at) continue;
+    const raw =
+      row.dados_novos && typeof row.dados_novos === "object"
+        ? (row.dados_novos as Record<string, unknown>)
+        : {};
+    const parsed = raw.valor == null || raw.valor === "" ? null : Number(raw.valor);
+    const item = {
+      familia: row.familia,
+      valor: parsed != null && Number.isFinite(parsed) ? parsed : null,
+      justificativa: typeof raw.justificativa === "string" ? raw.justificativa : "",
+    };
+    const group = groups.get(row.changed_at) ?? { sent_at: row.changed_at, items: [] };
+    group.items.push(item);
+    groups.set(row.changed_at, group);
+  }
+  return [...groups.values()].sort((a, b) => b.sent_at.localeCompare(a.sent_at));
+}
 
 /**
  * Visão do representante: atingimento calculado no servidor sobre a meta oficial gravada,

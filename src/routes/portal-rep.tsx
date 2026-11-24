@@ -98,7 +98,7 @@ function PortalRep() {
           <div className="flex items-center gap-3">
             <BrandMark className="h-8 w-8" />
             <div>
-              <h1 className="text-base font-semibold leading-tight">Portal do Representante</h1>
+              <h1 className="text-base font-semibold leading-tight">Painel de Metas</h1>
               {data && <p className="text-xs text-muted-foreground">{data.rep.nome}</p>}
             </div>
           </div>

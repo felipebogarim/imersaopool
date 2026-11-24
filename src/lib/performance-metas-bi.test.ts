@@ -12,6 +12,7 @@ import {
   semesterMonths,
   yearMonths,
   periodLabel,
+  scaleMetasBiFactsToMonthlyTarget,
   type MetasBiBackendRow,
   type MetasBiClient,
 } from "./performance-metas-bi";
@@ -158,6 +159,35 @@ describe("BI seguro do representante", () => {
     expect(total.metaAtual).toBe(400);
     expect(total.atingimento).toBeCloseTo(250 / 400);
     expect(total.diferenca).toBe(0);
+  });
+});
+
+describe("visão mensal da gestão", () => {
+  it("reescala todo o racional para R$ 9 milhões por mês", () => {
+    const source = buildRepMetasBiFacts([
+      {
+        rowId: "a",
+        cliente: "ALFA",
+        categoria: "Gold",
+        familia: "DECOR NEWLINE",
+        metaOficial: 2_000_000,
+        atingimento: 0.5,
+        fonte: "realizado",
+      },
+      {
+        rowId: "b",
+        cliente: "BETA",
+        categoria: "Silver",
+        familia: "PRO LED",
+        metaOficial: 1_000_000,
+        atingimento: 1,
+        fonte: "realizado",
+      },
+    ]);
+    const scaled = scaleMetasBiFactsToMonthlyTarget(source, 9_000_000, 2);
+    expect(totalMetasBi(scaled).metaAtual).toBe(18_000_000);
+    expect(scaled[0].metaAtual).toBe(12_000_000);
+    expect(scaled[1].metaAtual).toBe(6_000_000);
   });
 });
 

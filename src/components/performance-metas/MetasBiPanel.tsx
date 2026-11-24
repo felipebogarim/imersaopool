@@ -45,6 +45,7 @@ import {
   monthKey,
   monthShortLabel,
   periodLabel,
+  scaleMetasBiFactsToMonthlyTarget,
   semesterMonths,
   yearMonths,
   matrixMetasBi,
@@ -137,14 +138,7 @@ export function MetasBiPanel() {
 
   const allFacts = useMemo(() => {
     if (!visao9mm) return allFactsRaw;
-    const totalCompanyMeta = allFactsRaw.reduce((sum, f) => sum + (f.metaAtual ?? 0), 0);
-    const targetMeta = 9_000_000 * periodMonths.length;
-    const ratio = totalCompanyMeta > 0 ? targetMeta / totalCompanyMeta : 1;
-    return allFactsRaw.map((f) => ({
-      ...f,
-      metaAtual: f.metaAtual != null ? Math.round(f.metaAtual * ratio) : null,
-      metaPadrao: f.metaPadrao != null ? Math.round(f.metaPadrao * ratio) : null,
-    }));
+    return scaleMetasBiFactsToMonthlyTarget(allFactsRaw, 9_000_000, periodMonths.length);
   }, [allFactsRaw, visao9mm, periodMonths.length]);
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
@@ -388,8 +382,6 @@ export function MetasBiPanel() {
     </div>
   );
 }
-
-
 
 function fmtCompactBRL(v: number): string {
   if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
