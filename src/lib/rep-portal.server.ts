@@ -388,7 +388,7 @@ export async function provisionRepAccess(
 export async function inviteRepToMetasRow(
   rowId: string,
   mensagem: string,
-): Promise<{ email: string; primeiroAcesso: boolean }> {
+): Promise<{ email: string; incluiLinkSenha: boolean }> {
   const { data: row } = await admin
     .from("rep_performance_rows")
     .select("razao_social, rep_performance_uploads!inner(representative_id)")
@@ -398,6 +398,9 @@ export async function inviteRepToMetasRow(
   if (!row || !repId) throw new Error("Cliente não encontrado.");
   const rep = await loadRep(repId);
   const user = await ensureRepUser(rep);
+  // O convite pode ser aberto em um navegador com uma sessão interna já ativa. Um link novo de
+  // senha garante que o destinatário assuma a conta correta antes de entrar nas metas.
+  const senhaUrl = user.senhaUrl ?? (await firstAccessLink(user.uid));
   const res = await sendSystemEmail({
     templateName: "metas-convite",
     to: user.email,
@@ -407,11 +410,11 @@ export async function inviteRepToMetasRow(
       cliente: String(row.razao_social ?? "").trim(),
       mensagem: mensagem.trim(),
       metasUrl: `${origin()}/portal-rep/metas/${rowId}`,
-      senhaUrl: user.senhaUrl ?? undefined,
+      senhaUrl,
     },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
-  return { email: user.email, primeiroAcesso: Boolean(user.senhaUrl) };
+  return { email: user.email, incluiLinkSenha: true };
 }
 
 export type RepMetasRow = { rowId: string; cliente: string; periodo: string | null };

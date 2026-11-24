@@ -42,9 +42,9 @@ export function ConviteRepresentanteDialog({
     try {
       const r = await inviteRepToMetas({ data: { rowId, mensagem } });
       toast.success(`Convite enviado para ${r.email}.`, {
-        description: r.primeiroAcesso
-          ? "Primeiro acesso: o e-mail inclui o link para cadastrar a senha."
-          : "O representante já tem acesso ao portal.",
+        description: r.incluiLinkSenha
+          ? "O e-mail inclui um link pessoal para cadastrar ou redefinir a senha."
+          : "Convite enviado.",
       });
       onOpenChange(false);
     } catch (e) {
@@ -62,8 +62,8 @@ export function ConviteRepresentanteDialog({
             <Mail className="h-4 w-4" /> Convidar representante
           </DialogTitle>
           <DialogDescription>
-            O representante recebe por e-mail o link das metas deste cliente no portal. Se ainda não
-            tiver acesso, o convite cria o acesso e inclui o link para cadastrar a senha.
+            O representante recebe por e-mail um link pessoal para cadastrar ou redefinir a senha e,
+            em seguida, abrir as metas deste cliente no portal.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 text-sm">

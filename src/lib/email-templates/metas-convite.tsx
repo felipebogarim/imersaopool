@@ -22,7 +22,7 @@ interface Props {
   senhaUrl?: string;
 }
 
-const Email = ({ name, cliente, mensagem, metasUrl, senhaUrl }: Props) => (
+export const MetasConviteEmail = ({ name, cliente, mensagem, metasUrl, senhaUrl }: Props) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
     <Preview>Revisão das metas mensais{cliente ? ` · ${cliente}` : ""}</Preview>
@@ -34,11 +34,12 @@ const Email = ({ name, cliente, mensagem, metasUrl, senhaUrl }: Props) => (
         {senhaUrl ? (
           <>
             <Text style={text}>
-              <strong>1.</strong> Cadastre sua senha de acesso ao portal do representante:
+              <strong>1.</strong> Cadastre ou redefina sua senha de acesso ao portal do
+              representante:
             </Text>
             <Section style={{ margin: "8px 0 20px" }}>
               <Button href={senhaUrl} style={button}>
-                Cadastrar minha senha
+                Cadastrar ou redefinir minha senha
               </Button>
             </Section>
             <Text style={text}>
@@ -67,8 +68,9 @@ const Email = ({ name, cliente, mensagem, metasUrl, senhaUrl }: Props) => (
   </Html>
 );
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const template = {
-  component: Email,
+  component: MetasConviteEmail,
   subject: (d: Record<string, unknown>) =>
     `Revisão de metas${d.cliente ? ` · ${String(d.cliente)}` : ""}`,
   displayName: "Convite para revisão de metas (representante)",
