@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { fmtBRL, fmtPct } from "@/lib/performance-metas";
+import { FAROL_LABEL, statusFromRatio, type FarolStatus } from "@/lib/performance-farol";
 import {
   DIMENSION_LABEL,
   aggregateMetasBi,
@@ -254,13 +255,14 @@ export function MetasBiPanel() {
 
       {/* KPIs */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <Kpi
-          label="Meta atual"
+        <MetaAtualGaugeCard
+          metaAtual={total.metaAtual}
+          realizado={total.realizado}
+          metaComBase={total.metaComBase}
+          atingimento={total.atingimento}
+          periodo={periodLabel(periodMonths, year)}
           hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
-        >
-          <p className="text-2xl font-semibold tabular-nums">{fmtBRL(total.metaAtual)}</p>
-          <p className="text-[11px] text-muted-foreground">{periodLabel(periodMonths, year)}</p>
-        </Kpi>
+        />
         <Kpi label="Meta original" hint="Meta padrão da categoria (Black/Gold/Silver), fixa">
           <p className="text-xl font-medium tabular-nums text-muted-foreground">
             {fmtBRL(total.metaPadrao)}
@@ -382,6 +384,195 @@ export function MetasBiPanel() {
         Atingimento = base vendida ÷ meta atual (* inclui média histórica ou estimativa onde não há
         venda realizada). Região: cadastro do cliente, senão a do representante.
       </p>
+    </div>
+  );
+}
+
+const GAUGE_GRADIENTS: Record<FarolStatus, [string, string]> = {
+  excelente: ["#10b981", "#06b6d4"],
+  otimo: ["#84cc16", "#10b981"],
+  proximo: ["#f59e0b", "#eab308"],
+  pode_melhorar: ["#f97316", "#f59e0b"],
+  abaixo_meta: ["#f43f5e", "#ef4444"],
+  sem_compra: ["#94a3b8", "#64748b"],
+};
+
+const GAUGE_STATUS_TEXT: Record<FarolStatus, string> = {
+  excelente: "fill-emerald-600 dark:fill-emerald-400",
+  otimo: "fill-lime-600 dark:fill-lime-400",
+  proximo: "fill-amber-600 dark:fill-amber-400",
+  pode_melhorar: "fill-orange-600 dark:fill-orange-400",
+  abaixo_meta: "fill-red-600 dark:fill-red-400",
+  sem_compra: "fill-muted-foreground",
+};
+
+function MetaAtualGaugeCard({
+  metaAtual,
+  realizado,
+  metaComBase,
+  atingimento,
+  periodo,
+  hint,
+}: {
+  metaAtual: number;
+  realizado: number;
+  metaComBase: number;
+  atingimento: number | null;
+  periodo: string;
+  hint?: string;
+}) {
+  const status = statusFromRatio(atingimento);
+  const colors = GAUGE_GRADIENTS[status ?? "sem_compra"];
+  const statusTextColor = GAUGE_STATUS_TEXT[status ?? "sem_compra"];
+
+  // Escala do arco: 0 a 120% (1.20)
+  const ratio = atingimento ?? 0;
+  const clamped = Math.min(1.2, Math.max(0, ratio));
+  const t = clamped / 1.2;
+  const arcLength = 169.65;
+  const offset = arcLength * (1 - t);
+
+  // Ponto da agulha / indicador luminoso na ponta do progresso
+  const tipX = 90 - 54 * Math.cos(t * Math.PI);
+  const tipY = 72 - 54 * Math.sin(t * Math.PI);
+
+  return (
+    <div
+      className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm"
+      title={hint}
+    >
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Meta atual
+          </p>
+          <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
+            {periodo}
+          </span>
+        </div>
+        <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">
+          {fmtBRL(metaAtual)}
+        </p>
+      </div>
+
+      <div className="my-2 flex flex-col items-center">
+        <svg viewBox="0 0 180 96" className="w-full max-w-[190px] overflow-visible">
+          <defs>
+            <linearGradient id="metaAtualGaugeGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={colors[0]} />
+              <stop offset="100%" stopColor={colors[1]} />
+            </linearGradient>
+            <filter id="gaugeTipGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor={colors[1]} floodOpacity="0.4" />
+            </filter>
+          </defs>
+
+          {/* Arco de fundo (trilha) */}
+          <path
+            d="M 36 72 A 54 54 0 0 1 144 72"
+            fill="none"
+            strokeWidth={10}
+            strokeLinecap="round"
+            className="stroke-muted/30"
+          />
+
+          {/* Arco preenchido de progresso */}
+          {t > 0 && (
+            <path
+              d="M 36 72 A 54 54 0 0 1 144 72"
+              fill="none"
+              stroke="url(#metaAtualGaugeGrad)"
+              strokeWidth={10}
+              strokeLinecap="round"
+              strokeDasharray={`${arcLength} ${arcLength}`}
+              strokeDashoffset={offset}
+              className="transition-all duration-500 ease-out"
+            />
+          )}
+
+          {/* Marcador de 100% (meta atingida) */}
+          <line
+            x1={130.7}
+            y1={48.5}
+            x2={142.8}
+            y2={41.5}
+            stroke="currentColor"
+            strokeWidth={1.5}
+            className="text-muted-foreground/50"
+          />
+          <text
+            x={145}
+            y={38}
+            className="text-[8px] font-semibold fill-muted-foreground/80 select-none"
+          >
+            100%
+          </text>
+
+          {/* Indicador luminoso na ponta do arco */}
+          {t > 0 && (
+            <g filter="url(#gaugeTipGlow)">
+              <circle
+                cx={tipX}
+                cy={tipY}
+                r={4.5}
+                fill="#ffffff"
+                stroke={colors[1]}
+                strokeWidth={2.5}
+              />
+            </g>
+          )}
+
+          {/* Leitura central do percentual */}
+          <text
+            x={90}
+            y={50}
+            textAnchor="middle"
+            className="text-2xl font-bold fill-foreground tabular-nums select-none"
+          >
+            {atingimento != null ? fmtPct(atingimento) : "—"}
+          </text>
+
+          {/* Status do farol */}
+          <text
+            x={90}
+            y={66}
+            textAnchor="middle"
+            className={cn(
+              "text-[9px] font-semibold uppercase tracking-wider select-none",
+              statusTextColor,
+            )}
+          >
+            {status ? FAROL_LABEL[status] : "Sem base"}
+          </text>
+
+          {/* Marcas de escala */}
+          <text
+            x={34}
+            y={86}
+            textAnchor="middle"
+            className="text-[9px] font-medium fill-muted-foreground/60 select-none"
+          >
+            0%
+          </text>
+          <text
+            x={146}
+            y={86}
+            textAnchor="middle"
+            className="text-[9px] font-medium fill-muted-foreground/60 select-none"
+          >
+            120%
+          </text>
+        </svg>
+      </div>
+
+      <div className="border-t border-border/50 pt-2 text-[11px] text-muted-foreground flex items-center justify-between">
+        <span className="truncate">Base: {fmtBRL(realizado)}</span>
+        {metaComBase > 0 && (
+          <span className="shrink-0 text-[10px] text-muted-foreground/80">
+            de {fmtBRL(metaComBase)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
