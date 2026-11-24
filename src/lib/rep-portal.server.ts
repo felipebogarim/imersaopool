@@ -69,13 +69,11 @@ export type PortalAction = {
 };
 
 /**
- * Ações do representante. Só aparecem as que já foram ENVIADAS como sugestão — rascunhos
- * internos (acceptance = 'nao_enviada') nunca são expostos.
+ * Ações do representante. Traz todas as ações vinculadas ao representante na gestão,
+ * permitindo avaliar sugestões e acompanhar no calendário.
  */
 export async function loadPortal(rep: PortalRep): Promise<PortalAction[]> {
-  const actions = (await listActionsForRep(rep.id, { includeDone: true })).filter(
-    (a) => a.acceptance !== "nao_enviada",
-  );
+  const actions = await listActionsForRep(rep.id, { includeDone: true });
   const ids = actions.map((a) => a.id);
   if (!ids.length) return [];
 
@@ -146,10 +144,10 @@ export async function loadPortal(rep: PortalRep): Promise<PortalAction[]> {
   }));
 }
 
-/** Garante que a ação pertence ao representante e já foi enviada a ele. */
+/** Garante que a ação pertence ao representante. */
 export async function ownedAction(rep: PortalRep, cardId: string) {
   const actions = await listActionsForRep(rep.id, { includeDone: true });
-  const card = actions.find((a) => a.id === cardId && a.acceptance !== "nao_enviada");
+  const card = actions.find((a) => a.id === cardId);
   if (!card) throw new Error("Ação não encontrada.");
   return card;
 }
