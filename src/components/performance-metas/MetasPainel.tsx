@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link2, Loader2, Mail, RotateCcw, Save, Unlock, Wand2 } from "lucide-react";
+import { Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -307,13 +307,6 @@ export function MetasPainel({
                   <Wand2 className="mr-1.5 h-4 w-4" /> Aplicar IA
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setDrafts((d) => restoreDefault(d))}
-              >
-                <RotateCcw className="mr-1.5 h-4 w-4" /> Restaurar padrão
-              </Button>
               <Button size="sm" variant="outline" onClick={() => setConviteOpen(true)}>
                 <Mail className="mr-1.5 h-4 w-4" /> Convidar representante
               </Button>
