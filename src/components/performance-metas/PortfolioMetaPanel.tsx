@@ -42,12 +42,15 @@ export function PortfolioMetaPanel({
   point,
   agendadas = [],
   unsaved,
+  saveBar,
   vis,
   selected,
   onSelect,
   swatches,
   actions,
 }: {
+  /** Competência + botão Salvar, no rodapé do bloco editável (gestor ou representante). */
+  saveBar?: React.ReactNode;
   draft: FamilyMetaDraft;
   point: ComparativoPoint;
   /** Metas deste portfólio já gravadas para competências futuras. */
@@ -170,6 +173,9 @@ export function PortfolioMetaPanel({
               <CommentText text={draft.justificativaRep} />
             )}
           </Field>
+          {!vis.editarMetaOficial && vis.editarSugestaoRep && saveBar && (
+            <div className="flex flex-wrap items-center justify-end gap-1.5">{saveBar}</div>
+          )}
         </Section>
 
         {/* 2. Sugestão IA (interna — só gestão) */}
@@ -257,6 +263,9 @@ export function PortfolioMetaPanel({
                 >
                   Restaurar padrão
                 </SmallAction>
+                {saveBar && (
+                  <div className="ml-auto flex flex-wrap items-center gap-1.5">{saveBar}</div>
+                )}
               </div>
             </>
           )}

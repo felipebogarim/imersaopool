@@ -203,18 +203,25 @@ export function MetasPainel({
       {/* ================= 1. Dashboard fixo ================= */}
       <div className="sticky top-0 z-30 -mx-3 space-y-3 border-b border-border bg-background/95 px-3 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={handleSave} disabled={saving || unsaved.length === 0}>
-            <Save className="mr-1.5 h-4 w-4" />
-            {unsaved.length > 0 ? `Salvar (${unsaved.length})` : "Salvo"}
-          </Button>
-          {dbEnabled && vis.editarMetaOficial && (
-            <CompetenciaSelect
-              cycle={goals?.cycle ?? null}
-              proximo={goals?.proximo ?? null}
-              value={competencia}
-              onChange={setCompetencia}
+          {/* Resumo discreto; o botão Salvar fica no rodapé do bloco de edição. */}
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 text-xs",
+              unsaved.length > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground",
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                unsaved.length > 0 ? "bg-amber-500" : "bg-emerald-500",
+              )}
             />
-          )}
+            {saving
+              ? "Salvando…"
+              : unsaved.length > 0
+                ? `${unsaved.length} portfólio(s) com alterações não salvas`
+                : "Tudo salvo"}
+          </span>
           {vis.usarControlesGestao && (
             <>
               <Button
@@ -396,6 +403,27 @@ export function MetasPainel({
             point={comparativo[idx]}
             agendadas={(goals?.agendadas ?? []).filter((a) => a.familia === fam)}
             unsaved={unsaved}
+            saveBar={
+              <>
+                {dbEnabled && vis.editarMetaOficial && (
+                  <CompetenciaSelect
+                    cycle={goals?.cycle ?? null}
+                    proximo={goals?.proximo ?? null}
+                    value={competencia}
+                    onChange={setCompetencia}
+                  />
+                )}
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-[11px]"
+                  onClick={handleSave}
+                  disabled={saving || unsaved.length === 0}
+                >
+                  <Save className="mr-1 h-3 w-3" />
+                  {unsaved.length > 0 ? `Salvar (${unsaved.length})` : "Salvo"}
+                </Button>
+              </>
+            }
             vis={vis}
             selected={selected}
             onSelect={setSelected}
