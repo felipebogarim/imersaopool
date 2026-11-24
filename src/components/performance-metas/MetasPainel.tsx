@@ -203,11 +203,9 @@ export function MetasPainel({
       setGoals(res.state);
       const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
       setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
-      const fundamento = [...ia.values()].find((x) => x?.fundamento)?.fundamento;
-      toast.success(
-        "Sugestão IA gerada e registrada.",
-        fundamento ? { description: fundamento } : {},
-      );
+      toast.success("Análise da IA registrada para as 7 famílias.", {
+        description: "A meta oficial não foi alterada. Use “Aplicar IA” ou “Usar IA” por família.",
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a sugestão IA.");
     } finally {
@@ -250,14 +248,18 @@ export function MetasPainel({
                 variant="outline"
                 onClick={handleGerarIa}
                 disabled={!dbEnabled || gerandoIa}
-                title="Gera a sugestão da IA para os 7 portfólios: imersão, tendência histórica, perfil e comparáveis da região"
+                title={
+                  temIa
+                    ? "Gera uma nova análise da IA para as 7 famílias (a anterior fica no histórico)"
+                    : "Gera a análise da IA para as 7 famílias: imersões, histórico em R$ e comparáveis"
+                }
               >
                 {gerandoIa ? (
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 ) : (
                   <Sparkles className="mr-1.5 h-4 w-4" />
                 )}
-                {gerandoIa ? "Gerando…" : temIa ? "Atualizar sugestão IA" : "Gerar sugestão IA"}
+                {gerandoIa ? "Analisando…" : temIa ? "Nova sugestão IA" : "Sugestão IA"}
               </Button>
               {temIa && (
                 <Button

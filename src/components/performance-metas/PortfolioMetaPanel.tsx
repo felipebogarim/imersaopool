@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { CanonicalFamily } from "@/lib/client-bi-familias";
 import { FAROL_CELL_CLASS, FAROL_LABEL, statusFromRatio } from "@/lib/performance-farol";
 import {
+  AI_CONFIANCA_LABEL,
   AI_TAG_LABEL,
   META_ORIGEM_LABEL,
   METAS_FAMILIES,
@@ -188,30 +189,48 @@ export function PortfolioMetaPanel({
             title="Sugestão IA"
             aside={
               draft.sugestaoIa ? (
-                <Badge variant="outline" className="text-[10px]">
-                  Base: {AI_TAG_LABEL[draft.sugestaoIa.tag]}
-                </Badge>
+                <div className="flex gap-1">
+                  <Badge
+                    variant="outline"
+                    className={cn("text-[10px]", TAG_CLASS[draft.sugestaoIa.tag])}
+                  >
+                    {AI_TAG_LABEL[draft.sugestaoIa.tag]}
+                  </Badge>
+                  {draft.sugestaoIa.confianca && (
+                    <Badge variant="secondary" className="text-[10px] font-normal">
+                      {AI_CONFIANCA_LABEL[draft.sugestaoIa.confianca]}
+                    </Badge>
+                  )}
+                </div>
               ) : null
             }
           >
             {draft.sugestaoIa ? (
               <>
-                <Field label="Valor sugerido">
+                <Field
+                  label={
+                    draft.sugestaoIa.participacao != null
+                      ? `Valor sugerido · ${fmtPct(draft.sugestaoIa.participacao)} do total sugerido`
+                      : "Valor sugerido"
+                  }
+                >
                   <ValueText value={draft.sugestaoIa.valor} />
                 </Field>
                 <Field label="Justificativa">
                   <CommentText text={draft.sugestaoIa.justificativa} />
                 </Field>
-                {draft.sugestaoIa.fundamento && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Fundamento: {draft.sugestaoIa.fundamento}
-                  </p>
-                )}
+                <div className="space-y-0.5 text-[11px] text-muted-foreground">
+                  {draft.sugestaoIa.resumo && <p>Análise do cliente: {draft.sugestaoIa.resumo}</p>}
+                  {draft.sugestaoIa.fundamento && <p>Fundamento: {draft.sugestaoIa.fundamento}</p>}
+                  {draft.sugestaoIa.geradaEm && (
+                    <p>Gerada em {fmtDataHora(draft.sugestaoIa.geradaEm)}</p>
+                  )}
+                </div>
               </>
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-muted-foreground">
-                  Sem sugestão registrada para este portfólio.
+                  Nenhuma análise da IA registrada para este cliente.
                 </p>
                 <Button
                   size="sm"
@@ -224,7 +243,7 @@ export function PortfolioMetaPanel({
                   ) : (
                     <Sparkles className="mr-1.5 h-4 w-4" />
                   )}
-                  {gerandoIa ? "Gerando…" : "Gerar sugestão IA"}
+                  {gerandoIa ? "Analisando…" : "Sugestão IA"}
                 </Button>
               </div>
             )}
@@ -288,6 +307,19 @@ export function PortfolioMetaPanel({
     </div>
   );
 }
+
+const TAG_CLASS: Record<string, string> = {
+  imersao: "border-violet-500/40 text-violet-700 dark:text-violet-300",
+  tendencia: "border-sky-500/40 text-sky-700 dark:text-sky-300",
+  limitado: "border-amber-500/50 text-amber-700 dark:text-amber-300",
+};
+
+const fmtDataHora = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+};
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (

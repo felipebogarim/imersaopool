@@ -13,9 +13,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CANONICAL_FAMILIES } from "@/lib/client-bi-familias";
 import {
   AI_MODEL,
+  AI_TOOL,
   buildAiPrompt,
-  parseAiSuggestions,
+  extractAnalysis,
   referenciasDaCategoria,
+  validateAnalysis,
   type AiContext,
 } from "@/lib/performance-metas-ai";
 import {
@@ -120,7 +122,10 @@ export const confirmMetasLink = createServerFn({ method: "POST" })
     }),
   );
 
-/** Gera a sugestão da IA para os 7 portfólios e registra no banco (valor, justificativa, base). */
+/**
+ * Sugestão IA: UMA análise do cliente (7 famílias) com saída estruturada, validada no servidor
+ * e gravada com origem, confiança, participação e base. Nunca altera a meta oficial.
+ */
 export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(rowInput)
@@ -139,18 +144,19 @@ export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     const ctx = raw as AiContext;
-    const referencias = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
-    const { system, user } = buildAiPrompt(ctx, referencias);
+    const refs = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
+    const { system, user } = buildAiPrompt(ctx, refs);
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
         model: AI_MODEL,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
         ],
+        tools: [AI_TOOL],
+        tool_choice: { type: "function", function: { name: AI_TOOL.function.name } },
       }),
     });
     if (!res.ok) {
@@ -158,11 +164,14 @@ export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
       if (res.status === 402) throw new Error("Créditos de IA esgotados no workspace.");
       throw new Error(`Falha na IA (${res.status}).`);
     }
-    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = json.choices?.[0]?.message?.content ?? "";
-    const sugestoes = parseAiSuggestions(content, ctx, referencias);
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: Parameters<typeof extractAnalysis>[0] }>;
+    };
+    const parsed = extractAnalysis(json.choices?.[0]?.message ?? {});
+    if (!parsed) throw new Error("A IA não retornou uma análise válida. Tente novamente.");
+    const { sugestoes } = validateAnalysis(parsed, ctx, refs);
     if (sugestoes.length === 0)
-      throw new Error("A IA não retornou sugestões válidas. Tente novamente.");
+      throw new Error("Sem dados para recomendar metas deste cliente (categoria sem referência).");
     return callRpc(client, "record_performance_goal_ai_suggestions", {
       _row_id: data.rowId,
       _sugestoes: sugestoes,

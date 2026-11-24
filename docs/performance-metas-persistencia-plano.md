@@ -26,14 +26,21 @@ existentes da Performance):
   permanecem. Metas de competências futuras aparecem na tela como "agendadas".
 - **Sugestão do representante** (`performance_goal_rep_suggestions`): versão vigente por
   portfólio; versões anteriores ficam no histórico.
-- **Sugestões da IA** (`performance_goal_ai_suggestions`): só inserção. Geradas no servidor
-  ("Gerar sugestão IA"): contexto do banco com prioridade **imersão** (entrevistas, imersões,
-  relatórios de campo) → **tendência histórica** do cliente → **perfil** → **comparáveis da
-  região** (mesma categoria, região do representante, só médias e só com 3+ clientes). O modelo
-  responde por portfólio; o servidor valida (múltiplo de 50, teto de 3× a maior referência
-  conhecida) e grava valor, justificativa, tag (imersão/tendência), modelo e `base` (fontes
-  usadas). A sugestão não altera a meta oficial: o gestor usa "Usar IA"/"Aplicar IA".
-  Registros `origem = 'simulacao'` da fase de protótipo ficam no banco, ocultos na tela.
+- **Sugestões da IA** (`performance_goal_ai_suggestions`): só inserção. Botão "Sugestão IA" →
+  **uma análise** do cliente para as 7 famílias (mesmo `analise_id`); a tela mostra sempre a
+  última e permite gerar outra (nada é gerado ao abrir a página). Contexto do banco: imersões
+  (entrevistas, formulários da visita e do representante, relatórios de campo) → histórico em
+  R$ → comparáveis da mesma categoria (região do representante; empresa toda se houver menos de
+  3; só médias) → perfil. Pontos de farol não entram. Modelo econômico do gateway existente
+  (`google/gemini-2.5-flash`) com saída estruturada (tool calling). Por família: valor mensal,
+  participação no total sugerido, justificativa, origem (**Imersão**, **Tendência** ou **Dados
+  limitados**) e confiança (alta/média/baixa). O servidor valida: "Imersão" só com registro de
+  imersão; sem dado financeiro nem comparável → "Dados limitados" (confiança baixa, teto de
+  1,1× a referência); teto geral de 3× a maior referência em R$; família ausente → recomendação
+  conservadora. Pode subir ou reduzir famílias e o total, sem compensação. Grava modelo e `base`
+  (fontes + resumo da análise). A IA nunca altera a meta oficial: o gestor usa "Aplicar IA"
+  (todas) ou "Usar IA" (uma família) e pode editar. Registros `origem = 'simulacao'` antigos
+  ficam ocultos.
 - **Histórico** (`performance_goal_history`): trigger em ciclos, metas e sugestões do
   representante grava ação, valores antes/depois, autor e data. Imutável.
 

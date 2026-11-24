@@ -4,6 +4,7 @@
 
 import { CANONICAL_FAMILIES, type CanonicalFamily } from "./client-bi-familias";
 import type {
+  AiConfianca,
   AiSuggestionTag,
   BaseFinanceira,
   BaseFonte,
@@ -48,6 +49,9 @@ export type GoalsState = {
     base?: AiBase | null;
     modelo?: string | null;
     created_at?: string;
+    confianca?: AiConfianca | null;
+    participacao?: number | string | null;
+    analise_id?: string | null;
   }>;
   /** Valores financeiros do upload (R$). Só na visão da gestão. */
   base?: { metas?: RawJson; realizado?: RawJson; media?: RawJson; familia_pct?: RawJson };
@@ -56,7 +60,14 @@ export type GoalsState = {
 /** Base da recomendação da IA, montada no servidor a partir dos dados usados no prompt. */
 export type AiBase = {
   fontes?: Array<"imersao" | "historico" | "perfil" | "comparaveis" | "upload">;
-  imersao?: { entrevistas: number; relatorios: number; ultima: string | null };
+  imersao?: {
+    entrevistas: number;
+    formularios?: number;
+    relatorios: number;
+    ultima: string | null;
+  };
+  /** Leitura geral do cliente feita pela análise. */
+  resumo?: string;
   historico?: { periodos: number };
   comparaveis?: { clientes: number; regiao: string | null; categoria: string | null };
   perfil?: { categoria: string | null; cidade: string | null; estado: string | null };
@@ -73,9 +84,10 @@ export function fundamentoLabel(base: AiBase | null | undefined): string {
   if (!base) return "";
   const out: string[] = [];
   const im = base.imersao;
-  if (im && im.entrevistas + im.relatorios > 0) {
+  if (im && im.entrevistas + (im.formularios ?? 0) + im.relatorios > 0) {
     const partes = [
       im.entrevistas ? `${im.entrevistas} entrevista(s)` : null,
+      im.formularios ? `${im.formularios} formulário(s)` : null,
       im.relatorios ? `${im.relatorios} relatório(s) de campo` : null,
     ].filter(Boolean);
     const data = fmtData(im.ultima);
@@ -147,6 +159,10 @@ export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): Fa
           justificativa: ai.justificativa,
           tag: ai.tag,
           fundamento: fundamentoLabel(ai.base),
+          confianca: ai.confianca ?? null,
+          participacao: num(ai.participacao),
+          resumo: ai.base?.resumo ?? "",
+          geradaEm: ai.created_at,
         },
       }),
     };

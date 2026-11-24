@@ -76,12 +76,21 @@ export function viewerRoleFromRoles(roles: readonly string[]): MetasViewerRole {
 
 // ============================== Rascunho local ===============================
 
-/** Base da sugestão da IA. */
-export type AiSuggestionTag = "imersao" | "tendencia";
+/** Origem da recomendação da IA para a família. */
+export type AiSuggestionTag = "imersao" | "tendencia" | "limitado";
 
 export const AI_TAG_LABEL: Record<AiSuggestionTag, string> = {
   imersao: "Imersão",
   tendencia: "Tendência",
+  limitado: "Dados limitados",
+};
+
+export type AiConfianca = "alta" | "media" | "baixa";
+
+export const AI_CONFIANCA_LABEL: Record<AiConfianca, string> = {
+  alta: "Confiança alta",
+  media: "Confiança média",
+  baixa: "Confiança baixa",
 };
 
 /** Sugestão gerada pelo modelo de IA e registrada no banco (performance_goal_ai_suggestions). */
@@ -91,6 +100,13 @@ export type AiSuggestion = {
   tag: AiSuggestionTag;
   /** Resumo da base usada (ex.: "Imersão 12/10/26 · 3 entrevistas · 4 períodos de histórico"). */
   fundamento?: string;
+  confianca?: AiConfianca | null;
+  /** Fração da família no total sugerido pela análise (0–1). */
+  participacao?: number | null;
+  /** Leitura geral do cliente feita na análise. */
+  resumo?: string;
+  /** Data/hora em que a análise foi gerada (ISO). */
+  geradaEm?: string;
 };
 
 /** De onde veio o valor atual da meta oficial. */

@@ -25,7 +25,11 @@ const state: GoalsState = {
       justificativa: "j",
       tag: "imersao",
       origem: "modelo",
+      confianca: "alta",
+      participacao: "0.4000",
+      created_at: "2026-11-24T10:00:00Z",
       base: {
+        resumo: "Cliente em expansão.",
         fontes: ["imersao", "historico"],
         imersao: { entrevistas: 2, relatorios: 1, ultima: "2026-10-12" },
         historico: { periodos: 4 },
@@ -62,12 +66,18 @@ describe("performance-metas-persistence", () => {
       sugestaoRep: 900,
       justificativaRep: "queda",
     });
-    expect(perfil?.sugestaoIa).toEqual({
+    expect(perfil?.sugestaoIa).toMatchObject({
       valor: 1100,
       justificativa: "j",
       tag: "imersao",
       fundamento:
         "Imersão 12/10/26: 2 entrevista(s), 1 relatório(s) de campo · 4 período(s) de histórico",
+    });
+    expect(perfil?.sugestaoIa).toMatchObject({
+      confianca: "alta",
+      participacao: 0.4,
+      resumo: "Cliente em expansão.",
+      geradaEm: "2026-11-24T10:00:00Z",
     });
     expect(d.find((x) => x.familia === "PRO LED")?.sugestaoIa).toBeNull();
     const decor = d.find((x) => x.familia === "DECOR NEWLINE");
