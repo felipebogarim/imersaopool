@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, Maximize2, Minimize2, X } from "lucide-react";
+import { AlertTriangle, Loader2, Maximize2, Minimize2, SlidersHorizontal, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -135,10 +135,27 @@ export function MetasBiPanel() {
     [year],
   );
 
-  const allFacts = useMemo(
+  const [visao10mm, setVisao10mm] = useState(false);
+
+  const allFactsRaw = useMemo(
     () => buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths),
     [rows, bi, periodMonths],
   );
+
+  const allFacts = useMemo(() => {
+    if (!visao10mm) return allFactsRaw;
+    const totalCompanyMeta = allFactsRaw.reduce(
+      (sum, f) => sum + (f.metaAtual ?? 0),
+      0,
+    );
+    const targetMeta = 10_000_000 * periodMonths.length;
+    const ratio = totalCompanyMeta > 0 ? targetMeta / totalCompanyMeta : 1;
+    return allFactsRaw.map((f) => ({
+      ...f,
+      metaAtual: f.metaAtual != null ? Math.round(f.metaAtual * ratio) : null,
+      metaPadrao: f.metaPadrao != null ? Math.round(f.metaPadrao * ratio) : null,
+    }));
+  }, [allFactsRaw, visao10mm, periodMonths.length]);
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
   const porFamilia = useMemo(() => aggregateMetasBi(facts, "familia"), [facts]);
@@ -283,6 +300,8 @@ export function MetasBiPanel() {
             atingimento={total.atingimento}
             periodo={periodLabel(periodMonths, year)}
             hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
+            visao10mm={visao10mm}
+            onToggleVisao10mm={setVisao10mm}
           />
         </div>
         <div className="lg:col-span-2">
@@ -405,6 +424,8 @@ function MetaAtualGaugeCard({
   atingimento,
   periodo,
   hint,
+  visao10mm,
+  onToggleVisao10mm,
 }: {
   metaAtual: number;
   realizado: number;
@@ -412,6 +433,8 @@ function MetaAtualGaugeCard({
   atingimento: number | null;
   periodo: string;
   hint?: string;
+  visao10mm?: boolean;
+  onToggleVisao10mm?: (v: boolean) => void;
 }) {
   const status = statusFromRatio(atingimento);
   const colors = GAUGE_GRADIENTS[status ?? "sem_compra"];
@@ -434,17 +457,40 @@ function MetaAtualGaugeCard({
       title={hint}
     >
       <div>
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center justify-between gap-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Meta atual
           </p>
-          <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
-            {periodo}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onToggleVisao10mm?.(!visao10mm)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer",
+                visao10mm
+                  ? "bg-amber-500 text-white font-semibold shadow-xs hover:bg-amber-600"
+                  : "border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              title="Simular todo o cenário do BI com meta total de 10 milhões por mês proporcional aos portfólios"
+            >
+              <SlidersHorizontal className="h-2.5 w-2.5" />
+              Visão 10MM/mês
+            </button>
+            <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
+              {periodo}
+            </span>
+          </div>
         </div>
-        <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">
-          {fmtBRL(metaAtual)}
-        </p>
+        <div className="mt-1 flex items-baseline gap-2">
+          <p className="text-lg font-bold tracking-tight text-foreground tabular-nums">
+            {fmtBRL(metaAtual)}
+          </p>
+          {visao10mm && (
+            <span className="rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+              Cenário 10MM
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="my-2 flex flex-col items-center">
