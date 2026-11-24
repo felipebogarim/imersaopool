@@ -7,6 +7,9 @@ import {
   dimensionOptions,
   matrixMetasBi,
   totalMetasBi,
+  savedGoalForMonth,
+  yearMonths,
+  periodLabel,
   type MetasBiBackendRow,
   type MetasBiClient,
 } from "./performance-metas-bi";
@@ -124,5 +127,57 @@ describe("agregações", () => {
       { key: "r1", label: "REP 1" },
       { key: "r2", label: "REP 2" },
     ]);
+  });
+});
+
+describe("período (meses)", () => {
+  const withCycles: MetasBiBackendRow[] = [
+    {
+      ...backend[0],
+      cycles: [
+        {
+          inicio: "2026-11-01",
+          fim: "2027-04-01",
+          items: [
+            {
+              familia: "DECOR NEWLINE",
+              vigente_desde: "2026-11-01",
+              meta_mensal: 3000,
+              origem: "ia",
+            },
+            {
+              familia: "DECOR NEWLINE",
+              vigente_desde: "2027-01-01",
+              meta_mensal: 3500,
+              origem: "gestor",
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  const one = [clients[0]];
+  const dn = (months: string[]) =>
+    buildMetasBiFacts(one, withCycles, months).find((f) => f.familia === "DECOR NEWLINE")!;
+
+  it("usa a versão vigente em cada mês e o padrão fora do ciclo", () => {
+    expect(savedGoalForMonth(withCycles[0], "DECOR NEWLINE", "2026-12-01")?.meta).toBe(3000);
+    expect(savedGoalForMonth(withCycles[0], "DECOR NEWLINE", "2027-02-01")?.meta).toBe(3500);
+    expect(savedGoalForMonth(withCycles[0], "DECOR NEWLINE", "2026-10-01")).toBeUndefined();
+  });
+
+  it("soma os meses: meta original × n, meta atual mês a mês, base × n", () => {
+    const f = dn(["2026-10-01", "2026-12-01", "2027-01-01"]);
+    expect(f.metaPadrao).toBe(2500 * 3);
+    expect(f.metaAtual).toBe(2500 + 3000 + 3500);
+    expect(f.realizado).toBe(2800 * 3);
+    expect(f.origem).toBe("gestor");
+  });
+
+  it("ano inteiro = 12 competências", () => {
+    expect(yearMonths(2027)).toHaveLength(12);
+    expect(dn(yearMonths(2027)).metaAtual).toBe(3500 * 4 + 2500 * 8);
+    expect(periodLabel(yearMonths(2027), 2027)).toBe("Ano 2027");
+    expect(periodLabel(["2026-11-01"])).toBe("nov/26");
   });
 });

@@ -29,6 +29,17 @@ export type MetasBiBackendRow = {
   media: NumMap;
   familia_pct: NumMap;
   items: Array<{ familia: string; meta_mensal: number | string | null; origem: string }>;
+  /** Todos os ciclos com todas as versões (migration 20261126140000); ausente antes dela. */
+  cycles?: Array<{
+    inicio: string;
+    fim: string;
+    items: Array<{
+      familia: string;
+      vigente_desde: string;
+      meta_mensal: number | string | null;
+      origem: string;
+    }>;
+  }>;
 };
 
 /** Cliente da carteira (já resolvido na versão mais recente de cada representante). */
@@ -70,12 +81,77 @@ const num = (v: unknown): number | null => {
 
 const clean = (v: string | null | undefined) => (v ?? "").trim();
 
-/** Fatos cliente × portfólio. Clientes sem retorno do backend entram só com a meta padrão. */
+// ------------------------------- Período -------------------------------------
+
+/** Competência no formato YYYY-MM-01. */
+export const monthKey = (year: number, month1: number) =>
+  `${year}-${String(month1).padStart(2, "0")}-01`;
+
+export const currentMonthKey = (today = new Date()) =>
+  monthKey(today.getFullYear(), today.getMonth() + 1);
+
+export const yearMonths = (year: number) =>
+  Array.from({ length: 12 }, (_, i) => monthKey(year, i + 1));
+
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+export const monthShortLabel = (key: string) =>
+  `${MESES[Number(key.slice(5, 7)) - 1]}/${key.slice(2, 4)}`;
+
+/** Rótulo do período: "nov/26", "Ano 2026", "3 meses (set/26 – nov/26)". */
+export function periodLabel(months: readonly string[], year?: number): string {
+  if (months.length === 0) return "Nenhum mês";
+  const sorted = [...months].sort();
+  if (year != null && sorted.length === 12 && sorted.every((m) => m.startsWith(`${year}-`)))
+    return `Ano ${year}`;
+  if (sorted.length === 1) return monthShortLabel(sorted[0]);
+  return `${sorted.length} meses (${monthShortLabel(sorted[0])} – ${monthShortLabel(sorted[sorted.length - 1])})`;
+}
+
+type GoalVersion = { meta: number | null; origem: MetaOrigem };
+
+const asOrigem = (o: string | undefined): MetaOrigem =>
+  (ORIGENS as readonly string[]).includes(o ?? "") ? (o as MetaOrigem) : "padrao";
+
+/**
+ * Meta salva de um portfólio num mês: versão com maior vigente_desde <= mês, dentro do ciclo
+ * que contém o mês. `undefined` = nada salvo para o mês (vale a meta padrão).
+ * Sem `cycles` (backend antigo), as metas vigentes hoje valem para qualquer mês.
+ */
+export function savedGoalForMonth(
+  b: MetasBiBackendRow | undefined,
+  familia: CanonicalFamily,
+  month: string,
+): GoalVersion | undefined {
+  if (!b) return undefined;
+  if (!b.cycles) {
+    const it = b.items.find((i) => i.familia === familia);
+    return it ? { meta: num(it.meta_mensal), origem: asOrigem(it.origem) } : undefined;
+  }
+  const cycle = b.cycles.find((c) => c.inicio <= month && month <= c.fim);
+  if (!cycle) return undefined;
+  let best: (typeof cycle.items)[number] | undefined;
+  for (const i of cycle.items) {
+    if (i.familia !== familia || i.vigente_desde > month) continue;
+    if (!best || i.vigente_desde > best.vigente_desde) best = i;
+  }
+  return best ? { meta: num(best.meta_mensal), origem: asOrigem(best.origem) } : undefined;
+}
+
+/**
+ * Fatos cliente × portfólio no período (soma dos meses selecionados).
+ * - metaPadrao ("meta original") = meta padrão da categoria × nº de meses;
+ * - metaAtual = Σ meta salva de cada mês (ou padrão no mês sem meta salva);
+ * - realizado = base mensal × nº de meses (o BI só tem base mensal, sem quebra por mês).
+ * Clientes sem retorno do backend entram só com a meta padrão.
+ */
 export function buildMetasBiFacts(
   clients: readonly MetasBiClient[],
   backend: readonly MetasBiBackendRow[],
+  months: readonly string[] = [currentMonthKey()],
 ): MetasBiFact[] {
   const byRow = new Map(backend.map((b) => [b.row_id, b]));
+  const n = months.length;
   const facts: MetasBiFact[] = [];
   for (const c of clients) {
     const b = byRow.get(c.id);
@@ -89,16 +165,20 @@ export function buildMetasBiFacts(
           }
         : undefined,
     );
-    const items = new Map((b?.items ?? []).map((i) => [i.familia, i]));
     const regiao = clean(b?.cliente_regiao) || clean(b?.rep_regiao) || SEM_REGIAO;
     const uf = clean(b?.cliente_uf).toUpperCase() || SEM_UF;
     const categoria = clean(c.categoria) || SEM_CATEGORIA;
     for (const familia of CANONICAL_FAMILIES) {
-      const metaPadrao = getPerformancePortfolioTarget(c.categoria, familia);
-      const item = items.get(familia);
-      const origem = (ORIGENS as readonly string[]).includes(item?.origem ?? "")
-        ? (item!.origem as MetaOrigem)
-        : "padrao";
+      const padraoMensal = getPerformancePortfolioTarget(c.categoria, familia);
+      let metaAtual: number | null = null;
+      let origem: MetaOrigem = "padrao";
+      // Meses em ordem decrescente: a origem exibida é a do mês personalizado mais recente.
+      for (const m of [...months].sort().reverse()) {
+        const saved = savedGoalForMonth(b, familia, m);
+        const v = saved ? saved.meta : padraoMensal;
+        if (v != null) metaAtual = (metaAtual ?? 0) + v;
+        if (saved && origem === "padrao" && saved.origem !== "padrao") origem = saved.origem;
+      }
       const bv = base[familia] ?? null;
       facts.push({
         rowId: c.id,
@@ -109,10 +189,10 @@ export function buildMetasBiFacts(
         uf,
         categoria,
         familia,
-        metaAtual: item ? num(item.meta_mensal) : metaPadrao,
-        metaPadrao,
+        metaAtual,
+        metaPadrao: padraoMensal == null ? null : padraoMensal * n,
         origem,
-        realizado: bv?.valor ?? null,
+        realizado: bv == null ? null : bv.valor * n,
         fonte: bv?.fonte ?? null,
       });
     }

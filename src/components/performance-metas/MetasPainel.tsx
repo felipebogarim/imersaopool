@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link2, Loader2, Mail, RotateCcw, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -126,6 +127,7 @@ export function MetasPainel({
   );
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
   const [gerandoIa, setGerandoIa] = useState(false);
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
   const [vinculoOpen, setVinculoOpen] = useState(false);
@@ -214,6 +216,8 @@ export function MetasPainel({
       setGoals(res.state);
       setDrafts((prev) => mergeSaved(prev, hydrated, role));
       setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
+      // BI Metas: a "meta atual" reflete a edição na próxima visualização.
+      void queryClient.invalidateQueries({ queryKey: ["performance-metas", "bi"] });
       toast.success(`${unsaved.length} portfólio(s) salvo(s).`, {
         description: `Valendo a partir de ${competencia.slice(5, 7)}/${competencia.slice(0, 4)}.`,
       });

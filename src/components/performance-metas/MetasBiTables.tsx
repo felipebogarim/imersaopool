@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, FAROL_HEX, statusFromRatio } from "@/lib/performance-farol";
 import { METAS_FAMILIES, METAS_FAMILY_LABEL, fmtBRL, fmtPct } from "@/lib/performance-metas";
 import type { CanonicalFamily } from "@/lib/client-bi-familias";
 import type { MetasBiAggregate, MetasBiDimension } from "@/lib/performance-metas-bi";
@@ -169,14 +169,12 @@ function CheckBox({ state }: { state: "on" | "off" | "partial" }) {
 
 export function BreakdownTable({
   rows,
-  total,
   dimension,
   active,
   onToggle,
   limit,
 }: {
   rows: MetasBiAggregate[];
-  total: number;
   dimension: MetasBiDimension;
   /** Chaves filtradas nesta dimensão (destacadas). */
   active: string[];
@@ -184,7 +182,6 @@ export function BreakdownTable({
   limit?: number;
 }) {
   const [all, setAll] = useState(false);
-  const max = Math.max(1, ...rows.map((r) => r.metaAtual));
   const shown = limit && !all ? rows.slice(0, limit) : rows;
   return (
     <div>
@@ -192,9 +189,9 @@ export function BreakdownTable({
         <thead>
           <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="py-2 pr-2 text-left font-medium">{labelFor(dimension)}</th>
-            <th className="px-2 py-2 text-right font-medium">Clientes</th>
+            <th className="px-2 py-2 text-right font-medium">Meta original</th>
             <th className="px-2 py-2 text-left font-medium">Meta atual</th>
-            <th className="px-2 py-2 text-right font-medium">Dif. padrão</th>
+            <th className="px-2 py-2 text-right font-medium">Dif. original</th>
             <th className="py-2 pl-2 text-right font-medium">Ating.</th>
           </tr>
         </thead>
@@ -233,26 +230,11 @@ export function BreakdownTable({
                   )}
                 </td>
                 <td className="px-2 py-2 text-right text-xs tabular-nums text-muted-foreground">
-                  {r.clientes}
-                  {r.personalizados > 0 && (
-                    <span className="ml-1 text-[10px]" title="Com meta personalizada">
-                      ({r.personalizados})
-                    </span>
-                  )}
+                  {fmtBRL(r.metaPadrao)}
                 </td>
                 <td className="min-w-[160px] px-2 py-2">
-                  <div className="flex items-baseline justify-between gap-2 tabular-nums">
-                    <span className="font-semibold">{fmtBRL(r.metaAtual)}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {total > 0 ? fmtPct(r.metaAtual / total) : "—"}
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-muted">
-                    <div
-                      className="h-1.5 rounded-full bg-primary/70"
-                      style={{ width: `${(r.metaAtual / max) * 100}%` }}
-                    />
-                  </div>
+                  <span className="font-semibold tabular-nums">{fmtBRL(r.metaAtual)}</span>
+                  <AtingBar ratio={r.atingimento} />
                 </td>
                 <td
                   className={cn(
@@ -284,6 +266,22 @@ export function BreakdownTable({
         >
           {all ? "Mostrar menos" : `Mostrar todos (${rows.length})`}
         </button>
+      )}
+    </div>
+  );
+}
+
+/** Preenchimento = atingimento (limitado a 100%), na cor do farol. */
+function AtingBar({ ratio }: { ratio: number | null }) {
+  const status = statusFromRatio(ratio);
+  const width = ratio == null ? 0 : Math.max(0, Math.min(1, ratio)) * 100;
+  return (
+    <div className="mt-1 h-1.5 rounded-full bg-muted" title={fmtPct(ratio)}>
+      {status && width > 0 && (
+        <div
+          className="h-1.5 rounded-full"
+          style={{ width: `${width}%`, backgroundColor: `#${FAROL_HEX[status]}` }}
+        />
       )}
     </div>
   );

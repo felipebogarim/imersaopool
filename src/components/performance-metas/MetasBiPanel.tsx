@@ -20,7 +20,12 @@ import {
   aggregateMetasBi,
   applyMetasBiFilters,
   buildMetasBiFacts,
+  currentMonthKey,
   dimensionOptions,
+  monthKey,
+  monthShortLabel,
+  periodLabel,
+  yearMonths,
   matrixMetasBi,
   totalMetasBi,
   type MetasBiDimension,
@@ -58,6 +63,8 @@ const BREAKDOWN_DIMS: MetasBiDimension[] = [
 const MATRIX_DIMS = ["regiao", "uf", "representante", "categoria", "origem"] as const;
 type MatrixDim = (typeof MATRIX_DIMS)[number];
 
+const CATEGORIA_ORDEM = ["Black", "Gold", "Silver"];
+
 const SORT_LABEL: Record<MetasBiSort, string> = {
   metaAtual: "Maior meta",
   atingimento: "Maior atingimento",
@@ -72,7 +79,6 @@ export function MetasBiPanel() {
   const { data: bi, isLoading: loadingBi } = useQuery({
     queryKey: ["performance-metas", "bi", rowIds],
     enabled: rowIds.length > 0,
-    staleTime: 60_000,
     queryFn: () => getMetasBi({ data: { rowIds } }),
   });
 
@@ -82,12 +88,44 @@ export function MetasBiPanel() {
   const [matrixDim, setMatrixDim] = useState<MatrixDim>("representante");
   const [metric, setMetric] = useState<MatrixMetric>("meta");
 
-  const allFacts = useMemo(() => buildMetasBiFacts(rows, bi?.available ? bi.rows : []), [rows, bi]);
+  // Período: ano inteiro ou meses escolhidos (soma das metas mensais).
+  const thisYear = new Date().getFullYear();
+  const [mode, setMode] = useState<"mes" | "ano">("mes");
+  const [year, setYear] = useState(thisYear);
+  const [months, setMonths] = useState<string[]>(() => [currentMonthKey()]);
+  const periodMonths = useMemo(
+    () => (mode === "ano" ? yearMonths(year) : months),
+    [mode, year, months],
+  );
+  const changeYear = (y: number) => {
+    setYear(y);
+    // Mantém os mesmos meses no novo ano.
+    setMonths((ms) => ms.map((m) => monthKey(y, Number(m.slice(5, 7)))));
+  };
+  const monthOptions = useMemo(
+    () => yearMonths(year).map((key) => ({ key, label: monthShortLabel(key) })),
+    [year],
+  );
+
+  const allFacts = useMemo(
+    () => buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths),
+    [rows, bi, periodMonths],
+  );
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
   const porFamilia = useMemo(() => aggregateMetasBi(facts, "familia"), [facts]);
   const porDim = useMemo(() => aggregateMetasBi(facts, dim, sort), [facts, dim, sort]);
   const matrix = useMemo(() => matrixMetasBi(facts, matrixDim, sort), [facts, matrixDim, sort]);
+  const porCategoria = useMemo(
+    () =>
+      aggregateMetasBi(facts, "categoria", "label").sort((a, b) => {
+        const ia = CATEGORIA_ORDEM.indexOf(a.key);
+        const ib = CATEGORIA_ORDEM.indexOf(b.key);
+        if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        return b.clientes - a.clientes;
+      }),
+    [facts],
+  );
   const options = useMemo(
     () => Object.fromEntries(FILTER_DIMS.map((d) => [d, dimensionOptions(allFacts, d)])),
     [allFacts],
@@ -138,9 +176,44 @@ export function MetasBiPanel() {
             onChange={(v) => setFilter(d, v)}
           />
         ))}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex rounded-md border border-border p-0.5">
+            {(
+              [
+                ["mes", "Mês"],
+                ["ano", "Ano"],
+              ] as const
+            ).map(([m, l]) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={cn(
+                  "rounded px-2.5 py-1 text-xs",
+                  mode === m
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <InlineSelect
+            value={String(year)}
+            onChange={(v) => changeYear(Number(v))}
+            options={[thisYear - 1, thisYear, thisYear + 1].map((y) => [String(y), String(y)])}
+          />
+          {mode === "mes" && (
+            <MultiFilter
+              label={months.length === 1 ? monthShortLabel(months[0]) : "Meses"}
+              options={monthOptions}
+              value={months}
+              onChange={(v) => setMonths([...v].sort())}
+            />
+          )}
+        </div>
         {activeChips.length > 0 && (
-          <>
-            <div className="mx-1 h-6 w-px bg-border" />
+          <div className="flex w-full flex-wrap items-center gap-2 border-t border-border/50 pt-2">
             {activeChips.map((c) => (
               <button
                 key={`${c.d}|${c.k}`}
@@ -157,24 +230,25 @@ export function MetasBiPanel() {
             >
               Limpar filtros
             </button>
-          </>
+          </div>
         )}
       </div>
 
       {/* KPIs */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi
-          label="Meta mensal atual"
-          hint="Metas vigentes; padrão da categoria onde não há meta salva"
+          label="Meta atual"
+          hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
         >
           <p className="text-2xl font-semibold tabular-nums">{fmtBRL(total.metaAtual)}</p>
+          <p className="text-[11px] text-muted-foreground">{periodLabel(periodMonths, year)}</p>
         </Kpi>
-        <Kpi label="Meta padrão" hint="Matriz por categoria (Black/Gold/Silver)">
+        <Kpi label="Meta original" hint="Meta padrão da categoria (Black/Gold/Silver), fixa">
           <p className="text-xl font-medium tabular-nums text-muted-foreground">
             {fmtBRL(total.metaPadrao)}
           </p>
         </Kpi>
-        <Kpi label="Diferença vs. padrão">
+        <Kpi label="Diferença vs. original">
           <p className={cn("text-xl font-semibold tabular-nums", diffClass(total.diferenca))}>
             {fmtSignedShort(total.diferenca)}
           </p>
@@ -186,6 +260,7 @@ export function MetasBiPanel() {
           <AtingCell agg={total} className="px-2 py-1 text-xl" />
           <p className="mt-1 text-[11px] text-muted-foreground">
             Base {fmtBRL(total.realizado)} de {fmtBRL(total.metaComBase)}
+            {periodMonths.length > 1 && " · base mensal × meses"}
           </p>
         </Kpi>
         <Kpi label="Clientes">
@@ -193,6 +268,16 @@ export function MetasBiPanel() {
           <p className="text-[11px] text-muted-foreground">
             {total.personalizados} com meta personalizada
           </p>
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-border/50 pt-2 text-[11px]">
+            {porCategoria.map((c) => (
+              <div key={c.key} className="flex justify-between gap-2">
+                <span className="truncate text-muted-foreground" title={c.label}>
+                  {c.label}
+                </span>
+                <span className="font-medium tabular-nums">{c.clientes}</span>
+              </div>
+            ))}
+          </div>
         </Kpi>
       </div>
 
@@ -201,7 +286,6 @@ export function MetasBiPanel() {
         <Card title="Por portfólio">
           <BreakdownTable
             rows={porFamilia}
-            total={total.metaAtual}
             dimension="familia"
             active={filters.familia ?? []}
             onToggle={(k) => toggleFilter("familia", k)}
@@ -227,7 +311,6 @@ export function MetasBiPanel() {
         >
           <BreakdownTable
             rows={porDim}
-            total={total.metaAtual}
             dimension={dim}
             active={filters[dim] ?? []}
             onToggle={(k) => toggleFilter(dim, k)}
@@ -251,7 +334,7 @@ export function MetasBiPanel() {
                 [
                   ["meta", "Meta atual"],
                   ["atingimento", "Atingimento"],
-                  ["diferenca", "Dif. padrão"],
+                  ["diferenca", "Dif. original"],
                 ] as Array<[MatrixMetric, string]>
               ).map(([m, l]) => (
                 <button
@@ -275,9 +358,11 @@ export function MetasBiPanel() {
       </Card>
 
       <p className="text-[11px] text-muted-foreground">
-        Meta atual = meta vigente salva no ciclo do cliente; sem meta salva, vale a meta padrão da
-        categoria. Atingimento = base vendida ÷ meta atual (* inclui média histórica ou estimativa
-        onde não há venda realizada). Região: cadastro do cliente, senão a do representante.
+        Meta original = meta padrão da categoria (fixa). Meta atual = metas salvas pelo gestor mês a
+        mês (atualiza ao salvar); sem meta salva no mês, vale a original. Em períodos de vários
+        meses, as metas são somadas e a base vendida mensal é multiplicada pelo nº de meses.
+        Atingimento = base vendida ÷ meta atual (* inclui média histórica ou estimativa onde não há
+        venda realizada). Região: cadastro do cliente, senão a do representante.
       </p>
     </div>
   );
