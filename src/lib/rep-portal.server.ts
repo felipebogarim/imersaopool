@@ -9,6 +9,7 @@ import {
   type ActionStatus,
 } from "@/lib/action-tracking";
 import { listActionsForRep, notifySubmission, sendSystemEmail } from "@/lib/action-tracking.server";
+import { needsRepFirstAccess } from "@/lib/rep-first-access";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const admin = supabaseAdmin as any;
@@ -303,13 +304,20 @@ async function ensureRepUser(
     .toLowerCase();
   if (!email) throw new Error("Cadastre o e-mail do representante primeiro.");
   if (rep.user_id) {
-    // Acesso criado, mas senha ainda não cadastrada: reenvia o link de primeiro acesso.
-    const { data: prof } = await admin
-      .from("profiles")
-      .select("status")
-      .eq("id", rep.user_id)
-      .maybeSingle();
-    const pendente = prof?.status === "pendente";
+    // Além do status do perfil, cobre contas legadas marcadas como ativas pelo trigger padrão,
+    // mas que ainda nunca cadastraram senha nem entraram no portal.
+    const [{ data: prof, error: profErr }, { data: authData, error: authErr }] = await Promise.all([
+      admin.from("profiles").select("status").eq("id", rep.user_id).maybeSingle(),
+      admin.auth.admin.getUserById(rep.user_id),
+    ]);
+    if (profErr || authErr || !authData?.user) {
+      throw new Error("Não foi possível verificar o acesso do representante.");
+    }
+    const pendente = needsRepFirstAccess({
+      profileStatus: prof?.status,
+      mustChangePassword: authData.user.user_metadata?.must_change_password,
+      lastSignInAt: authData.user.last_sign_in_at,
+    });
     return {
       uid: rep.user_id,
       email,
@@ -322,7 +330,7 @@ async function ensureRepUser(
   const { data: u, error } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
-    user_metadata: { full_name: rep.nome },
+    user_metadata: { full_name: rep.nome, must_change_password: true },
   });
   if (error) {
     if (/already|registered|exists/i.test(error.message))
@@ -403,7 +411,7 @@ export async function inviteRepToMetasRow(
     },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
-  return { email: user.email, primeiroAcesso: user.created };
+  return { email: user.email, primeiroAcesso: Boolean(user.senhaUrl) };
 }
 
 export type RepMetasRow = { rowId: string; cliente: string; periodo: string | null };
