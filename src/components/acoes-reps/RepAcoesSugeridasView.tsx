@@ -8,8 +8,11 @@ import {
   CalendarPlus,
   CheckCircle2,
   Clock,
+  Eye,
+  FileText,
   Filter,
   Loader2,
+  Paperclip,
   Search,
   Sparkles,
   X,
@@ -20,6 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   ACTION_STATUS_LABEL,
@@ -43,6 +54,7 @@ export function RepAcoesSugeridasView({
   const [filterMode, setFilterMode] = useState<"pendentes" | "todas" | "recusadas">("pendentes");
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [declineNote, setDeclineNote] = useState("");
+  const [selectedDetailAction, setSelectedDetailAction] = useState<PortalAction | null>(null);
 
   const respondMutation = useMutation({
     mutationFn: (v: { cardId: string; decision: "aceita" | "recusada"; note?: string }) =>
@@ -50,6 +62,7 @@ export function RepAcoesSugeridasView({
     onSuccess: (_, vars) => {
       setDecliningId(null);
       setDeclineNote("");
+      setSelectedDetailAction(null);
       void qc.invalidateQueries({ queryKey: ["rep-portal"] });
       if (vars.decision === "aceita") {
         toast.success("Sugestão aceita! Ação agendada no seu Calendário de Ações.");
@@ -96,9 +109,9 @@ export function RepAcoesSugeridasView({
             <div>
               <h2 className="text-base font-bold text-foreground">Ações Sugeridas pela Gestão</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Avalie as propostas desenhadas para a sua carteira. Ao clicar em{" "}
-                <strong className="text-foreground">Aceitar Sugestão</strong>, a ação é
-                automaticamente agendada no seu <strong>Calendário de Ações</strong>.
+                Avalie as propostas desenhadas para a sua carteira. Clique no card para ver todos os detalhes
+                ou clique diretamente em <strong className="text-foreground">Aceitar sugestão</strong> para
+                agendar no seu <strong>Calendário de Ações</strong>.
               </p>
             </div>
           </div>
@@ -206,9 +219,14 @@ export function RepAcoesSugeridasView({
                   isPending && "border-primary/25 hover:border-primary/60",
                 )}
               >
-                <div>
+                {/* Área Clicável para abrir Detalhes */}
+                <div
+                  onClick={() => setSelectedDetailAction(action)}
+                  className="cursor-pointer space-y-2 select-none"
+                  title="Clique para ver todos os detalhes desta ação"
+                >
                   {/* Topo do card: badges */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center justify-between gap-2">
                     <Badge
                       variant="outline"
                       className="max-w-[170px] truncate text-[11px] font-semibold bg-muted/50"
@@ -232,12 +250,15 @@ export function RepAcoesSugeridasView({
                   </div>
 
                   {/* Título da ação */}
-                  <h3 className="text-sm font-bold text-foreground leading-snug tracking-tight">
-                    {action.title}
-                  </h3>
+                  <div className="group-hover:text-primary transition-colors flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-bold text-foreground leading-snug tracking-tight">
+                      {action.title}
+                    </h3>
+                    <Eye className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+                  </div>
 
                   {/* Prazo */}
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <CalendarClock
                       className={cn(
                         "h-3.5 w-3.5 shrink-0",
@@ -257,21 +278,23 @@ export function RepAcoesSugeridasView({
                     </span>
                   </div>
 
-                  {/* Última atualização / instrução da equipe */}
-                  {action.updates && action.updates.length > 0 && (
-                    <div className="mt-3 rounded-lg bg-muted/40 p-2.5 text-xs text-muted-foreground border border-border/50">
-                      <p className="line-clamp-2 italic">
-                        "{action.updates[0].note || "Sem observações adicionais."}"
-                      </p>
-                      <span className="mt-1 block text-[10px] text-muted-foreground/80">
-                        {action.updates[0].author || "Gestão"}
-                      </span>
-                    </div>
+                  {/* Prévia da Descrição se houver */}
+                  {action.description && (
+                    <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed pt-1">
+                      {action.description}
+                    </p>
                   )}
+
+                  {/* Botão de Ver Detalhes */}
+                  <div className="pt-1">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline">
+                      <FileText className="h-3 w-3" /> Ver todos os detalhes
+                    </span>
+                  </div>
                 </div>
 
                 {/* Rodapé interativo do card */}
-                <div className="mt-5 border-t pt-3">
+                <div className="mt-4 border-t pt-3">
                   {isDecliningThis ? (
                     <div className="space-y-2">
                       <Textarea
@@ -319,12 +342,13 @@ export function RepAcoesSugeridasView({
                       <Button
                         size="sm"
                         disabled={respondMutation.isPending}
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           respondMutation.mutate({
                             cardId: action.id,
                             decision: "aceita",
                           })
-                        }
+                        }}
                         className="h-9 flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer transition-transform active:scale-[0.98]"
                       >
                         {respondMutation.isPending ? (
@@ -338,7 +362,8 @@ export function RepAcoesSugeridasView({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setDecliningId(action.id);
                           setDeclineNote("");
                         }}
@@ -368,12 +393,13 @@ export function RepAcoesSugeridasView({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           respondMutation.mutate({
                             cardId: action.id,
                             decision: "aceita",
-                          })
-                        }
+                          });
+                        }}
                         className="h-7 text-xs text-primary font-medium hover:underline"
                       >
                         Reconsiderar e aceitar
@@ -386,6 +412,232 @@ export function RepAcoesSugeridasView({
           })}
         </div>
       )}
+
+      {/* DIÁLOGO COM TODOS OS DETALHES DO CARD */}
+      {selectedDetailAction && (
+        <AcaoSugeridaDetailDialog
+          action={selectedDetailAction}
+          open={!!selectedDetailAction}
+          onClose={() => setSelectedDetailAction(null)}
+          onAccept={() =>
+            respondMutation.mutate({
+              cardId: selectedDetailAction.id,
+              decision: "aceita",
+            })
+          }
+          onDecline={(note) =>
+            respondMutation.mutate({
+              cardId: selectedDetailAction.id,
+              decision: "recusada",
+              note,
+            })
+          }
+          isPending={respondMutation.isPending}
+          onNavigateToCalendar={onNavigateToCalendar}
+        />
+      )}
     </div>
+  );
+}
+
+function AcaoSugeridaDetailDialog({
+  action,
+  open,
+  onClose,
+  onAccept,
+  onDecline,
+  isPending,
+  onNavigateToCalendar,
+}: {
+  action: PortalAction;
+  open: boolean;
+  onClose: () => void;
+  onAccept: () => void;
+  onDecline: (note?: string) => void;
+  isPending: boolean;
+  onNavigateToCalendar: () => void;
+}) {
+  const [declining, setDeclining] = useState(false);
+  const [note, setNote] = useState("");
+
+  const d = daysUntil(action.due_date);
+  const isAccepted = action.acceptance === "aceita";
+  const isDeclined = action.acceptance === "recusada";
+  const isPendingAcceptance = !isAccepted && !isDeclined;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-xl max-h-[88vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <Badge variant="outline" className="text-xs font-semibold bg-muted/40">
+              {action.client || "Cliente Geral"}
+            </Badge>
+            {isAccepted ? (
+              <Badge className="bg-emerald-600 text-white text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Ação Aceita (No Calendário)
+              </Badge>
+            ) : isDeclined ? (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <XCircle className="h-3 w-3" /> Sugestão Recusada
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-500 text-white text-xs gap-1 shadow-xs">
+                <Sparkles className="h-3 w-3" /> Sugestão Pendente
+              </Badge>
+            )}
+          </div>
+          <DialogTitle className="text-lg font-bold leading-tight text-foreground">
+            {action.title}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+            <CalendarClock className="h-3.5 w-3.5 text-primary" />
+            Prazo limite:{" "}
+            <strong className="text-foreground">
+              {action.due_date ? formatPrazo(action.due_date) : "Sem data limite"}
+            </strong>
+            {d !== null && (
+              <span className={cn(d < 0 ? "text-destructive font-semibold" : "text-muted-foreground")}>
+                ({d < 0 ? `atrasada há ${Math.abs(d)} dia(s)` : d === 0 ? "vence hoje" : `em ${d} dia(s)`})
+              </span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-3">
+          {/* Descrição Completa da Ação */}
+          <div className="space-y-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Descrição e Objetivo da Ação
+            </h4>
+            <div className="rounded-lg border bg-muted/30 p-3.5 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+              {action.description ? (
+                action.description
+              ) : (
+                <span className="italic text-muted-foreground text-xs">
+                  Nenhuma descrição detalhada cadastrada para esta ação.
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Histórico de Andamentos e Instruções da Equipe */}
+          {action.updates && action.updates.length > 0 && (
+            <div className="space-y-2 border-t pt-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Instruções da Equipe & Histórico ({action.updates.length})
+              </h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {action.updates.map((u) => (
+                  <div key={u.id} className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="font-bold text-foreground">
+                        {u.author || "Equipe de Gestão"}
+                      </span>
+                      <span>{new Date(u.created_at).toLocaleString("pt-BR")}</span>
+                    </div>
+                    {u.status && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Status: {ACTION_STATUS_LABEL[u.status]}
+                      </Badge>
+                    )}
+                    {u.note && <p className="text-foreground/90 leading-relaxed">{u.note}</p>}
+                    {u.files && u.files.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {u.files.map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.url ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-[10px] text-primary hover:underline border shadow-2xs"
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {file.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Área de Recusa */}
+          {declining && (
+            <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs">
+              <p className="font-semibold text-foreground">Explique o motivo da recusa (opcional):</p>
+              <Textarea
+                placeholder="Ex.: Cliente em negociação prévia, ação inviável neste trimestre…"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="text-xs min-h-[60px]"
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={isPending}
+                  onClick={() => onDecline(note)}
+                  className="h-8 text-xs font-semibold"
+                >
+                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar recusa"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setDeclining(false)} className="h-8 text-xs">
+                  Voltar
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2 border-t pt-3">
+          <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+            Fechar
+          </Button>
+
+          {isPendingAcceptance && !declining && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setDeclining(true)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Recusar
+              </Button>
+              <Button
+                size="sm"
+                disabled={isPending}
+                onClick={onAccept}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex-1 sm:flex-none shadow-sm cursor-pointer"
+              >
+                {isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CalendarPlus className="h-4 w-4" />
+                )}
+                Aceitar sugestão & Agendar
+              </Button>
+            </div>
+          )}
+
+          {isAccepted && (
+            <Button
+              size="sm"
+              onClick={() => {
+                onClose();
+                onNavigateToCalendar();
+              }}
+              className="text-xs font-semibold gap-1.5"
+            >
+              <CalendarCheck className="h-3.5 w-3.5" />
+              Abrir no Calendário de Ações
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

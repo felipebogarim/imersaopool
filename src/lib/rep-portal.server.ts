@@ -60,6 +60,7 @@ export type PortalExtension = {
 export type PortalAction = {
   id: string;
   title: string;
+  description?: string | null;
   client?: string;
   due_date: string | null;
   status: ActionStatus;
@@ -82,7 +83,6 @@ export async function loadPortal(rep: PortalRep): Promise<PortalAction[]> {
       .from("kanban_action_updates")
       .select("id, card_id, author_name, status, note, created_at")
       .in("card_id", ids)
-      .eq("source", "representante")
       .order("created_at", { ascending: false })
       .limit(500),
     admin
@@ -110,6 +110,7 @@ export async function loadPortal(rep: PortalRep): Promise<PortalAction[]> {
   return actions.map((a) => ({
     id: a.id,
     title: a.title,
+    description: a.description ?? null,
     client: readActionMeta(a.metadata).client_name,
     due_date: a.due_date,
     status: a.status,

@@ -120,6 +120,7 @@ export async function sendSystemEmail(args: {
 export type OpenAction = {
   id: string;
   title: string;
+  description?: string | null;
   due_date: string | null;
   board_id: string;
   status: ActionStatus;
@@ -131,7 +132,7 @@ export type OpenAction = {
 export async function listActionsForRep(repId: string, opts?: { includeDone?: boolean }) {
   const { data: cards, error } = await admin
     .from("kanban_cards")
-    .select("id, title, due_date, board_id, metadata")
+    .select("id, title, description, due_date, board_id, metadata")
     .filter("metadata->>rep_id", "eq", repId)
     .is("archived_at", null)
     .order("due_date", { ascending: true, nullsFirst: false });

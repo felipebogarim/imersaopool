@@ -61,11 +61,7 @@ import {
   formatPrazo,
   type ActionStatus,
 } from "@/lib/action-tracking";
-import {
-  repCreateUpload,
-  repRequestExtension,
-  repSubmitUpdate,
-} from "@/lib/rep-portal.functions";
+import { repCreateUpload, repRequestExtension, repSubmitUpdate } from "@/lib/rep-portal.functions";
 import type { PortalAction } from "@/lib/rep-portal.server";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -95,8 +91,7 @@ export function RepAcoesCalendarioView({
       if (!q.trim()) return true;
       const query = q.toLowerCase();
       return (
-        a.title.toLowerCase().includes(query) ||
-        (a.client || "").toLowerCase().includes(query)
+        a.title.toLowerCase().includes(query) || (a.client || "").toLowerCase().includes(query)
       );
     });
   }, [acceptedActions, q]);
@@ -170,7 +165,9 @@ export function RepAcoesCalendarioView({
               <CalendarCheck className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">Calendário de Ações da Carteira</h2>
+              <h2 className="text-base font-bold text-foreground">
+                Calendário de Ações da Carteira
+              </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Cronograma de ações aceitas. Acompanhe prazos de entrega, anexe evidências e
                 atualize o status diretamente em cada compromisso.
@@ -314,7 +311,8 @@ export function RepAcoesCalendarioView({
                   className={cn(
                     "min-h-[110px] p-1.5 transition-colors flex flex-col justify-between",
                     !isCurrMonth && "bg-muted/15 text-muted-foreground/60",
-                    isCurrentDay && "bg-blue-50/40 dark:bg-blue-950/20 ring-1 ring-inset ring-primary/30",
+                    isCurrentDay &&
+                      "bg-blue-50/40 dark:bg-blue-950/20 ring-1 ring-inset ring-primary/30",
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -351,9 +349,13 @@ export function RepAcoesCalendarioView({
                           onClick={() => setSelectedAction(action)}
                           className={cn(
                             "w-full text-left truncate rounded px-1.5 py-1 text-[11px] font-semibold transition-all shadow-2xs border cursor-pointer",
-                            isDone && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25",
-                            isLate && "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 hover:bg-rose-500/25",
-                            !isDone && !isLate && "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 hover:bg-blue-500/25",
+                            isDone &&
+                              "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25",
+                            isLate &&
+                              "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30 hover:bg-rose-500/25",
+                            !isDone &&
+                              !isLate &&
+                              "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30 hover:bg-blue-500/25",
                           )}
                           title={`${action.client ? `${action.client} · ` : ""}${action.title}`}
                         >
@@ -395,7 +397,8 @@ export function RepAcoesCalendarioView({
           {groupedList.estaSemana.length > 0 && (
             <div className="space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400">
-                <Clock className="h-4 w-4" /> Vencem nos próximos 7 dias ({groupedList.estaSemana.length})
+                <Clock className="h-4 w-4" /> Vencem nos próximos 7 dias (
+                {groupedList.estaSemana.length})
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {groupedList.estaSemana.map((action) => (
@@ -413,7 +416,8 @@ export function RepAcoesCalendarioView({
           {groupedList.proximas.length > 0 && (
             <div className="space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <CalendarIcon className="h-4 w-4 text-primary" /> Próximas Semanas ({groupedList.proximas.length})
+                <CalendarIcon className="h-4 w-4 text-primary" /> Próximas Semanas (
+                {groupedList.proximas.length})
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 {groupedList.proximas.map((action) => (
@@ -514,7 +518,12 @@ function ActionListItem({ action, onOpen }: { action: PortalAction; onOpen: () =
       </div>
 
       <div className="mt-4 flex items-center justify-end border-t pt-2.5">
-        <Button size="sm" variant="ghost" onClick={onOpen} className="h-8 text-xs font-semibold gap-1 text-primary">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onOpen}
+          className="h-8 text-xs font-semibold gap-1 text-primary"
+        >
           Atualizar Andamento & Evidências →
         </Button>
       </div>
@@ -627,9 +636,7 @@ function ActionDetailDialog({
               {ACTION_STATUS_LABEL[action.status]}
             </Badge>
           </div>
-          <DialogTitle className="text-base font-bold leading-tight">
-            {action.title}
-          </DialogTitle>
+          <DialogTitle className="text-base font-bold leading-tight">{action.title}</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2">
             <CalendarClock className="h-3.5 w-3.5" />
             Prazo: <strong>{formatPrazo(action.due_date)}</strong>
@@ -680,6 +687,7 @@ function ActionDetailDialog({
                 ref={fileRef}
                 type="file"
                 multiple
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                 className="hidden"
                 onChange={(e) => void handleAddFiles(e.target.files)}
               />
@@ -696,14 +704,17 @@ function ActionDetailDialog({
                 ) : (
                   <Paperclip className="h-3 w-3" />
                 )}
-                Anexar foto/arquivo
+                Anexar foto, vídeo ou áudio
               </Button>
             </div>
 
             {files.length > 0 && (
               <div className="space-y-1 rounded-lg border bg-muted/20 p-2 text-xs">
                 {files.map((f, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-muted-foreground">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-2 text-muted-foreground"
+                  >
                     <span className="truncate">{f.name}</span>
                     <button
                       type="button"
