@@ -173,9 +173,20 @@ BEGIN
   -- 1. Recupera a empresa oficial PoolFlux
   SELECT id INTO v_company_id
   FROM public.companies
-  WHERE (UPPER(TRIM(name)) LIKE '%POOLFLUX%' OR UPPER(TRIM(razao_social)) LIKE '%POOLFLUX%')
+  WHERE (
+    UPPER(TRIM(nome)) LIKE '%POOLFLUX%'
+    OR UPPER(TRIM(COALESCE(razao_social, ''))) LIKE '%POOLFLUX%'
+    OR UPPER(TRIM(COALESCE(slug, ''))) LIKE '%POOLFLUX%'
+  )
   ORDER BY created_at ASC
   LIMIT 1;
+
+  IF v_company_id IS NULL THEN
+    SELECT r.company_id INTO v_company_id
+    FROM public.representatives r
+    WHERE UPPER(TRIM(r.nome)) = 'REPRESENTANTE TESTE' AND r.company_id IS NOT NULL
+    LIMIT 1;
+  END IF;
 
   IF v_company_id IS NULL THEN
     SELECT id INTO v_company_id FROM public.companies ORDER BY created_at ASC LIMIT 1;
@@ -298,7 +309,7 @@ BEGIN
         v_c ->> 'cnpj', v_c ->> 'cnpj', v_c ->> 'codigo_erp',
         v_c ->> 'cidade', v_c ->> 'cidade', v_c ->> 'estado', COALESCE(v_rep.regiao, 'SP'),
         v_c ->> 'endereco', v_c ->> 'comprador', v_c ->> 'telefone', v_c ->> 'telefone',
-        v_c ->> 'email', (v_c ->> 'grupo')::public.client_group, (v_c ->> 'categoria')::public.client_category, 'ativo', v_rep.nome,
+        v_c ->> 'email', (v_c ->> 'grupo')::public.client_group, (v_c ->> 'categoria')::public.client_category, 'ativo'::public.client_status, v_rep.nome,
         v_c ->> 'info_comerciais',
         'Cliente fictício da carteira do REPRESENTANTE TESTE para homologação de Metas, BI e IA.'
       )
@@ -311,7 +322,7 @@ BEGIN
           nome_representante_erp = v_rep.nome,
           categoria = (v_c ->> 'categoria')::public.client_category,
           grupo = (v_c ->> 'grupo')::public.client_group,
-          status = 'ativo',
+          status = 'ativo'::public.client_status,
           updated_at = now()
       WHERE id = v_client_id;
     END IF;
@@ -375,7 +386,7 @@ BEGIN
       INSERT INTO public.immersions (
         company_id, client_id, representative_id, status, titulo, subject_type, data_visita, observacoes
       ) VALUES (
-        v_rep.company_id, v_client_id, v_rep.id, 'concluida', v_c ->> 'imersao_titulo', 'client',
+        v_rep.company_id, v_client_id, v_rep.id, 'concluida'::public.immersion_status, v_c ->> 'imersao_titulo', 'client',
         CURRENT_DATE - ((v_c ->> 'dias')::int * INTERVAL '1 day'), v_c ->> 'imersao_obs'
       )
       RETURNING id INTO v_immersion_id;
