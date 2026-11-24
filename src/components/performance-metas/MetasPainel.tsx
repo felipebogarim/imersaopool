@@ -204,7 +204,7 @@ export function MetasPainel({
       const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
       setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
       toast.success("Análise da IA registrada para as 7 famílias.", {
-        description: "A meta oficial não foi alterada. Use “Aplicar IA” ou “Usar IA” por família.",
+        description: "A meta oficial não foi alterada. Use “Aplicar IA” ou “Aceitar sugestão IA” por família.",
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a sugestão IA.");

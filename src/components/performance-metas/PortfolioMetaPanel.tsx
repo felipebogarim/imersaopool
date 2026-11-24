@@ -2,11 +2,22 @@
 // Seções: sugestão do representante | sugestão IA (só gestão) | meta do gestor,
 // sempre com valor e comentário em campos separados.
 
+import { useState } from "react";
 import { ClipboardCopy, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { CanonicalFamily } from "@/lib/client-bi-familias";
 import { FAROL_CELL_CLASS, FAROL_LABEL, statusFromRatio } from "@/lib/performance-farol";
@@ -68,6 +79,7 @@ export function PortfolioMetaPanel({
   swatches: string[];
   actions: PortfolioPanelActions;
 }) {
+  const [confirmIaOpen, setConfirmIaOpen] = useState(false);
   const ratio = point.performancePct == null ? null : point.performancePct / 100;
   const status = statusFromRatio(ratio);
   const diff =
@@ -279,8 +291,12 @@ export function PortfolioMetaPanel({
                 />
               </Field>
               <div className="flex flex-wrap gap-1.5">
-                <SmallAction icon={Sparkles} disabled={!draft.sugestaoIa} onClick={actions.usarIa}>
-                  Usar IA
+                <SmallAction
+                  icon={Sparkles}
+                  disabled={!draft.sugestaoIa}
+                  onClick={() => setConfirmIaOpen(true)}
+                >
+                  Aceitar sugestão IA
                 </SmallAction>
                 <SmallAction
                   icon={ClipboardCopy}
@@ -300,6 +316,32 @@ export function PortfolioMetaPanel({
                   <div className="ml-auto flex flex-wrap items-center gap-1.5">{saveBar}</div>
                 )}
               </div>
+
+              <AlertDialog open={confirmIaOpen} onOpenChange={setConfirmIaOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Aceitar sugestão da IA?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A meta do gestor para <strong>{METAS_FAMILY_LABEL[selected]}</strong> será
+                      alterada de acordo com a sugestão da IA
+                      {draft.sugestaoIa?.valor != null && (
+                        <> para <strong>{fmtBRL(draft.sugestaoIa.valor)}</strong></>
+                      )}
+                      . Deseja confirmar a alteração?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        actions.usarIa();
+                      }}
+                    >
+                      Aceitar sugestão
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </Section>
