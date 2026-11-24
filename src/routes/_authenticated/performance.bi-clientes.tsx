@@ -117,7 +117,12 @@ function BIClientesPage() {
 
   const filtered = useMemo(() => {
     return consolidated.filter((r) => {
-      const matchSearch = !search || r.razao_social?.toLowerCase().includes(search.toLowerCase());
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        r.razao_social?.toLowerCase().includes(q) ||
+        r.repName?.toLowerCase().includes(q) ||
+        (r.categoria && r.categoria.toLowerCase().includes(q));
       const matchRep = repFilter === "all" || r.repId === repFilter;
       
       const matchCategory = categoryFilter.length === 0 || (r.categoria && categoryFilter.includes(r.categoria));

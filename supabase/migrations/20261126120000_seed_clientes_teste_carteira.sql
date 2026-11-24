@@ -5,18 +5,20 @@
 -- - Valores financeiros só em performance_private.rep_row_values; meta por família = matriz da categoria.
 -- - Atingimento, farol e cor são derivados do realizado ÷ meta (faixas oficiais do farol).
 -- - Pacote de imersão completo (immersions, interviews, field_visit_inputs) para a sugestão IA do METAS.
--- - Idempotente: clientes localizados pela razão social; reexecutar atualiza em vez de duplicar.
+-- - Idempotente: clientes localizados pela razão social ou cnpj; reexecutar atualiza em vez de duplicar.
+-- - Razão social com prefixo "CLIENTE TESTE" para identificação clara em buscas e filtros no sistema.
 -- Perfis variados de propósito: excelente, ótimo, próximo, pode melhorar e abaixo da meta/sem compra.
 
 DO $$
 DECLARE
-  v_company_id CONSTANT UUID := 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid;
+  v_company_id UUID;
   v_familias CONSTANT TEXT[] := ARRAY['DECOR NEWLINE', 'DECOR STUDIO', 'SISTEMAS E MÓDULOS', 'PRO LED', 'PRO LAMP', 'PERFIL', 'FITAS E FONTES'];
   v_matrix CONSTANT JSONB := '{"Black":{"DECOR NEWLINE":8000,"DECOR STUDIO":6000,"SISTEMAS E MÓDULOS":10000,"PRO LED":3000,"PRO LAMP":4000,"PERFIL":7000,"FITAS E FONTES":3000},"Gold":{"DECOR NEWLINE":2500,"DECOR STUDIO":3000,"SISTEMAS E MÓDULOS":2500,"PRO LED":1500,"PRO LAMP":1500,"PERFIL":2000,"FITAS E FONTES":2000},"Silver":{"DECOR NEWLINE":1000,"DECOR STUDIO":1500,"SISTEMAS E MÓDULOS":1000,"PRO LED":500,"PRO LAMP":1000,"PERFIL":1000,"FITAS E FONTES":1000}}'::jsonb;
   v_clientes CONSTANT JSONB := $json$[
     {
-      "nome_fantasia": "LUMINAR DESIGN",
-      "razao_social": "LUMINAR DESIGN ILUMINACAO LTDA",
+      "nome_fantasia": "CLIENTE TESTE 02 - LUMINAR DESIGN",
+      "razao_social": "CLIENTE TESTE 02 - LUMINAR DESIGN LTDA",
+      "legacy_razao_social": "LUMINAR DESIGN ILUMINACAO LTDA",
       "cnpj": "00.000.000/0002-70",
       "codigo_erp": "CLI-TESTE-002",
       "cidade": "Campinas", "estado": "SP",
@@ -40,8 +42,9 @@ DECLARE
       "texto": "Cliente maduro, com espaço para recuperar PRO LAMP e crescer em PRO LED."
     },
     {
-      "nome_fantasia": "CASA & LUZ MATERIAIS",
-      "razao_social": "CASA E LUZ MATERIAIS ELETRICOS LTDA",
+      "nome_fantasia": "CLIENTE TESTE 03 - CASA & LUZ",
+      "razao_social": "CLIENTE TESTE 03 - CASA E LUZ MATERIAIS ELETRICOS LTDA",
+      "legacy_razao_social": "CASA E LUZ MATERIAIS ELETRICOS LTDA",
       "cnpj": "00.000.000/0003-51",
       "codigo_erp": "CLI-TESTE-003",
       "cidade": "Santos", "estado": "SP",
@@ -65,8 +68,9 @@ DECLARE
       "texto": "Candidato a upgrade de categoria; metas podem subir acima do padrão Silver."
     },
     {
-      "nome_fantasia": "ELETRO NORTE DISTRIBUIDORA",
-      "razao_social": "ELETRO NORTE DISTRIBUIDORA DE ILUMINACAO LTDA",
+      "nome_fantasia": "CLIENTE TESTE 04 - ELETRO NORTE",
+      "razao_social": "CLIENTE TESTE 04 - ELETRO NORTE DISTRIBUIDORA DE ILUMINACAO LTDA",
+      "legacy_razao_social": "ELETRO NORTE DISTRIBUIDORA DE ILUMINACAO LTDA",
       "cnpj": "00.000.000/0004-32",
       "codigo_erp": "CLI-TESTE-004",
       "cidade": "Ribeirão Preto", "estado": "SP",
@@ -90,8 +94,9 @@ DECLARE
       "texto": "Cliente com potencial técnico; metas decorativas precisam de rampa."
     },
     {
-      "nome_fantasia": "ARQLUX PROJETOS",
-      "razao_social": "ARQLUX PROJETOS LUMINOTECNICOS LTDA",
+      "nome_fantasia": "CLIENTE TESTE 05 - ARQLUX PROJETOS",
+      "razao_social": "CLIENTE TESTE 05 - ARQLUX PROJETOS LUMINOTECNICOS LTDA",
+      "legacy_razao_social": "ARQLUX PROJETOS LUMINOTECNICOS LTDA",
       "cnpj": "00.000.000/0005-13",
       "codigo_erp": "CLI-TESTE-005",
       "cidade": "São Paulo", "estado": "SP",
@@ -115,14 +120,15 @@ DECLARE
       "texto": "Cliente estratégico de especificação; potencial claro em Fitas e Fontes."
     },
     {
-      "nome_fantasia": "CONSTRUFORTE HOME CENTER",
-      "razao_social": "CONSTRUFORTE HOME CENTER LTDA",
+      "nome_fantasia": "CLIENTE TESTE 06 - CONSTRUFORTE",
+      "razao_social": "CLIENTE TESTE 06 - CONSTRUFORTE HOME CENTER LTDA",
+      "legacy_razao_social": "CONSTRUFORTE HOME CENTER LTDA",
       "cnpj": "00.000.000/0006-02",
       "codigo_erp": "CLI-TESTE-006",
       "cidade": "Sorocaba", "estado": "SP",
       "endereco": "Av. Itavuvu, 3100 - Jardim Ipanema",
       "comprador": "Juliana Martins", "telefone": "(15) 98555-6677", "email": "juliana@construforte.com.br",
-      "grupo": "G3", "categoria": "Silver",
+      "grupo": "G2", "categoria": "Silver",
       "realizado": {"DECOR NEWLINE": 0, "DECOR STUDIO": 300, "SISTEMAS E MÓDULOS": 0, "PRO LED": 380, "PRO LAMP": 650, "PERFIL": 200, "FITAS E FONTES": 450},
       "observacao": "Cliente crítico: sem compra em DECOR NEWLINE e SISTEMAS E MÓDULOS, demais famílias abaixo da meta.",
       "info_comerciais": "Home center regional com foco em construção básica; iluminação é seção secundária.",
@@ -164,7 +170,22 @@ DECLARE
   v_immersion_id UUID;
   v_has_values BOOLEAN;
 BEGIN
-  -- 1. REPRESENTANTE TESTE (busca estrita; criado pela migration de seed anterior)
+  -- 1. Recupera a empresa oficial PoolFlux
+  SELECT id INTO v_company_id
+  FROM public.companies
+  WHERE (UPPER(TRIM(name)) LIKE '%POOLFLUX%' OR UPPER(TRIM(razao_social)) LIKE '%POOLFLUX%')
+  ORDER BY created_at ASC
+  LIMIT 1;
+
+  IF v_company_id IS NULL THEN
+    SELECT id INTO v_company_id FROM public.companies ORDER BY created_at ASC LIMIT 1;
+  END IF;
+
+  IF v_company_id IS NULL THEN
+    v_company_id := 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid;
+  END IF;
+
+  -- 2. REPRESENTANTE TESTE (busca estrita; criado pela migration de seed anterior)
   SELECT r.id, r.company_id, r.nome, r.regiao
   INTO v_rep
   FROM public.representatives r
@@ -180,7 +201,7 @@ BEGIN
     v_rep.company_id := v_company_id;
   END IF;
 
-  -- 2. Upload "2026 - YTD" do representante (o mesmo do CLIENTE TESTE)
+  -- 3. Upload "2026 - YTD" do representante (o mesmo do CLIENTE TESTE)
   SELECT id INTO v_upload_id
   FROM public.rep_performance_uploads
   WHERE representative_id = v_rep.id
@@ -209,7 +230,7 @@ BEGIN
   FOR v_c IN SELECT * FROM jsonb_array_elements(v_clientes) LOOP
     v_idx := v_idx + 1;
 
-    -- 3. Deriva metas, atingimento, farol e cor por família
+    -- 4. Deriva metas, atingimento, farol e cor por família
     v_metas := '{}'::jsonb; v_realizado := '{}'::jsonb; v_media := '{}'::jsonb;
     v_pct := '{}'::jsonb; v_status := '{}'::jsonb; v_cores := '{}'::jsonb;
     v_total_meta := 0; v_total_real := 0;
@@ -254,11 +275,16 @@ BEGIN
       ELSE 'excelente'
     END;
 
-    -- 4. Cliente
+    -- 5. Cliente (busca por razão social nova, legado, nome fantasia ou documento)
     SELECT id INTO v_client_id
     FROM public.clients
     WHERE company_id = v_rep.company_id
-      AND UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
+      AND (
+        UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
+        OR UPPER(TRIM(nome_fantasia)) = v_c ->> 'nome_fantasia'
+        OR (v_c ? 'legacy_razao_social' AND UPPER(TRIM(razao_social)) = v_c ->> 'legacy_razao_social')
+        OR documento = v_c ->> 'cnpj'
+      )
     ORDER BY created_at DESC
     LIMIT 1;
 
@@ -272,7 +298,7 @@ BEGIN
         v_c ->> 'cnpj', v_c ->> 'cnpj', v_c ->> 'codigo_erp',
         v_c ->> 'cidade', v_c ->> 'cidade', v_c ->> 'estado', COALESCE(v_rep.regiao, 'SP'),
         v_c ->> 'endereco', v_c ->> 'comprador', v_c ->> 'telefone', v_c ->> 'telefone',
-        v_c ->> 'email', v_c ->> 'grupo', v_c ->> 'categoria', 'ativo', v_rep.nome,
+        v_c ->> 'email', (v_c ->> 'grupo')::public.client_group, (v_c ->> 'categoria')::public.client_category, 'ativo', v_rep.nome,
         v_c ->> 'info_comerciais',
         'Cliente fictício da carteira do REPRESENTANTE TESTE para homologação de Metas, BI e IA.'
       )
@@ -280,19 +306,24 @@ BEGIN
     ELSE
       UPDATE public.clients
       SET representative_id = v_rep.id,
+          nome_fantasia = v_c ->> 'nome_fantasia',
+          razao_social = v_c ->> 'razao_social',
           nome_representante_erp = v_rep.nome,
-          categoria = v_c ->> 'categoria',
-          grupo = v_c ->> 'grupo',
+          categoria = (v_c ->> 'categoria')::public.client_category,
+          grupo = (v_c ->> 'grupo')::public.client_group,
           status = 'ativo',
           updated_at = now()
       WHERE id = v_client_id;
     END IF;
 
-    -- 5. Linha de performance no upload do representante
+    -- 6. Linha de performance no upload do representante
     SELECT id INTO v_row_id
     FROM public.rep_performance_rows
     WHERE upload_id = v_upload_id
-      AND UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
+      AND (
+        UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
+        OR (v_c ? 'legacy_razao_social' AND UPPER(TRIM(razao_social)) = v_c ->> 'legacy_razao_social')
+      )
     LIMIT 1;
 
     IF v_row_id IS NULL THEN
@@ -308,6 +339,7 @@ BEGIN
     ELSE
       UPDATE public.rep_performance_rows
       SET ordem = v_idx,
+          razao_social = v_c ->> 'razao_social',
           categoria = v_c ->> 'categoria',
           total_pct = v_total_ratio,
           total_pct_status = v_st,
@@ -319,7 +351,7 @@ BEGIN
       WHERE id = v_row_id;
     END IF;
 
-    -- 6. Valores financeiros (R$)
+    -- 7. Valores financeiros (R$)
     IF v_has_values THEN
       INSERT INTO performance_private.rep_row_values (row_id, upload_id, total_meta, metas, realizado, media)
       VALUES (v_row_id, v_upload_id, v_total_meta, v_metas, v_realizado, v_media)
@@ -332,7 +364,7 @@ BEGIN
           updated_at = now();
     END IF;
 
-    -- 7. Imersão
+    -- 8. Imersão
     SELECT id INTO v_immersion_id
     FROM public.immersions
     WHERE client_id = v_client_id AND representative_id = v_rep.id
@@ -349,7 +381,7 @@ BEGIN
       RETURNING id INTO v_immersion_id;
     END IF;
 
-    -- 8. Entrevista
+    -- 9. Entrevista
     IF NOT EXISTS (SELECT 1 FROM public.interviews WHERE immersion_id = v_immersion_id) THEN
       INSERT INTO public.interviews (
         company_id, client_id, immersion_id, empresa_nome, entrevistado_nome, entrevistador_nome,
@@ -360,9 +392,13 @@ BEGIN
         CURRENT_DATE - ((v_c ->> 'dias')::int * INTERVAL '1 day'),
         v_c ->> 'entrevista_obs', v_c -> 'respostas'
       );
+    ELSE
+      UPDATE public.interviews
+      SET empresa_nome = v_c ->> 'razao_social'
+      WHERE immersion_id = v_immersion_id;
     END IF;
 
-    -- 9. Notas de visita de campo
+    -- 10. Notas de visita de campo
     IF NOT EXISTS (SELECT 1 FROM public.field_visit_inputs WHERE immersion_id = v_immersion_id) THEN
       INSERT INTO public.field_visit_inputs (
         company_id, immersion_id, scope, oportunidades, observacoes_comerciais,
@@ -377,7 +413,7 @@ BEGIN
     RAISE NOTICE 'Cliente % | linha % | atingimento % (%)', v_c ->> 'nome_fantasia', v_row_id, v_total_ratio, v_st;
   END LOOP;
 
-  -- 10. Atingimento geral do upload = realizado total ÷ meta total de todas as linhas
+  -- 11. Atingimento geral do upload = realizado total ÷ meta total de todas as linhas
   IF v_has_values THEN
     UPDATE public.rep_performance_uploads u
     SET atingimento_geral = sub.ratio
