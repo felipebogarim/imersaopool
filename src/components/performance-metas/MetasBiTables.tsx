@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Minus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -74,6 +74,17 @@ export function MultiFilter({
   }, [options, q]);
   const toggle = (k: string) =>
     onChange(value.includes(k) ? value.filter((x) => x !== k) : [...value, k]);
+  // "Selecionar todos" age sobre as opções visíveis (respeita a busca).
+  const shownSelected = shown.filter((o) => value.includes(o.key)).length;
+  const allShown = shown.length > 0 && shownSelected === shown.length;
+  const toggleAll = () => {
+    const keys = new Set(shown.map((o) => o.key));
+    onChange(
+      allShown
+        ? value.filter((k) => !keys.has(k))
+        : [...value, ...shown.map((o) => o.key).filter((k) => !value.includes(k))],
+    );
+  };
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -101,27 +112,28 @@ export function MultiFilter({
             />
           </div>
         )}
+        {shown.length > 0 && (
+          <button
+            onClick={toggleAll}
+            className="mb-1 flex w-full items-center gap-2 rounded border-b border-border px-2 py-1.5 text-left text-xs font-medium hover:bg-muted"
+          >
+            <CheckBox state={allShown ? "on" : shownSelected > 0 ? "partial" : "off"} />
+            <span className="truncate">
+              {q.trim() ? `Selecionar todos os resultados (${shown.length})` : "Selecionar todos"}
+            </span>
+          </button>
+        )}
         <div className="max-h-64 space-y-0.5 overflow-y-auto">
-          {shown.map((o) => {
-            const on = value.includes(o.key);
-            return (
-              <button
-                key={o.key}
-                onClick={() => toggle(o.key)}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
-              >
-                <span
-                  className={cn(
-                    "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border",
-                    on ? "border-primary bg-primary text-primary-foreground" : "border-border",
-                  )}
-                >
-                  {on && <Check className="h-3 w-3" />}
-                </span>
-                <span className="truncate">{o.label}</span>
-              </button>
-            );
-          })}
+          {shown.map((o) => (
+            <button
+              key={o.key}
+              onClick={() => toggle(o.key)}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+            >
+              <CheckBox state={value.includes(o.key) ? "on" : "off"} />
+              <span className="truncate">{o.label}</span>
+            </button>
+          ))}
           {shown.length === 0 && (
             <p className="px-2 py-3 text-center text-xs text-muted-foreground">Nada encontrado.</p>
           )}
@@ -136,6 +148,20 @@ export function MultiFilter({
         )}
       </PopoverContent>
     </Popover>
+  );
+}
+
+function CheckBox({ state }: { state: "on" | "off" | "partial" }) {
+  return (
+    <span
+      className={cn(
+        "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm border",
+        state === "off" ? "border-border" : "border-primary bg-primary text-primary-foreground",
+      )}
+    >
+      {state === "on" && <Check className="h-3 w-3" />}
+      {state === "partial" && <Minus className="h-3 w-3" />}
+    </span>
   );
 }
 
