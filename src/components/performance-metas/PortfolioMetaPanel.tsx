@@ -242,23 +242,21 @@ export function PortfolioMetaPanel({
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-muted-foreground">
-                  Nenhuma análise da IA registrada para este cliente.
+                  Clique em “Gerar sugestão IA” para analisar as 7 famílias com base,
+                  prioritariamente, nos dados da imersão do cliente.
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={actions.gerarIa}
-                  disabled={gerandoIa || !iaDisponivel}
-                >
-                  {gerandoIa ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-1.5 h-4 w-4" />
-                  )}
-                  {gerandoIa ? "Analisando…" : "Sugestão IA"}
-                </Button>
               </div>
             )}
+            <div className="flex justify-end">
+              <SmallAction
+                icon={gerandoIa ? Loader2 : Sparkles}
+                spin={gerandoIa}
+                disabled={gerandoIa || !iaDisponivel}
+                onClick={actions.gerarIa}
+              >
+                {gerandoIa ? "Analisando…" : "Gerar sugestão IA"}
+              </SmallAction>
+            </div>
           </Section>
         )}
 
@@ -325,7 +323,10 @@ export function PortfolioMetaPanel({
                       A meta do gestor para <strong>{METAS_FAMILY_LABEL[selected]}</strong> será
                       alterada de acordo com a sugestão da IA
                       {draft.sugestaoIa?.valor != null && (
-                        <> para <strong>{fmtBRL(draft.sugestaoIa.valor)}</strong></>
+                        <>
+                          {" "}
+                          para <strong>{fmtBRL(draft.sugestaoIa.valor)}</strong>
+                        </>
                       )}
                       . Deseja confirmar a alteração?
                     </AlertDialogDescription>
@@ -443,11 +444,13 @@ function CommentText({ text }: { text: string }) {
 
 function SmallAction({
   icon: Icon,
+  spin,
   disabled,
   onClick,
   children,
 }: {
   icon: typeof Sparkles;
+  spin?: boolean;
   disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
@@ -460,7 +463,7 @@ function SmallAction({
       disabled={disabled}
       onClick={onClick}
     >
-      <Icon className="mr-1 h-3 w-3" /> {children}
+      <Icon className={cn("mr-1 h-3 w-3", spin && "animate-spin")} /> {children}
     </Button>
   );
 }

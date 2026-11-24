@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link2, Loader2, Mail, RotateCcw, Save, Sparkles, Wand2 } from "lucide-react";
+import { Link2, Mail, RotateCcw, Save, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -103,9 +103,11 @@ export function MetasPainel({
     persisted.available ? persisted.state : null,
   );
   // Rascunho inicial = meta padrão da categoria; o que estiver gravado no banco prevalece.
+  // A sugestão IA não vem preenchida: só aparece após "Gerar sugestão IA" no portfólio.
   const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
     const base = buildInitialDrafts(cliente.categoria);
-    return persisted.available ? hydrateDrafts(base, persisted.state) : base;
+    const hydrated = persisted.available ? hydrateDrafts(base, persisted.state) : base;
+    return hydrated.map((d) => ({ ...d, sugestaoIa: null }));
   });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   // Competência escolhida pelo gestor para as metas salvas (padrão: mês corrente do ciclo).
@@ -204,7 +206,8 @@ export function MetasPainel({
       const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
       setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
       toast.success("Análise da IA registrada para as 7 famílias.", {
-        description: "A meta oficial não foi alterada. Use “Aplicar IA” ou “Aceitar sugestão IA” por família.",
+        description:
+          "A meta oficial não foi alterada. Use “Aplicar IA” ou “Aceitar sugestão IA” por família.",
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a sugestão IA.");
@@ -243,24 +246,6 @@ export function MetasPainel({
           </span>
           {vis.usarControlesGestao && (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleGerarIa}
-                disabled={!dbEnabled || gerandoIa}
-                title={
-                  temIa
-                    ? "Gera uma nova análise da IA para as 7 famílias (a anterior fica no histórico)"
-                    : "Gera a análise da IA para as 7 famílias: imersões, histórico em R$ e comparáveis"
-                }
-              >
-                {gerandoIa ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-1.5 h-4 w-4" />
-                )}
-                {gerandoIa ? "Analisando…" : temIa ? "Nova sugestão IA" : "Sugestão IA"}
-              </Button>
               {temIa && (
                 <Button
                   size="sm"
