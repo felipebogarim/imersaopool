@@ -65,38 +65,55 @@ export function MetasCarteiraList({
     });
   }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter]);
 
-  // Convite em massa: só na visão da gestão e com um representante filtrado.
-  const repSelecionado =
-    restrictToRepIds == null && repFilter !== "all"
-      ? (visibleReps.find((r) => r.id === repFilter) ?? null)
-      : null;
+  // Convite em massa: sempre disponível na visão da gestão. Elegíveis = clientes do filtro atual
+  // com representante e razão social (linhas "(vazio)" ficam de fora).
+  const gestao = restrictToRepIds == null;
+  const elegiveis = useMemo(
+    () =>
+      filtered
+        .filter((r) => r.repId && r.razao_social?.trim())
+        .map((r) => ({
+          id: r.id,
+          razao_social: r.razao_social.trim(),
+          repId: r.repId as string,
+          repName: r.repName,
+        })),
+    [filtered],
+  );
+  const repsElegiveis = useMemo(() => new Set(elegiveis.map((c) => c.repId)).size, [elegiveis]);
+  const repFiltrado =
+    repFilter !== "all" ? (visibleReps.find((r) => r.id === repFilter) ?? null) : null;
 
   const toggle = (list: string[], v: string) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {repSelecionado && (
+      {gestao && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
           <p className="text-sm">
-            <span className="font-medium">{repSelecionado.nome}</span>
+            <span className="font-medium">
+              {repFiltrado ? repFiltrado.nome : "Todos os representantes"}
+            </span>
             <span className="text-muted-foreground">
               {" "}
-              · {filtered.length} cliente(s) no filtro atual
+              · {elegiveis.length} cliente(s)
+              {repFiltrado ? "" : ` de ${repsElegiveis} representante(s)`} no filtro atual
             </span>
           </p>
           <Button
             size="sm"
             onClick={() => setConviteMassa(true)}
-            disabled={isLoading || filtered.length === 0}
+            disabled={isLoading || elegiveis.length === 0}
           >
-            <Mail className="mr-1.5 h-4 w-4" /> Enviar convite em massa ao rep
+            <Mail className="mr-1.5 h-4 w-4" />
+            {repFiltrado ? "Enviar convite em massa ao rep" : "Enviar convite em massa"}
           </Button>
           <ConviteMassaDialog
             open={conviteMassa}
             onOpenChange={setConviteMassa}
-            repName={repSelecionado.nome}
-            clientes={filtered.map((r) => ({ id: r.id, razao_social: r.razao_social }))}
+            clientes={elegiveis}
+            initialRepIds={repFiltrado ? [repFiltrado.id] : []}
           />
         </div>
       )}
