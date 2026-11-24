@@ -7,11 +7,13 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { cn } from "@/lib/utils";
 import type { CanonicalFamily } from "@/lib/client-bi-familias";
 import { FAROL_HEX, FAROL_LABEL, statusFromRatio } from "@/lib/performance-farol";
 import {
@@ -55,71 +57,84 @@ export function MetasComparativoChart({
           Clique em um portfólio para editar a meta
         </p>
       </div>
-      <div className="h-[280px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
-            onClick={(e) => selectByLabel(e?.activeLabel)}
-          >
-            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-            <XAxis
-              dataKey="label"
-              interval={0}
-              tickLine={false}
-              axisLine={false}
-              tick={(props) => {
-                const { x, y, payload } = props as {
-                  x: number;
-                  y: number;
-                  payload: { value: string };
-                };
-                const isSel = data.find((d) => d.label === payload.value)?.familia === selected;
-                return (
-                  <text
-                    x={x}
-                    y={y + 12}
-                    textAnchor="middle"
-                    fontSize={11}
-                    fontWeight={isSel ? 700 : 400}
-                    className={isSel ? "fill-foreground" : "fill-muted-foreground"}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => selectByLabel(payload.value)}
-                  >
-                    {payload.value}
-                  </text>
-                );
-              }}
-            />
-            <YAxis
-              domain={[0, yMax]}
-              ticks={Array.from({ length: yMax / step + 1 }, (_, i) => i * step)}
-              tickFormatter={(v) => `${v}%`}
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
-              content={<ComparativoTooltip vis={vis} />}
-            />
-            <Bar dataKey="perf" radius={[4, 4, 0, 0]} maxBarSize={56} style={{ cursor: "pointer" }}>
-              {chartData.map((d) => {
-                const st = statusOf(d.performancePct);
-                const isSel = d.familia === selected;
-                return (
-                  <Cell
-                    key={d.familia}
-                    fill={st ? `#${FAROL_HEX[st]}` : "transparent"}
-                    fillOpacity={isSel ? 1 : 0.55}
-                    stroke={isSel ? "hsl(var(--foreground))" : "transparent"}
-                    strokeWidth={isSel ? 1.5 : 0}
-                  />
-                );
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="h-[290px] w-full overflow-x-auto sm:overflow-visible">
+        <div className="h-full min-w-[520px] sm:min-w-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              barCategoryGap="6%"
+              margin={{ top: 12, right: 12, left: -10, bottom: 0 }}
+              onClick={(e) => selectByLabel(e?.activeLabel)}
+            >
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+              <ReferenceLine
+                y={100}
+                stroke="hsl(var(--muted-foreground))"
+                strokeDasharray="4 4"
+                strokeOpacity={0.4}
+              />
+              <XAxis
+                dataKey="label"
+                interval={0}
+                tickLine={false}
+                axisLine={false}
+                height={32}
+                tick={(props) => {
+                  const { x, y, payload } = props as {
+                    x: number;
+                    y: number;
+                    payload: { value: string };
+                  };
+                  const isSel = data.find((d) => d.label === payload.value)?.familia === selected;
+                  return (
+                    <text
+                      x={x}
+                      y={y + 14}
+                      textAnchor="middle"
+                      className={cn(
+                        "text-[11px] select-none transition-colors",
+                        isSel
+                          ? "fill-foreground font-bold"
+                          : "fill-muted-foreground font-medium hover:fill-foreground",
+                      )}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => selectByLabel(payload.value)}
+                    >
+                      {payload.value}
+                    </text>
+                  );
+                }}
+              />
+              <YAxis
+                domain={[0, yMax]}
+                ticks={Array.from({ length: yMax / step + 1 }, (_, i) => i * step)}
+                tickFormatter={(v) => `${v}%`}
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
+                content={<ComparativoTooltip vis={vis} />}
+              />
+              <Bar dataKey="perf" radius={[6, 6, 0, 0]} maxBarSize={180} style={{ cursor: "pointer" }}>
+                {chartData.map((d) => {
+                  const st = statusOf(d.performancePct);
+                  const isSel = d.familia === selected;
+                  return (
+                    <Cell
+                      key={d.familia}
+                      fill={st ? `#${FAROL_HEX[st]}` : "transparent"}
+                      fillOpacity={isSel ? 1 : 0.68}
+                      stroke={isSel ? "hsl(var(--foreground))" : "transparent"}
+                      strokeWidth={isSel ? 2 : 0}
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
