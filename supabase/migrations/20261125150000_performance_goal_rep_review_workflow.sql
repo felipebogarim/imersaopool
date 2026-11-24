@@ -23,6 +23,7 @@ CREATE INDEX IF NOT EXISTS pgrr_rep_status_idx
   ON public.performance_goal_rep_reviews(representative_id, status);
 
 ALTER TABLE public.performance_goal_rep_reviews ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE public.performance_goal_rep_reviews TO service_role;
 
 -- Regra obrigatória para toda tabela public nova: representantes externos nunca acessam
 -- diretamente. O portal usa apenas funções server-side com service_role e escopo conferido.
