@@ -1,7 +1,12 @@
 # Performance → METAS — persistência
 
-Migration: `supabase/migrations/20261124120000_performance_goals.sql` (aplicação manual no
-Lovable Cloud, somente após aprovação). Não altera nenhuma tabela, função ou policy existente.
+Migrations (aplicação manual no Lovable Cloud; não alteram tabelas, funções ou policies
+existentes da Performance):
+
+- `20261124120000_performance_goals.sql` — ciclos, metas, sugestões, histórico e permissões.
+- `20261125120000_performance_goals_ai_real.sql` — sugestão IA real: coluna `base` em
+  `performance_goal_ai_suggestions`, `performance_goal_ai_context` e
+  `record_performance_goal_ai_suggestions`.
 
 ## Modelo
 
@@ -21,7 +26,14 @@ Lovable Cloud, somente após aprovação). Não altera nenhuma tabela, função 
   permanecem. Metas de competências futuras aparecem na tela como "agendadas".
 - **Sugestão do representante** (`performance_goal_rep_suggestions`): versão vigente por
   portfólio; versões anteriores ficam no histórico.
-- **Sugestões da IA** (`performance_goal_ai_suggestions`): só inserção, sem repetir a última igual.
+- **Sugestões da IA** (`performance_goal_ai_suggestions`): só inserção. Geradas no servidor
+  ("Gerar sugestão IA"): contexto do banco com prioridade **imersão** (entrevistas, imersões,
+  relatórios de campo) → **tendência histórica** do cliente → **perfil** → **comparáveis da
+  região** (mesma categoria, região do representante, só médias e só com 3+ clientes). O modelo
+  responde por portfólio; o servidor valida (múltiplo de 50, teto de 3× a maior referência
+  conhecida) e grava valor, justificativa, tag (imersão/tendência), modelo e `base` (fontes
+  usadas). A sugestão não altera a meta oficial: o gestor usa "Usar IA"/"Aplicar IA".
+  Registros `origem = 'simulacao'` da fase de protótipo ficam no banco, ocultos na tela.
 - **Histórico** (`performance_goal_history`): trigger em ciclos, metas e sugestões do
   representante grava ação, valores antes/depois, autor e data. Imutável.
 
@@ -30,10 +42,18 @@ Lovable Cloud, somente após aprovação). Não altera nenhuma tabela, função 
 | Perfil | Acesso |
 |---|---|
 | admin / gestor | Empresa ativa (`current_company_id()`): leitura por RLS e escrita pelas RPCs `get_performance_goals`, `save_performance_goals`, `renew_performance_goal_cycle`, `extend_performance_goal_cycle`, `confirm_performance_goal_link` |
-| representante | Só pelo servidor (service role): `rep_get_performance_goals`, `rep_save_goal_suggestions`, restritas à própria carteira. Recebe meta oficial, as próprias sugestões e o atingimento já calculado — nunca meta padrão, comentário do gestor, IA ou valores do upload |
+| admin / gestor | Também `performance_goal_ai_context` e `record_performance_goal_ai_suggestions` (mesma checagem de papel e empresa) |
+| representante | Só pelo servidor (service role): `rep_get_performance_goals`, `rep_save_goal_suggestions`, restritas à própria carteira, no portal (`/portal-rep` → "Metas para revisar" → `/portal-rep/metas/$rowId`). Recebe meta oficial, as próprias sugestões e o atingimento já calculado — nunca meta padrão, comentário do gestor, IA ou valores do upload |
 | agente / comercial / demais | Sem acesso (dados e menu) |
 
 Nenhuma escrita direta nas tabelas; `block_external_rep` em todas elas.
+
+## Convite ao representante
+
+"Convidar representante" (gestão, com metas já salvas) envia e-mail real (`metas-convite`) com o
+link das metas do cliente no portal. Sem acesso: cria o usuário externo, vincula ao
+representante e inclui o link de primeiro acesso (`/definir-senha`, 14 dias). Acesso criado mas
+senha pendente: reenvia o link de senha.
 
 ## Recálculo do atingimento
 
@@ -41,16 +61,18 @@ Base comparável à meta mensal, com a origem identificada na interface:
 
 1. **Venda realizada** — realizado em R$ do upload (`performance_private.rep_row_values`).
 2. **Média histórica** — média em R$ do upload; sinalizada como "média histórica".
-3. **Estimado** — atingimento × meta do upload (ou × meta padrão, sem banco); sinalizado.
+3. **Estimado** — atingimento × meta do upload, quando não há realizado nem média; sinalizado.
 
 ## Código
 
 - `src/lib/performance-metas.functions.ts` — server functions (gestão e representante).
 - `src/lib/performance-metas-persistence.ts` — conversões banco ↔ tela, competências, visão do representante.
-- Sem a migration aplicada, a tela funciona em simulação local.
+- `src/lib/performance-metas-ai.ts` — prompt, base da recomendação e validação da resposta da IA.
+- `src/components/performance-metas/RepMetasPortal.tsx` + `src/routes/portal-rep_.metas.$rowId.tsx` — portal.
+- Sem a persistência disponível, a tela avisa e não grava (não há mais simulação local).
+- Convite, IA e portal exigem `SUPABASE_SERVICE_ROLE_KEY` e `LOVABLE_API_KEY` no ambiente.
 
 ## Pendências
 
-- Regenerar `src/integrations/supabase/types.ts` após aplicar.
-- Entrada da tela do representante no portal (`/portal-rep`); as funções já existem.
+- Regenerar `src/integrations/supabase/types.ts` (o código usa RPCs não tipadas).
 - Integração das metas salvas com o BI oficial (próxima etapa).
