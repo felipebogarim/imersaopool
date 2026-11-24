@@ -260,7 +260,9 @@ export function PortfolioMetaPanel({
                 disabled={gerandoIa || !iaDisponivel}
                 onClick={actions.gerarIa}
               >
-                {gerandoIa ? "Analisando…" : "Gerar sugestão IA"}
+                {gerandoIa
+                  ? (draft.sugestaoIa ? "Consultando novos dados…" : "Analisando…")
+                  : (draft.sugestaoIa ? "Atualizar sugestão IA" : "Gerar sugestão IA")}
               </SmallAction>
             </div>
           </Section>

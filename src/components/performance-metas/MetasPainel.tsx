@@ -228,20 +228,38 @@ export function MetasPainel({
     }
   }
 
-  /** Gera (e registra no banco) a sugestão da IA dos 7 portfólios; não altera a meta oficial. */
-  async function handleGerarIa() {
+  /** Gera ou atualiza a sugestão da IA dos 7 portfólios; não altera a meta oficial. */
+  async function handleGerarIa(force = false) {
     if (!dbEnabled || gerandoIa) return;
     setGerandoIa(true);
     try {
-      const res = await generateMetasAiSuggestions({ data: { rowId } });
+      const res = await generateMetasAiSuggestions({ data: { rowId, force } });
       if (!res.available) throw new Error("Persistência das metas indisponível.");
       setGoals(res.state);
       const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
       setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
-      toast.success("Análise da IA registrada para as 7 famílias.", {
-        description:
-          "A meta oficial não foi alterada. Use “Aplicar IA” ou “Aceitar sugestão IA” por família.",
-      });
+
+      if ("hasNewInputs" in res && res.hasNewInputs === false) {
+        toast.info("Nenhum novo input identificado no sistema.", {
+          description:
+            "Não houve novas visitas, imersões ou sugestões que justifiquem reavaliar. As sugestões vigentes foram mantidas.",
+          action: {
+            label: "Reavaliar mesmo assim",
+            onClick: () => void handleGerarIa(true),
+          },
+        });
+      } else {
+        const isUpdate = Boolean(temIa);
+        toast.success(
+          isUpdate
+            ? "Sugestão IA atualizada com novos inputs!"
+            : "Análise da IA registrada para as 7 famílias.",
+          {
+            description:
+              "A meta oficial não foi alterada. Use “Aceitar sugestão IA” por família.",
+          },
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a sugestão IA.");
     } finally {

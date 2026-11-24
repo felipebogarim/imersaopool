@@ -16,6 +16,7 @@ import {
   AI_TOOL,
   buildAiPrompt,
   extractAnalysis,
+  hasNewInputsForAi,
   referenciasDaCategoria,
   validateAnalysis,
   type AiContext,
@@ -181,11 +182,12 @@ export const confirmMetasLink = createServerFn({ method: "POST" })
  */
 export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(rowInput)
+  .inputValidator(z.object({ rowId: z.string().uuid(), force: z.boolean().optional() }))
   .handler(async ({ data, context }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("IA indisponível neste ambiente (LOVABLE_API_KEY ausente).");
     const client = context.supabase as unknown as RpcClient;
+
     const { data: raw, error } = await client.rpc("performance_goal_ai_context", {
       _row_id: data.rowId,
     });
@@ -197,6 +199,29 @@ export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
       throw new Error(error.message);
     }
     const ctx = raw as AiContext;
+
+    // Consulta se já há sugestão anterior registrada
+    const currentGoals = await callRpc(client, "get_performance_goals", { _row_id: data.rowId });
+    const aiSug = currentGoals.available
+      ? currentGoals.state.ai_suggestions.filter((s) => s.origem === "modelo")
+      : [];
+    const lastGeneratedAt = aiSug[0]?.created_at;
+
+    // Se já foi gerada e não foi pedido reavaliação forçada: consulta se houve novos inputs
+    if (currentGoals.available && lastGeneratedAt && !data.force) {
+      const repSugs = currentGoals.state.rep_suggestions;
+      const check = hasNewInputsForAi(ctx, repSugs, lastGeneratedAt);
+      if (!check.hasNewInputs) {
+        return {
+          available: true as const,
+          state: currentGoals.state,
+          hasNewInputs: false,
+          lastGeneratedAt,
+          motivo: check.motivo,
+        };
+      }
+    }
+
     const refs = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
     const { system, user } = buildAiPrompt(ctx, refs);
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -225,11 +250,16 @@ export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
     const { sugestoes } = validateAnalysis(parsed, ctx, refs);
     if (sugestoes.length === 0)
       throw new Error("Sem dados para recomendar metas deste cliente (categoria sem referência).");
-    return callRpc(client, "record_performance_goal_ai_suggestions", {
+    const saveRes = await callRpc(client, "record_performance_goal_ai_suggestions", {
       _row_id: data.rowId,
       _sugestoes: sugestoes,
       _modelo: AI_MODEL,
     });
+    return {
+      ...saveRes,
+      hasNewInputs: true,
+      lastGeneratedAt: new Date().toISOString(),
+    };
   });
 
 /** Convida o representante da linha para revisar as metas do cliente (e-mail real). */
@@ -262,19 +292,6 @@ export const inviteRepToMetas = createServerFn({ method: "POST" })
 
 // ---------------------------- Representante ----------------------------------
 
-type AdminFrom = {
-  from: (t: string) => {
-    select: (c: string) => {
-      eq: (
-        k: string,
-        v: string,
-      ) => {
-        maybeSingle: () => PromiseLike<{ data: { razao_social?: string } | null }>;
-      };
-    };
-  };
-};
-
 type RepResult = { available: false } | { available: true; view: RepGoalsView };
 
 async function repCall(
@@ -287,18 +304,16 @@ async function repCall(
   const rep = await repForUser(userId);
   const res = await callRpc(supabaseAdmin, fn, { ...args, _representative_id: rep.id });
   if (!res.available) return res;
-  // A RPC já confirmou que a linha é da carteira deste representante.
-  const { data: row } = await (supabaseAdmin as unknown as AdminFrom)
-    .from("rep_performance_rows")
-    .select("razao_social, categoria")
-    .eq("id", String(args._row_id))
-    .maybeSingle();
   const baseView = repView(res.state);
-  const { reviewForCycle } = await import("@/lib/rep-portal.server");
-  const review = await reviewForCycle(baseView.cycle?.id ?? null);
+  const { loadRepMetasDetailExtras, reviewForCycle } = await import("@/lib/rep-portal.server");
+  const cycleId = baseView.cycle?.id ?? null;
+  const [review, extras] = await Promise.all([
+    reviewForCycle(cycleId),
+    loadRepMetasDetailExtras(rep.id, String(args._row_id), cycleId),
+  ]);
   return {
     available: true,
-    view: { ...baseView, review, cliente: String(row?.razao_social ?? "").trim() },
+    view: { ...baseView, review, ...extras },
   };
 }
 

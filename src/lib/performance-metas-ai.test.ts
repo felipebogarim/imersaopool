@@ -147,4 +147,51 @@ describe("performance-metas-ai", () => {
     const vazio: AiContext = { cliente: { razao_social: "X", categoria: null, periodo: null } };
     expect(validateAnalysis({ familias: [] }, vazio, semRefs).sugestoes).toEqual([]);
   });
+
+  describe("hasNewInputsForAi", () => {
+    it("sem sugestão anterior (primeira geração), indica que há novos inputs", async () => {
+      const { hasNewInputsForAi } = await import("./performance-metas-ai");
+      const res = hasNewInputsForAi(semImersao, [], null);
+      expect(res.hasNewInputs).toBe(true);
+    });
+
+    it("com inputs anteriores à data da análise, indica ausência de novos inputs", async () => {
+      const { hasNewInputsForAi } = await import("./performance-metas-ai");
+      const contextComDataAntiga: AiContext = {
+        ...semImersao,
+        imersao: {
+          entrevistas: [{ data: "2026-10-10" }],
+          visitas: [{ data: "2026-10-10" }],
+        },
+      };
+      // Sugestão gerada em 2026-10-15 (posterior aos dados)
+      const res = hasNewInputsForAi(contextComDataAntiga, [], "2026-10-15T12:00:00Z");
+      expect(res.hasNewInputs).toBe(false);
+      expect(res.detalhes).toEqual([]);
+    });
+
+    it("com nova visita ou entrevista posterior à análise, identifica novos inputs", async () => {
+      const { hasNewInputsForAi } = await import("./performance-metas-ai");
+      const contextComNovaVisita: AiContext = {
+        ...semImersao,
+        imersao: {
+          entrevistas: [{ data: "2026-10-10" }],
+          visitas: [{ data: "2026-10-20" }], // posterior
+        },
+      };
+      const res = hasNewInputsForAi(contextComNovaVisita, [], "2026-10-15T12:00:00Z");
+      expect(res.hasNewInputs).toBe(true);
+      expect(res.detalhes).toContain("Novo formulário de visita de campo");
+    });
+
+    it("com nova sugestão de representante posterior, identifica novos inputs", async () => {
+      const { hasNewInputsForAi } = await import("./performance-metas-ai");
+      const repSugs = [
+        { valor: 3000, updated_at: "2026-10-25T14:00:00Z" }, // posterior a 15/10
+      ];
+      const res = hasNewInputsForAi(semImersao, repSugs, "2026-10-15T12:00:00Z");
+      expect(res.hasNewInputs).toBe(true);
+      expect(res.detalhes).toContain("Nova sugestão enviada pelo representante");
+    });
+  });
 });

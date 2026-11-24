@@ -358,3 +358,114 @@ export function validateAnalysis(
     })),
   };
 }
+
+export type NewInputsCheck = {
+  hasNewInputs: boolean;
+  motivo: string;
+  detalhes: string[];
+};
+
+/**
+ * Consulta se houve algum novo input no sistema (visita, entrevista, relatório,
+ * sugestão de representante ou dados comerciais) posterior à data da última análise.
+ */
+export function hasNewInputsForAi(
+  ctx: AiContext,
+  repSuggestions: Array<{ created_at?: string | null; updated_at?: string | null; valor?: number | null }> = [],
+  lastGeneratedAt: string | Date | null | undefined = null,
+): NewInputsCheck {
+  if (!lastGeneratedAt) {
+    return {
+      hasNewInputs: true,
+      motivo: "Primeira geração de sugestão IA para este cliente.",
+      detalhes: ["Primeira análise do cliente"],
+    };
+  }
+
+  const lastGen = new Date(lastGeneratedAt).getTime();
+  if (isNaN(lastGen)) {
+    return {
+      hasNewInputs: true,
+      motivo: "Data da sugestão anterior inválida.",
+      detalhes: ["Reavaliação necessária"],
+    };
+  }
+
+  const detalhes: string[] = [];
+
+  // 1. Sugestões enviadas ou alteradas pelo representante
+  for (const s of repSuggestions ?? []) {
+    const dStr = s.updated_at || s.created_at;
+    if (dStr && s.valor != null) {
+      const dt = new Date(dStr).getTime();
+      if (!isNaN(dt) && dt > lastGen) {
+        detalhes.push("Nova sugestão enviada pelo representante");
+        break;
+      }
+    }
+  }
+
+  // 2. Entrevistas de imersão
+  for (const item of ctx.imersao?.entrevistas ?? []) {
+    if (!item.data) continue;
+    const dt = new Date(item.data).getTime();
+    if (!isNaN(dt) && dt > lastGen) {
+      detalhes.push("Nova entrevista de imersão");
+      break;
+    }
+  }
+
+  // 3. Formulários de visita de campo
+  for (const item of ctx.imersao?.visitas ?? []) {
+    if (!item.data) continue;
+    const dt = new Date(item.data).getTime();
+    if (!isNaN(dt) && dt > lastGen) {
+      detalhes.push("Novo formulário de visita de campo");
+      break;
+    }
+  }
+
+  // 4. Observações do representante vinculadas à imersão
+  for (const item of ctx.imersao?.representante ?? []) {
+    if (!item.data) continue;
+    const dt = new Date(item.data).getTime();
+    if (!isNaN(dt) && dt > lastGen) {
+      detalhes.push("Novas observações do representante na imersão");
+      break;
+    }
+  }
+
+  // 5. Imersões
+  for (const item of ctx.imersao?.imersoes ?? []) {
+    if (!item.data) continue;
+    const dt = new Date(item.data).getTime();
+    if (!isNaN(dt) && dt > lastGen) {
+      detalhes.push("Novo registro de imersão");
+      break;
+    }
+  }
+
+  // 6. Relatórios de visita
+  for (const item of ctx.imersao?.relatorios ?? []) {
+    if (!item.data) continue;
+    const dt = new Date(item.data).getTime();
+    if (!isNaN(dt) && dt > lastGen) {
+      detalhes.push("Novo relatório de visita de campo");
+      break;
+    }
+  }
+
+  if (detalhes.length > 0) {
+    return {
+      hasNewInputs: true,
+      motivo: `Novos inputs detectados: ${detalhes.join(", ")}`,
+      detalhes,
+    };
+  }
+
+  return {
+    hasNewInputs: false,
+    motivo: "Nenhum novo input no sistema (visitas, entrevistas ou sugestões) desde a última análise.",
+    detalhes: [],
+  };
+}
