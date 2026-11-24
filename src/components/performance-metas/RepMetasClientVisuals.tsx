@@ -59,58 +59,60 @@ export function RepMetasPerformanceChart({
           Clique em uma barra para abrir o portfólio
         </p>
       </div>
-      <div className="h-[300px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{ top: 8, right: 8, left: -12, bottom: 12 }}
-            barCategoryGap="12%"
-            barGap={4}
-            onClick={(event) => {
-              const item = data.find((row) => row.label === event?.activeLabel);
-              if (item) onSelect(item.familia);
-            }}
-          >
-            <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
-            <XAxis
-              dataKey="label"
-              interval={0}
-              height={52}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 10 }}
-            />
-            <YAxis
-              domain={[0, yMax]}
-              ticks={Array.from({ length: yMax / step + 1 }, (_, index) => index * step)}
-              tickFormatter={(value) => `${value}%`}
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" />
-            <Tooltip
-              cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
-              content={<RepTooltip />}
-            />
-            <Bar dataKey="atingimento" radius={[4, 4, 0, 0]} maxBarSize={58}>
-              {data.map((item) => {
-                const status = statusFromRatio(item.ratio);
-                const active = selected === item.familia;
-                return (
-                  <Cell
-                    key={item.familia}
-                    fill={status ? `#${FAROL_HEX[status]}` : "hsl(var(--muted))"}
-                    fillOpacity={active ? 1 : 0.68}
-                    stroke={active ? "hsl(var(--foreground))" : "transparent"}
-                    strokeWidth={active ? 1.5 : 0}
-                    className="cursor-pointer"
-                  />
-                );
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="w-full overflow-x-auto pb-1">
+        <div className="mx-auto h-[300px] w-full min-w-[760px] max-w-[1240px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              margin={{ top: 8, right: 16, left: -4, bottom: 12 }}
+              barCategoryGap="22%"
+              barGap={4}
+              onClick={(event) => {
+                const item = data.find((row) => row.label === event?.activeLabel);
+                if (item) onSelect(item.familia);
+              }}
+            >
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
+              <XAxis
+                dataKey="label"
+                interval={0}
+                height={52}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis
+                domain={[0, yMax]}
+                ticks={Array.from({ length: yMax / step + 1 }, (_, index) => index * step)}
+                tickFormatter={(value) => `${value}%`}
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="4 4" />
+              <Tooltip
+                cursor={{ fill: "hsl(var(--muted))", opacity: 0.35 }}
+                content={<RepTooltip />}
+              />
+              <Bar dataKey="atingimento" radius={[6, 6, 0, 0]} maxBarSize={96}>
+                {data.map((item) => {
+                  const status = statusFromRatio(item.ratio);
+                  const active = selected === item.familia;
+                  return (
+                    <Cell
+                      key={item.familia}
+                      fill={status ? `#${FAROL_HEX[status]}` : "hsl(var(--muted))"}
+                      fillOpacity={active ? 1 : 0.68}
+                      stroke={active ? "hsl(var(--foreground))" : "transparent"}
+                      strokeWidth={active ? 1.5 : 0}
+                      className="cursor-pointer"
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </section>
   );

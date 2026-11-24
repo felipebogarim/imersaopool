@@ -2,7 +2,7 @@
 // Mostra meta oficial, atingimento (com a origem quando não é venda realizada) e a sugestão
 // do representante; nunca meta padrão, comentário do gestor ou sugestões da IA.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -18,6 +18,7 @@ import {
   Target,
   Trophy,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
   const [saving, setSaving] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [showReopen, setShowReopen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [reopenNote, setReopenNote] = useState("");
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
 
@@ -175,39 +177,6 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
                   }
                   detail="Período em que estas metas mensais estarão vigentes"
                 />
-              </div>
-            </div>
-
-            {/* Guia Rápido */}
-            <div className="border-b bg-blue-50/70 dark:bg-blue-950/30 px-5 py-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400 shadow-xs">
-                  <Lightbulb className="h-4.5 w-4.5" />
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      Guia Rápido · Como preencher suas sugestões de metas
-                    </h3>
-                    <span className="rounded-full bg-blue-100 dark:bg-blue-900/60 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
-                      Passo a passo
-                    </span>
-                  </div>
-                  <div className="grid gap-1 sm:grid-cols-3 text-xs text-muted-foreground pt-0.5">
-                    <div className="flex items-start gap-1.5">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">1</span>
-                      <span>Mude de portfólio clicando nos <strong>botões em destaque</strong> ou no gráfico.</span>
-                    </div>
-                    <div className="flex items-start gap-1.5">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">2</span>
-                      <span>Alimente a <strong>meta mensal (R$)</strong> e sua <strong>justificativa</strong> em cada item.</span>
-                    </div>
-                    <div className="flex items-start gap-1.5">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">3</span>
-                      <span>Ao concluir, clique em <strong>Enviar sugestões</strong> para avaliação da gestão.</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -405,9 +374,76 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
             )}
           </div>
           <RepSuggestionHistory history={view.suggestion_history ?? []} />
+          <QuickGuide open={showGuide} onOpenChange={setShowGuide} />
         </>
       )}
     </div>
+  );
+}
+
+function QuickGuide({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <aside className="fixed bottom-4 right-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:bottom-6 sm:right-6">
+      {open && (
+        <div className="w-[360px] max-w-full rounded-2xl border border-blue-200 bg-background p-4 shadow-xl dark:border-blue-900">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
+              <Lightbulb className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">Como preencher suas sugestões</p>
+              <p className="text-xs text-muted-foreground">Guia rápido em 3 passos</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              aria-label="Fechar guia rápido"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <ol className="space-y-3 text-xs text-muted-foreground">
+            <GuideStep number={1}>
+              Mude de portfólio clicando nos <strong>botões em destaque</strong> ou no gráfico.
+            </GuideStep>
+            <GuideStep number={2}>
+              Informe a <strong>meta mensal (R$)</strong> e a <strong>justificativa</strong> de cada
+              item.
+            </GuideStep>
+            <GuideStep number={3}>
+              Ao concluir, clique em <strong>Enviar sugestões</strong> para avaliação da gestão.
+            </GuideStep>
+          </ol>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => onOpenChange(!open)}
+        aria-expanded={open}
+        className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-800"
+      >
+        <Lightbulb className="h-4 w-4" />
+        Guia rápido
+      </button>
+    </aside>
+  );
+}
+
+function GuideStep({ number, children }: { number: number; children: ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+        {number}
+      </span>
+      <span className="pt-0.5 leading-relaxed">{children}</span>
+    </li>
   );
 }
 
