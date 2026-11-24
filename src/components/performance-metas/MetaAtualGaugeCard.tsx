@@ -55,19 +55,29 @@ export function MetaAtualGaugeCard({
   const colors = GAUGE_GRADIENTS[status ?? "sem_compra"];
   const statusTextColor = GAUGE_STATUS_TEXT[status ?? "sem_compra"];
 
-  // Escala do arco: 0 a 120% (1.20)
+  // Escala do arco: 0 a 120% (1.20). Geometria pensada para não haver sobreposição:
+  // leitura central dentro do raio interno, marcador de 100% e escalas fora do arco.
+  const MAX = 1.2;
   const ratio = atingimento ?? 0;
-  const clamped = Math.min(1.2, Math.max(0, ratio));
-  const t = clamped / 1.2;
-  const arcRadius = 64;
-  const cx = 100;
-  const cy = 90;
-  const arcLength = Math.PI * arcRadius; // ~201.06
+  const t = Math.min(MAX, Math.max(0, ratio)) / MAX;
+  const cx = 110;
+  const cy = 100;
+  const r = 76;
+  const sw = 12;
+  const arcLength = Math.PI * r;
   const offset = arcLength * (1 - t);
-
-  // Ponto da agulha / indicador luminoso na ponta do progresso
-  const tipX = cx - arcRadius * Math.cos(t * Math.PI);
-  const tipY = cy - arcRadius * Math.sin(t * Math.PI);
+  const arcPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  /** Ponto do arco para uma fração 0..1 da escala, num raio qualquer. */
+  const at = (f: number, radius: number) => ({
+    x: cx - radius * Math.cos(f * Math.PI),
+    y: cy - radius * Math.sin(f * Math.PI),
+  });
+  const tip = at(t, r);
+  const f100 = 1 / MAX;
+  const notchIn = at(f100, r - sw / 2 - 1);
+  const notchOut = at(f100, r + sw / 2 + 1);
+  const tickOut = at(f100, r + sw / 2 + 7);
+  const label100 = at(f100, r + sw / 2 + 11);
 
   return (
     <div
@@ -117,7 +127,7 @@ export function MetaAtualGaugeCard({
       </div>
 
       <div className="my-2 flex flex-col items-center">
-        <svg viewBox="0 0 200 110" className="w-full max-w-[210px] overflow-visible">
+        <svg viewBox="0 0 220 128" className="w-full max-w-[240px] overflow-visible">
           <defs>
             <linearGradient id={gradId} x1="0%" y1="100%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={colors[0]} />
@@ -127,29 +137,29 @@ export function MetaAtualGaugeCard({
               <feDropShadow
                 dx="0"
                 dy="1"
-                stdDeviation="2"
+                stdDeviation="1.5"
                 floodColor={colors[1]}
                 floodOpacity="0.45"
               />
             </filter>
           </defs>
 
-          {/* Arco de fundo (trilha) mais encorpado */}
+          {/* Trilha */}
           <path
-            d="M 36 90 A 64 64 0 0 1 164 90"
+            d={arcPath}
             fill="none"
-            strokeWidth={14}
+            strokeWidth={sw}
             strokeLinecap="round"
-            className="stroke-muted/30"
+            className="stroke-muted"
           />
 
-          {/* Arco preenchido de progresso encorpado */}
+          {/* Progresso */}
           {t > 0 && (
             <path
-              d="M 36 90 A 64 64 0 0 1 164 90"
+              d={arcPath}
               fill="none"
               stroke={`url(#${gradId})`}
-              strokeWidth={14}
+              strokeWidth={sw}
               strokeLinecap="round"
               strokeDasharray={`${arcLength} ${arcLength}`}
               strokeDashoffset={offset}
@@ -157,75 +167,85 @@ export function MetaAtualGaugeCard({
             />
           )}
 
-          {/* Marcador de 100% (meta atingida) */}
+          {/* Marcador de 100%: entalhe no arco + traço e rótulo por fora */}
           <line
-            x1={147.6}
-            y1={62.5}
-            x2={165.0}
-            y2={52.5}
-            stroke="currentColor"
+            x1={notchIn.x}
+            y1={notchIn.y}
+            x2={notchOut.x}
+            y2={notchOut.y}
+            strokeWidth={2}
+            className="stroke-card"
+          />
+          <line
+            x1={notchOut.x}
+            y1={notchOut.y}
+            x2={tickOut.x}
+            y2={tickOut.y}
             strokeWidth={1.5}
-            className="text-muted-foreground/50"
+            strokeLinecap="round"
+            className="stroke-muted-foreground/60"
           />
           <text
-            x={168}
-            y={50}
-            className="text-[8px] font-semibold fill-muted-foreground/80 select-none"
+            x={label100.x + 1}
+            y={label100.y}
+            fontSize={8}
+            dominantBaseline="middle"
+            className="font-semibold fill-muted-foreground select-none"
           >
             100%
           </text>
 
-          {/* Indicador luminoso na ponta do arco */}
+          {/* Ponta do progresso */}
           {t > 0 && (
             <g filter={`url(#${glowId})`}>
               <circle
-                cx={tipX}
-                cy={tipY}
-                r={5.5}
+                cx={tip.x}
+                cy={tip.y}
+                r={5}
                 fill="#ffffff"
                 stroke={colors[1]}
-                strokeWidth={3}
+                strokeWidth={2.5}
               />
             </g>
           )}
 
-          {/* Leitura central do percentual (sem sobreposição com o arco) */}
+          {/* Leitura central, dentro do raio interno */}
           <text
-            x={100}
-            y={68}
+            x={cx}
+            y={cy - 14}
             textAnchor="middle"
-            className="text-2xl font-bold fill-foreground tabular-nums select-none"
+            fontSize={25}
+            className="font-bold fill-foreground tabular-nums select-none"
           >
             {atingimento != null ? fmtPct(atingimento) : "—"}
           </text>
-
-          {/* Status do farol */}
           <text
-            x={100}
-            y={83}
+            x={cx}
+            y={cy + 2}
             textAnchor="middle"
-            className={cn(
-              "text-[9px] font-bold uppercase tracking-wider select-none",
-              statusTextColor,
-            )}
+            fontSize={8.5}
+            letterSpacing={0.8}
+            className={cn("font-bold uppercase select-none", statusTextColor)}
           >
             {status ? FAROL_LABEL[status] : "Sem base"}
           </text>
 
-          {/* Marcas de escala */}
+          {/* Escala, abaixo das pontas do arco */}
           <text
-            x={34}
-            y={106}
+            x={cx - r}
+            y={cy + sw / 2 + 14}
             textAnchor="middle"
-            className="text-[9px] font-medium fill-muted-foreground/60 select-none"
+            fontSize={8.5}
+            className="font-medium fill-muted-foreground select-none"
           >
             0%
           </text>
           <text
-            x={166}
-            y={106}
+            x={cx + r}
+            y={cy + sw / 2 + 14}
             textAnchor="middle"
-            className="text-[9px] font-medium fill-muted-foreground/60 select-none"
+            fontSize={8.5}
+            className="font-medium fill-muted-foreground select-none"
           >
             120%
           </text>
