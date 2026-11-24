@@ -14,16 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -33,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { fmtBRL, fmtPct } from "@/lib/performance-metas";
 import {
   FAROL_CELL_CLASS,
+  FAROL_HEX,
   FAROL_LABEL,
   statusFromRatio,
   type FarolStatus,
@@ -59,12 +56,7 @@ import {
 } from "@/lib/performance-metas-bi";
 import { getMetasBi } from "@/lib/performance-metas.functions";
 import { useMetasCarteira } from "./use-metas-carteira";
-import {
-  BreakdownTable,
-  MetasMatrix,
-  MultiFilter,
-  type MatrixMetric,
-} from "./MetasBiTables";
+import { BreakdownTable, MetasMatrix, MultiFilter, type MatrixMetric } from "./MetasBiTables";
 
 const FILTER_DIMS: MetasBiDimension[] = [
   "regiao",
@@ -144,10 +136,7 @@ export function MetasBiPanel() {
 
   const allFacts = useMemo(() => {
     if (!visao9mm) return allFactsRaw;
-    const totalCompanyMeta = allFactsRaw.reduce(
-      (sum, f) => sum + (f.metaAtual ?? 0),
-      0,
-    );
+    const totalCompanyMeta = allFactsRaw.reduce((sum, f) => sum + (f.metaAtual ?? 0), 0);
     const targetMeta = 9_000_000 * periodMonths.length;
     const ratio = totalCompanyMeta > 0 ? targetMeta / totalCompanyMeta : 1;
     return allFactsRaw.map((f) => ({
@@ -504,7 +493,13 @@ function MetaAtualGaugeCard({
               <stop offset="100%" stopColor={colors[1]} />
             </linearGradient>
             <filter id="gaugeTipGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor={colors[1]} floodOpacity="0.45" />
+              <feDropShadow
+                dx="0"
+                dy="1"
+                stdDeviation="2"
+                floodColor={colors[1]}
+                floodOpacity="0.45"
+              />
             </filter>
           </defs>
 
@@ -624,19 +619,13 @@ function fmtCompactBRL(v: number): string {
   return fmtBRL(v);
 }
 
-function CategoriaMetasChart({
-  porCategoria,
-}: {
-  porCategoria: MetasBiAggregate[];
-}) {
+function CategoriaMetasChart({ porCategoria }: { porCategoria: MetasBiAggregate[] }) {
   const [expanded, setExpanded] = useState(false);
 
   const categoriesData = useMemo(() => {
     // Estritamente Silver, Black e Gold
     const targetCats = ["Black", "Gold", "Silver"];
-    const map = new Map(
-      porCategoria.map((c) => [c.key.trim().toLowerCase(), c]),
-    );
+    const map = new Map(porCategoria.map((c) => [c.key.trim().toLowerCase(), c]));
     return targetCats.map((cat) => {
       const found = map.get(cat.toLowerCase());
       const meta = found?.metaAtual ?? 0;
@@ -656,10 +645,7 @@ function CategoriaMetasChart({
     });
   }, [porCategoria]);
 
-  const maxVal = Math.max(
-    ...categoriesData.map((d) => Math.max(d.metaAtual, d.realizado)),
-    1,
-  );
+  const maxVal = Math.max(...categoriesData.map((d) => Math.max(d.metaAtual, d.realizado)), 1);
 
   return (
     <>
@@ -814,7 +800,7 @@ function CategoriaMetasChart({
                   width={60}
                 />
                 <Tooltip
-                  formatter={(val: any, name: any) => [
+                  formatter={(val: unknown, name: unknown) => [
                     fmtBRL(Number(val)),
                     name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
                   ]}
@@ -937,6 +923,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
             topReps.map((r, i) => {
               const realPct = Math.min(100, (r.realizado / maxReal) * 100);
               const metaPct = Math.min(100, (r.metaAtual / maxReal) * 100);
+              const barColor = `#${FAROL_HEX[statusFromRatio(r.atingimento) ?? "sem_compra"]}`;
 
               return (
                 <div key={r.key} className="space-y-0.5">
@@ -945,7 +932,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                       {i + 1}. {r.label}
                     </span>
                     <div className="flex items-center gap-1.5 text-[10px] tabular-nums">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="font-semibold text-foreground">
                         {fmtCompactBRL(r.realizado)}
                       </span>
                       <span className="text-muted-foreground">/ {fmtCompactBRL(r.metaAtual)}</span>
@@ -962,8 +949,8 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                       style={{ width: `${metaPct}%` }}
                     />
                     <div
-                      className="absolute left-0 top-0 h-full rounded-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${realPct}%` }}
+                      className="absolute left-0 top-0 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${realPct}%`, backgroundColor: barColor }}
                     />
                   </div>
                 </div>
@@ -1031,7 +1018,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                   width={120}
                 />
                 <Tooltip
-                  formatter={(val: any, name: any) => [
+                  formatter={(val: unknown, name: unknown) => [
                     fmtBRL(Number(val)),
                     name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
                   ]}
@@ -1052,10 +1039,16 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                 <Bar
                   dataKey="realizado"
                   name="Faturamento Realizado"
-                  fill="#10b981"
                   radius={[0, 4, 4, 0]}
                   barSize={12}
-                />
+                >
+                  {topReps.map((r) => (
+                    <Cell
+                      key={r.key}
+                      fill={`#${FAROL_HEX[statusFromRatio(r.atingimento) ?? "sem_compra"]}`}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1086,7 +1079,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
                       <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                         {r.clientes}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums">
                         {fmtBRL(r.realizado)}
                       </td>
                       <td className="px-4 py-2.5 text-right font-medium tabular-nums">
