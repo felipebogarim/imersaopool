@@ -66,6 +66,14 @@ function DefinirSenhaPage() {
   const [confirma, setConfirma] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Login normal preservando o destino do convite (ex.: metas de um cliente no portal).
+  const irParaLogin = () =>
+    navigate({
+      to: "/auth",
+      search: next ? { next: firstAccessDestination(next) } : {},
+      replace: true,
+    });
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -76,13 +84,17 @@ function DefinirSenhaPage() {
         if (res?.valid) {
           setInfo({ email: res.email, name: res.name });
           setState("ok");
+        } else if (res?.reason === "used") {
+          // Senha já cadastrada (ex.: segundo clique no mesmo convite ou outro cliente do convite
+          // em massa): segue direto para o login, mantendo o destino.
+          setMotivo("Sua senha já foi cadastrada. Redirecionando para o login…");
+          setState("invalid");
+          setTimeout(() => alive && irParaLogin(), 1200);
         } else {
           setMotivo(
-            res?.reason === "used"
-              ? "Este convite já foi utilizado. Faça login normalmente."
-              : res?.reason === "expired"
-                ? "Este convite expirou. Peça um novo ao administrador."
-                : "Convite inválido.",
+            res?.reason === "expired"
+              ? "Este convite expirou. Peça um novo ao administrador."
+              : "Convite inválido.",
           );
           setState("invalid");
         }
@@ -110,7 +122,7 @@ function DefinirSenhaPage() {
       const { error } = await supabase.auth.signInWithPassword({ email: info.email, password: senha });
       if (error) {
         toast.success("Senha criada! Faça login para continuar.");
-        navigate({ to: "/auth" });
+        irParaLogin();
         return;
       }
       // Garante que a sessão já esteja persistida antes de recarregar a app.
@@ -151,7 +163,7 @@ function DefinirSenhaPage() {
         {state === "invalid" && (
           <div className="space-y-4">
             <p className="text-sm text-destructive">{motivo}</p>
-            <Button variant="outline" onClick={() => navigate({ to: "/auth" })}>Ir para o login</Button>
+            <Button variant="outline" onClick={() => irParaLogin()}>Ir para o login</Button>
           </div>
         )}
 
