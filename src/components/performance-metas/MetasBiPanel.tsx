@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, X } from "lucide-react";
+import { AlertTriangle, Loader2, Maximize2, Minimize2, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,9 +13,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { cn } from "@/lib/utils";
 import { fmtBRL, fmtPct } from "@/lib/performance-metas";
-import { FAROL_LABEL, statusFromRatio, type FarolStatus } from "@/lib/performance-farol";
+import {
+  FAROL_CELL_CLASS,
+  FAROL_LABEL,
+  statusFromRatio,
+  type FarolStatus,
+} from "@/lib/performance-farol";
 import {
   DIMENSION_LABEL,
   aggregateMetasBi,
@@ -30,19 +51,18 @@ import {
   yearMonths,
   matrixMetasBi,
   totalMetasBi,
+  type MetasBiAggregate,
   type MetasBiDimension,
+  type MetasBiFact,
   type MetasBiFilters,
   type MetasBiSort,
 } from "@/lib/performance-metas-bi";
 import { getMetasBi } from "@/lib/performance-metas.functions";
 import { useMetasCarteira } from "./use-metas-carteira";
 import {
-  AtingCell,
   BreakdownTable,
   MetasMatrix,
   MultiFilter,
-  diffClass,
-  fmtSignedShort,
   type MatrixMetric,
 } from "./MetasBiTables";
 
@@ -253,52 +273,24 @@ export function MetasBiPanel() {
         )}
       </div>
 
-      {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <MetaAtualGaugeCard
-          metaAtual={total.metaAtual}
-          realizado={total.realizado}
-          metaComBase={total.metaComBase}
-          atingimento={total.atingimento}
-          periodo={periodLabel(periodMonths, year)}
-          hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
-        />
-        <Kpi label="Meta original" hint="Meta padrão da categoria (Black/Gold/Silver), fixa">
-          <p className="text-xl font-medium tabular-nums text-muted-foreground">
-            {fmtBRL(total.metaPadrao)}
-          </p>
-        </Kpi>
-        <Kpi label="Diferença vs. original">
-          <p className={cn("text-xl font-semibold tabular-nums", diffClass(total.diferenca))}>
-            {fmtSignedShort(total.diferenca)}
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            {diffPct == null ? "—" : `${diffPct >= 0 ? "+" : ""}${fmtPct(diffPct)}`}
-          </p>
-        </Kpi>
-        <Kpi label="Atingimento s/ meta atual" hint="Base vendida ÷ meta, nos portfólios com base">
-          <AtingCell agg={total} className="px-2 py-1 text-xl" />
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Base {fmtBRL(total.realizado)} de {fmtBRL(total.metaComBase)}
-            {periodMonths.length > 1 && " · base mensal × meses"}
-          </p>
-        </Kpi>
-        <Kpi label="Clientes">
-          <p className="text-xl font-semibold tabular-nums">{total.clientes}</p>
-          <p className="text-[11px] text-muted-foreground">
-            {total.personalizados} com meta personalizada
-          </p>
-          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-border/50 pt-2 text-[11px]">
-            {porCategoria.map((c) => (
-              <div key={c.key} className="flex justify-between gap-2">
-                <span className="truncate text-muted-foreground" title={c.label}>
-                  {c.label}
-                </span>
-                <span className="font-medium tabular-nums">{c.clientes}</span>
-              </div>
-            ))}
-          </div>
-        </Kpi>
+      {/* Topo: Gauge Meta Atual + Gráficos por Categoria e Top 10 Reps */}
+      <div className="grid gap-3 lg:grid-cols-5">
+        <div className="lg:col-span-1">
+          <MetaAtualGaugeCard
+            metaAtual={total.metaAtual}
+            realizado={total.realizado}
+            metaComBase={total.metaComBase}
+            atingimento={total.atingimento}
+            periodo={periodLabel(periodMonths, year)}
+            hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <CategoriaMetasChart porCategoria={porCategoria} />
+        </div>
+        <div className="lg:col-span-2">
+          <TopRepsMetasChart facts={facts} />
+        </div>
       </div>
 
       {/* Por portfólio + recorte livre */}
@@ -577,22 +569,502 @@ function MetaAtualGaugeCard({
   );
 }
 
-function Kpi({
-  label,
-  hint,
-  children,
+function fmtCompactBRL(v: number): string {
+  if (Math.abs(v) >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  if (Math.abs(v) >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+  return fmtBRL(v);
+}
+
+function CategoriaMetasChart({
+  porCategoria,
 }: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
+  porCategoria: MetasBiAggregate[];
 }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const categoriesData = useMemo(() => {
+    // Estritamente Silver, Black e Gold
+    const targetCats = ["Black", "Gold", "Silver"];
+    const map = new Map(
+      porCategoria.map((c) => [c.key.trim().toLowerCase(), c]),
+    );
+    return targetCats.map((cat) => {
+      const found = map.get(cat.toLowerCase());
+      const meta = found?.metaAtual ?? 0;
+      const real = found?.realizado ?? 0;
+      const ating = found?.atingimento ?? (meta > 0 ? real / meta : null);
+      const status = statusFromRatio(ating);
+      return {
+        key: cat,
+        label: cat,
+        metaAtual: meta,
+        realizado: real,
+        atingimento: ating,
+        status,
+        clientes: found?.clientes ?? 0,
+        diferenca: found?.diferenca ?? 0,
+      };
+    });
+  }, [porCategoria]);
+
+  const maxVal = Math.max(
+    ...categoriesData.map((d) => Math.max(d.metaAtual, d.realizado)),
+    1,
+  );
+
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm" title={hint}>
-      <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      {children}
-    </div>
+    <>
+      <div className="flex h-full flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Meta e atingimento por categoria
+            </p>
+            <p className="text-[11px] text-muted-foreground">Silver, Black e Gold</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(true)}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            title="Expandir visualização"
+          >
+            <Maximize2 className="mr-1 h-3.5 w-3.5" /> Expandir
+          </Button>
+        </div>
+
+        {/* Barras Horizontais Compactas */}
+        <div className="my-2 space-y-2.5">
+          {categoriesData.map((c) => {
+            const metaPct = Math.min(100, (c.metaAtual / maxVal) * 100);
+            const realPct = Math.min(100, (c.realizado / maxVal) * 100);
+            const statusClass = c.status
+              ? FAROL_CELL_CLASS[c.status]
+              : "bg-muted text-muted-foreground";
+
+            return (
+              <div key={c.key} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <span
+                      className={cn(
+                        "inline-block h-2 w-2 rounded-full",
+                        c.key === "Black"
+                          ? "bg-neutral-800 dark:bg-neutral-200"
+                          : c.key === "Gold"
+                            ? "bg-amber-500"
+                            : "bg-slate-400",
+                      )}
+                    />
+                    <span>{c.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      Meta: {fmtCompactBRL(c.metaAtual)} · Real: {fmtCompactBRL(c.realizado)}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                        statusClass,
+                      )}
+                    >
+                      {c.atingimento != null ? fmtPct(c.atingimento) : "—"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Barras horizontais comparativas */}
+                <div className="space-y-0.5">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                    <div
+                      className="h-full rounded-full bg-slate-400/80 transition-all duration-300"
+                      style={{ width: `${metaPct}%` }}
+                      title={`Meta: ${fmtBRL(c.metaAtual)}`}
+                    />
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted/40">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-300",
+                        c.status === "excelente"
+                          ? "bg-emerald-500"
+                          : c.status === "otimo"
+                            ? "bg-lime-500"
+                            : c.status === "proximo"
+                              ? "bg-amber-500"
+                              : "bg-red-500",
+                      )}
+                      style={{ width: `${realPct}%` }}
+                      title={`Realizado: ${fmtBRL(c.realizado)}`}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Rodapé compacto */}
+        <div className="flex items-center justify-between border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full bg-slate-400/80" /> Meta
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full bg-primary" /> Realizado
+            </span>
+          </div>
+          <span>3 categorias</span>
+        </div>
+      </div>
+
+      {/* Modal Expandido */}
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
+            <div>
+              <DialogTitle className="text-base font-semibold">
+                Meta e Atingimento por Categoria (Silver, Black e Gold)
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Comparativo de metas e faturamento realizado em barras horizontais
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExpanded(false)}
+              className="h-8 gap-1.5"
+            >
+              <Minimize2 className="h-4 w-4" /> Retrair
+            </Button>
+          </DialogHeader>
+
+          {/* Gráfico Recharts Expandido */}
+          <div className="h-[260px] w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={categoriesData}
+                margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+              >
+                <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <XAxis
+                  type="number"
+                  tickFormatter={fmtCompactBRL}
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs text-muted-foreground"
+                />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs font-semibold"
+                  width={60}
+                />
+                <Tooltip
+                  formatter={(val: any, name: any) => [
+                    fmtBRL(Number(val)),
+                    name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.75rem",
+                  }}
+                />
+                <Bar
+                  dataKey="metaAtual"
+                  name="Meta Atual"
+                  fill="#94a3b8"
+                  radius={[0, 4, 4, 0]}
+                  barSize={16}
+                />
+                <Bar
+                  dataKey="realizado"
+                  name="Faturamento Realizado"
+                  fill="#0ea5e9"
+                  radius={[0, 4, 4, 0]}
+                  barSize={16}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Tabela analítica no modal expandido */}
+          <div className="mt-4 rounded-lg border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 text-[11px] font-semibold uppercase text-muted-foreground">
+                <tr className="border-b">
+                  <th className="px-4 py-2.5 text-left">Categoria</th>
+                  <th className="px-4 py-2.5 text-right">Clientes</th>
+                  <th className="px-4 py-2.5 text-right">Meta Atual</th>
+                  <th className="px-4 py-2.5 text-right">Realizado</th>
+                  <th className="px-4 py-2.5 text-right">Atingimento</th>
+                  <th className="px-4 py-2.5 text-center">Farol</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {categoriesData.map((c) => (
+                  <tr key={c.key} className="hover:bg-muted/20">
+                    <td className="px-4 py-2.5 font-medium">{c.label}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                      {c.clientes}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-medium tabular-nums">
+                      {fmtBRL(c.metaAtual)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {fmtBRL(c.realizado)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
+                      {c.atingimento != null ? fmtPct(c.atingimento) : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <span
+                        className={cn(
+                          "rounded px-2 py-0.5 text-[10px] font-semibold",
+                          c.status ? FAROL_CELL_CLASS[c.status] : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {c.status ? FAROL_LABEL[c.status] : "—"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const topReps = useMemo(() => {
+    const all = aggregateMetasBi(facts, "representante");
+    return all
+      .filter((r) => r.key !== "__sem_rep__" && r.label !== "Sem representante")
+      .sort((a, b) => b.realizado - a.realizado || b.metaAtual - a.metaAtual)
+      .slice(0, 10);
+  }, [facts]);
+
+  const maxReal = Math.max(...topReps.map((r) => Math.max(r.metaAtual, r.realizado)), 1);
+
+  return (
+    <>
+      <div className="flex h-full flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Meta por Top 10 Representantes
+            </p>
+            <p className="text-[11px] text-muted-foreground">Maiores faturamentos</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(true)}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            title="Expandir ranking completo"
+          >
+            <Maximize2 className="mr-1 h-3.5 w-3.5" /> Expandir
+          </Button>
+        </div>
+
+        {/* Lista compacta com barras horizontais dos top reps */}
+        <div className="my-1.5 space-y-1.5 overflow-y-auto max-h-[160px] pr-1">
+          {topReps.length === 0 ? (
+            <p className="py-6 text-center text-xs text-muted-foreground">
+              Nenhum dado disponível.
+            </p>
+          ) : (
+            topReps.map((r, i) => {
+              const realPct = Math.min(100, (r.realizado / maxReal) * 100);
+              const metaPct = Math.min(100, (r.metaAtual / maxReal) * 100);
+
+              return (
+                <div key={r.key} className="space-y-0.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="truncate max-w-[130px] font-medium" title={r.label}>
+                      {i + 1}. {r.label}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[10px] tabular-nums">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {fmtCompactBRL(r.realizado)}
+                      </span>
+                      <span className="text-muted-foreground">/ {fmtCompactBRL(r.metaAtual)}</span>
+                      {r.atingimento != null && (
+                        <span className="text-[9px] text-muted-foreground">
+                          ({fmtPct(r.atingimento)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/40">
+                    <div
+                      className="absolute left-0 top-0 h-full rounded-full bg-slate-400/50"
+                      style={{ width: `${metaPct}%` }}
+                    />
+                    <div
+                      className="absolute left-0 top-0 h-full rounded-full bg-emerald-500 transition-all duration-300"
+                      style={{ width: `${realPct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Rodapé compacto */}
+        <div className="flex items-center justify-between border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
+          <span className="truncate">
+            Top 10: {fmtBRL(topReps.reduce((acc, r) => acc + r.realizado, 0))}
+          </span>
+          <span className="shrink-0">{topReps.length} representantes</span>
+        </div>
+      </div>
+
+      {/* Modal Expandido */}
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
+            <div>
+              <DialogTitle className="text-base font-semibold">
+                Ranking Top 10 Representantes em Faturamento vs Meta
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Os 10 maiores representantes por faturamento no período selecionado
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExpanded(false)}
+              className="h-8 gap-1.5"
+            >
+              <Minimize2 className="h-4 w-4" /> Retrair
+            </Button>
+          </DialogHeader>
+
+          {/* Gráfico Recharts Horizontal */}
+          <div className="h-[360px] w-full pt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={topReps.map((r, idx) => ({
+                  ...r,
+                  rankName: `#${idx + 1} ${r.label}`,
+                }))}
+                margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
+              >
+                <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <XAxis
+                  type="number"
+                  tickFormatter={fmtCompactBRL}
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs text-muted-foreground"
+                />
+                <YAxis
+                  type="category"
+                  dataKey="rankName"
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs font-medium"
+                  width={120}
+                />
+                <Tooltip
+                  formatter={(val: any, name: any) => [
+                    fmtBRL(Number(val)),
+                    name === "metaAtual" ? "Meta Atual" : "Faturamento Realizado",
+                  ]}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    borderColor: "hsl(var(--border))",
+                    borderRadius: "0.5rem",
+                    fontSize: "0.75rem",
+                  }}
+                />
+                <Bar
+                  dataKey="metaAtual"
+                  name="Meta Atual"
+                  fill="#94a3b8"
+                  radius={[0, 4, 4, 0]}
+                  barSize={12}
+                />
+                <Bar
+                  dataKey="realizado"
+                  name="Faturamento Realizado"
+                  fill="#10b981"
+                  radius={[0, 4, 4, 0]}
+                  barSize={12}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Tabela analítica no modal expandido */}
+          <div className="mt-4 rounded-lg border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 text-[11px] font-semibold uppercase text-muted-foreground">
+                <tr className="border-b">
+                  <th className="px-3 py-2.5 text-center w-12">#</th>
+                  <th className="px-4 py-2.5 text-left">Representante</th>
+                  <th className="px-4 py-2.5 text-right">Clientes</th>
+                  <th className="px-4 py-2.5 text-right">Faturamento Realizado</th>
+                  <th className="px-4 py-2.5 text-right">Meta Atual</th>
+                  <th className="px-4 py-2.5 text-right">Atingimento</th>
+                  <th className="px-4 py-2.5 text-center">Farol</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {topReps.map((r, idx) => {
+                  const status = statusFromRatio(r.atingimento);
+                  return (
+                    <tr key={r.key} className="hover:bg-muted/20">
+                      <td className="px-3 py-2.5 text-center font-bold text-muted-foreground">
+                        {idx + 1}º
+                      </td>
+                      <td className="px-4 py-2.5 font-medium">{r.label}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                        {r.clientes}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {fmtBRL(r.realizado)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums">
+                        {fmtBRL(r.metaAtual)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
+                        {r.atingimento != null ? fmtPct(r.atingimento) : "—"}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span
+                          className={cn(
+                            "rounded px-2 py-0.5 text-[10px] font-semibold",
+                            status ? FAROL_CELL_CLASS[status] : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {status ? FAROL_LABEL[status] : "—"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
