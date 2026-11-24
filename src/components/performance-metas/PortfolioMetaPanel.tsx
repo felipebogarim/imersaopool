@@ -248,8 +248,9 @@ export function PortfolioMetaPanel({
             ) : (
               <div className="space-y-2">
                 <p className="text-[11px] text-muted-foreground">
-                  Clique em “Gerar sugestão IA” para analisar as 7 famílias com base,
-                  prioritariamente, nos dados da imersão do cliente.
+                  {gerandoIa
+                    ? "Gerando a sugestão IA das 7 famílias com base, prioritariamente, nos dados da imersão do cliente…"
+                    : "Sugestão IA ainda não disponível. Clique em “Gerar sugestão IA” para analisar as 7 famílias com base, prioritariamente, nos dados da imersão do cliente."}
                 </p>
               </div>
             )}
@@ -261,8 +262,12 @@ export function PortfolioMetaPanel({
                 onClick={actions.gerarIa}
               >
                 {gerandoIa
-                  ? (draft.sugestaoIa ? "Consultando novos dados…" : "Analisando…")
-                  : (draft.sugestaoIa ? "Atualizar sugestão IA" : "Gerar sugestão IA")}
+                  ? draft.sugestaoIa
+                    ? "Consultando novos dados…"
+                    : "Analisando…"
+                  : draft.sugestaoIa
+                    ? "Atualizar sugestão IA"
+                    : "Gerar sugestão IA"}
               </SmallAction>
             </div>
           </Section>

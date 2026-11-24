@@ -3,15 +3,17 @@
 // Grava em performance_goal_* (sem tocar nas metas oficiais do BI). A sugestão IA é gerada
 // no servidor (imersão → tendência → perfil → comparáveis) e registrada no banco.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link2, Loader2, Mail, Save, ShoppingBag, Unlock, UserX, Wand2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
+import { isClientRow } from "@/lib/client-row-filter";
 import { type CanonicalFamily } from "@/lib/client-bi-familias";
 import {
   BASE_FONTE_LABEL,
@@ -24,6 +26,7 @@ import {
   changedFamilies,
   mergeSaved,
   projectedTotalAttainment,
+  realizadoBase,
   buildInitialDrafts,
   copyRepSuggestion,
   displayPercents,
@@ -58,6 +61,7 @@ import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
+import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 
 const FAMILY_SWATCH = [
   "bg-sky-500",
@@ -85,6 +89,7 @@ export type MetasClienteInfo = {
   periodoLabel: string | null;
   totalPct: number | null;
   familiaPct: Record<string, number | null>;
+  uploadId?: string | null;
 };
 
 export function MetasPainel({
@@ -109,12 +114,11 @@ export function MetasPainel({
   const [goals, setGoals] = useState<GoalsState | null>(
     persisted.available ? persisted.state : null,
   );
-  // Rascunho inicial = meta padrão da categoria; o que estiver gravado no banco prevalece.
-  // A sugestão IA não vem preenchida: só aparece após "Gerar sugestão IA" no portfólio.
+  // Rascunho inicial = meta padrão da categoria; o que estiver gravado no banco prevalece,
+  // inclusive a última sugestão IA registrada (o gestor decide se adere ou não).
   const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
     const base = buildInitialDrafts(cliente.categoria);
-    const hydrated = persisted.available ? hydrateDrafts(base, persisted.state) : base;
-    return hydrated.map((d) => ({ ...d, sugestaoIa: null }));
+    return persisted.available ? hydrateDrafts(base, persisted.state) : base;
   });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   // Competência escolhida pelo gestor para as metas salvas (padrão: mês corrente do ciclo).
@@ -229,7 +233,7 @@ export function MetasPainel({
   }
 
   /** Gera ou atualiza a sugestão da IA dos 7 portfólios; não altera a meta oficial. */
-  async function handleGerarIa(force = false) {
+  async function handleGerarIa(force = false, silent = false) {
     if (!dbEnabled || gerandoIa) return;
     setGerandoIa(true);
     try {
@@ -239,6 +243,7 @@ export function MetasPainel({
       const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
       setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
 
+      if (silent) return;
       if ("hasNewInputs" in res && res.hasNewInputs === false) {
         toast.info("Nenhum novo input identificado no sistema.", {
           description:
@@ -255,8 +260,7 @@ export function MetasPainel({
             ? "Sugestão IA atualizada com novos inputs!"
             : "Análise da IA registrada para as 7 famílias.",
           {
-            description:
-              "A meta oficial não foi alterada. Use “Aceitar sugestão IA” por família.",
+            description: "A meta oficial não foi alterada. Use “Aceitar sugestão IA” por família.",
           },
         );
       }
@@ -267,6 +271,16 @@ export function MetasPainel({
     }
   }
   const temIa = drafts.some((d) => d.sugestaoIa);
+
+  // Sugestão IA por padrão: sem sugestão registrada, gera automaticamente ao abrir o cliente
+  // (uma vez por abertura). Não altera a meta oficial; o gestor aceita ou não por família.
+  const autoIaRef = useRef(false);
+  useEffect(() => {
+    if (autoIaRef.current || !dbEnabled || !vis.verSugestaoIa) return;
+    autoIaRef.current = true;
+    if (!initialDrafts.some((d) => d.sugestaoIa)) void handleGerarIa(false, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const patch = (familia: CanonicalFamily, p: Partial<FamilyMetaDraft>) =>
     setDrafts((prev) => prev.map((d) => (d.familia === familia ? { ...d, ...p } : d)));
@@ -520,7 +534,7 @@ export function MetasPainel({
               setComentarioGestor: (t) => patch(fam, { comentarioGestor: t }),
               setSugestaoRep: (v) => patch(fam, { sugestaoRep: v }),
               setJustificativaRep: (t) => patch(fam, { justificativaRep: t }),
-              gerarIa: handleGerarIa,
+              gerarIa: () => void handleGerarIa(false),
               usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, fam)),
               restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, fam)),
               copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, fam)),
