@@ -35,6 +35,7 @@ export const NAV_TREE: NavGroup[] = [
         match: ["/clientes-bi", "/clientes-bi-batch"],
       },
       { key: "performance.bi-clientes", label: "BI Clientes", to: "/performance/bi-clientes" },
+      { key: "performance.metas", label: "METAS", to: "/performance/metas" },
     ],
   },
   {

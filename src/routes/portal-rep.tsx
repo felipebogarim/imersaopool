@@ -39,6 +39,7 @@ import {
 } from "@/lib/rep-portal.functions";
 import type { PortalAction } from "@/lib/rep-portal.server";
 import { cn } from "@/lib/utils";
+import { RepMetasLista } from "@/components/performance-metas/RepMetasPortal";
 
 export const Route = createFileRoute("/portal-rep")({
   ssr: false,
@@ -120,6 +121,8 @@ function PortalRep() {
             {error instanceof Error ? error.message : "Não foi possível carregar o portal."}
           </p>
         )}
+
+        <RepMetasLista />
 
         {data && (
           <>

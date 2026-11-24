@@ -1,0 +1,147 @@
+import { describe, expect, it } from "vitest";
+import { buildInitialDrafts, buildSavePayload, setMetaOficial } from "./performance-metas";
+import {
+  baseFromBackend,
+  competenciasDoCiclo,
+  cycleInfo,
+  gestorRpcArgs,
+  hydrateDrafts,
+  repView,
+  type GoalsState,
+} from "./performance-metas-persistence";
+
+// Valores sintéticos: nenhum dado financeiro real de cliente.
+const state: GoalsState = {
+  cycle: { id: "c1", inicio: "2026-11-01", fim: "2027-04-01", client_id: "x" },
+  items: [
+    { familia: "PERFIL", meta_mensal: 1200, origem: "gestor", comentario_gestor: "obra" },
+    { familia: "PRO LED", meta_mensal: 500, origem: "ia", comentario_gestor: "" },
+  ],
+  rep_suggestions: [{ familia: "PERFIL", valor: 900, justificativa: "queda" }],
+  ai_suggestions: [
+    {
+      familia: "PERFIL",
+      valor: 1100,
+      justificativa: "j",
+      tag: "imersao",
+      origem: "modelo",
+      confianca: "alta",
+      participacao: "0.4000",
+      created_at: "2026-11-24T10:00:00Z",
+      base: {
+        resumo: "Cliente em expansão.",
+        fontes: ["imersao", "historico"],
+        imersao: { entrevistas: 2, relatorios: 1, ultima: "2026-10-12" },
+        historico: { periodos: 4 },
+      },
+    },
+    // registro antigo da fase de protótipo: não aparece
+    { familia: "PRO LED", valor: 10, justificativa: "x", tag: "imersao", origem: "simulacao" },
+  ],
+  base: {
+    realizado: { PERFIL: 600 },
+    media: { "PRO LAMP": 300 },
+    familia_pct: { "PRO LED": 0.5, PERFIL: 0.6 },
+    metas: { "PRO LED": 800, PERFIL: 1000 },
+  },
+};
+
+describe("performance-metas-persistence", () => {
+  it("base financeira: realizado → média → atingimento × meta do upload (estimado)", () => {
+    const b = baseFromBackend(state.base);
+    expect(b.PERFIL).toEqual({ valor: 600, fonte: "realizado" });
+    expect(b["PRO LAMP"]).toEqual({ valor: 300, fonte: "media" });
+    expect(b["PRO LED"]).toEqual({ valor: 400, fonte: "estimado" });
+    expect(b["DECOR NEWLINE"]).toBeUndefined();
+    expect(baseFromBackend(undefined)).toEqual({});
+  });
+
+  it("hidrata os rascunhos com o que está gravado", () => {
+    const d = hydrateDrafts(buildInitialDrafts("Gold"), state);
+    const perfil = d.find((x) => x.familia === "PERFIL");
+    expect(perfil).toMatchObject({
+      metaOficial: 1200,
+      origem: "gestor",
+      comentarioGestor: "obra",
+      sugestaoRep: 900,
+      justificativaRep: "queda",
+    });
+    expect(perfil?.sugestaoIa).toMatchObject({
+      valor: 1100,
+      justificativa: "j",
+      tag: "imersao",
+      fundamento:
+        "Imersão 12/10/26: 2 entrevista(s), 1 relatório(s) de campo · 4 período(s) de histórico",
+    });
+    expect(perfil?.sugestaoIa).toMatchObject({
+      confianca: "alta",
+      participacao: 0.4,
+      resumo: "Cliente em expansão.",
+      geradaEm: "2026-11-24T10:00:00Z",
+    });
+    expect(d.find((x) => x.familia === "PRO LED")?.sugestaoIa).toBeNull();
+    const decor = d.find((x) => x.familia === "DECOR NEWLINE");
+    expect(decor?.origem).toBe("padrao");
+    expect(decor?.metaOficial).toBe(decor?.referencia);
+  });
+
+  it("visão do representante: atingimento pronto, sem base financeira nem IA", () => {
+    const v = repView(state);
+    expect(v.atingimento.PERFIL).toEqual({ ratio: 0.5, fonte: "realizado" });
+    expect(v.atingimento["PRO LED"]).toEqual({ ratio: 0.8, fonte: "estimado" });
+    const json = JSON.stringify(v);
+    expect(json).not.toMatch(
+      /comentario_gestor|ai_suggestions|agendadas|"base"|familia_pct|client_id/,
+    );
+    expect(json).not.toMatch(/"origem"/);
+  });
+
+  it("argumentos da RPC do gestor", () => {
+    const d = setMetaOficial(hydrateDrafts(buildInitialDrafts("Gold"), state), "PERFIL", 1300);
+    const p = buildSavePayload(d, "gestor", ["PERFIL"]);
+    if (p.perfil !== "gestor") throw new Error("perfil");
+    const args = gestorRpcArgs(p);
+    expect(args.metas).toEqual([
+      expect.objectContaining({ familia: "PERFIL", meta_mensal: 1300, origem: "gestor" }),
+    ]);
+    expect(args).not.toHaveProperty("sugestoes_ia");
+  });
+
+  it("competências: meses do ciclo, padrão no mês corrente", () => {
+    const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
+    const r = competenciasDoCiclo(c, null, new Date(2027, 0, 15));
+    expect(r.meses).toHaveLength(6);
+    expect(r.meses[0]).toBe("2026-11-01");
+    expect(r.padrao).toBe("2027-01-01");
+    expect(competenciasDoCiclo(c, null, new Date(2026, 5, 1)).padrao).toBe("2026-11-01");
+    expect(competenciasDoCiclo(c, null, new Date(2028, 0, 1)).padrao).toBe("2027-04-01");
+    // renovado: o próximo ciclo continua a sequência, sem interrupção
+    const prox = { id: "p", inicio: "2027-05-01", fim: "2027-10-01" };
+    const r2 = competenciasDoCiclo(c, prox, new Date(2027, 0, 15));
+    expect(r2.meses).toHaveLength(12);
+    expect(r2.meses[6]).toBe("2027-05-01");
+    expect(r2.padrao).toBe("2027-01-01");
+    const novo = competenciasDoCiclo(null, null, new Date(2026, 10, 23));
+    expect(novo.meses).toEqual([
+      "2026-11-01",
+      "2026-12-01",
+      "2027-01-01",
+      "2027-02-01",
+      "2027-03-01",
+      "2027-04-01",
+    ]);
+    expect(novo.padrao).toBe("2026-11-01");
+  });
+
+  it("ciclo: rótulo, duração e vencimento", () => {
+    const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
+    expect(cycleInfo(c, new Date(2026, 11, 10))).toEqual({
+      label: "nov/26 – abr/27",
+      meses: 6,
+      vencido: false,
+      podeEstender: true,
+    });
+    expect(cycleInfo(c, new Date(2027, 4, 2)).vencido).toBe(true);
+    expect(cycleInfo({ ...c, fim: "2027-10-01" }).podeEstender).toBe(false);
+  });
+});

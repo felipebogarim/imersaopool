@@ -15,6 +15,7 @@ import { template as acaoSugestao } from "./acao-sugestao";
 import { template as acaoVencimento } from "./acao-vencimento";
 import { template as repPortalBoasVindas } from "./rep-portal-boas-vindas";
 import { template as acaoProrrogacaoDecisao } from "./acao-prorrogacao-decisao";
+import { template as metasConvite } from "./metas-convite";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -42,4 +43,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "acao-vencimento": acaoVencimento,
   "rep-portal-boas-vindas": repPortalBoasVindas,
   "acao-prorrogacao-decisao": acaoProrrogacaoDecisao,
+  "metas-convite": metasConvite,
 };
