@@ -122,6 +122,7 @@ import { Route as ApiPublicBackupDownloadRouteImport } from './routes/api/public
 import { Route as ApiPublicBackupRunRouteImport } from './routes/api/public/backup-run'
 import { Route as ApiPublicBackupToDriveRouteImport } from './routes/api/public/backup-to-drive'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as PortalRepMetasRowIdRouteImport } from './routes/portal-rep_.metas.$rowId'
 import { Route as SolicitacoesAcaoTokenRouteImport } from './routes/solicitacoes.acao.$token'
 import { Route as AuthenticatedAdminCentralMensagensIndexRouteImport } from './routes/_authenticated/admin.central-mensagens.index'
 import { Route as AuthenticatedClientesBiRepIdRazaoRouteImport } from './routes/_authenticated/clientes-bi.$repId.$razao'
@@ -772,6 +773,11 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalRepMetasRowIdRoute = PortalRepMetasRowIdRouteImport.update({
+  id: '/portal-rep_/metas/$rowId',
+  path: '/portal-rep/metas/$rowId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SolicitacoesAcaoTokenRoute = SolicitacoesAcaoTokenRouteImport.update({
   id: '/solicitacoes/acao/$token',
   path: '/solicitacoes/acao/$token',
@@ -1038,6 +1044,7 @@ export interface FileRoutesByFullPath {
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/portal-rep/metas/$rowId': typeof PortalRepMetasRowIdRoute
   '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/clientes/': typeof AuthenticatedClientesIndexRoute
   '/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
@@ -1178,6 +1185,7 @@ export interface FileRoutesByTo {
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/portal-rep/metas/$rowId': typeof PortalRepMetasRowIdRoute
   '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/clientes': typeof AuthenticatedClientesIndexRoute
   '/entrevistas': typeof AuthenticatedEntrevistasIndexRoute
@@ -1322,6 +1330,7 @@ export interface FileRoutesById {
   '/api/public/backup-run': typeof ApiPublicBackupRunRoute
   '/api/public/backup-to-drive': typeof ApiPublicBackupToDriveRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/portal-rep_/metas/$rowId': typeof PortalRepMetasRowIdRoute
   '/solicitacoes/acao/$token': typeof SolicitacoesAcaoTokenRoute
   '/_authenticated/clientes/': typeof AuthenticatedClientesIndexRoute
   '/_authenticated/entrevistas/': typeof AuthenticatedEntrevistasIndexRoute
@@ -1466,6 +1475,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/portal-rep/metas/$rowId'
     | '/solicitacoes/acao/$token'
     | '/clientes/'
     | '/entrevistas/'
@@ -1606,6 +1616,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/portal-rep/metas/$rowId'
     | '/solicitacoes/acao/$token'
     | '/clientes'
     | '/entrevistas'
@@ -1749,6 +1760,7 @@ export interface FileRouteTypes {
     | '/api/public/backup-run'
     | '/api/public/backup-to-drive'
     | '/lovable/email/suppression'
+    | '/portal-rep_/metas/$rowId'
     | '/solicitacoes/acao/$token'
     | '/_authenticated/clientes/'
     | '/_authenticated/entrevistas/'
@@ -1823,6 +1835,7 @@ export interface RootRouteChildren {
   ApiPublicBackupRunRoute: typeof ApiPublicBackupRunRoute
   ApiPublicBackupToDriveRoute: typeof ApiPublicBackupToDriveRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  PortalRepMetasRowIdRoute: typeof PortalRepMetasRowIdRoute
   SolicitacoesAcaoTokenRoute: typeof SolicitacoesAcaoTokenRoute
   ApiPublicHooksActionDueAlertsRoute: typeof ApiPublicHooksActionDueAlertsRoute
   ApiPublicHooksActionWeeklyReminderRoute: typeof ApiPublicHooksActionWeeklyReminderRoute
@@ -2632,6 +2645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal-rep_/metas/$rowId': {
+      id: '/portal-rep_/metas/$rowId'
+      path: '/portal-rep/metas/$rowId'
+      fullPath: '/portal-rep/metas/$rowId'
+      preLoaderRoute: typeof PortalRepMetasRowIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/solicitacoes/acao/$token': {
       id: '/solicitacoes/acao/$token'
       path: '/solicitacoes/acao/$token'
@@ -3149,6 +3169,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicBackupRunRoute: ApiPublicBackupRunRoute,
   ApiPublicBackupToDriveRoute: ApiPublicBackupToDriveRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  PortalRepMetasRowIdRoute: PortalRepMetasRowIdRoute,
   SolicitacoesAcaoTokenRoute: SolicitacoesAcaoTokenRoute,
   ApiPublicHooksActionDueAlertsRoute: ApiPublicHooksActionDueAlertsRoute,
   ApiPublicHooksActionWeeklyReminderRoute:

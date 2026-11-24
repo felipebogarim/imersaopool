@@ -3,12 +3,21 @@
 // Gestão (admin/gestor): RPCs com o cliente RLS do usuário; o banco confere papel e empresa.
 // Representante (usuário externo): service role + `repForUser`, sempre limitado à carteira
 // dele, recebendo só meta oficial, as próprias sugestões e o atingimento já calculado.
-// Enquanto a migration não for aplicada, as leituras devolvem `available: false`.
+// Sugestão IA: contexto do banco (só gestão) → modelo → registro com a base da recomendação.
+// Convite: cria o acesso do representante (primeiro acesso com definição de senha) e envia
+// o e-mail com o link das metas do cliente.
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CANONICAL_FAMILIES } from "@/lib/client-bi-familias";
+import {
+  AI_MODEL,
+  buildAiPrompt,
+  parseAiSuggestions,
+  referenciasDaCategoria,
+  type AiContext,
+} from "@/lib/performance-metas-ai";
 import {
   repView,
   type GoalsState,
@@ -68,17 +77,6 @@ export const saveMetasGoals = createServerFn({ method: "POST" })
           }),
         )
         .max(7),
-      sugestoes_ia: z
-        .array(
-          z.object({
-            familia,
-            valor: z.number().nonnegative().max(1e11),
-            justificativa: text,
-            tag: z.enum(["imersao", "tendencia"]),
-            origem: z.enum(["simulacao", "modelo"]),
-          }),
-        )
-        .max(7),
       /** Competência a partir da qual as metas valem (YYYY-MM-01); padrão: mês corrente. */
       vigenteDesde: z
         .string()
@@ -90,7 +88,7 @@ export const saveMetasGoals = createServerFn({ method: "POST" })
     callRpc(context.supabase, "save_performance_goals", {
       _row_id: data.rowId,
       _metas: data.metas,
-      _sugestoes_ia: data.sugestoes_ia,
+      _sugestoes_ia: [], // sugestões da IA são registradas ao serem geradas
       _vigente_desde: data.vigenteDesde ?? null,
     }),
   );
@@ -122,7 +120,85 @@ export const confirmMetasLink = createServerFn({ method: "POST" })
     }),
   );
 
+/** Gera a sugestão da IA para os 7 portfólios e registra no banco (valor, justificativa, base). */
+export const generateMetasAiSuggestions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput)
+  .handler(async ({ data, context }) => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("IA indisponível neste ambiente (LOVABLE_API_KEY ausente).");
+    const client = context.supabase as unknown as RpcClient;
+    const { data: raw, error } = await client.rpc("performance_goal_ai_context", {
+      _row_id: data.rowId,
+    });
+    if (error) {
+      if (NOT_MIGRATED.has(error.code ?? ""))
+        throw new Error(
+          "Banco desatualizado: aplique a migration da sugestão IA (20261125120000).",
+        );
+      throw new Error(error.message);
+    }
+    const ctx = raw as AiContext;
+    const referencias = referenciasDaCategoria(ctx.perfil?.categoria ?? ctx.cliente.categoria);
+    const { system, user } = buildAiPrompt(ctx, referencias);
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      if (res.status === 429) throw new Error("Limite de requisições da IA. Tente em instantes.");
+      if (res.status === 402) throw new Error("Créditos de IA esgotados no workspace.");
+      throw new Error(`Falha na IA (${res.status}).`);
+    }
+    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const content = json.choices?.[0]?.message?.content ?? "";
+    const sugestoes = parseAiSuggestions(content, ctx, referencias);
+    if (sugestoes.length === 0)
+      throw new Error("A IA não retornou sugestões válidas. Tente novamente.");
+    return callRpc(client, "record_performance_goal_ai_suggestions", {
+      _row_id: data.rowId,
+      _sugestoes: sugestoes,
+      _modelo: AI_MODEL,
+    });
+  });
+
+/** Convida o representante da linha para revisar as metas do cliente (e-mail real). */
+export const inviteRepToMetas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput.extend({ mensagem: z.string().trim().min(1).max(2000) }))
+  .handler(async ({ data, context }) => {
+    // Mesma checagem de gestão das metas: admin/gestor da empresa ativa da linha.
+    const check = await callRpc(context.supabase, "get_performance_goals", { _row_id: data.rowId });
+    if (!check.available) throw new Error("Persistência das metas indisponível.");
+    // O representante revisa sobre metas oficiais já gravadas (e o cliente aparece no portal).
+    if (!check.state.cycle)
+      throw new Error("Salve as metas do cliente antes de convidar o representante.");
+    const { inviteRepToMetasRow } = await import("@/lib/rep-portal.server");
+    return inviteRepToMetasRow(data.rowId, data.mensagem);
+  });
+
 // ---------------------------- Representante ----------------------------------
+
+type AdminFrom = {
+  from: (t: string) => {
+    select: (c: string) => {
+      eq: (
+        k: string,
+        v: string,
+      ) => {
+        maybeSingle: () => PromiseLike<{ data: { razao_social?: string } | null }>;
+      };
+    };
+  };
+};
 
 type RepResult = { available: false } | { available: true; view: RepGoalsView };
 
@@ -135,7 +211,17 @@ async function repCall(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const rep = await repForUser(userId);
   const res = await callRpc(supabaseAdmin, fn, { ...args, _representative_id: rep.id });
-  return res.available ? { available: true, view: repView(res.state) } : res;
+  if (!res.available) return res;
+  // A RPC já confirmou que a linha é da carteira deste representante.
+  const { data: row } = await (supabaseAdmin as unknown as AdminFrom)
+    .from("rep_performance_rows")
+    .select("razao_social, categoria")
+    .eq("id", String(args._row_id))
+    .maybeSingle();
+  return {
+    available: true,
+    view: { ...repView(res.state), cliente: String(row?.razao_social ?? "").trim() },
+  };
 }
 
 export const repGetMetasGoals = createServerFn({ method: "POST" })
@@ -159,3 +245,12 @@ export const repSaveMetasSuggestions = createServerFn({ method: "POST" })
       _sugestoes: data.sugestoes,
     }),
   );
+
+/** Clientes da carteira do representante com metas em ciclo (para o portal). */
+export const repListMetas = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { repForUser, listRepMetasRows } = await import("@/lib/rep-portal.server");
+    const rep = await repForUser(context.userId);
+    return listRepMetasRows(rep.id);
+  });

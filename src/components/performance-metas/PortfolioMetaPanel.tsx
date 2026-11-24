@@ -2,7 +2,7 @@
 // Seções: sugestão do representante | sugestão IA (só gestão) | meta do gestor,
 // sempre com valor e comentário em campos separados.
 
-import { ClipboardCopy, RotateCcw, Sparkles } from "lucide-react";
+import { ClipboardCopy, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,8 @@ export function PortfolioMetaPanel({
   point,
   agendadas = [],
   unsaved,
+  gerandoIa = false,
+  iaDisponivel = true,
   saveBar,
   vis,
   selected,
@@ -49,6 +51,8 @@ export function PortfolioMetaPanel({
   swatches,
   actions,
 }: {
+  gerandoIa?: boolean;
+  iaDisponivel?: boolean;
   /** Competência + botão Salvar, no rodapé do bloco editável (gestor ou representante). */
   saveBar?: React.ReactNode;
   draft: FamilyMetaDraft;
@@ -184,14 +188,9 @@ export function PortfolioMetaPanel({
             title="Sugestão IA"
             aside={
               draft.sugestaoIa ? (
-                <div className="flex gap-1">
-                  <Badge variant="outline" className="text-[10px]">
-                    {AI_TAG_LABEL[draft.sugestaoIa.tag]}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[9px] uppercase">
-                    Simulação
-                  </Badge>
-                </div>
+                <Badge variant="outline" className="text-[10px]">
+                  Base: {AI_TAG_LABEL[draft.sugestaoIa.tag]}
+                </Badge>
               ) : null
             }
           >
@@ -203,16 +202,31 @@ export function PortfolioMetaPanel({
                 <Field label="Justificativa">
                   <CommentText text={draft.sugestaoIa.justificativa} />
                 </Field>
+                {draft.sugestaoIa.fundamento && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Fundamento: {draft.sugestaoIa.fundamento}
+                  </p>
+                )}
               </>
             ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={actions.gerarIa}
-                disabled={draft.referencia == null}
-              >
-                <Sparkles className="mr-1.5 h-4 w-4" /> Gerar sugestão IA
-              </Button>
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Sem sugestão registrada para este portfólio.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={actions.gerarIa}
+                  disabled={gerandoIa || !iaDisponivel}
+                >
+                  {gerandoIa ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1.5 h-4 w-4" />
+                  )}
+                  {gerandoIa ? "Gerando…" : "Gerar sugestão IA"}
+                </Button>
+              </div>
             )}
           </Section>
         )}

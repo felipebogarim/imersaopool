@@ -19,7 +19,20 @@ const state: GoalsState = {
   ],
   rep_suggestions: [{ familia: "PERFIL", valor: 900, justificativa: "queda" }],
   ai_suggestions: [
-    { familia: "PERFIL", valor: 1100, justificativa: "j", tag: "imersao", origem: "simulacao" },
+    {
+      familia: "PERFIL",
+      valor: 1100,
+      justificativa: "j",
+      tag: "imersao",
+      origem: "modelo",
+      base: {
+        fontes: ["imersao", "historico"],
+        imersao: { entrevistas: 2, relatorios: 1, ultima: "2026-10-12" },
+        historico: { periodos: 4 },
+      },
+    },
+    // registro antigo da fase de protótipo: não aparece
+    { familia: "PRO LED", valor: 10, justificativa: "x", tag: "imersao", origem: "simulacao" },
   ],
   base: {
     realizado: { PERFIL: 600 },
@@ -53,8 +66,10 @@ describe("performance-metas-persistence", () => {
       valor: 1100,
       justificativa: "j",
       tag: "imersao",
-      simulada: true,
+      fundamento:
+        "Imersão 12/10/26: 2 entrevista(s), 1 relatório(s) de campo · 4 período(s) de histórico",
     });
+    expect(d.find((x) => x.familia === "PRO LED")?.sugestaoIa).toBeNull();
     const decor = d.find((x) => x.familia === "DECOR NEWLINE");
     expect(decor?.origem).toBe("padrao");
     expect(decor?.metaOficial).toBe(decor?.referencia);
@@ -79,7 +94,7 @@ describe("performance-metas-persistence", () => {
     expect(args.metas).toEqual([
       expect.objectContaining({ familia: "PERFIL", meta_mensal: 1300, origem: "gestor" }),
     ]);
-    expect(args.sugestoes_ia[0]).toMatchObject({ origem: "simulacao", tag: "imersao" });
+    expect(args).not.toHaveProperty("sugestoes_ia");
   });
 
   it("competências: meses do ciclo, padrão no mês corrente", () => {

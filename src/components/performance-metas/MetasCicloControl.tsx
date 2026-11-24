@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { CalendarRange, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
+import { AlertTriangle, CalendarRange, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,7 +33,7 @@ export function MetasCicloControl({
   rowId: string;
   cycle: GoalsState["cycle"];
   proximo?: GoalsState["cycle"];
-  /** Banco habilitado (migration aplicada). */
+  /** Persistência disponível (RPCs das metas respondendo). */
   enabled: boolean;
   canManage: boolean;
   onChange: (state: GoalsState) => void;
@@ -42,8 +42,9 @@ export function MetasCicloControl({
 
   if (!enabled) {
     return (
-      <span className="hidden items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 sm:flex">
-        <FlaskConical className="h-3.5 w-3.5" /> Simulação local · banco ainda não habilitado
+      <span className="hidden items-center gap-1 text-[11px] text-red-700 dark:text-red-400 sm:flex">
+        <AlertTriangle className="h-3.5 w-3.5" /> Persistência indisponível · alterações não serão
+        gravadas
       </span>
     );
   }

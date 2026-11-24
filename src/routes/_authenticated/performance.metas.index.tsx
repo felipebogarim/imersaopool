@@ -14,10 +14,7 @@ function MetasIndexPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader
-        title="Metas"
-        subtitle="Metas mensais individualizadas por cliente e família — simulação local"
-      />
+      <PageHeader title="Metas" subtitle="Metas mensais individualizadas por cliente e portfólio" />
       <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
         {viewer.loading ? null : (
           <MetasCarteiraList restrictToRepIds={isRepView ? viewer.repIds : null} />

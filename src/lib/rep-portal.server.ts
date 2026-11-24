@@ -279,67 +279,176 @@ export async function recordExtensionRequest(args: {
   });
 }
 
-/** Cria (ou reaproveita) o usuário do representante e envia o convite para definir a senha. */
-export async function provisionRepAccess(
-  repId: string,
-): Promise<{ email: string; created: boolean }> {
+type RepRecord = { id: string; nome: string; email: string | null; user_id: string | null };
+
+async function loadRep(repId: string): Promise<RepRecord> {
   const { data: rep } = await admin
     .from("representatives")
     .select("id, nome, email, user_id")
     .eq("id", repId)
     .maybeSingle();
   if (!rep) throw new Error("Representante não encontrado.");
+  return rep as RepRecord;
+}
+
+/**
+ * Garante o usuário (externo) do representante. Sem usuário: cria, vincula e devolve o link de
+ * primeiro acesso (definir senha). Com usuário: só devolve o id.
+ */
+async function ensureRepUser(
+  rep: RepRecord,
+): Promise<{ uid: string; email: string; created: boolean; senhaUrl: string | null }> {
   const email = String(rep.email ?? "")
     .trim()
     .toLowerCase();
   if (!email) throw new Error("Cadastre o e-mail do representante primeiro.");
-
-  let uid: string | null = rep.user_id ?? null;
-  let created = false;
-  if (!uid) {
-    // Não reaproveita conta existente: evitaria transformar um usuário interno em "externo".
-    const { data: u, error } = await admin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { full_name: rep.nome },
-    });
-    if (error) {
-      if (/already|registered|exists/i.test(error.message))
-        throw new Error("Já existe um usuário com este e-mail. Use outro e-mail para o portal.");
-      throw new Error(error.message);
-    }
-    uid = u?.user?.id ?? null;
-    if (!uid) throw new Error("Falha ao criar o usuário.");
-    created = true;
-    // Vínculo ANTES de qualquer outra coisa: ativa a blindagem do banco para esse usuário.
-    const { error: linkErr } = await admin
-      .from("representatives")
-      .update({ user_id: uid })
-      .eq("id", rep.id);
-    if (linkErr) {
-      await admin.auth.admin.deleteUser(uid);
-      throw new Error("Falha ao vincular o usuário ao representante.");
-    }
-    await admin
+  if (rep.user_id) {
+    // Acesso criado, mas senha ainda não cadastrada: reenvia o link de primeiro acesso.
+    const { data: prof } = await admin
       .from("profiles")
-      .upsert({ id: uid, email, full_name: rep.nome, status: "pendente" }, { onConflict: "id" });
-    await admin.from("user_roles").delete().eq("user_id", uid);
-    await admin.from("user_roles").insert({ user_id: uid, role: "representante" });
+      .select("status")
+      .eq("id", rep.user_id)
+      .maybeSingle();
+    const pendente = prof?.status === "pendente";
+    return {
+      uid: rep.user_id,
+      email,
+      created: false,
+      senhaUrl: pendente ? await firstAccessLink(rep.user_id) : null,
+    };
   }
 
+  // Não reaproveita conta existente: evitaria transformar um usuário interno em "externo".
+  const { data: u, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: { full_name: rep.nome },
+  });
+  if (error) {
+    if (/already|registered|exists/i.test(error.message))
+      throw new Error("Já existe um usuário com este e-mail. Use outro e-mail para o portal.");
+    throw new Error(error.message);
+  }
+  const uid: string | null = u?.user?.id ?? null;
+  if (!uid) throw new Error("Falha ao criar o usuário.");
+  // Vínculo ANTES de qualquer outra coisa: ativa a blindagem do banco para esse usuário.
+  const { error: linkErr } = await admin
+    .from("representatives")
+    .update({ user_id: uid })
+    .eq("id", rep.id);
+  if (linkErr) {
+    await admin.auth.admin.deleteUser(uid);
+    throw new Error("Falha ao vincular o usuário ao representante.");
+  }
+  await admin
+    .from("profiles")
+    .upsert({ id: uid, email, full_name: rep.nome, status: "pendente" }, { onConflict: "id" });
+  await admin.from("user_roles").delete().eq("user_id", uid);
+  await admin.from("user_roles").insert({ user_id: uid, role: "representante" });
+  return { uid, email, created: true, senhaUrl: await firstAccessLink(uid) };
+}
+
+async function firstAccessLink(uid: string): Promise<string> {
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const { error: tokErr } = await admin.from("first_access_tokens").insert({ user_id: uid, token });
   if (tokErr) throw new Error("Falha ao gerar o convite.");
+  return `${origin()}/definir-senha?t=${token}`;
+}
+
+/** Cria (ou reaproveita) o usuário do representante e envia o convite para definir a senha. */
+export async function provisionRepAccess(
+  repId: string,
+): Promise<{ email: string; created: boolean }> {
+  const rep = await loadRep(repId);
+  const user = await ensureRepUser(rep);
+  const link = user.senhaUrl ?? (await firstAccessLink(user.uid));
   const res = await sendSystemEmail({
     templateName: "rep-portal-boas-vindas",
-    to: email,
-    idempotencyKey: `rep-portal-${uid}-${Date.now()}`,
+    to: user.email,
+    idempotencyKey: `rep-portal-${user.uid}-${Date.now()}`,
+    templateData: { name: rep.nome, link, portalUrl: `${origin()}/portal-rep` },
+  });
+  if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
+  return { email: user.email, created: user.created };
+}
+
+/**
+ * Convite para revisar as metas de um cliente (linha de Performance). Quem chama já conferiu
+ * que o usuário é gestão da empresa da linha. Primeiro acesso: cria o usuário e inclui o link
+ * para definir a senha.
+ */
+export async function inviteRepToMetasRow(
+  rowId: string,
+  mensagem: string,
+): Promise<{ email: string; primeiroAcesso: boolean }> {
+  const { data: row } = await admin
+    .from("rep_performance_rows")
+    .select("razao_social, rep_performance_uploads!inner(representative_id)")
+    .eq("id", rowId)
+    .maybeSingle();
+  const repId = row?.rep_performance_uploads?.representative_id as string | undefined;
+  if (!row || !repId) throw new Error("Cliente não encontrado.");
+  const rep = await loadRep(repId);
+  const user = await ensureRepUser(rep);
+  const res = await sendSystemEmail({
+    templateName: "metas-convite",
+    to: user.email,
+    idempotencyKey: `metas-convite-${rowId}-${user.uid}-${Date.now()}`,
     templateData: {
       name: rep.nome,
-      link: `${origin()}/definir-senha?t=${token}`,
-      portalUrl: `${origin()}/portal-rep`,
+      cliente: String(row.razao_social ?? "").trim(),
+      mensagem: mensagem.trim(),
+      metasUrl: `${origin()}/portal-rep/metas/${rowId}`,
+      senhaUrl: user.senhaUrl ?? undefined,
     },
   });
   if (!res.sent) throw new Error(`Convite não enviado (${res.reason ?? "erro"}).`);
-  return { email, created };
+  return { email: user.email, primeiroAcesso: user.created };
+}
+
+export type RepMetasRow = { rowId: string; cliente: string; periodo: string | null };
+
+/**
+ * Clientes da carteira do representante que têm ciclo de metas, apontando para a linha do
+ * upload vigente mais recente de cada cliente.
+ */
+export async function listRepMetasRows(repId: string): Promise<RepMetasRow[]> {
+  const { data: cycles } = await admin
+    .from("performance_goal_cycles")
+    .select("cliente_key")
+    .eq("representative_id", repId);
+  const keys = new Set<string>((cycles ?? []).map((c: { cliente_key: string }) => c.cliente_key));
+  if (keys.size === 0) return [];
+  const { data: rows } = await admin
+    .from("rep_performance_rows")
+    .select(
+      "id, razao_social, rep_performance_uploads!inner(representative_id, substituida_em, periodo_label, periodo_inicio, created_at)",
+    )
+    .eq("rep_performance_uploads.representative_id", repId)
+    .is("rep_performance_uploads.substituida_em", null);
+  type Row = {
+    id: string;
+    razao_social: string;
+    rep_performance_uploads: {
+      periodo_label: string | null;
+      periodo_inicio: string | null;
+      created_at: string;
+    };
+  };
+  const best = new Map<string, Row>();
+  const ordem = (r: Row) =>
+    `${r.rep_performance_uploads.periodo_inicio ?? ""}|${r.rep_performance_uploads.created_at}`;
+  for (const r of (rows ?? []) as Row[]) {
+    const key = r.razao_social.trim().toUpperCase();
+    if (!keys.has(key)) continue;
+    const cur = best.get(key);
+    if (!cur || ordem(r) > ordem(cur)) best.set(key, r);
+  }
+  return [...best.values()]
+    .map((r) => ({
+      rowId: r.id,
+      cliente: r.razao_social.trim(),
+      periodo: r.rep_performance_uploads.periodo_label,
+    }))
+    .sort((a, b) => a.cliente.localeCompare(b.cliente, "pt-BR"));
 }

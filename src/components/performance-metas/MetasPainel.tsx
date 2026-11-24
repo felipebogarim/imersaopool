@@ -1,11 +1,11 @@
 // Painel individual de metas do cliente.
 // Três partes: dashboard fixo no topo → gráfico comparativo → painel do portfólio.
-// Com a migration aplicada, grava em performance_goal_* (sem tocar nas metas oficiais
-// do BI); antes disso funciona como simulação local.
+// Grava em performance_goal_* (sem tocar nas metas oficiais do BI). A sugestão IA é gerada
+// no servidor (imersão → tendência → perfil → comparáveis) e registrada no banco.
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link2, Mail, RotateCcw, Save, Sparkles } from "lucide-react";
+import { Link2, Loader2, Mail, RotateCcw, Save, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ import {
   metasVisibility,
   restoreDefault,
   setMetaOficial,
-  simulateAiSuggestions,
   summarizeDrafts,
   type FamilyMetaDraft,
   type MetaOrigem,
@@ -46,7 +45,7 @@ import {
   type GoalsState,
   type MetasLoadResult,
 } from "@/lib/performance-metas-persistence";
-import { saveMetasGoals } from "@/lib/performance-metas.functions";
+import { generateMetasAiSuggestions, saveMetasGoals } from "@/lib/performance-metas.functions";
 import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasComparativoChart } from "./MetasComparativoChart";
@@ -103,10 +102,9 @@ export function MetasPainel({
   const [goals, setGoals] = useState<GoalsState | null>(
     persisted.available ? persisted.state : null,
   );
-  // Sugestões IA já vêm preenchidas (simulação) para o painel não começar vazio;
-  // o que estiver gravado no banco prevalece.
+  // Rascunho inicial = meta padrão da categoria; o que estiver gravado no banco prevalece.
   const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
-    const base = simulateAiSuggestions(buildInitialDrafts(cliente.categoria));
+    const base = buildInitialDrafts(cliente.categoria);
     return persisted.available ? hydrateDrafts(base, persisted.state) : base;
   });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
@@ -120,6 +118,7 @@ export function MetasPainel({
   );
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
+  const [gerandoIa, setGerandoIa] = useState(false);
   const [selected, setSelected] = useState<CanonicalFamily>(METAS_FAMILIES[0]);
   const [vinculoOpen, setVinculoOpen] = useState(false);
   const [conviteOpen, setConviteOpen] = useState(false);
@@ -161,39 +160,61 @@ export function MetasPainel({
 
   async function handleSave() {
     if (unsaved.length === 0) return;
+    const payload = buildSavePayload(drafts, role, unsaved);
+    // A prévia "ver como representante" não grava nada.
+    if (previewRep || payload.perfil !== "gestor") {
+      setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
+      toast.info("Pré-visualização do representante: nada é gravado.");
+      return;
+    }
+    const indisponivel = () =>
+      toast.error("Não foi possível gravar.", {
+        description: "Persistência das metas indisponível. Recarregue a página e tente novamente.",
+      });
+    if (!dbEnabled) return indisponivel();
     setSaving(true);
     try {
-      const payload = buildSavePayload(drafts, role, unsaved);
-      // Grava só a gestão com o banco habilitado; a prévia "ver como representante" não grava.
-      const res =
-        dbEnabled && payload.perfil === "gestor"
-          ? await saveMetasGoals({
-              data: { rowId, ...gestorRpcArgs(payload), vigenteDesde: competencia },
-            })
-          : null;
-      if (res?.available) {
-        // Volta ao que vale hoje; metas de competências futuras aparecem como agendadas.
-        const hydrated = hydrateDrafts(drafts, res.state);
-        setGoals(res.state);
-        setDrafts((prev) => mergeSaved(prev, hydrated, role));
-        setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
-      } else setSavedDrafts((prev) => mergeSaved(prev, drafts, role));
-      if (res?.available)
-        toast.success(`${unsaved.length} portfólio(s) salvo(s).`, {
-          description: `Valendo a partir de ${competencia.slice(5, 7)}/${competencia.slice(0, 4)}.`,
-        });
-      else
-        toast.success(`${unsaved.length} portfólio(s) salvo(s) nesta sessão.`, {
-          description: previewRep
-            ? "Pré-visualização do representante: nada é gravado."
-            : "Banco ainda não habilitado: a migration não foi aplicada.",
-        });
+      const res = await saveMetasGoals({
+        data: { rowId, ...gestorRpcArgs(payload), vigenteDesde: competencia },
+      });
+      if (!res.available) return indisponivel();
+      // Volta ao que vale hoje; metas de competências futuras aparecem como agendadas.
+      const hydrated = hydrateDrafts(drafts, res.state);
+      setGoals(res.state);
+      setDrafts((prev) => mergeSaved(prev, hydrated, role));
+      setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
+      toast.success(`${unsaved.length} portfólio(s) salvo(s).`, {
+        description: `Valendo a partir de ${competencia.slice(5, 7)}/${competencia.slice(0, 4)}.`,
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
   }
+
+  /** Gera (e registra no banco) a sugestão da IA dos 7 portfólios; não altera a meta oficial. */
+  async function handleGerarIa() {
+    if (!dbEnabled || gerandoIa) return;
+    setGerandoIa(true);
+    try {
+      const res = await generateMetasAiSuggestions({ data: { rowId } });
+      if (!res.available) throw new Error("Persistência das metas indisponível.");
+      setGoals(res.state);
+      const ia = new Map(hydrateDrafts(drafts, res.state).map((d) => [d.familia, d.sugestaoIa]));
+      setDrafts((prev) => prev.map((d) => ({ ...d, sugestaoIa: ia.get(d.familia) ?? null })));
+      const fundamento = [...ia.values()].find((x) => x?.fundamento)?.fundamento;
+      toast.success(
+        "Sugestão IA gerada e registrada.",
+        fundamento ? { description: fundamento } : {},
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível gerar a sugestão IA.");
+    } finally {
+      setGerandoIa(false);
+    }
+  }
+  const temIa = drafts.some((d) => d.sugestaoIa);
 
   const patch = (familia: CanonicalFamily, p: Partial<FamilyMetaDraft>) =>
     setDrafts((prev) => prev.map((d) => (d.familia === familia ? { ...d, ...p } : d)));
@@ -227,11 +248,27 @@ export function MetasPainel({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setDrafts((d) => applyAiSuggestion(simulateAiSuggestions(d)))}
-                title="Aplica a sugestão IA (simulada) como meta oficial em todos os portfólios"
+                onClick={handleGerarIa}
+                disabled={!dbEnabled || gerandoIa}
+                title="Gera a sugestão da IA para os 7 portfólios: imersão, tendência histórica, perfil e comparáveis da região"
               >
-                <Sparkles className="mr-1.5 h-4 w-4" /> Sugestão IA
+                {gerandoIa ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-1.5 h-4 w-4" />
+                )}
+                {gerandoIa ? "Gerando…" : temIa ? "Atualizar sugestão IA" : "Gerar sugestão IA"}
               </Button>
+              {temIa && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDrafts((d) => applyAiSuggestion(d))}
+                  title="Usa a sugestão da IA como meta oficial em todos os portfólios"
+                >
+                  <Wand2 className="mr-1.5 h-4 w-4" /> Aplicar IA
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -334,7 +371,7 @@ export function MetasPainel({
           </Tile>
 
           {vis.verMetaPadrao ? (
-            <Tile label="Status da simulação">
+            <Tile label="Origem das metas">
               <span
                 className={cn(
                   "inline-flex rounded-md px-2 py-0.5 text-sm font-semibold",
@@ -379,8 +416,7 @@ export function MetasPainel({
 
       {semReferencia && (
         <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Categoria “{cliente.categoria ?? "—"}” sem referência padrão. Defina as metas manualmente
-          na simulação.
+          Categoria “{cliente.categoria ?? "—"}” sem referência padrão. Defina as metas manualmente.
         </div>
       )}
 
@@ -403,6 +439,8 @@ export function MetasPainel({
             point={comparativo[idx]}
             agendadas={(goals?.agendadas ?? []).filter((a) => a.familia === fam)}
             unsaved={unsaved}
+            gerandoIa={gerandoIa}
+            iaDisponivel={dbEnabled}
             saveBar={
               <>
                 {dbEnabled && vis.editarMetaOficial && (
@@ -433,11 +471,7 @@ export function MetasPainel({
               setComentarioGestor: (t) => patch(fam, { comentarioGestor: t }),
               setSugestaoRep: (v) => patch(fam, { sugestaoRep: v }),
               setJustificativaRep: (t) => patch(fam, { justificativaRep: t }),
-              gerarIa: () =>
-                setDrafts((prev) => {
-                  const sim = simulateAiSuggestions(prev);
-                  return prev.map((x, i) => (x.familia === fam ? sim[i] : x));
-                }),
+              gerarIa: handleGerarIa,
               usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, fam)),
               restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, fam)),
               copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, fam)),
@@ -461,6 +495,8 @@ export function MetasPainel({
       <ConviteRepresentanteDialog
         open={conviteOpen}
         onOpenChange={setConviteOpen}
+        rowId={rowId}
+        enabled={dbEnabled}
         repName={cliente.repName}
         clienteNome={cliente.razaoSocial}
       />

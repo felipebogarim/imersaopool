@@ -168,6 +168,8 @@ export function gestorRpcArgs(payload: Extract<SavePayload, { perfil: "gestor" }
 
 export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendadas" | "proximo"> & {
   atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
+  /** Razão social do cliente (preenchida pelo servidor do portal). */
+  cliente?: string;
 };
 
 /**

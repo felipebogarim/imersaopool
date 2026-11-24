@@ -54,7 +54,7 @@ function MetasClientePage() {
   });
 
   const isGestor = viewer.role === "gestor";
-  // Metas gravadas (gestão). Sem a migration aplicada → { available: false } (simulação local).
+  // Metas gravadas (gestão). Funções ausentes no banco → { available: false } (tela avisa).
   const { data: persisted, isLoading: loadingGoals } = useQuery({
     queryKey: ["performance-metas", "goals", rowId],
     enabled: !viewer.loading && isGestor,

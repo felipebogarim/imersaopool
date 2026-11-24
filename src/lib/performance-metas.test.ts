@@ -14,7 +14,6 @@ import {
   parseMetaInput,
   restoreDefault,
   setMetaOficial,
-  simulateAiSuggestions,
   summarizeDrafts,
   viewerRoleFromRoles,
   type FamilyMetaDraft,
@@ -25,6 +24,13 @@ const withMetas = (values: Array<number | null>, referencia: number | null = 100
   buildInitialDrafts("Gold").map(
     (d, i): FamilyMetaDraft => ({ ...d, referencia, metaOficial: values[i] ?? null }),
   );
+
+// Sugestão IA sintética (no app ela vem do modelo e é registrada no banco).
+const comIa = (drafts: FamilyMetaDraft[]): FamilyMetaDraft[] =>
+  drafts.map((d) => ({
+    ...d,
+    sugestaoIa: { valor: 150, justificativa: "teste", tag: "tendencia" as const },
+  }));
 
 const gestor = metasVisibility("gestor");
 const rep = metasVisibility("representante");
@@ -72,7 +78,7 @@ describe("performance-metas (simulação local)", () => {
   });
 
   it("ações registram a origem e o status fica misto quando combinadas", () => {
-    let d = simulateAiSuggestions(withMetas([100, 100, 100, 100, 100, 100, 100]));
+    let d = comIa(withMetas([100, 100, 100, 100, 100, 100, 100]));
     d = d.map((x) => ({ ...x, sugestaoRep: 120 }));
     d = applyAiSuggestion(d, "PERFIL");
     d = copyRepSuggestion(d, "PRO LED");
@@ -106,18 +112,6 @@ describe("performance-metas (simulação local)", () => {
     const all = restoreDefault(edited);
     expect(all.every((x) => x.metaOficial === 100 && x.origem === "padrao")).toBe(true);
     expect(all.every((x) => x.sugestaoRep === 42)).toBe(true);
-  });
-
-  it("sugestão IA é demonstrativa, marcada como simulada e com tag de origem", () => {
-    const sim = simulateAiSuggestions(withMetas([1, 2, 3, 4, 5, 6, 7]));
-    for (const d of sim) {
-      expect(d.sugestaoIa?.simulada).toBe(true);
-      expect(["imersao", "tendencia"]).toContain(d.sugestaoIa?.tag);
-      expect((d.sugestaoIa?.valor ?? 0) % 50).toBe(0);
-    }
-    expect(simulateAiSuggestions(buildInitialDrafts(null)).every((d) => d.sugestaoIa == null)).toBe(
-      true,
-    );
   });
 
   it("comparativo: barra = performance; metas como participação no total", () => {
@@ -202,7 +196,7 @@ describe("performance-metas (simulação local)", () => {
   });
 
   it("detecta portfólios alterados e monta o payload por perfil", () => {
-    const saved = simulateAiSuggestions(withMetas([100, 100, 100, 100, 100, 100, 100]));
+    const saved = comIa(withMetas([100, 100, 100, 100, 100, 100, 100]));
     let cur = setMetaOficial(saved, "PERFIL", 130);
     cur = cur.map((x) => (x.familia === "PRO LED" ? { ...x, justificativaRep: "obra" } : x));
     expect(changedFamilies(saved, cur)).toEqual(["PRO LED", "PERFIL"]);
@@ -220,7 +214,8 @@ describe("performance-metas (simulação local)", () => {
           referencia: 100,
         },
       ]);
-      expect(g.sugestoes_ia).toHaveLength(1);
+      // a sugestão da IA é registrada ao ser gerada, não no Salvar
+      expect(g).not.toHaveProperty("sugestoes_ia");
     }
     const r = buildSavePayload(cur, "representante", ["PRO LED"]);
     expect(r).toEqual({

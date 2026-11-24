@@ -10,8 +10,8 @@ export type MetasViewer = {
 };
 
 /**
- * Perfil de tela da área Metas. É apenas apresentação: a autorização definitiva
- * (quem lê/escreve metas oficiais e sugestões) virá do backend em etapa futura.
+ * Perfil de tela da área Metas. É apenas apresentação: a autorização real fica no banco
+ * (RPCs performance_goal_* conferem papel e empresa) e no portal do representante.
  */
 export function useMetasViewer(): MetasViewer {
   const { data, isLoading } = useQuery({

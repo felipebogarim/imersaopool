@@ -1,8 +1,8 @@
-// Convite ao representante para colaborar com a revisão de metas.
-// Nesta etapa é só uma prévia: nenhum e-mail é enviado.
+// Convite ao representante para revisar as metas do cliente: envia e-mail real com o link
+// das metas no portal; no primeiro acesso, cria o usuário e inclui o link para cadastrar a senha.
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -14,23 +14,45 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { inviteRepToMetas } from "@/lib/performance-metas.functions";
 
 export function ConviteRepresentanteDialog({
   open,
   onOpenChange,
+  rowId,
+  enabled,
   repName,
   clienteNome,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  rowId: string;
+  enabled: boolean;
   repName: string;
   clienteNome: string;
 }) {
   const [mensagem, setMensagem] = useState(
     `Olá, ${repName}! Gostaríamos da sua colaboração na revisão das metas mensais do cliente ${clienteNome}. ` +
-      "Acesse o painel, registre sua sugestão por portfólio e deixe seus comentários.",
+      "Registre sua sugestão por portfólio e deixe sua justificativa.",
   );
+  const [enviando, setEnviando] = useState(false);
+
+  async function enviar() {
+    setEnviando(true);
+    try {
+      const r = await inviteRepToMetas({ data: { rowId, mensagem } });
+      toast.success(`Convite enviado para ${r.email}.`, {
+        description: r.primeiroAcesso
+          ? "Primeiro acesso: o e-mail inclui o link para cadastrar a senha."
+          : "O representante já tem acesso ao portal.",
+      });
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível enviar o convite.");
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,13 +60,10 @@ export function ConviteRepresentanteDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-4 w-4" /> Convidar representante
-            <Badge variant="secondary" className="text-[9px] uppercase">
-              Simulação
-            </Badge>
           </DialogTitle>
           <DialogDescription>
-            Prévia do convite para revisão colaborativa de metas. Nesta etapa nenhum e-mail é
-            enviado e nenhum acesso é criado.
+            O representante recebe por e-mail o link das metas deste cliente no portal. Se ainda não
+            tiver acesso, o convite cria o acesso e inclui o link para cadastrar a senha.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 text-sm">
@@ -54,24 +73,21 @@ export function ConviteRepresentanteDialog({
           <Textarea
             value={mensagem}
             onChange={(e) => setMensagem(e.target.value)}
+            maxLength={2000}
             className="min-h-[120px] text-sm"
           />
           <p className="text-[11px] text-muted-foreground">
-            O representante verá apenas a meta oficial, as próprias sugestões e os próprios
-            comentários.
+            O representante verá apenas a meta oficial, o atingimento e as próprias sugestões —
+            nunca a meta padrão, comentários do gestor ou sugestões da IA.
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={enviando}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => {
-              toast.info("Simulação: nenhum convite foi enviado.");
-              onOpenChange(false);
-            }}
-          >
-            Enviar convite (simulação)
+          <Button onClick={enviar} disabled={!enabled || enviando || !mensagem.trim()}>
+            {enviando && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            Enviar convite
           </Button>
         </DialogFooter>
       </DialogContent>

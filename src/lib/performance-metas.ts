@@ -32,9 +32,8 @@ export const METAS_FAMILY_LABEL: Record<CanonicalFamily, string> = {
 // ================================ Perfis =====================================
 
 /**
- * Perfil de visualização da tela de Metas.
- * Nesta etapa é derivado no cliente apenas para montar a interface; a regra
- * definitiva de autorização virá do backend (RLS / server functions).
+ * Perfil de visualização da tela de Metas (só monta a interface); a autorização
+ * real é do backend (RPCs com checagem de papel e empresa).
  */
 export type MetasViewerRole = "gestor" | "representante";
 
@@ -333,7 +332,7 @@ export function combineFontes(fontes: BaseFonte[]): BaseFonte | null {
 }
 export type BaseFinanceira = Partial<Record<CanonicalFamily, BaseValor | null>>;
 
-/** Valor vendido do portfólio: backend quando houver; senão estimativa local. */
+/** Valor vendido do portfólio: backend quando houver; senão estimativa (sinalizada). */
 export function realizadoBase(
   draft: Pick<FamilyMetaDraft, "referencia">,
   atingimentoOficial: number | null,
