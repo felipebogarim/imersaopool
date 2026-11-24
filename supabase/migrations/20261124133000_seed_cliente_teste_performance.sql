@@ -23,7 +23,9 @@ DECLARE
   v_metas_cores JSONB := '{"DECOR NEWLINE": "6EE7B7", "DECOR STUDIO": "6EE7B7", "SISTEMAS E MÓDULOS": "6EE7B7", "PRO LED": "6EE7B7", "PRO LAMP": "BEF264", "PERFIL": "6EE7B7", "FITAS E FONTES": "6EE7B7"}'::jsonb;
   v_matrix CONSTANT JSONB := '{"Black":{"DECOR NEWLINE":8000,"DECOR STUDIO":6000,"SISTEMAS E MÓDULOS":10000,"PRO LED":3000,"PRO LAMP":4000,"PERFIL":7000,"FITAS E FONTES":3000},"Gold":{"DECOR NEWLINE":2500,"DECOR STUDIO":3000,"SISTEMAS E MÓDULOS":2500,"PRO LED":1500,"PRO LAMP":1500,"PERFIL":2000,"FITAS E FONTES":2000},"Silver":{"DECOR NEWLINE":1000,"DECOR STUDIO":1500,"SISTEMAS E MÓDULOS":1000,"PRO LED":500,"PRO LAMP":1000,"PERFIL":1000,"FITAS E FONTES":1000}}'::jsonb;
 BEGIN
-  -- 1. Identifica o REPRESENTANTE TESTE exato (ou cria caso não exista)
+  v_company_id := 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid;
+
+  -- 1. Identifica o REPRESENTANTE TESTE exato (busca estrita por nome, sem aproximação)
   SELECT r.id, r.company_id, r.nome, r.regiao
   INTO v_rep
   FROM public.representatives r
@@ -32,24 +34,6 @@ BEGIN
   LIMIT 1;
 
   IF v_rep.id IS NULL THEN
-    SELECT r.id, r.company_id, r.nome, r.regiao
-    INTO v_rep
-    FROM public.representatives r
-    WHERE UPPER(TRIM(r.nome)) ILIKE '%REPRESENTANTE TESTE%'
-    ORDER BY r.created_at DESC
-    LIMIT 1;
-  END IF;
-
-  IF v_rep.id IS NULL THEN
-    SELECT c.id INTO v_company_id
-    FROM public.companies c
-    ORDER BY (c.id = 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid) DESC, c.created_at ASC
-    LIMIT 1;
-
-    IF v_company_id IS NULL THEN
-      v_company_id := 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid;
-    END IF;
-
     INSERT INTO public.representatives (
       company_id,
       nome,
@@ -62,7 +46,7 @@ BEGIN
       observacoes
     ) VALUES (
       v_company_id,
-      'Representante Teste',
+      'REPRESENTANTE TESTE',
       'rep.teste@poolflux.com.br',
       '(11) 99999-0000',
       'SP',
@@ -74,16 +58,13 @@ BEGIN
     RETURNING id, company_id, nome, regiao INTO v_rep;
   END IF;
 
-  -- Garante company_id consistente no representante
+  -- Garante company_id oficial (PoolFlux) caso o representante existente estivesse sem empresa
   IF v_rep.company_id IS NULL THEN
-    SELECT c.id INTO v_company_id
-    FROM public.companies c
-    ORDER BY (c.id = 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid) DESC, c.created_at ASC
-    LIMIT 1;
-    v_company_id := COALESCE(v_company_id, 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid);
     UPDATE public.representatives SET company_id = v_company_id WHERE id = v_rep.id;
     v_rep.company_id := v_company_id;
   END IF;
+
+  RAISE NOTICE 'Empresa alvo: % | Representante: % (ID: %)', v_rep.company_id, v_rep.nome, v_rep.id;
 
   -- 2. Cria ou recupera o upload exclusivo do REPRESENTANTE TESTE (sem tocar em outros representantes)
   SELECT id INTO v_upload_id
@@ -352,5 +333,7 @@ BEGIN
       'Diagnóstico de campo consolidado com plano de ação comercial positivo.'
     );
   END IF;
+
+  RAISE NOTICE 'Seed concluído com sucesso: Upload ID %, Cliente ID %, Linha de Performance ID %', v_upload_id, v_client_id, v_row_id;
 
 END $$;
