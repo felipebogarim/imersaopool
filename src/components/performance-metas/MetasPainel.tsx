@@ -187,6 +187,99 @@ export function MetasPainel({
     [savedDrafts, drafts, role],
   );
 
+  const [visao9mm, setVisao9mm] = useState(false);
+  const podeVerVisao9mm = role === "gestor" && !previewRep && vis.verMetaPadrao;
+
+  // Racional do cenário 9MM: proporção sobre o total mensal da empresa (~13.047.100)
+  const COMPANY_META_BASE_MENSAL = 13_047_100;
+  const RATIO_9MM = 9_000_000 / COMPANY_META_BASE_MENSAL;
+
+  const baseMetaTotal = summary.total > 0 ? summary.total : (summary.referenciaTotal ?? 0);
+  const displayedMeta =
+    visao9mm && podeVerVisao9mm ? Math.round(baseMetaTotal * RATIO_9MM) : baseMetaTotal;
+
+  const totalRealizado = useMemo(() => {
+    let sum = 0;
+    for (const d of drafts) {
+      const r = realizadoBase(d, atingimento[d.familia] ?? null, base[d.familia]);
+      if (r?.valor != null) sum += r.valor;
+    }
+    if (sum > 0) return sum;
+    const ratio = totalProjetado.ratio ?? totalOficial;
+    if (ratio != null && ratio > 0 && baseMetaTotal > 0) {
+      return Math.round(baseMetaTotal * ratio);
+    }
+    return 0;
+  }, [drafts, atingimento, base, totalProjetado.ratio, totalOficial, baseMetaTotal]);
+
+  const displayedAtingimento =
+    displayedMeta > 0
+      ? totalRealizado / displayedMeta
+      : (totalProjetado.ratio ?? totalOficial);
+
+  // Consulta consolidada da carteira do representante para os cards com compras / sem compras
+  const { data: carteiraStats } = useQuery({
+    queryKey: ["performance-metas", "rep-carteira-stats", cliente.uploadId, cliente.repId],
+    enabled: !!(cliente.uploadId || cliente.repId),
+    queryFn: async () => {
+      let query = supabase
+        .from("rep_performance_rows")
+        .select("id, razao_social, total_pct, metas_status, familia_pct");
+
+      if (cliente.uploadId) {
+        query = query.eq("upload_id", cliente.uploadId);
+      } else if (cliente.repId) {
+        const { data: upload } = await supabase
+          .from("rep_performance_uploads")
+          .select("id")
+          .eq("representative_id", cliente.repId)
+          .is("substituida_em", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!upload) return { comCompras: 0, semCompras: 0, total: 0 };
+        query = query.eq("upload_id", upload.id);
+      }
+
+      const { data } = await query;
+      const validRows = (data ?? []).filter((r) => isClientRow(r));
+
+      let comCompras = 0;
+      let semCompras = 0;
+
+      for (const r of validRows) {
+        const pct = sanitizeRatio(r.total_pct);
+        const metasStatus = (r.metas_status ?? {}) as Record<string, string>;
+        const famPct = (r.familia_pct ?? {}) as Record<string, number | null>;
+
+        const hasPurchase =
+          (pct != null && pct > 0) ||
+          Object.values(famPct).some((v) => v != null && v > 0) ||
+          Object.values(metasStatus).some(
+            (st) => st && st !== "sem_compra" && st !== "vazio",
+          );
+
+        if (hasPurchase) {
+          comCompras++;
+        } else {
+          semCompras++;
+        }
+      }
+
+      return {
+        comCompras,
+        semCompras,
+        total: validRows.length,
+      };
+    },
+  });
+
+  const comCompras = carteiraStats?.comCompras ?? 0;
+  const semCompras = carteiraStats?.semCompras ?? 0;
+  const totalCarteira = carteiraStats?.total ?? (comCompras + semCompras);
+  const pctComCompras = totalCarteira > 0 ? Math.round((comCompras / totalCarteira) * 100) : 0;
+  const pctSemCompras = totalCarteira > 0 ? Math.round((semCompras / totalCarteira) * 100) : 0;
+
   // Aviso ao sair da página com alterações não salvas.
   useEffect(() => {
     if (unsaved.length === 0) return;
@@ -370,110 +463,122 @@ export function MetasPainel({
           </div>
         </div>
 
-        <div
-          className={cn(
-            "grid gap-2 sm:grid-cols-2",
-            vis.verMetaPadrao ? "lg:grid-cols-6" : "lg:grid-cols-3",
-          )}
-        >
-          <Tile label="Meta mensal personalizada">
-            <p className="text-2xl font-semibold tabular-nums">{fmtBRL(summary.total)}</p>
-            <p className="text-[10px] text-muted-foreground">Soma dos 7 portfólios</p>
-          </Tile>
+        {/* Cabeçalho redefinido: Gauge + Clientes com Compras + Clientes sem Compras */}
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-3 items-stretch">
+          {/* 1. Gauge Meta Atual com visão 9MM proporcional */}
+          <div className="flex flex-col h-full">
+            <MetaAtualGaugeCard
+              metaAtual={displayedMeta}
+              realizado={totalRealizado}
+              metaComBase={displayedMeta}
+              atingimento={displayedAtingimento}
+              periodo={cliente.periodoLabel ?? "nov/26"}
+              hint="Meta individual do cliente; proporcional ao cenário de 9MM quando ativado"
+              visao9mm={visao9mm}
+              onToggleVisao9mm={podeVerVisao9mm ? setVisao9mm : undefined}
+              showVisao9mm={podeVerVisao9mm}
+            />
+          </div>
 
-          {vis.verMetaPadrao && (
-            <Tile label="Meta padrão" muted>
-              <p className="text-base font-medium tabular-nums text-muted-foreground">
-                {fmtBRL(summary.referenciaTotal)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">
-                Categoria {cliente.categoria ?? "—"}
-              </p>
-            </Tile>
-          )}
-
-          {vis.verMetaPadrao && (
-            <Tile label="Diferença">
-              <p
-                className={cn(
-                  "text-xl font-semibold tabular-nums",
-                  (summary.diferencaAbs ?? 0) > 0 && "text-emerald-600 dark:text-emerald-400",
-                  (summary.diferencaAbs ?? 0) < 0 && "text-red-600 dark:text-red-400",
-                )}
-              >
-                {fmtSignedBRL(summary.diferencaAbs)}
-              </p>
-              <p className="text-[10px] text-muted-foreground tabular-nums">
-                {summary.diferencaPct == null
-                  ? "Sem referência"
-                  : `${summary.diferencaPct > 0 ? "+" : ""}${fmtPct(summary.diferencaPct)} vs. padrão`}
-              </p>
-            </Tile>
-          )}
-
-          <Tile label="Distribuição entre portfólios">
-            {percents ? (
-              <>
-                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                  {METAS_FAMILIES.map((f, i) => (
-                    <div
-                      key={f}
-                      className={FAMILY_SWATCH[i]}
-                      style={{ width: `${percents[f] ?? 0}%` }}
-                      title={`${METAS_FAMILY_LABEL[f]}: ${String(percents[f]).replace(".", ",")}%`}
-                    />
-                  ))}
+          {/* 2. Total de clientes com compras */}
+          <div className="flex flex-col h-full">
+            <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div>
+                <div className="flex items-center justify-between gap-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Clientes com compras
+                  </p>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <ShoppingBag className="h-2.5 w-2.5" />
+                    {pctComCompras}% da carteira
+                  </span>
                 </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">
-                  100% distribuído · {summary.portfoliosComMeta}/7 com meta
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                    {comCompras}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {comCompras === 1 ? "cliente positivado" : "clientes positivados"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="my-auto py-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Positivação da carteira</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {pctComCompras}%
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${pctComCompras}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Clientes com faturamento registrado no período selecionado.
                 </p>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Sem meta positiva</p>
-            )}
-          </Tile>
+              </div>
 
-          {vis.verMetaPadrao ? (
-            <Tile label="Origem das metas">
-              <span
-                className={cn(
-                  "inline-flex rounded-md px-2 py-0.5 text-sm font-semibold",
-                  STATUS_CLASS[summary.status.origem],
-                )}
-              >
-                {summary.status.origem === "misto"
-                  ? "Misto"
-                  : META_ORIGEM_LABEL[summary.status.origem]}
-              </span>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {(Object.keys(summary.status.contagem) as MetaOrigem[])
-                  .filter((k) => summary.status.contagem[k] > 0)
-                  .map((k) => `${META_ORIGEM_LABEL[k]} ${summary.status.contagem[k]}`)
-                  .join(" · ")}
-              </p>
-            </Tile>
-          ) : null}
+              <div className="border-t border-border/50 pt-2 text-[11px] text-muted-foreground flex items-center justify-between">
+                <span className="truncate">Rep: {cliente.repName}</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground/80">
+                  {comCompras} de {totalCarteira} clientes
+                </span>
+              </div>
+            </div>
+          </div>
 
-          <Tile label="Atingimento s/ meta oficial">
-            <span
-              className={cn(
-                "inline-flex rounded-md px-2 py-0.5 text-xl font-semibold tabular-nums",
-                totalStatus && FAROL_CELL_CLASS[totalStatus],
-              )}
-            >
-              {fmtPct(totalProjetado.ratio)}
-            </span>
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              {totalProjetado.ratio != null &&
-              totalProjetado.fonte &&
-              totalProjetado.fonte !== "realizado"
-                ? `${BASE_FONTE_LABEL[totalProjetado.fonte]} · `
-                : ""}
-              {vis.verMetaPadrao
-                ? `Oficial (meta padrão): ${fmtPct(totalOficial)}`
-                : (cliente.periodoLabel ?? "Versão mais recente")}
-            </p>
-          </Tile>
+          {/* 3. Total de clientes sem compras */}
+          <div className="flex flex-col h-full">
+            <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div>
+                <div className="flex items-center justify-between gap-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Clientes sem compras
+                  </p>
+                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    <UserX className="h-2.5 w-2.5" />
+                    {pctSemCompras}% da carteira
+                  </span>
+                </div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
+                    {semCompras}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {semCompras === 1 ? "cliente sem faturamento" : "clientes sem faturamento"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="my-auto py-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Inativação no período</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
+                    {pctSemCompras}%
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all duration-500"
+                    style={{ width: `${pctSemCompras}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Oportunidades de ativação ou recuperação na carteira.
+                </p>
+              </div>
+
+              <div className="border-t border-border/50 pt-2 text-[11px] text-muted-foreground flex items-center justify-between">
+                <span className="truncate">Sem compra no ciclo</span>
+                <span className="shrink-0 text-[10px] text-muted-foreground/80">
+                  {semCompras} de {totalCarteira} clientes
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -563,30 +668,6 @@ export function MetasPainel({
         repName={cliente.repName}
         clienteNome={cliente.razaoSocial}
       />
-    </div>
-  );
-}
-
-function Tile({
-  label,
-  muted,
-  children,
-}: {
-  label: string;
-  muted?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg border border-border px-3 py-2",
-        muted ? "bg-muted/30" : "bg-card shadow-sm",
-      )}
-    >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="mt-1">{children}</div>
     </div>
   );
 }

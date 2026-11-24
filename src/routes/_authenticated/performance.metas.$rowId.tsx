@@ -49,6 +49,7 @@ function MetasClientePage() {
         periodoLabel: upload?.periodo_label ?? null,
         totalPct: row.total_pct,
         familiaPct: (row.familia_pct ?? {}) as Record<string, number | null>,
+        uploadId: row.upload_id,
       };
     },
   });
