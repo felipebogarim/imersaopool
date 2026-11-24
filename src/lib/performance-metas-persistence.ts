@@ -42,11 +42,53 @@ export type GoalsState = {
     valor: number;
     justificativa: string;
     tag: AiSuggestionTag;
+    /** "simulacao" = registro antigo da fase de protótipo (ignorado na tela). */
     origem: "simulacao" | "modelo";
+    /** Base da recomendação registrada junto com a sugestão. */
+    base?: AiBase | null;
+    modelo?: string | null;
+    created_at?: string;
   }>;
   /** Valores financeiros do upload (R$). Só na visão da gestão. */
   base?: { metas?: RawJson; realizado?: RawJson; media?: RawJson; familia_pct?: RawJson };
 };
+
+/** Base da recomendação da IA, montada no servidor a partir dos dados usados no prompt. */
+export type AiBase = {
+  fontes?: Array<"imersao" | "historico" | "perfil" | "comparaveis" | "upload">;
+  imersao?: { entrevistas: number; relatorios: number; ultima: string | null };
+  historico?: { periodos: number };
+  comparaveis?: { clientes: number; regiao: string | null; categoria: string | null };
+  perfil?: { categoria: string | null; cidade: string | null; estado: string | null };
+};
+
+const fmtData = (iso: string | null | undefined) => {
+  if (!iso) return null;
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  return d && m && y ? `${d}/${m}/${y.slice(-2)}` : null;
+};
+
+/** Resumo legível da base da recomendação. */
+export function fundamentoLabel(base: AiBase | null | undefined): string {
+  if (!base) return "";
+  const out: string[] = [];
+  const im = base.imersao;
+  if (im && im.entrevistas + im.relatorios > 0) {
+    const partes = [
+      im.entrevistas ? `${im.entrevistas} entrevista(s)` : null,
+      im.relatorios ? `${im.relatorios} relatório(s) de campo` : null,
+    ].filter(Boolean);
+    const data = fmtData(im.ultima);
+    out.push(`Imersão${data ? ` ${data}` : ""}: ${partes.join(", ")}`);
+  }
+  if (base.historico?.periodos) out.push(`${base.historico.periodos} período(s) de histórico`);
+  if (base.comparaveis?.clientes)
+    out.push(
+      `${base.comparaveis.clientes} comparáveis${base.comparaveis.regiao ? ` (${base.comparaveis.regiao})` : ""}`,
+    );
+  if (base.perfil?.categoria) out.push(`perfil ${base.perfil.categoria}`);
+  return out.join(" · ");
+}
 
 /** `available: false` = migration ainda não aplicada (funções inexistentes no banco). */
 export type MetasLoadResult = { available: false } | { available: true; state: GoalsState };
@@ -83,7 +125,10 @@ const isFamily = (f: string): f is CanonicalFamily =>
 export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): FamilyMetaDraft[] {
   const items = new Map(state.items.filter((i) => isFamily(i.familia)).map((i) => [i.familia, i]));
   const reps = new Map(state.rep_suggestions.map((s) => [s.familia, s]));
-  const ais = new Map(state.ai_suggestions.map((s) => [s.familia, s]));
+  // Registros "simulacao" são da fase de protótipo: não aparecem como sugestão real.
+  const ais = new Map(
+    state.ai_suggestions.filter((s) => s.origem === "modelo").map((s) => [s.familia, s]),
+  );
   return initial.map((d) => {
     const it = items.get(d.familia);
     const rep = reps.get(d.familia);
@@ -101,7 +146,7 @@ export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): Fa
           valor: ai.valor,
           justificativa: ai.justificativa,
           tag: ai.tag,
-          simulada: ai.origem === "simulacao",
+          fundamento: fundamentoLabel(ai.base),
         },
       }),
     };
@@ -117,13 +162,6 @@ export function gestorRpcArgs(payload: Extract<SavePayload, { perfil: "gestor" }
       origem: m.origem,
       comentario_gestor: m.comentario_gestor,
       referencia: m.referencia,
-    })),
-    sugestoes_ia: payload.sugestoes_ia.map((s) => ({
-      familia: s.familia,
-      valor: s.valor,
-      justificativa: s.justificativa,
-      tag: s.tag,
-      origem: s.simulada ? ("simulacao" as const) : ("modelo" as const),
     })),
   };
 }
