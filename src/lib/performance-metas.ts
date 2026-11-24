@@ -126,6 +126,7 @@ export type FamilyMetaDraft = {
   sugestaoIa: AiSuggestion | null;
   sugestaoRep: number | null;
   justificativaRep: string;
+  sugestaoRepEnviadaEm?: string | null;
   /** Meta mensal oficial definida pelo gestor (R$). */
   metaOficial: number | null;
   comentarioGestor: string;
@@ -142,6 +143,7 @@ export function buildInitialDrafts(categoria: unknown): FamilyMetaDraft[] {
       sugestaoIa: null,
       sugestaoRep: null,
       justificativaRep: "",
+      sugestaoRepEnviadaEm: null,
       metaOficial: referencia,
       comentarioGestor: "",
       origem: "padrao",

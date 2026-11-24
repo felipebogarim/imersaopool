@@ -17,7 +17,14 @@ const state: GoalsState = {
     { familia: "PERFIL", meta_mensal: 1200, origem: "gestor", comentario_gestor: "obra" },
     { familia: "PRO LED", meta_mensal: 500, origem: "ia", comentario_gestor: "" },
   ],
-  rep_suggestions: [{ familia: "PERFIL", valor: 900, justificativa: "queda" }],
+  rep_suggestions: [
+    {
+      familia: "PERFIL",
+      valor: 900,
+      justificativa: "queda",
+      updated_at: "2026-11-24T09:30:00Z",
+    },
+  ],
   ai_suggestions: [
     {
       familia: "PERFIL",
@@ -65,6 +72,7 @@ describe("performance-metas-persistence", () => {
       comentarioGestor: "obra",
       sugestaoRep: 900,
       justificativaRep: "queda",
+      sugestaoRepEnviadaEm: "2026-11-24T09:30:00Z",
     });
     expect(perfil?.sugestaoIa).toMatchObject({
       valor: 1100,

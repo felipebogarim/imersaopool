@@ -37,7 +37,13 @@ export type GoalsState = {
   }>;
   /** Versões já gravadas que passam a valer em competências futuras (só gestão). */
   agendadas?: Array<{ familia: string; meta_mensal: number | null; vigente_desde: string }>;
-  rep_suggestions: Array<{ familia: string; valor: number | null; justificativa: string }>;
+  rep_suggestions: Array<{
+    familia: string;
+    valor: number | null;
+    justificativa: string;
+    created_at?: string;
+    updated_at?: string;
+  }>;
   ai_suggestions: Array<{
     familia: string;
     valor: number;
@@ -152,7 +158,11 @@ export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): Fa
         origem: it.origem ?? d.origem,
         comentarioGestor: it.comentario_gestor ?? "",
       }),
-      ...(rep && { sugestaoRep: rep.valor, justificativaRep: rep.justificativa }),
+      ...(rep && {
+        sugestaoRep: rep.valor,
+        justificativaRep: rep.justificativa,
+        sugestaoRepEnviadaEm: rep.updated_at ?? rep.created_at ?? null,
+      }),
       ...(ai && {
         sugestaoIa: {
           valor: ai.valor,

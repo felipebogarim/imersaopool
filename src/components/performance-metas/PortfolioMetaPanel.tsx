@@ -190,6 +190,12 @@ export function PortfolioMetaPanel({
               <CommentText text={draft.justificativaRep} />
             )}
           </Field>
+          {(draft.sugestaoRep != null || Boolean(draft.justificativaRep?.trim())) &&
+            draft.sugestaoRepEnviadaEm && (
+              <p className="text-[11px] text-muted-foreground">
+                Enviada em {fmtDataHora(draft.sugestaoRepEnviadaEm)}
+              </p>
+            )}
           {!vis.editarMetaOficial && vis.editarSugestaoRep && saveBar && (
             <div className="flex flex-wrap items-center justify-end gap-1.5">{saveBar}</div>
           )}

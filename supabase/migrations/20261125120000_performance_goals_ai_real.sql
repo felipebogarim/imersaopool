@@ -74,7 +74,8 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
                 'familia', familia, 'meta_mensal', meta_mensal, 'vigente_desde', vigente_desde)
                 ORDER BY vigente_desde) FROM agendadas), '[]'::jsonb) ELSE '[]'::jsonb END,
     'rep_suggestions', COALESCE((SELECT jsonb_agg(jsonb_build_object(
-                'familia', s.familia, 'valor', s.valor, 'justificativa', s.justificativa))
+                'familia', s.familia, 'valor', s.valor, 'justificativa', s.justificativa,
+                'created_at', s.created_at, 'updated_at', s.updated_at))
               FROM public.performance_goal_rep_suggestions s JOIN c ON c.id = s.cycle_id), '[]'::jsonb),
     'ai_suggestions', CASE WHEN _staff THEN COALESCE((SELECT jsonb_agg(jsonb_build_object(
                 'familia', familia, 'valor', valor, 'justificativa', justificativa, 'tag', tag,
