@@ -400,7 +400,10 @@ export async function inviteRepToMetasRow(
   const user = await ensureRepUser(rep);
   // O convite pode ser aberto em um navegador com uma sessão interna já ativa. Um link novo de
   // senha garante que o destinatário assuma a conta correta antes de entrar nas metas.
-  const senhaUrl = user.senhaUrl ?? (await firstAccessLink(user.uid));
+  const metasPath = `/portal-rep/metas/${rowId}`;
+  const passwordLink = new URL(user.senhaUrl ?? (await firstAccessLink(user.uid)));
+  passwordLink.searchParams.set("next", metasPath);
+  const senhaUrl = passwordLink.toString();
   const res = await sendSystemEmail({
     templateName: "metas-convite",
     to: user.email,
@@ -409,7 +412,6 @@ export async function inviteRepToMetasRow(
       name: rep.nome,
       cliente: String(row.razao_social ?? "").trim(),
       mensagem: mensagem.trim(),
-      metasUrl: `${origin()}/portal-rep/metas/${rowId}`,
       senhaUrl,
     },
   });

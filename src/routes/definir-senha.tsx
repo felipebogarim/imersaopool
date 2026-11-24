@@ -9,9 +9,10 @@ import { Check, Eye, EyeOff, KeyRound, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { checkFirstAccessToken, setPasswordFromToken } from "@/lib/first-access.functions";
 import { purgeAppCaches } from "@/lib/app-refresh";
+import { firstAccessDestination } from "@/lib/first-access-redirect";
 
 export const Route = createFileRoute("/definir-senha")({
-  validateSearch: z.object({ t: z.string().optional() }),
+  validateSearch: z.object({ t: z.string().optional(), next: z.string().optional() }),
   head: () => ({
     meta: [
       { title: "Definir senha de acesso | PoolFlux" },
@@ -56,7 +57,7 @@ function PasswordField({
 }
 
 function DefinirSenhaPage() {
-  const { t } = Route.useSearch();
+  const { t, next } = Route.useSearch();
   const navigate = useNavigate();
   const [state, setState] = useState<"loading" | "ok" | "invalid">("loading");
   const [info, setInfo] = useState<{ email: string; name: string | null }>({ email: "", name: null });
@@ -121,7 +122,7 @@ function DefinirSenhaPage() {
       toast.success("Senha criada com sucesso");
       // Primeiro acesso: garante que nada de uma versão antiga siga em cache.
       await purgeAppCaches();
-      window.location.replace("/home");
+      window.location.replace(firstAccessDestination(next));
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível criar a senha");
     } finally {

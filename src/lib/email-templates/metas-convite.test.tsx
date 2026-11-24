@@ -9,13 +9,13 @@ describe("convite para revisão de metas", () => {
       <MetasConviteEmail
         name="Representante Teste"
         cliente="Cliente Teste"
-        metasUrl="https://poolflux.app/portal-rep/metas/cliente"
-        senhaUrl="https://poolflux.app/definir-senha?t=token-teste"
+        senhaUrl="https://poolflux.app/definir-senha?t=token-teste&next=%2Fportal-rep%2Fmetas%2Fcliente"
       />,
     );
 
-    expect(html).toContain("Cadastrar ou redefinir minha senha");
+    expect(html).toContain("Cadastrar ou redefinir senha e avaliar metas");
     expect(html).toContain("https://poolflux.app/definir-senha?t=token-teste");
-    expect(html).toContain("Abrir metas do cliente");
+    expect(html).not.toContain("Abrir metas do cliente");
+    expect(html.match(/<a\b/g)).toHaveLength(1);
   });
 });
