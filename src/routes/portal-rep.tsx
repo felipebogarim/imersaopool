@@ -42,6 +42,9 @@ function PortalRep() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["rep-portal"],
     queryFn: () => portalFn(),
+    staleTime: 0,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
 
   const actions = useMemo(() => data?.actions ?? [], [data]);

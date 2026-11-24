@@ -98,7 +98,11 @@ export function acceptanceOrDefault(v: unknown): ActionAcceptance {
 
 /** Colunas do Kanban "Ações Reps". A ação é sempre uma SUGESTÃO ao representante. */
 export const ACTION_BOARD_COLUMNS = [
-  { key: "sugerida", label: "Sugerida", hint: "Ainda não enviada ao representante" },
+  {
+    key: "sugerida",
+    label: "Sugerida",
+    hint: "Disponível no portal; representante ainda não notificado",
+  },
   {
     key: "aguardando",
     label: "Aguardando aceite",
@@ -116,11 +120,11 @@ export function boardColumnFor(
   acceptance: ActionAcceptance,
 ): ActionBoardColumn {
   if (acceptance === "recusada") return "recusada";
+  if (acceptance === "nao_enviada") return "sugerida";
+  if (acceptance === "enviada") return "aguardando";
   if (status === "concluido") return "concluida";
   if (status === "em_andamento") return "andamento";
-  if (acceptance === "aceita") return "aceita";
-  if (acceptance === "enviada") return "aguardando";
-  return "sugerida";
+  return "aceita";
 }
 
 /** Dias (inteiros) até o prazo; negativo = vencida; null = sem prazo. */

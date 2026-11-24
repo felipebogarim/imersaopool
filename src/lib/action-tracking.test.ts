@@ -55,6 +55,8 @@ describe("Kanban Ações Reps", () => {
     expect(boardColumnFor("em_andamento", "aceita")).toBe("andamento");
     expect(boardColumnFor("concluido", "aceita")).toBe("concluida");
     expect(boardColumnFor("em_andamento", "recusada")).toBe("recusada");
+    expect(boardColumnFor("em_andamento", "nao_enviada")).toBe("sugerida");
+    expect(boardColumnFor("concluido", "enviada")).toBe("aguardando");
   });
 
   it("calcula dias até o prazo", () => {
