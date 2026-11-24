@@ -60,6 +60,7 @@ import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
+import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
 
 const FAMILY_SWATCH = [
   "bg-sky-500",
@@ -396,10 +397,10 @@ export function MetasPainel({
           </div>
         </div>
 
-        {/* Cabeçalho: Gauge da meta atual */}
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-3 items-stretch">
-          {/* 1. Gauge Meta Atual com visão 9MM proporcional */}
-          <div className="flex flex-col h-full">
+        {/* Cabeçalho: Dash de Resultado Geral + Timeline de Categoria */}
+        <div className="grid gap-3 grid-cols-1 lg:grid-cols-12 items-stretch">
+          {/* 1. Dash de resultado geral: Gauge Meta Atual com visão 9MM proporcional */}
+          <div className="lg:col-span-4 flex flex-col h-full">
             <MetaAtualGaugeCard
               metaAtual={displayedMeta}
               realizado={totalRealizado}
@@ -410,6 +411,15 @@ export function MetasPainel({
               visao9mm={visao9mm}
               onToggleVisao9mm={podeVerVisao9mm ? setVisao9mm : undefined}
               showVisao9mm={podeVerVisao9mm}
+            />
+          </div>
+
+          {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção, upgrade e risco de degrade */}
+          <div className="lg:col-span-8 flex flex-col h-full">
+            <CategoriaTimelineCard
+              categoria={cliente.categoria}
+              realizado={totalRealizado}
+              periodoLabel={cliente.periodoLabel}
             />
           </div>
         </div>
