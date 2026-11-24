@@ -135,7 +135,7 @@ export function MetasBiPanel() {
     [year],
   );
 
-  const [visao10mm, setVisao10mm] = useState(false);
+  const [visao9mm, setVisao9mm] = useState(false);
 
   const allFactsRaw = useMemo(
     () => buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths),
@@ -143,19 +143,19 @@ export function MetasBiPanel() {
   );
 
   const allFacts = useMemo(() => {
-    if (!visao10mm) return allFactsRaw;
+    if (!visao9mm) return allFactsRaw;
     const totalCompanyMeta = allFactsRaw.reduce(
       (sum, f) => sum + (f.metaAtual ?? 0),
       0,
     );
-    const targetMeta = 10_000_000 * periodMonths.length;
+    const targetMeta = 9_000_000 * periodMonths.length;
     const ratio = totalCompanyMeta > 0 ? targetMeta / totalCompanyMeta : 1;
     return allFactsRaw.map((f) => ({
       ...f,
       metaAtual: f.metaAtual != null ? Math.round(f.metaAtual * ratio) : null,
       metaPadrao: f.metaPadrao != null ? Math.round(f.metaPadrao * ratio) : null,
     }));
-  }, [allFactsRaw, visao10mm, periodMonths.length]);
+  }, [allFactsRaw, visao9mm, periodMonths.length]);
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
   const porFamilia = useMemo(() => aggregateMetasBi(facts, "familia"), [facts]);
@@ -291,8 +291,8 @@ export function MetasBiPanel() {
       </div>
 
       {/* Topo: Gauge Meta Atual + Gráficos por Categoria e Top 10 Reps */}
-      <div className="grid gap-3 lg:grid-cols-5">
-        <div className="lg:col-span-1">
+      <div className="grid gap-3 lg:grid-cols-5 items-stretch">
+        <div className="lg:col-span-1 flex flex-col h-full">
           <MetaAtualGaugeCard
             metaAtual={total.metaAtual}
             realizado={total.realizado}
@@ -300,14 +300,14 @@ export function MetasBiPanel() {
             atingimento={total.atingimento}
             periodo={periodLabel(periodMonths, year)}
             hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
-            visao10mm={visao10mm}
-            onToggleVisao10mm={setVisao10mm}
+            visao9mm={visao9mm}
+            onToggleVisao9mm={setVisao9mm}
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col h-full">
           <CategoriaMetasChart porCategoria={porCategoria} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col h-full">
           <TopRepsMetasChart facts={facts} />
         </div>
       </div>
@@ -424,8 +424,8 @@ function MetaAtualGaugeCard({
   atingimento,
   periodo,
   hint,
-  visao10mm,
-  onToggleVisao10mm,
+  visao9mm,
+  onToggleVisao9mm,
 }: {
   metaAtual: number;
   realizado: number;
@@ -433,8 +433,8 @@ function MetaAtualGaugeCard({
   atingimento: number | null;
   periodo: string;
   hint?: string;
-  visao10mm?: boolean;
-  onToggleVisao10mm?: (v: boolean) => void;
+  visao9mm?: boolean;
+  onToggleVisao9mm?: (v: boolean) => void;
 }) {
   const status = statusFromRatio(atingimento);
   const colors = GAUGE_GRADIENTS[status ?? "sem_compra"];
@@ -444,16 +444,19 @@ function MetaAtualGaugeCard({
   const ratio = atingimento ?? 0;
   const clamped = Math.min(1.2, Math.max(0, ratio));
   const t = clamped / 1.2;
-  const arcLength = 169.65;
+  const arcRadius = 64;
+  const cx = 100;
+  const cy = 90;
+  const arcLength = Math.PI * arcRadius; // ~201.06
   const offset = arcLength * (1 - t);
 
   // Ponto da agulha / indicador luminoso na ponta do progresso
-  const tipX = 90 - 54 * Math.cos(t * Math.PI);
-  const tipY = 72 - 54 * Math.sin(t * Math.PI);
+  const tipX = cx - arcRadius * Math.cos(t * Math.PI);
+  const tipY = cy - arcRadius * Math.sin(t * Math.PI);
 
   return (
     <div
-      className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm"
+      className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm"
       title={hint}
     >
       <div>
@@ -464,17 +467,17 @@ function MetaAtualGaugeCard({
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => onToggleVisao10mm?.(!visao10mm)}
+              onClick={() => onToggleVisao9mm?.(!visao9mm)}
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer",
-                visao10mm
+                visao9mm
                   ? "bg-amber-500 text-white font-semibold shadow-xs hover:bg-amber-600"
                   : "border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
-              title="Simular todo o cenário do BI com meta total de 10 milhões por mês proporcional aos portfólios"
+              title="Simular todo o cenário do BI com meta total de 9 milhões por mês proporcional aos portfólios"
             >
               <SlidersHorizontal className="h-2.5 w-2.5" />
-              Visão 10MM/mês
+              Visão 9MM/mês
             </button>
             <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
               {periodo}
@@ -482,45 +485,45 @@ function MetaAtualGaugeCard({
           </div>
         </div>
         <div className="mt-1 flex items-baseline gap-2">
-          <p className="text-lg font-bold tracking-tight text-foreground tabular-nums">
+          <p className="text-base font-bold tracking-tight text-foreground tabular-nums">
             {fmtBRL(metaAtual)}
           </p>
-          {visao10mm && (
+          {visao9mm && (
             <span className="rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
-              Cenário 10MM
+              Cenário 9MM
             </span>
           )}
         </div>
       </div>
 
       <div className="my-2 flex flex-col items-center">
-        <svg viewBox="0 0 180 96" className="w-full max-w-[190px] overflow-visible">
+        <svg viewBox="0 0 200 110" className="w-full max-w-[210px] overflow-visible">
           <defs>
             <linearGradient id="metaAtualGaugeGrad" x1="0%" y1="100%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={colors[0]} />
               <stop offset="100%" stopColor={colors[1]} />
             </linearGradient>
             <filter id="gaugeTipGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor={colors[1]} floodOpacity="0.4" />
+              <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor={colors[1]} floodOpacity="0.45" />
             </filter>
           </defs>
 
-          {/* Arco de fundo (trilha) */}
+          {/* Arco de fundo (trilha) mais encorpado */}
           <path
-            d="M 36 72 A 54 54 0 0 1 144 72"
+            d="M 36 90 A 64 64 0 0 1 164 90"
             fill="none"
-            strokeWidth={10}
+            strokeWidth={14}
             strokeLinecap="round"
             className="stroke-muted/30"
           />
 
-          {/* Arco preenchido de progresso */}
+          {/* Arco preenchido de progresso encorpado */}
           {t > 0 && (
             <path
-              d="M 36 72 A 54 54 0 0 1 144 72"
+              d="M 36 90 A 64 64 0 0 1 164 90"
               fill="none"
               stroke="url(#metaAtualGaugeGrad)"
-              strokeWidth={10}
+              strokeWidth={14}
               strokeLinecap="round"
               strokeDasharray={`${arcLength} ${arcLength}`}
               strokeDashoffset={offset}
@@ -530,17 +533,17 @@ function MetaAtualGaugeCard({
 
           {/* Marcador de 100% (meta atingida) */}
           <line
-            x1={130.7}
-            y1={48.5}
-            x2={142.8}
-            y2={41.5}
+            x1={147.6}
+            y1={62.5}
+            x2={165.0}
+            y2={52.5}
             stroke="currentColor"
             strokeWidth={1.5}
             className="text-muted-foreground/50"
           />
           <text
-            x={145}
-            y={38}
+            x={168}
+            y={50}
             className="text-[8px] font-semibold fill-muted-foreground/80 select-none"
           >
             100%
@@ -552,18 +555,18 @@ function MetaAtualGaugeCard({
               <circle
                 cx={tipX}
                 cy={tipY}
-                r={4.5}
+                r={5.5}
                 fill="#ffffff"
                 stroke={colors[1]}
-                strokeWidth={2.5}
+                strokeWidth={3}
               />
             </g>
           )}
 
-          {/* Leitura central do percentual */}
+          {/* Leitura central do percentual (sem sobreposição com o arco) */}
           <text
-            x={90}
-            y={50}
+            x={100}
+            y={68}
             textAnchor="middle"
             className="text-2xl font-bold fill-foreground tabular-nums select-none"
           >
@@ -572,11 +575,11 @@ function MetaAtualGaugeCard({
 
           {/* Status do farol */}
           <text
-            x={90}
-            y={66}
+            x={100}
+            y={83}
             textAnchor="middle"
             className={cn(
-              "text-[9px] font-semibold uppercase tracking-wider select-none",
+              "text-[9px] font-bold uppercase tracking-wider select-none",
               statusTextColor,
             )}
           >
@@ -586,15 +589,15 @@ function MetaAtualGaugeCard({
           {/* Marcas de escala */}
           <text
             x={34}
-            y={86}
+            y={106}
             textAnchor="middle"
             className="text-[9px] font-medium fill-muted-foreground/60 select-none"
           >
             0%
           </text>
           <text
-            x={146}
-            y={86}
+            x={166}
+            y={106}
             textAnchor="middle"
             className="text-[9px] font-medium fill-muted-foreground/60 select-none"
           >
@@ -660,7 +663,7 @@ function CategoriaMetasChart({
 
   return (
     <>
-      <div className="flex h-full flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -905,7 +908,7 @@ function TopRepsMetasChart({ facts }: { facts: readonly MetasBiFact[] }) {
 
   return (
     <>
-      <div className="flex h-full flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
