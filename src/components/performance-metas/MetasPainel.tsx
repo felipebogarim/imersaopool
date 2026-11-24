@@ -5,15 +5,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2, Loader2, Mail, Save, ShoppingBag, Unlock, UserX, Wand2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { FAROL_CELL_CLASS, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
-import { isClientRow } from "@/lib/client-row-filter";
 import { type CanonicalFamily } from "@/lib/client-bi-familias";
 import {
   BASE_FONTE_LABEL,
@@ -213,72 +211,7 @@ export function MetasPainel({
   }, [drafts, atingimento, base, totalProjetado.ratio, totalOficial, baseMetaTotal]);
 
   const displayedAtingimento =
-    displayedMeta > 0
-      ? totalRealizado / displayedMeta
-      : (totalProjetado.ratio ?? totalOficial);
-
-  // Consulta consolidada da carteira do representante para os cards com compras / sem compras
-  const { data: carteiraStats } = useQuery({
-    queryKey: ["performance-metas", "rep-carteira-stats", cliente.uploadId, cliente.repId],
-    enabled: !!(cliente.uploadId || cliente.repId),
-    queryFn: async () => {
-      let query = supabase
-        .from("rep_performance_rows")
-        .select("id, razao_social, total_pct, metas_status, familia_pct");
-
-      if (cliente.uploadId) {
-        query = query.eq("upload_id", cliente.uploadId);
-      } else if (cliente.repId) {
-        const { data: upload } = await supabase
-          .from("rep_performance_uploads")
-          .select("id")
-          .eq("representative_id", cliente.repId)
-          .is("substituida_em", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (!upload) return { comCompras: 0, semCompras: 0, total: 0 };
-        query = query.eq("upload_id", upload.id);
-      }
-
-      const { data } = await query;
-      const validRows = (data ?? []).filter((r) => isClientRow(r));
-
-      let comCompras = 0;
-      let semCompras = 0;
-
-      for (const r of validRows) {
-        const pct = sanitizeRatio(r.total_pct);
-        const metasStatus = (r.metas_status ?? {}) as Record<string, string>;
-        const famPct = (r.familia_pct ?? {}) as Record<string, number | null>;
-
-        const hasPurchase =
-          (pct != null && pct > 0) ||
-          Object.values(famPct).some((v) => v != null && v > 0) ||
-          Object.values(metasStatus).some(
-            (st) => st && st !== "sem_compra" && st !== "vazio",
-          );
-
-        if (hasPurchase) {
-          comCompras++;
-        } else {
-          semCompras++;
-        }
-      }
-
-      return {
-        comCompras,
-        semCompras,
-        total: validRows.length,
-      };
-    },
-  });
-
-  const comCompras = carteiraStats?.comCompras ?? 0;
-  const semCompras = carteiraStats?.semCompras ?? 0;
-  const totalCarteira = carteiraStats?.total ?? (comCompras + semCompras);
-  const pctComCompras = totalCarteira > 0 ? Math.round((comCompras / totalCarteira) * 100) : 0;
-  const pctSemCompras = totalCarteira > 0 ? Math.round((semCompras / totalCarteira) * 100) : 0;
+    displayedMeta > 0 ? totalRealizado / displayedMeta : (totalProjetado.ratio ?? totalOficial);
 
   // Aviso ao sair da página com alterações não salvas.
   useEffect(() => {
@@ -463,7 +396,7 @@ export function MetasPainel({
           </div>
         </div>
 
-        {/* Cabeçalho redefinido: Gauge + Clientes com Compras + Clientes sem Compras */}
+        {/* Cabeçalho: Gauge da meta atual */}
         <div className="grid gap-3 grid-cols-1 md:grid-cols-3 items-stretch">
           {/* 1. Gauge Meta Atual com visão 9MM proporcional */}
           <div className="flex flex-col h-full">
@@ -478,106 +411,6 @@ export function MetasPainel({
               onToggleVisao9mm={podeVerVisao9mm ? setVisao9mm : undefined}
               showVisao9mm={podeVerVisao9mm}
             />
-          </div>
-
-          {/* 2. Total de clientes com compras */}
-          <div className="flex flex-col h-full">
-            <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
-              <div>
-                <div className="flex items-center justify-between gap-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Clientes com compras
-                  </p>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    <ShoppingBag className="h-2.5 w-2.5" />
-                    {pctComCompras}% da carteira
-                  </span>
-                </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
-                    {comCompras}
-                  </p>
-                  <span className="text-xs text-muted-foreground">
-                    {comCompras === 1 ? "cliente positivado" : "clientes positivados"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="my-auto py-3 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Positivação da carteira</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {pctComCompras}%
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                    style={{ width: `${pctComCompras}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Clientes com faturamento registrado no período selecionado.
-                </p>
-              </div>
-
-              <div className="border-t border-border/50 pt-2 text-[11px] text-muted-foreground flex items-center justify-between">
-                <span className="truncate">Rep: {cliente.repName}</span>
-                <span className="shrink-0 text-[10px] text-muted-foreground/80">
-                  {comCompras} de {totalCarteira} clientes
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Total de clientes sem compras */}
-          <div className="flex flex-col h-full">
-            <div className="flex h-full flex-1 flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
-              <div>
-                <div className="flex items-center justify-between gap-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Clientes sem compras
-                  </p>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                    <UserX className="h-2.5 w-2.5" />
-                    {pctSemCompras}% da carteira
-                  </span>
-                </div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <p className="text-2xl font-bold tracking-tight text-foreground tabular-nums">
-                    {semCompras}
-                  </p>
-                  <span className="text-xs text-muted-foreground">
-                    {semCompras === 1 ? "cliente sem faturamento" : "clientes sem faturamento"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="my-auto py-3 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Inativação no período</span>
-                  <span className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
-                    {pctSemCompras}%
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
-                  <div
-                    className="h-full rounded-full bg-amber-500 transition-all duration-500"
-                    style={{ width: `${pctSemCompras}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Oportunidades de ativação ou recuperação na carteira.
-                </p>
-              </div>
-
-              <div className="border-t border-border/50 pt-2 text-[11px] text-muted-foreground flex items-center justify-between">
-                <span className="truncate">Sem compra no ciclo</span>
-                <span className="shrink-0 text-[10px] text-muted-foreground/80">
-                  {semCompras} de {totalCarteira} clientes
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
