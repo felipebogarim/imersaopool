@@ -1,17 +1,18 @@
 -- Migration: +5 clientes fictícios na carteira do "REPRESENTANTE TESTE", com performance e imersão.
--- Segue o mesmo padrão de 20261124133000_seed_cliente_teste_performance.sql:
--- - Busca estrita do REPRESENTANTE TESTE e da empresa oficial PoolFlux; nenhum outro representante é tocado.
--- - Reaproveita o upload "2026 - YTD" do representante (cria se não existir).
--- - Valores financeiros só em performance_private.rep_row_values; meta por família = matriz da categoria.
--- - Atingimento, farol e cor são derivados do realizado ÷ meta (faixas oficiais do farol).
--- - Pacote de imersão completo (immersions, interviews, field_visit_inputs) para a sugestão IA do METAS.
--- - Idempotente: clientes localizados pela razão social ou cnpj; reexecutar atualiza em vez de duplicar.
--- - Razão social com prefixo "CLIENTE TESTE" para identificação clara em buscas e filtros no sistema.
--- Perfis variados de propósito: excelente, ótimo, próximo, pode melhorar e abaixo da meta/sem compra.
+--
+-- Versão corrigida (2026-11-24). Validada contra o schema real das migrations:
+-- - NÃO consulta public.companies por nome/aproximação. A empresa é a do upload ativo onde já está o
+--   CLIENTE TESTE ILUMINACAO LTDA (o mesmo que a tela de Metas exibe), conferida contra o representante.
+-- - Representante localizado por nome EXATO; aborta se houver zero ou mais de um "REPRESENTANTE TESTE".
+-- - Upload = versão ativa mais recente do representante (mesma regra da tela: periodo_fim desc,
+--   created_at desc); aborta se o CLIENTE TESTE original não estiver nela.
+-- - Clientes localizados só por identificadores fictícios exatos (razão social nova, CNPJ 00.000.000/…,
+--   código CLI-TESTE-…). Nunca altera cliente vinculado a outro representante.
+-- - Valores financeiros em performance_private.rep_row_values (obrigatório); 7 famílias por cliente.
+-- - Idempotente: reexecutar atualiza em vez de duplicar. CLIENTE TESTE original e dados reais intactos.
 
 DO $$
 DECLARE
-  v_company_id UUID;
   v_familias CONSTANT TEXT[] := ARRAY['DECOR NEWLINE', 'DECOR STUDIO', 'SISTEMAS E MÓDULOS', 'PRO LED', 'PRO LAMP', 'PERFIL', 'FITAS E FONTES'];
   v_matrix CONSTANT JSONB := '{"Black":{"DECOR NEWLINE":8000,"DECOR STUDIO":6000,"SISTEMAS E MÓDULOS":10000,"PRO LED":3000,"PRO LAMP":4000,"PERFIL":7000,"FITAS E FONTES":3000},"Gold":{"DECOR NEWLINE":2500,"DECOR STUDIO":3000,"SISTEMAS E MÓDULOS":2500,"PRO LED":1500,"PRO LAMP":1500,"PERFIL":2000,"FITAS E FONTES":2000},"Silver":{"DECOR NEWLINE":1000,"DECOR STUDIO":1500,"SISTEMAS E MÓDULOS":1000,"PRO LED":500,"PRO LAMP":1000,"PERFIL":1000,"FITAS E FONTES":1000}}'::jsonb;
   v_clientes CONSTANT JSONB := $json$[
@@ -147,7 +148,10 @@ DECLARE
     }
   ]$json$::jsonb;
 
+  v_rep_count INT;
   v_rep RECORD;
+  v_company_id UUID;
+  v_company_nome TEXT;
   v_upload_id UUID;
   v_c JSONB;
   v_idx INT := 1;
@@ -166,77 +170,60 @@ DECLARE
   v_total_real NUMERIC;
   v_total_ratio NUMERIC;
   v_client_id UUID;
+  v_client_rep UUID;
   v_row_id UUID;
   v_immersion_id UUID;
-  v_has_values BOOLEAN;
+  v_total_rows INT;
 BEGIN
-  -- 1. Recupera a empresa oficial PoolFlux
-  SELECT id INTO v_company_id
-  FROM public.companies
-  WHERE (
-    UPPER(TRIM(nome)) LIKE '%POOLFLUX%'
-    OR UPPER(TRIM(COALESCE(razao_social, ''))) LIKE '%POOLFLUX%'
-    OR UPPER(TRIM(COALESCE(slug, ''))) LIKE '%POOLFLUX%'
-  )
-  ORDER BY created_at ASC
-  LIMIT 1;
-
-  IF v_company_id IS NULL THEN
-    SELECT r.company_id INTO v_company_id
-    FROM public.representatives r
-    WHERE UPPER(TRIM(r.nome)) = 'REPRESENTANTE TESTE' AND r.company_id IS NOT NULL
-    LIMIT 1;
+  -- 0. Valores financeiros privados são obrigatórios
+  IF to_regclass('performance_private.rep_row_values') IS NULL THEN
+    RAISE EXCEPTION 'Tabela performance_private.rep_row_values não existe neste banco.';
   END IF;
 
-  IF v_company_id IS NULL THEN
-    SELECT id INTO v_company_id FROM public.companies ORDER BY created_at ASC LIMIT 1;
+  -- 1. REPRESENTANTE TESTE: nome exato e único
+  SELECT count(*) INTO v_rep_count
+  FROM public.representatives
+  WHERE UPPER(TRIM(nome)) = 'REPRESENTANTE TESTE';
+
+  IF v_rep_count <> 1 THEN
+    RAISE EXCEPTION 'Esperado exatamente 1 representante "REPRESENTANTE TESTE", encontrados %.', v_rep_count;
   END IF;
 
-  IF v_company_id IS NULL THEN
-    v_company_id := 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid;
-  END IF;
+  SELECT id, company_id, nome, regiao INTO v_rep
+  FROM public.representatives
+  WHERE UPPER(TRIM(nome)) = 'REPRESENTANTE TESTE';
 
-  -- 2. REPRESENTANTE TESTE (busca estrita; criado pela migration de seed anterior)
-  SELECT r.id, r.company_id, r.nome, r.regiao
-  INTO v_rep
-  FROM public.representatives r
-  WHERE UPPER(TRIM(r.nome)) = 'REPRESENTANTE TESTE'
-  ORDER BY r.created_at DESC
-  LIMIT 1;
-
-  IF v_rep.id IS NULL THEN
-    RAISE EXCEPTION 'REPRESENTANTE TESTE não encontrado. Aplique antes 20261124133000_seed_cliente_teste_performance.sql.';
-  END IF;
-  IF v_rep.company_id IS NULL THEN
-    UPDATE public.representatives SET company_id = v_company_id WHERE id = v_rep.id;
-    v_rep.company_id := v_company_id;
-  END IF;
-
-  -- 3. Upload "2026 - YTD" do representante (o mesmo do CLIENTE TESTE)
-  SELECT id INTO v_upload_id
-  FROM public.rep_performance_uploads
-  WHERE representative_id = v_rep.id
-    AND company_id = v_rep.company_id
-    AND periodo_label = '2026 - YTD'
-    AND substituida_em IS NULL
-  ORDER BY periodo_fim DESC NULLS LAST, created_at DESC
+  -- 2. Upload ativo mais recente do representante (mesma regra da tela de Metas)
+  SELECT u.id, u.company_id INTO v_upload_id, v_company_id
+  FROM public.rep_performance_uploads u
+  WHERE u.representative_id = v_rep.id
+    AND u.substituida_em IS NULL
+  ORDER BY u.periodo_fim DESC NULLS LAST, u.created_at DESC
   LIMIT 1;
 
   IF v_upload_id IS NULL THEN
-    INSERT INTO public.rep_performance_uploads (
-      company_id, representative_id, periodo_label, periodo_inicio, periodo_fim,
-      familias, filename, atingimento_geral, origem
-    ) VALUES (
-      v_rep.company_id, v_rep.id, '2026 - YTD', '2026-01-01', '2026-12-31',
-      v_familias, 'performance_representante_teste_2026.xlsx', NULL, 'manual_seed'
-    )
-    RETURNING id INTO v_upload_id;
+    RAISE EXCEPTION 'REPRESENTANTE TESTE não tem upload de performance ativo.';
   END IF;
 
-  v_has_values := EXISTS (
-    SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'performance_private' AND table_name = 'rep_row_values'
-  );
+  -- 3. Âncora: o CLIENTE TESTE original precisa estar nesse upload
+  IF NOT EXISTS (
+    SELECT 1 FROM public.rep_performance_rows
+    WHERE upload_id = v_upload_id
+      AND UPPER(TRIM(razao_social)) = 'CLIENTE TESTE ILUMINACAO LTDA'
+  ) THEN
+    RAISE EXCEPTION 'CLIENTE TESTE ILUMINACAO LTDA não está no upload ativo % do REPRESENTANTE TESTE.', v_upload_id;
+  END IF;
+
+  -- 4. Empresa = a do upload; precisa existir e ser a mesma do representante
+  SELECT nome INTO v_company_nome FROM public.companies WHERE id = v_company_id;
+  IF v_company_nome IS NULL THEN
+    RAISE EXCEPTION 'Empresa % do upload não encontrada.', v_company_id;
+  END IF;
+  IF v_rep.company_id IS DISTINCT FROM v_company_id THEN
+    RAISE EXCEPTION 'Representante (empresa %) e upload (empresa %) em empresas diferentes.', v_rep.company_id, v_company_id;
+  END IF;
+
+  RAISE NOTICE 'Empresa: % (%) | Representante: % | Upload: %', v_company_nome, v_company_id, v_rep.id, v_upload_id;
 
   FOR v_c IN SELECT * FROM jsonb_array_elements(v_clientes) LOOP
     v_idx := v_idx + 1;
@@ -286,18 +273,25 @@ BEGIN
       ELSE 'excelente'
     END;
 
-    -- 5. Cliente (busca por razão social nova, legado, nome fantasia ou documento)
-    SELECT id INTO v_client_id
+    -- 5. Cliente: somente identificadores fictícios exatos, na mesma empresa
+    v_client_id := NULL;
+    v_client_rep := NULL;
+    SELECT id, representative_id INTO v_client_id, v_client_rep
     FROM public.clients
-    WHERE company_id = v_rep.company_id
+    WHERE company_id = v_company_id
       AND (
         UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
-        OR UPPER(TRIM(nome_fantasia)) = v_c ->> 'nome_fantasia'
-        OR (v_c ? 'legacy_razao_social' AND UPPER(TRIM(razao_social)) = v_c ->> 'legacy_razao_social')
         OR documento = v_c ->> 'cnpj'
+        OR cnpj = v_c ->> 'cnpj'
+        OR codigo_erp = v_c ->> 'codigo_erp'
       )
-    ORDER BY created_at DESC
+    ORDER BY created_at ASC
     LIMIT 1;
+
+    IF v_client_id IS NOT NULL AND v_client_rep IS NOT NULL AND v_client_rep <> v_rep.id THEN
+      RAISE EXCEPTION 'Cliente % já existe vinculado a outro representante (%); seed abortado para preservar dados reais.',
+        v_c ->> 'razao_social', v_client_rep;
+    END IF;
 
     IF v_client_id IS NULL THEN
       INSERT INTO public.clients (
@@ -305,11 +299,12 @@ BEGIN
         cidade, municipio, estado, regiao, endereco, nome_comprador, telefone, whatsapp, email,
         grupo, categoria, status, nome_representante_erp, info_comerciais, obs_cliente
       ) VALUES (
-        v_rep.company_id, v_rep.id, v_c ->> 'nome_fantasia', v_c ->> 'razao_social',
+        v_company_id, v_rep.id, v_c ->> 'nome_fantasia', v_c ->> 'razao_social',
         v_c ->> 'cnpj', v_c ->> 'cnpj', v_c ->> 'codigo_erp',
         v_c ->> 'cidade', v_c ->> 'cidade', v_c ->> 'estado', COALESCE(v_rep.regiao, 'SP'),
         v_c ->> 'endereco', v_c ->> 'comprador', v_c ->> 'telefone', v_c ->> 'telefone',
-        v_c ->> 'email', (v_c ->> 'grupo')::public.client_group, (v_c ->> 'categoria')::public.client_category, 'ativo'::public.client_status, v_rep.nome,
+        v_c ->> 'email', (v_c ->> 'grupo')::public.client_group,
+        (v_c ->> 'categoria')::public.client_category, 'ativo'::public.client_status, v_rep.nome,
         v_c ->> 'info_comerciais',
         'Cliente fictício da carteira do REPRESENTANTE TESTE para homologação de Metas, BI e IA.'
       )
@@ -327,14 +322,13 @@ BEGIN
       WHERE id = v_client_id;
     END IF;
 
-    -- 6. Linha de performance no upload do representante
+    -- 6. Linha de performance no upload ativo (razão social exata, nova ou da versão anterior do seed)
+    v_row_id := NULL;
     SELECT id INTO v_row_id
     FROM public.rep_performance_rows
     WHERE upload_id = v_upload_id
-      AND (
-        UPPER(TRIM(razao_social)) = v_c ->> 'razao_social'
-        OR (v_c ? 'legacy_razao_social' AND UPPER(TRIM(razao_social)) = v_c ->> 'legacy_razao_social')
-      )
+      AND UPPER(TRIM(razao_social)) IN (v_c ->> 'razao_social', v_c ->> 'legacy_razao_social')
+    ORDER BY created_at ASC
     LIMIT 1;
 
     IF v_row_id IS NULL THEN
@@ -342,7 +336,7 @@ BEGIN
         company_id, upload_id, ordem, razao_social, categoria, total_pct, total_pct_status,
         familia_pct, metas_status, metas_cores, observacao, acompanhar
       ) VALUES (
-        v_rep.company_id, v_upload_id, v_idx, v_c ->> 'razao_social', v_c ->> 'categoria',
+        v_company_id, v_upload_id, v_idx, v_c ->> 'razao_social', v_c ->> 'categoria',
         v_total_ratio, v_st, v_pct, v_status, v_cores, v_c ->> 'observacao',
         v_total_ratio < 0.9
       )
@@ -362,18 +356,16 @@ BEGIN
       WHERE id = v_row_id;
     END IF;
 
-    -- 7. Valores financeiros (R$)
-    IF v_has_values THEN
-      INSERT INTO performance_private.rep_row_values (row_id, upload_id, total_meta, metas, realizado, media)
-      VALUES (v_row_id, v_upload_id, v_total_meta, v_metas, v_realizado, v_media)
-      ON CONFLICT (row_id) DO UPDATE
-      SET upload_id = EXCLUDED.upload_id,
-          total_meta = EXCLUDED.total_meta,
-          metas = EXCLUDED.metas,
-          realizado = EXCLUDED.realizado,
-          media = EXCLUDED.media,
-          updated_at = now();
-    END IF;
+    -- 7. Valores financeiros privados (R$) das 7 famílias
+    INSERT INTO performance_private.rep_row_values (row_id, upload_id, total_meta, metas, realizado, media)
+    VALUES (v_row_id, v_upload_id, v_total_meta, v_metas, v_realizado, v_media)
+    ON CONFLICT (row_id) DO UPDATE
+    SET upload_id = EXCLUDED.upload_id,
+        total_meta = EXCLUDED.total_meta,
+        metas = EXCLUDED.metas,
+        realizado = EXCLUDED.realizado,
+        media = EXCLUDED.media,
+        updated_at = now();
 
     -- 8. Imersão
     SELECT id INTO v_immersion_id
@@ -386,7 +378,7 @@ BEGIN
       INSERT INTO public.immersions (
         company_id, client_id, representative_id, status, titulo, subject_type, data_visita, observacoes
       ) VALUES (
-        v_rep.company_id, v_client_id, v_rep.id, 'concluida'::public.immersion_status, v_c ->> 'imersao_titulo', 'client',
+        v_company_id, v_client_id, v_rep.id, 'concluida'::public.immersion_status, v_c ->> 'imersao_titulo', 'client',
         CURRENT_DATE - ((v_c ->> 'dias')::int * INTERVAL '1 day'), v_c ->> 'imersao_obs'
       )
       RETURNING id INTO v_immersion_id;
@@ -398,7 +390,7 @@ BEGIN
         company_id, client_id, immersion_id, empresa_nome, entrevistado_nome, entrevistador_nome,
         entrevistado_classificacao, perfil, data_entrevista, observacoes, respostas
       ) VALUES (
-        v_rep.company_id, v_client_id, v_immersion_id, v_c ->> 'razao_social', v_c ->> 'entrevistado',
+        v_company_id, v_client_id, v_immersion_id, v_c ->> 'razao_social', v_c ->> 'entrevistado',
         'Equipe Comercial PoolFlux', v_c ->> 'classificacao', v_c ->> 'perfil',
         CURRENT_DATE - ((v_c ->> 'dias')::int * INTERVAL '1 day'),
         v_c ->> 'entrevista_obs', v_c -> 'respostas'
@@ -415,7 +407,7 @@ BEGIN
         company_id, immersion_id, scope, oportunidades, observacoes_comerciais,
         observacoes_concorrentes, observacoes_exposicao, observacoes_loja, texto
       ) VALUES (
-        v_rep.company_id, v_immersion_id, 'immersion', v_c ->> 'oportunidades',
+        v_company_id, v_immersion_id, 'immersion', v_c ->> 'oportunidades',
         v_c ->> 'obs_comerciais', v_c ->> 'obs_concorrentes', v_c ->> 'obs_exposicao',
         v_c ->> 'obs_loja', v_c ->> 'texto'
       );
@@ -424,17 +416,26 @@ BEGIN
     RAISE NOTICE 'Cliente % | linha % | atingimento % (%)', v_c ->> 'nome_fantasia', v_row_id, v_total_ratio, v_st;
   END LOOP;
 
-  -- 11. Atingimento geral do upload = realizado total ÷ meta total de todas as linhas
-  IF v_has_values THEN
-    UPDATE public.rep_performance_uploads u
-    SET atingimento_geral = sub.ratio
-    FROM (
-      SELECT ROUND(
-        SUM((SELECT SUM(value::numeric) FROM jsonb_each_text(v.realizado)))
-          / NULLIF(SUM(v.total_meta), 0), 4) AS ratio
-      FROM performance_private.rep_row_values v
-      WHERE v.upload_id = v_upload_id
-    ) sub
-    WHERE u.id = v_upload_id AND sub.ratio IS NOT NULL;
+  -- 11. Atingimento geral do upload = realizado total ÷ meta total das linhas com valores
+  UPDATE public.rep_performance_uploads u
+  SET atingimento_geral = sub.ratio
+  FROM (
+    SELECT ROUND(
+      SUM((SELECT SUM(value::numeric) FROM jsonb_each_text(v.realizado)))
+        / NULLIF(SUM(v.total_meta), 0), 4) AS ratio
+    FROM performance_private.rep_row_values v
+    WHERE v.upload_id = v_upload_id
+  ) sub
+  WHERE u.id = v_upload_id AND sub.ratio IS NOT NULL;
+
+  -- 12. Conferência final
+  SELECT count(*) INTO v_total_rows
+  FROM public.rep_performance_rows
+  WHERE upload_id = v_upload_id AND UPPER(TRIM(razao_social)) LIKE 'CLIENTE TESTE%';
+
+  IF v_total_rows < 6 THEN
+    RAISE EXCEPTION 'Conferência falhou: % linhas CLIENTE TESTE no upload (esperado 6).', v_total_rows;
   END IF;
+
+  RAISE NOTICE 'Seed concluído: % linhas CLIENTE TESTE no upload %.', v_total_rows, v_upload_id;
 END $$;
