@@ -400,18 +400,19 @@ async function repCall(
   fn: string,
   args: Record<string, unknown>,
 ): Promise<RepResult> {
-  const { repForUser } = await import("@/lib/rep-portal.server");
+  const { repForUser, loadRepMetasDetailExtras, reviewForCycle } = await import(
+    "@/lib/rep-portal.server"
+  );
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const rep = await repForUser(userId);
   const res = await callRpc(supabaseAdmin, fn, { ...args, _representative_id: rep.id });
   if (!res.available) return res;
-  const baseView = repView(res.state);
-  const { loadRepMetasDetailExtras, reviewForCycle } = await import("@/lib/rep-portal.server");
-  const cycleId = baseView.cycle?.id ?? null;
+  const cycleId = res.state.cycle?.id ?? null;
   const [review, extras] = await Promise.all([
     reviewForCycle(cycleId),
     loadRepMetasDetailExtras(rep.id, String(args._row_id), cycleId),
   ]);
+  const baseView = repView(res.state, extras.categoria, extras.familia_pct);
   return {
     available: true,
     view: { ...baseView, review, ...extras },

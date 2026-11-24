@@ -64,6 +64,8 @@ export function RepMetasPerformanceChart({
           <BarChart
             data={data}
             margin={{ top: 8, right: 8, left: -12, bottom: 12 }}
+            barCategoryGap="12%"
+            barGap={4}
             onClick={(event) => {
               const item = data.find((row) => row.label === event?.activeLabel);
               if (item) onSelect(item.familia);

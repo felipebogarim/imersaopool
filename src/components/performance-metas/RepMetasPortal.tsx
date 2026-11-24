@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock3,
+  Lightbulb,
   Loader2,
   PencilLine,
   Search,
@@ -177,33 +178,101 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
               </div>
             </div>
 
+            {/* Guia Rápido */}
+            <div className="border-b bg-blue-50/70 dark:bg-blue-950/30 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400 shadow-xs">
+                  <Lightbulb className="h-4.5 w-4.5" />
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Guia Rápido · Como preencher suas sugestões de metas
+                    </h3>
+                    <span className="rounded-full bg-blue-100 dark:bg-blue-900/60 px-2.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                      Passo a passo
+                    </span>
+                  </div>
+                  <div className="grid gap-1 sm:grid-cols-3 text-xs text-muted-foreground pt-0.5">
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">1</span>
+                      <span>Mude de portfólio clicando nos <strong>botões em destaque</strong> ou no gráfico.</span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">2</span>
+                      <span>Alimente a <strong>meta mensal (R$)</strong> e sua <strong>justificativa</strong> em cada item.</span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-200/70 dark:bg-blue-800 text-[10px] font-bold text-blue-800 dark:text-blue-200">3</span>
+                      <span>Ao concluir, clique em <strong>Enviar sugestões</strong> para avaliação da gestão.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="border-b p-4 sm:p-5">
               <RepMetasPerformanceChart view={view} selected={selected} onSelect={setSelected} />
             </div>
 
-            <div className="flex gap-1 overflow-x-auto border-b px-3 pt-3">
-              {METAS_FAMILIES.map((family, index) => (
-                <button
-                  key={family}
-                  type="button"
-                  onClick={() => setSelected(family)}
-                  className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-t-md border-b-2 px-3 py-2 text-xs transition-colors",
-                    selected === family
-                      ? "border-primary font-semibold text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span className={cn("h-2 w-2 rounded-sm", FAMILY_SWATCH[index])} />
-                  {METAS_FAMILY_LABEL[family]}
-                  {alterados.includes(family) && (
-                    <span
-                      className="h-1.5 w-1.5 rounded-full bg-amber-500"
-                      title="Alteração não enviada"
-                    />
-                  )}
-                </button>
-              ))}
+            {/* Abas com cada item dos portfólios com alto destaque e contraste */}
+            <div className="border-b bg-muted/30 p-3 sm:px-5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Portfólios · Clique para selecionar e editar
+                </p>
+                <span className="text-[11px] font-medium text-foreground">
+                  Ativo: <strong className="text-primary">{METAS_FAMILY_LABEL[selected]}</strong>
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {METAS_FAMILIES.map((family, index) => {
+                  const isSelected = selected === family;
+                  const isAltered = alterados.includes(family);
+                  const hasDraft = edit[family].valor != null && edit[family].valor! > 0;
+                  return (
+                    <button
+                      key={family}
+                      type="button"
+                      onClick={() => setSelected(family)}
+                      className={cn(
+                        "group relative flex items-center justify-between gap-2 rounded-lg px-3.5 py-2.5 text-xs transition-all cursor-pointer select-none",
+                        isSelected
+                          ? "bg-primary text-primary-foreground font-bold shadow-md ring-2 ring-primary/40 border-transparent"
+                          : "bg-card text-foreground/85 hover:text-foreground hover:bg-muted/80 border-2 border-border shadow-xs font-semibold hover:border-foreground/30",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className={cn(
+                            "h-2.5 w-2.5 shrink-0 rounded-full",
+                            FAMILY_SWATCH[index],
+                            isSelected ? "ring-2 ring-primary-foreground" : "ring-1 ring-border",
+                          )}
+                        />
+                        <span className="truncate">{METAS_FAMILY_LABEL[family]}</span>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-1.5 ml-1">
+                        {isAltered && (
+                          <span
+                            className="h-2 w-2 rounded-full bg-amber-400 ring-2 ring-background"
+                            title="Sugestão alterada e não enviada"
+                          />
+                        )}
+                        {!isAltered && hasDraft && (
+                          <CheckCircle2
+                            className={cn(
+                              "h-3.5 w-3.5",
+                              isSelected ? "text-primary-foreground" : "text-emerald-500",
+                            )}
+                          />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>

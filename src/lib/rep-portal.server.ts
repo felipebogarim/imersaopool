@@ -539,11 +539,21 @@ export async function loadRepMetasDetailExtras(
   repId: string,
   rowId: string,
   cycleId: string | null,
-): Promise<Pick<RepGoalsView, "cliente" | "performance_period" | "suggestion_history">> {
+): Promise<{
+  cliente: string;
+  categoria: string | null;
+  familia_pct: Record<string, unknown> | null;
+  performance_period: {
+    label: string | null;
+    inicio: string | null;
+    fim: string | null;
+  };
+  suggestion_history: RepGoalsView["suggestion_history"];
+}> {
   const { data: row, error } = await admin
     .from("rep_performance_rows")
     .select(
-      "razao_social, rep_performance_uploads!inner(representative_id, periodo_label, periodo_inicio, periodo_fim)",
+      "razao_social, categoria, familia_pct, rep_performance_uploads!inner(representative_id, periodo_label, periodo_inicio, periodo_fim)",
     )
     .eq("id", rowId)
     .eq("rep_performance_uploads.representative_id", repId)
@@ -568,6 +578,8 @@ export async function loadRepMetasDetailExtras(
 
   return {
     cliente: String(row.razao_social ?? "").trim(),
+    categoria: row.categoria ?? null,
+    familia_pct: (row.familia_pct as Record<string, unknown>) ?? null,
     performance_period: {
       label: upload?.periodo_label ?? null,
       inicio: upload?.periodo_inicio ?? null,
@@ -681,7 +693,7 @@ export async function loadRepMetasBi(rep: PortalRep): Promise<{
           _representative_id: rep.id,
         });
         if (error) throw new Error("Não foi possível consolidar as metas da carteira.");
-        return { row, view: repView(data as GoalsState) };
+        return { row, view: repView(data as GoalsState, row.categoria) };
       }),
     );
     for (const { row, view } of states) {

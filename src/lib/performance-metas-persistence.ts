@@ -2,7 +2,13 @@
 // e conversões puras entre o banco e os rascunhos da tela.
 // Gravação/leitura: `performance-metas.functions.ts` (RPCs com checagem de papel).
 
-import { CANONICAL_FAMILIES, type CanonicalFamily } from "./client-bi-familias";
+import {
+  CANONICAL_FAMILIES,
+  normalizeFamilyName,
+  normalizeText,
+  type CanonicalFamily,
+} from "./client-bi-familias";
+import { getPerformancePortfolioTarget } from "./performance-portfolio-targets";
 import type {
   AiConfianca,
   AiSuggestionTag,
@@ -132,22 +138,36 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+export function lookupFamilyNum(record: unknown, family: string): number | null {
+  if (!record || typeof record !== "object") return null;
+  const rec = record as Record<string, unknown>;
+  if (rec[family] !== undefined) return num(rec[family]);
+  const normTarget = normalizeText(family);
+  for (const [k, v] of Object.entries(rec)) {
+    if (normalizeText(k) === normTarget) return num(v);
+  }
+  return null;
+}
+
 /**
  * Valor vendido comparável à meta mensal, por portfólio, a partir do backend:
  * venda realizada (R$) → média histórica (R$) → atingimento × meta do upload (estimado).
  */
-export function baseFromBackend(base: GoalsState["base"]): BaseFinanceira {
+export function baseFromBackend(
+  base: GoalsState["base"],
+  categoria?: string | null,
+): BaseFinanceira {
   const out: BaseFinanceira = {};
   if (!base) return out;
   for (const f of CANONICAL_FAMILIES) {
-    const real = num(base.realizado?.[f]);
-    const media = num(base.media?.[f]);
-    const pct = num(base.familia_pct?.[f]);
-    const meta = num(base.metas?.[f]);
+    const real = lookupFamilyNum(base.realizado, f);
+    const media = lookupFamilyNum(base.media, f);
+    const pct = lookupFamilyNum(base.familia_pct, f);
+    const meta = lookupFamilyNum(base.metas, f) ?? getPerformancePortfolioTarget(categoria, f);
     if (real != null && real >= 0) out[f] = { valor: real, fonte: "realizado" };
     else if (media != null && media >= 0) out[f] = { valor: media, fonte: "media" };
     else if (pct != null && pct >= 0 && meta != null && meta > 0)
-      out[f] = { valor: pct * meta, fonte: "estimado" };
+      out[f] = { valor: (Math.abs(pct) <= 2.5 ? pct : pct / 100) * meta, fonte: "estimado" };
   }
   return out;
 }
@@ -212,6 +232,8 @@ export type RepGoalsView = Omit<GoalsState, "base" | "ai_suggestions" | "agendad
   atingimento: Partial<Record<CanonicalFamily, { ratio: number; fonte: BaseFonte }>>;
   /** Razão social do cliente (preenchida pelo servidor do portal). */
   cliente?: string;
+  /** Categoria do cliente (Black, Gold, Silver). */
+  categoria?: string | null;
   /** Período da Performance usada para calcular o atingimento. */
   performance_period?: {
     label: string | null;
@@ -265,21 +287,52 @@ export function groupRepSuggestionHistory(
 /**
  * Visão do representante: atingimento calculado no servidor sobre a meta oficial gravada,
  * sem enviar valores do upload (metas padrão/realizado) nem sugestões da IA.
+ * Se a gestão ainda não personalizou as metas, utiliza como meta oficial a meta padrão da categoria.
  */
-export function repView(state: GoalsState): RepGoalsView {
-  const base = baseFromBackend(state.base);
+export function repView(
+  state: GoalsState,
+  categoria?: string | null,
+  fallbackFamiliaPct?: Record<string, unknown> | null,
+): RepGoalsView {
+  const base = baseFromBackend(state.base, categoria);
   const atingimento: RepGoalsView["atingimento"] = {};
-  for (const it of state.items) {
-    const b = isFamily(it.familia) ? base[it.familia] : null;
-    if (b && it.meta_mensal != null && it.meta_mensal > 0 && isFamily(it.familia))
+
+  const savedMap = new Map(
+    (state.items ?? []).filter((i) => isFamily(i.familia)).map((i) => [i.familia, i.meta_mensal]),
+  );
+
+  const effectiveItems = CANONICAL_FAMILIES.map((familia) => {
+    const savedMeta = savedMap.get(familia);
+    const meta_mensal =
+      savedMeta !== undefined ? savedMeta : getPerformancePortfolioTarget(categoria, familia);
+    return {
+      familia,
+      meta_mensal,
+    };
+  });
+
+  for (const it of effectiveItems) {
+    const b = base[it.familia];
+    if (b && it.meta_mensal != null && it.meta_mensal > 0) {
       atingimento[it.familia] = { ratio: b.valor / it.meta_mensal, fonte: b.fonte };
+    } else {
+      const pct =
+        lookupFamilyNum(state.base?.familia_pct, it.familia) ??
+        lookupFamilyNum(fallbackFamiliaPct, it.familia);
+      if (pct != null && pct >= 0) {
+        const ratio = Math.abs(pct) <= 2.5 ? pct : pct / 100;
+        atingimento[it.familia] = { ratio, fonte: "estimado" };
+      }
+    }
   }
+
   return {
     cycle: state.cycle && { id: state.cycle.id, inicio: state.cycle.inicio, fim: state.cycle.fim },
-    items: state.items.map((i) => ({ familia: i.familia, meta_mensal: i.meta_mensal })),
-    rep_suggestions: state.rep_suggestions,
+    items: effectiveItems,
+    rep_suggestions: state.rep_suggestions ?? [],
     atingimento,
     review: { status: "nao_convidado" },
+    categoria: categoria ?? null,
   };
 }
 

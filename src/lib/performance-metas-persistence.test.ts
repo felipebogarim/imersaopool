@@ -105,6 +105,25 @@ describe("performance-metas-persistence", () => {
     expect(json).not.toMatch(/"origem"/);
   });
 
+  it("visão do representante: sem metas gravadas pela gestão, usa meta padrão da categoria", () => {
+    const emptyState: GoalsState = {
+      cycle: null,
+      items: [],
+      rep_suggestions: [],
+      ai_suggestions: [],
+      base: {
+        realizado: { "DECOR NEWLINE": 1250 },
+        familia_pct: { "DECOR STUDIO": 0.85 },
+      },
+    };
+    const v = repView(emptyState, "Silver");
+    expect(v.items).toHaveLength(7);
+    expect(v.items.find((i) => i.familia === "DECOR NEWLINE")?.meta_mensal).toBe(1000);
+    expect(v.items.find((i) => i.familia === "DECOR STUDIO")?.meta_mensal).toBe(1500);
+    expect(v.atingimento["DECOR NEWLINE"]).toEqual({ ratio: 1.25, fonte: "realizado" });
+    expect(v.atingimento["DECOR STUDIO"]).toEqual({ ratio: 0.85, fonte: "estimado" });
+  });
+
   it("agrupa o histórico de sugestões por envio e remove campos internos", () => {
     const history = groupRepSuggestionHistory([
       {
