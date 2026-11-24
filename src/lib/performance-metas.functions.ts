@@ -27,6 +27,7 @@ import {
   type MetasLoadResult,
   type RepGoalsView,
 } from "@/lib/performance-metas-persistence";
+import type { MetasBiBackendRow } from "@/lib/performance-metas-bi";
 
 type RpcClient = {
   rpc: (
@@ -78,6 +79,28 @@ export const getMetasGoals = createServerFn({ method: "POST" })
   .inputValidator(rowInput)
   .handler(({ data, context }) =>
     callRpc(context.supabase, "get_performance_goals", { _row_id: data.rowId }),
+  );
+
+/** BI Metas: metas vigentes + base em R$ de várias linhas (somente gestão). */
+export const getMetasBi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ rowIds: z.array(z.string().uuid()).max(10000) }))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ available: false } | { available: true; rows: MetasBiBackendRow[] }> => {
+      if (data.rowIds.length === 0) return { available: true, rows: [] };
+      const { data: rows, error } = await (context.supabase as unknown as RpcClient).rpc(
+        "get_performance_goals_bi",
+        { _row_ids: data.rowIds },
+      );
+      if (error) {
+        if (NOT_MIGRATED.has(error.code ?? "")) return { available: false };
+        throw new Error(error.message);
+      }
+      return { available: true, rows: (rows ?? []) as MetasBiBackendRow[] };
+    },
   );
 
 export const getMetasReview = createServerFn({ method: "POST" })

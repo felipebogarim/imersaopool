@@ -4,9 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search, Target, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,29 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  FAROL_CELL_CLASS,
-  catBadge,
-  statusFromRatio,
-  type FarolStatus,
-} from "@/lib/performance-farol";
+import { FAROL_CELL_CLASS, catBadge, statusFromRatio } from "@/lib/performance-farol";
 import { sanitizeRatio } from "@/lib/performance-metrics";
-import { getLatestActiveVersionByRep } from "@/lib/performance-periods";
 import { METAS_FAMILIES, METAS_FAMILY_LABEL, fmtPct } from "@/lib/performance-metas";
 import { FilterChip } from "./FilterChip";
-
-const SUMMARY_PREFIXES = ["PARTICIPA", "ATINGIMENTO", "TOTAL", "ESTIMATIVA", "FAIXA"];
-
-type ListRow = {
-  id: string;
-  razao_social: string;
-  categoria: string | null;
-  repId: string | null;
-  repName: string;
-  totalPct: number | null;
-  familiaPct: Record<string, number | null>;
-  metasStatus: Record<string, FarolStatus | null>;
-};
+import { useMetasCarteira } from "./use-metas-carteira";
 
 export function MetasCarteiraList({
   restrictToRepIds,
@@ -53,77 +33,18 @@ export function MetasCarteiraList({
   const [familyFilter, setFamilyFilter] = useState<string[]>([]);
   const [zeroFilter, setZeroFilter] = useState(false);
 
-  const { data: reps = [] } = useQuery({
-    queryKey: ["performance-metas", "reps"],
-    queryFn: async () => {
-      const { data } = await supabase.from("representatives").select("id, nome").order("nome");
-      return data ?? [];
-    },
-  });
-
-  const { data: uploads = [], isLoading: loadingUploads } = useQuery({
-    queryKey: ["performance-metas", "uploads"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("rep_performance_uploads")
-        .select("id, representative_id, familias, periodo_fim, periodo_label, created_at")
-        .is("substituida_em", null)
-        .order("periodo_fim", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
-      return Array.from(getLatestActiveVersionByRep(data ?? []).values());
-    },
-  });
-
-  const uploadIds = useMemo(() => uploads.map((u) => u.id), [uploads]);
-
-  const { data: allRows = [], isLoading: loadingRows } = useQuery({
-    queryKey: ["performance-metas", "rows", uploadIds],
-    enabled: uploadIds.length > 0,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("rep_performance_rows")
-        .select("id, upload_id, razao_social, categoria, total_pct, familia_pct, metas_status")
-        .in("upload_id", uploadIds)
-        .order("razao_social");
-      return data ?? [];
-    },
-  });
-
-  const rows: ListRow[] = useMemo(() => {
-    const repById = new Map(reps.map((r) => [r.id, r.nome]));
-    const repByUpload = new Map(uploads.map((u) => [u.id, u.representative_id]));
-    return allRows
-      .filter((r) => {
-        const u = String(r.razao_social ?? "")
-          .trim()
-          .toUpperCase();
-        return !SUMMARY_PREFIXES.some((p) => u.startsWith(p));
-      })
-      .map((r) => {
-        const repId = repByUpload.get(r.upload_id) ?? null;
-        return {
-          id: r.id,
-          razao_social: r.razao_social,
-          categoria: r.categoria,
-          repId,
-          repName: (repId && repById.get(repId)) || "—",
-          totalPct: sanitizeRatio(r.total_pct),
-          familiaPct: (r.familia_pct ?? {}) as Record<string, number | null>,
-          metasStatus: (r.metas_status ?? {}) as Record<string, FarolStatus | null>,
-        };
-      })
-      .filter((r) => !restrictToRepIds || (r.repId != null && restrictToRepIds.includes(r.repId)));
-  }, [allRows, uploads, reps, restrictToRepIds]);
-
-  const visibleReps = useMemo(
-    () => (restrictToRepIds ? reps.filter((r) => restrictToRepIds.includes(r.id)) : reps),
-    [reps, restrictToRepIds],
-  );
+  const { rows, visibleReps, isLoading } = useMetasCarteira(restrictToRepIds);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
-      if (q && !r.razao_social.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !r.razao_social.toLowerCase().includes(q) &&
+        !r.repName.toLowerCase().includes(q) &&
+        !(r.categoria && r.categoria.toLowerCase().includes(q))
+      )
+        return false;
       if (repFilter !== "all" && r.repId !== repFilter) return false;
       if (categoryFilter.length && !(r.categoria && categoryFilter.includes(r.categoria)))
         return false;
@@ -141,7 +62,6 @@ export function MetasCarteiraList({
     });
   }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter]);
 
-  const isLoading = loadingUploads || loadingRows;
   const toggle = (list: string[], v: string) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
