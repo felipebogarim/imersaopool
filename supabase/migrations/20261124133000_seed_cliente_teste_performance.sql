@@ -1,33 +1,31 @@
 -- Migration: Seed do "CLIENTE TESTE" com dados fictícios e vínculo ao "REPRESENTANTE TESTE", incluindo performance e imersão.
+-- Usa as 7 famílias canônicas do sistema: DECOR NEWLINE, DECOR STUDIO, SISTEMAS E MÓDULOS, PRO LED, PRO LAMP, PERFIL, FITAS E FONTES.
+-- Formato de atingimento compatível com sanitizeRatio (1.0 = 100%, 1.09 = 109%).
 
 DO $$
 DECLARE
+  v_rep RECORD;
   v_company RECORD;
   v_rep_id UUID;
   v_client_id UUID;
   v_upload_id UUID;
   v_row_id UUID;
-  v_familias TEXT[] := ARRAY['Fitas LED', 'Perfis de LED', 'Fontes', 'Spots', 'Painéis LED', 'Luminárias Decorativas'];
-  v_metas JSONB := '{"Fitas LED": 50000, "Perfis de LED": 30000, "Fontes": 15000, "Spots": 25000, "Painéis LED": 20000, "Luminárias Decorativas": 10000}'::jsonb;
-  v_realizado JSONB := '{"Fitas LED": 56000, "Perfis de LED": 33000, "Fontes": 14000, "Spots": 28000, "Painéis LED": 21000, "Luminárias Decorativas": 11500}'::jsonb;
-  v_familia_pct JSONB := '{"Fitas LED": 112.0, "Perfis de LED": 110.0, "Fontes": 93.3, "Spots": 112.0, "Painéis LED": 105.0, "Luminárias Decorativas": 115.0}'::jsonb;
-  v_metas_status JSONB := '{"Fitas LED": "superada", "Perfis de LED": "superada", "Fontes": "em_aberto", "Spots": "superada", "Painéis LED": "superada", "Luminárias Decorativas": "superada"}'::jsonb;
-  v_metas_cores JSONB := '{"Fitas LED": "green", "Perfis de LED": "green", "Fontes": "yellow", "Spots": "green", "Painéis LED": "green", "Luminárias Decorativas": "green"}'::jsonb;
+  v_familias TEXT[] := ARRAY['DECOR NEWLINE', 'DECOR STUDIO', 'SISTEMAS E MÓDULOS', 'PRO LED', 'PRO LAMP', 'PERFIL', 'FITAS E FONTES'];
+  v_metas JSONB := '{"DECOR NEWLINE": 2500, "DECOR STUDIO": 3000, "SISTEMAS E MÓDULOS": 2500, "PRO LED": 1500, "PRO LAMP": 1500, "PERFIL": 2000, "FITAS E FONTES": 2000}'::jsonb;
+  v_realizado JSONB := '{"DECOR NEWLINE": 2800, "DECOR STUDIO": 3300, "SISTEMAS E MÓDULOS": 2600, "PRO LED": 1600, "PRO LAMP": 1400, "PERFIL": 2200, "FITAS E FONTES": 2450}'::jsonb;
+  v_familia_pct JSONB := '{"DECOR NEWLINE": 1.12, "DECOR STUDIO": 1.10, "SISTEMAS E MÓDULOS": 1.04, "PRO LED": 1.0667, "PRO LAMP": 0.9333, "PERFIL": 1.10, "FITAS E FONTES": 1.225}'::jsonb;
+  v_metas_status JSONB := '{"DECOR NEWLINE": "superada", "DECOR STUDIO": "superada", "SISTEMAS E MÓDULOS": "superada", "PRO LED": "superada", "PRO LAMP": "em_aberto", "PERFIL": "superada", "FITAS E FONTES": "superada"}'::jsonb;
+  v_metas_cores JSONB := '{"DECOR NEWLINE": "green", "DECOR STUDIO": "green", "SISTEMAS E MÓDULOS": "green", "PRO LED": "green", "PRO LAMP": "yellow", "PERFIL": "green", "FITAS E FONTES": "green"}'::jsonb;
+  v_matrix CONSTANT JSONB := '{"Black":{"DECOR NEWLINE":8000,"DECOR STUDIO":6000,"SISTEMAS E MÓDULOS":10000,"PRO LED":3000,"PRO LAMP":4000,"PERFIL":7000,"FITAS E FONTES":3000},"Gold":{"DECOR NEWLINE":2500,"DECOR STUDIO":3000,"SISTEMAS E MÓDULOS":2500,"PRO LED":1500,"PRO LAMP":1500,"PERFIL":2000,"FITAS E FONTES":2000},"Silver":{"DECOR NEWLINE":1000,"DECOR STUDIO":1500,"SISTEMAS E MÓDULOS":1000,"PRO LED":500,"PRO LAMP":1000,"PERFIL":1000,"FITAS E FONTES":1000}}'::jsonb;
 BEGIN
-  -- Percorre as empresas cadastradas no sistema
-  FOR v_company IN 
-    SELECT id FROM public.companies
-    UNION
-    SELECT 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid AS id
-    LIMIT 10
-  LOOP
-    -- 1. Cria ou recupera o "REPRESENTANTE TESTE"
-    SELECT id INTO v_rep_id
-    FROM public.representatives
-    WHERE company_id = v_company.id AND UPPER(TRIM(nome)) = 'REPRESENTANTE TESTE'
-    LIMIT 1;
-
-    IF v_rep_id IS NULL THEN
+  -- 1. Garante que exista ao menos um "REPRESENTANTE TESTE"
+  IF NOT EXISTS (SELECT 1 FROM public.representatives WHERE UPPER(TRIM(nome)) ILIKE '%TESTE%') THEN
+    FOR v_company IN 
+      SELECT id FROM public.companies
+      UNION
+      SELECT 'c86498e0-be56-4ed4-a362-6cdfbf72eff7'::uuid AS id
+      LIMIT 10
+    LOOP
       INSERT INTO public.representatives (
         company_id,
         nome,
@@ -40,7 +38,7 @@ BEGIN
         observacoes
       ) VALUES (
         v_company.id,
-        'REPRESENTANTE TESTE',
+        'Representante Teste',
         'rep.teste@poolflux.com.br',
         '(11) 99999-0000',
         'SP',
@@ -48,14 +46,21 @@ BEGIN
         'Nenhuma',
         'Representação Teste',
         'Representante fictício criado para testes e validações de rotinas comerciais.'
-      )
-      RETURNING id INTO v_rep_id;
-    END IF;
+      );
+    END LOOP;
+  END IF;
 
-    -- 2. Cria ou atualiza o "CLIENTE TESTE"
+  -- 2. Para cada representante que seja de teste, cria ou atualiza os dados completos
+  FOR v_rep IN
+    SELECT id, company_id, nome
+    FROM public.representatives
+    WHERE UPPER(TRIM(nome)) ILIKE '%TESTE%'
+  LOOP
+    -- 2.1 Cria ou atualiza o CLIENTE TESTE
     SELECT id INTO v_client_id
     FROM public.clients
-    WHERE company_id = v_company.id AND (UPPER(TRIM(nome_fantasia)) = 'CLIENTE TESTE' OR UPPER(TRIM(razao_social)) = 'CLIENTE TESTE ILUMINACAO LTDA')
+    WHERE (company_id = v_rep.company_id OR v_rep.company_id IS NULL)
+      AND (UPPER(TRIM(nome_fantasia)) = 'CLIENTE TESTE' OR UPPER(TRIM(razao_social)) = 'CLIENTE TESTE ILUMINACAO LTDA')
     LIMIT 1;
 
     IF v_client_id IS NULL THEN
@@ -86,8 +91,8 @@ BEGIN
         info_comerciais,
         obs_cliente
       ) VALUES (
-        v_company.id,
-        v_rep_id,
+        v_rep.company_id,
+        v_rep.id,
         'CLIENTE TESTE',
         'CLIENTE TESTE ILUMINACAO LTDA',
         '00.000.000/0001-99',
@@ -108,25 +113,27 @@ BEGIN
         'Gold',
         'ativo',
         'ativo',
-        'REPRESENTANTE TESTE',
-        'Cliente teste criado para homologação de relatórios, diagnósticos e BI.',
+        v_rep.nome,
+        'Cliente teste criado para homologação de relatórios, diagnósticos, Metas e BI.',
         'Perfil fictício com metas de performance batidas e bom relacionamento comercial.'
       )
       RETURNING id INTO v_client_id;
     ELSE
       UPDATE public.clients
-      SET representative_id = v_rep_id,
-          nome_representante_erp = 'REPRESENTANTE TESTE',
+      SET representative_id = v_rep.id,
+          nome_representante_erp = v_rep.nome,
+          categoria = 'Gold',
+          status = 'ativo',
           updated_at = now()
       WHERE id = v_client_id;
     END IF;
 
-    -- 3. Cria upload de performance para o REPRESENTANTE TESTE (se ainda não existir ativo)
+    -- 2.2 Cria ou atualiza o upload de performance ativo para o representante
     SELECT id INTO v_upload_id
     FROM public.rep_performance_uploads
-    WHERE representative_id = v_rep_id
-      AND periodo_label = '2026 - YTD'
+    WHERE representative_id = v_rep.id
       AND substituida_em IS NULL
+    ORDER BY periodo_fim DESC NULLS LAST, created_at DESC
     LIMIT 1;
 
     IF v_upload_id IS NULL THEN
@@ -142,25 +149,32 @@ BEGIN
         atingimento_geral,
         origem
       ) VALUES (
-        v_company.id,
-        v_rep_id,
+        v_rep.company_id,
+        v_rep.id,
         '2026 - YTD',
         '2026-01-01',
         '2026-12-31',
         v_familias,
-        '{"Gold": 150000, "Black": 300000, "Silver": 80000}'::jsonb,
+        '{"Gold": 15000, "Black": 35000, "Silver": 8000}'::jsonb,
         'performance_representante_teste_2026.xlsx',
-        109.0,
+        1.09,
         'manual_seed'
       )
       RETURNING id INTO v_upload_id;
+    ELSE
+      UPDATE public.rep_performance_uploads
+      SET familias = v_familias,
+          periodo_fim = COALESCE(periodo_fim, '2026-12-31'),
+          atingimento_geral = 1.09,
+          substituida_em = NULL
+      WHERE id = v_upload_id;
     END IF;
 
-    -- 4. Cria linha de performance vinculada ao CLIENTE TESTE (razao_social = CLIENTE TESTE ILUMINACAO LTDA)
+    -- 2.3 Cria ou atualiza a linha de performance (rep_performance_rows) vinculada ao upload
     SELECT id INTO v_row_id
     FROM public.rep_performance_rows
     WHERE upload_id = v_upload_id
-      AND UPPER(TRIM(razao_social)) = 'CLIENTE TESTE ILUMINACAO LTDA'
+      AND (UPPER(TRIM(razao_social)) = 'CLIENTE TESTE ILUMINACAO LTDA' OR UPPER(TRIM(razao_social)) = 'CLIENTE TESTE')
     LIMIT 1;
 
     IF v_row_id IS NULL THEN
@@ -181,40 +195,44 @@ BEGIN
         observacao,
         acompanhar
       ) VALUES (
-        v_company.id,
+        v_rep.company_id,
         v_upload_id,
         1,
         'CLIENTE TESTE ILUMINACAO LTDA',
         'Gold',
         v_metas,
         v_realizado,
-        150000,
-        109.0,
+        15000,
+        1.09,
         'superada',
         v_familia_pct,
         v_metas_status,
         v_metas_cores,
-        'Cliente destaque em Fitas LED e Perfis de LED. Desempenho geral acima de 100%.',
+        'Cliente destaque em DECOR NEWLINE e FITAS E FONTES. Desempenho geral de 109% (superada).',
         true
       )
       RETURNING id INTO v_row_id;
     ELSE
       UPDATE public.rep_performance_rows
-      SET metas = v_metas,
+      SET razao_social = 'CLIENTE TESTE ILUMINACAO LTDA',
+          categoria = 'Gold',
+          metas = v_metas,
           realizado = v_realizado,
-          total_meta = 150000,
-          total_pct = 109.0,
+          total_meta = 15000,
+          total_pct = 1.09,
           total_pct_status = 'superada',
           familia_pct = v_familia_pct,
           metas_status = v_metas_status,
-          metas_cores = v_metas_cores
+          metas_cores = v_metas_cores,
+          observacao = 'Cliente destaque em DECOR NEWLINE e FITAS E FONTES. Desempenho geral de 109% (superada).',
+          acompanhar = true
       WHERE id = v_row_id;
     END IF;
 
-    -- 5. Se o schema performance_private existir, sincroniza rep_row_values e rep_upload_values
+    -- 2.4 Sincronização com o schema performance_private (se existir)
     IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'performance_private') THEN
       INSERT INTO performance_private.rep_row_values (row_id, upload_id, total_meta, metas, realizado)
-      VALUES (v_row_id, v_upload_id, 150000, v_metas, v_realizado)
+      VALUES (v_row_id, v_upload_id, 15000, v_metas, v_realizado)
       ON CONFLICT (row_id) DO UPDATE
       SET total_meta = EXCLUDED.total_meta,
           metas = EXCLUDED.metas,
@@ -222,14 +240,22 @@ BEGIN
           updated_at = now();
 
       INSERT INTO performance_private.rep_upload_values (upload_id, categoria_metas)
-      VALUES (v_upload_id, '{"Gold": 150000, "Black": 300000, "Silver": 80000}'::jsonb)
-      ON CONFLICT (upload_id) DO NOTHING;
+      VALUES (v_upload_id, jsonb_build_object('__family_metas_by_category__', v_matrix))
+      ON CONFLICT (upload_id) DO UPDATE
+      SET categoria_metas = jsonb_build_object('__family_metas_by_category__', v_matrix);
+
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'performance_private' AND table_name = 'upload_category_family_targets') THEN
+        DELETE FROM performance_private.upload_category_family_targets WHERE upload_id = v_upload_id;
+        INSERT INTO performance_private.upload_category_family_targets (upload_id, categoria, familia, target_amount)
+        SELECT v_upload_id, c.key, f.key, (f.value::text)::numeric 
+        FROM jsonb_each(v_matrix) c CROSS JOIN jsonb_each(c.value) f;
+      END IF;
     END IF;
 
-    -- 6. Adiciona imersão fictícia em public.immersions se ainda não existir
+    -- 2.5 Cria imersão fictícia se ainda não existir
     IF NOT EXISTS (
       SELECT 1 FROM public.immersions 
-      WHERE client_id = v_client_id AND company_id = v_company.id
+      WHERE client_id = v_client_id AND representative_id = v_rep.id
     ) THEN
       INSERT INTO public.immersions (
         company_id,
@@ -241,14 +267,14 @@ BEGIN
         observacoes,
         diagnostico
       ) VALUES (
-        v_company.id,
+        v_rep.company_id,
         v_client_id,
-        v_rep_id,
+        v_rep.id,
         'concluida',
         CURRENT_DATE - INTERVAL '15 days',
         'Equipe PoolFlux',
-        'Imersão comercial de teste realizada com foco em expansão de mix e alinhamento de tabela.',
-        'Cliente com excelente aceitação da linha de iluminação técnica e alto potencial de crescimento em luminárias decorativas.'
+        'Imersão comercial de teste realizada com foco em expansão de mix e metas de portfólio.',
+        'Cliente com excelente aceitação das famílias técnicas (Pro LED, Perfil) e grande oportunidade em Decor Studio.'
       );
     END IF;
 
