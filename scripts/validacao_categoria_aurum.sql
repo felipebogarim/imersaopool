@@ -1,64 +1,114 @@
--- Validação da CATEGORIA de um cliente com os dados efetivos do banco (SOMENTE LEITURA).
--- Rodar no SQL Editor do Lovable. Troque o nome em `alvo` para validar outro cliente.
--- Mostra: (1) todos os uploads com a linha do cliente, período e se estão vigentes;
--- (2) valores por portfólio (realizado do mês de referência e MÉDIA do período);
--- (3) a memória de cálculo da média do semestre de corte, igual à do painel.
+-- Validação da MÉDIA MENSAL e da CATEGORIA na timeline de metas (SOMENTE LEITURA).
+-- Rodar no SQL Editor do Lovable. Reproduz a regra única de src/lib/performance-media-cliente.ts:
+--   por portfólio: MÉDIA (R$) → REALIZADO (R$) → % × META ORIGINAL DO UPLOAD (estimado) → sem dado.
+--   Portfólio sem dado fica fora da soma (nunca vira zero).
+-- E compara com os pisos configurados em "Mínimos por categoria" (familia = '__PISO_MENSAL__').
+-- Clientes validados: A&M, AMX e AURUM (ajuste os padrões ILIKE em `alvo` se o nome divergir).
 
-WITH alvo AS (SELECT 'AURUM ILUMINACAO LTDA'::text AS cliente_key),
+-- (1) Detalhe por cliente × upload vigente × portfólio: de onde veio cada valor.
+WITH alvo(padrao) AS (VALUES ('A&M%'), ('AMX%'), ('AURUM%')),
 linhas AS (
-  SELECT r.id AS row_id, u.id AS upload_id, u.representative_id, u.periodo_label,
-         u.periodo_inicio, u.periodo_fim, u.substituida_em, u.created_at,
+  SELECT DISTINCT ON (r.razao_social)
+         r.razao_social, r.categoria, r.familia_pct, u.periodo_label, u.periodo_inicio,
+         u.periodo_fim, v.realizado, v.media, v.metas
+  FROM public.rep_performance_rows r
+  JOIN public.rep_performance_uploads u ON u.id = r.upload_id
+  LEFT JOIN performance_private.rep_row_values v ON v.row_id = r.id
+  WHERE u.substituida_em IS NULL
+    AND EXISTS (SELECT 1 FROM alvo a WHERE upper(btrim(r.razao_social)) ILIKE a.padrao)
+  ORDER BY r.razao_social, u.periodo_fim DESC NULLS LAST, u.created_at DESC
+),
+port AS (
+  SELECT l.*, f.familia,
+         NULLIF(l.media ->> f.familia, '')::numeric AS v_media,
+         NULLIF(l.realizado ->> f.familia, '')::numeric AS v_realizado,
+         NULLIF(l.familia_pct ->> f.familia, '')::numeric AS v_pct,
+         NULLIF(l.metas ->> f.familia, '')::numeric AS v_meta_original
+  FROM linhas l
+  CROSS JOIN LATERAL (
+    SELECT DISTINCT k AS familia FROM jsonb_object_keys(
+      COALESCE(l.media, '{}') || COALESCE(l.realizado, '{}') ||
+      COALESCE(l.familia_pct, '{}') || COALESCE(l.metas, '{}')) k
+  ) f
+),
+resolvido AS (
+  SELECT p.*,
+         CASE
+           WHEN v_media >= 0 THEN v_media
+           WHEN v_realizado >= 0 THEN v_realizado
+           WHEN v_pct >= 0 AND v_meta_original > 0
+             THEN (CASE WHEN v_pct <= 2.5 THEN v_pct ELSE v_pct / 100 END) * v_meta_original
+         END AS valor_mensal,
+         CASE
+           WHEN v_media >= 0 THEN 'media'
+           WHEN v_realizado >= 0 THEN 'realizado'
+           WHEN v_pct >= 0 AND v_meta_original > 0 THEN 'ESTIMADO (% x meta original)'
+           ELSE 'sem dado (fora da soma)'
+         END AS fonte
+  FROM port p
+)
+SELECT razao_social, categoria AS categoria_cadastrada, periodo_label, familia,
+       v_media, v_realizado, v_pct, v_meta_original, round(valor_mensal, 2) AS valor_mensal, fonte
+FROM resolvido
+ORDER BY razao_social, familia;
+
+-- (2) Resumo por cliente: média mensal, se há estimativa, categoria pela média e situação.
+WITH alvo(padrao) AS (VALUES ('A&M%'), ('AMX%'), ('AURUM%')),
+pisos AS (
+  SELECT max(minimo) FILTER (WHERE categoria = 'Silver') AS silver,
+         max(minimo) FILTER (WHERE categoria = 'Gold') AS gold,
+         max(minimo) FILTER (WHERE categoria = 'Black') AS black
+  FROM public.performance_goal_minimums
+  WHERE familia = '__PISO_MENSAL__'
+),
+linhas AS (
+  SELECT DISTINCT ON (r.razao_social)
+         r.razao_social, r.categoria, r.familia_pct, u.periodo_inicio, u.periodo_fim,
          v.realizado, v.media, v.metas
   FROM public.rep_performance_rows r
   JOIN public.rep_performance_uploads u ON u.id = r.upload_id
   LEFT JOIN performance_private.rep_row_values v ON v.row_id = r.id
-  WHERE upper(btrim(r.razao_social)) = (SELECT cliente_key FROM alvo)
+  WHERE u.substituida_em IS NULL
+    AND EXISTS (SELECT 1 FROM alvo a WHERE upper(btrim(r.razao_social)) ILIKE a.padrao)
+  ORDER BY r.razao_social, u.periodo_fim DESC NULLS LAST, u.created_at DESC
+),
+port AS (
+  SELECT l.razao_social, l.categoria, l.periodo_inicio, l.periodo_fim,
+         NULLIF(l.media ->> f.familia, '')::numeric AS m,
+         NULLIF(l.realizado ->> f.familia, '')::numeric AS r,
+         NULLIF(l.familia_pct ->> f.familia, '')::numeric AS p,
+         NULLIF(l.metas ->> f.familia, '')::numeric AS mt
+  FROM linhas l
+  LEFT JOIN LATERAL (
+    SELECT DISTINCT k AS familia FROM jsonb_object_keys(
+      COALESCE(l.media, '{}') || COALESCE(l.realizado, '{}') ||
+      COALESCE(l.familia_pct, '{}') || COALESCE(l.metas, '{}')) k
+  ) f ON true
+),
+cli AS (
+  SELECT razao_social, categoria, periodo_inicio, periodo_fim,
+         sum(CASE WHEN m >= 0 THEN m WHEN r >= 0 THEN r
+                  WHEN p >= 0 AND mt > 0 THEN (CASE WHEN p <= 2.5 THEN p ELSE p / 100 END) * mt
+             END) AS media_mensal,
+         bool_or(COALESCE(m, -1) < 0 AND COALESCE(r, -1) < 0 AND p >= 0 AND mt > 0)
+           AS tem_estimativa
+  FROM port
+  GROUP BY 1, 2, 3, 4
 )
--- (1) + (2): origem dos valores, um registro por upload × portfólio
-SELECT l.periodo_label,
-       l.periodo_inicio,
-       l.periodo_fim,
-       (l.periodo_fim - l.periodo_inicio) / 28 + 1 AS meses_aprox,
-       CASE WHEN l.substituida_em IS NULL THEN 'vigente' ELSE 'substituído' END AS situacao,
-       f.familia,
-       NULLIF(l.realizado ->> f.familia, '')::numeric AS realizado_mes_referencia,
-       NULLIF(l.media ->> f.familia, '')::numeric AS media_mensal_periodo,
-       l.upload_id,
-       l.row_id
-FROM linhas l
-CROSS JOIN LATERAL (
-  SELECT DISTINCT k AS familia
-  FROM jsonb_object_keys(COALESCE(l.media, '{}') || COALESCE(l.realizado, '{}')) k
-) f
-ORDER BY l.periodo_fim DESC, l.created_at DESC, f.familia;
-
--- (3) Resumo por upload: Σ da MÉDIA por portfólio (= média mensal do cliente no período) e
--- se o período está contido no semestre de corte (o que torna a média "real do semestre").
-WITH alvo AS (SELECT 'AURUM ILUMINACAO LTDA'::text AS cliente_key),
-linhas AS (
-  SELECT u.periodo_label, u.periodo_inicio, u.periodo_fim, u.substituida_em, v.media, v.realizado
-  FROM public.rep_performance_rows r
-  JOIN public.rep_performance_uploads u ON u.id = r.upload_id
-  LEFT JOIN performance_private.rep_row_values v ON v.row_id = r.id
-  WHERE upper(btrim(r.razao_social)) = (SELECT cliente_key FROM alvo)
-)
-SELECT l.periodo_label,
-       l.periodo_inicio,
-       l.periodo_fim,
-       CASE WHEN l.substituida_em IS NULL THEN 'vigente' ELSE 'substituído' END AS situacao,
-       date_trunc('month', l.periodo_fim)::date
-         - CASE WHEN extract(month FROM l.periodo_fim) <= 6
-                THEN (extract(month FROM l.periodo_fim) - 1)::int
-                ELSE (extract(month FROM l.periodo_fim) - 7)::int END * interval '1 month'
-         AS inicio_semestre_corte,
-       (l.periodo_inicio >= date_trunc('month', l.periodo_fim)::date
-         - CASE WHEN extract(month FROM l.periodo_fim) <= 6
-                THEN (extract(month FROM l.periodo_fim) - 1)::int
-                ELSE (extract(month FROM l.periodo_fim) - 7)::int END * interval '1 month')
-         AS contido_no_semestre,
-       (SELECT sum(NULLIF(x.value, '')::numeric) FROM jsonb_each_text(COALESCE(l.media, '{}')) x)
-         AS soma_media_mensal,
-       (SELECT sum(NULLIF(x.value, '')::numeric) FROM jsonb_each_text(COALESCE(l.realizado, '{}')) x)
-         AS soma_realizado_mes_referencia
-FROM linhas l
-ORDER BY l.periodo_fim DESC;
+SELECT c.razao_social, c.categoria AS categoria_cadastrada, c.periodo_inicio, c.periodo_fim,
+       round(c.media_mensal, 2) AS media_mensal, COALESCE(c.tem_estimativa, false) AS estimado,
+       ps.silver AS piso_silver, ps.gold AS piso_gold, ps.black AS piso_black,
+       CASE
+         WHEN ps.black IS NULL THEN 'PISOS NÃO CONFIGURADOS'
+         WHEN c.media_mensal IS NULL THEN 'sem base'
+         WHEN c.media_mensal >= ps.black THEN 'Black'
+         WHEN c.media_mensal >= ps.gold THEN 'Gold'
+         WHEN c.media_mensal >= ps.silver THEN 'Silver'
+         ELSE 'abaixo de Silver'
+       END AS categoria_pela_media,
+       round(c.media_mensal - CASE c.categoria WHEN 'Black' THEN ps.black
+                                               WHEN 'Gold' THEN ps.gold
+                                               WHEN 'Silver' THEN ps.silver END, 2)
+         AS saldo_mensal_sobre_piso_cadastrado
+FROM cli c CROSS JOIN pisos ps
+ORDER BY c.razao_social;

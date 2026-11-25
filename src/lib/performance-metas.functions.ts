@@ -10,6 +10,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { PISO_CATEGORIA_FAMILIA } from "@/lib/performance-metas-minimos";
 import { CANONICAL_FAMILIES } from "@/lib/client-bi-familias";
 import {
   AI_MODEL,
@@ -633,7 +634,7 @@ export const saveMetasMinimos = createServerFn({ method: "POST" })
         .array(
           z.object({
             categoria: z.enum(["Silver", "Gold", "Black"]),
-            familia,
+            familia: z.union([familia, z.literal(PISO_CATEGORIA_FAMILIA)]),
             minimo: money,
           }),
         )
@@ -643,63 +644,3 @@ export const saveMetasMinimos = createServerFn({ method: "POST" })
   .handler(({ data, context }) =>
     minimosRpc(context.supabase, "set_performance_goal_minimums", { _itens: data.itens }),
   );
-
-// --------------------- Base da categoria (média do semestre) ---------------------
-
-export type CategoriaBaseResult =
-  | { available: false }
-  | {
-      available: true;
-      categoria: string | null;
-      uploads: Array<{
-        upload_id: string;
-        row_id: string;
-        atual: boolean;
-        periodo_label: string | null;
-        periodo_inicio: string | null;
-        periodo_fim: string | null;
-        realizado: Record<string, number | null>;
-        media: Record<string, number | null>;
-      }>;
-    };
-
-/** Converte o jsonb de valores por portfólio em números (serializável no RPC do TanStack). */
-function numRecord(v: unknown): Record<string, number | null> {
-  const out: Record<string, number | null> = {};
-  if (!v || typeof v !== "object") return out;
-  for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
-    const n = x == null || x === "" ? NaN : Number(x);
-    out[k] = Number.isFinite(n) ? n : null;
-  }
-  return out;
-}
-
-export const getMetasCategoriaBase = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ rowId: z.string().uuid() }))
-  .handler(async ({ data, context }): Promise<CategoriaBaseResult> => {
-    const { data: res, error } = await (context.supabase as unknown as RpcClient).rpc(
-      "get_performance_goal_categoria_base",
-      { _row_id: data.rowId },
-    );
-    if (error) {
-      if (NOT_MIGRATED.has(error.code ?? "")) return { available: false };
-      throw new Error(error.message);
-    }
-    const r = (res ?? {}) as { categoria?: string | null; uploads?: unknown };
-    const ups = (Array.isArray(r.uploads) ? r.uploads : []) as Array<Record<string, unknown>>;
-    return {
-      available: true,
-      categoria: r.categoria ?? null,
-      uploads: ups.map((u) => ({
-        upload_id: String(u.upload_id),
-        row_id: String(u.row_id),
-        atual: u.atual === true,
-        periodo_label: (u.periodo_label as string | null) ?? null,
-        periodo_inicio: (u.periodo_inicio as string | null) ?? null,
-        periodo_fim: (u.periodo_fim as string | null) ?? null,
-        realizado: numRecord(u.realizado),
-        media: numRecord(u.media),
-      })),
-    };
-  });

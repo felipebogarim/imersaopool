@@ -29,7 +29,7 @@ function MetasClientePage() {
       if (!row) return null;
       const { data: upload } = await supabase
         .from("rep_performance_uploads")
-        .select("representative_id, periodo_label, periodo_fim")
+        .select("representative_id, periodo_label, periodo_inicio, periodo_fim")
         .eq("id", row.upload_id)
         .maybeSingle();
       let repName = "—";
@@ -47,6 +47,7 @@ function MetasClientePage() {
         repId: upload?.representative_id ?? null,
         repName,
         periodoLabel: upload?.periodo_label ?? null,
+        periodoInicio: upload?.periodo_inicio ?? null,
         periodoFim: upload?.periodo_fim ?? null,
         totalPct: row.total_pct,
         familiaPct: (row.familia_pct ?? {}) as Record<string, number | null>,

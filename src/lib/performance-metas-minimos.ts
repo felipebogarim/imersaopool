@@ -33,3 +33,30 @@ export function abaixoDoMinimo<T extends { familia: string; metaOficial: number 
   }
   return out;
 }
+
+// ------------------------- Pisos da categoria (régua) -------------------------
+// O piso de cada categoria (média mensal total de compras) fica na MESMA configuração
+// "Mínimos por categoria", numa linha especial ao lado dos portfólios. Nada fixo no código.
+
+export const PISO_CATEGORIA_FAMILIA = "__PISO_MENSAL__";
+
+export type PisosCategoria = Record<MinimoCategoria, number>;
+
+/** Pisos configurados; `pisos` só existe quando as 3 categorias estão preenchidas e crescentes. */
+export function pisosCategoria(minimos: readonly MinimoItem[] | null | undefined): {
+  pisos: PisosCategoria | null;
+  faltando: MinimoCategoria[];
+  erro: string | null;
+} {
+  const valores = MINIMO_CATEGORIAS.map((c) => minimoPara(minimos, c, PISO_CATEGORIA_FAMILIA));
+  const faltando = MINIMO_CATEGORIAS.filter((_, i) => valores[i] == null || valores[i]! <= 0);
+  if (faltando.length) return { pisos: null, faltando, erro: null };
+  const [s, g, b] = valores as number[];
+  if (!(s < g && g < b))
+    return {
+      pisos: null,
+      faltando: [],
+      erro: "Os pisos devem crescer de Silver para Gold e Black.",
+    };
+  return { pisos: { Silver: s, Gold: g, Black: b }, faltando: [], erro: null };
+}

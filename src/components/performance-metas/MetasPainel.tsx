@@ -41,7 +41,6 @@ import {
 } from "@/lib/performance-metas";
 import {
   baseFromBackend,
-  mediaMensalCliente,
   competenciasDoCiclo,
   gestorRpcArgs,
   hydrateDrafts,
@@ -61,18 +60,14 @@ import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
 import { MetasSecaoTitulo } from "./MetasSecaoTitulo";
 import { MetasHistoricoButton } from "./MetasHistoricoDialog";
 import { useMetasMinimos } from "./use-metas-minimos";
-import { abaixoDoMinimo, minimoPara } from "@/lib/performance-metas-minimos";
+import { abaixoDoMinimo, minimoPara, pisosCategoria } from "@/lib/performance-metas-minimos";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
-import {
-  baseCategoriaSemestral,
-  baseEstimada,
-  situacaoCategoria,
-} from "@/lib/performance-categoria-semestre";
-import { getMetasCategoriaBase } from "@/lib/performance-metas.functions";
+import { complementoSemestral, situacaoCategoria } from "@/lib/performance-categoria";
+import { acumuladoNoAno, mediaMensalCompras } from "@/lib/performance-media-cliente";
 import { AlertaSituacaoCard } from "./AlertaSituacaoCard";
 import { MetasShareWhatsapp } from "./MetasShareWhatsapp";
 
@@ -100,7 +95,8 @@ export type MetasClienteInfo = {
   repId: string | null;
   repName: string;
   periodoLabel: string | null;
-  /** Fim do período do upload (YYYY-MM-DD): define o semestre de corte da categoria. */
+  /** Início e fim do período do upload (YYYY-MM-DD): acumulado no ano e semestre (complemento). */
+  periodoInicio?: string | null;
   periodoFim?: string | null;
   totalPct: number | null;
   familiaPct: Record<string, number | null>;
@@ -192,36 +188,33 @@ export function MetasPainel({
   );
   // Valor vendido real (R$) do backend; sem ele o atingimento é marcado como estimado.
   const base = useMemo(() => baseFromBackend(goals?.base), [goals?.base]);
-  const { data: minimosRes } = useMetasMinimos(dbEnabled && role === "gestor");
-  const minimos = minimosRes?.available ? minimosRes.itens : null;
-  // Categoria: média mensal real (coluna MÉDIA do upload), não a venda do mês de referência.
-  const mediaCategoria = useMemo(
-    () => mediaMensalCliente(goals?.base, cliente.categoria),
-    [goals?.base, cliente.categoria],
+  const { data: minimosRes, isLoading: carregandoMinimos } = useMetasMinimos(
+    dbEnabled && role === "gestor",
   );
-  // Situação da categoria: UMA apuração para o card, o alerta e os indicadores. Base = média
-  // mensal só do semestre de corte (uploads do semestre); sem eles, estimada e sinalizada.
-  const { data: categoriaBaseRes } = useQuery({
-    queryKey: ["performance-metas", "categoria-base", rowId],
-    queryFn: () => getMetasCategoriaBase({ data: { rowId } }),
-    enabled: dbEnabled && role === "gestor",
-    staleTime: 60_000,
-    retry: false,
-  });
-  const situacaoCat = useMemo(() => {
-    const ups = categoriaBaseRes?.available ? categoriaBaseRes.uploads : [];
-    const base =
-      ups.length > 0
-        ? baseCategoriaSemestral(ups, METAS_FAMILIES)
-        : baseEstimada(mediaCategoria ?? 0, cliente.periodoFim, cliente.periodoLabel);
-    return situacaoCategoria(cliente.categoria, base);
-  }, [
-    categoriaBaseRes,
-    mediaCategoria,
-    cliente.periodoFim,
-    cliente.periodoLabel,
-    cliente.categoria,
-  ]);
+  const minimos = minimosRes?.available ? minimosRes.itens : null;
+  // Média mensal de compras: FONTE ÚNICA (performance-media-cliente) para timeline, alerta e
+  // gauge. Vem da base já carregada com a página; nenhuma consulta posterior a substitui.
+  const mediaCliente = useMemo(() => mediaMensalCompras(goals?.base), [goals?.base]);
+  // Pisos da régua: "Mínimos por categoria" (linha "Piso da categoria"); nada fixo no código.
+  const pisosCfg = useMemo(() => pisosCategoria(minimos), [minimos]);
+  const situacaoCat = useMemo(
+    () =>
+      pisosCfg.pisos ? situacaoCategoria(cliente.categoria, mediaCliente, pisosCfg.pisos) : null,
+    [pisosCfg.pisos, cliente.categoria, mediaCliente],
+  );
+  const acumuladoAno = useMemo(
+    () => acumuladoNoAno(mediaCliente.total, cliente.periodoInicio, cliente.periodoFim),
+    [mediaCliente.total, cliente.periodoInicio, cliente.periodoFim],
+  );
+  const complementoSem = useMemo(
+    () =>
+      complementoSemestral(
+        mediaCliente.total,
+        cliente.periodoFim,
+        situacaoCat?.pisoCadastrada ?? null,
+      ),
+    [mediaCliente.total, cliente.periodoFim, situacaoCat?.pisoCadastrada],
+  );
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
   const comparativo = useMemo(
@@ -251,22 +244,10 @@ export function MetasPainel({
   const displayedMeta =
     visao9mm && podeVerVisao9mm ? Math.round(baseMetaTotal * RATIO_9MM) : baseMetaTotal;
 
-  const totalRealizado = useMemo(() => {
-    let sum = 0;
-    for (const d of drafts) {
-      const r = realizadoBase(d, atingimento[d.familia] ?? null, base[d.familia]);
-      if (r?.valor != null) sum += r.valor;
-    }
-    if (sum > 0) return sum;
-    const ratio = totalProjetado.ratio ?? totalOficial;
-    if (ratio != null && ratio > 0 && baseMetaTotal > 0) {
-      return Math.round(baseMetaTotal * ratio);
-    }
-    return 0;
-  }, [drafts, atingimento, base, totalProjetado.ratio, totalOficial, baseMetaTotal]);
-
+  // Base do gauge = a mesma média mensal (nunca derivada da meta do gestor).
+  const totalRealizado = mediaCliente.total ?? 0;
   const displayedAtingimento =
-    displayedMeta > 0 ? totalRealizado / displayedMeta : (totalProjetado.ratio ?? totalOficial);
+    mediaCliente.total != null && displayedMeta > 0 ? mediaCliente.total / displayedMeta : null;
 
   // Aviso ao sair da página com alterações não salvas.
   useEffect(() => {
@@ -505,13 +486,38 @@ export function MetasPainel({
 
           {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção e upgrade */}
           <div className="lg:col-span-8 flex flex-col h-full">
-            <CategoriaTimelineCard situacao={situacaoCat} periodoLabel={cliente.periodoLabel} />
+            {carregandoMinimos ? (
+              <div className="flex h-full min-h-[220px] flex-1 items-center justify-center rounded-xl border border-border bg-card text-xs text-muted-foreground">
+                Carregando faixa de categoria…
+              </div>
+            ) : (
+              <CategoriaTimelineCard
+                situacao={situacaoCat}
+                mediaCliente={mediaCliente}
+                pisos={pisosCfg.pisos}
+                pisosAviso={
+                  pisosCfg.erro ??
+                  (pisosCfg.faltando.length
+                    ? `Falta o piso de ${pisosCfg.faltando.join(", ")} em "Mínimos por categoria" (coluna "Piso da categoria").`
+                    : null)
+                }
+                acumulado={acumuladoAno}
+                complemento={complementoSem}
+                periodoLabel={cliente.periodoLabel}
+              />
+            )}
           </div>
         </div>
 
         {/* 3. Destaque separado: Alerta de Situação (degrade, upgrade, consolidação) */}
         <div ref={alertaRef}>
-          <AlertaSituacaoCard situacao={situacaoCat} periodoLabel={cliente.periodoLabel} />
+          {!carregandoMinimos && (
+            <AlertaSituacaoCard
+              situacao={situacaoCat}
+              periodoLabel={cliente.periodoLabel}
+              complemento={complementoSem}
+            />
+          )}
         </div>
       </div>
 

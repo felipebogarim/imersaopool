@@ -9,6 +9,7 @@ import {
   type CanonicalFamily,
 } from "./client-bi-familias";
 import { getPerformancePortfolioTarget } from "./performance-portfolio-targets";
+import { mediaDoPortfolio, mediaMensalCompras } from "./performance-media-cliente";
 import type {
   AiConfianca,
   AiSuggestionTag,
@@ -150,51 +151,32 @@ export function lookupFamilyNum(record: unknown, family: string): number | null 
 }
 
 /**
- * Valor vendido comparável à meta mensal, por portfólio, a partir do backend:
- * venda realizada (R$) → média histórica (R$) → atingimento × meta do upload (estimado).
+ * Valor mensal por portfólio a partir do backend, pela regra ÚNICA de `mediaDoPortfolio`
+ * (média → realizado → % × meta ORIGINAL do upload, estimado). Sem dado = portfólio ausente.
+ * `categoria` é mantida na assinatura por compatibilidade, mas não é usada: o % só vale sobre
+ * a meta original do upload, nunca sobre a meta padrão da categoria.
  */
 export function baseFromBackend(
   base: GoalsState["base"],
   categoria?: string | null,
 ): BaseFinanceira {
+  void categoria;
   const out: BaseFinanceira = {};
   if (!base) return out;
   for (const f of CANONICAL_FAMILIES) {
-    const real = lookupFamilyNum(base.realizado, f);
-    const media = lookupFamilyNum(base.media, f);
-    const pct = lookupFamilyNum(base.familia_pct, f);
-    const meta = lookupFamilyNum(base.metas, f) ?? getPerformancePortfolioTarget(categoria, f);
-    if (real != null && real >= 0) out[f] = { valor: real, fonte: "realizado" };
-    else if (media != null && media >= 0) out[f] = { valor: media, fonte: "media" };
-    else if (pct != null && pct >= 0 && meta != null && meta > 0)
-      out[f] = { valor: (Math.abs(pct) <= 2.5 ? pct : pct / 100) * meta, fonte: "estimado" };
+    const r = mediaDoPortfolio(base, f);
+    if (r) out[f] = { valor: r.valor, fonte: r.fonte };
   }
   return out;
 }
 
-/**
- * Média mensal real do cliente (base da categoria): Σ da coluna MÉDIA de cada portfólio; sem
- * média no portfólio, usa a base disponível (realizado do mês ou estimado). Null sem dados.
- * O "realizado" do upload é a venda do mês de referência — não serve para a categoria, que é
- * apurada pela média mensal no semestre.
- */
+/** Média mensal de compras do cliente (Σ dos portfólios com dado); null sem dados. */
 export function mediaMensalCliente(
   base: GoalsState["base"],
   categoria?: string | null,
 ): number | null {
-  if (!base) return null;
-  const fallback = baseFromBackend(base, categoria);
-  let soma = 0;
-  let algum = false;
-  for (const f of CANONICAL_FAMILIES) {
-    const media = lookupFamilyNum(base.media, f);
-    const v = media != null && media >= 0 ? media : (fallback[f]?.valor ?? null);
-    if (v != null) {
-      soma += v;
-      algum = true;
-    }
-  }
-  return algum ? soma : null;
+  void categoria;
+  return mediaMensalCompras(base).total;
 }
 
 const isFamily = (f: string): f is CanonicalFamily =>
