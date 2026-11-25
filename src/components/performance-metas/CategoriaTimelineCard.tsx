@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import {
-  AlertTriangle,
-  ArrowUpRight,
   Award,
   CheckCircle2,
-  ShieldAlert,
-  ShieldCheck,
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -100,68 +96,6 @@ export function CategoriaTimelineCard({
   const metaUpgrade = nextTier ? nextTier.target : metaManutencao;
   const faltaUpgrade = nextTier ? Math.max(0, metaUpgrade - realizado) : 0;
   const upgradeAlcancado = nextTier ? realizado >= metaUpgrade : true;
-
-  // 3. Risco de Degrade
-  const degradeRisk = useMemo(() => {
-    if (currentIndex === 0) {
-      // Silver (piso inicial)
-      if (atingimentoManutencaoPct >= 100) {
-        return {
-          level: "baixo" as const,
-          titulo: "Risco Baixo",
-          descricao: "Meta da categoria Silver garantida no período.",
-          badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
-          icon: ShieldCheck,
-        };
-      }
-      if (atingimentoManutencaoPct >= 50) {
-        return {
-          level: "medio" as const,
-          titulo: "Atenção ao Ritmo",
-          descricao: `Faltam ${fmtBRL(faltaManutencao)} para assegurar permanência na carteira Silver.`,
-          badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
-          icon: AlertTriangle,
-        };
-      }
-      return {
-        level: "alto" as const,
-        titulo: "Alto Risco de Inativação",
-        descricao: `Faltam ${fmtBRL(faltaManutencao)} para atingir o piso mínimo da categoria.`,
-        badgeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
-        icon: ShieldAlert,
-      };
-    }
-
-    // Gold ou Black
-    if (manutencaoGarantida) {
-      return {
-        level: "baixo" as const,
-        titulo: "Risco Baixo",
-        descricao: `Categoria ${currentTier.name} consolidada (+${fmtBRL(sobraManutencao)} acima do piso).`,
-        badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
-        icon: ShieldCheck,
-      };
-    }
-
-    const pisoAnterior = prevTier ? prevTier.target : 0;
-    if (realizado < pisoAnterior) {
-      return {
-        level: "alto" as const,
-        titulo: `Alto Risco de Degrade`,
-        descricao: `Faturamento abaixo de ${prevTier?.name ?? "piso"}. Faltam ${fmtBRL(faltaManutencao)} para manter ${currentTier.name}.`,
-        badgeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
-        icon: ShieldAlert,
-      };
-    }
-
-    return {
-      level: "medio" as const,
-      titulo: `Risco Moderado de Degrade`,
-      descricao: `Acima de ${prevTier?.name}, mas faltam ${fmtBRL(faltaManutencao)} para manter ${currentTier.name}.`,
-      badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
-      icon: AlertTriangle,
-    };
-  }, [currentIndex, atingimentoManutencaoPct, manutencaoGarantida, faltaManutencao, sobraManutencao, currentTier.name, prevTier, realizado]);
 
   const timelineFillPct = getTimelinePositionPct(realizado);
 
@@ -296,8 +230,8 @@ export function CategoriaTimelineCard({
         </div>
       </div>
 
-      {/* ======================= 3 BLOCOS DE INFORMAÇÃO ======================= */}
-      <div className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-3">
+      {/* ======================= 2 BLOCOS DE PROGRESSÃO ======================= */}
+      <div className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-2">
         {/* Bloco 1: Manutenção da Categoria */}
         <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
           <div className="flex items-center justify-between gap-1">
@@ -365,29 +299,6 @@ export function CategoriaTimelineCard({
               {nextTier
                 ? `Alvo da categoria: ${fmtBRL(metaUpgrade)}`
                 : "Cliente no patamar mais elevado"}
-            </p>
-          </div>
-        </div>
-
-        {/* Bloco 3: Risco de Degrade */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-              Risco de Degrade
-            </span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold",
-                degradeRisk.badgeClass,
-              )}
-            >
-              <degradeRisk.icon className="h-2.5 w-2.5" />
-              {degradeRisk.titulo}
-            </span>
-          </div>
-          <div className="mt-1">
-            <p className="text-[11px] leading-snug font-medium text-foreground">
-              {degradeRisk.descricao}
             </p>
           </div>
         </div>

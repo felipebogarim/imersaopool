@@ -61,6 +61,7 @@ import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
+import { AlertaSituacaoCard } from "./AlertaSituacaoCard";
 import { MetasShareWhatsapp } from "./MetasShareWhatsapp";
 
 const FAMILY_SWATCH = [
@@ -139,6 +140,7 @@ export function MetasPainel({
   const [review, setReview] = useState<GoalReview | null>(null);
   const [reopening, setReopening] = useState(false);
   const headerCardsRef = useRef<HTMLDivElement>(null);
+  const alertaRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -385,7 +387,7 @@ export function MetasPainel({
                 periodoReferencia={cliente.periodoLabel ?? "nov/26"}
                 categoria={cliente.categoria}
                 repName={cliente.repName}
-                blocks={[headerCardsRef, chartRef]}
+                blocks={[headerCardsRef, alertaRef, chartRef]}
               />
             </>
           )}
@@ -424,7 +426,7 @@ export function MetasPainel({
             />
           </div>
 
-          {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção, upgrade e risco de degrade */}
+          {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção e upgrade */}
           <div className="lg:col-span-8 flex flex-col h-full">
             <CategoriaTimelineCard
               categoria={cliente.categoria}
@@ -432,6 +434,16 @@ export function MetasPainel({
               periodoLabel={cliente.periodoLabel}
             />
           </div>
+        </div>
+
+        {/* 3. Destaque separado: Alerta de Situação (degrade, upgrade, consolidação) */}
+        <div ref={alertaRef}>
+          <AlertaSituacaoCard
+            categoria={cliente.categoria}
+            realizado={totalRealizado}
+            periodoLabel={cliente.periodoLabel}
+            clienteNome={cliente.razaoSocial}
+          />
         </div>
       </div>
 
