@@ -5,16 +5,23 @@ import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarCheck, LogOut, Sparkles, Target } from "lucide-react";
+import { CalendarCheck, Inbox, LogOut, Sparkles, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandMark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRepPortal } from "@/lib/rep-portal.functions";
+import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
+import { useRepSolicitacoes } from "./use-rep-solicitacoes";
 
-export type PortalTab = "metas" | "acoes_sugeridas" | "calendario";
+export type PortalTab = "metas" | "acoes_sugeridas" | "calendario" | "solicitacoes";
 
-export const PORTAL_TABS: readonly PortalTab[] = ["metas", "acoes_sugeridas", "calendario"];
+export const PORTAL_TABS: readonly PortalTab[] = [
+  "metas",
+  "acoes_sugeridas",
+  "calendario",
+  "solicitacoes",
+];
 
 /** Dados do portal (mesma query do /portal-rep: cache compartilhado entre as páginas). */
 export function useRepPortalData() {
@@ -54,6 +61,10 @@ export function RepPortalChrome({
   acceptedCount: number;
 }) {
   const navigate = useNavigate();
+  const { data: solicitacoes } = useRepSolicitacoes();
+  const solicitacoesAbertas = solicitacoes?.available
+    ? solicitacoes.items.filter((s) => solicitacaoEmAberto(s.status)).length
+    : 0;
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -98,7 +109,10 @@ export function RepPortalChrome({
       {/* Menu fixo do portal */}
       <div className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur-sm shadow-xs">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
-          <nav className="flex space-x-1 sm:space-x-2" aria-label="Menu Principal do Representante">
+          <nav
+            className="flex flex-wrap gap-1 sm:gap-2"
+            aria-label="Menu Principal do Representante"
+          >
             <button type="button" onClick={() => go("metas")} className={tabClass("metas")}>
               <Target className="h-4 w-4" />
               Metas
@@ -142,6 +156,27 @@ export function RepPortalChrome({
                   )}
                 >
                   {acceptedCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => go("solicitacoes")}
+              className={tabClass("solicitacoes")}
+            >
+              <Inbox className="h-4 w-4" />
+              Solicitações
+              {solicitacoesAbertas > 0 && (
+                <span
+                  className={cn(
+                    "ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none",
+                    activeTab === "solicitacoes"
+                      ? "bg-primary-foreground text-primary"
+                      : "bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300",
+                  )}
+                >
+                  {solicitacoesAbertas}
                 </span>
               )}
             </button>

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { RepMetasArea } from "@/components/performance-metas/RepMetasArea";
@@ -9,6 +10,14 @@ import {
   useRepPortalData,
   type PortalTab,
 } from "@/components/rep-portal/RepPortalChrome";
+import { RepAcoesUteis } from "@/components/rep-portal/RepAcoesUteis";
+import { RepSolicitacoesView } from "@/components/rep-portal/RepSolicitacoesView";
+import {
+  RepSolicitacaoDialog,
+  type SolicitacaoPreset,
+} from "@/components/rep-portal/RepSolicitacaoDialog";
+import { useRepSolicitacoes } from "@/components/rep-portal/use-rep-solicitacoes";
+import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
 
 export const Route = createFileRoute("/portal-rep")({
   ssr: false,
@@ -35,6 +44,16 @@ function PortalRep() {
     void navigate({ to: "/portal-rep", search: t === "metas" ? {} : { tab: t }, replace: true });
 
   const { data, isLoading, error, actions, pendingCount, acceptedCount } = useRepPortalData();
+  const { data: solicitacoes } = useRepSolicitacoes();
+  const solicitacoesAbertas = solicitacoes?.available
+    ? solicitacoes.items.filter((s) => solicitacaoEmAberto(s.status)).length
+    : 0;
+  // Formulário de solicitação de apoio (atalhos, card de ação ou aba Solicitações).
+  const [preset, setPreset] = useState<SolicitacaoPreset | null>(null);
+  const clientes = useMemo(
+    () => [...new Set(actions.map((a) => a.client?.trim()).filter((c): c is string => !!c))].sort(),
+    [actions],
+  );
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -63,6 +82,22 @@ function PortalRep() {
           <RepAcoesSugeridasView
             actions={actions}
             onNavigateToCalendar={() => setActiveTab("calendario")}
+            onSolicitarApoio={(a) =>
+              setPreset({
+                tipo: "material_evento",
+                cliente: a.client ?? null,
+                cardId: a.id,
+                titulo: a.title,
+                acaoVinculada: a.title,
+              })
+            }
+            topo={
+              <RepAcoesUteis
+                onSolicitar={(tipo) => setPreset({ tipo })}
+                onVerSolicitacoes={() => setActiveTab("solicitacoes")}
+                emAberto={solicitacoesAbertas}
+              />
+            }
           />
         )}
 
@@ -73,7 +108,19 @@ function PortalRep() {
             onNavigateToSuggestions={() => setActiveTab("acoes_sugeridas")}
           />
         )}
+
+        {/* Aba 4: Solicitações de apoio (materiais para eventos, trade, PDV, amostras) */}
+        {activeTab === "solicitacoes" && (
+          <RepSolicitacoesView onSolicitar={(tipo) => setPreset({ tipo })} />
+        )}
       </main>
+
+      <RepSolicitacaoDialog
+        preset={preset}
+        clientes={clientes}
+        onClose={() => setPreset(null)}
+        onCreated={() => setActiveTab("solicitacoes")}
+      />
     </div>
   );
 }

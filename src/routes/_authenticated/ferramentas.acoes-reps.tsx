@@ -2,7 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CalendarClock, Loader2, MoreVertical, Send, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Inbox,
+  Loader2,
+  MoreVertical,
+  Send,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
@@ -37,6 +45,11 @@ import {
 import { sendActionSuggestions } from "@/lib/action-tracking.functions";
 import { RepsPanel } from "@/components/acoes-reps/RepsPanel";
 import { ExtensionsDialog, type PendingExtension } from "@/components/acoes-reps/ExtensionsDialog";
+import {
+  SolicitacoesRepsDialog,
+  useStaffSolicitacoes,
+} from "@/components/acoes-reps/SolicitacoesRepsDialog";
+import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ferramentas/acoes-reps")({
@@ -73,6 +86,11 @@ function AcoesRepsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [repsOpen, setRepsOpen] = useState(false);
   const [extOpen, setExtOpen] = useState(false);
+  const [solOpen, setSolOpen] = useState(false);
+  const { data: solData } = useStaffSolicitacoes();
+  const solAbertas = solData?.available
+    ? solData.items.filter((x) => solicitacaoEmAberto(x.status)).length
+    : 0;
   const [highlightRep, setHighlightRep] = useState<string | null>(null);
 
   const {
@@ -224,6 +242,12 @@ function AcoesRepsPage() {
               <Button variant="outline" onClick={() => setExtOpen(true)}>
                 <CalendarClock className="mr-1 h-4 w-4" />
                 Prorrogações ({extItems.length})
+              </Button>
+            )}
+            {solData?.available && (
+              <Button variant="outline" onClick={() => setSolOpen(true)}>
+                <Inbox className="mr-1 h-4 w-4" />
+                Solicitações dos reps{solAbertas ? ` (${solAbertas})` : ""}
               </Button>
             )}
             <Button variant="outline" onClick={() => setRepsOpen(true)}>
@@ -390,6 +414,7 @@ function AcoesRepsPage() {
         </div>
       </div>
       <ExtensionsDialog open={extOpen} onOpenChange={setExtOpen} items={extItems} />
+      <SolicitacoesRepsDialog open={solOpen} onOpenChange={setSolOpen} />
       <RepsPanel open={repsOpen} onOpenChange={setRepsOpen} highlightRepId={highlightRep} />
     </div>
   );

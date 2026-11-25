@@ -12,6 +12,7 @@ import {
   FileText,
   Filter,
   Loader2,
+  PackageOpen,
   Paperclip,
   Search,
   Sparkles,
@@ -44,9 +45,15 @@ import type { PortalAction } from "@/lib/rep-portal.server";
 export function RepAcoesSugeridasView({
   actions,
   onNavigateToCalendar,
+  onSolicitarApoio,
+  topo,
 }: {
   actions: PortalAction[];
   onNavigateToCalendar: () => void;
+  /** Abre a solicitação de apoio (materiais/trade) vinculada à ação. */
+  onSolicitarApoio?: (action: PortalAction) => void;
+  /** Conteúdo exibido acima da lista (atalhos "Ações úteis"). */
+  topo?: React.ReactNode;
 }) {
   const qc = useQueryClient();
   const respondFn = useServerFn(repRespondSuggestion);
@@ -77,7 +84,10 @@ export function RepAcoesSugeridasView({
   const filtered = useMemo(() => {
     return actions.filter((a) => {
       // Por padrão, "pendentes" são sugestões que ainda não foram aceitas nem recusadas
-      if (filterMode === "pendentes" && (a.acceptance === "aceita" || a.acceptance === "recusada")) {
+      if (
+        filterMode === "pendentes" &&
+        (a.acceptance === "aceita" || a.acceptance === "recusada")
+      ) {
         return false;
       }
       if (filterMode === "recusadas" && a.acceptance !== "recusada") {
@@ -99,6 +109,7 @@ export function RepAcoesSugeridasView({
 
   return (
     <div className="space-y-6">
+      {topo}
       {/* Cabeçalho explicativo */}
       <div className="rounded-xl border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -109,9 +120,10 @@ export function RepAcoesSugeridasView({
             <div>
               <h2 className="text-base font-bold text-foreground">Ações Sugeridas pela Gestão</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Avalie as propostas desenhadas para a sua carteira. Clique no card para ver todos os detalhes
-                ou clique diretamente em <strong className="text-foreground">Aceitar sugestão</strong> para
-                agendar no seu <strong>Calendário de Ações</strong>.
+                Avalie as propostas desenhadas para a sua carteira. Clique no card para ver todos os
+                detalhes ou clique diretamente em{" "}
+                <strong className="text-foreground">Aceitar sugestão</strong> para agendar no seu{" "}
+                <strong>Calendário de Ações</strong>.
               </p>
             </div>
           </div>
@@ -285,11 +297,23 @@ export function RepAcoesSugeridasView({
                     </p>
                   )}
 
-                  {/* Botão de Ver Detalhes */}
-                  <div className="pt-1">
+                  {/* Botão de Ver Detalhes + apoio */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline">
                       <FileText className="h-3 w-3" /> Ver todos os detalhes
                     </span>
+                    {onSolicitarApoio && action.acceptance !== "recusada" && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSolicitarApoio(action);
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                      >
+                        <PackageOpen className="h-3 w-3" /> Solicitar apoio
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -347,7 +371,7 @@ export function RepAcoesSugeridasView({
                           respondMutation.mutate({
                             cardId: action.id,
                             decision: "aceita",
-                          })
+                          });
                         }}
                         className="h-9 flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm cursor-pointer transition-transform active:scale-[0.98]"
                       >
@@ -497,8 +521,16 @@ function AcaoSugeridaDetailDialog({
               {action.due_date ? formatPrazo(action.due_date) : "Sem data limite"}
             </strong>
             {d !== null && (
-              <span className={cn(d < 0 ? "text-destructive font-semibold" : "text-muted-foreground")}>
-                ({d < 0 ? `atrasada há ${Math.abs(d)} dia(s)` : d === 0 ? "vence hoje" : `em ${d} dia(s)`})
+              <span
+                className={cn(d < 0 ? "text-destructive font-semibold" : "text-muted-foreground")}
+              >
+                (
+                {d < 0
+                  ? `atrasada há ${Math.abs(d)} dia(s)`
+                  : d === 0
+                    ? "vence hoje"
+                    : `em ${d} dia(s)`}
+                )
               </span>
             )}
           </DialogDescription>
@@ -529,7 +561,10 @@ function AcaoSugeridaDetailDialog({
               </h4>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {action.updates.map((u) => (
-                  <div key={u.id} className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-1.5">
+                  <div
+                    key={u.id}
+                    className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-1.5"
+                  >
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span className="font-bold text-foreground">
                         {u.author || "Equipe de Gestão"}
@@ -567,7 +602,9 @@ function AcaoSugeridaDetailDialog({
           {/* Área de Recusa */}
           {declining && (
             <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs">
-              <p className="font-semibold text-foreground">Explique o motivo da recusa (opcional):</p>
+              <p className="font-semibold text-foreground">
+                Explique o motivo da recusa (opcional):
+              </p>
               <Textarea
                 placeholder="Ex.: Cliente em negociação prévia, ação inviável neste trimestre…"
                 value={note}
@@ -582,9 +619,18 @@ function AcaoSugeridaDetailDialog({
                   onClick={() => onDecline(note)}
                   className="h-8 text-xs font-semibold"
                 >
-                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar recusa"}
+                  {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    "Confirmar recusa"
+                  )}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setDeclining(false)} className="h-8 text-xs">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDeclining(false)}
+                  className="h-8 text-xs"
+                >
                   Voltar
                 </Button>
               </div>
