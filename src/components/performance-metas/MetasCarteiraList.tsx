@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Loader2, Mail, Search, Target, X } from "lucide-react";
+import { CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export function MetasCarteiraList({
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [familyFilter, setFamilyFilter] = useState<string[]>([]);
   const [zeroFilter, setZeroFilter] = useState(false);
+  const [revisadoOnly, setRevisadoOnly] = useState(false);
   const [conviteMassa, setConviteMassa] = useState(false);
 
   const { rows, visibleReps, isLoading } = useMetasCarteira(restrictToRepIds);
@@ -63,9 +64,10 @@ export function MetasCarteiraList({
         !((r.totalPct ?? 0) === 0 || Object.values(r.metasStatus).includes("sem_compra"))
       )
         return false;
+      if (revisadoOnly && !r.revisadoCompleto) return false;
       return true;
     });
-  }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter]);
+  }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter, revisadoOnly]);
 
   // Convite em massa: sempre disponível na visão da gestão. Elegíveis = clientes do filtro atual
   // com representante e razão social (linhas "(vazio)" ficam de fora).
@@ -187,12 +189,29 @@ export function MetasCarteiraList({
             0%
             {zeroFilter && <X className="ml-1.5 h-3 w-3 inline-block" />}
           </Badge>
-          {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter) && (
+          <div className="w-px h-6 bg-border mx-1" />
+          <Badge
+            variant={revisadoOnly ? "default" : "outline"}
+            className={cn(
+              "cursor-pointer px-2.5 py-1 text-[10px] uppercase font-bold tracking-tight gap-1",
+              revisadoOnly
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700",
+            )}
+            onClick={() => setRevisadoOnly((p) => !p)}
+            title="Filtrar clientes com todas as metas revisadas pelo gestor"
+          >
+            <CheckCircle2 className="h-3 w-3 inline" />
+            Revisados
+            {revisadoOnly && <X className="ml-0.5 h-3 w-3 inline-block" />}
+          </Badge>
+          {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
             <button
               onClick={() => {
                 setCategoryFilter([]);
                 setFamilyFilter([]);
                 setZeroFilter(false);
+                setRevisadoOnly(false);
               }}
               className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-auto"
             >
@@ -214,6 +233,13 @@ export function MetasCarteiraList({
                 <th className="px-2 sm:px-4 py-3 font-semibold border-r border-border/50 text-center">
                   Cat
                 </th>
+                <th
+                  className="w-12 px-1 sm:px-2 py-3 font-semibold border-r border-border/50 text-center text-[10px]"
+                  title="Metas de todas as categorias revisadas e salvas pelo gestor"
+                >
+                  <span className="sr-only">Revisado</span>
+                  <CheckCircle2 className="h-3.5 w-3.5 mx-auto text-muted-foreground" />
+                </th>
                 <th className="px-2 sm:px-4 py-3 font-semibold border-r border-border/50 text-center">
                   Ating %
                 </th>
@@ -231,7 +257,7 @@ export function MetasCarteiraList({
             <tbody className="divide-y divide-border/50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={METAS_FAMILIES.length + 5} className="px-4 py-12 text-center">
+                  <td colSpan={METAS_FAMILIES.length + 6} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       <span>Carregando carteira...</span>
@@ -241,7 +267,7 @@ export function MetasCarteiraList({
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={METAS_FAMILIES.length + 5}
+                    colSpan={METAS_FAMILIES.length + 6}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     {restrictToRepIds && restrictToRepIds.length === 0
@@ -279,6 +305,28 @@ export function MetasCarteiraList({
                           </span>
                         ) : (
                           "—"
+                        )}
+                      </td>
+                      <td
+                        className="w-12 px-1 sm:px-2 py-2.5 text-center border-r border-border/50"
+                        title={
+                          row.revisadoCompleto
+                            ? "Metas de todas as categorias revisadas e salvas pelo gestor (7/7)"
+                            : row.metasSalvasCount > 0
+                              ? `${row.metasSalvasCount} de 7 categorias revisadas pelo gestor`
+                              : "Nenhuma meta revisada pelo gestor"
+                        }
+                      >
+                        {row.revisadoCompleto ? (
+                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mx-auto">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </span>
+                        ) : row.metasSalvasCount > 0 ? (
+                          <span className="text-[10px] font-mono text-muted-foreground/80">
+                            {row.metasSalvasCount}/7
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/30 text-xs">—</span>
                         )}
                       </td>
                       <td

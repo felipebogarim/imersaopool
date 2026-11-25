@@ -18,6 +18,8 @@ export type CarteiraRow = {
   totalPct: number | null;
   familiaPct: Record<string, number | null>;
   metasStatus: Record<string, FarolStatus | null>;
+  revisadoCompleto: boolean;
+  metasSalvasCount: number;
 };
 
 export function useMetasCarteira(restrictToRepIds: string[] | null) {
@@ -57,6 +59,52 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
     },
   });
 
+  // Metas salvas/revisadas pelo gestor no ciclo vigente (por representante e cliente)
+  const { data: reviewedMap = new Map<string, { count: number; completo: boolean }>() } = useQuery({
+    queryKey: ["performance-metas", "reviewed-status"],
+    queryFn: async () => {
+      try {
+        const { data: cycles, error } = await supabase
+          .from("performance_goal_cycles")
+          .select(`
+            id,
+            representative_id,
+            cliente_key,
+            inicio,
+            fim,
+            performance_goal_items (
+              familia,
+              meta_mensal
+            )
+          `)
+          .order("inicio", { ascending: false });
+
+        if (error || !cycles) {
+          return new Map<string, { count: number; completo: boolean }>();
+        }
+
+        const map = new Map<string, { count: number; completo: boolean }>();
+        for (const c of cycles) {
+          const key = `${c.representative_id}|${c.cliente_key}`;
+          if (map.has(key)) continue;
+
+          const items = (c.performance_goal_items ?? []) as Array<{
+            familia: string;
+            meta_mensal: number | null;
+          }>;
+          const savedFamilies = new Set(
+            items.filter((i) => i.meta_mensal != null).map((i) => i.familia),
+          );
+          const count = savedFamilies.size;
+          map.set(key, { count, completo: count >= 7 });
+        }
+        return map;
+      } catch {
+        return new Map<string, { count: number; completo: boolean }>();
+      }
+    },
+  });
+
   const rows: CarteiraRow[] = useMemo(() => {
     const repById = new Map(reps.map((r) => [r.id, r.nome]));
     const repByUpload = new Map(uploads.map((u) => [u.id, u.representative_id]));
@@ -64,6 +112,11 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
       .filter((r) => isClientRow(r))
       .map((r) => {
         const repId = repByUpload.get(r.upload_id) ?? null;
+        const clienteKey = r.razao_social ? r.razao_social.trim().toUpperCase() : "";
+        const revStatus = repId ? reviewedMap.get(`${repId}|${clienteKey}`) : undefined;
+        const metasSalvasCount = revStatus?.count ?? 0;
+        const revisadoCompleto = revStatus?.completo ?? false;
+
         return {
           id: r.id,
           razao_social: r.razao_social,
@@ -73,10 +126,12 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
           totalPct: sanitizeRatio(r.total_pct),
           familiaPct: (r.familia_pct ?? {}) as Record<string, number | null>,
           metasStatus: (r.metas_status ?? {}) as Record<string, FarolStatus | null>,
+          revisadoCompleto,
+          metasSalvasCount,
         };
       })
       .filter((r) => !restrictToRepIds || (r.repId != null && restrictToRepIds.includes(r.repId)));
-  }, [allRows, uploads, reps, restrictToRepIds]);
+  }, [allRows, uploads, reps, restrictToRepIds, reviewedMap]);
 
   const visibleReps = useMemo(
     () => (restrictToRepIds ? reps.filter((r) => restrictToRepIds.includes(r.id)) : reps),
