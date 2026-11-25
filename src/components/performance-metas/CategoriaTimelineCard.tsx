@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import {
+  AlertTriangle,
   Award,
   CheckCircle2,
+  ShieldAlert,
+  ShieldCheck,
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +14,7 @@ export type CategoryTier = {
   name: "Silver" | "Gold" | "Black";
   target: number;
   label: string;
+  rangeLabel: string;
   badgeClass: string;
   activeColor: string;
   glowColor: string;
@@ -19,24 +23,27 @@ export type CategoryTier = {
 export const CATEGORY_TIERS: CategoryTier[] = [
   {
     name: "Silver",
-    target: 7_000,
+    target: 3_000,
     label: "Silver",
+    rangeLabel: "R$ 3.000 a R$ 5.999",
     badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
     activeColor: "#94a3b8",
     glowColor: "rgba(148, 163, 184, 0.4)",
   },
   {
     name: "Gold",
-    target: 15_000,
+    target: 6_000,
     label: "Gold",
+    rangeLabel: "R$ 6.000 a R$ 19.999",
     badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700",
     activeColor: "#f59e0b",
     glowColor: "rgba(245, 158, 11, 0.4)",
   },
   {
     name: "Black",
-    target: 41_000,
+    target: 20_000,
     label: "Black",
+    rangeLabel: "Acima de R$ 20.000",
     badgeClass: "bg-purple-950/20 text-purple-900 dark:text-purple-200 border-purple-400/40",
     activeColor: "#8b5cf6",
     glowColor: "rgba(139, 92, 246, 0.4)",
@@ -46,17 +53,17 @@ export const CATEGORY_TIERS: CategoryTier[] = [
 /** Mapeamento proporcional contínuo para os 3 patamares na timeline */
 function getTimelinePositionPct(valor: number): number {
   if (valor <= 0) return 0;
-  if (valor < 7_000) {
+  if (valor < 3_000) {
     // 0% a 33.3%
-    return Math.max(2, (valor / 7_000) * 33.3);
+    return Math.max(2, (valor / 3_000) * 33.3);
   }
-  if (valor < 15_000) {
+  if (valor < 6_000) {
     // 33.3% a 66.6%
-    return 33.3 + ((valor - 7_000) / (15_000 - 7_000)) * 33.3;
+    return 33.3 + ((valor - 3_000) / (6_000 - 3_000)) * 33.3;
   }
-  if (valor < 41_000) {
+  if (valor < 20_000) {
     // 66.6% a 98%
-    return 66.6 + ((valor - 15_000) / (41_000 - 15_000)) * 31.4;
+    return 66.6 + ((valor - 6_000) / (20_000 - 6_000)) * 31.4;
   }
   return 100;
 }
@@ -96,6 +103,78 @@ export function CategoriaTimelineCard({
   const metaUpgrade = nextTier ? nextTier.target : metaManutencao;
   const faltaUpgrade = nextTier ? Math.max(0, metaUpgrade - realizado) : 0;
   const upgradeAlcancado = nextTier ? realizado >= metaUpgrade : true;
+
+  // 3. Risco de Degrade (regras fixas: Silver 3k a 6k, Gold 6k a 20k, Black > 20k)
+  const degradeRisk = useMemo(() => {
+    if (currentIndex === 0) {
+      // Silver (piso R$ 3.000)
+      if (manutencaoGarantida) {
+        return {
+          level: "baixo" as const,
+          titulo: "Risco Baixo",
+          descricao: `Piso Silver de ${fmtBRL(metaManutencao)} garantido (+${fmtBRL(sobraManutencao)} acima).`,
+          badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+          icon: ShieldCheck,
+        };
+      }
+      if (atingimentoManutencaoPct >= 50) {
+        return {
+          level: "medio" as const,
+          titulo: "Atenção ao Ritmo",
+          descricao: `Faltam ${fmtBRL(faltaManutencao)} para assegurar o piso Silver de ${fmtBRL(metaManutencao)}.`,
+          badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
+          icon: AlertTriangle,
+        };
+      }
+      return {
+        level: "alto" as const,
+        titulo: "Alto Risco de Inativação",
+        descricao: `Faltam ${fmtBRL(faltaManutencao)} para atingir o piso mínimo Silver de ${fmtBRL(metaManutencao)}.`,
+        badgeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
+        icon: ShieldAlert,
+      };
+    }
+
+    // Gold (piso R$ 6.000) ou Black (piso R$ 20.000)
+    if (manutencaoGarantida) {
+      return {
+        level: "baixo" as const,
+        titulo: "Risco Baixo",
+        descricao: `Categoria ${currentTier.name} consolidada (+${fmtBRL(sobraManutencao)} acima do piso de ${fmtBRL(metaManutencao)}).`,
+        badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+        icon: ShieldCheck,
+      };
+    }
+
+    const pisoAnterior = prevTier ? prevTier.target : 0;
+    if (realizado < pisoAnterior) {
+      return {
+        level: "alto" as const,
+        titulo: "Alto Risco de Degrade",
+        descricao: `Faturamento abaixo de ${prevTier?.name ?? "piso"} (${fmtBRL(pisoAnterior)}). Faltam ${fmtBRL(faltaManutencao)} para manter ${currentTier.name}.`,
+        badgeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
+        icon: ShieldAlert,
+      };
+    }
+
+    return {
+      level: "medio" as const,
+      titulo: "Risco Moderado de Degrade",
+      descricao: `Acima de ${prevTier?.name}, mas faltam ${fmtBRL(faltaManutencao)} para manter ${currentTier.name} (${fmtBRL(metaManutencao)}).`,
+      badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
+      icon: AlertTriangle,
+    };
+  }, [
+    currentIndex,
+    atingimentoManutencaoPct,
+    manutencaoGarantida,
+    faltaManutencao,
+    sobraManutencao,
+    currentTier.name,
+    prevTier,
+    realizado,
+    metaManutencao,
+  ]);
 
   const timelineFillPct = getTimelinePositionPct(realizado);
 
@@ -192,17 +271,17 @@ export function CategoriaTimelineCard({
             <div
               className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
               style={{ left: "33.3%" }}
-              title="Piso Silver: R$ 7.000"
+              title="Piso Silver: R$ 3.000 (faixa de R$ 3.000 a R$ 5.999)"
             />
             <div
               className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
               style={{ left: "66.6%" }}
-              title="Piso Gold: R$ 15.000"
+              title="Piso Gold: R$ 6.000 (faixa de R$ 6.000 a R$ 19.999)"
             />
             <div
               className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
               style={{ right: "0%" }}
-              title="Piso Black: R$ 41.000"
+              title="Piso Black: R$ 20.000 (acima de R$ 20.000)"
             />
 
             {/* Marcador luminoso da posição atual do cliente */}
@@ -225,13 +304,13 @@ export function CategoriaTimelineCard({
             <span className="font-semibold text-foreground tabular-nums">
               Realizado: {fmtBRL(realizado)}
             </span>
-            <span>R$ 41k+</span>
+            <span>R$ 20k+</span>
           </div>
         </div>
       </div>
 
-      {/* ======================= 2 BLOCOS DE PROGRESSÃO ======================= */}
-      <div className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-2">
+      {/* ======================= 3 BLOCOS DE INFORMAÇÃO ======================= */}
+      <div className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-3">
         {/* Bloco 1: Manutenção da Categoria */}
         <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
           <div className="flex items-center justify-between gap-1">
@@ -302,11 +381,34 @@ export function CategoriaTimelineCard({
             </p>
           </div>
         </div>
+
+        {/* Bloco 3: Risco de Degrade */}
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+              Risco de Degrade
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold",
+                degradeRisk.badgeClass,
+              )}
+            >
+              <degradeRisk.icon className="h-2.5 w-2.5" />
+              {degradeRisk.titulo}
+            </span>
+          </div>
+          <div className="mt-1">
+            <p className="text-[11px] leading-snug font-medium text-foreground">
+              {degradeRisk.descricao}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Rodapé compacto */}
       <div className="mt-3 border-t border-border/50 pt-2 text-[10px] text-muted-foreground flex items-center justify-between">
-        <span>Faixas mensais: Silver (7k) · Gold (15k) · Black (41k)</span>
+        <span>Faixas de compras: Silver (3k - 6k) · Gold (6k - 20k) · Black (&gt; 20k)</span>
         <span className="font-medium">
           {nextTier ? `Próximo salto: +${fmtBRL(metaUpgrade - metaManutencao)}` : "Topo da carteira"}
         </span>

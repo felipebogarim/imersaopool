@@ -159,7 +159,7 @@ export function AlertaSituacaoCard({
       };
     }
 
-    // 5. Categoria Silver em Construção de Base (abaixo de 7.000)
+    // 5. Categoria Silver em Construção de Base (abaixo de 3.000)
     if (tierIndex === 0 && realizado < metaManutencao) {
       return {
         tipo: "silver_consolidacao",
