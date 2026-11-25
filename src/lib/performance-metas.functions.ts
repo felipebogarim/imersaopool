@@ -293,7 +293,7 @@ export const inviteRepToMetas = createServerFn({ method: "POST" })
 
 // --------------------------- Convite em massa --------------------------------
 
-const rowIdsInput = z.object({ rowIds: z.array(z.string().uuid()).min(1).max(500) });
+const rowIdsInput = z.object({ rowIds: z.array(z.string().uuid()).min(1).max(5000) });
 
 /** Executa `fn` em lotes para não abrir centenas de requisições simultâneas. */
 async function inBatches<T, R>(items: readonly T[], size: number, fn: (t: T) => Promise<R>) {
@@ -302,6 +302,91 @@ async function inBatches<T, R>(items: readonly T[], size: number, fn: (t: T) => 
     out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
   return out;
 }
+
+/**
+ * Retorna os IDs dos clientes classificados no Top 10 por representante.
+ * Usa o faturamento real via `rep_goal_revenue_ranks` e complementa pela `ordem` da planilha
+ * caso faltem dados de faturamento.
+ */
+export const getMetasTop10RowIds = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowIdsInput)
+  .handler(async ({ data }): Promise<{ top10RowIds: string[] }> => {
+    if (!data.rowIds.length) return { top10RowIds: [] };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+
+    const rows: Array<{
+      id: string;
+      ordem: number | null;
+      rep_performance_uploads: { representative_id: string } | null;
+    }> = [];
+
+    for (let i = 0; i < data.rowIds.length; i += 200) {
+      const chunk = data.rowIds.slice(i, i + 200);
+      const { data: part, error } = await admin
+        .from("rep_performance_rows")
+        .select("id, ordem, rep_performance_uploads!inner(representative_id)")
+        .in("id", chunk);
+      if (error) {
+        throw new Error(error.message ?? "Falha ao consultar linhas de performance.");
+      }
+      if (part) rows.push(...(part as any));
+    }
+
+    // Agrupa por representante
+    const byRep = new Map<string, Array<{ id: string; ordem: number }>>();
+    for (const r of rows) {
+      const repId = r.rep_performance_uploads?.representative_id;
+      if (!repId) continue;
+      const list = byRep.get(repId) ?? [];
+      list.push({ id: r.id, ordem: r.ordem ?? 0 });
+      byRep.set(repId, list);
+    }
+
+    const top10RowIds: string[] = [];
+
+    for (const [repId, repRows] of byRep) {
+      const repRowIds = repRows.map((r) => r.id);
+      const limit = Math.min(10, repRows.length);
+      const repTop10: string[] = [];
+
+      try {
+        const { data: ranks } = await admin.rpc("rep_goal_revenue_ranks", {
+          _representative_id: repId,
+          _row_ids: repRowIds,
+        });
+
+        if (ranks && Array.isArray(ranks)) {
+          const sortedRanks = [...ranks].sort((a, b) => (a.top10_rank ?? 0) - (b.top10_rank ?? 0));
+          for (const r of sortedRanks) {
+            if (repTop10.length < limit && !repTop10.includes(r.row_id)) {
+              repTop10.push(r.row_id);
+            }
+          }
+        }
+      } catch {
+        // Fallback gracioso para a ordem da planilha
+      }
+
+      // Se a RPC não encontrou receita suficiente ou não retornou 10,
+      // complementa com as linhas de menor `ordem` (que na planilha vêm do topo)
+      if (repTop10.length < limit) {
+        const sortedByOrdem = [...repRows].sort((a, b) => a.ordem - b.ordem);
+        for (const r of sortedByOrdem) {
+          if (repTop10.length >= limit) break;
+          if (!repTop10.includes(r.id)) {
+            repTop10.push(r.id);
+          }
+        }
+      }
+
+      top10RowIds.push(...repTop10);
+    }
+
+    return { top10RowIds };
+  });
 
 /** Situação das metas de cada cliente (o gestor já gravou os 7 portfólios?). */
 export const getMetasBulkStatus = createServerFn({ method: "POST" })

@@ -4,7 +4,7 @@
 // cancela. Cada representante recebe um único e-mail com todos os seus clientes.
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, Mail, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, Mail, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   completeMetasWithAi,
   getMetasBulkStatus,
+  getMetasTop10RowIds,
   inviteRepToMetasBulk,
 } from "@/lib/performance-metas.functions";
 import {
@@ -78,11 +79,25 @@ export function ConviteMassaDialog({
   const [erroStatus, setErroStatus] = useState<string | null>(null);
   const [fase, setFase] = useState<"idle" | "ia" | "enviando">("idle");
   const [progresso, setProgresso] = useState({ feito: 0, total: 0, rotulo: "" });
+  const [top10RowIds, setTop10RowIds] = useState<Set<string>>(new Set());
+  const [carregandoTop10, setCarregandoTop10] = useState(false);
+  const [visualizarAba, setVisualizarAba] = useState<"todos" | "top10" | "excetoTop10">("todos");
 
   const selecionados = useMemo(() => {
     const set = new Set(repIds);
     return clientes.filter((c) => set.has(c.repId));
   }, [clientes, repIds]);
+
+  const top10Clientes = useMemo(
+    () => selecionados.filter((c) => top10RowIds.has(c.id)),
+    [selecionados, top10RowIds],
+  );
+
+  const excetoTop10Clientes = useMemo(
+    () => selecionados.filter((c) => !top10RowIds.has(c.id)),
+    [selecionados, top10RowIds],
+  );
+
   const info = useMemo(() => new Map(clientes.map((c) => [c.id, c])), [clientes]);
   const umRep = repIds.length === 1 ? reps.find((r) => r.key === repIds[0]) : undefined;
 
@@ -95,8 +110,33 @@ export function ConviteMassaDialog({
     setStatuses(null);
     setErroStatus(null);
     setFase("idle");
+    setVisualizarAba("todos");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => {
+    if (!open || selecionados.length === 0) {
+      setTop10RowIds(new Set());
+      return;
+    }
+    let active = true;
+    setCarregandoTop10(true);
+    getMetasTop10RowIds({ data: { rowIds: selecionados.map((c) => c.id) } })
+      .then((res) => {
+        if (active) {
+          setTop10RowIds(new Set(res.top10RowIds));
+        }
+      })
+      .catch((e) => {
+        console.warn("Falha ao obter top 10 para convite em massa:", e);
+      })
+      .finally(() => {
+        if (active) setCarregandoTop10(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, selecionados]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,6 +182,23 @@ export function ConviteMassaDialog({
   }, [open, repIds]);
 
   const resumo = useMemo(() => (statuses ? bulkResumo(statuses) : null), [statuses]);
+
+  const statusesExibidos = useMemo(() => {
+    if (!statuses) return [];
+    if (visualizarAba === "top10") {
+      return statuses.filter((s) => top10RowIds.has(s.rowId));
+    }
+    if (visualizarAba === "excetoTop10") {
+      return statuses.filter((s) => !top10RowIds.has(s.rowId));
+    }
+    return statuses;
+  }, [statuses, visualizarAba, top10RowIds]);
+
+  const resumoExibido = useMemo(
+    () => (statusesExibidos.length ? bulkResumo(statusesExibidos) : null),
+    [statusesExibidos],
+  );
+
   const incompletos = resumo ? [...resumo.parcial, ...resumo.pendente] : [];
   const ocupado = fase !== "idle" || avaliando;
   const repsNoEnvio = (ids: string[]) => new Set(ids.map((id) => info.get(id)?.repId)).size;
@@ -193,35 +250,63 @@ export function ConviteMassaDialog({
     if (falhas.length === 0) onOpenChange(false);
   }
 
-  async function aceitarIaEEnviar() {
-    if (!resumo) return;
-    setFase("ia");
-    setProgresso({ feito: 0, total: incompletos.length, rotulo: "Aplicando sugestão IA" });
-    const prontos = [...resumo.completo];
-    let falhas = 0;
-    const atualizados = new Map<string, BulkRowStatus>();
-    // Sequencial: cada cliente pode exigir uma análise da IA.
-    for (const rowId of incompletos) {
-      try {
-        const s = await completeMetasWithAi({ data: { rowId } });
-        atualizados.set(rowId, s);
-        if (bulkCategoria(s) === "completo") prontos.push(rowId);
-        else falhas += 1;
-      } catch (e) {
-        falhas += 1;
-        const antes = statuses?.find((x) => x.rowId === rowId);
-        if (antes)
-          atualizados.set(rowId, {
-            ...antes,
-            erro: e instanceof Error ? e.message : "Falha na IA.",
-          });
-      }
-      setProgresso((p) => ({ ...p, feito: p.feito + 1 }));
+  async function enviarLote(alvoIds: string[], rotuloGrupo?: string) {
+    if (alvoIds.length === 0) {
+      toast.error("Nenhum cliente para enviar.");
+      return;
     }
-    setStatuses((prev) => prev?.map((s) => atualizados.get(s.rowId) ?? s) ?? prev);
+    if (!statuses) {
+      toast.error("Aguarde a avaliação das metas antes de enviar.");
+      return;
+    }
+
+    const statusMap = new Map(statuses.map((s) => [s.rowId, s]));
+    const incompletosDoAlvo = alvoIds.filter((id) => {
+      const s = statusMap.get(id);
+      if (!s) return true;
+      const cat = bulkCategoria(s);
+      return cat === "parcial" || cat === "pendente";
+    });
+
+    const prontos = alvoIds.filter((id) => {
+      const s = statusMap.get(id);
+      return s && bulkCategoria(s) === "completo";
+    });
+
+    let falhas = 0;
+    if (incompletosDoAlvo.length > 0) {
+      setFase("ia");
+      setProgresso({
+        feito: 0,
+        total: incompletosDoAlvo.length,
+        rotulo: rotuloGrupo ? `Aplicando sugestão IA (${rotuloGrupo})` : "Aplicando sugestão IA",
+      });
+      const atualizados = new Map<string, BulkRowStatus>();
+      for (const rowId of incompletosDoAlvo) {
+        try {
+          const s = await completeMetasWithAi({ data: { rowId } });
+          atualizados.set(rowId, s);
+          if (bulkCategoria(s) === "completo") prontos.push(rowId);
+          else falhas += 1;
+        } catch (e) {
+          falhas += 1;
+          const antes = statusMap.get(rowId);
+          if (antes)
+            atualizados.set(rowId, {
+              ...antes,
+              erro: e instanceof Error ? e.message : "Falha na IA.",
+            });
+        }
+        setProgresso((p) => ({ ...p, feito: p.feito + 1 }));
+      }
+      setStatuses((prev) => prev?.map((s) => atualizados.get(s.rowId) ?? s) ?? prev);
+    }
+
     await enviar(
       prontos,
-      falhas > 0 ? `${falhas} cliente(s) ficaram de fora (sem sugestão IA completa).` : undefined,
+      falhas > 0
+        ? `${falhas} cliente(s) ficaram de fora (sem sugestão IA completa).`
+        : undefined,
     );
   }
 
@@ -291,18 +376,66 @@ export function ConviteMassaDialog({
             )
           ) : (
             <>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setVisualizarAba("todos")}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 font-medium transition-colors",
+                      visualizarAba === "todos"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Todos ({selecionados.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVisualizarAba("top10")}
+                    className={cn(
+                      "flex items-center gap-1 rounded-md px-2.5 py-1 font-medium transition-colors",
+                      visualizarAba === "top10"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                    <span>TOP 10 ({top10Clientes.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVisualizarAba("excetoTop10")}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 font-medium transition-colors",
+                      visualizarAba === "excetoTop10"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Demais ({excetoTop10Clientes.length})
+                  </button>
+                </div>
+                {carregandoTop10 && (
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Identificando TOP 10...
+                  </span>
+                )}
+              </div>
+
               <div className="grid grid-cols-3 gap-2 text-center">
                 {(["completo", "parcial", "pendente"] as const).map((c) => (
                   <div key={c} className="rounded-md border border-border p-2">
-                    <p className="text-lg font-semibold tabular-nums">{resumo?.[c].length ?? 0}</p>
+                    <p className="text-lg font-semibold tabular-nums">{resumoExibido?.[c].length ?? 0}</p>
                     <p className={cn("text-[11px]", CAT_INFO[c].className)}>{CAT_INFO[c].label}</p>
                   </div>
                 ))}
               </div>
               <ul className="max-h-44 space-y-1 overflow-y-auto rounded-md border border-border p-2 text-xs">
-                {statuses.map((s) => {
+                {statusesExibidos.map((s) => {
                   const cat = bulkCategoria(s);
                   const c = info.get(s.rowId);
+                  const isTop10 = top10RowIds.has(s.rowId);
                   const Icon =
                     cat === "completo"
                       ? CheckCircle2
@@ -314,6 +447,11 @@ export function ConviteMassaDialog({
                       <span className="flex min-w-0 items-center gap-1.5">
                         <Icon className={cn("h-3.5 w-3.5 shrink-0", CAT_INFO[cat].className)} />
                         <span className="truncate">{c?.razao_social ?? s.rowId}</span>
+                        {isTop10 && (
+                          <span className="shrink-0 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                            TOP 10
+                          </span>
+                        )}
                         {repIds.length > 1 && (
                           <span className="shrink-0 text-muted-foreground">· {c?.repName}</span>
                         )}
@@ -374,42 +512,94 @@ export function ConviteMassaDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+        <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={ocupado}>
             Cancelar
           </Button>
-          {resumo &&
-            (todosProntos ? (
-              <Button
-                onClick={() => void enviar(resumo.completo)}
-                disabled={ocupado || !mensagem.trim()}
-              >
-                <Mail className="mr-1.5 h-4 w-4" />
-                Enviar convite ({resumo.completo.length} clientes · {repsNoEnvio(resumo.completo)}{" "}
-                rep.)
-              </Button>
-            ) : (
-              <>
+          {resumo && (
+            <>
+              {resumo.completo.length > 0 && incompletos.length > 0 && (
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => void enviar(resumo.completo)}
-                  disabled={ocupado || resumo.completo.length === 0 || !mensagem.trim()}
+                  disabled={ocupado || !mensagem.trim()}
+                  title="Enviar apenas os clientes já revisados pelo gestor"
                 >
-                  Enviar só os revisados ({resumo.completo.length})
+                  Enviar só revisados ({resumo.completo.length})
                 </Button>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void enviarLote(
+                    excetoTop10Clientes.map((c) => c.id),
+                    "Demais clientes",
+                  )
+                }
+                disabled={
+                  ocupado ||
+                  carregandoTop10 ||
+                  excetoTop10Clientes.length === 0 ||
+                  !mensagem.trim()
+                }
+              >
+                <Mail className="mr-1.5 h-4 w-4" />
+                TODOS, EXCETO TOP 10 ({excetoTop10Clientes.length})
+              </Button>
+
+              <Button
+                onClick={() =>
+                  void enviarLote(
+                    top10Clientes.map((c) => c.id),
+                    "TOP 10",
+                  )
+                }
+                disabled={
+                  ocupado ||
+                  carregandoTop10 ||
+                  top10Clientes.length === 0 ||
+                  !mensagem.trim()
+                }
+                className="bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-600 dark:hover:bg-amber-500 font-semibold shadow-sm"
+              >
+                {fase === "ia" ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Star className="mr-1.5 h-4 w-4 fill-white text-white" />
+                )}
+                ENVIAR TOP 10 ({top10Clientes.length})
+              </Button>
+
+              {incompletos.length > 0 ? (
                 <Button
-                  onClick={() => void aceitarIaEEnviar()}
-                  disabled={ocupado || incompletos.length === 0 || !mensagem.trim()}
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void enviarLote(selecionados.map((c) => c.id), "Todos")}
+                  disabled={ocupado || !mensagem.trim()}
+                  title="Aceitar sugestão IA nos faltantes e enviar todos"
                 >
                   {fase === "ia" ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Sparkles className="mr-1.5 h-4 w-4" />
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   )}
-                  Aceitar sugestão IA e enviar ({resumo.completo.length + incompletos.length})
+                  Enviar todos ({selecionados.length})
                 </Button>
-              </>
-            ))}
+              ) : (
+                todosProntos && (
+                  <Button
+                    onClick={() => void enviar(resumo.completo)}
+                    disabled={ocupado || !mensagem.trim()}
+                  >
+                    <Mail className="mr-1.5 h-4 w-4" />
+                    Enviar todos ({resumo.completo.length})
+                  </Button>
+                )
+              )}
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
