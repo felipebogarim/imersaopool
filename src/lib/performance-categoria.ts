@@ -1,16 +1,27 @@
 // Categoria do cliente na timeline: categoria CADASTRADA (nunca alterada aqui) × categoria em que
-// a MÉDIA MENSAL de compras se enquadra, contra os pisos configurados em "Mínimos por categoria".
+// a MÉDIA MENSAL de compras se enquadra, pela CLASSIFICAÇÃO COMERCIAL (Silver/Gold/Black).
+// Independe de "Metas Mínimas" (referência de meta por portfólio, outro conceito).
 // O corte semestral é só informação complementar (estimada), nunca o critério da timeline.
 
 import type { MediaCliente } from "./performance-media-cliente";
-import type { PisosCategoria } from "./performance-metas-minimos";
 
 export type CategoriaNome = "Silver" | "Gold" | "Black";
 export const CATEGORIAS: CategoriaNome[] = ["Silver", "Gold", "Black"];
 
+export type PisosCategoria = Record<CategoriaNome, number>;
+
+/** Classificação comercial: média mensal de compras a partir da qual o cliente se enquadra. */
+export const PISOS_CATEGORIA: PisosCategoria = { Silver: 3000, Gold: 6000, Black: 20000 };
+
+/** Categoria cadastrada normalizada ("BLACK", " Black ", "Cliente Black" → "Black"). */
 export function categoriaCadastrada(c: string | null | undefined): CategoriaNome | null {
   const n = (c ?? "").trim().toLowerCase();
-  return CATEGORIAS.find((x) => x.toLowerCase() === n) ?? null;
+  if (!n) return null;
+  return (
+    CATEGORIAS.find((x) => x.toLowerCase() === n) ??
+    CATEGORIAS.find((x) => new RegExp(`\\b${x.toLowerCase()}\\b`).test(n)) ??
+    null
+  );
 }
 
 /** Categoria pela média: a maior cujo piso a média alcança; null = abaixo do piso Silver. */
@@ -66,7 +77,7 @@ const FOLGA_ATENCAO = 0.1;
 export function situacaoCategoria(
   categoria: string | null | undefined,
   mediaCliente: MediaCliente,
-  pisos: PisosCategoria,
+  pisos: PisosCategoria = PISOS_CATEGORIA,
 ): SituacaoCategoria {
   const cadastrada = categoriaCadastrada(categoria);
   const media = mediaCliente.total;

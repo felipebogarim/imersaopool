@@ -10,7 +10,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { PISO_CATEGORIA_FAMILIA } from "@/lib/performance-metas-minimos";
 import { CANONICAL_FAMILIES } from "@/lib/client-bi-familias";
 import {
   AI_MODEL,
@@ -600,7 +599,7 @@ export const setMetasInvestigacao = createServerFn({ method: "POST" })
     }),
   );
 
-// ------------------------- Mínimos por categoria -----------------------------
+// ------------------------------ Metas Mínimas ---------------------------------
 
 export type MinimosResult =
   | { available: false }
@@ -634,7 +633,7 @@ export const saveMetasMinimos = createServerFn({ method: "POST" })
         .array(
           z.object({
             categoria: z.enum(["Silver", "Gold", "Black"]),
-            familia: z.union([familia, z.literal(PISO_CATEGORIA_FAMILIA)]),
+            familia,
             minimo: money,
           }),
         )

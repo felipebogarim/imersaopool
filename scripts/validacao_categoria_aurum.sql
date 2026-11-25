@@ -2,7 +2,7 @@
 -- Rodar no SQL Editor do Lovable. Reproduz a regra única de src/lib/performance-media-cliente.ts:
 --   por portfólio: MÉDIA (R$) → REALIZADO (R$) → % × META ORIGINAL DO UPLOAD (estimado) → sem dado.
 --   Portfólio sem dado fica fora da soma (nunca vira zero).
--- E compara com os pisos configurados em "Mínimos por categoria" (familia = '__PISO_MENSAL__').
+-- E classifica pela classificação comercial: Silver 3.000, Gold 6.000, Black 20.000 (média mensal).
 -- Clientes validados: A&M, AMX e AURUM (ajuste os padrões ILIKE em `alvo` se o nome divergir).
 
 -- (1) Detalhe por cliente × upload vigente × portfólio: de onde veio cada valor.
@@ -54,13 +54,7 @@ ORDER BY razao_social, familia;
 
 -- (2) Resumo por cliente: média mensal, se há estimativa, categoria pela média e situação.
 WITH alvo(padrao) AS (VALUES ('A&M%'), ('AMX%'), ('AURUM%')),
-pisos AS (
-  SELECT max(minimo) FILTER (WHERE categoria = 'Silver') AS silver,
-         max(minimo) FILTER (WHERE categoria = 'Gold') AS gold,
-         max(minimo) FILTER (WHERE categoria = 'Black') AS black
-  FROM public.performance_goal_minimums
-  WHERE familia = '__PISO_MENSAL__'
-),
+pisos AS (SELECT 3000::numeric AS silver, 6000::numeric AS gold, 20000::numeric AS black),
 linhas AS (
   SELECT DISTINCT ON (r.razao_social)
          r.razao_social, r.categoria, r.familia_pct, u.periodo_inicio, u.periodo_fim,
@@ -99,7 +93,6 @@ SELECT c.razao_social, c.categoria AS categoria_cadastrada, c.periodo_inicio, c.
        round(c.media_mensal, 2) AS media_mensal, COALESCE(c.tem_estimativa, false) AS estimado,
        ps.silver AS piso_silver, ps.gold AS piso_gold, ps.black AS piso_black,
        CASE
-         WHEN ps.black IS NULL THEN 'PISOS NÃO CONFIGURADOS'
          WHEN c.media_mensal IS NULL THEN 'sem base'
          WHEN c.media_mensal >= ps.black THEN 'Black'
          WHEN c.media_mensal >= ps.gold THEN 'Gold'

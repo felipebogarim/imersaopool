@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { categoriaPelaMedia, posicaoNaRegua, situacaoCategoria } from "./performance-categoria";
+import {
+  PISOS_CATEGORIA,
+  categoriaCadastrada,
+  categoriaPelaMedia,
+  posicaoNaRegua,
+  situacaoCategoria,
+} from "./performance-categoria";
 import { mediaMensalCompras, type MediaCliente } from "./performance-media-cliente";
-import { PISO_CATEGORIA_FAMILIA, pisosCategoria } from "./performance-metas-minimos";
 
 const PISOS = { Silver: 3000, Gold: 6000, Black: 20000 };
 const media = (total: number | null, estimado = false): MediaCliente => ({
@@ -11,24 +16,20 @@ const media = (total: number | null, estimado = false): MediaCliente => ({
   semDado: [],
 });
 
-describe("pisos vindos de Mínimos por categoria", () => {
-  const cfg = (s?: number, g?: number, b?: number) =>
-    [
-      s != null && { categoria: "Silver", familia: PISO_CATEGORIA_FAMILIA, minimo: s },
-      g != null && { categoria: "Gold", familia: PISO_CATEGORIA_FAMILIA, minimo: g },
-      b != null && { categoria: "Black", familia: PISO_CATEGORIA_FAMILIA, minimo: b },
-      { categoria: "Black", familia: "PERFIL", minimo: 999 },
-    ].filter(Boolean) as Array<{ categoria: string; familia: string; minimo: number }>;
-
-  it("lê os três pisos; ignora mínimos de portfólio", () => {
-    expect(pisosCategoria(cfg(3000, 6000, 20000)).pisos).toEqual(PISOS);
+describe("classificação comercial independente de Metas Mínimas", () => {
+  it("faixas fixas 3.000 / 6.000 / 20.000", () => {
+    expect(PISOS_CATEGORIA).toEqual(PISOS);
   });
-  it("sem configuração não inventa valores", () => {
-    expect(pisosCategoria([]).pisos).toBeNull();
-    expect(pisosCategoria(cfg(3000, 6000)).faltando).toEqual(["Black"]);
+  it("usa a categoria cadastrada como vier no cadastro (caixa e espaços)", () => {
+    expect(categoriaCadastrada("BLACK")).toBe("Black");
+    expect(categoriaCadastrada(" Black ")).toBe("Black");
+    expect(categoriaCadastrada("Cliente Gold")).toBe("Gold");
+    expect(categoriaCadastrada("")).toBeNull();
+    expect(categoriaCadastrada("Consumidor Final")).toBeNull();
   });
-  it("pisos fora de ordem são inválidos", () => {
-    expect(pisosCategoria(cfg(6000, 3000, 20000)).erro).toMatch(/crescer/);
+  it("situação sem pisos informados usa a classificação padrão", () => {
+    expect(situacaoCategoria("BLACK", media(20000)).cadastrada).toBe("Black");
+    expect(situacaoCategoria("BLACK", media(20000)).estado).not.toBe("risco_queda");
   });
 });
 

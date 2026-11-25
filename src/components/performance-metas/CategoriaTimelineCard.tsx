@@ -1,5 +1,5 @@
 // Evolução e faixa de categoria (padrão visual original): barra por faixas com o marcador na
-// MÉDIA MENSAL de compras, pisos vindos de "Mínimos por categoria", e três blocos — manter a
+// MÉDIA MENSAL de compras, faixas da classificação comercial (PISOS_CATEGORIA), e três blocos — manter a
 // categoria cadastrada, evoluir para a próxima e situação. Recebe a apuração pronta
 // (`situacaoCategoria`), a mesma do alerta, para os dois nunca divergirem.
 
@@ -16,14 +16,13 @@ import { cn } from "@/lib/utils";
 import { fmtBRL, METAS_FAMILY_LABEL } from "@/lib/performance-metas";
 import {
   CATEGORIAS,
+  PISOS_CATEGORIA,
   posicaoNaRegua,
   type CategoriaNome,
   type EstadoCategoria,
   type SituacaoCategoria,
 } from "@/lib/performance-categoria";
-import type { PisosCategoria } from "@/lib/performance-metas-minimos";
 import { FONTE_MEDIA_LABEL, type MediaCliente } from "@/lib/performance-media-cliente";
-import { MinimosCategoriaButton } from "./MinimosCategoriaDialog";
 
 const TIER_STYLE: Record<
   CategoriaNome,
@@ -116,8 +115,6 @@ function descricaoSituacao(s: SituacaoCategoria): string {
 export function CategoriaTimelineCard({
   situacao: sit,
   mediaCliente,
-  pisos,
-  pisosAviso,
   acumulado,
   complemento,
   periodoLabel,
@@ -125,20 +122,18 @@ export function CategoriaTimelineCard({
 }: {
   situacao: SituacaoCategoria | null;
   mediaCliente: MediaCliente;
-  pisos: PisosCategoria | null;
-  /** Mensagem quando os pisos não estão configurados (ou são inválidos). */
-  pisosAviso?: string | null;
   acumulado: { valor: number; meses: number; ano: number } | null;
   complemento: { label: string; projecao: number; piso: number } | null;
   periodoLabel?: string | null;
   className?: string;
 }) {
+  const pisos = PISOS_CATEGORIA;
   const media = mediaCliente.total;
   const cad = sit?.cadastrada ?? null;
-  const fill = pisos ? posicaoNaRegua(media, pisos) : 0;
+  const fill = posicaoNaRegua(media, pisos);
   const marcador = TIER_STYLE[sit?.enquadrada ?? cad ?? "Silver"];
   const estado = sit ? ESTADO_INFO[sit.estado] : null;
-  const mostrarBlocos = !!(pisos && sit && sit.estado !== "sem_base" && sit.cadastrada);
+  const mostrarBlocos = !!(sit && sit.estado !== "sem_base" && sit.cadastrada);
 
   return (
     <div
@@ -166,7 +161,7 @@ export function CategoriaTimelineCard({
             >
               Categoria Atual: {cad ?? "não informada"}
             </span>
-            {pisos && sit && sit.media != null && (
+            {sit && sit.media != null && (
               <span
                 className={cn(
                   "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold",
@@ -187,123 +182,106 @@ export function CategoriaTimelineCard({
           </div>
         </div>
 
-        {!pisos ? (
-          <div className="mt-4 flex flex-col items-start gap-2 rounded-lg border border-amber-300 bg-amber-500/10 p-3 text-xs">
-            <p className="font-semibold text-amber-800 dark:text-amber-200">
-              Pisos de categoria não configurados.
-            </p>
-            <p className="text-muted-foreground">
-              {pisosAviso ??
-                'Defina o piso de média mensal de Silver, Gold e Black em "Mínimos por categoria" (coluna "Piso da categoria").'}
-            </p>
-            <MinimosCategoriaButton />
-            <p className="tabular-nums text-foreground">
-              Média mensal de compras: <strong>{media != null ? fmtBRL(media) : "sem base"}</strong>
-              <Est on={mediaCliente.estimado} />
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 px-2">
-            {/* Marcos das categorias */}
-            <div
-              className="relative mb-2 grid grid-cols-3 text-center"
-              style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
-            >
-              {CATEGORIAS.map((c, idx) => {
-                const isCurrent = c === cad;
-                const isNext = cad != null && idx === CATEGORIAS.indexOf(cad) + 1;
-                const isAchieved = media != null && media >= pisos[c];
-                return (
-                  <div key={c} className="flex flex-col items-center">
-                    <span
-                      className={cn(
-                        "text-[11px] font-bold tracking-tight",
-                        isCurrent && "font-extrabold text-foreground",
-                        !isCurrent && isAchieved && "text-primary",
-                        !isCurrent && !isAchieved && "text-muted-foreground",
-                      )}
-                    >
-                      {c}
-                    </span>
-                    <span className="text-[9px] font-semibold tabular-nums text-muted-foreground/80">
-                      {fmtBRL(pisos[c])}/mês
-                    </span>
-                    {isCurrent && (
-                      <span className="mt-0.5 rounded-full bg-primary/10 px-1.5 text-[8px] font-bold text-primary">
-                        Atual
-                      </span>
+        <div className="mt-4 px-2">
+          {/* Marcos das categorias */}
+          <div
+            className="relative mb-2 grid grid-cols-3 text-center"
+            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+          >
+            {CATEGORIAS.map((c, idx) => {
+              const isCurrent = c === cad;
+              const isNext = cad != null && idx === CATEGORIAS.indexOf(cad) + 1;
+              const isAchieved = media != null && media >= pisos[c];
+              return (
+                <div key={c} className="flex flex-col items-center">
+                  <span
+                    className={cn(
+                      "text-[11px] font-bold tracking-tight",
+                      isCurrent && "font-extrabold text-foreground",
+                      !isCurrent && isAchieved && "text-primary",
+                      !isCurrent && !isAchieved && "text-muted-foreground",
                     )}
-                    {isNext && (
-                      <span className="mt-0.5 rounded-full bg-amber-500/10 px-1.5 text-[8px] font-bold text-amber-600 dark:text-amber-400">
-                        Próximo
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Trilho e barra — sem animação: o valor é calculado uma vez, da mesma fonte */}
-            <div className="relative my-2 h-3 w-full rounded-full bg-muted/50 p-0.5">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${fill}%`,
-                  background:
-                    fill >= 66
-                      ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 50%, #8b5cf6 100%)"
-                      : fill >= 33
-                        ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 100%)"
-                        : "linear-gradient(90deg, #64748b 0%, #94a3b8 100%)",
-                }}
-              />
-              <div
-                className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-                style={{ left: "33.3%" }}
-                title={`Piso Silver: ${fmtBRL(pisos.Silver)}/mês`}
-              />
-              <div
-                className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-                style={{ left: "66.6%" }}
-                title={`Piso Gold: ${fmtBRL(pisos.Gold)}/mês`}
-              />
-              <div
-                className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-                style={{ right: "0%" }}
-                title={`Piso Black: ${fmtBRL(pisos.Black)}/mês`}
-              />
-              {fill > 0 && (
-                <div
-                  className="absolute top-1/2 -ml-2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-background shadow-md"
-                  style={{
-                    left: `${fill}%`,
-                    backgroundColor: marcador.activeColor,
-                    boxShadow: `0 0 10px ${marcador.glowColor}`,
-                  }}
-                  title={`Média mensal de compras: ${media != null ? fmtBRL(media) : "—"}`}
-                />
-              )}
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-0.5 text-[10px] text-muted-foreground">
-              <span>R$ 0</span>
-              <span className="text-center tabular-nums">
-                <span className="font-semibold text-foreground">
-                  Média mensal: {media != null ? fmtBRL(media) : "sem base"}
-                </span>
-                <Est on={mediaCliente.estimado} />
-                {acumulado && (
-                  <span className="ml-1">
-                    · acumulado {acumulado.ano} ({acumulado.meses}{" "}
-                    {acumulado.meses === 1 ? "mês" : "meses"}): {fmtBRL(acumulado.valor)}
-                    <Est on />
+                  >
+                    {c}
                   </span>
-                )}
-              </span>
-              <span>{fmtBRL(pisos.Black)}+</span>
-            </div>
+                  <span className="text-[9px] font-semibold tabular-nums text-muted-foreground/80">
+                    {fmtBRL(pisos[c])}/mês
+                  </span>
+                  {isCurrent && (
+                    <span className="mt-0.5 rounded-full bg-primary/10 px-1.5 text-[8px] font-bold text-primary">
+                      Atual
+                    </span>
+                  )}
+                  {isNext && (
+                    <span className="mt-0.5 rounded-full bg-amber-500/10 px-1.5 text-[8px] font-bold text-amber-600 dark:text-amber-400">
+                      Próximo
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
+
+          {/* Trilho e barra — sem animação: o valor é calculado uma vez, da mesma fonte */}
+          <div className="relative my-2 h-3 w-full rounded-full bg-muted/50 p-0.5">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${fill}%`,
+                background:
+                  fill >= 66
+                    ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 50%, #8b5cf6 100%)"
+                    : fill >= 33
+                      ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 100%)"
+                      : "linear-gradient(90deg, #64748b 0%, #94a3b8 100%)",
+              }}
+            />
+            <div
+              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
+              style={{ left: "33.3%" }}
+              title={`Piso Silver: ${fmtBRL(pisos.Silver)}/mês`}
+            />
+            <div
+              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
+              style={{ left: "66.6%" }}
+              title={`Piso Gold: ${fmtBRL(pisos.Gold)}/mês`}
+            />
+            <div
+              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
+              style={{ right: "0%" }}
+              title={`Piso Black: ${fmtBRL(pisos.Black)}/mês`}
+            />
+            {fill > 0 && (
+              <div
+                className="absolute top-1/2 -ml-2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-background shadow-md"
+                style={{
+                  left: `${fill}%`,
+                  backgroundColor: marcador.activeColor,
+                  boxShadow: `0 0 10px ${marcador.glowColor}`,
+                }}
+                title={`Média mensal de compras: ${media != null ? fmtBRL(media) : "—"}`}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-2 pt-0.5 text-[10px] text-muted-foreground">
+            <span>R$ 0</span>
+            <span className="text-center tabular-nums">
+              <span className="font-semibold text-foreground">
+                Média mensal: {media != null ? fmtBRL(media) : "sem base"}
+              </span>
+              <Est on={mediaCliente.estimado} />
+              {acumulado && (
+                <span className="ml-1">
+                  · acumulado {acumulado.ano} ({acumulado.meses}{" "}
+                  {acumulado.meses === 1 ? "mês" : "meses"}): {fmtBRL(acumulado.valor)}
+                  <Est on />
+                </span>
+              )}
+            </span>
+            <span>{fmtBRL(pisos.Black)}+</span>
+          </div>
+        </div>
       </div>
 
       {/* Três blocos */}

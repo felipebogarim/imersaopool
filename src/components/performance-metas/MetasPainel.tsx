@@ -60,7 +60,7 @@ import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
 import { MetasSecaoTitulo } from "./MetasSecaoTitulo";
 import { MetasHistoricoButton } from "./MetasHistoricoDialog";
 import { useMetasMinimos } from "./use-metas-minimos";
-import { abaixoDoMinimo, minimoPara, pisosCategoria } from "@/lib/performance-metas-minimos";
+import { abaixoDoMinimo, minimoPara } from "@/lib/performance-metas-minimos";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -188,19 +188,16 @@ export function MetasPainel({
   );
   // Valor vendido real (R$) do backend; sem ele o atingimento é marcado como estimado.
   const base = useMemo(() => baseFromBackend(goals?.base), [goals?.base]);
-  const { data: minimosRes, isLoading: carregandoMinimos } = useMetasMinimos(
-    dbEnabled && role === "gestor",
-  );
+  const { data: minimosRes } = useMetasMinimos(dbEnabled && role === "gestor");
   const minimos = minimosRes?.available ? minimosRes.itens : null;
   // Média mensal de compras: FONTE ÚNICA (performance-media-cliente) para timeline, alerta e
   // gauge. Vem da base já carregada com a página; nenhuma consulta posterior a substitui.
   const mediaCliente = useMemo(() => mediaMensalCompras(goals?.base), [goals?.base]);
-  // Pisos da régua: "Mínimos por categoria" (linha "Piso da categoria"); nada fixo no código.
-  const pisosCfg = useMemo(() => pisosCategoria(minimos), [minimos]);
+  // Classificação comercial (Silver/Gold/Black) — independe de "Metas Mínimas" e da meta do
+  // gestor. Usa a categoria cadastrada do cliente, a mesma do cabeçalho.
   const situacaoCat = useMemo(
-    () =>
-      pisosCfg.pisos ? situacaoCategoria(cliente.categoria, mediaCliente, pisosCfg.pisos) : null,
-    [pisosCfg.pisos, cliente.categoria, mediaCliente],
+    () => situacaoCategoria(cliente.categoria, mediaCliente),
+    [cliente.categoria, mediaCliente],
   );
   const acumuladoAno = useMemo(
     () => acumuladoNoAno(mediaCliente.total, cliente.periodoInicio, cliente.periodoFim),
@@ -486,38 +483,23 @@ export function MetasPainel({
 
           {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção e upgrade */}
           <div className="lg:col-span-8 flex flex-col h-full">
-            {carregandoMinimos ? (
-              <div className="flex h-full min-h-[220px] flex-1 items-center justify-center rounded-xl border border-border bg-card text-xs text-muted-foreground">
-                Carregando faixa de categoria…
-              </div>
-            ) : (
-              <CategoriaTimelineCard
-                situacao={situacaoCat}
-                mediaCliente={mediaCliente}
-                pisos={pisosCfg.pisos}
-                pisosAviso={
-                  pisosCfg.erro ??
-                  (pisosCfg.faltando.length
-                    ? `Falta o piso de ${pisosCfg.faltando.join(", ")} em "Mínimos por categoria" (coluna "Piso da categoria").`
-                    : null)
-                }
-                acumulado={acumuladoAno}
-                complemento={complementoSem}
-                periodoLabel={cliente.periodoLabel}
-              />
-            )}
+            <CategoriaTimelineCard
+              situacao={situacaoCat}
+              mediaCliente={mediaCliente}
+              acumulado={acumuladoAno}
+              complemento={complementoSem}
+              periodoLabel={cliente.periodoLabel}
+            />
           </div>
         </div>
 
         {/* 3. Destaque separado: Alerta de Situação (degrade, upgrade, consolidação) */}
         <div ref={alertaRef}>
-          {!carregandoMinimos && (
-            <AlertaSituacaoCard
-              situacao={situacaoCat}
-              periodoLabel={cliente.periodoLabel}
-              complemento={complementoSem}
-            />
-          )}
+          <AlertaSituacaoCard
+            situacao={situacaoCat}
+            periodoLabel={cliente.periodoLabel}
+            complemento={complementoSem}
+          />
         </div>
       </div>
 
