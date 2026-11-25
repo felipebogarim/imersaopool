@@ -82,19 +82,30 @@ export function MetasShareWhatsapp({
     }
   }
 
-  async function compartilhar() {
+  async function compartilhar(target: "native" | "web" = "native") {
     if (!blob) return;
-    const r = await shareImageOnWhatsapp(blob, fileName);
+    const r = await shareImageOnWhatsapp(blob, fileName, target);
     if (r === "shared") {
       setBlob(null);
       toast.success("Metas compartilhadas com sucesso!");
     } else if (r === "copied") {
-      toast.success("Imagem copiada para a área de transferência!", {
-        description: "Abrimos o WhatsApp Web: basta colar (Ctrl/Cmd + V) na conversa.",
-      });
+      toast.success(
+        target === "native"
+          ? "Imagem copiada! Abrindo o WhatsApp no seu Mac..."
+          : "Imagem copiada para a área de transferência!",
+        {
+          description:
+            target === "native"
+              ? "Basta colar (Cmd + V) na conversa do WhatsApp no aplicativo."
+              : "Basta colar (Ctrl/Cmd + V) na conversa do WhatsApp Web.",
+        },
+      );
     } else if (r === "downloaded") {
       toast.success("Imagem baixada.", {
-        description: "Abrimos o WhatsApp Web: anexe a imagem baixada na conversa.",
+        description:
+          target === "native"
+            ? "Abrindo o WhatsApp no seu Mac: anexe a imagem na conversa."
+            : "Abrimos o WhatsApp Web: anexe a imagem baixada na conversa.",
       });
     }
   }
@@ -165,18 +176,28 @@ export function MetasShareWhatsapp({
             </div>
           )}
 
-          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button variant="ghost" onClick={copiar}>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
+            <Button variant="ghost" size="sm" onClick={copiar}>
               <Copy className="mr-1.5 h-4 w-4" /> Copiar imagem
             </Button>
-            <Button variant="outline" onClick={baixar}>
+            <Button variant="outline" size="sm" onClick={baixar}>
               <Download className="mr-1.5 h-4 w-4" /> Baixar imagem
             </Button>
             <Button
-              onClick={() => void compartilhar()}
-              className="bg-[#25D366] text-white hover:bg-[#1ebe5a] font-medium"
+              variant="outline"
+              size="sm"
+              onClick={() => void compartilhar("web")}
+              className="text-muted-foreground hover:text-foreground"
+              title="Abrir no WhatsApp Web pelo navegador"
             >
-              <WhatsappIcon className="mr-1.5 h-4 w-4" /> Enviar no WhatsApp
+              WhatsApp Web
+            </Button>
+            <Button
+              onClick={() => void compartilhar("native")}
+              className="bg-[#25D366] text-white hover:bg-[#1ebe5a] font-medium shadow-sm"
+              title="Abrir no aplicativo WhatsApp instalado no seu Mac"
+            >
+              <WhatsappIcon className="mr-1.5 h-4 w-4" /> Abrir no App do WhatsApp
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -58,21 +58,32 @@ async function capture(el: HTMLElement): Promise<HTMLCanvasElement> {
     scale: SCALE,
     useCORS: true,
     backgroundColor: null,
+    windowWidth: 1280,
     onclone: (d) => {
       // Força tema claro para visual consistente idêntico ao print
       d.documentElement.classList.remove("dark");
       toRgbColors(d);
 
-      // Garante grid em colunas lado a lado
-      for (const grid of Array.from(d.querySelectorAll<HTMLElement>(".grid"))) {
-        grid.style.display = "grid";
-        grid.style.gridTemplateColumns = "repeat(12, minmax(0, 1fr))";
+      // Garante grid de 12 colunas apenas no cabeçalho principal (Gauge + Timeline lado a lado)
+      for (const grid12 of Array.from(d.querySelectorAll<HTMLElement>(".lg\\:grid-cols-12"))) {
+        grid12.style.display = "grid";
+        grid12.style.gridTemplateColumns = "repeat(12, minmax(0, 1fr))";
+        grid12.style.width = "100%";
       }
       for (const col4 of Array.from(d.querySelectorAll<HTMLElement>(".lg\\:col-span-4"))) {
         col4.style.gridColumn = "span 4 / span 4";
       }
       for (const col8 of Array.from(d.querySelectorAll<HTMLElement>(".lg\\:col-span-8"))) {
         col8.style.gridColumn = "span 8 / span 8";
+      }
+
+      // Preserva grids de 3 colunas da timeline e dos blocos sem forçar 12 colunas
+      for (const g3 of Array.from(
+        d.querySelectorAll<HTMLElement>(".grid-cols-3, .sm\\:grid-cols-3"),
+      )) {
+        g3.style.display = "grid";
+        g3.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+        g3.style.width = "100%";
       }
     },
     ignoreElements: (n) => n instanceof HTMLElement && n.hasAttribute("data-share-ignore"),
@@ -243,11 +254,16 @@ export async function buildMetasShareImage(args: MetasShareArgs): Promise<Blob> 
 export type ShareOutcome = "shared" | "cancelled" | "copied" | "downloaded";
 
 /**
- * Compartilha só a imagem. Com Web Share de arquivos (celular e navegadores compatíveis) abre a
- * folha de compartilhamento, onde o WhatsApp aparece. Sem suporte: copia a imagem para a área de
- * transferência (ou baixa o arquivo) e abre o WhatsApp Web para colar na conversa.
+ * Compartilha a imagem no WhatsApp.
+ * - Copia a imagem processada para a área de transferência e faz o download como garantia.
+ * - Modo "native" (padrão): dispara `whatsapp://send` para abrir o aplicativo WhatsApp instalado no Mac/Windows.
+ * - Modo "web": abre o `web.whatsapp.com` diretamente no navegador.
  */
-export async function shareImageOnWhatsapp(blob: Blob, fileName: string): Promise<ShareOutcome> {
+export async function shareImageOnWhatsapp(
+  blob: Blob,
+  fileName: string,
+  target: "native" | "web" = "native",
+): Promise<ShareOutcome> {
   const file = new File([blob], fileName, { type: "image/png" });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
@@ -277,6 +293,18 @@ export async function shareImageOnWhatsapp(blob: Blob, fileName: string): Promis
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  window.open("https://web.whatsapp.com/", "_blank", "noopener");
+
+  if (target === "native") {
+    // Dispara o aplicativo WhatsApp nativo instalado (macOS / Windows)
+    const a = document.createElement("a");
+    a.href = "whatsapp://send";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    // Abre a versão web no navegador
+    window.open("https://web.whatsapp.com/", "_blank", "noopener");
+  }
+
   return outcome;
 }

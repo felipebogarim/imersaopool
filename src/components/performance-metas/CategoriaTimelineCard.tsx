@@ -214,7 +214,10 @@ export function CategoriaTimelineCard({
         {/* ======================= TIMELINE VISUAL ======================= */}
         <div className="mt-4 px-2">
           {/* Marcos das Categorias */}
-          <div className="relative mb-2 grid grid-cols-3 text-center">
+          <div
+            className="relative mb-2 grid grid-cols-3 text-center"
+            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", width: "100%" }}
+          >
             {CATEGORY_TIERS.map((tier, idx) => {
               const isPast = idx < currentIndex;
               const isCurrent = idx === currentIndex;
@@ -310,19 +313,22 @@ export function CategoriaTimelineCard({
       </div>
 
       {/* ======================= 3 BLOCOS DE INFORMAÇÃO ======================= */}
-      <div className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-3">
+      <div
+        className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-3"
+        style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", width: "100%" }}
+      >
         {/* Bloco 1: Manutenção da Categoria */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
               Manter {currentTier.name}
             </span>
             {manutencaoGarantida ? (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0 whitespace-nowrap">
                 <CheckCircle2 className="h-2.5 w-2.5" /> Garantida
               </span>
             ) : (
-              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0 whitespace-nowrap">
                 {atingimentoManutencaoPct.toFixed(0)}%
               </span>
             )}
@@ -337,7 +343,7 @@ export function CategoriaTimelineCard({
                 Faltam {fmtBRL(faltaManutencao)}
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
               {manutencaoGarantida
                 ? `Acima do piso de ${fmtBRL(metaManutencao)}`
                 : `Para atingir piso de ${fmtBRL(metaManutencao)}`}
@@ -346,13 +352,13 @@ export function CategoriaTimelineCard({
         </div>
 
         {/* Bloco 2: Caminho para Upgrade */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
               {nextTier ? `Upgrade para ${nextTier.name}` : "Categoria Máxima"}
             </span>
             {nextTier && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-primary/10 text-primary">
+              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-primary/10 text-primary shrink-0 whitespace-nowrap">
                 <TrendingUp className="h-2.5 w-2.5" />
                 {nextTier.name}
               </span>
@@ -374,7 +380,7 @@ export function CategoriaTimelineCard({
                 Elite Black
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
               {nextTier
                 ? `Alvo da categoria: ${fmtBRL(metaUpgrade)}`
                 : "Cliente no patamar mais elevado"}
@@ -383,14 +389,14 @@ export function CategoriaTimelineCard({
         </div>
 
         {/* Bloco 3: Risco de Degrade */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between gap-1 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
               Risco de Degrade
             </span>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold",
+                "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold shrink-0 whitespace-nowrap",
                 degradeRisk.badgeClass,
               )}
             >
