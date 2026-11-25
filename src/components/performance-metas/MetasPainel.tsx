@@ -41,6 +41,7 @@ import {
 } from "@/lib/performance-metas";
 import {
   baseFromBackend,
+  mediaMensalCliente,
   competenciasDoCiclo,
   gestorRpcArgs,
   hydrateDrafts,
@@ -183,6 +184,11 @@ export function MetasPainel({
   );
   // Valor vendido real (R$) do backend; sem ele o atingimento é marcado como estimado.
   const base = useMemo(() => baseFromBackend(goals?.base), [goals?.base]);
+  // Categoria: média mensal real (coluna MÉDIA do upload), não a venda do mês de referência.
+  const mediaCategoria = useMemo(
+    () => mediaMensalCliente(goals?.base, cliente.categoria),
+    [goals?.base, cliente.categoria],
+  );
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
   const comparativo = useMemo(
@@ -448,7 +454,7 @@ export function MetasPainel({
           <div className="lg:col-span-8 flex flex-col h-full">
             <CategoriaTimelineCard
               categoria={cliente.categoria}
-              realizado={totalRealizado}
+              realizado={mediaCategoria ?? totalRealizado}
               periodoFim={cliente.periodoFim}
               periodoLabel={cliente.periodoLabel}
             />
@@ -459,7 +465,7 @@ export function MetasPainel({
         <div ref={alertaRef}>
           <AlertaSituacaoCard
             categoria={cliente.categoria}
-            realizado={totalRealizado}
+            realizado={mediaCategoria ?? totalRealizado}
             periodoFim={cliente.periodoFim}
             periodoLabel={cliente.periodoLabel}
             clienteNome={cliente.razaoSocial}

@@ -90,6 +90,7 @@ export function AlertaSituacaoCard({
     const ritmo = semestre.restantesLabel
       ? ` Mantida a média de ${fmtBRL(realizado)}/mês, o semestre fecha em ${fmtBRL(projecao)}.`
       : "";
+    const mediaTxt = `média de ${fmtBRL(realizado)}/mês`;
 
     // 1. Upgrade Conquistado
     if (upgradeAlcancado && nextTier) {
@@ -97,8 +98,8 @@ export function AlertaSituacaoCard({
         tipo: "upgrade_conquistado",
         badge: `Salto de Categoria Conquistado · ${semestre.label}`,
         titulo: `Parabéns! Cliente qualificado para Categoria ${nextTier.name}`,
-        mensagem: `O cliente acumulou ${fmtBRL(acumulado)} no semestre, superando o piso semestral de ${fmtBRL(metaUpgrade)}. Momento ideal para consolidar a parceria no patamar de elite e expandir linhas de portfólio!`,
-        destaqueValor: `+${fmtBRL(acumulado - metaUpgrade)}`,
+        mensagem: `Com ${mediaTxt}, o cliente supera o piso ${nextTier.name} de ${fmtBRL(upgrade?.pisoMensal ?? 0)}/mês e fecha o ${semestre.label} em ${fmtBRL(projecao)} (piso ${fmtBRL(metaUpgrade)}). Momento ideal para consolidar a parceria no novo patamar e expandir linhas de portfólio!`,
+        destaqueValor: `+${fmtBRL(upgrade?.sobra ?? 0)}`,
         destaqueRotulo: `acima de ${nextTier.name} no semestre`,
         icon: Crown,
         themeClasses: {
@@ -117,12 +118,12 @@ export function AlertaSituacaoCard({
     }
 
     // 2. Muito Próximo do Upgrade (projeção do semestre a partir de 85% do piso da próxima categoria)
-    if (nextTier && upgrade && !sit.encerrado && upgrade.projecaoPct >= 85) {
+    if (nextTier && upgrade && !sit.encerrado && upgrade.atingimentoPct >= 85) {
       return {
         tipo: "upgrade_proximo",
         badge: `Oportunidade de Upgrade · Rumo a ${nextTier.name}`,
-        titulo: `Ao alcance do patamar ${nextTier.name}! Faltam ${fmtBRL(faltaUpgrade)} acumulados no semestre`,
-        mensagem: `O cliente já acumulou ${fmtBRL(acumulado)} de ${fmtBRL(metaUpgrade)} no ${semestre.label}.${ritmo} Para subir no corte faltam ${fmtBRL(faltaUpgrade)}${porMes(upgrade.necessarioMes)} — um pedido de reposição ou novos portfólios garante a promoção!`,
+        titulo: `Ao alcance do patamar ${nextTier.name}! Faltam ${fmtBRL(faltaUpgrade)} no acumulado do semestre`,
+        mensagem: `Com ${mediaTxt}, o cliente está a ${upgrade.atingimentoPct.toFixed(0)}% do piso ${nextTier.name} (${fmtBRL(upgrade.pisoMensal)}/mês = ${fmtBRL(metaUpgrade)} no semestre).${ritmo} Para subir no corte faltam ${fmtBRL(faltaUpgrade)}${porMes(upgrade.necessarioMes)} — um pedido de reposição ou novos portfólios garante a promoção!`,
         destaqueValor: `Faltam ${fmtBRL(faltaUpgrade)}`,
         destaqueRotulo: `alvo semestral ${fmtBRL(metaUpgrade)}`,
         icon: Rocket,
@@ -148,10 +149,10 @@ export function AlertaSituacaoCard({
         badge: `Blindagem de Categoria · ${semestre.label}`,
         titulo: sit.encerrado
           ? `Semestre fechou ${fmtBRL(faltaManutencao)} abaixo do piso ${currentTier.name}`
-          : `Atenção: faltam ${fmtBRL(faltaManutencao)} acumulados para defender a Categoria ${currentTier.name}`,
+          : `Atenção: faltam ${fmtBRL(faltaManutencao)} no acumulado do semestre para defender a Categoria ${currentTier.name}`,
         mensagem: sit.encerrado
           ? `O cliente acumulou ${fmtBRL(acumulado)} no ${semestre.label}, abaixo do piso semestral de ${fmtBRL(metaManutencao)}. Plano de recuperação no próximo semestre é prioridade!`
-          : `Acumulado de ${fmtBRL(acumulado)} no semestre, piso de ${fmtBRL(metaManutencao)}.${ritmo} São necessários ${fmtBRL(faltaManutencao)}${porMes(manter.necessarioMes)} — uma ativação concentrada nos portfólios com menor compra protege o cliente no corte!`,
+          : `Com ${mediaTxt}, abaixo do piso ${currentTier.name} de ${fmtBRL(manter.pisoMensal)}/mês.${ritmo} Faltam ${fmtBRL(faltaManutencao)} para o piso de ${fmtBRL(metaManutencao)}${porMes(manter.necessarioMes)} — uma ativação concentrada nos portfólios com menor compra protege o cliente no corte!`,
         destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
         destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
         icon: Flame,
@@ -175,7 +176,7 @@ export function AlertaSituacaoCard({
         tipo: "degrade_moderado",
         badge: `Atenção ao Ritmo · Manutenção no ${semestre.label}`,
         titulo: `Falta pouco para carimbar a permanência em ${currentTier.name}`,
-        mensagem: `O cliente já acumulou ${atingimentoManutencaoPct.toFixed(0)}% do piso semestral (${fmtBRL(acumulado)} de ${fmtBRL(metaManutencao)}).${ritmo} Faltam ${fmtBRL(faltaManutencao)} acumulados${porMes(manter.necessarioMes)} para blindar a categoria ${currentTier.name} no corte!`,
+        mensagem: `Com ${mediaTxt}, o cliente está a ${atingimentoManutencaoPct.toFixed(0)}% do piso ${currentTier.name} (${fmtBRL(manter.pisoMensal)}/mês = ${fmtBRL(metaManutencao)} no semestre).${ritmo} Faltam ${fmtBRL(faltaManutencao)} no acumulado${porMes(manter.necessarioMes)} para blindar a categoria no corte!`,
         destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
         destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
         icon: AlertTriangle,
@@ -199,8 +200,8 @@ export function AlertaSituacaoCard({
       return {
         tipo: "silver_consolidacao",
         badge: "Ritmo de Ativação · Categoria Silver",
-        titulo: `Faltam ${fmtBRL(faltaManutencao)} acumulados no semestre para o piso Silver`,
-        mensagem: `Acumulado de ${fmtBRL(acumulado)} no ${semestre.label}.${ritmo} Com compras regulares${porMes(manter.necessarioMes)} e mix diversificado nos 7 portfólios, o cliente atinge os ${fmtBRL(metaManutencao)} do semestre e mira o salto até Gold!`,
+        titulo: `Faltam ${fmtBRL(faltaManutencao)} no acumulado do semestre para o piso Silver`,
+        mensagem: `Com ${mediaTxt}, abaixo do piso Silver de ${fmtBRL(manter.pisoMensal)}/mês.${ritmo} Com compras regulares${porMes(manter.necessarioMes)} e mix diversificado nos 7 portfólios, o cliente atinge os ${fmtBRL(metaManutencao)} do semestre e mira o salto até Gold!`,
         destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
         destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
         icon: Zap,
@@ -222,11 +223,11 @@ export function AlertaSituacaoCard({
     // 6. Manutenção Garantida com Segurança
     return {
       tipo: "manutencao_segura",
-      badge: `Patamar ${currentTier.name} Assegurado`,
-      titulo: `Piso ${currentTier.name} do semestre garantido (+${fmtBRL(sobraManutencao)} acumulados acima)`,
+      badge: `Patamar ${currentTier.name} ${manter.garantido ? "Garantido" : "Mantido"} · ${semestre.label}`,
+      titulo: `Categoria ${currentTier.name} mantida: ${mediaTxt}, acima do piso de ${fmtBRL(manter.pisoMensal)}/mês`,
       mensagem: nextTier
-        ? `A permanência no ${semestre.label} está consolidada. Agora o objetivo é o salto para ${nextTier.name} — faltam ${fmtBRL(faltaUpgrade)} acumulados${porMes(upgrade?.necessarioMes)} para o novo patamar!`
-        : `Excelente performance! O cliente se mantém firme no patamar máximo de elite da carteira.`,
+        ? `No ritmo atual o semestre fecha em ${fmtBRL(projecao)}, +${fmtBRL(sobraManutencao)} acima do piso ${currentTier.name} (${fmtBRL(metaManutencao)}). Agora o objetivo é o salto para ${nextTier.name} — faltam ${fmtBRL(faltaUpgrade)} no acumulado${porMes(upgrade?.necessarioMes)}!`
+        : `Excelente performance! No ritmo atual o semestre fecha em ${fmtBRL(projecao)}, +${fmtBRL(sobraManutencao)} acima do piso Black (${fmtBRL(metaManutencao)}). O cliente se mantém no patamar máximo da carteira.`,
       destaqueValor: `+${fmtBRL(sobraManutencao)}`,
       destaqueRotulo: `acima de ${currentTier.name} no semestre`,
       icon: ShieldCheck,

@@ -125,10 +125,10 @@ export function CategoriaTimelineCard({
     descricao: sit.risco.descricao,
   };
 
-  const timelineFillPct = posicaoReguaSemestral(acumulado);
-  const projecaoPct = posicaoReguaSemestral(projecao);
+  // Posição na régua = projeção do semestre (média mensal × 6 quando estimada): o que define a
+  // categoria é a média mensal no semestre contra o piso mensal.
+  const timelineFillPct = posicaoReguaSemestral(projecao);
   const restantes = semestre.restantesLabel;
-  const decorridos = semestre.decorridosLabel || "início do semestre";
 
   return (
     <div
@@ -186,7 +186,7 @@ export function CategoriaTimelineCard({
             {CATEGORY_TIERS.map((tier, idx) => {
               const isCurrent = idx === currentIndex;
               const isNext = idx === currentIndex + 1;
-              const isAchieved = acumulado >= pisoSemestral(tier.name);
+              const isAchieved = projecao >= pisoSemestral(tier.name);
 
               return (
                 <div key={tier.name} className="flex flex-col items-center">
@@ -255,16 +255,7 @@ export function CategoriaTimelineCard({
               title="Piso Black no semestre: R$ 120.000 (R$ 20.000/mês × 6)"
             />
 
-            {/* Projeção de fechamento do semestre (média atual nos meses restantes) */}
-            {restantes && projecaoPct > timelineFillPct && (
-              <div
-                className="absolute top-1/2 -translate-y-1/2 -ml-1.5 h-3 w-3 rounded-full border-2 border-dashed bg-background"
-                style={{ left: `${projecaoPct}%`, borderColor: currentTier.activeColor }}
-                title={`Projeção de fechamento do semestre: ${fmtBRL(projecao)}`}
-              />
-            )}
-
-            {/* Marcador luminoso do acumulado no semestre */}
+            {/* Marcador luminoso: média mensal real (projeção do semestre) */}
             {timelineFillPct > 0 && (
               <div
                 className="absolute top-1/2 -translate-y-1/2 -ml-2 h-4 w-4 rounded-full border-2 border-background shadow-md transition-all duration-700 ease-out"
@@ -273,7 +264,7 @@ export function CategoriaTimelineCard({
                   backgroundColor: currentTier.activeColor,
                   boxShadow: `0 0 10px ${currentTier.glowColor}`,
                 }}
-                title={`Acumulado no semestre (${decorridos}): ${fmtBRL(acumulado)}`}
+                title={`Média mensal ${fmtBRL(realizado)} · semestre fecha em ${fmtBRL(projecao)} no ritmo atual (acumulado ${fmtBRL(acumulado)})`}
               />
             )}
           </div>
@@ -302,7 +293,8 @@ export function CategoriaTimelineCard({
             </span>
             {manutencaoGarantida ? (
               <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0 whitespace-nowrap">
-                <CheckCircle2 className="h-2.5 w-2.5" /> Garantida
+                <CheckCircle2 className="h-2.5 w-2.5" />{" "}
+                {manter.garantido ? "Garantida" : "Mantida"}
               </span>
             ) : (
               <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0 whitespace-nowrap">
@@ -322,9 +314,9 @@ export function CategoriaTimelineCard({
             )}
             <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
               {manutencaoGarantida
-                ? `Acima do piso semestral de ${fmtBRL(manter.piso)}`
+                ? `Média ${fmtBRL(realizado)}/mês ≥ piso ${fmtBRL(manter.pisoMensal)}/mês · semestre fecha acima de ${fmtBRL(manter.piso)}`
                 : manter.necessarioMes != null
-                  ? `Acumulado no semestre · ${fmtBRL(manter.necessarioMes)}/mês em ${restantes} (piso ${fmtBRL(manter.piso)})`
+                  ? `No acumulado do semestre (piso ${fmtBRL(manter.piso)}) · precisa de ${fmtBRL(manter.necessarioMes)}/mês em ${restantes}`
                   : `Semestre encerrado abaixo do piso de ${fmtBRL(manter.piso)}`}
             </p>
           </div>
@@ -361,10 +353,10 @@ export function CategoriaTimelineCard({
               {!upgrade
                 ? "Cliente no patamar mais elevado"
                 : upgrade.atingido
-                  ? `Acumulado acima de ${fmtBRL(upgrade.piso)} no semestre`
+                  ? `Média ≥ ${fmtBRL(upgrade.pisoMensal)}/mês: sobe para ${upgrade.categoria} no corte`
                   : upgrade.necessarioMes != null
-                    ? `Acumulado no semestre · ${fmtBRL(upgrade.necessarioMes)}/mês em ${restantes} (alvo ${fmtBRL(upgrade.piso)})`
-                    : `Alvo semestral: ${fmtBRL(upgrade.piso)}`}
+                    ? `No acumulado do semestre (alvo ${fmtBRL(upgrade.piso)}) · precisa de ${fmtBRL(upgrade.necessarioMes)}/mês em ${restantes}`
+                    : `Alvo: ${fmtBRL(upgrade.pisoMensal)}/mês (${fmtBRL(upgrade.piso)} no semestre)`}
             </p>
           </div>
         </div>
@@ -396,9 +388,9 @@ export function CategoriaTimelineCard({
       {/* Rodapé compacto */}
       <div className="mt-3 border-t border-border/50 pt-2 text-[10px] text-muted-foreground flex flex-wrap items-center justify-between gap-1">
         <span>
-          Corte semestral (jan–jun · jul–dez), pisos acumulados: Silver{" "}
-          {fmtK(pisoSemestral("Silver"))} · Gold {fmtK(pisoSemestral("Gold"))} · Black{" "}
-          {fmtK(pisoSemestral("Black"))} (piso mensal × {MESES_SEMESTRE})
+          Corte semestral (jan–jun · jul–dez): categoria pela média mensal no semestre — Silver 3k ·
+          Gold 6k · Black 20k/mês (× {MESES_SEMESTRE} = {fmtK(pisoSemestral("Silver"))} ·{" "}
+          {fmtK(pisoSemestral("Gold"))} · {fmtK(pisoSemestral("Black"))} no semestre)
           {sit.acumuladoEstimado && (
             <span className="opacity-75"> · acumulado estimado pela média mensal do período</span>
           )}

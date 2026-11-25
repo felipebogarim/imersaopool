@@ -7,6 +7,7 @@ import {
   groupRepSuggestionHistory,
   gestorRpcArgs,
   hydrateDrafts,
+  mediaMensalCliente,
   repView,
   type GoalsState,
 } from "./performance-metas-persistence";
@@ -62,6 +63,15 @@ describe("performance-metas-persistence", () => {
     expect(b["PRO LED"]).toEqual({ valor: 400, fonte: "estimado" });
     expect(b["DECOR NEWLINE"]).toBeUndefined();
     expect(baseFromBackend(undefined)).toEqual({});
+  });
+
+  it("média mensal do cliente: coluna MÉDIA, com base disponível como reserva", () => {
+    // PRO LAMP média 300 + PERFIL (sem média) realizado 600 + PRO LED estimado 0,5 × 800
+    expect(mediaMensalCliente(state.base)).toBe(1300);
+    expect(mediaMensalCliente({ realizado: { PERFIL: 19_200 }, media: { PERFIL: 21_000 } })).toBe(
+      21_000,
+    );
+    expect(mediaMensalCliente(undefined)).toBeNull();
   });
 
   it("hidrata pela competência: usa a meta agendada que vale nela", () => {

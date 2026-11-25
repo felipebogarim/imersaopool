@@ -111,26 +111,36 @@ export function normalizarCategoria(c: string | null | undefined): CategoriaNome
   return CATEGORIAS_ORDEM.find((x) => x.toLowerCase() === n) ?? "Silver";
 }
 
+// Regra: o cliente mantém/alcança a categoria quando a MÉDIA MENSAL no semestre atinge o piso
+// mensal (Silver 3k, Gold 6k, Black 20k) — equivalente a fechar o semestre com acumulado >= piso
+// semestral (piso mensal × 6). Por isso o status usa a PROJEÇÃO de fechamento (acumulado até
+// agora + média atual nos meses restantes), nunca o acumulado parcial contra o piso cheio.
+// "Falta" = quanto falta no acumulado do semestre para o piso, no ritmo atual.
+
 export type MetaSemestral = {
   categoria: CategoriaNome;
+  /** Piso semestral (piso mensal × 6). */
   piso: number;
-  /** Acumulado que falta no semestre (0 se já atingido). */
+  pisoMensal: number;
+  /** No ritmo atual, quanto falta no acumulado do semestre para o piso (0 se atinge). */
   falta: number;
-  /** Quanto o acumulado já passou do piso. */
+  /** No ritmo atual, quanto o semestre fecha acima do piso. */
   sobra: number;
+  /** Média mensal >= piso mensal (projeção do semestre >= piso semestral). */
   atingido: boolean;
-  /** Média mensal necessária nos meses restantes (null se o semestre está encerrado ou já atingido). */
+  /** Acumulado do semestre já passou do piso (garantido mesmo sem novas compras). */
+  garantido: boolean;
+  /** Média mensal necessária nos meses restantes para fechar no piso (null se garantido/encerrado). */
   necessarioMes: number | null;
-  /** Acumulado ÷ piso (0..∞). */
+  /** Projeção ÷ piso (= média mensal ÷ piso mensal quando o acumulado é estimado). */
   atingimentoPct: number;
-  /** Projeção ÷ piso. */
-  projecaoPct: number;
 };
 
 export type SituacaoSemestral = {
   semestre: SemestreCorte;
   categoria: CategoriaNome;
   mediaMensal: number;
+  /** Acumulado do semestre até o último mês com dados. */
   acumulado: number;
   acumuladoEstimado: boolean;
   /** Fechamento do semestre mantendo a média atual nos meses restantes. */
@@ -154,16 +164,17 @@ function meta(
   restantes: number,
 ): MetaSemestral {
   const piso = pisoSemestral(categoria);
-  const falta = Math.max(0, piso - acumulado);
+  const garantido = acumulado >= piso;
   return {
     categoria,
     piso,
-    falta,
-    sobra: Math.max(0, acumulado - piso),
-    atingido: falta === 0,
-    necessarioMes: falta > 0 && restantes > 0 ? falta / restantes : null,
-    atingimentoPct: piso > 0 ? (acumulado / piso) * 100 : 0,
-    projecaoPct: piso > 0 ? (projecao / piso) * 100 : 0,
+    pisoMensal: PISO_MENSAL[categoria],
+    falta: Math.max(0, piso - projecao),
+    sobra: Math.max(0, projecao - piso),
+    atingido: projecao >= piso,
+    garantido,
+    necessarioMes: !garantido && restantes > 0 ? (piso - acumulado) / restantes : null,
+    atingimentoPct: piso > 0 ? (projecao / piso) * 100 : 0,
   };
 }
 
@@ -193,46 +204,46 @@ export function situacaoSemestral(args: {
   const encerrado = restantes === 0;
 
   const quando = semestre.restantesLabel ? ` em ${semestre.restantesLabel}` : "";
-  const porMes = manter.necessarioMes != null ? ` (${brl(manter.necessarioMes)}/mês${quando})` : "";
+  const porMes =
+    manter.necessarioMes != null
+      ? ` Para fechar no piso, o cliente precisa comprar ${brl(manter.necessarioMes)}/mês${quando}.`
+      : "";
+  const pisoTxt = `piso ${categoria} de ${brl(manter.pisoMensal)}/mês (${brl(manter.piso)} no semestre)`;
 
   let risco: SituacaoSemestral["risco"];
   if (manter.atingido) {
     risco = {
       nivel: "baixo",
-      titulo: "Risco Baixo",
-      descricao: `Piso ${categoria} do semestre (${brl(manter.piso)}) já atingido: +${brl(manter.sobra)} acumulados.`,
+      titulo: manter.garantido ? "Categoria Garantida" : "Categoria Mantida",
+      descricao: manter.garantido
+        ? `Acumulado de ${brl(acumulado)} no semestre já supera o ${pisoTxt}.`
+        : `Média de ${brl(media)}/mês acima do ${pisoTxt}. No ritmo atual o semestre fecha em ${brl(projecao)} (+${brl(manter.sobra)}).`,
     };
   } else if (encerrado) {
     risco = {
       nivel: "alto",
       titulo: anterior ? "Degrade no Corte" : "Abaixo do Piso",
-      descricao: `Semestre encerrado com ${brl(acumulado)}, ${brl(manter.falta)} abaixo do piso ${categoria} (${brl(manter.piso)}).`,
-    };
-  } else if (projecao >= manter.piso) {
-    risco = {
-      nivel: "baixo",
-      titulo: "No Ritmo",
-      descricao: `Mantida a média de ${brl(media)}/mês, o semestre fecha em ${brl(projecao)}, acima do piso ${categoria} (${brl(manter.piso)}).`,
+      descricao: `Semestre encerrado com ${brl(acumulado)}, ${brl(manter.falta)} abaixo do ${pisoTxt}.`,
     };
   } else if (anterior && pisoAnterior != null && projecao >= pisoAnterior) {
     risco = {
       nivel: "medio",
       titulo: "Risco Moderado de Degrade",
-      descricao: `No ritmo atual o semestre fecha em ${brl(projecao)}, ${brl(manter.piso - projecao)} abaixo do piso ${categoria}. Faltam ${brl(manter.falta)} acumulados${porMes}.`,
+      descricao: `Média de ${brl(media)}/mês abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
     };
-  } else if (!anterior && manter.projecaoPct >= 50) {
+  } else if (!anterior && manter.atingimentoPct >= 50) {
     risco = {
       nivel: "medio",
       titulo: "Atenção ao Ritmo",
-      descricao: `No ritmo atual o semestre fecha em ${brl(projecao)}. Faltam ${brl(manter.falta)} acumulados para o piso Silver${porMes}.`,
+      descricao: `Média de ${brl(media)}/mês abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
     };
   } else {
     risco = {
       nivel: "alto",
       titulo: anterior ? "Alto Risco de Degrade" : "Alto Risco de Inativação",
       descricao: anterior
-        ? `No ritmo atual o semestre fecha em ${brl(projecao)}, abaixo até do piso ${anterior} (${brl(pisoAnterior ?? 0)}). Faltam ${brl(manter.falta)} acumulados${porMes}.`
-        : `No ritmo atual o semestre fecha em ${brl(projecao)}. Faltam ${brl(manter.falta)} acumulados para o piso Silver${porMes}.`,
+        ? `Média de ${brl(media)}/mês abaixo até do piso ${anterior} (${brl(PISO_MENSAL[anterior])}/mês). No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre para manter ${categoria}.${porMes}`
+        : `Média de ${brl(media)}/mês bem abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
     };
   }
 
@@ -251,7 +262,7 @@ export function situacaoSemestral(args: {
   };
 }
 
-/** Posição (0..100) de um acumulado semestral na régua Silver / Gold / Black. */
+/** Posição (0..100) de um valor semestral (ex.: projeção = média × 6) na régua Silver / Gold / Black. */
 export function posicaoReguaSemestral(valor: number): number {
   if (valor <= 0) return 0;
   const s = pisoSemestral("Silver");

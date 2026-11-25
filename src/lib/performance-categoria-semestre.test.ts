@@ -46,7 +46,7 @@ describe("situacaoSemestral", () => {
     expect(pisoSemestral("Black")).toBe(120_000);
   });
 
-  it("Black com média 19.200 até outubro: falta o acumulado do semestre, não R$ 800", () => {
+  it("Black com média 19.200 até outubro: falta o acumulado do semestre no ritmo atual", () => {
     const r = situacaoSemestral({
       categoria: "Black",
       mediaMensal: 19_200,
@@ -54,13 +54,39 @@ describe("situacaoSemestral", () => {
     });
     expect(r.acumulado).toBe(76_800);
     expect(r.acumuladoEstimado).toBe(true);
-    expect(r.manter.piso).toBe(120_000);
-    expect(r.manter.falta).toBe(43_200);
-    expect(r.manter.necessarioMes).toBe(21_600);
     expect(r.projecao).toBe(115_200);
+    expect(r.manter.piso).toBe(120_000);
+    expect(r.manter.atingido).toBe(false);
+    expect(r.manter.falta).toBe(4_800); // (20.000 − 19.200) × 6, não R$ 800
+    expect(r.manter.necessarioMes).toBe(21_600); // (120.000 − 76.800) ÷ 2 meses
+    expect(r.manter.atingimentoPct).toBeCloseTo(96);
     expect(r.upgrade).toBeNull();
     expect(r.risco.nivel).toBe("medio");
     expect(r.risco.descricao).toContain("nov–dez");
+  });
+
+  it("Black com média acima de 20.000: categoria mantida, nada falta", () => {
+    const r = situacaoSemestral({
+      categoria: "Black",
+      mediaMensal: 21_000,
+      semestre: semestreDeCorte("2026-10-31"),
+    });
+    expect(r.manter.atingido).toBe(true);
+    expect(r.manter.garantido).toBe(false);
+    expect(r.manter.falta).toBe(0);
+    expect(r.manter.sobra).toBe(6_000);
+    expect(r.risco.nivel).toBe("baixo");
+    expect(r.risco.titulo).toBe("Categoria Mantida");
+  });
+
+  it("média exatamente no piso conta como atingido", () => {
+    const r = situacaoSemestral({
+      categoria: "Gold",
+      mediaMensal: 6_000,
+      semestre: semestreDeCorte("2026-08-31"),
+    });
+    expect(r.manter.atingido).toBe(true);
+    expect(r.manter.falta).toBe(0);
   });
 
   it("usa o acumulado real quando informado", () => {
@@ -71,11 +97,12 @@ describe("situacaoSemestral", () => {
       semestre: semestreDeCorte("2026-10-31"),
     });
     expect(r.acumuladoEstimado).toBe(false);
-    expect(r.manter.atingido).toBe(true);
-    expect(r.manter.sobra).toBe(4_000);
-    expect(r.upgrade?.falta).toBe(80_000);
+    expect(r.projecao).toBe(54_000);
+    expect(r.manter.garantido).toBe(true);
+    expect(r.manter.necessarioMes).toBeNull();
+    expect(r.upgrade?.falta).toBe(66_000);
     expect(r.upgrade?.necessarioMes).toBe(40_000);
-    expect(r.risco.nivel).toBe("baixo");
+    expect(r.risco.titulo).toBe("Categoria Garantida");
   });
 
   it("semestre encerrado abaixo do piso → degrade no corte", () => {
@@ -90,7 +117,7 @@ describe("situacaoSemestral", () => {
     expect(r.risco.titulo).toBe("Degrade no Corte");
   });
 
-  it("projeção abaixo do piso anterior → alto risco", () => {
+  it("média abaixo do piso anterior → alto risco", () => {
     const r = situacaoSemestral({
       categoria: "Black",
       mediaMensal: 5_000,
@@ -108,7 +135,8 @@ describe("situacaoSemestral", () => {
     });
     expect(r.categoria).toBe("Silver");
     expect(r.acumulado).toBe(10_500);
-    expect(r.risco.titulo).toBe("No Ritmo");
+    expect(r.manter.atingido).toBe(true);
+    expect(r.upgrade?.falta).toBe(15_000); // (6.000 − 3.500) × 6
   });
 });
 

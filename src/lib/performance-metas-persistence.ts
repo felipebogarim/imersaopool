@@ -172,6 +172,31 @@ export function baseFromBackend(
   return out;
 }
 
+/**
+ * Média mensal real do cliente (base da categoria): Σ da coluna MÉDIA de cada portfólio; sem
+ * média no portfólio, usa a base disponível (realizado do mês ou estimado). Null sem dados.
+ * O "realizado" do upload é a venda do mês de referência — não serve para a categoria, que é
+ * apurada pela média mensal no semestre.
+ */
+export function mediaMensalCliente(
+  base: GoalsState["base"],
+  categoria?: string | null,
+): number | null {
+  if (!base) return null;
+  const fallback = baseFromBackend(base, categoria);
+  let soma = 0;
+  let algum = false;
+  for (const f of CANONICAL_FAMILIES) {
+    const media = lookupFamilyNum(base.media, f);
+    const v = media != null && media >= 0 ? media : (fallback[f]?.valor ?? null);
+    if (v != null) {
+      soma += v;
+      algum = true;
+    }
+  }
+  return algum ? soma : null;
+}
+
 const isFamily = (f: string): f is CanonicalFamily =>
   (CANONICAL_FAMILIES as readonly string[]).includes(f);
 
