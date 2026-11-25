@@ -3,6 +3,7 @@
 // Somente leitura — usa percentuais e faróis já publicados, nunca valores em R$.
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
 import { MinimosCategoriaButton } from "./MinimosCategoriaDialog";
@@ -48,6 +49,9 @@ function loadStoredFilters(): StoredFilters | null {
   }
 }
 
+/** Slot ao lado das abas do topo onde a lista renderiza suas ações (ex.: mínimos em massa). */
+export const METAS_ACOES_TOPO_ID = "metas-acoes-topo";
+
 export function MetasCarteiraList({
   restrictToRepIds,
 }: {
@@ -67,6 +71,11 @@ export function MetasCarteiraList({
   const [zeroFilter, setZeroFilter] = useState(() => initialFilters?.zeroFilter ?? false);
   const [revisadoOnly, setRevisadoOnly] = useState(() => initialFilters?.revisadoOnly ?? false);
   const [conviteMassa, setConviteMassa] = useState(false);
+  // Slot das ações no topo (montado pela página, fora desta lista).
+  const [acoesTopo, setAcoesTopo] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setAcoesTopo(document.getElementById(METAS_ACOES_TOPO_ID));
+  }, []);
 
   // Mantém os filtros no sessionStorage para não perder o contexto ao navegar ou atualizar
   useEffect(() => {
@@ -272,16 +281,21 @@ export function MetasCarteiraList({
             {revisadoOnly && <X className="ml-0.5 h-3 w-3 inline-block" />}
           </Badge>
           {gestao && (
-            // Funções (não filtros): estilo discreto, separadas dos chips de filtro.
+            // Função (não filtro): estilo discreto, separada dos chips de filtro.
             <div className="flex items-center gap-0.5 border-l border-border pl-2">
               <MinimosCategoriaButton />
+            </div>
+          )}
+          {gestao &&
+            acoesTopo &&
+            createPortal(
               <MinimosMassaButton
                 todos={carteiraMassa}
                 filtrados={filtradosMassa}
                 disabled={isLoading}
-              />
-            </div>
-          )}
+              />,
+              acoesTopo,
+            )}
           {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
             <button
               onClick={() => {

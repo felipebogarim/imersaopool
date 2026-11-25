@@ -2,7 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BarChart3, ListChecks } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
-import { MetasCarteiraList } from "@/components/performance-metas/MetasCarteiraList";
+import {
+  METAS_ACOES_TOPO_ID,
+  MetasCarteiraList,
+} from "@/components/performance-metas/MetasCarteiraList";
 import { MetasBiPanel } from "@/components/performance-metas/MetasBiPanel";
 import { useMetasViewer } from "@/components/performance-metas/use-metas-viewer";
 
@@ -34,23 +37,27 @@ function MetasIndexPage() {
       <PageHeader title="Metas" subtitle="Metas mensais individualizadas por cliente e portfólio" />
       <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4">
         {!viewer.loading && !isRepView && (
-          <div className="inline-flex rounded-lg border border-border bg-card p-1 shadow-sm">
-            {VIEWS.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() =>
-                  navigate({ search: { view: key === "bi" ? "bi" : undefined }, replace: true })
-                }
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
-                  current === key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4" /> {label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex rounded-lg border border-border bg-card p-1 shadow-sm">
+              {VIEWS.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() =>
+                    navigate({ search: { view: key === "bi" ? "bi" : undefined }, replace: true })
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                    current === key
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+            {/* Ações da carteira (ex.: aplicar mínimos em massa), renderizadas pela lista. */}
+            <div id={METAS_ACOES_TOPO_ID} className="flex items-center gap-1" />
           </div>
         )}
         {viewer.loading ? null : current === "bi" ? (
