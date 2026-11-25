@@ -485,9 +485,8 @@ async function repCall(
   fn: string,
   args: Record<string, unknown>,
 ): Promise<RepResult> {
-  const { repForUser, loadRepMetasDetailExtras, reviewForCycle } = await import(
-    "@/lib/rep-portal.server"
-  );
+  const { repForUser, loadRepMetasDetailExtras, reviewForCycle } =
+    await import("@/lib/rep-portal.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const rep = await repForUser(userId);
   const res = await callRpc(supabaseAdmin, fn, { ...args, _representative_id: rep.id });
@@ -567,3 +566,42 @@ export const repListMetas = createServerFn({ method: "POST" })
     const rep = await repForUser(context.userId);
     return listRepMetasRows(rep.id);
   });
+
+// ------------------------- Flag "Em investigação" ----------------------------
+
+export type InvestigacaoResult =
+  | { available: false }
+  | { available: true; emInvestigacao: boolean };
+
+async function investigacaoRpc(
+  client: unknown,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<InvestigacaoResult> {
+  const { data, error } = await (client as RpcClient).rpc(fn, args);
+  if (error) {
+    if (NOT_MIGRATED.has(error.code ?? "")) return { available: false };
+    throw new Error(error.message);
+  }
+  const d = (data ?? {}) as { em_investigacao?: boolean };
+  return { available: true, emInvestigacao: d.em_investigacao === true };
+}
+
+export const getMetasInvestigacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput)
+  .handler(({ data, context }) =>
+    investigacaoRpc(context.supabase, "get_performance_goal_investigation", {
+      _row_id: data.rowId,
+    }),
+  );
+
+export const setMetasInvestigacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(rowInput.extend({ ativo: z.boolean() }))
+  .handler(({ data, context }) =>
+    investigacaoRpc(context.supabase, "set_performance_goal_investigation", {
+      _row_id: data.rowId,
+      _ativo: data.ativo,
+    }),
+  );

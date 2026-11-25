@@ -62,7 +62,10 @@ export function PortfolioMetaPanel({
   onSelect,
   swatches,
   actions,
+  investigacao,
 }: {
+  /** Flag "Em investigação" do cliente, exibido no bloco da meta do gestor. */
+  investigacao?: React.ReactNode;
   gerandoIa?: boolean;
   iaDisponivel?: boolean;
   /** Competência + botão Salvar, no rodapé do bloco editável (gestor ou representante). */
@@ -301,6 +304,7 @@ export function PortfolioMetaPanel({
                   className="min-h-[72px] text-sm"
                 />
               </Field>
+              {investigacao}
               <div className="flex flex-wrap gap-1.5">
                 <SmallAction
                   icon={Sparkles}

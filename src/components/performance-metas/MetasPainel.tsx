@@ -56,6 +56,7 @@ import {
 } from "@/lib/performance-metas.functions";
 import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
+import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -478,6 +479,11 @@ export function MetasPainel({
             point={comparativo[idx]}
             agendadas={(goals?.agendadas ?? []).filter((a) => a.familia === fam)}
             unsaved={unsaved}
+            investigacao={
+              dbEnabled && vis.editarMetaOficial ? (
+                <MetasInvestigacaoToggle rowId={rowId} />
+              ) : undefined
+            }
             gerandoIa={gerandoIa}
             iaDisponivel={dbEnabled}
             saveBar={

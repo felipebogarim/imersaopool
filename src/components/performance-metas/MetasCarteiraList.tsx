@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,7 +285,7 @@ export function MetasCarteiraList({
                 </th>
                 <th
                   className="w-12 px-1 sm:px-2 py-3 font-semibold border-r border-border/50 text-center text-[10px]"
-                  title="Metas de todas as categorias revisadas e salvas pelo gestor"
+                  title="Status: metas revisadas pelo gestor · ⚠ cliente em investigação"
                 >
                   <span className="sr-only">Revisado</span>
                   <CheckCircle2 className="h-3.5 w-3.5 mx-auto text-muted-foreground" />
@@ -362,24 +362,35 @@ export function MetasCarteiraList({
                       <td
                         className="w-12 px-1 sm:px-2 py-2.5 text-center border-r border-border/50"
                         title={
-                          row.revisadoCompleto
+                          (row.emInvestigacao
+                            ? "Em investigação: aberto processo de investigação mais detalhada sobre o cliente antes de definir a meta. "
+                            : "") +
+                          (row.revisadoCompleto
                             ? "Metas de todas as categorias revisadas e salvas pelo gestor (7/7)"
                             : row.metasSalvasCount > 0
                               ? `${row.metasSalvasCount} de 7 categorias revisadas pelo gestor`
-                              : "Nenhuma meta revisada pelo gestor"
+                              : "Nenhuma meta revisada pelo gestor")
                         }
                       >
-                        {row.revisadoCompleto ? (
-                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mx-auto">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                          </span>
-                        ) : row.metasSalvasCount > 0 ? (
-                          <span className="text-[10px] font-mono text-muted-foreground/80">
-                            {row.metasSalvasCount}/7
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/30 text-xs">—</span>
-                        )}
+                        <span className="inline-flex items-center justify-center gap-1">
+                          {row.emInvestigacao && (
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              <span className="sr-only">Em investigação</span>
+                            </span>
+                          )}
+                          {row.revisadoCompleto ? (
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mx-auto">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            </span>
+                          ) : row.metasSalvasCount > 0 ? (
+                            <span className="text-[10px] font-mono text-muted-foreground/80">
+                              {row.metasSalvasCount}/7
+                            </span>
+                          ) : row.emInvestigacao ? null : (
+                            <span className="text-muted-foreground/30 text-xs">—</span>
+                          )}
+                        </span>
                       </td>
                       <td
                         className={cn(
