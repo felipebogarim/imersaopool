@@ -58,6 +58,7 @@ import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
 import { MetasSecaoTitulo } from "./MetasSecaoTitulo";
+import { MetasHistoricoButton } from "./MetasHistoricoDialog";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -97,6 +98,9 @@ export type MetasClienteInfo = {
   uploadId?: string | null;
 };
 
+/** Competência "infinita": hidrata com a última versão gravada de cada portfólio. */
+const ULTIMA_VERSAO = "9999-12-01";
+
 export function MetasPainel({
   rowId,
   persisted,
@@ -129,10 +133,11 @@ export function MetasPainel({
         persisted.available ? (persisted.state.proximo ?? null) : null,
       ).padrao,
   );
-  // A meta exibida é a que vale na competência padrão (inclui o que já foi agendado para ela).
+  // Assim que a meta é definida ela aparece na página: a meta exibida é a última versão gravada
+  // (inclusive a programada para o próximo semestre); versões anteriores ficam no histórico.
   const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
     const base = buildInitialDrafts(cliente.categoria);
-    return persisted.available ? hydrateDrafts(base, persisted.state, competencia) : base;
+    return persisted.available ? hydrateDrafts(base, persisted.state, ULTIMA_VERSAO) : base;
   });
   const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
@@ -259,6 +264,7 @@ export function MetasPainel({
       setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
       // BI Metas: a "meta atual" reflete a edição na próxima visualização.
       void queryClient.invalidateQueries({ queryKey: ["performance-metas", "bi"] });
+      void queryClient.invalidateQueries({ queryKey: ["performance-metas", "historico"] });
       toast.success(`${unsaved.length} portfólio(s) salvo(s).`, {
         description: `Valendo a partir de ${competencia.slice(5, 7)}/${competencia.slice(0, 4)}.`,
       });
@@ -544,6 +550,10 @@ export function MetasPainel({
           />
         );
       })()}
+
+      {dbEnabled && role === "gestor" && (
+        <MetasHistoricoButton repId={cliente.repId} razaoSocial={cliente.razaoSocial} />
+      )}
 
       <RevisarVinculoDialog
         open={vinculoOpen}
