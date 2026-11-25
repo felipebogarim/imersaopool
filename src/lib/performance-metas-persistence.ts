@@ -176,8 +176,22 @@ const isFamily = (f: string): f is CanonicalFamily =>
   (CANONICAL_FAMILIES as readonly string[]).includes(f);
 
 /** Aplica o que está gravado sobre os rascunhos iniciais (portfólios sem registro ficam no padrão). */
-export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): FamilyMetaDraft[] {
+/** `competencia` (YYYY-MM-01): a meta oficial exibida é a versão que vale nessa competência —
+ *  inclusive uma mudança agendada (ex.: próximo semestre). Sem ela, a versão vigente hoje. */
+export function hydrateDrafts(
+  initial: FamilyMetaDraft[],
+  state: GoalsState,
+  competencia?: string,
+): FamilyMetaDraft[] {
   const items = new Map(state.items.filter((i) => isFamily(i.familia)).map((i) => [i.familia, i]));
+  const agendada = new Map<string, number | null>();
+  if (competencia) {
+    for (const a of [...(state.agendadas ?? [])].sort((x, y) =>
+      x.vigente_desde.localeCompare(y.vigente_desde),
+    )) {
+      if (a.vigente_desde.slice(0, 10) <= competencia) agendada.set(a.familia, a.meta_mensal);
+    }
+  }
   const reps = new Map(state.rep_suggestions.map((s) => [s.familia, s]));
   // Registros "simulacao" são da fase de protótipo: não aparecem como sugestão real.
   const ais = new Map(
@@ -194,6 +208,7 @@ export function hydrateDrafts(initial: FamilyMetaDraft[], state: GoalsState): Fa
         origem: it.origem ?? d.origem,
         comentarioGestor: it.comentario_gestor ?? "",
       }),
+      ...(agendada.has(d.familia) && { metaOficial: agendada.get(d.familia) ?? null }),
       ...(rep && {
         sugestaoRep: rep.valor,
         justificativaRep: rep.justificativa,
@@ -362,8 +377,10 @@ export function cycleInfo(cycle: GoalsCycle, today = new Date()) {
   };
 }
 
-/** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo vigente e do
- *  próximo (se já renovado), ou do semestre corrente quando ainda não há ciclo. Padrão: mês corrente (ou o primeiro mês disponível depois dele). */
+/** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo vigente (ou do
+ *  semestre corrente, se ainda não há ciclo) e do PRÓXIMO semestre — já programado ou criado
+ *  ao salvar. Padrão: 1º mês do próximo semestre (ex.: jan/27); se não estiver disponível, o
+ *  mês corrente (ou o primeiro mês disponível depois dele). */
 export function competenciasDoCiclo(
   cycle: GoalsCycle | null,
   proximo: GoalsCycle | null = null,
@@ -380,9 +397,20 @@ export function competenciasDoCiclo(
   const faixas: Array<[number, number]> = cycle
     ? [[idx(cycle.inicio), idx(cycle.fim)]]
     : [[semIni, semIni + 5]];
-  if (cycle && proximo) faixas.push([idx(proximo.inicio), idx(proximo.fim)]);
+  if (cycle && proximo) {
+    faixas.push([idx(proximo.inicio), idx(proximo.fim)]);
+  } else {
+    // Próximo semestre ainda não programado: logo após o fim do ciclo atual.
+    const fim = faixas[0][1];
+    let ini = Math.floor((fim + 1) / 6) * 6;
+    if (ini <= fim) ini += 6;
+    faixas.push([ini, ini + 5]);
+  }
   const meses: string[] = [];
   for (const [a, b] of faixas) for (let k = a; k <= b; k++) meses.push(iso(k));
-  const padrao = meses.find((m) => idx(m) >= atual) ?? meses[meses.length - 1];
+  const proxSemestre = iso(semIni + 6);
+  const padrao = meses.includes(proxSemestre)
+    ? proxSemestre
+    : (meses.find((m) => idx(m) >= atual) ?? meses[meses.length - 1]);
   return { meses, padrao };
 }

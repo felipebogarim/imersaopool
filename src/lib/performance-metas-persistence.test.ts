@@ -64,6 +64,23 @@ describe("performance-metas-persistence", () => {
     expect(baseFromBackend(undefined)).toEqual({});
   });
 
+  it("hidrata pela competência: usa a meta agendada que vale nela", () => {
+    const st = {
+      ...state,
+      agendadas: [
+        { familia: "PERFIL", meta_mensal: 1500, vigente_desde: "2027-01-01" },
+        { familia: "PERFIL", meta_mensal: 1800, vigente_desde: "2027-03-01" },
+      ],
+    };
+    const perfil = (c?: string) =>
+      hydrateDrafts(buildInitialDrafts("Gold"), st, c).find((x) => x.familia === "PERFIL")
+        ?.metaOficial;
+    expect(perfil()).toBe(1200);
+    expect(perfil("2026-12-01")).toBe(1200);
+    expect(perfil("2027-01-01")).toBe(1500);
+    expect(perfil("2027-04-01")).toBe(1800);
+  });
+
   it("hidrata os rascunhos com o que está gravado", () => {
     const d = hydrateDrafts(buildInitialDrafts("Gold"), state);
     const perfil = d.find((x) => x.familia === "PERFIL");
@@ -165,32 +182,31 @@ describe("performance-metas-persistence", () => {
     expect(args).not.toHaveProperty("sugestoes_ia");
   });
 
-  it("competências: meses do ciclo, padrão no mês corrente", () => {
-    const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
-    const r = competenciasDoCiclo(c, null, new Date(2027, 0, 15));
-    expect(r.meses).toHaveLength(6);
-    expect(r.meses[0]).toBe("2026-11-01");
+  it("competências: semestre vigente + próximo semestre, padrão no início do próximo", () => {
+    const c = { id: "c", inicio: "2026-07-01", fim: "2026-12-01" };
+    const r = competenciasDoCiclo(c, null, new Date(2026, 10, 25));
+    expect(r.meses).toHaveLength(12);
+    expect(r.meses[0]).toBe("2026-07-01");
+    expect(r.meses[6]).toBe("2027-01-01");
+    expect(r.meses[11]).toBe("2027-06-01");
     expect(r.padrao).toBe("2027-01-01");
-    expect(competenciasDoCiclo(c, null, new Date(2026, 5, 1)).padrao).toBe("2026-11-01");
-    expect(competenciasDoCiclo(c, null, new Date(2028, 0, 1)).padrao).toBe("2027-04-01");
-    // renovado: o próximo ciclo continua a sequência, sem interrupção
-    const prox = { id: "p", inicio: "2027-05-01", fim: "2027-10-01" };
-    const r2 = competenciasDoCiclo(c, prox, new Date(2027, 0, 15));
-    expect(r2.meses).toHaveLength(12);
-    expect(r2.meses[6]).toBe("2027-05-01");
-    expect(r2.padrao).toBe("2027-01-01");
-    // sem ciclo: o semestre corrente (jul–dez), padrão no mês corrente
+    // próximo semestre já programado
+    const prox = { id: "p", inicio: "2027-01-01", fim: "2027-06-01" };
+    expect(competenciasDoCiclo(c, prox, new Date(2026, 10, 25)).meses).toHaveLength(12);
+    expect(competenciasDoCiclo(c, prox, new Date(2026, 10, 25)).padrao).toBe("2027-01-01");
+    // sem ciclo: semestre corrente + próximo
     const novo = competenciasDoCiclo(null, null, new Date(2026, 10, 23));
-    expect(novo.meses).toEqual([
-      "2026-07-01",
-      "2026-08-01",
-      "2026-09-01",
-      "2026-10-01",
-      "2026-11-01",
-      "2026-12-01",
-    ]);
-    expect(novo.padrao).toBe("2026-11-01");
-    expect(competenciasDoCiclo(null, null, new Date(2027, 1, 3)).meses[0]).toBe("2027-01-01");
+    expect(novo.meses[0]).toBe("2026-07-01");
+    expect(novo.meses).toHaveLength(12);
+    expect(novo.padrao).toBe("2027-01-01");
+    // 1º semestre: padrão jul do mesmo ano
+    const s1 = { id: "s", inicio: "2027-01-01", fim: "2027-06-01" };
+    expect(competenciasDoCiclo(s1, null, new Date(2027, 1, 3)).padrao).toBe("2027-07-01");
+    // ciclo legado fora do calendário (nov/26–abr/27): jan/27 está no ciclo
+    const leg = { id: "l", inicio: "2026-11-01", fim: "2027-04-01" };
+    const rl = competenciasDoCiclo(leg, null, new Date(2026, 10, 25));
+    expect(rl.padrao).toBe("2027-01-01");
+    expect(rl.meses).toContain("2027-07-01");
   });
 
   it("ciclo semestral: rótulo, próximo semestre e vencimento", () => {

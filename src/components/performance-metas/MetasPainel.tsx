@@ -121,12 +121,7 @@ export function MetasPainel({
   );
   // Rascunho inicial = meta padrão da categoria; o que estiver gravado no banco prevalece,
   // inclusive a última sugestão IA registrada (o gestor decide se adere ou não).
-  const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
-    const base = buildInitialDrafts(cliente.categoria);
-    return persisted.available ? hydrateDrafts(base, persisted.state) : base;
-  });
-  const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
-  // Competência escolhida pelo gestor para as metas salvas (padrão: mês corrente do ciclo).
+  // Competência escolhida pelo gestor para as metas salvas (padrão: início do próximo semestre).
   const [competencia, setCompetencia] = useState(
     () =>
       competenciasDoCiclo(
@@ -134,6 +129,12 @@ export function MetasPainel({
         persisted.available ? (persisted.state.proximo ?? null) : null,
       ).padrao,
   );
+  // A meta exibida é a que vale na competência padrão (inclui o que já foi agendado para ela).
+  const [initialDrafts] = useState<FamilyMetaDraft[]>(() => {
+    const base = buildInitialDrafts(cliente.categoria);
+    return persisted.available ? hydrateDrafts(base, persisted.state, competencia) : base;
+  });
+  const [drafts, setDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [savedDrafts, setSavedDrafts] = useState<FamilyMetaDraft[]>(initialDrafts);
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -251,8 +252,8 @@ export function MetasPainel({
         data: { rowId, ...gestorRpcArgs(payload), vigenteDesde: competencia },
       });
       if (!res.available) return indisponivel();
-      // Volta ao que vale hoje; metas de competências futuras aparecem como agendadas.
-      const hydrated = hydrateDrafts(drafts, res.state);
+      // Mostra o que vale na competência salva (as demais mudanças seguem como agendadas).
+      const hydrated = hydrateDrafts(drafts, res.state, competencia);
       setGoals(res.state);
       setDrafts((prev) => mergeSaved(prev, hydrated, role));
       setSavedDrafts((prev) => mergeSaved(prev, hydrated, role));
