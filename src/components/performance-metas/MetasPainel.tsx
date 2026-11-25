@@ -494,7 +494,10 @@ export function MetasPainel({
           <PortfolioMetaPanel
             draft={d}
             point={comparativo[idx]}
-            agendadas={(goals?.agendadas ?? []).filter((a) => a.familia === fam)}
+            // Só mudanças POSTERIORES à competência selecionada: as que já valem nela estão no campo.
+            agendadas={(goals?.agendadas ?? []).filter(
+              (a) => a.familia === fam && a.vigente_desde.slice(0, 10) > competencia,
+            )}
             unsaved={unsaved}
             investigacao={
               dbEnabled && vis.editarMetaOficial ? (

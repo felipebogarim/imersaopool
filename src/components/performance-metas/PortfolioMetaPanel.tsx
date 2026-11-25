@@ -290,7 +290,7 @@ export function PortfolioMetaPanel({
               {agendadas
                 .map(
                   (a) =>
-                    `Agendada: ${fmtBRL(a.meta_mensal)} a partir de ${monthLabel(a.vigente_desde)}`,
+                    `Mudança programada: ${fmtBRL(a.meta_mensal)} a partir de ${monthLabel(a.vigente_desde)}`,
                 )
                 .join(" · ")}
             </p>
