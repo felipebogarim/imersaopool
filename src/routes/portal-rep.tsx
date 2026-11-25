@@ -11,6 +11,7 @@ import {
   type PortalTab,
 } from "@/components/rep-portal/RepPortalChrome";
 import { RepAcoesUteis } from "@/components/rep-portal/RepAcoesUteis";
+import { RepAgendaView } from "@/components/rep-portal/RepAgendaView";
 import { RepSolicitacoesView } from "@/components/rep-portal/RepSolicitacoesView";
 import {
   RepSolicitacaoDialog,
@@ -76,6 +77,9 @@ function PortalRep() {
 
         {/* Aba 1: Metas (dashboard, lista de clientes, gauges, timeline) */}
         {activeTab === "metas" && <RepMetasArea />}
+
+        {/* Guia de Agenda: visitas da semana e o guia de cada cliente */}
+        {activeTab === "agenda" && <RepAgendaView actions={actions} />}
 
         {/* Aba 2: Ações Sugeridas (cards das ações sugeridas com botão intuitivo de aceite) */}
         {activeTab === "acoes_sugeridas" && (

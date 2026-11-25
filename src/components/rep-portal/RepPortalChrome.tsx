@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarCheck, Inbox, LogOut, Sparkles, Target } from "lucide-react";
+import { CalendarCheck, CalendarDays, Inbox, LogOut, Sparkles, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandMark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,11 @@ import { getRepPortal } from "@/lib/rep-portal.functions";
 import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
 import { useRepSolicitacoes } from "./use-rep-solicitacoes";
 
-export type PortalTab = "metas" | "acoes_sugeridas" | "calendario" | "solicitacoes";
+export type PortalTab = "metas" | "agenda" | "acoes_sugeridas" | "calendario" | "solicitacoes";
 
 export const PORTAL_TABS: readonly PortalTab[] = [
   "metas",
+  "agenda",
   "acoes_sugeridas",
   "calendario",
   "solicitacoes",
@@ -116,6 +117,11 @@ export function RepPortalChrome({
             <button type="button" onClick={() => go("metas")} className={tabClass("metas")}>
               <Target className="h-4 w-4" />
               Metas
+            </button>
+
+            <button type="button" onClick={() => go("agenda")} className={tabClass("agenda")}>
+              <CalendarDays className="h-4 w-4" />
+              Guia de Agenda
             </button>
 
             <button
