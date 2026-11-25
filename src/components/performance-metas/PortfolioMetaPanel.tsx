@@ -3,7 +3,14 @@
 // sempre com valor e comentário em campos separados.
 
 import { useState } from "react";
-import { ClipboardCopy, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardCopy,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +54,8 @@ export type PortfolioPanelActions = {
   usarIa: () => void;
   restaurarPadrao: () => void;
   copiarRep: () => void;
+  /** Preenche a meta do gestor do portfólio com o mínimo da categoria. */
+  aplicarMinimo?: () => void;
 };
 
 export function PortfolioMetaPanel({
@@ -63,7 +72,12 @@ export function PortfolioMetaPanel({
   swatches,
   actions,
   investigacao,
+  minimo = null,
+  categoria = null,
 }: {
+  /** Mínimo de meta da categoria do cliente para este portfólio (null = sem mínimo). */
+  minimo?: number | null;
+  categoria?: string | null;
   /** Flag "Em investigação" do cliente, exibido no bloco da meta do gestor. */
   investigacao?: React.ReactNode;
   gerandoIa?: boolean;
@@ -285,6 +299,19 @@ export function PortfolioMetaPanel({
               <ValueText value={draft.metaOficial} />
             )}
           </Field>
+          {vis.editarMetaOficial &&
+            minimo != null &&
+            (draft.metaOficial != null && draft.metaOficial < minimo ? (
+              <p className="flex items-start gap-1.5 rounded-md border border-red-300 bg-red-500/10 px-2.5 py-1.5 text-[11px] font-medium text-red-700 dark:border-red-800 dark:text-red-300">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Meta abaixo do mínimo de {fmtBRL(minimo)} para {categoria ?? "a categoria"}. Ajuste
+                ao menos para o mínimo para poder salvar.
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                Mínimo da categoria {categoria ?? ""}: {fmtBRL(minimo)}
+              </p>
+            ))}
           {vis.editarMetaOficial && agendadas.length > 0 && (
             <p className="text-[11px] text-sky-700 dark:text-sky-400">
               {agendadas
@@ -327,6 +354,15 @@ export function PortfolioMetaPanel({
                 >
                   Restaurar padrão
                 </SmallAction>
+                {actions.aplicarMinimo && (
+                  <SmallAction
+                    icon={ShieldCheck}
+                    disabled={minimo == null}
+                    onClick={actions.aplicarMinimo}
+                  >
+                    Aplicar mínimo
+                  </SmallAction>
+                )}
                 {saveBar && (
                   <div className="ml-auto flex flex-wrap items-center gap-1.5">{saveBar}</div>
                 )}

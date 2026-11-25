@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
+import { MinimosCategoriaButton } from "./MinimosCategoriaDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -252,6 +253,7 @@ export function MetasCarteiraList({
             Revisados
             {revisadoOnly && <X className="ml-0.5 h-3 w-3 inline-block" />}
           </Badge>
+          {gestao && <MinimosCategoriaButton />}
           {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
             <button
               onClick={() => {

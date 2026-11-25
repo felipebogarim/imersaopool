@@ -60,6 +60,8 @@ import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
 import { MetasSecaoTitulo } from "./MetasSecaoTitulo";
 import { MetasHistoricoButton } from "./MetasHistoricoDialog";
+import { useMetasMinimos } from "./use-metas-minimos";
+import { abaixoDoMinimo, minimoPara } from "@/lib/performance-metas-minimos";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -184,6 +186,8 @@ export function MetasPainel({
   );
   // Valor vendido real (R$) do backend; sem ele o atingimento é marcado como estimado.
   const base = useMemo(() => baseFromBackend(goals?.base), [goals?.base]);
+  const { data: minimosRes } = useMetasMinimos(dbEnabled && role === "gestor");
+  const minimos = minimosRes?.available ? minimosRes.itens : null;
   // Categoria: média mensal real (coluna MÉDIA do upload), não a venda do mês de referência.
   const mediaCategoria = useMemo(
     () => mediaMensalCliente(goals?.base, cliente.categoria),
@@ -245,6 +249,26 @@ export function MetasPainel({
 
   async function handleSave() {
     if (unsaved.length === 0) return;
+    // Bloqueio: meta do gestor abaixo do mínimo da categoria (o banco confere de novo).
+    if (role === "gestor" && !previewRep) {
+      const abaixo = abaixoDoMinimo(
+        drafts.filter((d) => unsaved.includes(d.familia)),
+        minimos,
+        cliente.categoria,
+      );
+      if (abaixo.length > 0) {
+        setSelected(abaixo[0].familia as CanonicalFamily);
+        toast.error("Meta abaixo do mínimo da categoria.", {
+          description: abaixo
+            .map(
+              (a) =>
+                `${METAS_FAMILY_LABEL[a.familia as CanonicalFamily]}: ${fmtBRL(a.meta)} < mínimo ${fmtBRL(a.minimo)}`,
+            )
+            .join(" · "),
+        });
+        return;
+      }
+    }
     const payload = buildSavePayload(drafts, role, unsaved);
     // A prévia "ver como representante" não grava nada.
     if (previewRep || payload.perfil !== "gestor") {
@@ -511,6 +535,8 @@ export function MetasPainel({
               (a) => a.familia === fam && a.vigente_desde.slice(0, 10) > competencia,
             )}
             unsaved={unsaved}
+            minimo={minimoPara(minimos, cliente.categoria, fam)}
+            categoria={cliente.categoria}
             investigacao={
               dbEnabled && vis.editarMetaOficial ? (
                 <MetasInvestigacaoToggle rowId={rowId} />
@@ -552,6 +578,13 @@ export function MetasPainel({
               usarIa: () => setDrafts((prev) => applyAiSuggestion(prev, fam)),
               restaurarPadrao: () => setDrafts((prev) => restoreDefault(prev, fam)),
               copiarRep: () => setDrafts((prev) => copyRepSuggestion(prev, fam)),
+              aplicarMinimo:
+                role === "gestor"
+                  ? () => {
+                      const min = minimoPara(minimos, cliente.categoria, fam);
+                      if (min != null) setDrafts((prev) => setMetaOficial(prev, fam, min));
+                    }
+                  : undefined,
             }}
           />
         );

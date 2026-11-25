@@ -598,3 +598,48 @@ export const setMetasInvestigacao = createServerFn({ method: "POST" })
       _ativo: data.ativo,
     }),
   );
+
+// ------------------------- Mínimos por categoria -----------------------------
+
+export type MinimosResult =
+  | { available: false }
+  | { available: true; itens: Array<{ categoria: string; familia: string; minimo: number }> };
+
+async function minimosRpc(
+  client: unknown,
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<MinimosResult> {
+  const { data, error } = await (client as RpcClient).rpc(fn, args);
+  if (error) {
+    if (NOT_MIGRATED.has(error.code ?? "")) return { available: false };
+    throw new Error(error.message);
+  }
+  const itens = ((data ?? []) as Array<{ categoria: string; familia: string; minimo: unknown }>)
+    .map((i) => ({ categoria: i.categoria, familia: i.familia, minimo: Number(i.minimo) }))
+    .filter((i) => Number.isFinite(i.minimo));
+  return { available: true, itens };
+}
+
+export const getMetasMinimos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(({ context }) => minimosRpc(context.supabase, "get_performance_goal_minimums", {}));
+
+export const saveMetasMinimos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      itens: z
+        .array(
+          z.object({
+            categoria: z.enum(["Silver", "Gold", "Black"]),
+            familia,
+            minimo: money,
+          }),
+        )
+        .max(60),
+    }),
+  )
+  .handler(({ data, context }) =>
+    minimosRpc(context.supabase, "set_performance_goal_minimums", { _itens: data.itens }),
+  );
