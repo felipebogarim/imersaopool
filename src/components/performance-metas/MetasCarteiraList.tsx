@@ -2,7 +2,7 @@
 // (mesmas fontes de dados, mesmos filtros), com acesso ao painel individual.
 // Somente leitura — usa percentuais e faróis já publicados, nunca valores em R$.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,19 +24,66 @@ import { FilterChip } from "./FilterChip";
 import { useMetasCarteira } from "./use-metas-carteira";
 import { ConviteMassaDialog } from "./ConviteMassaDialog";
 
+const FILTERS_STORAGE_KEY = "metas_carteira_filters_v1";
+
+type StoredFilters = {
+  search?: string;
+  repFilter?: string;
+  categoryFilter?: string[];
+  familyFilter?: string[];
+  zeroFilter?: boolean;
+  revisadoOnly?: boolean;
+};
+
+function loadStoredFilters(): StoredFilters | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 export function MetasCarteiraList({
   restrictToRepIds,
 }: {
   /** Quando definido, mostra apenas clientes desses representantes (visão do representante). */
   restrictToRepIds: string[] | null;
 }) {
-  const [search, setSearch] = useState("");
-  const [repFilter, setRepFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [familyFilter, setFamilyFilter] = useState<string[]>([]);
-  const [zeroFilter, setZeroFilter] = useState(false);
-  const [revisadoOnly, setRevisadoOnly] = useState(false);
+  const initialFilters = useMemo(() => loadStoredFilters(), []);
+
+  const [search, setSearch] = useState(() => initialFilters?.search ?? "");
+  const [repFilter, setRepFilter] = useState(() => initialFilters?.repFilter ?? "all");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>(
+    () => initialFilters?.categoryFilter ?? [],
+  );
+  const [familyFilter, setFamilyFilter] = useState<string[]>(
+    () => initialFilters?.familyFilter ?? [],
+  );
+  const [zeroFilter, setZeroFilter] = useState(() => initialFilters?.zeroFilter ?? false);
+  const [revisadoOnly, setRevisadoOnly] = useState(() => initialFilters?.revisadoOnly ?? false);
   const [conviteMassa, setConviteMassa] = useState(false);
+
+  // Mantém os filtros no sessionStorage para não perder o contexto ao navegar ou atualizar
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({
+          search,
+          repFilter,
+          categoryFilter,
+          familyFilter,
+          zeroFilter,
+          revisadoOnly,
+        }),
+      );
+    } catch {
+      // sessionStorage indisponível
+    }
+  }, [search, repFilter, categoryFilter, familyFilter, zeroFilter, revisadoOnly]);
 
   const { rows, visibleReps, isLoading } = useMetasCarteira(restrictToRepIds);
 
@@ -212,6 +259,9 @@ export function MetasCarteiraList({
                 setFamilyFilter([]);
                 setZeroFilter(false);
                 setRevisadoOnly(false);
+                try {
+                  sessionStorage.removeItem(FILTERS_STORAGE_KEY);
+                } catch {}
               }}
               className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-auto"
             >
@@ -284,8 +334,10 @@ export function MetasCarteiraList({
                         <Link
                           to="/performance/metas/$rowId"
                           params={{ rowId: row.id }}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="block truncate max-w-[150px] sm:max-w-[240px] hover:text-primary hover:underline underline-offset-2"
-                          title={row.razao_social}
+                          title={`${row.razao_social} (abrir em nova janela)`}
                         >
                           {row.razao_social}
                         </Link>
@@ -357,7 +409,10 @@ export function MetasCarteiraList({
                           <Link
                             to="/performance/metas/$rowId"
                             params={{ rowId: row.id }}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted"
+                            title="Abrir metas do cliente em uma nova janela"
                           >
                             <Target className="h-3.5 w-3.5" /> Abrir
                           </Link>
