@@ -152,19 +152,12 @@ export const saveMetasGoals = createServerFn({ method: "POST" })
 
 export const renewMetasCycle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(rowInput.extend({ meses: z.union([z.literal(6), z.literal(12)]) }))
+  .inputValidator(rowInput.extend({ meses: z.literal(6) }))
   .handler(({ data, context }) =>
     callRpc(context.supabase, "renew_performance_goal_cycle", {
       _row_id: data.rowId,
       _meses: data.meses,
     }),
-  );
-
-export const extendMetasCycle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(rowInput)
-  .handler(({ data, context }) =>
-    callRpc(context.supabase, "extend_performance_goal_cycle", { _row_id: data.rowId }),
   );
 
 export const confirmMetasLink = createServerFn({ method: "POST" })

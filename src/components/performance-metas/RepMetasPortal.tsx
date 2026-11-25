@@ -172,9 +172,7 @@ export function RepMetasCliente({ rowId }: { rowId: string }) {
                 />
                 <PeriodCard
                   label="Vigência das metas"
-                  value={
-                    ciclo ? `${ciclo.label} · ${ciclo.meses} meses` : "Ciclo ainda não iniciado"
-                  }
+                  value={ciclo ? ciclo.label : "Ciclo ainda não iniciado"}
                   detail="Período em que estas metas mensais estarão vigentes"
                 />
               </div>

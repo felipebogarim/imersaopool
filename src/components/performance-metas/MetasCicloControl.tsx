@@ -1,4 +1,5 @@
-// Ciclo de vigência das metas (gestão): mostra o período e permite renovar ou estender.
+// Ciclo de vigência das metas (gestão): sempre um semestre fixo (1º jan–jun, 2º jul–dez).
+// Mostra o semestre e permite programar o próximo; não há ciclo de 12 meses.
 
 import { useState } from "react";
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ import {
   type GoalsState,
   type MetasLoadResult,
 } from "@/lib/performance-metas-persistence";
-import { extendMetasCycle, renewMetasCycle } from "@/lib/performance-metas.functions";
+import { renewMetasCycle } from "@/lib/performance-metas.functions";
 
 export function MetasCicloControl({
   rowId,
@@ -52,10 +53,10 @@ export function MetasCicloControl({
   const info = cycle ? cycleInfo(cycle) : null;
   const prox = proximo ? cycleInfo(proximo) : null;
   const label = info
-    ? `Ciclo ${info.label} · ${info.meses} meses${info.vencido && !prox ? " · vencido" : ""}${
+    ? `Ciclo ${info.label}${info.vencido && !prox ? " · vencido" : ""}${
         prox ? ` · próximo ${prox.label}` : ""
       }`
-    : "Ciclo de 6 meses inicia ao salvar";
+    : "Ciclo do semestre inicia ao salvar";
 
   async function run(fn: () => Promise<MetasLoadResult>, ok: string) {
     setBusy(true);
@@ -100,42 +101,22 @@ export function MetasCicloControl({
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           {prox
-            ? `Próximo ciclo já programado (${prox.label}). Para revisar metas, use "Vale a partir de".`
-            : "A renovação programa o próximo ciclo logo após o fim do atual, copiando as metas vigentes. O ciclo atual segue até o fim previsto."}
+            ? `Próximo semestre já programado (${prox.label}). Para revisar metas, use "Vale a partir de".`
+            : "Os ciclos são semestrais e fixos (1º semestre jan–jun · 2º semestre jul–dez). A renovação programa o próximo semestre copiando as metas vigentes; o atual segue até o fim."}
         </DropdownMenuLabel>
         {!prox && <DropdownMenuSeparator />}
-        {!prox && info?.podeEstender && (
+        {!prox && (
           <DropdownMenuItem
             onClick={() =>
-              run(() => extendMetasCycle({ data: { rowId } }), "Ciclo estendido para 12 meses.")
+              run(
+                () => renewMetasCycle({ data: { rowId, meses: 6 } }),
+                "Próximo semestre programado.",
+              )
             }
           >
-            Estender este ciclo para 12 meses
+            Renovar: próximo semestre
+            {info ? ` (${info.proximoLabel})` : ""}
           </DropdownMenuItem>
-        )}
-        {!prox && (
-          <>
-            <DropdownMenuItem
-              onClick={() =>
-                run(
-                  () => renewMetasCycle({ data: { rowId, meses: 6 } }),
-                  "Novo ciclo de 6 meses criado.",
-                )
-              }
-            >
-              Renovar: novo ciclo de 6 meses
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                run(
-                  () => renewMetasCycle({ data: { rowId, meses: 12 } }),
-                  "Novo ciclo de 12 meses criado.",
-                )
-              }
-            >
-              Renovar: novo ciclo de 12 meses
-            </DropdownMenuItem>
-          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

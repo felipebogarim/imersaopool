@@ -179,27 +179,35 @@ describe("performance-metas-persistence", () => {
     expect(r2.meses).toHaveLength(12);
     expect(r2.meses[6]).toBe("2027-05-01");
     expect(r2.padrao).toBe("2027-01-01");
+    // sem ciclo: o semestre corrente (jul–dez), padrão no mês corrente
     const novo = competenciasDoCiclo(null, null, new Date(2026, 10, 23));
     expect(novo.meses).toEqual([
+      "2026-07-01",
+      "2026-08-01",
+      "2026-09-01",
+      "2026-10-01",
       "2026-11-01",
       "2026-12-01",
-      "2027-01-01",
-      "2027-02-01",
-      "2027-03-01",
-      "2027-04-01",
     ]);
     expect(novo.padrao).toBe("2026-11-01");
+    expect(competenciasDoCiclo(null, null, new Date(2027, 1, 3)).meses[0]).toBe("2027-01-01");
   });
 
-  it("ciclo: rótulo, duração e vencimento", () => {
-    const c = { id: "c", inicio: "2026-11-01", fim: "2027-04-01" };
-    expect(cycleInfo(c, new Date(2026, 11, 10))).toEqual({
-      label: "nov/26 – abr/27",
+  it("ciclo semestral: rótulo, próximo semestre e vencimento", () => {
+    const c = { id: "c", inicio: "2026-07-01", fim: "2026-12-01" };
+    expect(cycleInfo(c, new Date(2026, 10, 10))).toEqual({
+      label: "2º semestre 2026 (jul/26 – dez/26)",
       meses: 6,
       vencido: false,
-      podeEstender: true,
+      proximoLabel: "1º semestre 2027",
     });
-    expect(cycleInfo(c, new Date(2027, 4, 2)).vencido).toBe(true);
-    expect(cycleInfo({ ...c, fim: "2027-10-01" }).podeEstender).toBe(false);
+    expect(cycleInfo(c, new Date(2027, 0, 2)).vencido).toBe(true);
+    const s1 = cycleInfo({ id: "s", inicio: "2027-01-01", fim: "2027-06-01" });
+    expect(s1.label).toBe("1º semestre 2027 (jan/27 – jun/27)");
+    expect(s1.proximoLabel).toBe("2º semestre 2027");
+    // ciclo legado fora do calendário: só o intervalo
+    expect(cycleInfo({ id: "x", inicio: "2026-11-01", fim: "2027-04-01" }).label).toBe(
+      "nov/26 – abr/27",
+    );
   });
 });

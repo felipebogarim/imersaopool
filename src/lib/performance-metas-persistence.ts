@@ -342,23 +342,28 @@ export const monthLabel = (iso: string) => {
   return `${MESES[m - 1]}/${String(y).slice(-2)}`;
 };
 
-/** "nov/26 – abr/27 · 6 meses"; `vencido` quando o último mês já passou. */
+/** "2º semestre 2026 (jul/26 – dez/26)"; `vencido` quando o último mês já passou. */
 export function cycleInfo(cycle: GoalsCycle, today = new Date()) {
   const [y1, m1] = cycle.inicio.split("-").map(Number);
   const [y2, m2] = cycle.fim.split("-").map(Number);
   const meses = (y2 - y1) * 12 + (m2 - m1) + 1;
   const atual = today.getFullYear() * 12 + today.getMonth();
+  const range = `${monthLabel(cycle.inicio)} – ${monthLabel(cycle.fim)}`;
+  // Ciclo semestral fixo: 1º semestre (jan–jun) ou 2º semestre (jul–dez).
+  const semestral = meses === 6 && (m1 === 1 || m1 === 7);
+  const sem = m1 <= 6 ? 1 : 2;
+  const proxSem = sem === 1 ? 2 : 1;
+  const proxAno = sem === 1 ? y1 : y1 + 1;
   return {
-    label: `${monthLabel(cycle.inicio)} – ${monthLabel(cycle.fim)}`,
+    label: semestral ? `${sem}º semestre ${y1} (${range})` : range,
     meses,
     vencido: y2 * 12 + (m2 - 1) < atual,
-    podeEstender: meses < 12,
+    proximoLabel: `${proxSem}º semestre ${proxAno}`,
   };
 }
 
 /** Competências (YYYY-MM-01) disponíveis para uma nova meta: meses do ciclo vigente e do
- *  próximo (se já renovado), ou de um ciclo de 6 meses a partir do mês corrente quando ainda
- *  não há ciclo. Padrão: mês corrente (ou o primeiro mês disponível depois dele). */
+ *  próximo (se já renovado), ou do semestre corrente quando ainda não há ciclo. Padrão: mês corrente (ou o primeiro mês disponível depois dele). */
 export function competenciasDoCiclo(
   cycle: GoalsCycle | null,
   proximo: GoalsCycle | null = null,
@@ -370,9 +375,11 @@ export function competenciasDoCiclo(
   };
   const iso = (k: number) => `${Math.floor(k / 12)}-${String((k % 12) + 1).padStart(2, "0")}-01`;
   const atual = today.getFullYear() * 12 + today.getMonth();
+  // Sem ciclo: o semestre corrente (jan–jun ou jul–dez), que é o ciclo criado ao salvar.
+  const semIni = today.getFullYear() * 12 + (today.getMonth() < 6 ? 0 : 6);
   const faixas: Array<[number, number]> = cycle
     ? [[idx(cycle.inicio), idx(cycle.fim)]]
-    : [[atual, atual + 5]];
+    : [[semIni, semIni + 5]];
   if (cycle && proximo) faixas.push([idx(proximo.inicio), idx(proximo.fim)]);
   const meses: string[] = [];
   for (const [a, b] of faixas) for (let k = a; k <= b; k++) meses.push(iso(k));
