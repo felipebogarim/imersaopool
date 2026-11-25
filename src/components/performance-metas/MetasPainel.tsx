@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
+import { Gauge, Layers, Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,7 @@ import {
 import { CompetenciaSelect, MetasCicloControl } from "./MetasCicloControl";
 import { PortfolioMetaPanel } from "./PortfolioMetaPanel";
 import { MetasInvestigacaoToggle } from "./MetasInvestigacaoToggle";
+import { MetasSecaoTitulo } from "./MetasSecaoTitulo";
 import { MetasComparativoChart } from "./MetasComparativoChart";
 import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
@@ -412,6 +413,13 @@ export function MetasPainel({
           </div>
         </div>
 
+        <MetasSecaoTitulo
+          numero={1}
+          icon={Gauge}
+          titulo="Visão geral do cliente"
+          descricao="Meta geral e categoria: soma de todos os portfólios"
+        />
+
         {/* Cabeçalho: Dash de Resultado Geral + Timeline de Categoria */}
         <div ref={headerCardsRef} className="grid gap-3 grid-cols-1 lg:grid-cols-12 items-stretch">
           {/* 1. Dash de resultado geral: Gauge Meta Atual com visão 9MM proporcional */}
@@ -459,6 +467,14 @@ export function MetasPainel({
       )}
 
       {/* ================= 2. Gráfico principal ================= */}
+      <MetasSecaoTitulo
+        numero={2}
+        icon={Layers}
+        tom="violet"
+        titulo="Detalhe por portfólio"
+        descricao="Atingimento e meta de cada portfólio: clique em um portfólio para editar"
+        className="pt-4"
+      />
       <div ref={chartRef}>
         <MetasComparativoChart
           data={comparativo}
