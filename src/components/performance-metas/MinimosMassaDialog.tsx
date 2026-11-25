@@ -8,7 +8,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import {
   applyMetasMinimosMassa,
   type MinimosMassaResultado,
@@ -47,18 +45,18 @@ export function MinimosMassaButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Badge
-        variant="outline"
-        className={cn(
-          "cursor-pointer gap-1 border-sky-300 px-2.5 py-1 text-[10px] font-bold uppercase tracking-tight text-sky-700 hover:bg-sky-500/10 dark:text-sky-300",
-          disabled && "pointer-events-none opacity-50",
-        )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1.5 px-2 text-xs font-medium normal-case text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+        disabled={disabled}
         onClick={() => setOpen(true)}
-        title="Preencher a meta do gestor com as Metas Mínimas nos portfólios ainda sem meta"
+        title="Preencher a meta do gestor com as Metas Mínimas nos portfólios sem meta revisada"
       >
-        <Sparkles className="inline h-3 w-3" />
+        <Sparkles className="h-3.5 w-3.5" />
         Aplicar mínimos em massa
-      </Badge>
+      </Button>
       {open && (
         <MinimosMassaDialog
           open={open}

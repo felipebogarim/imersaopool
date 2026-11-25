@@ -271,13 +271,16 @@ export function MetasCarteiraList({
             Revisados
             {revisadoOnly && <X className="ml-0.5 h-3 w-3 inline-block" />}
           </Badge>
-          {gestao && <MinimosCategoriaButton />}
           {gestao && (
-            <MinimosMassaButton
-              todos={carteiraMassa}
-              filtrados={filtradosMassa}
-              disabled={isLoading}
-            />
+            // Funções (não filtros): estilo discreto, separadas dos chips de filtro.
+            <div className="flex items-center gap-0.5 border-l border-border pl-2">
+              <MinimosCategoriaButton />
+              <MinimosMassaButton
+                todos={carteiraMassa}
+                filtrados={filtradosMassa}
+                disabled={isLoading}
+              />
+            </div>
           )}
           {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
             <button

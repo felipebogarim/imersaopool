@@ -6,7 +6,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,15 +29,17 @@ export function MinimosCategoriaButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Badge
-        variant="outline"
-        className="cursor-pointer gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-tight hover:bg-muted"
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1.5 px-2 text-xs font-medium normal-case text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         onClick={() => setOpen(true)}
         title="Configurar a meta mínima por portfólio para cada categoria"
       >
-        <ShieldCheck className="inline h-3 w-3" />
+        <ShieldCheck className="h-3.5 w-3.5" />
         Metas Mínimas
-      </Badge>
+      </Button>
       {open && <MinimosCategoriaDialog open={open} onOpenChange={setOpen} />}
     </>
   );
