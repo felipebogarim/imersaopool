@@ -61,6 +61,7 @@ import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
+import { MetasShareWhatsapp } from "./MetasShareWhatsapp";
 
 const FAMILY_SWATCH = [
   "bg-sky-500",
@@ -137,6 +138,8 @@ export function MetasPainel({
   const [conviteOpen, setConviteOpen] = useState(false);
   const [review, setReview] = useState<GoalReview | null>(null);
   const [reopening, setReopening] = useState(false);
+  const headerCardsRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!vis.usarControlesGestao) return;
@@ -377,6 +380,13 @@ export function MetasPainel({
               >
                 <Link2 className="mr-1.5 h-4 w-4" /> Revisar vínculo
               </Button>
+              <MetasShareWhatsapp
+                clienteNome={cliente.razaoSocial}
+                periodoReferencia={cliente.periodoLabel ?? "nov/26"}
+                categoria={cliente.categoria}
+                repName={cliente.repName}
+                blocks={[headerCardsRef, chartRef]}
+              />
             </>
           )}
           <div className="ml-auto flex items-center gap-3">
@@ -398,7 +408,7 @@ export function MetasPainel({
         </div>
 
         {/* Cabeçalho: Dash de Resultado Geral + Timeline de Categoria */}
-        <div className="grid gap-3 grid-cols-1 lg:grid-cols-12 items-stretch">
+        <div ref={headerCardsRef} className="grid gap-3 grid-cols-1 lg:grid-cols-12 items-stretch">
           {/* 1. Dash de resultado geral: Gauge Meta Atual com visão 9MM proporcional */}
           <div className="lg:col-span-4 flex flex-col h-full">
             <MetaAtualGaugeCard
@@ -432,12 +442,14 @@ export function MetasPainel({
       )}
 
       {/* ================= 2. Gráfico principal ================= */}
-      <MetasComparativoChart
-        data={comparativo}
-        vis={vis}
-        selected={selected}
-        onSelect={setSelected}
-      />
+      <div ref={chartRef}>
+        <MetasComparativoChart
+          data={comparativo}
+          vis={vis}
+          selected={selected}
+          onSelect={setSelected}
+        />
+      </div>
 
       {/* ================= 3. Painel do portfólio selecionado ================= */}
       {(() => {

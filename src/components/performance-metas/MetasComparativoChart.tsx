@@ -7,6 +7,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -38,7 +39,7 @@ export function MetasComparativoChart({
 }) {
   const peak = Math.max(120, ...data.map((d) => d.performancePct ?? 0));
   const step = peak <= 150 ? 25 : peak <= 300 ? 50 : 100;
-  const yMax = Math.ceil(peak / step) * step;
+  const yMax = Math.ceil((peak + step * 0.5) / step) * step;
   const chartData = data.map((d) => ({ ...d, perf: d.performancePct ?? 0 }));
 
   const selectByLabel = (label: unknown) => {
@@ -57,13 +58,13 @@ export function MetasComparativoChart({
           Clique em um portfólio para editar a meta
         </p>
       </div>
-      <div className="h-[290px] w-full overflow-x-auto sm:overflow-visible">
+      <div className="h-[310px] w-full overflow-x-auto sm:overflow-visible">
         <div className="h-full min-w-[520px] sm:min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
               barCategoryGap="6%"
-              margin={{ top: 12, right: 12, left: -10, bottom: 0 }}
+              margin={{ top: 32, right: 12, left: -10, bottom: 0 }}
               onClick={(e) => selectByLabel(e?.activeLabel)}
             >
               <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} />
@@ -118,6 +119,43 @@ export function MetasComparativoChart({
                 content={<ComparativoTooltip vis={vis} />}
               />
               <Bar dataKey="perf" radius={[6, 6, 0, 0]} maxBarSize={180} style={{ cursor: "pointer" }}>
+                <LabelList
+                  dataKey="perf"
+                  position="top"
+                  content={(props: any) => {
+                    const { x, y, width, index } = props;
+                    const pt = chartData[index];
+                    if (!pt) return null;
+                    const ating = pt.performancePct != null ? fmtPoints(pt.performancePct) : "0%";
+                    const meta = pt.metaValor != null ? fmtBRL(pt.metaValor) : "—";
+                    const barTop = typeof y === "number" ? y : 0;
+                    const barCenterX =
+                      typeof x === "number" && typeof width === "number" ? x + width / 2 : 0;
+                    const labelY = Math.max(barTop - 26, 6);
+                    return (
+                      <g transform={`translate(${barCenterX}, ${labelY})`}>
+                        <text
+                          x={0}
+                          y={0}
+                          textAnchor="middle"
+                          className="fill-foreground font-bold text-[11px]"
+                          style={{ fill: "var(--foreground, #0f172a)" }}
+                        >
+                          {ating}
+                        </text>
+                        <text
+                          x={0}
+                          y={13}
+                          textAnchor="middle"
+                          className="fill-muted-foreground font-medium text-[10px]"
+                          style={{ fill: "var(--muted-foreground, #64748b)" }}
+                        >
+                          {`Meta: ${meta}`}
+                        </text>
+                      </g>
+                    );
+                  }}
+                />
                 {chartData.map((d) => {
                   const st = statusOf(d.performancePct);
                   const isSel = d.familia === selected;

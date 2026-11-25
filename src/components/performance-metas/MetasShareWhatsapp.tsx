@@ -1,10 +1,9 @@
-// Botão "Compartilhar no WhatsApp" do painel de metas do cliente: gera a imagem (cabeçalho +
-// blocos da tela) e, num segundo clique, compartilha somente a imagem, sem texto.
-// O segundo clique é necessário porque o navegador só libera o compartilhamento/cópia logo após
-// uma ação do usuário, e a geração da imagem leva alguns segundos.
+// Botão "Compartilhar" do painel de metas do cliente: gera a imagem processada (cabeçalho +
+// blocos da tela: gauge, timeline de categoria e gráfico com meta e atingimento nas barras)
+// e permite compartilhar diretamente no WhatsApp, copiar ou baixar.
 
 import { useEffect, useState, type RefObject } from "react";
-import { Download, Loader2, Share2 } from "lucide-react";
+import { Copy, Download, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,12 +25,16 @@ function WhatsappIcon({ className }: { className?: string }) {
 }
 
 export function MetasShareWhatsapp({
-  title,
-  subtitle,
+  clienteNome,
+  periodoReferencia,
+  categoria,
+  repName,
   blocks,
 }: {
-  title: string;
-  subtitle: string;
+  clienteNome: string;
+  periodoReferencia: string;
+  categoria?: string | null;
+  repName?: string | null;
   /** Blocos da tela que entram na imagem, na ordem. */
   blocks: Array<RefObject<HTMLElement | null>>;
 }) {
@@ -47,7 +50,7 @@ export function MetasShareWhatsapp({
   }, [blob]);
 
   const fileName = `metas-${
-    title
+    clienteNome
       .normalize("NFD")
       .replace(/[̀-ͯ]/g, "")
       .replace(/[^a-zA-Z0-9]+/g, "-")
@@ -58,10 +61,20 @@ export function MetasShareWhatsapp({
 
   async function gerar() {
     const els = blocks.map((r) => r.current).filter((e): e is HTMLElement => !!e);
-    if (els.length === 0) return;
+    if (els.length === 0) {
+      toast.error("Elementos visuais ainda não carregados na tela.");
+      return;
+    }
     setGerando(true);
     try {
-      setBlob(await buildMetasShareImage({ title, subtitle, blocks: els }));
+      const b = await buildMetasShareImage({
+        clienteNome,
+        periodoReferencia,
+        categoria,
+        repName,
+        blocks: els,
+      });
+      setBlob(b);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível gerar a imagem.");
     } finally {
@@ -72,15 +85,36 @@ export function MetasShareWhatsapp({
   async function compartilhar() {
     if (!blob) return;
     const r = await shareImageOnWhatsapp(blob, fileName);
-    if (r === "shared") setBlob(null);
-    else if (r === "copied")
-      toast.success("Imagem copiada.", {
-        description: "Abrimos o WhatsApp Web: escolha a conversa e cole (Ctrl/Cmd + V).",
+    if (r === "shared") {
+      setBlob(null);
+      toast.success("Metas compartilhadas com sucesso!");
+    } else if (r === "copied") {
+      toast.success("Imagem copiada para a área de transferência!", {
+        description: "Abrimos o WhatsApp Web: basta colar (Ctrl/Cmd + V) na conversa.",
       });
-    else if (r === "downloaded")
+    } else if (r === "downloaded") {
       toast.success("Imagem baixada.", {
         description: "Abrimos o WhatsApp Web: anexe a imagem baixada na conversa.",
       });
+    }
+  }
+
+  async function copiar() {
+    if (!blob) return;
+    try {
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        toast.success("Imagem copiada para a área de transferência!", {
+          description: "Você já pode colar diretamente na conversa do WhatsApp (Ctrl/Cmd + V).",
+        });
+      } else {
+        toast.error("Seu navegador não suporta cópia direta de imagem.");
+      }
+    } catch (e) {
+      toast.error("Não foi possível copiar a imagem.", {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    }
   }
 
   function baixar() {
@@ -89,41 +123,58 @@ export function MetasShareWhatsapp({
     a.href = preview;
     a.download = fileName;
     a.click();
+    toast.success("Download da imagem iniciado.");
   }
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => void gerar()} disabled={gerando}>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => void gerar()}
+        disabled={gerando}
+        className="gap-1.5 font-medium"
+      >
         {gerando ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
         ) : (
-          <WhatsappIcon className="mr-1.5 h-4 w-4 text-[#25D366]" />
+          <Share2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
         )}
-        {gerando ? "Gerando imagem…" : "Compartilhar no WhatsApp"}
+        {gerando ? "Gerando imagem…" : "Compartilhar"}
       </Button>
 
       <Dialog open={!!blob} onOpenChange={(v) => !v && setBlob(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Share2 className="h-4 w-4" /> Compartilhar imagem
+              <Share2 className="h-5 w-5 text-emerald-600" /> Compartilhar metas no WhatsApp
             </DialogTitle>
-            <DialogDescription>Somente a imagem é compartilhada, sem texto.</DialogDescription>
+            <DialogDescription>
+              Imagem processada com nome do cliente ({clienteNome}), período ({periodoReferencia}) e
+              metas/atingimento por portfólio.
+            </DialogDescription>
           </DialogHeader>
+
           {preview && (
-            <img
-              src={preview}
-              alt={`Metas de ${title}`}
-              className="max-h-[60vh] w-full rounded-md border border-border object-contain"
-            />
+            <div className="flex justify-center rounded-lg border border-border bg-slate-100 p-2 dark:bg-slate-900">
+              <img
+                src={preview}
+                alt={`Metas de ${clienteNome}`}
+                className="max-h-[60vh] w-auto max-w-full rounded-md object-contain shadow-sm"
+              />
+            </div>
           )}
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={baixar}>
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={copiar}>
+              <Copy className="mr-1.5 h-4 w-4" /> Copiar imagem
+            </Button>
+            <Button variant="outline" onClick={baixar}>
               <Download className="mr-1.5 h-4 w-4" /> Baixar imagem
             </Button>
             <Button
               onClick={() => void compartilhar()}
-              className="bg-[#25D366] text-white hover:bg-[#1ebe5a]"
+              className="bg-[#25D366] text-white hover:bg-[#1ebe5a] font-medium"
             >
               <WhatsappIcon className="mr-1.5 h-4 w-4" /> Enviar no WhatsApp
             </Button>
