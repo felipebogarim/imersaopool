@@ -88,6 +88,8 @@ export type MetasClienteInfo = {
   repId: string | null;
   repName: string;
   periodoLabel: string | null;
+  /** Fim do período do upload (YYYY-MM-DD): define o semestre de corte da categoria. */
+  periodoFim?: string | null;
   totalPct: number | null;
   familiaPct: Record<string, number | null>;
   uploadId?: string | null;
@@ -431,6 +433,7 @@ export function MetasPainel({
             <CategoriaTimelineCard
               categoria={cliente.categoria}
               realizado={totalRealizado}
+              periodoFim={cliente.periodoFim}
               periodoLabel={cliente.periodoLabel}
             />
           </div>
@@ -441,6 +444,7 @@ export function MetasPainel({
           <AlertaSituacaoCard
             categoria={cliente.categoria}
             realizado={totalRealizado}
+            periodoFim={cliente.periodoFim}
             periodoLabel={cliente.periodoLabel}
             clienteNome={cliente.razaoSocial}
           />
