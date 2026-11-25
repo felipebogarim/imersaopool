@@ -281,11 +281,8 @@ export function CategoriaTimelineCard({
           {/* Legenda do marcador atual */}
           <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
             <span>R$ 0</span>
-            <span className="text-center tabular-nums">
-              <span className="font-semibold text-foreground">
-                Acumulado {decorridos}: {fmtBRL(acumulado)}
-              </span>
-              {restantes && <> · projeção do semestre {fmtBRL(projecao)}</>}
+            <span className="text-center font-semibold text-foreground tabular-nums">
+              Média mensal real: {fmtBRL(realizado)}
             </span>
             <span>{fmtK(pisoSemestral("Black"))}+</span>
           </div>
