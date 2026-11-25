@@ -2,7 +2,15 @@
 // Clientes), sem linhas de resumo da planilha. Compartilhada pela lista e pelo BI Metas.
 
 import { useMemo } from "react";
-import { statusRevisao } from "@/lib/performance-metas-bulk";
+import { statusRevisaoCliente } from "@/lib/performance-metas-bulk";
+
+type ItemRevisao = {
+  familia: string;
+  meta_mensal: number | null;
+  origem: string | null;
+  comentario_gestor: string | null;
+  vigente_desde: string | null;
+};
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { FarolStatus } from "@/lib/performance-farol";
@@ -109,20 +117,26 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
           return new Map<string, { count: number; completo: boolean; emMassa: number }>();
         }
 
-        const map = new Map<string, { count: number; completo: boolean; emMassa: number }>();
+        // Agrupa os ciclos por cliente: as metas revisadas podem estar no ciclo vigente e no
+        // próximo semestre (o painel mostra os dois), então a contagem considera ambos.
+        const porCliente = new Map<
+          string,
+          Array<{ inicio: string; fim: string; items: ItemRevisao[] }>
+        >();
         for (const c of cycles) {
           const key = `${c.representative_id}|${c.cliente_key}`;
-          if (map.has(key)) continue;
-
-          const items = (c.performance_goal_items ?? []) as Array<{
-            familia: string;
-            meta_mensal: number | null;
-            origem: string | null;
-            comentario_gestor: string | null;
-            vigente_desde: string | null;
-          }>;
+          const lista = porCliente.get(key) ?? [];
+          lista.push({
+            inicio: c.inicio,
+            fim: c.fim,
+            items: (c.performance_goal_items ?? []) as ItemRevisao[],
+          });
+          porCliente.set(key, lista);
+        }
+        const map = new Map<string, { count: number; completo: boolean; emMassa: number }>();
+        for (const [key, ciclos] of porCliente) {
           // Revisada = meta gravada pelo gestor; meta mínima em massa conta à parte ("IA").
-          const { revisadas, emMassa } = statusRevisao(items);
+          const { revisadas, emMassa } = statusRevisaoCliente(ciclos);
           map.set(key, { count: revisadas, completo: revisadas >= 7, emMassa });
         }
         return map;

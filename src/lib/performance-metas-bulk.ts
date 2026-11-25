@@ -197,3 +197,24 @@ export function competenciasMassa(
   if (cycle && proximo && proximo.inicio > vigente) out.push(proximo.inicio);
   return out;
 }
+
+type CicloRevisao = { inicio: string; fim: string; items: readonly ItemMeta[] };
+
+/**
+ * Revisão do cliente considerando TODOS os ciclos ainda em vigor (vigente + futuros), e não só o
+ * de início mais recente: um semestre futuro criado antes das revisões pode ter só parte dos
+ * portfólios, enquanto as demais metas revisadas estão no ciclo vigente (o painel mostra ambas).
+ * Sem ciclo em vigor, usa o último. Por portfólio vale a versão mais recente entre os ciclos.
+ */
+export function statusRevisaoCliente(
+  ciclos: readonly CicloRevisao[],
+  today = new Date(),
+): { revisadas: number; emMassa: number } {
+  if (!ciclos.length) return { revisadas: 0, emMassa: 0 };
+  const mesAtual = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  const emVigor = ciclos.filter((c) => c.fim >= mesAtual);
+  const usados = emVigor.length
+    ? emVigor
+    : [ciclos.reduce((a, b) => (b.inicio > a.inicio ? b : a))];
+  return statusRevisao(usados.flatMap((c) => c.items));
+}

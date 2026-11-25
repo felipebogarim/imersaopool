@@ -11,6 +11,7 @@ import {
   competenciasMassa,
   minimosParaFaltantes,
   statusRevisao,
+  statusRevisaoCliente,
 } from "./performance-metas-bulk";
 
 const cycle = { id: "c1", inicio: "2026-11-01", fim: "2027-04-01" } as GoalsState["cycle"];
@@ -171,5 +172,40 @@ describe("metas mínimas em massa", () => {
         },
       ]),
     ).toEqual({ revisadas: 1, emMassa: 0 });
+  });
+});
+
+describe("revisão do cliente entre ciclos", () => {
+  const hoje = new Date(2026, 10, 25);
+  const it7 = (vig: string) =>
+    CANONICAL_FAMILIES.map((familia) => ({
+      familia,
+      meta_mensal: 3000,
+      origem: "gestor",
+      vigente_desde: vig,
+    }));
+
+  it("semestre futuro com 1 portfólio não esconde as 7 revisadas do ciclo vigente", () => {
+    const r = statusRevisaoCliente(
+      [
+        { inicio: "2026-11-01", fim: "2027-04-01", items: it7("2027-01-01") },
+        {
+          inicio: "2027-07-01",
+          fim: "2027-12-01",
+          items: [
+            { familia: "PERFIL", meta_mensal: 4000, origem: "gestor", vigente_desde: "2027-07-01" },
+          ],
+        },
+      ],
+      hoje,
+    );
+    expect(r.revisadas).toBe(7);
+  });
+
+  it("ciclo vencido não conta quando há ciclo em vigor; sem nenhum em vigor usa o último", () => {
+    const antigo = { inicio: "2025-07-01", fim: "2025-12-01", items: it7("2025-07-01") };
+    const atual = { inicio: "2026-07-01", fim: "2026-12-01", items: it7("2026-07-01").slice(0, 2) };
+    expect(statusRevisaoCliente([antigo, atual], hoje).revisadas).toBe(2);
+    expect(statusRevisaoCliente([antigo], hoje).revisadas).toBe(7);
   });
 });
