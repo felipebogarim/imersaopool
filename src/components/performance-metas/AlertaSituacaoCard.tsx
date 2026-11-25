@@ -3,32 +3,15 @@
 // Design suave, moderno e com comunicação provocativa (positivamente / comercialmente inspiradora).
 
 import { useMemo } from "react";
-import {
-  AlertTriangle,
-  Award,
-  Crown,
-  Flame,
-  Rocket,
-  ShieldAlert,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { AlertTriangle, Crown, Flame, Rocket, ShieldCheck, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtBRL } from "@/lib/performance-metas";
-import { semestreDeCorte, situacaoSemestral } from "@/lib/performance-categoria-semestre";
+import { ESTADO_LABEL, type SituacaoCategoria } from "@/lib/performance-categoria-semestre";
 
 export type AlertaSituacaoCardProps = {
-  categoria: string | null;
-  /** Média mensal de compras no período do upload (R$). */
-  realizado: number;
-  /** Fim do período dos dados: define o semestre de corte (categoria é apurada por semestre). */
-  periodoFim?: string | null;
-  /** Acumulado real do semestre, quando conhecido. */
-  acumuladoSemestre?: number | null;
+  /** Situação apurada por `situacaoCategoria` — a mesma do card de categoria. */
+  situacao: SituacaoCategoria;
   periodoLabel?: string | null;
-  clienteNome?: string;
   className?: string;
 };
 
@@ -37,7 +20,7 @@ type AlertaConfig = {
     | "degrade_critico"
     | "degrade_moderado"
     | "upgrade_proximo"
-    | "upgrade_conquistado"
+    | "evolucao_projetada"
     | "manutencao_segura"
     | "silver_consolidacao";
   badge: string;
@@ -58,49 +41,36 @@ type AlertaConfig = {
 };
 
 export function AlertaSituacaoCard({
-  categoria,
-  realizado,
-  periodoFim,
-  acumuladoSemestre,
+  situacao: sit,
   periodoLabel,
   className,
 }: AlertaSituacaoCardProps) {
+  const estimado = sit.mediaEstimada || sit.acumuladoEstimado;
   const config = useMemo<AlertaConfig>(() => {
-    // Corte semestral: tudo em acumulado no semestre (piso mensal × 6).
-    const sit = situacaoSemestral({
-      categoria,
-      mediaMensal: realizado,
-      acumulado: acumuladoSemestre,
-      semestre: semestreDeCorte(periodoFim),
-    });
-    const { manter, upgrade, acumulado, projecao, semestre } = sit;
+    const { manter, proxima, semestre } = sit;
     const tierIndex = ["Silver", "Gold", "Black"].indexOf(sit.categoria);
     const currentTier = { name: sit.categoria };
-    const nextTier = upgrade ? { name: upgrade.categoria } : null;
-    const metaManutencao = manter.piso;
-    const atingimentoManutencaoPct = manter.atingimentoPct;
-    const faltaManutencao = manter.falta;
-    const sobraManutencao = manter.sobra;
-    const metaUpgrade = upgrade?.piso ?? metaManutencao;
-    const faltaUpgrade = upgrade?.falta ?? 0;
-    const upgradeAlcancado = upgrade?.atingido ?? false;
-    const quando = semestre.restantesLabel ? ` em ${semestre.restantesLabel}` : "";
-    const porMes = (v: number | null | undefined) =>
-      v != null ? ` (${fmtBRL(v)}/mês${quando})` : "";
-    const ritmo = semestre.restantesLabel
-      ? ` Mantida a média de ${fmtBRL(realizado)}/mês, o semestre fecha em ${fmtBRL(projecao)}.`
-      : "";
-    const mediaTxt = `média de ${fmtBRL(realizado)}/mês`;
+    const nextTier = proxima ? { name: proxima.categoria } : null;
+    const est = sit.mediaEstimada ? " estimada" : "";
+    const mediaTxt = `média mensal${est} de ${fmtBRL(sit.mediaMensal)}`;
+    const quando = semestre.restantesLabel ? ` (${semestre.restantesLabel})` : "";
+    const necessario = (m: typeof manter) =>
+      m.necessarioMes != null
+        ? ` Compras necessárias até o fim do semestre: ${fmtBRL(m.volumeNecessario)} — média de ${fmtBRL(m.necessarioMes)}/mês${quando}.`
+        : "";
+    const deficit = Math.max(0, -manter.saldoProjetado);
+    const excedente = Math.max(0, manter.saldoProjetado);
+    const projTxt = `${fmtBRL(sit.projecao)} projetados no fechamento`;
 
-    // 1. Upgrade Conquistado
-    if (upgradeAlcancado && nextTier) {
+    // 1. Evolução de categoria projetada (média compatível com a próxima categoria)
+    if (sit.evolucaoProjetada && nextTier && proxima) {
       return {
-        tipo: "upgrade_conquistado",
-        badge: `Salto de Categoria Conquistado · ${semestre.label}`,
-        titulo: `Parabéns! Cliente qualificado para Categoria ${nextTier.name}`,
-        mensagem: `Com ${mediaTxt}, o cliente supera o piso ${nextTier.name} de ${fmtBRL(upgrade?.pisoMensal ?? 0)}/mês e fecha o ${semestre.label} em ${fmtBRL(projecao)} (piso ${fmtBRL(metaUpgrade)}). Momento ideal para consolidar a parceria no novo patamar e expandir linhas de portfólio!`,
-        destaqueValor: `+${fmtBRL(upgrade?.sobra ?? 0)}`,
-        destaqueRotulo: `acima de ${nextTier.name} no semestre`,
+        tipo: "evolucao_projetada",
+        badge: `Evolução projetada para ${nextTier.name} · ${semestre.label}`,
+        titulo: `Média compatível com a Categoria ${nextTier.name}`,
+        mensagem: `Com ${mediaTxt}, o cliente supera o piso ${nextTier.name} de ${fmtBRL(proxima.pisoMensal)}/mês (${proxima.atingimentoPct.toFixed(0)}%). Mantido o ritmo: ${projTxt}, excedente projetado de ${fmtBRL(proxima.saldoProjetado)} sobre o piso semestral de ${fmtBRL(proxima.piso)}. A evolução só se confirma no corte — momento de consolidar o novo patamar!`,
+        destaqueValor: `+${fmtBRL(proxima.saldoProjetado)}`,
+        destaqueRotulo: `excedente projetado (${nextTier.name})`,
         icon: Crown,
         themeClasses: {
           container:
@@ -117,15 +87,21 @@ export function AlertaSituacaoCard({
       };
     }
 
-    // 2. Muito Próximo do Upgrade (projeção do semestre a partir de 85% do piso da próxima categoria)
-    if (nextTier && upgrade && !sit.encerrado && upgrade.atingimentoPct >= 85) {
+    // 2. Próximo da evolução: categoria atual em manutenção/garantida e média ≥ 85% da próxima
+    if (
+      nextTier &&
+      proxima &&
+      !sit.encerrado &&
+      sit.estado !== "risco" &&
+      proxima.atingimentoPct >= 85
+    ) {
       return {
         tipo: "upgrade_proximo",
-        badge: `Oportunidade de Upgrade · Rumo a ${nextTier.name}`,
-        titulo: `Ao alcance do patamar ${nextTier.name}! Faltam ${fmtBRL(faltaUpgrade)} no acumulado do semestre`,
-        mensagem: `Com ${mediaTxt}, o cliente está a ${upgrade.atingimentoPct.toFixed(0)}% do piso ${nextTier.name} (${fmtBRL(upgrade.pisoMensal)}/mês = ${fmtBRL(metaUpgrade)} no semestre).${ritmo} Para subir no corte faltam ${fmtBRL(faltaUpgrade)}${porMes(upgrade.necessarioMes)} — um pedido de reposição ou novos portfólios garante a promoção!`,
-        destaqueValor: `Faltam ${fmtBRL(faltaUpgrade)}`,
-        destaqueRotulo: `alvo semestral ${fmtBRL(metaUpgrade)}`,
+        badge: `${ESTADO_LABEL[sit.estado]} · Rumo a ${nextTier.name}`,
+        titulo: `Ao alcance do patamar ${nextTier.name}: média a ${proxima.atingimentoPct.toFixed(0)}% do piso de ${fmtBRL(proxima.pisoMensal)}/mês`,
+        mensagem: `Com ${mediaTxt}, déficit projetado de ${fmtBRL(-proxima.saldoProjetado)} para o piso ${nextTier.name} de ${fmtBRL(proxima.piso)} no semestre.${necessario(proxima)}`,
+        destaqueValor: `−${fmtBRL(-proxima.saldoProjetado)}`,
+        destaqueRotulo: `déficit projetado (${nextTier.name})`,
         icon: Rocket,
         themeClasses: {
           container:
@@ -142,19 +118,19 @@ export function AlertaSituacaoCard({
       };
     }
 
-    // 3. Risco Crítico de Degrade (Gold/Black abaixo do piso da categoria anterior ou < 50% da manutenção)
-    if (tierIndex > 0 && !manter.atingido && sit.risco.nivel === "alto") {
+    // 3. Em risco, nível alto (abaixo do piso da categoria anterior ou semestre encerrado)
+    if (tierIndex > 0 && sit.estado === "risco" && sit.risco.nivel === "alto") {
       return {
         tipo: "degrade_critico",
-        badge: `Blindagem de Categoria · ${semestre.label}`,
+        badge: `Em risco · ${sit.risco.titulo} · ${semestre.label}`,
         titulo: sit.encerrado
-          ? `Semestre fechou ${fmtBRL(faltaManutencao)} abaixo do piso ${currentTier.name}`
-          : `Atenção: faltam ${fmtBRL(faltaManutencao)} no acumulado do semestre para defender a Categoria ${currentTier.name}`,
+          ? `Semestre fechou com média abaixo do piso ${currentTier.name} de ${fmtBRL(manter.pisoMensal)}/mês`
+          : `Média mensal a ${manter.atingimentoPct.toFixed(0)}% do piso ${currentTier.name}: déficit projetado de ${fmtBRL(deficit)}`,
         mensagem: sit.encerrado
-          ? `O cliente acumulou ${fmtBRL(acumulado)} no ${semestre.label}, abaixo do piso semestral de ${fmtBRL(metaManutencao)}. Plano de recuperação no próximo semestre é prioridade!`
-          : `Com ${mediaTxt}, abaixo do piso ${currentTier.name} de ${fmtBRL(manter.pisoMensal)}/mês.${ritmo} Faltam ${fmtBRL(faltaManutencao)} para o piso de ${fmtBRL(metaManutencao)}${porMes(manter.necessarioMes)} — uma ativação concentrada nos portfólios com menor compra protege o cliente no corte!`,
-        destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
-        destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
+          ? `Com ${mediaTxt} no ${semestre.label}, abaixo do piso de ${fmtBRL(manter.pisoMensal)}/mês (${fmtBRL(manter.piso)} no semestre). Plano de recuperação no próximo semestre é prioridade!`
+          : `Com ${mediaTxt}, abaixo do piso ${currentTier.name} de ${fmtBRL(manter.pisoMensal)}/mês.${necessario(manter)} Ativação concentrada nos portfólios com menor compra protege o cliente no corte.`,
+        destaqueValor: `−${fmtBRL(deficit)}`,
+        destaqueRotulo: `déficit projetado · piso ${fmtBRL(manter.piso)}`,
         icon: Flame,
         themeClasses: {
           container:
@@ -170,15 +146,15 @@ export function AlertaSituacaoCard({
       };
     }
 
-    // 4. Risco Moderado de Degrade (Gold/Black acima do piso anterior, mas sem garantir o patamar atual)
-    if (tierIndex > 0 && !manter.atingido) {
+    // 4. Em risco (média abaixo do piso mensal, acima do piso anterior)
+    if (tierIndex > 0 && sit.estado === "risco") {
       return {
         tipo: "degrade_moderado",
-        badge: `Atenção ao Ritmo · Manutenção no ${semestre.label}`,
-        titulo: `Falta pouco para carimbar a permanência em ${currentTier.name}`,
-        mensagem: `Com ${mediaTxt}, o cliente está a ${atingimentoManutencaoPct.toFixed(0)}% do piso ${currentTier.name} (${fmtBRL(manter.pisoMensal)}/mês = ${fmtBRL(metaManutencao)} no semestre).${ritmo} Faltam ${fmtBRL(faltaManutencao)} no acumulado${porMes(manter.necessarioMes)} para blindar a categoria no corte!`,
-        destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
-        destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
+        badge: `Em risco · ${currentTier.name} · ${semestre.label}`,
+        titulo: `Média mensal a ${manter.atingimentoPct.toFixed(0)}% do piso ${currentTier.name} de ${fmtBRL(manter.pisoMensal)}/mês`,
+        mensagem: `Com ${mediaTxt}, abaixo do piso. Mantido o ritmo: ${projTxt}, déficit de ${fmtBRL(deficit)} sobre o piso semestral de ${fmtBRL(manter.piso)}.${necessario(manter)}`,
+        destaqueValor: `−${fmtBRL(deficit)}`,
+        destaqueRotulo: `déficit projetado · piso ${fmtBRL(manter.piso)}`,
         icon: AlertTriangle,
         themeClasses: {
           container:
@@ -196,14 +172,14 @@ export function AlertaSituacaoCard({
     }
 
     // 5. Categoria Silver em Construção de Base (abaixo do piso semestral)
-    if (tierIndex === 0 && !manter.atingido) {
+    if (tierIndex === 0 && sit.estado === "risco") {
       return {
         tipo: "silver_consolidacao",
-        badge: "Ritmo de Ativação · Categoria Silver",
-        titulo: `Faltam ${fmtBRL(faltaManutencao)} no acumulado do semestre para o piso Silver`,
-        mensagem: `Com ${mediaTxt}, abaixo do piso Silver de ${fmtBRL(manter.pisoMensal)}/mês.${ritmo} Com compras regulares${porMes(manter.necessarioMes)} e mix diversificado nos 7 portfólios, o cliente atinge os ${fmtBRL(metaManutencao)} do semestre e mira o salto até Gold!`,
-        destaqueValor: `Faltam ${fmtBRL(faltaManutencao)}`,
-        destaqueRotulo: `piso semestral ${fmtBRL(metaManutencao)}`,
+        badge: `Em risco · ${sit.risco.titulo} · Silver`,
+        titulo: `Média mensal a ${manter.atingimentoPct.toFixed(0)}% do piso Silver de ${fmtBRL(manter.pisoMensal)}/mês`,
+        mensagem: `Com ${mediaTxt}. Mantido o ritmo: ${projTxt}, déficit de ${fmtBRL(deficit)} sobre o piso semestral de ${fmtBRL(manter.piso)}.${necessario(manter)}`,
+        destaqueValor: `−${fmtBRL(deficit)}`,
+        destaqueRotulo: `déficit projetado · piso ${fmtBRL(manter.piso)}`,
         icon: Zap,
         themeClasses: {
           container:
@@ -223,13 +199,20 @@ export function AlertaSituacaoCard({
     // 6. Manutenção Garantida com Segurança
     return {
       tipo: "manutencao_segura",
-      badge: `Patamar ${currentTier.name} ${manter.garantido ? "Garantido" : "Mantido"} · ${semestre.label}`,
-      titulo: `Categoria ${currentTier.name} mantida: ${mediaTxt}, acima do piso de ${fmtBRL(manter.pisoMensal)}/mês`,
-      mensagem: nextTier
-        ? `No ritmo atual o semestre fecha em ${fmtBRL(projecao)}, +${fmtBRL(sobraManutencao)} acima do piso ${currentTier.name} (${fmtBRL(metaManutencao)}). Agora o objetivo é o salto para ${nextTier.name} — faltam ${fmtBRL(faltaUpgrade)} no acumulado${porMes(upgrade?.necessarioMes)}!`
-        : `Excelente performance! No ritmo atual o semestre fecha em ${fmtBRL(projecao)}, +${fmtBRL(sobraManutencao)} acima do piso Black (${fmtBRL(metaManutencao)}). O cliente se mantém no patamar máximo da carteira.`,
-      destaqueValor: `+${fmtBRL(sobraManutencao)}`,
-      destaqueRotulo: `acima de ${currentTier.name} no semestre`,
+      badge: `${ESTADO_LABEL[sit.estado]} · ${currentTier.name} · ${semestre.label}`,
+      titulo:
+        sit.estado === "garantida"
+          ? `Categoria ${currentTier.name} garantida: acumulado real de ${fmtBRL(sit.acumulado)} ≥ piso semestral de ${fmtBRL(manter.piso)}`
+          : `Categoria ${currentTier.name} em manutenção: ${mediaTxt} ≥ piso de ${fmtBRL(manter.pisoMensal)}/mês (${manter.atingimentoPct.toFixed(0)}%)`,
+      mensagem:
+        (sit.estado === "garantida"
+          ? "O piso do semestre já foi atingido com compras reais."
+          : `Mantido o ritmo: ${projTxt}, excedente de ${fmtBRL(excedente)} sobre o piso semestral de ${fmtBRL(manter.piso)}. Ainda não é garantia definitiva: faltam ${fmtBRL(manter.volumeNecessario)} em compras até o fim do semestre.`) +
+        (nextTier && proxima
+          ? ` Para evoluir a ${nextTier.name}: média de ${fmtBRL(proxima.pisoMensal)}/mês (hoje ${proxima.atingimentoPct.toFixed(0)}%).`
+          : " Cliente no patamar máximo da carteira."),
+      destaqueValor: `+${fmtBRL(excedente)}`,
+      destaqueRotulo: `excedente projetado · piso ${fmtBRL(manter.piso)}`,
       icon: ShieldCheck,
       themeClasses: {
         container: "from-sky-500/12 via-sky-500/5 to-card border-sky-300 dark:border-sky-800/60",
@@ -241,7 +224,7 @@ export function AlertaSituacaoCard({
         tagText: "text-sky-700 dark:text-sky-300",
       },
     };
-  }, [categoria, realizado, acumuladoSemestre, periodoFim]);
+  }, [sit]);
 
   const Icon = config.icon;
 
@@ -275,6 +258,14 @@ export function AlertaSituacaoCard({
               >
                 {config.badge}
               </span>
+              {estimado && (
+                <span
+                  className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300"
+                  title={sit.base.memoria.join("\n")}
+                >
+                  Valores estimados
+                </span>
+              )}
               {periodoLabel && (
                 <span className="text-[10px] text-muted-foreground/80 font-medium tabular-nums">
                   {periodoLabel}

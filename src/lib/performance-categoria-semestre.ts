@@ -1,12 +1,16 @@
-// Categoria do cliente (Silver / Gold / Black) com CORTE SEMESTRAL.
+// Categoria do cliente (Silver / Gold / Black) com CORTE SEMESTRAL (1º jan–jun, 2º jul–dez).
 //
-// A categoria é apurada por semestre (1º = jan–jun, 2º = jul–dez). Os pisos conhecidos são
-// mensais (Silver R$ 3.000, Gold R$ 6.000, Black R$ 20.000); no corte valem multiplicados pelos
-// 6 meses do semestre. Portanto o que falta para manter/subir de categoria é o ACUMULADO que
-// falta no semestre — não a diferença na média mensal.
+// Regra: a categoria é mantida/alcançada quando a MÉDIA MENSAL DO SEMESTRE atinge o piso mensal
+// (Silver R$ 3.000, Gold R$ 6.000, Black R$ 20.000) — equivalente a fechar o semestre com
+// acumulado >= piso × 6.
 //
-// Sem a venda mês a mês do cliente, o acumulado do semestre é estimado pela média mensal do
-// período do upload × meses do semestre já cobertos pelos dados (sinalizado em `acumuladoEstimado`).
+// A média é apurada SÓ com meses do semestre de corte (ex.: 2º semestre com dados até outubro →
+// jul–out). Fonte por mês: upload de 1 mês → realizado do mês; upload de vários meses contido no
+// semestre → média mensal daquele período. Sem dados só do semestre (ex.: upload jan–out), a
+// média do período do upload é usada como ESTIMATIVA e isso é sinalizado (`fonte: "estimada"`).
+// Nada é misturado em silêncio: cada indicador sabe se é real ou estimado.
+
+import { lookupFamilyNum } from "./performance-metas-persistence";
 
 export type CategoriaNome = "Silver" | "Gold" | "Black";
 
@@ -111,163 +115,368 @@ export function normalizarCategoria(c: string | null | undefined): CategoriaNome
   return CATEGORIAS_ORDEM.find((x) => x.toLowerCase() === n) ?? "Silver";
 }
 
-// Regra: o cliente mantém/alcança a categoria quando a MÉDIA MENSAL no semestre atinge o piso
-// mensal (Silver 3k, Gold 6k, Black 20k) — equivalente a fechar o semestre com acumulado >= piso
-// semestral (piso mensal × 6). Por isso o status usa a PROJEÇÃO de fechamento (acumulado até
-// agora + média atual nos meses restantes), nunca o acumulado parcial contra o piso cheio.
-// "Falta" = quanto falta no acumulado do semestre para o piso, no ritmo atual.
+// ============================ Base: média do semestre ============================
 
-export type MetaSemestral = {
-  categoria: CategoriaNome;
-  /** Piso semestral (piso mensal × 6). */
-  piso: number;
-  pisoMensal: number;
-  /** No ritmo atual, quanto falta no acumulado do semestre para o piso (0 se atinge). */
-  falta: number;
-  /** No ritmo atual, quanto o semestre fecha acima do piso. */
-  sobra: number;
-  /** Média mensal >= piso mensal (projeção do semestre >= piso semestral). */
-  atingido: boolean;
-  /** Acumulado do semestre já passou do piso (garantido mesmo sem novas compras). */
-  garantido: boolean;
-  /** Média mensal necessária nos meses restantes para fechar no piso (null se garantido/encerrado). */
-  necessarioMes: number | null;
-  /** Projeção ÷ piso (= média mensal ÷ piso mensal quando o acumulado é estimado). */
-  atingimentoPct: number;
+export type UploadCategoria = {
+  upload_id: string;
+  atual?: boolean;
+  periodo_label: string | null;
+  periodo_inicio: string | null;
+  periodo_fim: string | null;
+  realizado: Record<string, unknown> | null;
+  media: Record<string, unknown> | null;
 };
 
-export type SituacaoSemestral = {
-  semestre: SemestreCorte;
-  categoria: CategoriaNome;
+export type FonteMedia = "semestre" | "semestre_parcial" | "estimada";
+
+export type ComposicaoPortfolio = {
+  familia: string;
+  /** Média mensal do portfólio na base usada. */
   mediaMensal: number;
-  /** Acumulado do semestre até o último mês com dados. */
-  acumulado: number;
-  acumuladoEstimado: boolean;
-  /** Fechamento do semestre mantendo a média atual nos meses restantes. */
-  projecao: number;
-  manter: MetaSemestral;
-  upgrade: MetaSemestral | null;
-  /** Piso semestral da categoria abaixo (null para Silver). */
-  pisoAnterior: number | null;
-  encerrado: boolean;
-  risco: {
-    nivel: "baixo" | "medio" | "alto";
-    titulo: string;
-    descricao: string;
-  };
+  origem: string;
 };
 
-function meta(
-  categoria: CategoriaNome,
-  acumulado: number,
-  projecao: number,
-  restantes: number,
-): MetaSemestral {
-  const piso = pisoSemestral(categoria);
-  const garantido = acumulado >= piso;
-  return {
-    categoria,
-    piso,
-    pisoMensal: PISO_MENSAL[categoria],
-    falta: Math.max(0, piso - projecao),
-    sobra: Math.max(0, projecao - piso),
-    atingido: projecao >= piso,
-    garantido,
-    necessarioMes: !garantido && restantes > 0 ? (piso - acumulado) / restantes : null,
-    atingimentoPct: piso > 0 ? (projecao / piso) * 100 : 0,
-  };
+export type BaseCategoria = {
+  semestre: SemestreCorte;
+  mediaMensal: number;
+  fonte: FonteMedia;
+  /** Meses do semestre com dados reais usados na média. */
+  mesesObservados: number;
+  /** Rótulo do período efetivamente usado na média (ex.: "jul–out/2026" ou "Janeiro a Outubro 2026"). */
+  periodoMedia: string;
+  /** Acumulado REAL do semestre (todos os meses decorridos com dados); null se estimado. */
+  acumuladoReal: number | null;
+  composicao: ComposicaoPortfolio[];
+  /** Memória de cálculo, linha a linha. */
+  memoria: string[];
+};
+
+const mesIdx = (iso: string) => {
+  const m = /^(\d{4})-(\d{2})/.exec(iso);
+  return m ? Number(m[1]) * 12 + Number(m[2]) - 1 : NaN;
+};
+const mesLabel = (k: number) => `${MES_ABREV[k % 12]}/${Math.floor(k / 12)}`;
+
+function num(rec: Record<string, unknown> | null | undefined, familia: string): number | null {
+  const v = lookupFamilyNum(rec, familia);
+  return v != null && Number.isFinite(v) && v >= 0 ? v : null;
 }
 
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-export function situacaoSemestral(args: {
-  categoria: string | null | undefined;
-  mediaMensal: number;
+/**
+ * Apura a média mensal do semestre de corte a partir dos uploads do cliente.
+ * O semestre é o que contém o fim do período do upload atual.
+ */
+export function baseCategoriaSemestral(
+  uploads: readonly UploadCategoria[],
+  familias: readonly string[],
+  hoje: Date = new Date(),
+): BaseCategoria {
+  const atual =
+    uploads.find((u) => u.atual) ??
+    [...uploads].sort((a, b) => (a.periodo_fim ?? "").localeCompare(b.periodo_fim ?? "")).pop();
+  const semestre = semestreDeCorte(atual?.periodo_fim ?? null, hoje);
+  const semIni = semestre.ano * 12 + (semestre.semestre === 1 ? 0 : 6);
+  const dataFim = semIni + semestre.mesesDecorridos - 1;
+
+  // Uploads inteiramente contidos nos meses decorridos do semestre.
+  const contidos = uploads
+    .map((u) => ({
+      u,
+      ini: u.periodo_inicio ? mesIdx(u.periodo_inicio) : NaN,
+      fim: u.periodo_fim ? mesIdx(u.periodo_fim) : NaN,
+    }))
+    .filter((x) => Number.isFinite(x.ini) && Number.isFinite(x.fim))
+    .filter((x) => x.ini >= semIni && x.fim <= dataFim && x.fim >= x.ini);
+
+  // Para cada mês decorrido, o upload contido de menor período que o cobre.
+  const porMes = new Map<number, (typeof contidos)[number]>();
+  for (let k = semIni; k <= dataFim; k++) {
+    const c = contidos
+      .filter((x) => x.ini <= k && x.fim >= k)
+      .sort((a, b) => a.fim - a.ini - (b.fim - b.ini))[0];
+    if (c) porMes.set(k, c);
+  }
+
+  const valorMes = (x: (typeof contidos)[number], f: string): { v: number | null; o: string } => {
+    const unico = x.fim === x.ini;
+    const real = num(x.u.realizado, f);
+    const media = num(x.u.media, f);
+    if (unico) return real != null ? { v: real, o: "realizado do mês" } : { v: media, o: "média" };
+    return media != null
+      ? { v: media, o: "média do período" }
+      : { v: real, o: "realizado do período" };
+  };
+
+  const memoria: string[] = [];
+  const meses = [...porMes.keys()].sort((a, b) => a - b);
+  if (meses.length > 0) {
+    let acumulado = 0;
+    const porFamilia = new Map<string, { soma: number; origens: Set<string> }>();
+    for (const k of meses) {
+      const x = porMes.get(k)!;
+      let totalMes = 0;
+      for (const f of familias) {
+        const { v, o } = valorMes(x, f);
+        if (v == null) continue;
+        totalMes += v;
+        const pf = porFamilia.get(f) ?? { soma: 0, origens: new Set<string>() };
+        pf.soma += v;
+        pf.origens.add(o);
+        porFamilia.set(f, pf);
+      }
+      acumulado += totalMes;
+      memoria.push(
+        `${mesLabel(k)}: ${brl(totalMes)} (upload "${x.u.periodo_label ?? "sem rótulo"}", ${
+          x.fim === x.ini ? "realizado do mês" : "média mensal do período"
+        })`,
+      );
+    }
+    const completo = meses.length === semestre.mesesDecorridos;
+    const mediaMensal = acumulado / meses.length;
+    const periodoMedia = `${mesLabel(meses[0])} a ${mesLabel(meses[meses.length - 1])}`;
+    memoria.push(
+      `Média mensal do semestre = ${brl(acumulado)} ÷ ${meses.length} ${
+        meses.length === 1 ? "mês" : "meses"
+      } = ${brl(mediaMensal)}`,
+    );
+    if (!completo) {
+      memoria.push(
+        `Sem dados de ${semestre.mesesDecorridos - meses.length} mês(es) decorrido(s) do semestre: acumulado do semestre estimado.`,
+      );
+    }
+    return {
+      semestre,
+      mediaMensal,
+      fonte: completo ? "semestre" : "semestre_parcial",
+      mesesObservados: meses.length,
+      periodoMedia,
+      acumuladoReal: completo ? acumulado : null,
+      composicao: familias.map((f) => {
+        const pf = porFamilia.get(f);
+        return {
+          familia: f,
+          mediaMensal: pf ? pf.soma / meses.length : 0,
+          origem: pf ? [...pf.origens].join(" + ") : "sem dado",
+        };
+      }),
+      memoria,
+    };
+  }
+
+  // Sem dados só do semestre: estimativa pela média do período do upload atual.
+  const composicao = familias.map((f) => {
+    const media = num(atual?.media, f);
+    const real = num(atual?.realizado, f);
+    return media != null
+      ? { familia: f, mediaMensal: media, origem: "média do período do upload" }
+      : real != null
+        ? { familia: f, mediaMensal: real, origem: "realizado do upload (sem média)" }
+        : { familia: f, mediaMensal: 0, origem: "sem dado" };
+  });
+  const mediaMensal = composicao.reduce((s, c) => s + c.mediaMensal, 0);
+  const periodoMedia = atual?.periodo_label ?? "período do upload";
+  memoria.push(
+    `Não há upload só com meses do ${semestre.label} (${semestre.decorridosLabel || "nenhum mês decorrido"}).`,
+    `Média ESTIMADA = Σ da média mensal por portfólio do upload "${periodoMedia}" = ${brl(mediaMensal)}.`,
+  );
+  return {
+    semestre,
+    mediaMensal,
+    fonte: "estimada",
+    mesesObservados: 0,
+    periodoMedia,
+    acumuladoReal: null,
+    composicao,
+    memoria,
+  };
+}
+
+/** Base estimada a partir de uma média já conhecida (sem a RPC de uploads). */
+export function baseEstimada(
+  mediaMensal: number,
+  periodoFim: string | null | undefined,
+  periodoLabel: string | null | undefined,
+  hoje: Date = new Date(),
+): BaseCategoria {
+  const semestre = semestreDeCorte(periodoFim ?? null, hoje);
+  const periodoMedia = periodoLabel ?? "período do upload";
+  return {
+    semestre,
+    mediaMensal,
+    fonte: "estimada",
+    mesesObservados: 0,
+    periodoMedia,
+    acumuladoReal: null,
+    composicao: [],
+    memoria: [
+      `Média ESTIMADA pela média mensal do upload "${periodoMedia}" = ${brl(mediaMensal)}.`,
+    ],
+  };
+}
+
+// ============================ Situação da categoria ============================
+
+export type EstadoCategoria = "garantida" | "manutencao" | "risco";
+
+export type MetaCategoria = {
+  categoria: CategoriaNome;
+  pisoMensal: number;
+  /** Piso semestral = piso mensal × 6. */
+  piso: number;
+  /** Média mensal atual ÷ piso mensal × 100. */
+  atingimentoPct: number;
+  /** Média mensal atual >= piso mensal. */
+  atingido: boolean;
+  /** Projeção do fechamento − piso semestral (negativo = déficit, positivo = excedente). */
+  saldoProjetado: number;
+  /** Compras ainda necessárias até o fim do semestre para chegar ao piso (0 se já chegou). */
+  volumeNecessario: number;
+  /** Média mensal necessária nos meses restantes (null se nada falta ou semestre encerrado). */
+  necessarioMes: number | null;
+};
+
+export type SituacaoCategoria = {
+  base: BaseCategoria;
   semestre: SemestreCorte;
-  /** Acumulado real do semestre, quando conhecido. */
-  acumulado?: number | null;
-}): SituacaoSemestral {
-  const { semestre } = args;
-  const categoria = normalizarCategoria(args.categoria);
-  const media = Math.max(0, args.mediaMensal || 0);
-  const real = typeof args.acumulado === "number" && args.acumulado >= 0 ? args.acumulado : null;
-  const acumulado = real ?? media * semestre.mesesDecorridos;
+  categoria: CategoriaNome;
+  mediaMensal: number;
+  /** A média (e tudo que deriva dela) é estimada. */
+  mediaEstimada: boolean;
+  /** Acumulado do semestre até o último mês com dados. */
+  acumulado: number;
+  acumuladoEstimado: boolean;
+  /** Fechamento do semestre: acumulado + média atual × meses restantes. */
+  projecao: number;
+  encerrado: boolean;
+  estado: EstadoCategoria;
+  /** Média mensal compatível com a próxima categoria. */
+  evolucaoProjetada: boolean;
+  manter: MetaCategoria;
+  proxima: MetaCategoria | null;
+  anterior: CategoriaNome | null;
+  risco: { nivel: "baixo" | "medio" | "alto"; titulo: string; descricao: string };
+};
+
+function metaCategoria(
+  categoria: CategoriaNome,
+  media: number,
+  acumulado: number,
+  projecao: number,
+  restantes: number,
+): MetaCategoria {
+  const pisoMensal = PISO_MENSAL[categoria];
+  const piso = pisoMensal * MESES_SEMESTRE;
+  const volumeNecessario = Math.max(0, piso - acumulado);
+  return {
+    categoria,
+    pisoMensal,
+    piso,
+    atingimentoPct: (media / pisoMensal) * 100,
+    atingido: media >= pisoMensal,
+    saldoProjetado: projecao - piso,
+    volumeNecessario,
+    necessarioMes: volumeNecessario > 0 && restantes > 0 ? volumeNecessario / restantes : null,
+  };
+}
+
+export const ESTADO_LABEL: Record<EstadoCategoria, string> = {
+  garantida: "Categoria garantida",
+  manutencao: "Em manutenção",
+  risco: "Em risco",
+};
+
+export function situacaoCategoria(
+  categoriaAtual: string | null | undefined,
+  base: BaseCategoria,
+): SituacaoCategoria {
+  const { semestre } = base;
+  const categoria = normalizarCategoria(categoriaAtual);
+  const media = Math.max(0, base.mediaMensal || 0);
+  const acumulado = base.acumuladoReal ?? media * semestre.mesesDecorridos;
   const restantes = semestre.mesesRestantes;
   const projecao = acumulado + media * restantes;
   const idx = CATEGORIAS_ORDEM.indexOf(categoria);
-  const proxima = CATEGORIAS_ORDEM[idx + 1] ?? null;
+  const proxNome = CATEGORIAS_ORDEM[idx + 1] ?? null;
   const anterior = idx > 0 ? CATEGORIAS_ORDEM[idx - 1] : null;
-  const manter = meta(categoria, acumulado, projecao, restantes);
-  const upgrade = proxima ? meta(proxima, acumulado, projecao, restantes) : null;
-  const pisoAnterior = anterior ? pisoSemestral(anterior) : null;
+  const manter = metaCategoria(categoria, media, acumulado, projecao, restantes);
+  const proxima = proxNome ? metaCategoria(proxNome, media, acumulado, projecao, restantes) : null;
   const encerrado = restantes === 0;
 
+  const estado: EstadoCategoria =
+    base.acumuladoReal != null && base.acumuladoReal >= manter.piso
+      ? "garantida"
+      : manter.atingido
+        ? "manutencao"
+        : "risco";
+  const evolucaoProjetada = !!proxima && proxima.atingido;
+  const est = base.fonte === "estimada" ? " (estimada)" : "";
   const quando = semestre.restantesLabel ? ` em ${semestre.restantesLabel}` : "";
-  const porMes =
-    manter.necessarioMes != null
-      ? ` Para fechar no piso, o cliente precisa comprar ${brl(manter.necessarioMes)}/mês${quando}.`
-      : "";
-  const pisoTxt = `piso ${categoria} de ${brl(manter.pisoMensal)}/mês (${brl(manter.piso)} no semestre)`;
 
-  let risco: SituacaoSemestral["risco"];
-  if (manter.atingido) {
+  let risco: SituacaoCategoria["risco"];
+  if (estado === "garantida") {
     risco = {
       nivel: "baixo",
-      titulo: manter.garantido ? "Categoria Garantida" : "Categoria Mantida",
-      descricao: manter.garantido
-        ? `Acumulado de ${brl(acumulado)} no semestre já supera o ${pisoTxt}.`
-        : `Média de ${brl(media)}/mês acima do ${pisoTxt}. No ritmo atual o semestre fecha em ${brl(projecao)} (+${brl(manter.sobra)}).`,
+      titulo: ESTADO_LABEL.garantida,
+      descricao: `Acumulado real de ${brl(acumulado)} no semestre já supera o piso ${categoria} de ${brl(manter.piso)}.`,
     };
-  } else if (encerrado) {
+  } else if (estado === "manutencao") {
     risco = {
-      nivel: "alto",
-      titulo: anterior ? "Degrade no Corte" : "Abaixo do Piso",
-      descricao: `Semestre encerrado com ${brl(acumulado)}, ${brl(manter.falta)} abaixo do ${pisoTxt}.`,
-    };
-  } else if (anterior && pisoAnterior != null && projecao >= pisoAnterior) {
-    risco = {
-      nivel: "medio",
-      titulo: "Risco Moderado de Degrade",
-      descricao: `Média de ${brl(media)}/mês abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
-    };
-  } else if (!anterior && manter.atingimentoPct >= 50) {
-    risco = {
-      nivel: "medio",
-      titulo: "Atenção ao Ritmo",
-      descricao: `Média de ${brl(media)}/mês abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
+      nivel: "baixo",
+      titulo: ESTADO_LABEL.manutencao,
+      descricao: `Média mensal${est} de ${brl(media)} ≥ piso de ${brl(manter.pisoMensal)}/mês. Mantido o ritmo, o semestre fecha com excedente de ${brl(manter.saldoProjetado)}; ainda não é garantia definitiva.`,
     };
   } else {
+    const abaixoAnterior =
+      anterior != null ? media < PISO_MENSAL[anterior] : manter.atingimentoPct < 50;
+    const porMes =
+      manter.necessarioMes != null
+        ? ` Precisa de ${brl(manter.volumeNecessario)} em compras até o fim do semestre (${brl(manter.necessarioMes)}/mês${quando}).`
+        : "";
     risco = {
-      nivel: "alto",
-      titulo: anterior ? "Alto Risco de Degrade" : "Alto Risco de Inativação",
-      descricao: anterior
-        ? `Média de ${brl(media)}/mês abaixo até do piso ${anterior} (${brl(PISO_MENSAL[anterior])}/mês). No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre para manter ${categoria}.${porMes}`
-        : `Média de ${brl(media)}/mês bem abaixo do ${pisoTxt}. No ritmo atual faltam ${brl(manter.falta)} no acumulado do semestre.${porMes}`,
+      nivel: encerrado || abaixoAnterior ? "alto" : "medio",
+      titulo: encerrado
+        ? anterior
+          ? "Degrade no corte"
+          : "Abaixo do piso"
+        : abaixoAnterior
+          ? anterior
+            ? "Alto risco de degrade"
+            : "Alto risco de inativação"
+          : "Em risco",
+      descricao: encerrado
+        ? `Semestre encerrado com média de ${brl(media)}/mês, abaixo do piso ${categoria} de ${brl(manter.pisoMensal)}/mês.`
+        : `Média mensal${est} de ${brl(media)} abaixo do piso de ${brl(manter.pisoMensal)}/mês (${manter.atingimentoPct.toFixed(0)}%). Déficit projetado de ${brl(-manter.saldoProjetado)} no fechamento.${porMes}`,
     };
   }
 
   return {
+    base,
     semestre,
     categoria,
     mediaMensal: media,
+    mediaEstimada: base.fonte === "estimada",
     acumulado,
-    acumuladoEstimado: real == null,
+    acumuladoEstimado: base.acumuladoReal == null,
     projecao,
-    manter,
-    upgrade,
-    pisoAnterior,
     encerrado,
+    estado,
+    evolucaoProjetada,
+    manter,
+    proxima,
+    anterior,
     risco,
   };
 }
 
-/** Posição (0..100) de um valor semestral (ex.: projeção = média × 6) na régua Silver / Gold / Black. */
-export function posicaoReguaSemestral(valor: number): number {
+/** Posição (0..100) de uma média MENSAL na régua: pisos 3k (33%), 6k (66%) e 20k (100%). */
+export function posicaoReguaMensal(valor: number): number {
   if (valor <= 0) return 0;
-  const s = pisoSemestral("Silver");
-  const g = pisoSemestral("Gold");
-  const b = pisoSemestral("Black");
+  const s = PISO_MENSAL.Silver;
+  const g = PISO_MENSAL.Gold;
+  const b = PISO_MENSAL.Black;
   if (valor < s) return Math.max(2, (valor / s) * 33.3);
   if (valor < g) return 33.3 + ((valor - s) / (g - s)) * 33.3;
   if (valor < b) return 66.6 + ((valor - g) / (b - g)) * 31.4;

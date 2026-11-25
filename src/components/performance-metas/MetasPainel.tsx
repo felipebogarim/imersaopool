@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Gauge, Layers, Link2, Loader2, Mail, Save, Unlock, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -67,6 +67,12 @@ import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
+import {
+  baseCategoriaSemestral,
+  baseEstimada,
+  situacaoCategoria,
+} from "@/lib/performance-categoria-semestre";
+import { getMetasCategoriaBase } from "@/lib/performance-metas.functions";
 import { AlertaSituacaoCard } from "./AlertaSituacaoCard";
 import { MetasShareWhatsapp } from "./MetasShareWhatsapp";
 
@@ -193,6 +199,29 @@ export function MetasPainel({
     () => mediaMensalCliente(goals?.base, cliente.categoria),
     [goals?.base, cliente.categoria],
   );
+  // Situação da categoria: UMA apuração para o card, o alerta e os indicadores. Base = média
+  // mensal só do semestre de corte (uploads do semestre); sem eles, estimada e sinalizada.
+  const { data: categoriaBaseRes } = useQuery({
+    queryKey: ["performance-metas", "categoria-base", rowId],
+    queryFn: () => getMetasCategoriaBase({ data: { rowId } }),
+    enabled: dbEnabled && role === "gestor",
+    staleTime: 60_000,
+    retry: false,
+  });
+  const situacaoCat = useMemo(() => {
+    const ups = categoriaBaseRes?.available ? categoriaBaseRes.uploads : [];
+    const base =
+      ups.length > 0
+        ? baseCategoriaSemestral(ups, METAS_FAMILIES)
+        : baseEstimada(mediaCategoria ?? 0, cliente.periodoFim, cliente.periodoLabel);
+    return situacaoCategoria(cliente.categoria, base);
+  }, [
+    categoriaBaseRes,
+    mediaCategoria,
+    cliente.periodoFim,
+    cliente.periodoLabel,
+    cliente.categoria,
+  ]);
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
   const comparativo = useMemo(
@@ -476,24 +505,13 @@ export function MetasPainel({
 
           {/* 2. Timeline de Categoria: Faixa preenchida, caminho até a próxima categoria, manutenção e upgrade */}
           <div className="lg:col-span-8 flex flex-col h-full">
-            <CategoriaTimelineCard
-              categoria={cliente.categoria}
-              realizado={mediaCategoria ?? totalRealizado}
-              periodoFim={cliente.periodoFim}
-              periodoLabel={cliente.periodoLabel}
-            />
+            <CategoriaTimelineCard situacao={situacaoCat} periodoLabel={cliente.periodoLabel} />
           </div>
         </div>
 
         {/* 3. Destaque separado: Alerta de Situação (degrade, upgrade, consolidação) */}
         <div ref={alertaRef}>
-          <AlertaSituacaoCard
-            categoria={cliente.categoria}
-            realizado={mediaCategoria ?? totalRealizado}
-            periodoFim={cliente.periodoFim}
-            periodoLabel={cliente.periodoLabel}
-            clienteNome={cliente.razaoSocial}
-          />
+          <AlertaSituacaoCard situacao={situacaoCat} periodoLabel={cliente.periodoLabel} />
         </div>
       </div>
 

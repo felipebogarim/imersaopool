@@ -1,8 +1,12 @@
-import { useMemo } from "react";
+// Evolução e faixa de categoria (corte semestral). Recebe a situação já apurada
+// (`situacaoCategoria`), a mesma usada no alerta de situação, para manter tudo consistente.
+// Régua: MÉDIA MENSAL contra os pisos de R$ 3.000 / 6.000 / 20.000; acumulado é complementar.
+
 import {
   AlertTriangle,
   Award,
   CheckCircle2,
+  Info,
   ShieldAlert,
   ShieldCheck,
   TrendingUp,
@@ -10,11 +14,11 @@ import {
 import { cn } from "@/lib/utils";
 import { fmtBRL } from "@/lib/performance-metas";
 import {
+  ESTADO_LABEL,
   MESES_SEMESTRE,
-  pisoSemestral,
-  posicaoReguaSemestral,
-  semestreDeCorte,
-  situacaoSemestral,
+  posicaoReguaMensal,
+  type MetaCategoria,
+  type SituacaoCategoria,
 } from "@/lib/performance-categoria-semestre";
 
 export type CategoryTier = {
@@ -60,75 +64,125 @@ export const CATEGORY_TIERS: CategoryTier[] = [
   },
 ];
 
-export type CategoriaTimelineCardProps = {
-  categoria: string | null;
-  /** Média mensal de compras do cliente no período do upload (R$). */
-  realizado: number;
-  /** Fim do período dos dados (ex.: "2026-10-31"): define o semestre de corte e os meses decorridos. */
-  periodoFim?: string | null;
-  /** Acumulado real do semestre, quando conhecido (senão é estimado pela média). */
-  acumuladoSemestre?: number | null;
-  periodoLabel?: string | null;
-  className?: string;
-};
-
-const RISCO_BADGE = {
-  baixo: {
-    badgeClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+const ESTADO_BADGE = {
+  garantida: {
+    cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
     icon: ShieldCheck,
   },
-  medio: {
-    badgeClass: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
-    icon: AlertTriangle,
+  manutencao: {
+    cls: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-300",
+    icon: CheckCircle2,
   },
-  alto: {
-    badgeClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
-    icon: ShieldAlert,
+  risco: {
+    cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
+    icon: AlertTriangle,
   },
 } as const;
 
-const fmtK = (v: number) => `R$ ${Math.round(v / 1000)}k`;
+const RISCO_BADGE = {
+  baixo: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+  medio: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
+  alto: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-300",
+} as const;
 
-// A categoria é apurada no CORTE SEMESTRAL (jan–jun / jul–dez): pisos e faltantes são acumulados
-// no semestre (piso mensal × 6), não diferenças na média mensal.
+const FONTE_LABEL = {
+  semestre: "real do semestre",
+  semestre_parcial: "parcial do semestre",
+  estimada: "estimada",
+} as const;
+
+/** Marca "estimado" ao lado de um indicador derivado de estimativa. */
+function Est({ on }: { on: boolean }) {
+  if (!on) return null;
+  return (
+    <span className="ml-1 rounded bg-amber-500/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+      estimado
+    </span>
+  );
+}
+
+function Linha({
+  rotulo,
+  valor,
+  estimado = false,
+  destaque,
+}: {
+  rotulo: string;
+  valor: string;
+  estimado?: boolean;
+  destaque?: "bom" | "ruim";
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 text-[10px] leading-snug">
+      <span className="text-muted-foreground">{rotulo}</span>
+      <span
+        className={cn(
+          "whitespace-nowrap font-semibold tabular-nums text-foreground",
+          destaque === "bom" && "text-emerald-600 dark:text-emerald-400",
+          destaque === "ruim" && "text-rose-600 dark:text-rose-400",
+        )}
+      >
+        {valor}
+        <Est on={estimado} />
+      </span>
+    </div>
+  );
+}
+
+/** Indicadores de uma categoria-alvo (manter a atual ou alcançar a próxima). */
+function Indicadores({ meta, sit }: { meta: MetaCategoria; sit: SituacaoCategoria }) {
+  const restantes = sit.semestre.restantesLabel;
+  const saldo = meta.saldoProjetado;
+  return (
+    <div className="mt-1.5 space-y-0.5">
+      <Linha rotulo="Piso mensal" valor={`${fmtBRL(meta.pisoMensal)}/mês`} />
+      <Linha
+        rotulo="Atingimento"
+        valor={`${meta.atingimentoPct.toFixed(0)}%`}
+        estimado={sit.mediaEstimada}
+        destaque={meta.atingido ? "bom" : "ruim"}
+      />
+      <Linha
+        rotulo={saldo >= 0 ? "Excedente no fechamento" : "Déficit no fechamento"}
+        valor={`${saldo >= 0 ? "+" : "−"}${fmtBRL(Math.abs(saldo))}`}
+        estimado={sit.mediaEstimada || sit.acumuladoEstimado}
+        destaque={saldo >= 0 ? "bom" : "ruim"}
+      />
+      {!sit.encerrado && (
+        <>
+          <Linha
+            rotulo={`Compras necessárias até ${sit.semestre.mesesLabel.split("–")[1] ?? "o fim"}`}
+            valor={fmtBRL(meta.volumeNecessario)}
+            estimado={sit.acumuladoEstimado}
+          />
+          <Linha
+            rotulo={`Média necessária ${restantes ? `(${restantes})` : ""}`}
+            valor={meta.necessarioMes != null ? `${fmtBRL(meta.necessarioMes)}/mês` : "—"}
+            estimado={sit.acumuladoEstimado && meta.necessarioMes != null}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 export function CategoriaTimelineCard({
-  categoria,
-  realizado,
-  periodoFim,
-  acumuladoSemestre,
+  situacao: sit,
   periodoLabel,
   className,
-}: CategoriaTimelineCardProps) {
-  const sit = useMemo(
-    () =>
-      situacaoSemestral({
-        categoria,
-        mediaMensal: realizado,
-        acumulado: acumuladoSemestre,
-        semestre: semestreDeCorte(periodoFim),
-      }),
-    [categoria, realizado, acumuladoSemestre, periodoFim],
-  );
-  const { semestre, manter, upgrade, acumulado, projecao } = sit;
-
+}: {
+  situacao: SituacaoCategoria;
+  periodoLabel?: string | null;
+  className?: string;
+}) {
+  const { semestre, manter, proxima, base } = sit;
   const currentIndex = Math.max(
     0,
     CATEGORY_TIERS.findIndex((t) => t.name === sit.categoria),
   );
   const currentTier = CATEGORY_TIERS[currentIndex];
-  const nextTier = CATEGORY_TIERS[currentIndex + 1] ?? null;
-  const manutencaoGarantida = manter.atingido;
-  const upgradeAlcancado = upgrade ? upgrade.atingido : true;
-  const degradeRisk = {
-    ...RISCO_BADGE[sit.risco.nivel],
-    titulo: sit.risco.titulo,
-    descricao: sit.risco.descricao,
-  };
-
-  // Posição na régua = projeção do semestre (média mensal × 6 quando estimada): o que define a
-  // categoria é a média mensal no semestre contra o piso mensal.
-  const timelineFillPct = posicaoReguaSemestral(projecao);
-  const restantes = semestre.restantesLabel;
+  const estado = ESTADO_BADGE[sit.estado];
+  const fill = posicaoReguaMensal(sit.mediaMensal);
 
   return (
     <div
@@ -137,8 +191,8 @@ export function CategoriaTimelineCard({
         className,
       )}
     >
-      {/* Topo do Card */}
       <div>
+        {/* Topo */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Award className="h-4 w-4 text-primary" />
@@ -149,72 +203,65 @@ export function CategoriaTimelineCard({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
-                "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold tabular-nums",
+                "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold",
                 currentTier.badgeClass,
               )}
             >
               Categoria Atual: {currentTier.name}
             </span>
             <span
-              className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary tabular-nums"
-              title={`Categoria apurada no corte semestral (${semestre.mesesLabel})`}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold",
+                estado.cls,
+              )}
+            >
+              <estado.icon className="h-3 w-3" />
+              {ESTADO_LABEL[sit.estado]}
+            </span>
+            {sit.evolucaoProjetada && proxima && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-purple-300 bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300">
+                <TrendingUp className="h-3 w-3" /> Evolução projetada: {proxima.categoria}
+              </span>
+            )}
+            <span
+              className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+              title="Categoria apurada no corte semestral"
             >
               Corte: {semestre.label} ({semestre.mesesLabel})
             </span>
-            {periodoLabel && (
-              <span
-                className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums"
-                title="Período dos dados do upload (base da média mensal)"
-              >
-                {periodoLabel}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* ======================= TIMELINE VISUAL ======================= */}
+        {/* Régua: média mensal × pisos mensais */}
         <div className="mt-4 px-2">
-          {/* Marcos das Categorias */}
           <div
             className="relative mb-2 grid grid-cols-3 text-center"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              width: "100%",
-            }}
+            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
           >
             {CATEGORY_TIERS.map((tier, idx) => {
               const isCurrent = idx === currentIndex;
-              const isNext = idx === currentIndex + 1;
-              const isAchieved = projecao >= pisoSemestral(tier.name);
-
+              const isAchieved = sit.mediaMensal >= tier.target;
               return (
                 <div key={tier.name} className="flex flex-col items-center">
                   <span
                     className={cn(
-                      "text-[11px] font-bold tracking-tight transition-colors",
-                      isCurrent && "text-foreground font-extrabold",
+                      "text-[11px] font-bold tracking-tight",
+                      isCurrent && "font-extrabold text-foreground",
                       !isCurrent && isAchieved && "text-primary",
                       !isCurrent && !isAchieved && "text-muted-foreground",
                     )}
                   >
                     {tier.name}
                   </span>
-                  <span className="text-[9px] font-semibold text-muted-foreground/80 tabular-nums">
-                    {fmtBRL(pisoSemestral(tier.name))}
-                    <span className="font-normal text-muted-foreground/70"> /sem</span>
-                  </span>
-                  <span className="text-[8px] text-muted-foreground/60 tabular-nums">
+                  <span className="text-[10px] font-semibold tabular-nums text-foreground/80">
                     {fmtBRL(tier.target)}/mês
                   </span>
+                  <span className="text-[8px] tabular-nums text-muted-foreground/60">
+                    {fmtBRL(tier.target * MESES_SEMESTRE)} no semestre
+                  </span>
                   {isCurrent && (
-                    <span className="mt-0.5 rounded-full bg-primary/10 px-1.5 py-0.2 text-[8px] font-bold text-primary">
+                    <span className="mt-0.5 rounded-full bg-primary/10 px-1.5 text-[8px] font-bold text-primary">
                       Atual
-                    </span>
-                  )}
-                  {isNext && (
-                    <span className="mt-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[8px] font-bold text-amber-600 dark:text-amber-400">
-                      Próximo
                     </span>
                   )}
                 </div>
@@ -222,183 +269,222 @@ export function CategoriaTimelineCard({
             })}
           </div>
 
-          {/* Trilho e Barra Preenchida Contínua */}
           <div className="relative my-2 h-3 w-full rounded-full bg-muted/50 p-0.5">
-            {/* Faixa preenchida com gradiente de acordo com a posição */}
             <div
               className="h-full rounded-full transition-all duration-700 ease-out"
               style={{
-                width: `${timelineFillPct}%`,
+                width: `${fill}%`,
                 background:
-                  timelineFillPct >= 66
+                  fill >= 66
                     ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 50%, #8b5cf6 100%)"
-                    : timelineFillPct >= 33
+                    : fill >= 33
                       ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 100%)"
                       : "linear-gradient(90deg, #64748b 0%, #94a3b8 100%)",
               }}
             />
-
-            {/* Marcadores dos 3 patamares na barra */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
-              style={{ left: "33.3%" }}
-              title="Piso Silver no semestre: R$ 18.000 (R$ 3.000/mês × 6)"
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
-              style={{ left: "66.6%" }}
-              title="Piso Gold no semestre: R$ 36.000 (R$ 6.000/mês × 6)"
-            />
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-4 w-1 bg-border rounded-full"
-              style={{ right: "0%" }}
-              title="Piso Black no semestre: R$ 120.000 (R$ 20.000/mês × 6)"
-            />
-
-            {/* Marcador luminoso: média mensal real (projeção do semestre) */}
-            {timelineFillPct > 0 && (
+            {[
+              ["33.3%", "Piso Silver: R$ 3.000/mês"],
+              ["66.6%", "Piso Gold: R$ 6.000/mês"],
+            ].map(([left, title]) => (
               <div
-                className="absolute top-1/2 -translate-y-1/2 -ml-2 h-4 w-4 rounded-full border-2 border-background shadow-md transition-all duration-700 ease-out"
+                key={left}
+                className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
+                style={{ left }}
+                title={title}
+              />
+            ))}
+            <div
+              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
+              style={{ right: "0%" }}
+              title="Piso Black: R$ 20.000/mês"
+            />
+            {fill > 0 && (
+              <div
+                className="absolute top-1/2 -ml-2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-background shadow-md transition-all duration-700 ease-out"
                 style={{
-                  left: `${timelineFillPct}%`,
+                  left: `${fill}%`,
                   backgroundColor: currentTier.activeColor,
                   boxShadow: `0 0 10px ${currentTier.glowColor}`,
                 }}
-                title={`Média mensal ${fmtBRL(realizado)} · semestre fecha em ${fmtBRL(projecao)} no ritmo atual (acumulado ${fmtBRL(acumulado)})`}
+                title={`Média mensal: ${fmtBRL(sit.mediaMensal)}`}
               />
             )}
           </div>
 
-          {/* Legenda do marcador atual */}
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
+          <div className="flex items-center justify-between pt-0.5 text-[10px] text-muted-foreground">
             <span>R$ 0</span>
-            <span className="text-center font-semibold text-foreground tabular-nums">
-              Média mensal real: {fmtBRL(realizado)}
+            <span className="text-center tabular-nums">
+              <span className="font-semibold text-foreground">
+                Média mensal atual: {fmtBRL(sit.mediaMensal)}
+              </span>
+              <Est on={sit.mediaEstimada} />
+              <span className="ml-1">
+                · acumulado {semestre.decorridosLabel || "—"}: {fmtBRL(sit.acumulado)}
+              </span>
+              <Est on={sit.acumuladoEstimado} />
             </span>
-            <span>{fmtK(pisoSemestral("Black"))}+</span>
+            <span>R$ 20k+/mês</span>
           </div>
         </div>
       </div>
 
-      {/* ======================= 3 BLOCOS DE INFORMAÇÃO ======================= */}
+      {/* Blocos */}
       <div
-        className="mt-3 grid gap-2.5 grid-cols-1 sm:grid-cols-3"
-        style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", width: "100%" }}
+        className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3"
+        style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
       >
-        {/* Bloco 1: Manutenção da Categoria */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
-              Manter {currentTier.name}
-            </span>
-            {manutencaoGarantida ? (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0 whitespace-nowrap">
-                <CheckCircle2 className="h-2.5 w-2.5" />{" "}
-                {manter.garantido ? "Garantida" : "Mantida"}
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0 whitespace-nowrap">
-                {manter.atingimentoPct.toFixed(0)}%
-              </span>
-            )}
-          </div>
-          <div className="mt-1">
-            {manutencaoGarantida ? (
-              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                +{fmtBRL(manter.sobra)}
-              </p>
-            ) : (
-              <p className="text-sm font-bold text-foreground tabular-nums">
-                Faltam {fmtBRL(manter.falta)}
-              </p>
-            )}
-            <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-              {manutencaoGarantida
-                ? `Média ${fmtBRL(realizado)}/mês ≥ piso ${fmtBRL(manter.pisoMensal)}/mês · semestre fecha acima de ${fmtBRL(manter.piso)}`
-                : manter.necessarioMes != null
-                  ? `No acumulado do semestre (piso ${fmtBRL(manter.piso)}) · precisa de ${fmtBRL(manter.necessarioMes)}/mês em ${restantes}`
-                  : `Semestre encerrado abaixo do piso de ${fmtBRL(manter.piso)}`}
-            </p>
-          </div>
-        </div>
-
-        {/* Bloco 2: Caminho para Upgrade */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
-              {nextTier ? `Upgrade para ${nextTier.name}` : "Categoria Máxima"}
-            </span>
-            {nextTier && (
-              <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-bold bg-primary/10 text-primary shrink-0 whitespace-nowrap">
-                <TrendingUp className="h-2.5 w-2.5" />
-                {nextTier.name}
-              </span>
-            )}
-          </div>
-          <div className="mt-1">
-            {nextTier ? (
-              upgradeAlcancado ? (
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                  Qualificado!
-                </p>
-              ) : (
-                <p className="text-sm font-bold text-foreground tabular-nums">
-                  Faltam {fmtBRL(upgrade?.falta ?? 0)}
-                </p>
-              )
-            ) : (
-              <p className="text-sm font-bold text-primary tabular-nums">Elite Black</p>
-            )}
-            <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-              {!upgrade
-                ? "Cliente no patamar mais elevado"
-                : upgrade.atingido
-                  ? `Média ≥ ${fmtBRL(upgrade.pisoMensal)}/mês: sobe para ${upgrade.categoria} no corte`
-                  : upgrade.necessarioMes != null
-                    ? `No acumulado do semestre (alvo ${fmtBRL(upgrade.piso)}) · precisa de ${fmtBRL(upgrade.necessarioMes)}/mês em ${restantes}`
-                    : `Alvo: ${fmtBRL(upgrade.pisoMensal)}/mês (${fmtBRL(upgrade.piso)} no semestre)`}
-            </p>
-          </div>
-        </div>
-
-        {/* Bloco 3: Risco de Degrade */}
-        <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 flex flex-col justify-between min-w-0">
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground whitespace-nowrap">
-              Risco de Degrade
+        <div className="flex min-w-0 flex-col rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
+              Manter {manter.categoria}
             </span>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded border px-1.5 py-0.2 text-[9px] font-bold shrink-0 whitespace-nowrap",
-                degradeRisk.badgeClass,
+                "inline-flex items-center gap-0.5 whitespace-nowrap rounded border px-1.5 text-[9px] font-bold",
+                estado.cls,
               )}
             >
-              <degradeRisk.icon className="h-2.5 w-2.5" />
-              {degradeRisk.titulo}
+              {ESTADO_LABEL[sit.estado]}
             </span>
           </div>
-          <div className="mt-1">
-            <p className="text-[11px] leading-snug font-medium text-foreground">
-              {degradeRisk.descricao}
-            </p>
+          <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+            {fmtBRL(sit.mediaMensal)}
+            <span className="text-[10px] font-normal text-muted-foreground">
+              {" "}
+              / {fmtBRL(manter.pisoMensal)} por mês
+            </span>
+            <Est on={sit.mediaEstimada} />
+          </p>
+          <Indicadores meta={manter} sit={sit} />
+        </div>
+
+        <div className="flex min-w-0 flex-col rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
+              {proxima ? `Evoluir para ${proxima.categoria}` : "Categoria máxima"}
+            </span>
+            {proxima && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 whitespace-nowrap rounded px-1.5 text-[9px] font-bold",
+                  sit.evolucaoProjetada
+                    ? "bg-purple-500/15 text-purple-700 dark:text-purple-300"
+                    : "bg-primary/10 text-primary",
+                )}
+              >
+                <TrendingUp className="h-2.5 w-2.5" />
+                {sit.evolucaoProjetada ? "Projetada" : proxima.categoria}
+              </span>
+            )}
           </div>
+          {proxima ? (
+            <>
+              <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+                {sit.evolucaoProjetada
+                  ? "Média compatível"
+                  : `Faltam ${fmtBRL(proxima.pisoMensal - sit.mediaMensal)}/mês`}
+                <Est on={sit.mediaEstimada} />
+              </p>
+              <Indicadores meta={proxima} sit={sit} />
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-sm font-bold text-primary">Elite Black</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                Cliente no patamar mais elevado
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-col rounded-lg border border-border/70 bg-card/60 p-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
+              Situação
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 whitespace-nowrap rounded border px-1.5 text-[9px] font-bold",
+                RISCO_BADGE[sit.risco.nivel],
+              )}
+            >
+              {sit.risco.nivel === "alto" ? (
+                <ShieldAlert className="h-2.5 w-2.5" />
+              ) : sit.risco.nivel === "medio" ? (
+                <AlertTriangle className="h-2.5 w-2.5" />
+              ) : (
+                <ShieldCheck className="h-2.5 w-2.5" />
+              )}
+              {sit.risco.titulo}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium leading-snug text-foreground">
+            {sit.risco.descricao}
+          </p>
         </div>
       </div>
 
-      {/* Rodapé compacto */}
-      <div className="mt-3 border-t border-border/50 pt-2 text-[10px] text-muted-foreground flex flex-wrap items-center justify-between gap-1">
-        <span>
-          Corte semestral (jan–jun · jul–dez): categoria pela média mensal no semestre — Silver 3k ·
-          Gold 6k · Black 20k/mês (× {MESES_SEMESTRE} = {fmtK(pisoSemestral("Silver"))} ·{" "}
-          {fmtK(pisoSemestral("Gold"))} · {fmtK(pisoSemestral("Black"))} no semestre)
-          {sit.acumuladoEstimado && (
-            <span className="opacity-75"> · acumulado estimado pela média mensal do período</span>
+      {/* Memória de cálculo: origem, período e composição por portfólio */}
+      <details className="mt-3 rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5 text-[10px]">
+        <summary className="cursor-pointer select-none font-semibold text-muted-foreground">
+          Memória de cálculo
+        </summary>
+        <div className="mt-1.5 space-y-1.5">
+          {base.composicao.length > 0 && (
+            <table className="w-full tabular-nums">
+              <thead>
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-0.5 font-medium">Portfólio</th>
+                  <th className="py-0.5 text-right font-medium">Média mensal</th>
+                  <th className="py-0.5 pl-2 font-medium">Origem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {base.composicao.map((c) => (
+                  <tr key={c.familia} className="border-t border-border/40">
+                    <td className="py-0.5">{c.familia}</td>
+                    <td className="py-0.5 text-right">{fmtBRL(c.mediaMensal)}</td>
+                    <td className="py-0.5 pl-2 text-muted-foreground">{c.origem}</td>
+                  </tr>
+                ))}
+                <tr className="border-t border-border font-semibold">
+                  <td className="py-0.5">Total</td>
+                  <td className="py-0.5 text-right">{fmtBRL(sit.mediaMensal)}</td>
+                  <td />
+                </tr>
+              </tbody>
+            </table>
           )}
+          <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
+            {base.memoria.map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+            <li>
+              Acumulado {semestre.decorridosLabel || "—"}: {fmtBRL(sit.acumulado)}
+              {sit.acumuladoEstimado ? " (estimado = média × meses decorridos)" : " (real)"} ·
+              Projeção do fechamento = acumulado + média × {semestre.mesesRestantes} mês(es)
+              restante(s) = {fmtBRL(sit.projecao)} · Piso semestral {sit.categoria} ={" "}
+              {fmtBRL(manter.pisoMensal)} × {MESES_SEMESTRE} = {fmtBRL(manter.piso)}
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      {/* Origem dos dados */}
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-1 border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
+        <span className="flex items-start gap-1">
+          <Info className="mt-px h-3 w-3 shrink-0" />
+          <span>
+            Média {FONTE_LABEL[base.fonte]}: <strong>{base.periodoMedia}</strong>
+            {base.fonte === "estimada" &&
+              ` — o banco não tem dados só de ${semestre.decorridosLabel || "meses do semestre"}; a média do período do upload é usada como estimativa do ${semestre.label}.`}
+            {base.fonte === "semestre_parcial" &&
+              ` — ${base.mesesObservados} de ${semestre.mesesDecorridos} meses decorridos com dados; acumulado estimado.`}
+            {periodoLabel && base.fonte !== "estimada" && ` · upload atual: ${periodoLabel}`}
+          </span>
         </span>
-        <span className="font-medium">
-          {nextTier && upgrade
-            ? `Próximo salto: +${fmtBRL(upgrade.piso - manter.piso)} no semestre`
-            : "Topo da carteira"}
+        <span>
+          Corte semestral: categoria pela média mensal no semestre (piso × {MESES_SEMESTRE})
         </span>
       </div>
     </div>
