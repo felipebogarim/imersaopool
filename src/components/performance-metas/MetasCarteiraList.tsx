@@ -24,6 +24,7 @@ import { sanitizeRatio } from "@/lib/performance-metrics";
 import { METAS_FAMILIES, METAS_FAMILY_LABEL, fmtPct } from "@/lib/performance-metas";
 import { isClientRow } from "@/lib/client-row-filter";
 import { FilterChip } from "./FilterChip";
+import { MultiFilter } from "./MetasBiTables";
 import { useMetasCarteira } from "./use-metas-carteira";
 import { ConviteMassaDialog } from "./ConviteMassaDialog";
 
@@ -36,6 +37,8 @@ type StoredFilters = {
   familyFilter?: string[];
   zeroFilter?: boolean;
   revisadoOnly?: boolean;
+  ocultarInativos?: boolean;
+  ocultarZero?: boolean;
 };
 
 function loadStoredFilters(): StoredFilters | null {
@@ -51,6 +54,8 @@ function loadStoredFilters(): StoredFilters | null {
 
 /** Slot ao lado das abas do topo onde a lista renderiza suas ações (ex.: mínimos em massa). */
 export const METAS_ACOES_TOPO_ID = "metas-acoes-topo";
+
+const ehInativo = (c: string | null | undefined) => /inativ/i.test(c ?? "");
 
 export function MetasCarteiraList({
   restrictToRepIds,
@@ -70,6 +75,10 @@ export function MetasCarteiraList({
   );
   const [zeroFilter, setZeroFilter] = useState(() => initialFilters?.zeroFilter ?? false);
   const [revisadoOnly, setRevisadoOnly] = useState(() => initialFilters?.revisadoOnly ?? false);
+  const [ocultarInativos, setOcultarInativos] = useState(
+    () => initialFilters?.ocultarInativos ?? false,
+  );
+  const [ocultarZero, setOcultarZero] = useState(() => initialFilters?.ocultarZero ?? false);
   const [conviteMassa, setConviteMassa] = useState(false);
   // Slot das ações no topo (montado pela página, fora desta lista).
   const [acoesTopo, setAcoesTopo] = useState<HTMLElement | null>(null);
@@ -89,12 +98,23 @@ export function MetasCarteiraList({
           familyFilter,
           zeroFilter,
           revisadoOnly,
+          ocultarInativos,
+          ocultarZero,
         }),
       );
     } catch {
       // sessionStorage indisponível
     }
-  }, [search, repFilter, categoryFilter, familyFilter, zeroFilter, revisadoOnly]);
+  }, [
+    search,
+    repFilter,
+    categoryFilter,
+    familyFilter,
+    zeroFilter,
+    revisadoOnly,
+    ocultarInativos,
+    ocultarZero,
+  ]);
 
   const { rows, visibleReps, isLoading } = useMetasCarteira(restrictToRepIds);
 
@@ -110,7 +130,7 @@ export function MetasCarteiraList({
       )
         return false;
       if (repFilter !== "all" && r.repId !== repFilter) return false;
-      if (categoryFilter.length && !(r.categoria && categoryFilter.includes(r.categoria)))
+      if (categoryFilter.length && !(r.categoria && categoryFilter.includes(r.categoria.trim())))
         return false;
       if (
         familyFilter.length &&
@@ -123,9 +143,39 @@ export function MetasCarteiraList({
       )
         return false;
       if (revisadoOnly && !r.revisadoCompleto) return false;
+      if (ocultarInativos && ehInativo(r.categoria)) return false;
+      // Ocultar 0%: clientes sem atingimento (0% ou sem dado) saem da lista.
+      if (ocultarZero && !((r.totalPct ?? 0) > 0)) return false;
       return true;
     });
-  }, [rows, search, repFilter, categoryFilter, familyFilter, zeroFilter, revisadoOnly]);
+  }, [
+    rows,
+    search,
+    repFilter,
+    categoryFilter,
+    familyFilter,
+    zeroFilter,
+    revisadoOnly,
+    ocultarInativos,
+    ocultarZero,
+  ]);
+
+  // Categorias presentes na carteira (Black, Gold, Silver primeiro; demais em ordem alfabética).
+  const categoriaOptions = useMemo(() => {
+    const set = new Set<string>(["Black", "Gold", "Silver"]);
+    for (const r of rows) if (isClientRow(r) && r.categoria?.trim()) set.add(r.categoria.trim());
+    const ordem = (c: string) => {
+      const i = ["Black", "Gold", "Silver"].indexOf(c);
+      return i < 0 ? 3 : i;
+    };
+    return [...set]
+      .sort((a, b) => ordem(a) - ordem(b) || a.localeCompare(b, "pt-BR"))
+      .map((c) => ({ key: c, label: c }));
+  }, [rows]);
+  const familiaOptions = useMemo(
+    () => METAS_FAMILIES.map((f) => ({ key: f, label: METAS_FAMILY_LABEL[f] ?? f })),
+    [],
+  );
 
   // Convite em massa: sempre disponível na visão da gestão. Elegíveis = clientes do filtro atual
   // com representante e razão social (linhas "(vazio)" ficam de fora).
@@ -162,10 +212,6 @@ export function MetasCarteiraList({
   const repsElegiveis = useMemo(() => new Set(elegiveis.map((c) => c.repId)).size, [elegiveis]);
   const repFiltrado =
     repFilter !== "all" ? (visibleReps.find((r) => r.id === repFilter) ?? null) : null;
-
-  const toggle = (list: string[], v: string) =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-
   return (
     <div className="space-y-4 sm:space-y-6">
       {gestao && (
@@ -233,35 +279,44 @@ export function MetasCarteiraList({
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
-          {["Black", "Gold", "Silver"].map((cat) => (
-            <FilterChip
-              key={cat}
-              active={categoryFilter.includes(cat)}
-              onClick={() => setCategoryFilter((p) => toggle(p, cat))}
-            >
-              {cat}
-            </FilterChip>
-          ))}
+          <MultiFilter
+            label="Categoria"
+            options={categoriaOptions}
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+          />
+          <MultiFilter
+            label="Portfólio"
+            options={familiaOptions}
+            value={familyFilter}
+            onChange={setFamilyFilter}
+          />
           <div className="w-px h-6 bg-border mx-1" />
-          {METAS_FAMILIES.map((fam) => (
-            <FilterChip
-              key={fam}
-              active={familyFilter.includes(fam)}
-              onClick={() => setFamilyFilter((p) => toggle(p, fam))}
-            >
-              {fam}
-            </FilterChip>
-          ))}
-          <div className="w-px h-6 bg-border mx-1" />
+          <FilterChip active={ocultarInativos} onClick={() => setOcultarInativos((p) => !p)}>
+            Ocultar inativos
+          </FilterChip>
+          <FilterChip
+            active={ocultarZero}
+            onClick={() => {
+              setOcultarZero((p) => !p);
+              setZeroFilter(false);
+            }}
+          >
+            Ocultar 0%
+          </FilterChip>
           <Badge
             variant={zeroFilter ? "destructive" : "outline"}
             className={cn(
               "cursor-pointer px-3 py-1 text-[10px] uppercase font-bold tracking-tight",
               !zeroFilter && "hover:bg-destructive/10 text-destructive border-destructive/30",
             )}
-            onClick={() => setZeroFilter((z) => !z)}
+            onClick={() => {
+              setZeroFilter((z) => !z);
+              setOcultarZero(false);
+            }}
+            title="Mostrar só clientes com 0%"
           >
-            0%
+            Só 0%
             {zeroFilter && <X className="ml-1.5 h-3 w-3 inline-block" />}
           </Badge>
           <div className="w-px h-6 bg-border mx-1" />
@@ -296,13 +351,20 @@ export function MetasCarteiraList({
               />,
               acoesTopo,
             )}
-          {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
+          {(categoryFilter.length > 0 ||
+            familyFilter.length > 0 ||
+            zeroFilter ||
+            revisadoOnly ||
+            ocultarInativos ||
+            ocultarZero) && (
             <button
               onClick={() => {
                 setCategoryFilter([]);
                 setFamilyFilter([]);
                 setZeroFilter(false);
                 setRevisadoOnly(false);
+                setOcultarInativos(false);
+                setOcultarZero(false);
                 try {
                   sessionStorage.removeItem(FILTERS_STORAGE_KEY);
                 } catch {}
