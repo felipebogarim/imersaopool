@@ -66,7 +66,7 @@ import { ConviteRepresentanteDialog } from "./ConviteRepresentanteDialog";
 import { RevisarVinculoDialog } from "./RevisarVinculoDialog";
 import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import { CategoriaTimelineCard } from "./CategoriaTimelineCard";
-import { complementoSemestral, situacaoCategoria } from "@/lib/performance-categoria";
+import { situacaoCategoria } from "@/lib/performance-categoria";
 import { acumuladoNoAno, mediaMensalCompras } from "@/lib/performance-media-cliente";
 import { AlertaSituacaoCard } from "./AlertaSituacaoCard";
 import { MetasShareWhatsapp } from "./MetasShareWhatsapp";
@@ -195,22 +195,14 @@ export function MetasPainel({
   const mediaCliente = useMemo(() => mediaMensalCompras(goals?.base), [goals?.base]);
   // Classificação comercial (Silver/Gold/Black) — independe de "Metas Mínimas" e da meta do
   // gestor. Usa a categoria cadastrada do cliente, a mesma do cabeçalho.
-  const situacaoCat = useMemo(
-    () => situacaoCategoria(cliente.categoria, mediaCliente),
-    [cliente.categoria, mediaCliente],
-  );
+  // Fechamento anual (jan–dez): acumulado do ano até o último mês consolidado da base.
   const acumuladoAno = useMemo(
-    () => acumuladoNoAno(mediaCliente.total, cliente.periodoInicio, cliente.periodoFim),
-    [mediaCliente.total, cliente.periodoInicio, cliente.periodoFim],
+    () => acumuladoNoAno(mediaCliente.total, cliente.periodoFim),
+    [mediaCliente.total, cliente.periodoFim],
   );
-  const complementoSem = useMemo(
-    () =>
-      complementoSemestral(
-        mediaCliente.total,
-        cliente.periodoFim,
-        situacaoCat?.pisoCadastrada ?? null,
-      ),
-    [mediaCliente.total, cliente.periodoFim, situacaoCat?.pisoCadastrada],
+  const situacaoCat = useMemo(
+    () => situacaoCategoria(cliente.categoria, mediaCliente, acumuladoAno),
+    [cliente.categoria, mediaCliente, acumuladoAno],
   );
   const summary = useMemo(() => summarizeDrafts(drafts), [drafts]);
   const percents = useMemo(() => displayPercents(summary.composicao), [summary.composicao]);
@@ -486,8 +478,6 @@ export function MetasPainel({
             <CategoriaTimelineCard
               situacao={situacaoCat}
               mediaCliente={mediaCliente}
-              acumulado={acumuladoAno}
-              complemento={complementoSem}
               periodoLabel={cliente.periodoLabel}
             />
           </div>
@@ -495,11 +485,7 @@ export function MetasPainel({
 
         {/* 3. Destaque separado: Alerta de Situação (degrade, upgrade, consolidação) */}
         <div ref={alertaRef}>
-          <AlertaSituacaoCard
-            situacao={situacaoCat}
-            periodoLabel={cliente.periodoLabel}
-            complemento={complementoSem}
-          />
+          <AlertaSituacaoCard situacao={situacaoCat} periodoLabel={cliente.periodoLabel} />
         </div>
       </div>
 

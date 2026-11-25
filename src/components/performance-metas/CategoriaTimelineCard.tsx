@@ -1,7 +1,7 @@
-// Evolução e faixa de categoria (padrão visual original): barra por faixas com o marcador na
-// MÉDIA MENSAL de compras, faixas da classificação comercial (PISOS_CATEGORIA), e três blocos — manter a
-// categoria cadastrada, evoluir para a próxima e situação. Recebe a apuração pronta
-// (`situacaoCategoria`), a mesma do alerta, para os dois nunca divergirem.
+// Evolução e faixa de categoria (padrão visual original): barra por faixas alinhadas aos pisos
+// mensais (Silver 3.000 · Gold 6.000 · Black 20.000), marcador na MÉDIA MENSAL de compras e três
+// blocos — manter a categoria cadastrada, evoluir para a próxima e situação — pelo FECHAMENTO
+// ANUAL (jan–dez). Recebe a apuração pronta (`situacaoCategoria`), a mesma do alerta.
 
 import {
   AlertTriangle,
@@ -17,59 +17,57 @@ import { fmtBRL, METAS_FAMILY_LABEL } from "@/lib/performance-metas";
 import {
   CATEGORIAS,
   PISOS_CATEGORIA,
+  faixasRegua,
   posicaoNaRegua,
+  rotuloMesesDecorridos,
   type CategoriaNome,
   type EstadoCategoria,
+  type MetaAnual,
   type SituacaoCategoria,
 } from "@/lib/performance-categoria";
 import { FONTE_MEDIA_LABEL, type MediaCliente } from "@/lib/performance-media-cliente";
 
-const TIER_STYLE: Record<
-  CategoriaNome,
-  { badgeClass: string; activeColor: string; glowColor: string }
-> = {
-  Silver: {
-    badgeClass:
-      "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
-    activeColor: "#94a3b8",
-    glowColor: "rgba(148, 163, 184, 0.4)",
-  },
-  Gold: {
-    badgeClass:
-      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700",
-    activeColor: "#f59e0b",
-    glowColor: "rgba(245, 158, 11, 0.4)",
-  },
-  Black: {
-    badgeClass: "bg-purple-950/20 text-purple-900 dark:text-purple-200 border-purple-400/40",
-    activeColor: "#8b5cf6",
-    glowColor: "rgba(139, 92, 246, 0.4)",
-  },
-};
+const TIER_STYLE: Record<CategoriaNome, { badgeClass: string; color: string; glowColor: string }> =
+  {
+    Silver: {
+      badgeClass:
+        "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
+      color: "#94a3b8",
+      glowColor: "rgba(148, 163, 184, 0.45)",
+    },
+    Gold: {
+      badgeClass:
+        "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700",
+      color: "#f59e0b",
+      glowColor: "rgba(245, 158, 11, 0.45)",
+    },
+    Black: {
+      badgeClass: "bg-purple-950/20 text-purple-900 dark:text-purple-200 border-purple-400/40",
+      color: "#8b5cf6",
+      glowColor: "rgba(139, 92, 246, 0.45)",
+    },
+  };
+/** Faixa abaixo de Silver: preenchimento e marcador neutros. */
+const NEUTRO = { color: "#cbd5e1", glowColor: "rgba(100, 116, 139, 0.35)" };
 
 const ESTADO_INFO: Record<
   EstadoCategoria,
   { titulo: string; cls: string; icon: typeof ShieldCheck }
 > = {
-  evolucao: {
-    titulo: "Desempenho superior",
-    cls: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300",
-    icon: TrendingUp,
-  },
-  proximo_evoluir: {
-    titulo: "Próximo de evoluir",
-    cls: "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300",
-    icon: TrendingUp,
-  },
-  manutencao: {
-    titulo: "Categoria mantida",
+  garantida: {
+    titulo: "Categoria garantida",
     cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
     icon: ShieldCheck,
   },
-  atencao: {
-    titulo: "Pouca folga",
-    cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
-    icon: AlertTriangle,
+  garantida_estimada: {
+    titulo: "Piso anual atingido (estimado)",
+    cls: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+    icon: ShieldCheck,
+  },
+  mantida_ritmo: {
+    titulo: "Mantida pelo ritmo atual",
+    cls: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-300",
+    icon: CheckCircle2,
   },
   risco_queda: {
     titulo: "Risco de queda",
@@ -88,7 +86,7 @@ function Est({ on }: { on: boolean }) {
   return (
     <span
       className="ml-1 rounded bg-amber-500/15 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300"
-      title={FONTE_MEDIA_LABEL.estimado}
+      title="Valor estimado: o acumulado do ano é a média mensal × meses decorridos"
     >
       estimado
     </span>
@@ -96,44 +94,97 @@ function Est({ on }: { on: boolean }) {
 }
 
 function descricaoSituacao(s: SituacaoCategoria): string {
+  const ate = s.mesesRestantes ? "até dezembro" : "no fechamento anual";
   switch (s.estado) {
-    case "evolucao":
-      return `Média compatível com ${s.enquadrada}, acima da categoria cadastrada (${s.cadastrada}).`;
+    case "garantida":
+      return `Compras do ano já superam o piso anual ${s.cadastrada}.`;
+    case "garantida_estimada":
+      return `Pela estimativa, o acumulado do ano já supera o piso anual ${s.cadastrada}. Confirmar com o fechamento real.`;
+    case "mantida_ritmo":
+      return s.manter
+        ? `Média acima do piso mensal; faltam ${fmtBRL(s.manter.totalNecessario)} ${ate} para consolidar ${s.cadastrada}.`
+        : `Média acima do piso mensal ${s.cadastrada}.`;
     case "risco_queda":
-      return `Média abaixo do piso ${s.cadastrada}; enquadra-se em ${s.enquadrada ?? "faixa abaixo de Silver"}.`;
-    case "proximo_evoluir":
-      return `Média a ${Math.round(((s.media ?? 0) / (s.pisoProxima ?? 1)) * 100)}% do piso ${s.proxima}.`;
-    case "atencao":
-      return `Folga de ${fmtBRL(s.saldoManutencao ?? 0)}/mês sobre o piso: menos de 10%.`;
-    case "manutencao":
-      return `Média em ${Math.round((s.pctPiso ?? 0) * 100)}% do piso ${s.cadastrada}.`;
+      return `Média abaixo do piso mensal ${s.cadastrada}; pela média, enquadra-se em ${s.enquadrada ?? "faixa abaixo de Silver"}.`;
     default:
       return "Sem dados de compra na importação.";
   }
 }
 
+function BlocoAnual({
+  titulo,
+  meta,
+  estimado,
+  rotuloRestantes,
+  destaque,
+}: {
+  titulo: string;
+  meta: MetaAnual;
+  estimado: boolean;
+  rotuloRestantes: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-col justify-between rounded-lg border bg-card/60 p-2.5",
+        destaque ? "border-border" : "border-border/60",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-1">
+        <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
+          {titulo}
+        </span>
+        {meta.atingido ? (
+          <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded bg-emerald-500/15 px-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-2.5 w-2.5" /> {estimado ? "Atingido (est.)" : "Atingido"}
+          </span>
+        ) : (
+          <span className="whitespace-nowrap rounded bg-muted px-1.5 text-[9px] font-bold text-muted-foreground">
+            Piso anual {fmtBRL(meta.pisoAnual)}
+          </span>
+        )}
+      </div>
+      <div className="mt-1">
+        <p
+          className={cn(
+            "text-sm font-bold tabular-nums",
+            meta.atingido ? "text-emerald-600 dark:text-emerald-400" : "text-foreground",
+          )}
+        >
+          {meta.atingido ? "R$ 0 até dezembro" : `Faltam ${fmtBRL(meta.totalNecessario)}`}
+          <Est on={estimado} />
+        </p>
+        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+          {meta.mediaNecessaria != null
+            ? `${fmtBRL(meta.mediaNecessaria)}/mês em ${rotuloRestantes}`
+            : "Fechamento anual (sem meses restantes)"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function CategoriaTimelineCard({
   situacao: sit,
   mediaCliente,
-  acumulado,
-  complemento,
   periodoLabel,
   className,
 }: {
-  situacao: SituacaoCategoria | null;
+  situacao: SituacaoCategoria;
   mediaCliente: MediaCliente;
-  acumulado: { valor: number; meses: number; ano: number } | null;
-  complemento: { label: string; projecao: number; piso: number } | null;
   periodoLabel?: string | null;
   className?: string;
 }) {
   const pisos = PISOS_CATEGORIA;
+  const faixas = faixasRegua(pisos);
   const media = mediaCliente.total;
-  const cad = sit?.cadastrada ?? null;
+  const cad = sit.cadastrada;
   const fill = posicaoNaRegua(media, pisos);
-  const marcador = TIER_STYLE[sit?.enquadrada ?? cad ?? "Silver"];
-  const estado = sit ? ESTADO_INFO[sit.estado] : null;
-  const mostrarBlocos = !!(sit && sit.estado !== "sem_base" && sit.cadastrada);
+  const marcador = sit.enquadrada ? TIER_STYLE[sit.enquadrada] : NEUTRO;
+  const estado = ESTADO_INFO[sit.estado];
+  const idxCad = cad ? CATEGORIAS.indexOf(cad) : -1;
+  const mostrarBlocos = sit.estado !== "sem_base" && !!cad;
 
   return (
     <div
@@ -161,7 +212,7 @@ export function CategoriaTimelineCard({
             >
               Categoria Atual: {cad ?? "não informada"}
             </span>
-            {sit && sit.media != null && (
+            {sit.media != null && (
               <span
                 className={cn(
                   "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold",
@@ -183,38 +234,38 @@ export function CategoriaTimelineCard({
         </div>
 
         <div className="mt-4 px-2">
-          {/* Marcos das categorias */}
-          <div
-            className="relative mb-2 grid grid-cols-3 text-center"
-            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
-          >
-            {CATEGORIAS.map((c, idx) => {
-              const isCurrent = c === cad;
-              const isNext = cad != null && idx === CATEGORIAS.indexOf(cad) + 1;
-              const isAchieved = media != null && media >= pisos[c];
+          {/* Nomes das categorias centralizados na própria faixa */}
+          <div className="relative mb-1 h-9">
+            {faixas.map((f) => {
+              if (!f.categoria) return null;
+              const idx = CATEGORIAS.indexOf(f.categoria);
+              const isCurrent = f.categoria === cad;
+              const isNext = idxCad >= 0 && idx === idxCad + 1;
+              const isAchieved = media != null && media >= pisos[f.categoria];
               return (
-                <div key={c} className="flex flex-col items-center">
+                <div
+                  key={f.categoria}
+                  className="absolute top-0 flex -translate-x-1/2 flex-col items-center"
+                  style={{ left: `${(f.inicio + f.fim) / 2}%` }}
+                >
                   <span
                     className={cn(
                       "text-[11px] font-bold tracking-tight",
                       isCurrent && "font-extrabold text-foreground",
-                      !isCurrent && isAchieved && "text-primary",
+                      !isCurrent && isAchieved && "text-foreground/80",
                       !isCurrent && !isAchieved && "text-muted-foreground",
                     )}
                   >
-                    {c}
-                  </span>
-                  <span className="text-[9px] font-semibold tabular-nums text-muted-foreground/80">
-                    {fmtBRL(pisos[c])}/mês
+                    {f.categoria}
                   </span>
                   {isCurrent && (
-                    <span className="mt-0.5 rounded-full bg-primary/10 px-1.5 text-[8px] font-bold text-primary">
+                    <span className="mt-0.5 whitespace-nowrap rounded-full bg-primary/10 px-1.5 text-[8px] font-bold text-primary">
                       Atual
                     </span>
                   )}
                   {isNext && (
-                    <span className="mt-0.5 rounded-full bg-amber-500/10 px-1.5 text-[8px] font-bold text-amber-600 dark:text-amber-400">
-                      Próximo
+                    <span className="mt-0.5 whitespace-nowrap rounded-full bg-muted px-1.5 text-[8px] font-bold text-muted-foreground">
+                      Próxima categoria
                     </span>
                   )}
                 </div>
@@ -222,173 +273,151 @@ export function CategoriaTimelineCard({
             })}
           </div>
 
-          {/* Trilho e barra — sem animação: o valor é calculado uma vez, da mesma fonte */}
-          <div className="relative my-2 h-3 w-full rounded-full bg-muted/50 p-0.5">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${fill}%`,
-                background:
-                  fill >= 66
-                    ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 50%, #8b5cf6 100%)"
-                    : fill >= 33
-                      ? "linear-gradient(90deg, #94a3b8 0%, #f59e0b 100%)"
-                      : "linear-gradient(90deg, #64748b 0%, #94a3b8 100%)",
-              }}
-            />
-            <div
-              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-              style={{ left: "33.3%" }}
-              title={`Piso Silver: ${fmtBRL(pisos.Silver)}/mês`}
-            />
-            <div
-              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-              style={{ left: "66.6%" }}
-              title={`Piso Gold: ${fmtBRL(pisos.Gold)}/mês`}
-            />
-            <div
-              className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-border"
-              style={{ right: "0%" }}
-              title={`Piso Black: ${fmtBRL(pisos.Black)}/mês`}
-            />
+          {/* Trilho neutro + preenchimento por faixa (só a cor das faixas alcançadas) */}
+          <div className="relative my-1 h-3 w-full rounded-full bg-muted/60">
+            {faixas.map((f) => {
+              const largura = Math.max(0, Math.min(fill, f.fim) - f.inicio);
+              if (largura <= 0) return null;
+              return (
+                <div
+                  key={`fill-${f.categoria ?? "base"}`}
+                  className={cn(
+                    "absolute top-0 h-full",
+                    f.inicio === 0 && "rounded-l-full",
+                    fill >= 100 && f.fim === 100 && "rounded-r-full",
+                  )}
+                  style={{
+                    left: `${f.inicio}%`,
+                    width: `${largura}%`,
+                    backgroundColor: f.categoria ? TIER_STYLE[f.categoria].color : NEUTRO.color,
+                  }}
+                />
+              );
+            })}
+            {/* Marcos de entrada de cada categoria */}
+            {faixas.slice(1).map((f) => (
+              <div
+                key={`tick-${f.categoria}`}
+                className="absolute top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/25"
+                style={{ left: `${f.inicio}%` }}
+                title={`Entrada ${f.categoria}: ${fmtBRL(f.de)}/mês`}
+              />
+            ))}
             {fill > 0 && (
               <div
-                className="absolute top-1/2 -ml-2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-background shadow-md"
+                className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background shadow-md"
                 style={{
-                  left: `${fill}%`,
-                  backgroundColor: marcador.activeColor,
+                  left: `${Math.min(fill, 99)}%`,
+                  backgroundColor: marcador.color,
                   boxShadow: `0 0 10px ${marcador.glowColor}`,
                 }}
-                title={`Média mensal de compras: ${media != null ? fmtBRL(media) : "—"}`}
+                title={`Média mensal de compras: ${fmtBRL(media)}`}
               />
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 pt-0.5 text-[10px] text-muted-foreground">
-            <span>R$ 0</span>
-            <span className="text-center tabular-nums">
-              <span className="font-semibold text-foreground">
-                Média mensal: {media != null ? fmtBRL(media) : "sem base"}
+          {/* Valores de entrada sob cada marco */}
+          <div className="relative h-4 text-[9px] font-semibold tabular-nums text-muted-foreground/80">
+            <span className="absolute left-0">R$ 0</span>
+            {faixas.slice(1).map((f) => (
+              <span
+                key={`val-${f.categoria}`}
+                className="absolute -translate-x-1/2 whitespace-nowrap"
+                style={{ left: `${f.inicio}%` }}
+              >
+                {fmtBRL(f.de)}
               </span>
-              <Est on={mediaCliente.estimado} />
-              {acumulado && (
-                <span className="ml-1">
-                  · acumulado {acumulado.ano} ({acumulado.meses}{" "}
-                  {acumulado.meses === 1 ? "mês" : "meses"}): {fmtBRL(acumulado.valor)}
-                  <Est on />
-                </span>
-              )}
-            </span>
-            <span>{fmtBRL(pisos.Black)}+</span>
+            ))}
           </div>
+
+          <p className="pt-1 text-center text-[10px] tabular-nums text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              Média mensal: {media != null ? fmtBRL(media) : "sem base"}
+            </span>
+            <Est on={mediaCliente.estimado} />
+            {sit.acumulado != null && sit.ano != null && sit.mesRef != null && (
+              <span className="ml-1">
+                · acumulado {sit.ano} ({rotuloMesesDecorridos(sit.mesRef)}): {fmtBRL(sit.acumulado)}
+                <Est on={sit.acumuladoEstimado} />
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
-      {/* Três blocos */}
-      {mostrarBlocos && sit && (
+      {/* Três blocos — fechamento anual */}
+      {mostrarBlocos && (
         <div
           className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-3"
           style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
         >
-          {/* Manter a categoria cadastrada */}
-          <div className="flex min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card/60 p-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-1">
-              <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
-                Manter {sit.cadastrada}
-              </span>
-              {(sit.saldoManutencao ?? 0) >= 0 ? (
-                <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded bg-emerald-500/15 px-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-2.5 w-2.5" /> Mantida
-                </span>
-              ) : (
-                <span className="whitespace-nowrap rounded bg-amber-500/15 px-1.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-                  {Math.round((sit.pctPiso ?? 0) * 100)}%
-                </span>
-              )}
+          {sit.manter ? (
+            <BlocoAnual
+              titulo={`Manter ${sit.cadastrada}`}
+              meta={sit.manter}
+              estimado={sit.acumuladoEstimado}
+              rotuloRestantes={sit.rotuloRestantes}
+              destaque
+            />
+          ) : (
+            <div className="rounded-lg border border-border/70 bg-card/60 p-2.5 text-[10px] text-muted-foreground">
+              Manter {sit.cadastrada}: sem mês de referência na base para o fechamento anual.
             </div>
-            <div className="mt-1">
-              <p
-                className={cn(
-                  "text-sm font-bold tabular-nums",
-                  (sit.saldoManutencao ?? 0) >= 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-foreground",
-                )}
-              >
-                {(sit.saldoManutencao ?? 0) >= 0
-                  ? `+${fmtBRL(sit.saldoManutencao ?? 0)}/mês`
-                  : `Faltam ${fmtBRL(-(sit.saldoManutencao ?? 0))}/mês`}
-                <Est on={sit.estimado} />
-              </p>
-              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                {(sit.saldoManutencao ?? 0) >= 0 ? "Acima do piso de " : "Para o piso de "}
-                {fmtBRL(sit.pisoCadastrada ?? 0)}/mês
-              </p>
-            </div>
-          </div>
+          )}
 
-          {/* Evoluir */}
-          <div className="flex min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card/60 p-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-1">
-              <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
-                {sit.proxima ? `Evoluir para ${sit.proxima}` : "Categoria máxima"}
+          {sit.evoluir ? (
+            <BlocoAnual
+              titulo={`Conquistar ${sit.evoluir.categoria}`}
+              meta={sit.evoluir}
+              estimado={sit.acumuladoEstimado}
+              rotuloRestantes={sit.rotuloRestantes}
+            />
+          ) : (
+            <div className="flex min-w-0 flex-col justify-between rounded-lg border border-border/60 bg-card/60 p-2.5">
+              <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+                Categoria máxima
               </span>
-              {sit.proxima && (
-                <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded bg-primary/10 px-1.5 text-[9px] font-bold text-primary">
-                  <TrendingUp className="h-2.5 w-2.5" />
-                  {sit.proxima}
-                </span>
-              )}
-            </div>
-            <div className="mt-1">
-              {sit.proxima ? (
-                sit.faltaProxima === 0 ? (
-                  <p className="text-sm font-bold text-purple-600 dark:text-purple-400">
-                    Compatível com {sit.enquadrada}
-                  </p>
-                ) : (
-                  <p className="text-sm font-bold tabular-nums text-foreground">
-                    Faltam {fmtBRL(sit.faltaProxima ?? 0)}/mês
-                    <Est on={sit.estimado} />
-                  </p>
-                )
-              ) : (
-                <p className="text-sm font-bold text-primary">Elite Black</p>
-              )}
+              <p className="mt-1 text-sm font-bold text-primary">Elite Black</p>
               <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                {sit.proxima
-                  ? `Piso ${sit.proxima}: ${fmtBRL(sit.pisoProxima ?? 0)}/mês`
-                  : "Cliente no patamar mais elevado"}
+                Foco na manutenção da categoria
               </p>
             </div>
-          </div>
+          )}
 
-          {/* Situação */}
           <div className="flex min-w-0 flex-col justify-between rounded-lg border border-border/70 bg-card/60 p-2.5">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="whitespace-nowrap text-[10px] font-semibold uppercase text-muted-foreground">
                 Situação
               </span>
-              {estado && (
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 whitespace-nowrap rounded border px-1.5 text-[9px] font-bold",
-                    estado.cls,
-                  )}
-                >
-                  <estado.icon className="h-2.5 w-2.5" />
-                  {estado.titulo}
-                </span>
-              )}
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 whitespace-nowrap rounded border px-1.5 text-[9px] font-bold",
+                  estado.cls,
+                )}
+              >
+                <estado.icon className="h-2.5 w-2.5" />
+                {estado.titulo}
+              </span>
             </div>
             <p className="mt-1 text-[11px] font-medium leading-snug text-foreground">
               {descricaoSituacao(sit)}
             </p>
+            {sit.oportunidadeEvolucao && sit.proxima && (
+              <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                <TrendingUp className="h-3 w-3" /> Oportunidade de evolução para {sit.proxima}
+              </p>
+            )}
+            {sit.estado === "risco_queda" && (
+              <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="h-3 w-3" /> Faltam {fmtBRL(-(sit.saldoManutencao ?? 0))}
+                /mês na média atual
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      {/* Rodapé: composição da média e complemento semestral */}
+      {/* Rodapé: composição da média */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-1 border-t border-border/50 pt-2 text-[10px] text-muted-foreground">
         <span
           className="cursor-help underline decoration-dotted"
@@ -407,12 +436,7 @@ export function CategoriaTimelineCard({
           {mediaCliente.portfolios.length} portfólios
           {mediaCliente.semDado.length > 0 && " · sem dado não entra como zero"}
         </span>
-        {complemento && (
-          <span>
-            Complemento · {complemento.label}: mantida a média, {fmtBRL(complemento.projecao)} vs
-            piso {fmtBRL(complemento.piso)} (estimado)
-          </span>
-        )}
+        <span>Referência: fechamento anual jan–dez · piso anual = piso mensal × 12</span>
       </div>
     </div>
   );

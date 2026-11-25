@@ -53,14 +53,15 @@ describe("média mensal de compras (fonte única)", () => {
     expect(m.estimado).toBe(true);
   });
 
-  it("acumulado no ano = média × meses do período no ano; sem datas, não supõe", () => {
-    expect(acumuladoNoAno(20000, "2026-01-01", "2026-10-31")).toEqual({
-      valor: 200000,
+  it("acumulado no ano = média × meses de janeiro ao último mês consolidado (estimado)", () => {
+    expect(acumuladoNoAno(9100, "2026-10-31")).toEqual({
+      valor: 91000,
       meses: 10,
       ano: 2026,
+      estimado: true,
     });
-    expect(acumuladoNoAno(20000, "2025-11-01", "2026-03-31")?.meses).toBe(3);
-    expect(acumuladoNoAno(20000, null, "2026-10-31")).toBeNull();
-    expect(acumuladoNoAno(null, "2026-01-01", "2026-10-31")).toBeNull();
+    expect(acumuladoNoAno(20000, "2026-03-31")?.meses).toBe(3);
+    expect(acumuladoNoAno(20000, null)).toBeNull();
+    expect(acumuladoNoAno(null, "2026-10-31")).toBeNull();
   });
 });

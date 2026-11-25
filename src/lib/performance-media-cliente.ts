@@ -99,21 +99,18 @@ export function mediaMensalCompras(base: BaseImportada | undefined): MediaClient
 }
 
 /**
- * Acumulado no ano (estimado): média mensal × meses do período do upload dentro do ano do fim do
- * período. Sem início ou fim de período não há como contar os meses: null (não supõe).
+ * Acumulado no ano (ESTIMADO): média mensal × meses decorridos de janeiro até o último mês
+ * consolidado da base importada (mês do fim do período). A importação não traz o total real do
+ * ano, por isso o resultado é sempre sinalizado como estimativa. Sem mês de referência: null.
  */
 export function acumuladoNoAno(
   media: number | null,
-  periodoInicio: string | null | undefined,
   periodoFim: string | null | undefined,
-): { valor: number; meses: number; ano: number } | null {
-  if (media == null || !periodoInicio || !periodoFim) return null;
-  const ini = /^(\d{4})-(\d{2})/.exec(periodoInicio);
+): { valor: number; meses: number; ano: number; estimado: true } | null {
+  if (media == null || !periodoFim) return null;
   const fim = /^(\d{4})-(\d{2})/.exec(periodoFim);
-  if (!ini || !fim) return null;
-  const ano = Number(fim[1]);
-  const mIni = Number(ini[1]) < ano ? 1 : Number(ini[2]);
-  const meses = Number(fim[2]) - mIni + 1;
+  if (!fim) return null;
+  const meses = Number(fim[2]);
   if (meses < 1 || meses > 12) return null;
-  return { valor: media * meses, meses, ano };
+  return { valor: media * meses, meses, ano: Number(fim[1]), estimado: true };
 }

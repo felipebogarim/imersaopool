@@ -1,7 +1,9 @@
-// Alerta estratégico abaixo da timeline: situação atual, distância mensal (R$) para manter ou
-// evoluir e a oportunidade/risco comercial. Mesma apuração (`situacaoCategoria`) do card.
+// Alerta estratégico abaixo da timeline: média mensal atual e situação do cliente, com destaque
+// para o TOTAL de compras necessário até dezembro e a MÉDIA MENSAL necessária nos meses restantes
+// para manter a categoria (fechamento anual jan–dez). Evolução (Silver/Gold) é complementar.
+// Mesma apuração (`situacaoCategoria`) do card da timeline.
 
-import { AlertTriangle, Crown, Flame, Info, Rocket, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Flame, Info, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtBRL } from "@/lib/performance-metas";
 import type { EstadoCategoria, SituacaoCategoria } from "@/lib/performance-categoria";
@@ -9,7 +11,7 @@ import type { EstadoCategoria, SituacaoCategoria } from "@/lib/performance-categ
 const TEMA: Record<
   EstadoCategoria,
   {
-    icon: typeof Crown;
+    icon: typeof ShieldCheck;
     container: string;
     iconWrapper: string;
     badge: string;
@@ -17,25 +19,7 @@ const TEMA: Record<
     tag: string;
   }
 > = {
-  evolucao: {
-    icon: Crown,
-    container:
-      "from-purple-500/12 via-purple-500/5 to-card border-purple-300 dark:border-purple-800/60",
-    iconWrapper: "bg-purple-500/15 text-purple-600 dark:text-purple-400 ring-4 ring-purple-500/10",
-    badge: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300",
-    title: "text-purple-950 dark:text-purple-100",
-    tag: "bg-purple-500/10 border-purple-300/40 text-purple-700 dark:text-purple-300",
-  },
-  proximo_evoluir: {
-    icon: Rocket,
-    container:
-      "from-purple-500/10 via-purple-500/5 to-card border-purple-300 dark:border-purple-800/60",
-    iconWrapper: "bg-purple-500/15 text-purple-600 dark:text-purple-400 ring-4 ring-purple-500/10",
-    badge: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300",
-    title: "text-purple-950 dark:text-purple-100",
-    tag: "bg-purple-500/10 border-purple-300/40 text-purple-700 dark:text-purple-300",
-  },
-  manutencao: {
+  garantida: {
     icon: ShieldCheck,
     container:
       "from-emerald-500/12 via-emerald-500/5 to-card border-emerald-300 dark:border-emerald-800/60",
@@ -45,14 +29,23 @@ const TEMA: Record<
     title: "text-emerald-950 dark:text-emerald-100",
     tag: "bg-emerald-500/10 border-emerald-300/40 text-emerald-700 dark:text-emerald-300",
   },
-  atencao: {
-    icon: AlertTriangle,
+  garantida_estimada: {
+    icon: ShieldCheck,
     container:
-      "from-amber-500/12 via-amber-500/5 to-card border-amber-300 dark:border-amber-800/60",
-    iconWrapper: "bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-4 ring-amber-500/10",
-    badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300",
-    title: "text-amber-950 dark:text-amber-100",
-    tag: "bg-amber-500/10 border-amber-300/40 text-amber-700 dark:text-amber-300",
+      "from-emerald-500/12 via-emerald-500/5 to-card border-emerald-300 dark:border-emerald-800/60",
+    iconWrapper:
+      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 ring-4 ring-emerald-500/10",
+    badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300",
+    title: "text-emerald-950 dark:text-emerald-100",
+    tag: "bg-emerald-500/10 border-emerald-300/40 text-emerald-700 dark:text-emerald-300",
+  },
+  mantida_ritmo: {
+    icon: CheckCircle2,
+    container: "from-sky-500/12 via-sky-500/5 to-card border-sky-300 dark:border-sky-800/60",
+    iconWrapper: "bg-sky-500/15 text-sky-600 dark:text-sky-400 ring-4 ring-sky-500/10",
+    badge: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-300",
+    title: "text-sky-950 dark:text-sky-100",
+    tag: "bg-sky-500/10 border-sky-300/40 text-sky-700 dark:text-sky-300",
   },
   risco_queda: {
     icon: Flame,
@@ -72,12 +65,65 @@ const TEMA: Record<
   },
 };
 
-type Texto = { badge: string; titulo: string; mensagem: string; valor: string; rotulo: string };
+type Destaque = { valor: string; rotulo: string };
+type Texto = {
+  badge: string;
+  titulo: string;
+  mensagem: string;
+  /** Duas informações principais: total necessário até dezembro e média mensal necessária. */
+  destaques: Destaque[];
+  /** Silver/Gold: conquista da categoria superior (complementar). */
+  evolucao: string | null;
+};
+
+const est = (on: boolean) => (on ? " (estimado)" : "");
+
+function destaquesManter(s: SituacaoCategoria): Destaque[] {
+  const m = s.manter;
+  if (!m) return [{ valor: "—", rotulo: "sem mês de referência para o fechamento anual" }];
+  const e = s.acumuladoEstimado ? " · est." : "";
+  return [
+    {
+      valor: fmtBRL(m.totalNecessario),
+      rotulo: `total até dezembro para manter ${m.categoria}${e}`,
+    },
+    m.mediaNecessaria != null
+      ? {
+          valor: `${fmtBRL(m.mediaNecessaria)}/mês`,
+          rotulo: `média necessária em ${s.rotuloRestantes}${e}`,
+        }
+      : {
+          valor: m.atingido ? "Atingido" : "Não atingido",
+          rotulo: `fechamento anual ${s.ano ?? ""}${e}`.trim(),
+        },
+  ];
+}
+
+function textoEvolucao(s: SituacaoCategoria): string | null {
+  const ev = s.evoluir;
+  if (!ev) return null;
+  const e = est(s.acumuladoEstimado);
+  if (ev.atingido)
+    return `Conquistar ${ev.categoria}: piso anual de ${fmtBRL(ev.pisoAnual)} já alcançado${e}.`;
+  return (
+    `Conquistar ${ev.categoria}: faltam ${fmtBRL(ev.totalNecessario)} até dezembro` +
+    (ev.mediaNecessaria != null
+      ? ` (${fmtBRL(ev.mediaNecessaria)}/mês em ${s.rotuloRestantes})`
+      : "") +
+    `${e}.` +
+    (s.oportunidadeEvolucao ? " Oportunidade de evolução no ritmo atual." : "")
+  );
+}
 
 export function textoAlerta(s: SituacaoCategoria): Texto {
   const m = s.media != null ? fmtBRL(s.media) : "—";
-  const est = s.estimado ? " (estimada)" : "";
+  const mEst = s.mediaEstimada ? " (estimada)" : "";
   const cad = s.cadastrada ?? "sem categoria";
+  const acum =
+    s.acumulado != null && s.ano != null
+      ? ` Acumulado ${s.ano}: ${fmtBRL(s.acumulado)}${est(s.acumuladoEstimado)}, piso anual ${cad} ${fmtBRL(s.manter?.pisoAnual)}.`
+      : "";
+  const base = { destaques: destaquesManter(s), evolucao: textoEvolucao(s) };
   switch (s.estado) {
     case "sem_base":
       return {
@@ -85,50 +131,36 @@ export function textoAlerta(s: SituacaoCategoria): Texto {
         titulo: "A importação não traz valores de compra deste cliente",
         mensagem:
           "Nenhum portfólio tem média, realizado ou % sobre a meta original do upload. A categoria não é avaliada — isso não significa compra zero.",
-        valor: "—",
-        rotulo: "sem base",
+        destaques: [{ valor: "—", rotulo: "sem base" }],
+        evolucao: null,
       };
-    case "evolucao":
+    case "garantida":
       return {
-        badge: `Desempenho ${s.enquadrada} · cadastrado ${cad}`,
-        titulo: `Média mensal${est} de ${m}: desempenho compatível com ${s.enquadrada}`,
-        mensagem: `O cliente supera o piso ${s.enquadrada} e está acima da categoria cadastrada (${cad}). Oportunidade: consolidar o novo patamar com mix completo e avaliar a reclassificação no corte. A categoria cadastrada não é alterada automaticamente.`,
-        valor: `+${fmtBRL(s.media! - (s.pisoEnquadrada ?? 0))}`,
-        rotulo: `por mês acima do piso ${s.enquadrada}`,
+        ...base,
+        badge: `${cad} garantida`,
+        titulo: `Compras do ano já superam o piso anual ${cad}`,
+        mensagem: `Média mensal${mEst} de ${m}.${acum} Categoria garantida para o fechamento de dezembro.`,
       };
-    case "proximo_evoluir":
+    case "garantida_estimada":
       return {
-        badge: `${cad} mantida · rumo a ${s.proxima}`,
-        titulo: `Faltam ${fmtBRL(s.faltaProxima!)}/mês para o patamar ${s.proxima}`,
-        mensagem: `Média mensal${est} de ${m}, a ${Math.round((s.media! / s.pisoProxima!) * 100)}% do piso ${s.proxima} (${fmtBRL(s.pisoProxima!)}/mês). Oportunidade: ampliar portfólios pouco comprados para alcançar a próxima categoria.`,
-        valor: `${fmtBRL(s.faltaProxima!)}`,
-        rotulo: `por mês para ${s.proxima}`,
+        ...base,
+        badge: `${cad} · piso anual atingido (estimado)`,
+        titulo: `Pela estimativa, o acumulado do ano já supera o piso anual ${cad}`,
+        mensagem: `Média mensal${mEst} de ${m}.${acum} Como o acumulado é estimado (média × meses), confirme com o fechamento real antes de considerar a categoria garantida.`,
       };
-    case "manutencao":
+    case "mantida_ritmo":
       return {
-        badge: `Categoria ${cad} mantida`,
-        titulo: `Média mensal${est} de ${m}, ${fmtBRL(s.saldoManutencao!)}/mês acima do piso ${cad}`,
-        mensagem: s.proxima
-          ? `Categoria sustentada com folga. Para evoluir a ${s.proxima} faltam ${fmtBRL(s.faltaProxima!)}/mês (piso ${fmtBRL(s.pisoProxima!)}/mês).`
-          : "Cliente no patamar máximo da carteira, com folga sobre o piso. Oportunidade: proteger a relação e expandir o mix.",
-        valor: `+${fmtBRL(s.saldoManutencao!)}`,
-        rotulo: `por mês acima do piso ${cad}`,
-      };
-    case "atencao":
-      return {
-        badge: `${cad} mantida · pouca folga`,
-        titulo: `Média mensal${est} de ${m}: só ${fmtBRL(s.saldoManutencao!)}/mês acima do piso ${cad}`,
-        mensagem: `A categoria está mantida, mas qualquer queda nas compras leva o cliente abaixo do piso de ${fmtBRL(s.pisoCadastrada!)}/mês. Risco: acompanhar os portfólios em queda e antecipar pedidos.`,
-        valor: `+${fmtBRL(s.saldoManutencao!)}`,
-        rotulo: "de folga por mês",
+        ...base,
+        badge: `${cad} mantida pelo ritmo atual`,
+        titulo: `Média mensal${mEst} de ${m}, acima do piso de ${fmtBRL(s.pisoCadastrada)}/mês`,
+        mensagem: `Sem risco de queda pela média.${acum} Para consolidar ${cad} no fechamento anual ainda são necessárias compras até dezembro.`,
       };
     case "risco_queda":
       return {
+        ...base,
         badge: `Risco de queda · ${cad}`,
-        titulo: `Faltam ${fmtBRL(-s.saldoManutencao!)}/mês para manter ${cad}`,
-        mensagem: `Média mensal${est} de ${m}, ${Math.round((s.pctPiso ?? 0) * 100)}% do piso ${cad} (${fmtBRL(s.pisoCadastrada!)}/mês); pela média, o cliente se enquadra em ${s.enquadrada ?? "faixa abaixo de Silver"}. Risco: ativação concentrada nos portfólios com menor compra.`,
-        valor: `−${fmtBRL(-s.saldoManutencao!)}`,
-        rotulo: `por mês para o piso ${cad}`,
+        titulo: `Média mensal${mEst} de ${m}, abaixo do piso de ${fmtBRL(s.pisoCadastrada)}/mês`,
+        mensagem: `Pela média, o cliente se enquadra em ${s.enquadrada ?? "faixa abaixo de Silver"}.${acum} Risco: sem acelerar as compras até dezembro, o cliente não sustenta ${cad} no fechamento anual.`,
       };
   }
 }
@@ -136,18 +168,16 @@ export function textoAlerta(s: SituacaoCategoria): Texto {
 export function AlertaSituacaoCard({
   situacao,
   periodoLabel,
-  complemento,
   className,
 }: {
-  situacao: SituacaoCategoria | null;
+  situacao: SituacaoCategoria;
   periodoLabel?: string | null;
-  complemento?: { label: string; projecao: number; piso: number } | null;
   className?: string;
 }) {
-  if (!situacao) return null;
   const t = textoAlerta(situacao);
   const tema = TEMA[situacao.estado];
   const Icon = tema.icon;
+  const estimado = situacao.acumuladoEstimado && situacao.estado !== "sem_base";
   return (
     <div
       className={cn(
@@ -176,9 +206,9 @@ export function AlertaSituacaoCard({
               >
                 {t.badge}
               </span>
-              {situacao.estimado && (
+              {estimado && (
                 <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                  Média estimada
+                  Valores estimados
                 </span>
               )}
               {periodoLabel && (
@@ -191,24 +221,26 @@ export function AlertaSituacaoCard({
               {t.titulo}
             </h3>
             <p className="text-xs leading-relaxed text-muted-foreground">{t.mensagem}</p>
-            {complemento && situacao.estado !== "sem_base" && (
-              <p className="text-[11px] text-muted-foreground/90">
-                Complemento · {complemento.label}: mantida a média, o semestre soma{" "}
-                {fmtBRL(complemento.projecao)} (piso {fmtBRL(complemento.piso)}) — estimativa.
+            {t.evolucao && (
+              <p className="text-[11px] font-medium text-purple-700/90 dark:text-purple-300/90">
+                {t.evolucao}
               </p>
             )}
           </div>
         </div>
-        <div className="shrink-0 sm:self-center">
-          <div
-            className={cn(
-              "flex flex-col items-start rounded-lg border px-3.5 py-1.5 sm:items-end",
-              tema.tag,
-            )}
-          >
-            <span className="text-sm font-extrabold tabular-nums tracking-tight">{t.valor}</span>
-            <span className="text-[10px] font-medium text-muted-foreground/90">{t.rotulo}</span>
-          </div>
+        <div className="flex shrink-0 flex-row gap-2 sm:flex-col sm:self-center">
+          {t.destaques.map((d) => (
+            <div
+              key={d.rotulo}
+              className={cn(
+                "flex flex-col items-start rounded-lg border px-3.5 py-1.5 sm:items-end",
+                tema.tag,
+              )}
+            >
+              <span className="text-sm font-extrabold tabular-nums tracking-tight">{d.valor}</span>
+              <span className="text-[10px] font-medium text-muted-foreground/90">{d.rotulo}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
