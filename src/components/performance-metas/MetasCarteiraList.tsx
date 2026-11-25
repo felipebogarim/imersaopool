@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, CheckCircle2, Loader2, Mail, Search, Target, X } from "lucide-react";
 import { MinimosCategoriaButton } from "./MinimosCategoriaDialog";
+import { MinimosMassaButton } from "./MinimosMassaDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +133,23 @@ export function MetasCarteiraList({
         })),
     [filtered],
   );
+  // Metas mínimas em massa: clientes com representante (toda a carteira ou o filtro atual).
+  const paraMassa = (r: (typeof rows)[number]) => ({
+    id: r.id,
+    razao_social: r.razao_social,
+    categoria: r.categoria,
+    revisadoCompleto: r.revisadoCompleto,
+  });
+  const carteiraMassa = useMemo(
+    () => rows.filter((r) => isClientRow(r) && r.repId && r.razao_social?.trim()).map(paraMassa),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows],
+  );
+  const filtradosMassa = useMemo(
+    () => filtered.filter((r) => r.repId && r.razao_social?.trim()).map(paraMassa),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered],
+  );
   const repsElegiveis = useMemo(() => new Set(elegiveis.map((c) => c.repId)).size, [elegiveis]);
   const repFiltrado =
     repFilter !== "all" ? (visibleReps.find((r) => r.id === repFilter) ?? null) : null;
@@ -254,6 +272,13 @@ export function MetasCarteiraList({
             {revisadoOnly && <X className="ml-0.5 h-3 w-3 inline-block" />}
           </Badge>
           {gestao && <MinimosCategoriaButton />}
+          {gestao && (
+            <MinimosMassaButton
+              todos={carteiraMassa}
+              filtrados={filtradosMassa}
+              disabled={isLoading}
+            />
+          )}
           {(categoryFilter.length > 0 || familyFilter.length > 0 || zeroFilter || revisadoOnly) && (
             <button
               onClick={() => {
@@ -369,9 +394,14 @@ export function MetasCarteiraList({
                             : "") +
                           (row.revisadoCompleto
                             ? "Metas de todas as categorias revisadas e salvas pelo gestor (7/7)"
-                            : row.metasSalvasCount > 0
-                              ? `${row.metasSalvasCount} de 7 categorias revisadas pelo gestor`
-                              : "Nenhuma meta revisada pelo gestor")
+                            : row.metasEmMassaCount > 0
+                              ? `${row.metasEmMassaCount} meta(s) mínima(s) aplicada(s) em massa, aguardando revisão` +
+                                (row.metasSalvasCount > 0
+                                  ? ` · ${row.metasSalvasCount} revisada(s) pelo gestor`
+                                  : "")
+                              : row.metasSalvasCount > 0
+                                ? `${row.metasSalvasCount} de 7 categorias revisadas pelo gestor`
+                                : "Nenhuma meta revisada pelo gestor")
                         }
                       >
                         <span className="inline-flex items-center justify-center gap-1">
@@ -384,6 +414,10 @@ export function MetasCarteiraList({
                           {row.revisadoCompleto ? (
                             <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mx-auto">
                               <CheckCircle2 className="h-3.5 w-3.5" />
+                            </span>
+                          ) : row.metasEmMassaCount > 0 ? (
+                            <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-sky-500/15 px-1 text-[9px] font-extrabold tracking-tight text-sky-600 dark:text-sky-400 mx-auto">
+                              IA
                             </span>
                           ) : row.metasSalvasCount > 0 ? (
                             <span className="text-[10px] font-mono text-muted-foreground/80">

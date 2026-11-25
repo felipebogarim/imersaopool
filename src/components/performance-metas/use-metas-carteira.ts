@@ -2,6 +2,7 @@
 // Clientes), sem linhas de resumo da planilha. Compartilhada pela lista e pelo BI Metas.
 
 import { useMemo } from "react";
+import { statusRevisao } from "@/lib/performance-metas-bulk";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { FarolStatus } from "@/lib/performance-farol";
@@ -20,6 +21,8 @@ export type CarteiraRow = {
   metasStatus: Record<string, FarolStatus | null>;
   revisadoCompleto: boolean;
   metasSalvasCount: number;
+  /** Portfólios com meta mínima aplicada em massa (marca "IA", ainda não revisados). */
+  metasEmMassaCount: number;
   /** Gestor marcou "Em investigação" (investigação detalhada antes de definir a meta). */
   emInvestigacao: boolean;
 };
@@ -76,7 +79,9 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
   });
 
   // Metas salvas/revisadas pelo gestor no ciclo vigente (por representante e cliente)
-  const { data: reviewedMap = new Map<string, { count: number; completo: boolean }>() } = useQuery({
+  const {
+    data: reviewedMap = new Map<string, { count: number; completo: boolean; emMassa: number }>(),
+  } = useQuery({
     queryKey: ["performance-metas", "reviewed-status"],
     queryFn: async () => {
       try {
@@ -91,17 +96,20 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
             fim,
             performance_goal_items (
               familia,
-              meta_mensal
+              meta_mensal,
+              origem,
+              comentario_gestor,
+              vigente_desde
             )
           `,
           )
           .order("inicio", { ascending: false });
 
         if (error || !cycles) {
-          return new Map<string, { count: number; completo: boolean }>();
+          return new Map<string, { count: number; completo: boolean; emMassa: number }>();
         }
 
-        const map = new Map<string, { count: number; completo: boolean }>();
+        const map = new Map<string, { count: number; completo: boolean; emMassa: number }>();
         for (const c of cycles) {
           const key = `${c.representative_id}|${c.cliente_key}`;
           if (map.has(key)) continue;
@@ -109,16 +117,17 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
           const items = (c.performance_goal_items ?? []) as Array<{
             familia: string;
             meta_mensal: number | null;
+            origem: string | null;
+            comentario_gestor: string | null;
+            vigente_desde: string | null;
           }>;
-          const savedFamilies = new Set(
-            items.filter((i) => i.meta_mensal != null).map((i) => i.familia),
-          );
-          const count = savedFamilies.size;
-          map.set(key, { count, completo: count >= 7 });
+          // Revisada = meta gravada pelo gestor; meta mínima em massa conta à parte ("IA").
+          const { revisadas, emMassa } = statusRevisao(items);
+          map.set(key, { count: revisadas, completo: revisadas >= 7, emMassa });
         }
         return map;
       } catch {
-        return new Map<string, { count: number; completo: boolean }>();
+        return new Map<string, { count: number; completo: boolean; emMassa: number }>();
       }
     },
   });
@@ -147,6 +156,7 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
         const revStatus = repId ? reviewedMap.get(`${repId}|${clienteKey}`) : undefined;
         const metasSalvasCount = revStatus?.count ?? 0;
         const revisadoCompleto = revStatus?.completo ?? false;
+        const metasEmMassaCount = revStatus?.emMassa ?? 0;
 
         return {
           id: r.id,
@@ -159,6 +169,7 @@ export function useMetasCarteira(restrictToRepIds: string[] | null) {
           metasStatus: (r.metas_status ?? {}) as Record<string, FarolStatus | null>,
           revisadoCompleto,
           metasSalvasCount,
+          metasEmMassaCount,
           emInvestigacao: repId ? investigacoes.has(`${repId}|${clienteKey}`) : false,
         };
       })

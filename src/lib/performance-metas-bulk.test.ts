@@ -6,6 +6,10 @@ import {
   bulkCategoria,
   bulkResumo,
   bulkRowStatus,
+  comentarioRevisado,
+  MARCA_MINIMO_MASSA,
+  minimosParaFaltantes,
+  statusRevisao,
 } from "./performance-metas-bulk";
 
 const cycle = { id: "c1", inicio: "2026-11-01", fim: "2027-04-01" } as GoalsState["cycle"];
@@ -69,5 +73,76 @@ describe("convite em massa — avaliação das metas", () => {
     expect(fill).toEqual([
       expect.objectContaining({ familia: "PRO LED", meta_mensal: 1500, origem: "ia" }),
     ]);
+  });
+});
+
+describe("metas mínimas em massa", () => {
+  const MIN = [
+    { categoria: "Black", familia: "PERFIL", minimo: 3000 },
+    { categoria: "Black", familia: "PRO LED", minimo: 3000 },
+    { categoria: "Black", familia: "FITAS E FONTES", minimo: 6000 },
+    { categoria: "Gold", familia: "PERFIL", minimo: 2000 },
+  ];
+
+  it("preenche só portfólios sem meta, com o mínimo da categoria cadastrada", () => {
+    const metas = minimosParaFaltantes(
+      { items: [{ familia: "PERFIL", meta_mensal: 9000 }], agendadas: [] },
+      "BLACK",
+      MIN,
+    );
+    expect(metas.map((m) => [m.familia, m.meta_mensal])).toEqual([
+      ["PRO LED", 3000],
+      ["FITAS E FONTES", 6000],
+    ]);
+    expect(
+      metas.every((m) => m.origem === "ia" && m.comentario_gestor === MARCA_MINIMO_MASSA),
+    ).toBe(true);
+  });
+
+  it("meta programada (agendada) também conta como definida; categoria desconhecida não grava", () => {
+    expect(
+      minimosParaFaltantes(
+        {
+          items: [],
+          agendadas: [{ familia: "PERFIL", meta_mensal: 2500, vigente_desde: "2027-01-01" }],
+        },
+        "Gold",
+        MIN,
+      ),
+    ).toEqual([]);
+    expect(minimosParaFaltantes(null, "Consumidor Final", MIN)).toEqual([]);
+  });
+
+  it("status: massa = IA (não revisada); salvar no painel remove a marca", () => {
+    const s = statusRevisao([
+      { familia: "PERFIL", meta_mensal: 3000, origem: "ia", comentario_gestor: MARCA_MINIMO_MASSA },
+      { familia: "PRO LED", meta_mensal: 4000, origem: "ia", comentario_gestor: "" },
+      { familia: "DECOR STUDIO", meta_mensal: 1000, origem: "gestor", comentario_gestor: "ok" },
+      { familia: "PRO LAMP", meta_mensal: null, origem: "gestor" },
+    ]);
+    expect(s).toEqual({ revisadas: 2, emMassa: 1 });
+    expect(comentarioRevisado(MARCA_MINIMO_MASSA)).toBe("");
+    expect(comentarioRevisado("ajuste")).toBe("ajuste");
+  });
+
+  it("vale a última versão de cada portfólio", () => {
+    expect(
+      statusRevisao([
+        {
+          familia: "PERFIL",
+          meta_mensal: 3000,
+          origem: "ia",
+          comentario_gestor: MARCA_MINIMO_MASSA,
+          vigente_desde: "2026-07-01",
+        },
+        {
+          familia: "PERFIL",
+          meta_mensal: 5000,
+          origem: "gestor",
+          comentario_gestor: "",
+          vigente_desde: "2027-01-01",
+        },
+      ]),
+    ).toEqual({ revisadas: 1, emMassa: 0 });
   });
 });

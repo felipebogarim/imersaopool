@@ -10,6 +10,7 @@ import {
 } from "./client-bi-familias";
 import { getPerformancePortfolioTarget } from "./performance-portfolio-targets";
 import { mediaDoPortfolio, mediaMensalCompras } from "./performance-media-cliente";
+import { comentarioRevisado } from "./performance-metas-bulk";
 import type {
   AiConfianca,
   AiSuggestionTag,
@@ -244,7 +245,8 @@ export function gestorRpcArgs(payload: Extract<SavePayload, { perfil: "gestor" }
       familia: m.familia,
       meta_mensal: m.meta_oficial,
       origem: m.origem,
-      comentario_gestor: m.comentario_gestor,
+      // Salvar no painel = revisão do gestor: a marca de "meta mínima em massa" sai.
+      comentario_gestor: comentarioRevisado(m.comentario_gestor),
       referencia: m.referencia,
     })),
   };

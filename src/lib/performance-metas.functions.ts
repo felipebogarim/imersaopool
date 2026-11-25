@@ -22,6 +22,7 @@ import {
   type AiContext,
 } from "@/lib/performance-metas-ai";
 import {
+  competenciasDoCiclo,
   repView,
   type GoalReview,
   type GoalsState,
@@ -29,7 +30,12 @@ import {
   type RepGoalsView,
 } from "@/lib/performance-metas-persistence";
 import type { MetasBiBackendRow, RepMetasBiBackendFact } from "@/lib/performance-metas-bi";
-import { aiFillForMissing, bulkRowStatus, type BulkRowStatus } from "@/lib/performance-metas-bulk";
+import {
+  aiFillForMissing,
+  bulkRowStatus,
+  minimosParaFaltantes,
+  type BulkRowStatus,
+} from "@/lib/performance-metas-bulk";
 
 type RpcClient = {
   rpc: (
@@ -643,3 +649,78 @@ export const saveMetasMinimos = createServerFn({ method: "POST" })
   .handler(({ data, context }) =>
     minimosRpc(context.supabase, "set_performance_goal_minimums", { _itens: data.itens }),
   );
+
+export type MinimosMassaResultado = {
+  rowId: string;
+  /** Portfólios preenchidos com o mínimo nesta execução. */
+  aplicadas: number;
+  /** Motivo de não aplicar (nada faltando, sem mínimo, categoria fora de Silver/Gold/Black…). */
+  motivo?: string;
+  erro?: string;
+};
+
+/**
+ * Metas mínimas em massa: para cada cliente, grava o mínimo da tabela "Metas Mínimas" (categoria
+ * cadastrada × portfólio) nos portfólios ainda SEM meta. Nunca sobrescreve meta já gravada
+ * (revisada ou não). Origem "ia" + marca: conta nos cálculos e aparece como "IA" na carteira.
+ * Usa a mesma RPC e a mesma competência padrão do painel do cliente.
+ */
+export const applyMetasMinimosMassa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ rowIds: z.array(z.string().uuid()).min(1).max(200) }))
+  .handler(async ({ data, context }): Promise<MinimosMassaResultado[]> => {
+    const client = context.supabase as unknown as RpcClient;
+    const minimos = await minimosRpc(client, "get_performance_goal_minimums", {});
+    if (!minimos.available) throw new Error("Tabela de Metas Mínimas indisponível.");
+    if (!minimos.itens.length) throw new Error("Nenhuma meta mínima configurada.");
+
+    const { data: rows, error } = await (
+      context.supabase as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            in: (
+              col: string,
+              v: string[],
+            ) => Promise<{
+              data: Array<{ id: string; categoria: string | null }> | null;
+              error: { message: string } | null;
+            }>;
+          };
+        };
+      }
+    )
+      .from("rep_performance_rows")
+      .select("id, categoria")
+      .in("id", data.rowIds);
+    if (error) throw new Error(error.message);
+    const categoria = new Map((rows ?? []).map((r) => [r.id, r.categoria]));
+
+    return inBatches(data.rowIds, 4, async (rowId): Promise<MinimosMassaResultado> => {
+      try {
+        const res = await callRpc(client, "get_performance_goals", { _row_id: rowId });
+        if (!res.available) throw new Error("Persistência das metas indisponível.");
+        const metas = minimosParaFaltantes(res.state, categoria.get(rowId), minimos.itens);
+        if (!metas.length) {
+          const cat = categoria.get(rowId);
+          return {
+            rowId,
+            aplicadas: 0,
+            motivo: /^(silver|gold|black)$/i.test((cat ?? "").trim())
+              ? "Todos os portfólios já têm meta (ou sem mínimo configurado)."
+              : `Categoria "${cat ?? "—"}" fora de Silver/Gold/Black.`,
+          };
+        }
+        const vigente = competenciasDoCiclo(res.state.cycle, res.state.proximo ?? null).padrao;
+        const saved = await callRpc(client, "save_performance_goals", {
+          _row_id: rowId,
+          _metas: metas,
+          _sugestoes_ia: [],
+          _vigente_desde: vigente,
+        });
+        if (!saved.available) throw new Error("Persistência das metas indisponível.");
+        return { rowId, aplicadas: metas.length };
+      } catch (e) {
+        return { rowId, aplicadas: 0, erro: e instanceof Error ? e.message : "Falha ao aplicar." };
+      }
+    });
+  });

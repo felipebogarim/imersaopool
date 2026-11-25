@@ -89,3 +89,86 @@ export function aiFillForMissing(state: GoalsState): Array<{
     ];
   });
 }
+
+// ------------------------- Metas mínimas aplicadas em massa -------------------------
+// Preenche a META DO GESTOR com o mínimo da tabela "Metas Mínimas" (categoria × portfólio) nos
+// portfólios ainda SEM meta gravada. Grava como origem "ia" + esta marca no comentário: conta em
+// todos os cálculos, mas a carteira mostra "IA" azul (não o check verde de revisado). Quando o
+// gestor salva o painel do cliente, a marca é removida e a meta passa a contar como revisada.
+
+export const MARCA_MINIMO_MASSA =
+  "Meta mínima da categoria aplicada em massa (aguardando revisão).";
+
+type ItemMeta = {
+  familia: string;
+  meta_mensal: number | null;
+  origem?: string | null;
+  comentario_gestor?: string | null;
+  vigente_desde?: string | null;
+};
+
+export const ehMetaMinimaMassa = (i: Pick<ItemMeta, "origem" | "comentario_gestor">) =>
+  i.origem === "ia" && (i.comentario_gestor ?? "").trim() === MARCA_MINIMO_MASSA;
+
+/** Comentário a gravar quando o gestor salva o painel: a marca de massa sai (vira revisada). */
+export const comentarioRevisado = (c: string) => (c.trim() === MARCA_MINIMO_MASSA ? "" : c);
+
+/** Situação de revisão por portfólio (última versão de cada um). */
+export function statusRevisao(items: readonly ItemMeta[]): {
+  revisadas: number;
+  emMassa: number;
+} {
+  const ultima = new Map<string, ItemMeta>();
+  for (const i of items) {
+    const atual = ultima.get(i.familia);
+    if (!atual || (i.vigente_desde ?? "") >= (atual.vigente_desde ?? "")) ultima.set(i.familia, i);
+  }
+  let revisadas = 0;
+  let emMassa = 0;
+  for (const i of ultima.values()) {
+    if (i.meta_mensal == null) continue;
+    if (ehMetaMinimaMassa(i)) emMassa += 1;
+    else revisadas += 1;
+  }
+  return { revisadas, emMassa };
+}
+
+const categoriaDe = (c: string | null | undefined) => {
+  const n = (c ?? "").trim().toLowerCase();
+  return n === "silver" || n === "gold" || n === "black" ? n : null;
+};
+
+/** Metas a gravar: mínimo da categoria nos portfólios SEM meta (nunca sobrescreve). */
+export function minimosParaFaltantes(
+  state: Pick<GoalsState, "items" | "agendadas"> | null,
+  categoria: string | null | undefined,
+  minimos: ReadonlyArray<{ categoria: string; familia: string; minimo: number }>,
+): Array<{
+  familia: CanonicalFamily;
+  meta_mensal: number;
+  origem: "ia";
+  comentario_gestor: string;
+  referencia: null;
+}> {
+  const cat = categoriaDe(categoria);
+  if (!cat) return [];
+  const definidas = new Set(
+    [...(state?.items ?? []), ...(state?.agendadas ?? [])]
+      .filter((i) => i.meta_mensal != null)
+      .map((i) => i.familia),
+  );
+  return CANONICAL_FAMILIES.flatMap((familia) => {
+    if (definidas.has(familia)) return [];
+    const m = minimos.find((x) => x.categoria.toLowerCase() === cat && x.familia === familia);
+    if (!m || !Number.isFinite(m.minimo) || m.minimo <= 0) return [];
+    return [
+      {
+        familia,
+        meta_mensal: m.minimo,
+        origem: "ia" as const,
+        comentario_gestor: MARCA_MINIMO_MASSA,
+        referencia: null,
+      },
+    ];
+  });
+}
