@@ -22,7 +22,6 @@ import {
   type AiContext,
 } from "@/lib/performance-metas-ai";
 import {
-  competenciasDoCiclo,
   repView,
   type GoalReview,
   type GoalsState,
@@ -33,6 +32,7 @@ import type { MetasBiBackendRow, RepMetasBiBackendFact } from "@/lib/performance
 import {
   aiFillForMissing,
   bulkRowStatus,
+  competenciasMassa,
   minimosParaFaltantes,
   type BulkRowStatus,
 } from "@/lib/performance-metas-bulk";
@@ -661,9 +661,9 @@ export type MinimosMassaResultado = {
 
 /**
  * Metas mínimas em massa: para cada cliente, grava o mínimo da tabela "Metas Mínimas" (categoria
- * cadastrada × portfólio) nos portfólios ainda SEM meta. Nunca sobrescreve meta já gravada
- * (revisada ou não). Origem "ia" + marca: conta nos cálculos e aparece como "IA" na carteira.
- * Usa a mesma RPC e a mesma competência padrão do painel do cliente.
+ * cadastrada × portfólio) nos portfólios sem meta REVISADA (inclui os que só exibem a meta padrão
+ * do upload e mínimos em massa anteriores). Nunca sobrescreve meta revisada. Origem "ia" + marca:
+ * conta nos cálculos desde a competência atual e aparece como "IA" na carteira.
  */
 export const applyMetasMinimosMassa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -706,18 +706,21 @@ export const applyMetasMinimosMassa = createServerFn({ method: "POST" })
             rowId,
             aplicadas: 0,
             motivo: /^(silver|gold|black)$/i.test((cat ?? "").trim())
-              ? "Todos os portfólios já têm meta (ou sem mínimo configurado)."
+              ? "Todos os portfólios já têm meta revisada (ou sem mínimo configurado)."
               : `Categoria "${cat ?? "—"}" fora de Silver/Gold/Black.`,
           };
         }
-        const vigente = competenciasDoCiclo(res.state.cycle, res.state.proximo ?? null).padrao;
-        const saved = await callRpc(client, "save_performance_goals", {
-          _row_id: rowId,
-          _metas: metas,
-          _sugestoes_ia: [],
-          _vigente_desde: vigente,
-        });
-        if (!saved.available) throw new Error("Persistência das metas indisponível.");
+        // Vigente JÁ (competência atual do ciclo), para contar nos cálculos agora — e não só a
+        // partir do próximo semestre. Se o próximo semestre já estiver programado, grava lá também.
+        for (const vigente of competenciasMassa(res.state.cycle, res.state.proximo ?? null)) {
+          const saved = await callRpc(client, "save_performance_goals", {
+            _row_id: rowId,
+            _metas: metas,
+            _sugestoes_ia: [],
+            _vigente_desde: vigente,
+          });
+          if (!saved.available) throw new Error("Persistência das metas indisponível.");
+        }
         return { rowId, aplicadas: metas.length };
       } catch (e) {
         return { rowId, aplicadas: 0, erro: e instanceof Error ? e.message : "Falha ao aplicar." };

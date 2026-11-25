@@ -8,6 +8,7 @@ import {
   bulkRowStatus,
   comentarioRevisado,
   MARCA_MINIMO_MASSA,
+  competenciasMassa,
   minimosParaFaltantes,
   statusRevisao,
 } from "./performance-metas-bulk";
@@ -111,6 +112,32 @@ describe("metas mínimas em massa", () => {
       ),
     ).toEqual([]);
     expect(minimosParaFaltantes(null, "Consumidor Final", MIN)).toEqual([]);
+  });
+
+  it("mínimo em massa anterior é reaplicado (não conta como revisado)", () => {
+    const metas = minimosParaFaltantes(
+      {
+        items: CANONICAL_FAMILIES.map((familia) => ({
+          familia,
+          meta_mensal: 1,
+          origem: "ia" as const,
+          comentario_gestor: MARCA_MINIMO_MASSA,
+        })),
+        agendadas: [],
+      },
+      "Black",
+      MIN,
+    );
+    expect(metas.length).toBe(MIN.filter((m) => m.categoria === "Black").length);
+  });
+
+  it("grava na competência vigente agora (e no próximo semestre já programado)", () => {
+    const hoje = new Date(2026, 10, 25);
+    const jul = { id: "c", inicio: "2026-07-01", fim: "2026-12-01" };
+    expect(competenciasMassa(jul, null, hoje)).toEqual(["2026-11-01"]);
+    expect(competenciasMassa(null, null, hoje)).toEqual(["2026-11-01"]);
+    const prox = { id: "p", inicio: "2027-01-01", fim: "2027-06-01" };
+    expect(competenciasMassa(jul, prox, hoje)).toEqual(["2026-11-01", "2027-01-01"]);
   });
 
   it("status: massa = IA (não revisada); salvar no painel remove a marca", () => {

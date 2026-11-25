@@ -2,7 +2,11 @@
 // meta dos 7 portfólios e monta o que falta a partir da sugestão IA. Lógica pura (sem I/O).
 
 import { CANONICAL_FAMILIES, type CanonicalFamily } from "@/lib/client-bi-familias";
-import type { GoalsState } from "@/lib/performance-metas-persistence";
+import {
+  competenciasDoCiclo,
+  type GoalsCycle,
+  type GoalsState,
+} from "@/lib/performance-metas-persistence";
 
 export type BulkRowStatus = {
   rowId: string;
@@ -138,7 +142,7 @@ const categoriaDe = (c: string | null | undefined) => {
   return n === "silver" || n === "gold" || n === "black" ? n : null;
 };
 
-/** Metas a gravar: mínimo da categoria nos portfólios SEM meta (nunca sobrescreve). */
+/** Metas a gravar: mínimo da categoria nos portfólios sem meta revisada (nunca sobrescreve revisão). */
 export function minimosParaFaltantes(
   state: Pick<GoalsState, "items" | "agendadas"> | null,
   categoria: string | null | undefined,
@@ -152,9 +156,12 @@ export function minimosParaFaltantes(
 }> {
   const cat = categoriaDe(categoria);
   if (!cat) return [];
+  // Só meta REVISADA (gravada pelo gestor/representante/IA aceita) é preservada; portfólio sem
+  // meta gravada (exibindo apenas a meta padrão do upload) ou com mínimo em massa anterior recebe
+  // o mínimo atual da tabela.
   const definidas = new Set(
     [...(state?.items ?? []), ...(state?.agendadas ?? [])]
-      .filter((i) => i.meta_mensal != null)
+      .filter((i) => i.meta_mensal != null && !ehMetaMinimaMassa(i as ItemMeta))
       .map((i) => i.familia),
   );
   return CANONICAL_FAMILIES.flatMap((familia) => {
@@ -171,4 +178,22 @@ export function minimosParaFaltantes(
       },
     ];
   });
+}
+
+/**
+ * Competências em que o mínimo em massa é gravado: a VIGENTE agora (1º mês do ciclo ≥ mês atual),
+ * para entrar nos cálculos imediatamente, e o início do próximo semestre se ele já estiver
+ * programado (o ciclo futuro já copiou as metas antigas e não herdaria as novas).
+ */
+export function competenciasMassa(
+  cycle: GoalsCycle | null,
+  proximo: GoalsCycle | null,
+  today = new Date(),
+): string[] {
+  const { meses } = competenciasDoCiclo(cycle, proximo, today);
+  const atual = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  const vigente = meses.find((m) => m >= atual) ?? meses[meses.length - 1];
+  const out = [vigente];
+  if (cycle && proximo && proximo.inicio > vigente) out.push(proximo.inicio);
+  return out;
 }

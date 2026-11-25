@@ -1,6 +1,6 @@
 // Aplicar metas mínimas em massa (gestão): grava o mínimo da tabela "Metas Mínimas" como META DO
-// GESTOR nos portfólios ainda sem meta, por categoria cadastrada. Nunca sobrescreve meta já
-// gravada (clientes revisados ficam intactos). As metas entram em todos os cálculos e aparecem
+// GESTOR nos portfólios sem meta revisada, por categoria cadastrada, vigente desde o mês atual.
+// Nunca sobrescreve meta revisada (clientes revisados ficam intactos). As metas entram em todos os cálculos e aparecem
 // na carteira com "IA" azul até o gestor revisar e salvar o painel do cliente.
 
 import { useMemo, useState } from "react";
@@ -152,9 +152,11 @@ function MinimosMassaDialog({
           </DialogTitle>
           <DialogDescription>
             Preenche a <strong>meta do gestor</strong> com o valor da tabela{" "}
-            <strong>Metas Mínimas</strong> (categoria cadastrada × portfólio) somente nos portfólios
-            ainda <strong>sem meta</strong>. Metas já gravadas não são alteradas e clientes
-            revisados (7/7) ficam de fora. As metas entram em todos os cálculos e aparecem com{" "}
+            <strong>Metas Mínimas</strong> (categoria cadastrada × portfólio) em todos os portfólios
+            <strong> sem meta revisada</strong>, inclusive os que hoje só exibem a meta padrão do
+            upload, valendo <strong>a partir do mês atual</strong>. Metas revisadas pelo gestor não
+            são alteradas e clientes revisados (7/7) ficam de fora. As metas entram em todos os
+            cálculos e aparecem com{" "}
             <span className="rounded bg-sky-500/15 px-1 text-[10px] font-extrabold text-sky-600">
               IA
             </span>{" "}
