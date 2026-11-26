@@ -25,14 +25,6 @@ export const NAV_TREE: NavGroup[] = [
   { key: "home", label: "Home", to: "/home", children: [] },
   { key: "bi-diretor", label: "BI Diretor", to: "/bi-diretor", children: [] },
   {
-    key: "inteligencia",
-    label: "Inteligência Comercial",
-    children: [
-      { key: "inteligencia.chat", label: "Chat", to: "/inteligencia" },
-      { key: "inteligencia.gestao", label: "Gestão do Brain", to: "/inteligencia/gestao" },
-    ],
-  },
-  {
     key: "performance",
     label: "Performance",
     children: [
@@ -145,6 +137,14 @@ export const NAV_TREE: NavGroup[] = [
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
       { key: "admin.agentes", label: "Agentes", to: "/agentes" },
       { key: "admin.permissoes", label: "Permissões", to: "/admin/permissoes" },
+    ],
+  },
+  {
+    key: "inteligencia",
+    label: "Inteligência Comercial",
+    children: [
+      { key: "inteligencia.chat", label: "Chat", to: "/inteligencia" },
+      { key: "inteligencia.gestao", label: "Gestão do Brain", to: "/inteligencia/gestao" },
     ],
   },
   {
