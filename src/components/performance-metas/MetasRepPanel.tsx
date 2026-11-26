@@ -27,6 +27,7 @@ import {
   monthShortLabel,
   periodLabel,
   resumoPortfolioRep,
+  scaleMetasBiFactsToMonthlyTarget,
   semesterMonths,
   totalMetasBi,
   yearMonths,
@@ -36,6 +37,7 @@ import {
   type MetasBiSort,
 } from "@/lib/performance-metas-bi";
 import { getMetasBi } from "@/lib/performance-metas.functions";
+import { CenarioMMToggle, fmtCenarioMM } from "./MetaAtualGaugeCard";
 import { useMetasCarteira } from "./use-metas-carteira";
 import { AtingCell, MetasMatrix, MultiFilter, type MatrixMetric } from "./MetasBiTables";
 
@@ -79,10 +81,14 @@ export function MetasRepPanel() {
     [mode, year, months, semester],
   );
 
-  const allFacts = useMemo(
-    () => buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths),
-    [rows, bi, periodMonths],
-  );
+  // Cenário de meta total da empresa (mesma regra do BI Metas); null = metas reais.
+  const [cenarioMM, setCenarioMM] = useState<number | null>(null);
+  const allFacts = useMemo(() => {
+    const raw = buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths);
+    return cenarioMM == null
+      ? raw
+      : scaleMetasBiFactsToMonthlyTarget(raw, cenarioMM * 1_000_000, periodMonths.length);
+  }, [rows, bi, periodMonths, cenarioMM]);
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
   const matrix = useMemo(() => matrixMetasBi(facts, "representante", sort), [facts, sort]);
@@ -130,6 +136,7 @@ export function MetasRepPanel() {
           />
         ))}
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <CenarioMMToggle value={cenarioMM} onChange={setCenarioMM} />
           <div className="flex rounded-md border border-border p-0.5">
             {(
               [
@@ -192,7 +199,11 @@ export function MetasRepPanel() {
         <Kpi
           label="Meta do período"
           valor={fmtBRL(total.metaAtual)}
-          sub={periodLabel(periodMonths, year)}
+          sub={
+            cenarioMM != null
+              ? `Cenário ${fmtCenarioMM(cenarioMM)}MM/mês · ${periodLabel(periodMonths, year)}`
+              : periodLabel(periodMonths, year)
+          }
         />
         <Kpi
           label="Base vendida"

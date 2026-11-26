@@ -6,7 +6,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, Maximize2, Minimize2, SlidersHorizontal, X } from "lucide-react";
-import { MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
+import { CenarioMMToggle, MetaAtualGaugeCard } from "./MetaAtualGaugeCard";
 import {
   Select,
   SelectContent,
@@ -129,7 +129,8 @@ export function MetasBiPanel() {
     [year],
   );
 
-  // Cenário de meta total da empresa (9MM ou 8MM/mês); null = metas reais.
+  // Cenário de meta total da empresa (8, 8,5 ou 9MM/mês); null = metas reais.
+  // Reescala os fatos antes de qualquer agregação: KPIs, gráficos, tabelas e matriz refletem.
   const [cenarioMM, setCenarioMM] = useState<number | null>(null);
 
   const allFactsRaw = useMemo(
@@ -211,6 +212,7 @@ export function MetasBiPanel() {
           />
         ))}
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <CenarioMMToggle value={cenarioMM} onChange={setCenarioMM} />
           <div className="flex rounded-md border border-border p-0.5">
             {(
               [
@@ -290,7 +292,7 @@ export function MetasBiPanel() {
             periodo={periodLabel(periodMonths, year)}
             hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
             cenarioMM={cenarioMM}
-            onCenarioMM={setCenarioMM}
+            showCenarios={false}
           />
         </div>
         <div className="lg:col-span-2 flex flex-col h-full">

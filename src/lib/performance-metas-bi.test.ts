@@ -188,6 +188,12 @@ describe("visão mensal da gestão", () => {
     expect(totalMetasBi(scaled).metaAtual).toBe(18_000_000);
     expect(scaled[0].metaAtual).toBe(12_000_000);
     expect(scaled[1].metaAtual).toBe(6_000_000);
+    // Cenário 8,5MM/mês: total do período e atingimento recalculados; realizado intacto.
+    const s85 = scaleMetasBiFactsToMonthlyTarget(source, 8_500_000, 1);
+    const t85 = totalMetasBi(s85);
+    expect(t85.metaAtual).toBe(8_500_000);
+    expect(t85.realizado).toBe(totalMetasBi(source).realizado);
+    expect(t85.atingimento).toBeCloseTo(t85.realizado / t85.metaComBase);
   });
 });
 

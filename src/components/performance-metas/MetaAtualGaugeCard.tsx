@@ -23,7 +23,51 @@ export const GAUGE_STATUS_TEXT: Record<FarolStatus, string> = {
 };
 
 /** Cenários de meta total da empresa (milhões/mês) disponíveis no card. */
-export const CENARIOS_MM = [9, 8] as const;
+export const CENARIOS_MM = [8, 8.5, 9] as const;
+
+/** "8,5" para 8.5 (rótulos de cenário em pt-BR). */
+export const fmtCenarioMM = (mm: number) => mm.toLocaleString("pt-BR");
+
+/** Seletor de cenário de meta total da empresa (clicar no ativo volta às metas reais). */
+export function CenarioMMToggle({
+  value,
+  onChange,
+  className,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex rounded-md border border-border p-0.5", className)} role="group">
+      {CENARIOS_MM.map((mm) => {
+        const ativo = value === mm;
+        return (
+          <button
+            key={mm}
+            type="button"
+            aria-pressed={ativo}
+            onClick={() => onChange(ativo ? null : mm)}
+            title={
+              ativo
+                ? "Voltar às metas reais"
+                : `Simular com meta proporcional de ${fmtCenarioMM(mm)} milhões por mês`
+            }
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors",
+              ativo
+                ? "bg-amber-500 font-semibold text-white hover:bg-amber-600"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+            Visão {fmtCenarioMM(mm)}MM/mês
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export type MetaAtualGaugeCardProps = {
   metaAtual: number;
@@ -111,10 +155,10 @@ export function MetaAtualGaugeCard({
                         ? "bg-amber-500 text-white font-semibold shadow-xs hover:bg-amber-600"
                         : "border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                    title={`Simular com meta proporcional de ${mm} milhões por mês`}
+                    title={`Simular com meta proporcional de ${fmtCenarioMM(mm)} milhões por mês`}
                   >
                     <SlidersHorizontal className="h-2.5 w-2.5" />
-                    Visão {mm}MM/mês
+                    Visão {fmtCenarioMM(mm)}MM/mês
                   </button>
                 );
               })}
@@ -129,7 +173,7 @@ export function MetaAtualGaugeCard({
           </p>
           {cenarioMM != null && (
             <span className="rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
-              Cenário {cenarioMM}MM
+              Cenário {fmtCenarioMM(cenarioMM)}MM
             </span>
           )}
         </div>
