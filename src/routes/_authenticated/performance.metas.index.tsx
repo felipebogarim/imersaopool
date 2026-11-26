@@ -21,8 +21,8 @@ export const Route = createFileRoute("/_authenticated/performance/metas/")({
 });
 
 const VIEWS: Array<{ key: MetasView; label: string; icon: typeof ListChecks }> = [
-  { key: "clientes", label: "Metas por cliente", icon: ListChecks },
   { key: "bi", label: "BI Metas", icon: BarChart3 },
+  { key: "clientes", label: "Metas por cliente", icon: ListChecks },
   { key: "reps", label: "Metas por Rep", icon: Users },
 ];
 
@@ -40,10 +40,15 @@ function MetasIndexPage() {
       <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4">
         {!viewer.loading && !isRepView && (
           <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex rounded-lg border border-border bg-card p-1 shadow-sm">
+            <div
+              role="tablist"
+              className="inline-flex flex-wrap items-center gap-1.5 rounded-xl border border-border bg-muted/60 p-1.5 shadow-sm"
+            >
               {VIEWS.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
+                  role="tab"
+                  aria-selected={current === key}
                   onClick={() =>
                     navigate({
                       search: { view: key === "clientes" ? undefined : key },
@@ -51,10 +56,10 @@ function MetasIndexPage() {
                     })
                   }
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-medium transition-colors",
                     current === key
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4" /> {label}
