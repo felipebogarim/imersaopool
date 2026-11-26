@@ -658,6 +658,352 @@ export type Database = {
         }
         Relationships: []
       }
+      brain_attachments: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          expira_em: string
+          id: string
+          message_id: string | null
+          mime: string
+          nome: string
+          owner_id: string
+          tamanho: number | null
+          texto_extraido: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          expira_em: string
+          id?: string
+          message_id?: string | null
+          mime: string
+          nome: string
+          owner_id: string
+          tamanho?: number | null
+          texto_extraido?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          expira_em?: string
+          id?: string
+          message_id?: string | null
+          mime?: string
+          nome?: string
+          owner_id?: string
+          tamanho?: number | null
+          texto_extraido?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "brain_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brain_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "brain_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brain_audit: {
+        Row: {
+          clientes: string[]
+          conversation_id: string | null
+          created_at: string
+          detalhe: string | null
+          escopo: string
+          escopo_ref: string | null
+          ferramentas: Json
+          id: string
+          interface: string
+          modelo: string | null
+          status: string
+          tokens_entrada: number | null
+          tokens_saida: number | null
+          user_id: string
+        }
+        Insert: {
+          clientes?: string[]
+          conversation_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          escopo: string
+          escopo_ref?: string | null
+          ferramentas?: Json
+          id?: string
+          interface: string
+          modelo?: string | null
+          status: string
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+          user_id: string
+        }
+        Update: {
+          clientes?: string[]
+          conversation_id?: string | null
+          created_at?: string
+          detalhe?: string | null
+          escopo?: string
+          escopo_ref?: string | null
+          ferramentas?: Json
+          id?: string
+          interface?: string
+          modelo?: string | null
+          status?: string
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brain_conversations: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          interface: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          interface: string
+          titulo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          interface?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      brain_knowledge: {
+        Row: {
+          aprovado_por: string | null
+          autor_id: string | null
+          busca: unknown
+          camada: string
+          cliente_nome: string | null
+          cliente_norm: string | null
+          company_id: string
+          confidencialidade: string
+          conteudo: string
+          created_at: string
+          data_referencia: string | null
+          fonte: string | null
+          id: string
+          portfolio: string | null
+          regiao: string | null
+          representative_id: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+          valido_ate: string | null
+          versao: number
+        }
+        Insert: {
+          aprovado_por?: string | null
+          autor_id?: string | null
+          busca?: unknown
+          camada: string
+          cliente_nome?: string | null
+          cliente_norm?: string | null
+          company_id: string
+          confidencialidade: string
+          conteudo: string
+          created_at?: string
+          data_referencia?: string | null
+          fonte?: string | null
+          id?: string
+          portfolio?: string | null
+          regiao?: string | null
+          representative_id?: string | null
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+          valido_ate?: string | null
+          versao?: number
+        }
+        Update: {
+          aprovado_por?: string | null
+          autor_id?: string | null
+          busca?: unknown
+          camada?: string
+          cliente_nome?: string | null
+          cliente_norm?: string | null
+          company_id?: string
+          confidencialidade?: string
+          conteudo?: string
+          created_at?: string
+          data_referencia?: string | null
+          fonte?: string | null
+          id?: string
+          portfolio?: string | null
+          regiao?: string | null
+          representative_id?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          valido_ate?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_knowledge_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brain_knowledge_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brain_knowledge_versions: {
+        Row: {
+          created_at: string
+          dados: Json
+          id: string
+          knowledge_id: string
+          versao: number
+        }
+        Insert: {
+          created_at?: string
+          dados: Json
+          id?: string
+          knowledge_id: string
+          versao: number
+        }
+        Update: {
+          created_at?: string
+          dados?: Json
+          id?: string
+          knowledge_id?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_knowledge_versions_knowledge_id_fkey"
+            columns: ["knowledge_id"]
+            isOneToOne: false
+            referencedRelation: "brain_knowledge"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brain_messages: {
+        Row: {
+          attachments: Json
+          clientes_ref: string[]
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          modelo: string | null
+          role: string
+          sources: Json
+          tokens_entrada: number | null
+          tokens_saida: number | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json
+          clientes_ref?: string[]
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          modelo?: string | null
+          role: string
+          sources?: Json
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json
+          clientes_ref?: string[]
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          modelo?: string | null
+          role?: string
+          sources?: Json
+          tokens_entrada?: number | null
+          tokens_saida?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brain_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "brain_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brain_role_capabilities: {
+        Row: {
+          capability: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          capability: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          capability?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      brain_settings: {
+        Row: {
+          chave: string
+          updated_at: string
+          updated_by: string | null
+          valor: Json
+        }
+        Insert: {
+          chave: string
+          updated_at?: string
+          updated_by?: string | null
+          valor: Json
+        }
+        Update: {
+          chave?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: Json
+        }
+        Relationships: []
+      }
       capitulos: {
         Row: {
           campos_matriz: Json
@@ -8615,6 +8961,7 @@ export type Database = {
         Returns: Json
       }
       assert_aal2: { Args: never; Returns: boolean }
+      brain_purge_expired: { Args: never; Returns: undefined }
       compute_bi_shares: { Args: { _rep_id: string }; Returns: Json }
       confirm_performance_goal_link: {
         Args: { _client_id: string; _row_id: string }
