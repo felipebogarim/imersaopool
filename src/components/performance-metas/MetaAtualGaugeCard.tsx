@@ -22,6 +22,9 @@ export const GAUGE_STATUS_TEXT: Record<FarolStatus, string> = {
   sem_compra: "fill-muted-foreground",
 };
 
+/** Cenários de meta total da empresa (milhões/mês) disponíveis no card. */
+export const CENARIOS_MM = [9, 8] as const;
+
 export type MetaAtualGaugeCardProps = {
   metaAtual: number;
   realizado: number;
@@ -29,9 +32,10 @@ export type MetaAtualGaugeCardProps = {
   atingimento: number | null;
   periodo: string;
   hint?: string;
-  visao9mm?: boolean;
-  onToggleVisao9mm?: (v: boolean) => void;
-  showVisao9mm?: boolean;
+  /** Cenário ativo em milhões/mês (ex.: 9 ou 8); null = metas reais. */
+  cenarioMM?: number | null;
+  onCenarioMM?: (v: number | null) => void;
+  showCenarios?: boolean;
   className?: string;
 };
 
@@ -42,9 +46,9 @@ export function MetaAtualGaugeCard({
   atingimento,
   periodo,
   hint,
-  visao9mm,
-  onToggleVisao9mm,
-  showVisao9mm = true,
+  cenarioMM = null,
+  onCenarioMM,
+  showCenarios = true,
   className,
 }: MetaAtualGaugeCardProps) {
   const rawId = useId();
@@ -93,22 +97,27 @@ export function MetaAtualGaugeCard({
             Meta atual
           </p>
           <div className="flex items-center gap-1.5">
-            {showVisao9mm && (
-              <button
-                type="button"
-                onClick={() => onToggleVisao9mm?.(!visao9mm)}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer",
-                  visao9mm
-                    ? "bg-amber-500 text-white font-semibold shadow-xs hover:bg-amber-600"
-                    : "border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-                title="Simular com meta proporcional de 9 milhões por mês"
-              >
-                <SlidersHorizontal className="h-2.5 w-2.5" />
-                Visão 9MM/mês
-              </button>
-            )}
+            {showCenarios &&
+              CENARIOS_MM.map((mm) => {
+                const ativo = cenarioMM === mm;
+                return (
+                  <button
+                    key={mm}
+                    type="button"
+                    onClick={() => onCenarioMM?.(ativo ? null : mm)}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition-all cursor-pointer",
+                      ativo
+                        ? "bg-amber-500 text-white font-semibold shadow-xs hover:bg-amber-600"
+                        : "border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    title={`Simular com meta proporcional de ${mm} milhões por mês`}
+                  >
+                    <SlidersHorizontal className="h-2.5 w-2.5" />
+                    Visão {mm}MM/mês
+                  </button>
+                );
+              })}
             <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
               {periodo}
             </span>
@@ -118,9 +127,9 @@ export function MetaAtualGaugeCard({
           <p className="text-base font-bold tracking-tight text-foreground tabular-nums">
             {fmtBRL(metaAtual)}
           </p>
-          {visao9mm && (
+          {cenarioMM != null && (
             <span className="rounded bg-amber-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
-              Cenário 9MM
+              Cenário {cenarioMM}MM
             </span>
           )}
         </div>

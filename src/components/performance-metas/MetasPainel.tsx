@@ -222,16 +222,18 @@ export function MetasPainel({
     [savedDrafts, drafts, role],
   );
 
-  const [visao9mm, setVisao9mm] = useState(false);
+  // Cenário de meta total da empresa (9MM ou 8MM/mês); null = meta real do cliente.
+  const [cenarioMM, setCenarioMM] = useState<number | null>(null);
   const podeVerVisao9mm = role === "gestor" && !previewRep && vis.verMetaPadrao;
 
-  // Racional do cenário 9MM: proporção sobre o total mensal da empresa (~13.047.100)
+  // Racional dos cenários: proporção sobre o total mensal da empresa (~13.047.100)
   const COMPANY_META_BASE_MENSAL = 13_047_100;
-  const RATIO_9MM = 9_000_000 / COMPANY_META_BASE_MENSAL;
 
   const baseMetaTotal = summary.total > 0 ? summary.total : (summary.referenciaTotal ?? 0);
   const displayedMeta =
-    visao9mm && podeVerVisao9mm ? Math.round(baseMetaTotal * RATIO_9MM) : baseMetaTotal;
+    cenarioMM != null && podeVerVisao9mm
+      ? Math.round((baseMetaTotal * cenarioMM * 1_000_000) / COMPANY_META_BASE_MENSAL)
+      : baseMetaTotal;
 
   // Base do gauge = a mesma média mensal (nunca derivada da meta do gestor).
   const totalRealizado = mediaCliente.total ?? 0;
@@ -466,10 +468,10 @@ export function MetasPainel({
               metaComBase={displayedMeta}
               atingimento={displayedAtingimento}
               periodo={cliente.periodoLabel ?? "nov/26"}
-              hint="Meta individual do cliente; proporcional ao cenário de 9MM quando ativado"
-              visao9mm={visao9mm}
-              onToggleVisao9mm={podeVerVisao9mm ? setVisao9mm : undefined}
-              showVisao9mm={podeVerVisao9mm}
+              hint="Meta individual do cliente; proporcional ao cenário de 9MM ou 8MM quando ativado"
+              cenarioMM={cenarioMM}
+              onCenarioMM={podeVerVisao9mm ? setCenarioMM : undefined}
+              showCenarios={podeVerVisao9mm}
             />
           </div>
 

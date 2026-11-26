@@ -129,7 +129,8 @@ export function MetasBiPanel() {
     [year],
   );
 
-  const [visao9mm, setVisao9mm] = useState(false);
+  // Cenário de meta total da empresa (9MM ou 8MM/mês); null = metas reais.
+  const [cenarioMM, setCenarioMM] = useState<number | null>(null);
 
   const allFactsRaw = useMemo(
     () => buildMetasBiFacts(rows, bi?.available ? bi.rows : [], periodMonths),
@@ -137,9 +138,13 @@ export function MetasBiPanel() {
   );
 
   const allFacts = useMemo(() => {
-    if (!visao9mm) return allFactsRaw;
-    return scaleMetasBiFactsToMonthlyTarget(allFactsRaw, 9_000_000, periodMonths.length);
-  }, [allFactsRaw, visao9mm, periodMonths.length]);
+    if (cenarioMM == null) return allFactsRaw;
+    return scaleMetasBiFactsToMonthlyTarget(
+      allFactsRaw,
+      cenarioMM * 1_000_000,
+      periodMonths.length,
+    );
+  }, [allFactsRaw, cenarioMM, periodMonths.length]);
   const facts = useMemo(() => applyMetasBiFilters(allFacts, filters), [allFacts, filters]);
   const total = useMemo(() => totalMetasBi(facts), [facts]);
   const porFamilia = useMemo(() => aggregateMetasBi(facts, "familia"), [facts]);
@@ -284,8 +289,8 @@ export function MetasBiPanel() {
             atingimento={total.atingimento}
             periodo={periodLabel(periodMonths, year)}
             hint="Metas salvas mês a mês; padrão da categoria nos meses sem meta salva"
-            visao9mm={visao9mm}
-            onToggleVisao9mm={setVisao9mm}
+            cenarioMM={cenarioMM}
+            onCenarioMM={setCenarioMM}
           />
         </div>
         <div className="lg:col-span-2 flex flex-col h-full">
