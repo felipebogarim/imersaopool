@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import type { BrainStreamEvent } from "@/lib/brain/types";
+import { contextoTelaSchema } from "@/lib/brain/page-context";
 
 // Chat da Inteligência Comercial (SSE). Autenticação e escopo resolvidos no servidor a cada
 // requisição; o corpo nunca define permissões (interface só escolhe entre escopos do próprio
@@ -24,6 +25,7 @@ const corpo = z.object({
   message: z.string().trim().min(1).max(8000),
   attachments: z.array(anexo).max(5).optional(),
   analise: z.boolean().optional(),
+  contexto: contextoTelaSchema.nullable().optional(),
 });
 
 const json = (body: unknown, status: number) => Response.json(body, { status });
@@ -38,6 +40,7 @@ export const Route = createFileRoute("/api/brain/chat")({
           await import("@/lib/brain/orchestrator");
         const { chatRound } = await import("@/lib/brain/llm");
         const { obterContexto } = await import("@/lib/brain/cache.server");
+        const { resolverContextoTela } = await import("@/lib/brain/contexto.server");
 
         const auth = request.headers.get("authorization") ?? "";
         const jwt = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
@@ -132,13 +135,20 @@ export const Route = createFileRoute("/api/brain/chat")({
                   else throw e;
                 }
               }
-              emit({ type: "meta", conversationId: conversaId, persisted: persistido });
+              const tela = await resolverContextoTela(ctx, body.contexto, jwt);
+              emit({
+                type: "meta",
+                conversationId: conversaId,
+                persisted: persistido,
+                contexto: tela.rotulo,
+              });
 
               const turno = await executarTurno({
                 ctx,
                 historico,
                 pergunta: mensagemUsuario(body.message, body.attachments ?? []),
                 modelo,
+                contextoTela: tela.texto,
                 signal: controller.signal,
                 emit: (e) => {
                   if (e.type === "text") resposta += e.delta;

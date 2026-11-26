@@ -8,6 +8,7 @@ import { BrandMark, PoolFlowLogo } from "@/components/Brand";
 import newlineLogo from "@/assets/newline-logo.png.asset.json";
 
 import { cn } from "@/lib/utils";
+import { BrainFloating } from "@/components/brain/BrainFloating";
 import { Button } from "@/components/ui/button";
 import { ConfidentialityModal } from "@/components/ConfidentialityModal";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
@@ -448,6 +449,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       {!isAccessGatePage && <ForcePasswordChange />}
       {!isAccessGatePage && <ConfidentialityModal />}
       {!isAccessGatePage && <SensitiveAdminGate />}
+      {!isAccessGatePage && (
+        <BrainFloating
+          iface="plataforma"
+          oculto={pathname === "/inteligencia" || pathname === "/inteligencia/"}
+        />
+      )}
     </div>
   );
 }

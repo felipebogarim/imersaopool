@@ -1,6 +1,7 @@
 // Markdown das respostas do Brain: reaproveita o MarkdownView e acrescenta tabelas.
 import type { ReactNode } from "react";
 import { MarkdownView } from "@/components/MarkdownView";
+import { BrainChart, parseGrafico } from "./BrainChart";
 
 const ehLinhaTabela = (l: string) => /^\s*\|.*\|\s*$/.test(l);
 const ehSeparador = (l: string) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
@@ -23,6 +24,16 @@ export function BrainMarkdown({ markdown }: { markdown: string }) {
     texto = [];
   };
   for (let i = 0; i < linhas.length; i++) {
+    // Bloco ```grafico {json}``` (durante o streaming, só renderiza quando o bloco fecha).
+    if (/^\s*```\s*grafico\s*$/i.test(linhas[i])) {
+      const fim = linhas.findIndex((l, k) => k > i && /^\s*```\s*$/.test(l));
+      if (fim < 0) break;
+      flush();
+      const g = parseGrafico(linhas.slice(i + 1, fim).join("\n"));
+      if (g) blocos.push(<BrainChart key={`g${blocos.length}`} g={g} />);
+      i = fim;
+      continue;
+    }
     if (ehLinhaTabela(linhas[i]) && i + 1 < linhas.length && ehSeparador(linhas[i + 1])) {
       flush();
       const cab = celulas(linhas[i]);

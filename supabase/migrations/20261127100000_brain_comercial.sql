@@ -238,8 +238,11 @@ ALTER TABLE public.user_nav_permissions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.role_permissions, public.user_nav_permissions FROM anon;
 
 DROP POLICY IF EXISTS "Authenticated can read role permissions" ON public.role_permissions;
+-- Leitura restrita (como aplicado no banco em 2026-11-26): cada um lê as permissões do próprio
+-- papel; admin/gestor leem todas.
 CREATE POLICY "Authenticated can read role permissions" ON public.role_permissions
-  FOR SELECT TO authenticated USING (true);
+  FOR SELECT TO authenticated
+  USING (public.has_role(auth.uid(), role) OR public.is_admin_or_gestor(auth.uid()));
 DROP POLICY IF EXISTS "Admins manage role permissions" ON public.role_permissions;
 CREATE POLICY "Admins manage role permissions" ON public.role_permissions
   FOR ALL TO authenticated

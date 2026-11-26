@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRepPortal } from "@/lib/rep-portal.functions";
 import { getBrainAccess } from "@/lib/brain.functions";
+import { BrainFloating } from "@/components/brain/BrainFloating";
 import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
 import { useRepSolicitacoes } from "./use-rep-solicitacoes";
 
@@ -228,6 +229,9 @@ export function RepPortalChrome({
           </nav>
         </div>
       </div>
+
+      {/* Assistente flutuante: só com a feature flag ligada (o servidor revalida). */}
+      <BrainFloating iface="portal" oculto={activeTab === "inteligencia"} />
     </>
   );
 }

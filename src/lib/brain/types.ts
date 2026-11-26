@@ -48,7 +48,7 @@ export type BrainAttachmentInput = {
 
 /** Eventos enviados ao navegador durante a resposta (SSE). */
 export type BrainStreamEvent =
-  | { type: "meta"; conversationId: string | null; persisted: boolean }
+  | { type: "meta"; conversationId: string | null; persisted: boolean; contexto?: string | null }
   | { type: "tool"; name: string; label: string }
   | { type: "text"; delta: string }
   | { type: "sources"; sources: BrainSource[] }

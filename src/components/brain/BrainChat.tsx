@@ -1,7 +1,8 @@
-// Chat da Inteligência Comercial — mesmo componente na plataforma e no Portal do Representante.
-// O escopo NÃO é decidido aqui: o servidor resolve a partir da sessão a cada mensagem.
+// Chat da Inteligência Comercial — mesmo componente na página completa e na janela flutuante,
+// na plataforma e no Portal do Representante. A conversa vem do store compartilhado; o escopo é
+// sempre resolvido pelo servidor a cada mensagem.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -9,16 +10,17 @@ import {
   FileText,
   History,
   Loader2,
+  MapPin,
   Mic,
   Paperclip,
   Pencil,
   Plus,
   Send,
-  Sparkles,
   Square,
   Trash2,
   Volume2,
   X,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,39 +31,17 @@ import { transcribeAudioInBrowser } from "@/lib/transcribe-client";
 import { extractFileText } from "@/lib/sintese-file-text";
 import {
   deleteBrainConversation,
-  getBrainConversation,
   listBrainConversations,
   renameBrainConversation,
 } from "@/lib/brain.functions";
-import type {
-  BrainAttachmentInput,
-  BrainInterface,
-  BrainMessage,
-  BrainSource,
-  BrainStreamEvent,
-} from "@/lib/brain/types";
+import { sugestoesDoContexto, type ContextoTela } from "@/lib/brain/page-context";
+import type { BrainInterface } from "@/lib/brain/types";
 import { BrainMarkdown } from "./BrainMarkdown";
-
-type Anexo = BrainAttachmentInput & { size: number };
-type MsgUi = BrainMessage & { status?: string; erro?: boolean };
+import { BrainAvatar } from "./BrainAvatar";
+import { brainChat, useBrainChat, type AnexoEnvio, type MsgUi } from "./brain-chat-store";
 
 const MAX_ARQUIVO = 15 * 1024 * 1024;
 const MAX_IMAGEM = 5 * 1024 * 1024;
-
-const SUGESTOES: Record<BrainInterface, string[]> = {
-  plataforma: [
-    "Resumo da carteira por representante",
-    "Quais clientes Gold estão em risco de cair de categoria?",
-    "Top 10 clientes por média mensal de compras",
-    "Clientes com oportunidade de subir para Black",
-  ],
-  portal: [
-    "Resumo da minha carteira",
-    "Quais clientes meus estão em risco de cair de categoria?",
-    "Quanto falta para meus clientes Gold manterem a categoria?",
-    "Quais clientes têm o menor atingimento?",
-  ],
-};
 
 function lerDataUrl(file: File) {
   return new Promise<string>((ok, erro) => {
@@ -72,27 +52,41 @@ function lerDataUrl(file: File) {
   });
 }
 
-export function BrainChat({ iface }: { iface: BrainInterface }) {
+/** Texto limpo para cópia/áudio (sem blocos de gráfico nem marcação). */
+const textoPlano = (md: string) =>
+  md
+    .replace(/```grafico[\s\S]*?```/gi, "")
+    .replace(/[|#*_`>]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export function BrainChat({
+  iface,
+  variant = "page",
+  contexto = null,
+  acoes,
+}: {
+  iface: BrainInterface;
+  variant?: "page" | "compact";
+  contexto?: ContextoTela | null;
+  /** Botões extras no cabeçalho (ex.: controles da janela flutuante). */
+  acoes?: ReactNode;
+}) {
   const qc = useQueryClient();
   const listFn = useServerFn(listBrainConversations);
-  const getFn = useServerFn(getBrainConversation);
   const renameFn = useServerFn(renameBrainConversation);
   const deleteFn = useServerFn(deleteBrainConversation);
+  const st = useBrainChat(iface);
+  const compact = variant === "compact";
 
-  const [conversaId, setConversaId] = useState<string | null>(null);
-  const [msgs, setMsgs] = useState<MsgUi[]>([]);
   const [texto, setTexto] = useState("");
-  const [anexos, setAnexos] = useState<Anexo[]>([]);
-  const [enviando, setEnviando] = useState(false);
-  const [analise, setAnalise] = useState(false);
-  const [persistido, setPersistido] = useState(true);
+  const [anexos, setAnexos] = useState<AnexoEnvio[]>([]);
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [gravando, setGravando] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
   const [preparandoAnexo, setPreparandoAnexo] = useState(false);
   const [falando, setFalando] = useState<string | null>(null);
 
-  const abortRef = useRef<AbortController | null>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fimRef = useRef<HTMLDivElement | null>(null);
@@ -104,23 +98,33 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
   });
 
   useEffect(() => {
+    void brainChat.restaurar(iface);
+  }, [iface]);
+
+  useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [msgs]);
+  }, [st.msgs]);
 
   useEffect(
     () => () => {
-      abortRef.current?.abort();
       audioRef.current?.pause();
+      if (recRef.current?.state === "recording") recRef.current.stop();
     },
     [],
   );
 
+  // Atualiza a lista de conversas quando uma resposta termina.
+  const enviandoAntes = useRef(st.enviando);
+  useEffect(() => {
+    if (enviandoAntes.current && !st.enviando) {
+      void qc.invalidateQueries({ queryKey: ["brain-conversas", iface] });
+    }
+    enviandoAntes.current = st.enviando;
+  }, [st.enviando, iface, qc]);
+
   async function abrirConversa(id: string) {
-    if (enviando) return;
     try {
-      const m = await getFn({ data: { interface: iface, id } });
-      setConversaId(id);
-      setMsgs(m);
+      await brainChat.abrir(iface, id);
       setHistoricoAberto(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível abrir a conversa.");
@@ -128,9 +132,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
   }
 
   function novaConversa() {
-    if (enviando) abortRef.current?.abort();
-    setConversaId(null);
-    setMsgs([]);
+    brainChat.nova(iface);
     setAnexos([]);
     setHistoricoAberto(false);
   }
@@ -188,7 +190,9 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
       const partes: Blob[] = [];
-      rec.ondataavailable = (e) => e.data.size && partes.push(e.data);
+      rec.ondataavailable = (e) => {
+        if (e.data.size) partes.push(e.data);
+      };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         setGravando(false);
@@ -219,14 +223,10 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
     audioRef.current?.pause();
     setFalando(m.id);
     try {
-      const limpo = m.content
-        .replace(/[|#*_`>-]+/g, " ")
-        .replace(/\s+/g, " ")
-        .slice(0, 4000);
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await aiAuthHeaders()) },
-        body: JSON.stringify({ text: limpo }),
+        body: JSON.stringify({ text: textoPlano(m.content).slice(0, 4000) }),
       });
       if (!res.ok) throw new Error("Falha ao gerar áudio.");
       const audio = new Audio(URL.createObjectURL(await res.blob()));
@@ -239,104 +239,13 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
     }
   }
 
-  async function enviar(pergunta?: string) {
+  function enviar(pergunta?: string) {
     const message = (pergunta ?? texto).trim();
-    if (!message || enviando) return;
-    const idUser = `u${Date.now()}`;
-    const idBot = `a${Date.now()}`;
+    if (!message || st.enviando) return;
     const enviados = anexos;
-    setMsgs((m) => [
-      ...m,
-      {
-        id: idUser,
-        role: "user",
-        content: message,
-        attachments: enviados.map((a) => ({ name: a.name, mime: a.mime })),
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: idBot,
-        role: "assistant",
-        content: "",
-        created_at: new Date().toISOString(),
-        status: "Pensando…",
-      },
-    ]);
     setTexto("");
     setAnexos([]);
-    setEnviando(true);
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    const atualizar = (f: (m: MsgUi) => MsgUi) =>
-      setMsgs((ms) => ms.map((m) => (m.id === idBot ? f(m) : m)));
-
-    try {
-      const res = await fetch("/api/brain/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await aiAuthHeaders()) },
-        body: JSON.stringify({
-          interface: iface,
-          conversationId: conversaId,
-          message,
-          analise,
-          attachments: enviados.map(({ name, mime, size, text, dataUrl }) => ({
-            name,
-            mime,
-            size,
-            text,
-            dataUrl,
-          })),
-        }),
-        signal: ctrl.signal,
-      });
-      if (!res.ok || !res.body) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? "Não foi possível obter resposta.");
-      }
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let idx: number;
-        while ((idx = buf.indexOf("\n\n")) >= 0) {
-          const bloco = buf.slice(0, idx).trim();
-          buf = buf.slice(idx + 2);
-          if (!bloco.startsWith("data:")) continue;
-          const ev = JSON.parse(bloco.slice(5)) as BrainStreamEvent;
-          if (ev.type === "meta") {
-            setPersistido(ev.persisted);
-            if (ev.conversationId) setConversaId(ev.conversationId);
-          } else if (ev.type === "tool") atualizar((m) => ({ ...m, status: `${ev.label}…` }));
-          else if (ev.type === "text")
-            atualizar((m) => ({ ...m, content: m.content + ev.delta, status: undefined }));
-          else if (ev.type === "sources")
-            atualizar((m) => ({ ...m, sources: ev.sources as BrainSource[] }));
-          else if (ev.type === "done") {
-            atualizar((m) => ({ ...m, id: ev.messageId ?? m.id, status: undefined }));
-          } else if (ev.type === "error") {
-            atualizar((m) => ({ ...m, content: ev.message, erro: true, status: undefined }));
-          }
-        }
-      }
-    } catch (e) {
-      if (ctrl.signal.aborted) {
-        atualizar((m) => ({ ...m, status: undefined, content: m.content || "_(interrompido)_" }));
-      } else {
-        atualizar((m) => ({
-          ...m,
-          status: undefined,
-          erro: true,
-          content: e instanceof Error ? e.message : "Falha na resposta.",
-        }));
-      }
-    } finally {
-      setEnviando(false);
-      abortRef.current = null;
-      void qc.invalidateQueries({ queryKey: ["brain-conversas", iface] });
-    }
+    void brainChat.enviar(iface, message, enviados, contexto);
   }
 
   async function renomear(id: string, atual: string) {
@@ -353,25 +262,38 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
     await deleteFn({ data: { interface: iface, id } }).catch(() =>
       toast.error("Falha ao excluir."),
     );
-    if (id === conversaId) novaConversa();
+    if (id === st.conversaId) novaConversa();
     void qc.invalidateQueries({ queryKey: ["brain-conversas", iface] });
   }
+
+  const sugestoes = sugestoesDoContexto(contexto, iface);
 
   const listaConversas = (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b p-3">
         <span className="text-sm font-semibold">Conversas</span>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 px-2 text-xs"
-          onClick={novaConversa}
-        >
-          <Plus className="h-3.5 w-3.5" /> Nova
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={novaConversa}
+          >
+            <Plus className="h-3.5 w-3.5" /> Nova
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className={cn("h-7 w-7", !compact && "md:hidden")}
+            aria-label="Fechar histórico"
+            onClick={() => setHistoricoAberto(false)}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
       <div className="flex-1 space-y-0.5 overflow-y-auto p-2">
-        {!persistido && (
+        {!st.persistido && (
           <p className="p-2 text-xs text-muted-foreground">
             Histórico ainda não habilitado (aguardando a migration do Brain).
           </p>
@@ -381,7 +303,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
             key={c.id}
             className={cn(
               "group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs hover:bg-muted",
-              c.id === conversaId && "bg-muted font-medium",
+              c.id === st.conversaId && "bg-muted font-medium",
             )}
           >
             <button
@@ -394,7 +316,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
             <button
               type="button"
               aria-label="Renomear"
-              className="opacity-0 group-hover:opacity-100"
+              className="opacity-60 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               onClick={() => void renomear(c.id, c.titulo)}
             >
               <Pencil className="h-3 w-3 text-muted-foreground" />
@@ -402,14 +324,14 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
             <button
               type="button"
               aria-label="Excluir"
-              className="opacity-0 group-hover:opacity-100"
+              className="opacity-60 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               onClick={() => void excluir(c.id)}
             >
               <Trash2 className="h-3 w-3 text-muted-foreground" />
             </button>
           </div>
         ))}
-        {persistido && conversas.data?.length === 0 && (
+        {st.persistido && conversas.data?.length === 0 && (
           <p className="p-2 text-xs text-muted-foreground">Nenhuma conversa ainda.</p>
         )}
       </div>
@@ -417,60 +339,121 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] min-h-[520px] overflow-hidden rounded-xl border bg-background">
-      <aside className="hidden w-60 shrink-0 border-r md:block">{listaConversas}</aside>
+    <div
+      className={cn(
+        "relative flex overflow-hidden bg-background",
+        compact ? "h-full" : "h-[calc(100vh-9rem)] min-h-[520px] rounded-xl border",
+      )}
+    >
+      {!compact && (
+        <aside className="hidden w-60 shrink-0 border-r md:block">{listaConversas}</aside>
+      )}
       {historicoAberto && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="w-72 bg-background shadow-xl">{listaConversas}</div>
+        <div className={cn("absolute inset-0 z-20 flex", !compact && "md:hidden")}>
+          <div className="w-72 max-w-[85%] border-r bg-background shadow-xl">{listaConversas}</div>
           <button
             type="button"
             aria-label="Fechar"
-            className="flex-1 bg-black/40"
+            className="flex-1 bg-black/30"
             onClick={() => setHistoricoAberto(false)}
           />
         </div>
       )}
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b px-3 py-2">
+        <div className="flex items-center gap-1.5 border-b px-2 py-1.5 sm:px-3">
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 md:hidden"
+            className={cn("h-8 w-8 shrink-0", !compact && "md:hidden")}
             aria-label="Conversas"
+            title="Conversas"
             onClick={() => setHistoricoAberto(true)}
           >
             <History className="h-4 w-4" />
           </Button>
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Inteligência Comercial</span>
-          <span className="text-xs text-muted-foreground">
-            {iface === "portal" ? "· sua carteira" : "· base comercial Newline"}
-          </span>
-          <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={analise}
-              onChange={(e) => setAnalise(e.target.checked)}
-            />
-            Análise aprofundada
-          </label>
+          {compact && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              aria-label="Nova conversa"
+              title="Nova conversa"
+              onClick={novaConversa}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
+          <BrainAvatar className="h-6 w-6 shrink-0" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-tight">
+              {compact ? "Inteligência" : "Inteligência Comercial"}
+            </p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">
+              {iface === "portal" ? "Sua carteira" : "Base comercial Newline"}
+            </p>
+          </div>
+          {compact ? (
+            <Button
+              size="icon"
+              variant={st.analise ? "secondary" : "ghost"}
+              className={cn("ml-auto h-7 w-7 shrink-0", st.analise && "text-primary")}
+              aria-pressed={st.analise}
+              aria-label="Análise aprofundada"
+              title={st.analise ? "Análise aprofundada ligada" : "Ligar análise aprofundada"}
+              onClick={() => brainChat.setAnalise(iface, !st.analise)}
+            >
+              <Zap className="h-3.5 w-3.5" />
+            </Button>
+          ) : (
+            <label
+              className="ml-auto flex shrink-0 cursor-pointer items-center gap-1 text-[11px] text-muted-foreground"
+              title="Usa o modelo de análise aprofundada"
+            >
+              <input
+                type="checkbox"
+                checked={st.analise}
+                onChange={(e) => brainChat.setAnalise(iface, e.target.checked)}
+              />
+              Análise aprofundada
+            </label>
+          )}
+          {acoes}
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {msgs.length === 0 && (
-            <div className="mx-auto max-w-xl space-y-4 pt-8 text-center">
-              <Sparkles className="mx-auto h-8 w-8 text-primary" />
+        {(contexto?.area || st.contexto) && (
+          <div className="flex items-center gap-1 border-b bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              Contexto:{" "}
+              {st.contexto && st.contexto !== contexto?.area
+                ? `${contexto?.area ?? ""} · ${st.contexto}`
+                : contexto?.area}
+            </span>
+          </div>
+        )}
+
+        <div className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+          {st.carregando && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Carregando conversa…
+            </p>
+          )}
+          {st.msgs.length === 0 && !st.carregando && (
+            <div
+              className={cn("mx-auto max-w-xl space-y-4 text-center", compact ? "pt-4" : "pt-8")}
+            >
+              <BrainAvatar className="mx-auto h-10 w-10" />
               <p className="text-sm text-muted-foreground">
                 Pergunte sobre clientes, categorias, metas, atingimento e oportunidades. As
                 respostas usam apenas dados do sistema, com período e fonte.
               </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {SUGESTOES[iface].map((s) => (
+              <div className={cn("grid gap-2", !compact && "sm:grid-cols-2")}>
+                {sugestoes.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    onClick={() => void enviar(s)}
+                    onClick={() => enviar(s)}
                     className="rounded-lg border px-3 py-2 text-left text-xs hover:bg-muted"
                   >
                     {s}
@@ -480,14 +463,14 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
             </div>
           )}
 
-          {msgs.map((m) => (
+          {st.msgs.map((m) => (
             <div
               key={m.id}
               className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
             >
               <div
                 className={cn(
-                  "max-w-[min(100%,52rem)] rounded-xl px-3.5 py-2.5",
+                  "min-w-0 max-w-[min(100%,52rem)] rounded-xl px-3.5 py-2.5",
                   m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50",
                   m.erro && "border border-destructive/40 bg-destructive/5",
                   m.oculto && "italic text-muted-foreground",
@@ -528,6 +511,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
                     <button
                       type="button"
                       aria-label="Copiar"
+                      title="Copiar"
                       className="rounded p-1 text-muted-foreground hover:bg-muted"
                       onClick={() => {
                         void navigator.clipboard.writeText(m.content);
@@ -539,6 +523,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
                     <button
                       type="button"
                       aria-label="Ouvir"
+                      title="Ouvir"
                       className={cn(
                         "rounded p-1 text-muted-foreground hover:bg-muted",
                         falando === m.id && "text-primary",
@@ -559,7 +544,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
           <div ref={fimRef} />
         </div>
 
-        <div className="border-t p-3">
+        <div className="border-t p-2 sm:p-3">
           {!!anexos.length && (
             <div className="mb-2 flex flex-wrap gap-1.5">
               {anexos.map((a, i) => (
@@ -579,7 +564,7 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
               ))}
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-1 sm:gap-2">
             <input
               ref={fileRef}
               type="file"
@@ -592,7 +577,8 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
               size="icon"
               variant="ghost"
               aria-label="Anexar"
-              disabled={enviando || preparandoAnexo}
+              title="Anexar arquivo"
+              disabled={st.enviando || preparandoAnexo}
               onClick={() => fileRef.current?.click()}
             >
               {preparandoAnexo ? (
@@ -605,7 +591,8 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
               size="icon"
               variant={gravando ? "destructive" : "ghost"}
               aria-label={gravando ? "Parar gravação" : "Gravar áudio"}
-              disabled={enviando || transcrevendo}
+              title={gravando ? "Parar gravação" : "Gravar áudio"}
+              disabled={st.enviando || transcrevendo}
               onClick={() => void alternarGravacao()}
             >
               {transcrevendo ? (
@@ -620,21 +607,26 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  void enviar();
+                  enviar();
                 }
               }}
               placeholder={
-                transcrevendo ? "Transcrevendo áudio…" : "Pergunte à Inteligência Comercial…"
+                transcrevendo
+                  ? "Transcrevendo áudio…"
+                  : compact
+                    ? "Pergunte…"
+                    : "Pergunte à Inteligência Comercial…"
               }
               rows={1}
               className="max-h-40 min-h-[40px] flex-1 resize-none text-sm"
             />
-            {enviando ? (
+            {st.enviando ? (
               <Button
                 size="icon"
                 variant="outline"
                 aria-label="Interromper"
-                onClick={() => abortRef.current?.abort()}
+                title="Interromper"
+                onClick={() => brainChat.interromper(iface)}
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -643,13 +635,13 @@ export function BrainChat({ iface }: { iface: BrainInterface }) {
                 size="icon"
                 aria-label="Enviar"
                 disabled={!texto.trim()}
-                onClick={() => void enviar()}
+                onClick={() => enviar()}
               >
                 <Send className="h-4 w-4" />
               </Button>
             )}
           </div>
-          <p className="mt-1.5 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-[10px] text-muted-foreground">
             Respostas geradas por IA a partir dos dados do sistema. Confira valores críticos antes
             de decidir.
           </p>
