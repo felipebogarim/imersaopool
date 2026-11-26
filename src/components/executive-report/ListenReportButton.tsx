@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aiAuthHeaders } from "@/lib/ai-endpoint-client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -73,7 +74,7 @@ export function ListenReportButton({
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await aiAuthHeaders()) },
         body: JSON.stringify({ text }),
       });
       if (!res.ok) {

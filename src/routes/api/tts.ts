@@ -5,8 +5,12 @@ export const Route = createFileRoute("/api/tts")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { authorizeAiRequest } = await import("@/lib/ai-endpoint-auth.server");
+        const authz = await authorizeAiRequest(request);
+        if (!authz.ok) return Response.json({ error: authz.error }, { status: authz.status });
+
         const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return Response.json({ error: "LOVABLE_API_KEY ausente" }, { status: 500 });
+        if (!key) return Response.json({ error: "Serviço de IA indisponível." }, { status: 503 });
 
         let body: { text?: string; voice?: string };
         try {
@@ -36,13 +40,21 @@ export const Route = createFileRoute("/api/tts")({
         });
 
         if (!res.ok) {
-          const detail = await res.text().catch(() => "");
+          // Detalhe do provedor só no log do servidor (não expõe resposta bruta ao cliente).
+          console.error(
+            "[api/tts] falha no provedor",
+            res.status,
+            await res.text().catch(() => ""),
+          );
+          const status = res.status === 429 || res.status === 402 ? res.status : 502;
           return Response.json(
-            { error: `Falha ao gerar áudio: ${res.status} ${detail}` },
             {
-              status:
-                res.status === 429 || res.status === 402 || res.status === 403 ? res.status : 502,
+              error:
+                status === 429
+                  ? "Limite de uso atingido. Tente novamente em instantes."
+                  : "Falha ao gerar áudio.",
             },
+            { status },
           );
         }
 

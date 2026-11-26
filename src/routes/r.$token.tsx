@@ -5,6 +5,7 @@ import { BrandLogo } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { VoiceTextarea } from "@/components/VoiceInput";
+import { setPublicRepToken } from "@/lib/ai-endpoint-client";
 import { FieldHelp } from "@/components/FieldHelp";
 import { REP_PUBLIC_HELP } from "@/lib/field-help-texts";
 import {
@@ -49,6 +50,12 @@ function PublicRepForm() {
 
   const loadFn = useServerFn(getImmersionByToken);
   const submitFn = useServerFn(submitRepresentativeInput);
+
+  // Ditado por voz nesta página pública: o servidor de transcrição valida este token.
+  useEffect(() => {
+    setPublicRepToken(token);
+    return () => setPublicRepToken(null);
+  }, [token]);
 
   useEffect(() => {
     (async () => {

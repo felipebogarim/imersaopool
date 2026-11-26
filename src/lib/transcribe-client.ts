@@ -1,4 +1,5 @@
 import { normalizeAudioToWavChunks } from "@/lib/audio-wav";
+import { aiAuthHeaders } from "@/lib/ai-endpoint-client";
 
 /**
  * Transcreve áudio no navegador: normaliza para WAV, fatia em trechos curtos e
@@ -10,11 +11,12 @@ export async function transcribeAudioInBrowser(
 ): Promise<string> {
   const chunks = await normalizeAudioToWavChunks(input);
   const parts: string[] = [];
+  const auth = await aiAuthHeaders();
 
   for (let index = 0; index < chunks.length; index += 1) {
     const res = await fetch("/api/transcribe-chunk", {
       method: "POST",
-      headers: { "Content-Type": "audio/wav" },
+      headers: { "Content-Type": "audio/wav", ...auth },
       body: chunks[index],
     });
     const json = await res.json().catch(() => ({}) as { text?: string; error?: string });

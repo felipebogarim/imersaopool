@@ -6,8 +6,12 @@ export const Route = createFileRoute("/api/transcribe-chunk")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { authorizeAiRequest } = await import("@/lib/ai-endpoint-auth.server");
+        const authz = await authorizeAiRequest(request);
+        if (!authz.ok) return Response.json({ error: authz.error }, { status: authz.status });
+
         const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return Response.json({ error: "LOVABLE_API_KEY ausente" }, { status: 500 });
+        if (!key) return Response.json({ error: "Serviço de IA indisponível." }, { status: 503 });
 
         const buf = await request.arrayBuffer();
         if (!buf.byteLength) return Response.json({ error: "Áudio vazio" }, { status: 400 });
@@ -24,10 +28,21 @@ export const Route = createFileRoute("/api/transcribe-chunk")({
           body: form,
         });
         if (!res.ok) {
-          const detail = await res.text().catch(() => "");
+          // Detalhe do provedor só no log do servidor (não expõe resposta bruta ao cliente).
+          console.error(
+            "[api/transcribe-chunk] falha no provedor",
+            res.status,
+            await res.text().catch(() => ""),
+          );
+          const status = res.status === 429 || res.status === 402 ? res.status : 502;
           return Response.json(
-            { error: `Falha ao transcrever: ${res.status} ${detail}` },
-            { status: res.status === 429 || res.status === 402 ? res.status : 502 },
+            {
+              error:
+                status === 429
+                  ? "Limite de uso atingido. Tente novamente em instantes."
+                  : "Falha ao transcrever.",
+            },
+            { status },
           );
         }
         const json: { text?: string } = await res.json();
