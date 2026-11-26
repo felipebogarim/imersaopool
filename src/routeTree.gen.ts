@@ -87,6 +87,8 @@ import { Route as AuthenticatedFormsIdRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedImersoesIndexRouteImport } from './routes/_authenticated/imersoes.index'
 import { Route as AuthenticatedImersoesIdRouteImport } from './routes/_authenticated/imersoes.$id'
 import { Route as AuthenticatedImersoesNovaRouteImport } from './routes/_authenticated/imersoes.nova'
+import { Route as AuthenticatedInteligenciaIndexRouteImport } from './routes/_authenticated/inteligencia.index'
+import { Route as AuthenticatedInteligenciaGestaoRouteImport } from './routes/_authenticated/inteligencia.gestao'
 import { Route as AuthenticatedManuaisIndexRouteImport } from './routes/_authenticated/manuais.index'
 import { Route as AuthenticatedMapaAcoesIndexRouteImport } from './routes/_authenticated/mapa-acoes.index'
 import { Route as AuthenticatedPerformanceBiClientesRouteImport } from './routes/_authenticated/performance.bi-clientes'
@@ -114,6 +116,7 @@ import { Route as AuthenticatedSolicitacoesAdminRouteImport } from './routes/_au
 import { Route as AuthenticatedSolicitacoesDashboardRouteImport } from './routes/_authenticated/solicitacoes.dashboard'
 import { Route as AuthenticatedSolicitacoesNovoRouteImport } from './routes/_authenticated/solicitacoes.novo'
 import { Route as AuthenticatedTarefasIndexRouteImport } from './routes/_authenticated/tarefas.index'
+import { Route as ApiBrainChatRouteImport } from './routes/api/brain/chat'
 import { Route as ApiOgEstruturaRepIdRouteImport } from './routes/api/og-estrutura.$repId'
 import { Route as ApiOgExecutivoReportIdRouteImport } from './routes/api/og-executivo.$reportId'
 import { Route as ApiOgRelatorioTokenRouteImport } from './routes/api/og-relatorio.$token'
@@ -575,6 +578,18 @@ const AuthenticatedImersoesNovaRoute =
     path: '/imersoes/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInteligenciaIndexRoute =
+  AuthenticatedInteligenciaIndexRouteImport.update({
+    id: '/inteligencia/',
+    path: '/inteligencia/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInteligenciaGestaoRoute =
+  AuthenticatedInteligenciaGestaoRouteImport.update({
+    id: '/inteligencia/gestao',
+    path: '/inteligencia/gestao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedManuaisIndexRoute =
   AuthenticatedManuaisIndexRouteImport.update({
     id: '/manuais/',
@@ -734,6 +749,11 @@ const AuthenticatedTarefasIndexRoute =
     path: '/tarefas/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiBrainChatRoute = ApiBrainChatRouteImport.update({
+  id: '/api/brain/chat',
+  path: '/api/brain/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOgEstruturaRepIdRoute = ApiOgEstruturaRepIdRouteImport.update({
   id: '/api/og-estrutura/$repId',
   path: '/api/og-estrutura/$repId',
@@ -1023,6 +1043,7 @@ export interface FileRoutesByFullPath {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/inteligencia/gestao': typeof AuthenticatedInteligenciaGestaoRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
   '/performance/reps': typeof AuthenticatedPerformanceRepsRoute
   '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
@@ -1042,6 +1063,7 @@ export interface FileRoutesByFullPath {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/brain/chat': typeof ApiBrainChatRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
@@ -1058,6 +1080,7 @@ export interface FileRoutesByFullPath {
   '/fontes/': typeof AuthenticatedFontesIndexRoute
   '/forms/': typeof AuthenticatedFormsIndexRoute
   '/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/inteligencia/': typeof AuthenticatedInteligenciaIndexRoute
   '/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/price/': typeof AuthenticatedPriceIndexRoute
@@ -1165,6 +1188,7 @@ export interface FileRoutesByTo {
   '/forms/$id': typeof AuthenticatedFormsIdRoute
   '/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/inteligencia/gestao': typeof AuthenticatedInteligenciaGestaoRoute
   '/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
   '/performance/reps': typeof AuthenticatedPerformanceRepsRoute
   '/precos/mapa': typeof AuthenticatedPrecosMapaRoute
@@ -1184,6 +1208,7 @@ export interface FileRoutesByTo {
   '/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/brain/chat': typeof ApiBrainChatRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
@@ -1200,6 +1225,7 @@ export interface FileRoutesByTo {
   '/fontes': typeof AuthenticatedFontesIndexRoute
   '/forms': typeof AuthenticatedFormsIndexRoute
   '/imersoes': typeof AuthenticatedImersoesIndexRoute
+  '/inteligencia': typeof AuthenticatedInteligenciaIndexRoute
   '/manuais': typeof AuthenticatedManuaisIndexRoute
   '/mapa-acoes': typeof AuthenticatedMapaAcoesIndexRoute
   '/price': typeof AuthenticatedPriceIndexRoute
@@ -1311,6 +1337,7 @@ export interface FileRoutesById {
   '/_authenticated/forms/$id': typeof AuthenticatedFormsIdRoute
   '/_authenticated/imersoes/$id': typeof AuthenticatedImersoesIdRoute
   '/_authenticated/imersoes/nova': typeof AuthenticatedImersoesNovaRoute
+  '/_authenticated/inteligencia/gestao': typeof AuthenticatedInteligenciaGestaoRoute
   '/_authenticated/performance/bi-clientes': typeof AuthenticatedPerformanceBiClientesRoute
   '/_authenticated/performance/reps': typeof AuthenticatedPerformanceRepsRoute
   '/_authenticated/precos/mapa': typeof AuthenticatedPrecosMapaRoute
@@ -1330,6 +1357,7 @@ export interface FileRoutesById {
   '/_authenticated/solicitacoes/admin': typeof AuthenticatedSolicitacoesAdminRoute
   '/_authenticated/solicitacoes/dashboard': typeof AuthenticatedSolicitacoesDashboardRoute
   '/_authenticated/solicitacoes/novo': typeof AuthenticatedSolicitacoesNovoRoute
+  '/api/brain/chat': typeof ApiBrainChatRoute
   '/api/og-estrutura/$repId': typeof ApiOgEstruturaRepIdRoute
   '/api/og-executivo/$reportId': typeof ApiOgExecutivoReportIdRoute
   '/api/og-relatorio/$token': typeof ApiOgRelatorioTokenRoute
@@ -1346,6 +1374,7 @@ export interface FileRoutesById {
   '/_authenticated/fontes/': typeof AuthenticatedFontesIndexRoute
   '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/imersoes/': typeof AuthenticatedImersoesIndexRoute
+  '/_authenticated/inteligencia/': typeof AuthenticatedInteligenciaIndexRoute
   '/_authenticated/manuais/': typeof AuthenticatedManuaisIndexRoute
   '/_authenticated/mapa-acoes/': typeof AuthenticatedMapaAcoesIndexRoute
   '/_authenticated/price/': typeof AuthenticatedPriceIndexRoute
@@ -1457,6 +1486,7 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/inteligencia/gestao'
     | '/performance/bi-clientes'
     | '/performance/reps'
     | '/precos/mapa'
@@ -1476,6 +1506,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/brain/chat'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/og-relatorio/$token'
@@ -1492,6 +1523,7 @@ export interface FileRouteTypes {
     | '/fontes/'
     | '/forms/'
     | '/imersoes/'
+    | '/inteligencia/'
     | '/manuais/'
     | '/mapa-acoes/'
     | '/price/'
@@ -1599,6 +1631,7 @@ export interface FileRouteTypes {
     | '/forms/$id'
     | '/imersoes/$id'
     | '/imersoes/nova'
+    | '/inteligencia/gestao'
     | '/performance/bi-clientes'
     | '/performance/reps'
     | '/precos/mapa'
@@ -1618,6 +1651,7 @@ export interface FileRouteTypes {
     | '/solicitacoes/admin'
     | '/solicitacoes/dashboard'
     | '/solicitacoes/novo'
+    | '/api/brain/chat'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/og-relatorio/$token'
@@ -1634,6 +1668,7 @@ export interface FileRouteTypes {
     | '/fontes'
     | '/forms'
     | '/imersoes'
+    | '/inteligencia'
     | '/manuais'
     | '/mapa-acoes'
     | '/price'
@@ -1744,6 +1779,7 @@ export interface FileRouteTypes {
     | '/_authenticated/forms/$id'
     | '/_authenticated/imersoes/$id'
     | '/_authenticated/imersoes/nova'
+    | '/_authenticated/inteligencia/gestao'
     | '/_authenticated/performance/bi-clientes'
     | '/_authenticated/performance/reps'
     | '/_authenticated/precos/mapa'
@@ -1763,6 +1799,7 @@ export interface FileRouteTypes {
     | '/_authenticated/solicitacoes/admin'
     | '/_authenticated/solicitacoes/dashboard'
     | '/_authenticated/solicitacoes/novo'
+    | '/api/brain/chat'
     | '/api/og-estrutura/$repId'
     | '/api/og-executivo/$reportId'
     | '/api/og-relatorio/$token'
@@ -1779,6 +1816,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fontes/'
     | '/_authenticated/forms/'
     | '/_authenticated/imersoes/'
+    | '/_authenticated/inteligencia/'
     | '/_authenticated/manuais/'
     | '/_authenticated/mapa-acoes/'
     | '/_authenticated/price/'
@@ -1839,6 +1877,7 @@ export interface RootRouteChildren {
   MSlugRoute: typeof MSlugRoute
   RTokenRoute: typeof RTokenRoute
   RelatorioTokenRoute: typeof RelatorioTokenRoute
+  ApiBrainChatRoute: typeof ApiBrainChatRoute
   ApiOgEstruturaRepIdRoute: typeof ApiOgEstruturaRepIdRoute
   ApiOgExecutivoReportIdRoute: typeof ApiOgExecutivoReportIdRoute
   ApiOgRelatorioTokenRoute: typeof ApiOgRelatorioTokenRoute
@@ -2413,6 +2452,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImersoesNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inteligencia/': {
+      id: '/_authenticated/inteligencia/'
+      path: '/inteligencia'
+      fullPath: '/inteligencia/'
+      preLoaderRoute: typeof AuthenticatedInteligenciaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/inteligencia/gestao': {
+      id: '/_authenticated/inteligencia/gestao'
+      path: '/inteligencia/gestao'
+      fullPath: '/inteligencia/gestao'
+      preLoaderRoute: typeof AuthenticatedInteligenciaGestaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/manuais/': {
       id: '/_authenticated/manuais/'
       path: '/manuais'
@@ -2601,6 +2654,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tarefas/'
       preLoaderRoute: typeof AuthenticatedTarefasIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/brain/chat': {
+      id: '/api/brain/chat'
+      path: '/api/brain/chat'
+      fullPath: '/api/brain/chat'
+      preLoaderRoute: typeof ApiBrainChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/og-estrutura/$repId': {
       id: '/api/og-estrutura/$repId'
@@ -3028,6 +3088,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFormsIdRoute: typeof AuthenticatedFormsIdRoute
   AuthenticatedImersoesIdRoute: typeof AuthenticatedImersoesIdRoute
   AuthenticatedImersoesNovaRoute: typeof AuthenticatedImersoesNovaRoute
+  AuthenticatedInteligenciaGestaoRoute: typeof AuthenticatedInteligenciaGestaoRoute
   AuthenticatedPerformanceBiClientesRoute: typeof AuthenticatedPerformanceBiClientesRoute
   AuthenticatedPerformanceRepsRoute: typeof AuthenticatedPerformanceRepsRoute
   AuthenticatedPrecosMapaRoute: typeof AuthenticatedPrecosMapaRoute
@@ -3044,6 +3105,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFontesIndexRoute: typeof AuthenticatedFontesIndexRoute
   AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedImersoesIndexRoute: typeof AuthenticatedImersoesIndexRoute
+  AuthenticatedInteligenciaIndexRoute: typeof AuthenticatedInteligenciaIndexRoute
   AuthenticatedManuaisIndexRoute: typeof AuthenticatedManuaisIndexRoute
   AuthenticatedMapaAcoesIndexRoute: typeof AuthenticatedMapaAcoesIndexRoute
   AuthenticatedProdutosIndexRoute: typeof AuthenticatedProdutosIndexRoute
@@ -3108,6 +3170,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFormsIdRoute: AuthenticatedFormsIdRoute,
   AuthenticatedImersoesIdRoute: AuthenticatedImersoesIdRoute,
   AuthenticatedImersoesNovaRoute: AuthenticatedImersoesNovaRoute,
+  AuthenticatedInteligenciaGestaoRoute: AuthenticatedInteligenciaGestaoRoute,
   AuthenticatedPerformanceBiClientesRoute:
     AuthenticatedPerformanceBiClientesRoute,
   AuthenticatedPerformanceRepsRoute: AuthenticatedPerformanceRepsRoute,
@@ -3128,6 +3191,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFontesIndexRoute: AuthenticatedFontesIndexRoute,
   AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedImersoesIndexRoute: AuthenticatedImersoesIndexRoute,
+  AuthenticatedInteligenciaIndexRoute: AuthenticatedInteligenciaIndexRoute,
   AuthenticatedManuaisIndexRoute: AuthenticatedManuaisIndexRoute,
   AuthenticatedMapaAcoesIndexRoute: AuthenticatedMapaAcoesIndexRoute,
   AuthenticatedProdutosIndexRoute: AuthenticatedProdutosIndexRoute,
@@ -3181,6 +3245,7 @@ const rootRouteChildren: RootRouteChildren = {
   MSlugRoute: MSlugRoute,
   RTokenRoute: RTokenRoute,
   RelatorioTokenRoute: RelatorioTokenRoute,
+  ApiBrainChatRoute: ApiBrainChatRoute,
   ApiOgEstruturaRepIdRoute: ApiOgEstruturaRepIdRoute,
   ApiOgExecutivoReportIdRoute: ApiOgExecutivoReportIdRoute,
   ApiOgRelatorioTokenRoute: ApiOgRelatorioTokenRoute,
