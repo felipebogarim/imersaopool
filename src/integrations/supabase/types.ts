@@ -5177,6 +5177,48 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_goal_investigations: {
+        Row: {
+          cliente_key: string
+          company_id: string
+          em_investigacao: boolean
+          representative_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cliente_key: string
+          company_id: string
+          em_investigacao?: boolean
+          representative_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cliente_key?: string
+          company_id?: string
+          em_investigacao?: boolean
+          representative_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_investigations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_goal_investigations_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       performance_goal_items: {
         Row: {
           comentario_gestor: string
@@ -5233,6 +5275,41 @@ export type Database = {
             columns: ["cycle_id"]
             isOneToOne: false
             referencedRelation: "performance_goal_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_goal_minimums: {
+        Row: {
+          categoria: string
+          company_id: string
+          familia: string
+          minimo: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          categoria: string
+          company_id: string
+          familia: string
+          minimo: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          categoria?: string
+          company_id?: string
+          familia?: string
+          minimo?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_goal_minimums_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -7011,6 +7088,100 @@ export type Database = {
           },
         ]
       }
+      rep_support_requests: {
+        Row: {
+          acao_trade_tipo: string | null
+          card_id: string | null
+          cliente: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          data_evento: string | null
+          data_necessaria: string | null
+          descricao: string | null
+          id: string
+          itens: Json
+          local: string | null
+          publico_estimado: number | null
+          representative_id: string
+          respondido_em: string | null
+          respondido_por: string | null
+          resposta: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          acao_trade_tipo?: string | null
+          card_id?: string | null
+          cliente?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_evento?: string | null
+          data_necessaria?: string | null
+          descricao?: string | null
+          id?: string
+          itens?: Json
+          local?: string | null
+          publico_estimado?: number | null
+          representative_id: string
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          acao_trade_tipo?: string | null
+          card_id?: string | null
+          cliente?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_evento?: string | null
+          data_necessaria?: string | null
+          descricao?: string | null
+          id?: string
+          itens?: Json
+          local?: string | null
+          publico_estimado?: number | null
+          representative_id?: string
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rep_support_requests_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rep_support_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rep_support_requests_representative_id_fkey"
+            columns: ["representative_id"]
+            isOneToOne: false
+            referencedRelation: "representatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       representative_inputs: {
         Row: {
           abordagem_diferente: string | null
@@ -8507,6 +8678,15 @@ export type Database = {
           status: string
         }[]
       }
+      get_performance_goal_categoria_base: {
+        Args: { _row_id: string }
+        Returns: Json
+      }
+      get_performance_goal_investigation: {
+        Args: { _row_id: string }
+        Returns: Json
+      }
+      get_performance_goal_minimums: { Args: never; Returns: Json }
       get_performance_goals: { Args: { _row_id: string }; Returns: Json }
       get_performance_goals_bi: { Args: { _row_ids: string[] }; Returns: Json }
       has_role: {
@@ -8825,6 +9005,10 @@ export type Database = {
         Returns: Json
       }
       performance_goal_row_context: { Args: { _row_id: string }; Returns: Json }
+      performance_goal_semestre_inicio: {
+        Args: { _d: string }
+        Returns: string
+      }
       performance_goal_staff_ctx: { Args: { _row_id: string }; Returns: Json }
       performance_goal_state: {
         Args: { _ctx: Json; _staff: boolean }
@@ -8907,6 +9091,11 @@ export type Database = {
           ultimo: string
         }[]
       }
+      set_performance_goal_investigation: {
+        Args: { _ativo: boolean; _row_id: string }
+        Returns: Json
+      }
+      set_performance_goal_minimums: { Args: { _itens: Json }; Returns: Json }
       start_performance_goal_review: {
         Args: { _row_id: string }
         Returns: Json
