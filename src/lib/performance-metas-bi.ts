@@ -484,3 +484,38 @@ export function matrixMetasBi(
     ) as Record<CanonicalFamily, MetasBiAggregate | null>,
   }));
 }
+
+// ------------------------------- Metas por Rep --------------------------------
+
+/** Abaixo deste atingimento o portfólio entra como "abaixo da meta" no painel por rep. */
+export const LIMIAR_PORTFOLIO_ABAIXO = 0.7;
+
+export type MetasRepPortfolioResumo = {
+  /** Portfólios com meta e base (atingimento calculável). */
+  avaliados: number;
+  /** Portfólios com atingimento abaixo de LIMIAR_PORTFOLIO_ABAIXO. */
+  abaixo: number;
+  melhor: MetasBiAggregate | null;
+  pior: MetasBiAggregate | null;
+};
+
+/** Leitura da performance de portfólio de um representante (células da matriz rep × portfólio). */
+export function resumoPortfolioRep(
+  cells: Record<CanonicalFamily, MetasBiAggregate | null>,
+): MetasRepPortfolioResumo {
+  const comAting = CANONICAL_FAMILIES.map((f) => cells[f]).filter(
+    (c): c is MetasBiAggregate => c != null && c.metaAtual > 0 && c.atingimento != null,
+  );
+  let melhor: MetasBiAggregate | null = null;
+  let pior: MetasBiAggregate | null = null;
+  for (const c of comAting) {
+    if (!melhor || c.atingimento! > melhor.atingimento!) melhor = c;
+    if (!pior || c.atingimento! < pior.atingimento!) pior = c;
+  }
+  return {
+    avaliados: comAting.length,
+    abaixo: comAting.filter((c) => c.atingimento! < LIMIAR_PORTFOLIO_ABAIXO).length,
+    melhor,
+    pior: comAting.length > 1 ? pior : null,
+  };
+}

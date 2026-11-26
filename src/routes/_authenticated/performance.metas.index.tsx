@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { BarChart3, ListChecks } from "lucide-react";
+import { BarChart3, ListChecks, Users } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import {
@@ -7,14 +7,15 @@ import {
   MetasCarteiraList,
 } from "@/components/performance-metas/MetasCarteiraList";
 import { MetasBiPanel } from "@/components/performance-metas/MetasBiPanel";
+import { MetasRepPanel } from "@/components/performance-metas/MetasRepPanel";
 import { useMetasViewer } from "@/components/performance-metas/use-metas-viewer";
 
-type MetasView = "clientes" | "bi";
+type MetasView = "clientes" | "bi" | "reps";
 
 export const Route = createFileRoute("/_authenticated/performance/metas/")({
   head: () => ({ meta: [{ title: "Metas — Performance — PoolFlux" }] }),
   validateSearch: (search: Record<string, unknown>): { view?: MetasView } => ({
-    view: search.view === "bi" ? "bi" : undefined,
+    view: search.view === "bi" || search.view === "reps" ? search.view : undefined,
   }),
   component: MetasIndexPage,
 });
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/performance/metas/")({
 const VIEWS: Array<{ key: MetasView; label: string; icon: typeof ListChecks }> = [
   { key: "clientes", label: "Metas por cliente", icon: ListChecks },
   { key: "bi", label: "BI Metas", icon: BarChart3 },
+  { key: "reps", label: "Metas por Rep", icon: Users },
 ];
 
 function MetasIndexPage() {
@@ -29,8 +31,8 @@ function MetasIndexPage() {
   const isRepView = viewer.role === "representante";
   const { view } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  // BI consolida a empresa inteira (valores em R$): só gestão.
-  const current: MetasView = !isRepView && view === "bi" ? "bi" : "clientes";
+  // BI e Metas por Rep consolidam a empresa inteira (valores em R$): só gestão.
+  const current: MetasView = !isRepView && view ? view : "clientes";
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,7 +45,10 @@ function MetasIndexPage() {
                 <button
                   key={key}
                   onClick={() =>
-                    navigate({ search: { view: key === "bi" ? "bi" : undefined }, replace: true })
+                    navigate({
+                      search: { view: key === "clientes" ? undefined : key },
+                      replace: true,
+                    })
                   }
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
@@ -62,6 +67,8 @@ function MetasIndexPage() {
         )}
         {viewer.loading ? null : current === "bi" ? (
           <MetasBiPanel />
+        ) : current === "reps" ? (
+          <MetasRepPanel />
         ) : (
           <MetasCarteiraList restrictToRepIds={isRepView ? viewer.repIds : null} />
         )}

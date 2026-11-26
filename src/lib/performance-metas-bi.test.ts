@@ -250,3 +250,37 @@ describe("período (meses)", () => {
     expect(periodLabel(semesterMonths(2027, 2), 2027)).toBe("2º semestre 2027");
   });
 });
+
+describe("resumoPortfolioRep", () => {
+  it("identifica melhor, pior e portfólios abaixo do limiar, ignorando os sem base", async () => {
+    const { resumoPortfolioRep, matrixMetasBi } = await import("./performance-metas-bi");
+    const fato = (familia: string, meta: number, realizado: number | null) => ({
+      rowId: "r1",
+      cliente: "C",
+      repId: "rep",
+      repName: "Rep",
+      regiao: "Sul",
+      uf: "SC",
+      categoria: "Gold",
+      familia,
+      metaAtual: meta,
+      metaPadrao: meta,
+      origem: "padrao" as const,
+      realizado,
+      fonte: realizado == null ? null : ("realizado" as const),
+    });
+    const fams = [...(await import("./client-bi-familias")).CANONICAL_FAMILIES];
+    const facts = [
+      fato(fams[0], 100, 120),
+      fato(fams[1], 100, 40),
+      fato(fams[2], 100, 80),
+      fato(fams[3], 100, null),
+    ] as Parameters<typeof matrixMetasBi>[0];
+    const [{ cells }] = matrixMetasBi(facts, "representante");
+    const r = resumoPortfolioRep(cells);
+    expect(r.avaliados).toBe(3);
+    expect(r.abaixo).toBe(1);
+    expect(r.melhor?.key).toBe(fams[0]);
+    expect(r.pior?.key).toBe(fams[1]);
+  });
+});

@@ -101,7 +101,8 @@ export function contextoDaRota(
   }
   const area = AREAS.find(([r]) => r.test(p))?.[1];
   if (!area) return null;
-  const view = search.view === "bi" ? " · BI Metas" : "";
+  const view =
+    search.view === "bi" ? " · BI Metas" : search.view === "reps" ? " · Metas por Rep" : "";
   return { tipo: "area", area: area + view, filtros: filtrosDaUrl(search) };
 }
 
