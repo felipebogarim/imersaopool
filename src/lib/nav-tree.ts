@@ -24,6 +24,7 @@ export type NavGroup = {
 export const NAV_TREE: NavGroup[] = [
   { key: "home", label: "Home", to: "/home", children: [] },
   { key: "bi-diretor", label: "BI Diretor", to: "/bi-diretor", children: [] },
+  { key: "inteligencia", label: "Inteligência Comercial", to: "/inteligencia", children: [] },
   {
     key: "performance",
     label: "Performance",
@@ -137,6 +138,7 @@ export const NAV_TREE: NavGroup[] = [
       { key: "admin.usuarios", label: "Usuários", to: "/admin/usuarios" },
       { key: "admin.agentes", label: "Agentes", to: "/agentes" },
       { key: "admin.permissoes", label: "Permissões", to: "/admin/permissoes" },
+      { key: "admin.brain", label: "Gestão do Brain", to: "/admin/brain" },
     ],
   },
   {

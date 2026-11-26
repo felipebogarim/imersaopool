@@ -5,16 +5,31 @@ import { useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarCheck, CalendarDays, Inbox, LogOut, Sparkles, Target } from "lucide-react";
+import {
+  BrainCircuit,
+  CalendarCheck,
+  CalendarDays,
+  Inbox,
+  LogOut,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandMark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getRepPortal } from "@/lib/rep-portal.functions";
+import { getBrainAccess } from "@/lib/brain.functions";
 import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
 import { useRepSolicitacoes } from "./use-rep-solicitacoes";
 
-export type PortalTab = "metas" | "agenda" | "acoes_sugeridas" | "calendario" | "solicitacoes";
+export type PortalTab =
+  | "metas"
+  | "agenda"
+  | "acoes_sugeridas"
+  | "calendario"
+  | "solicitacoes"
+  | "inteligencia";
 
 export const PORTAL_TABS: readonly PortalTab[] = [
   "metas",
@@ -22,7 +37,19 @@ export const PORTAL_TABS: readonly PortalTab[] = [
   "acoes_sugeridas",
   "calendario",
   "solicitacoes",
+  "inteligencia",
 ];
+
+/** Acesso ao chat no portal (liberado pelo servidor só com a feature flag ligada). */
+export function useBrainPortalAccess() {
+  const accessFn = useServerFn(getBrainAccess);
+  const { data } = useQuery({
+    queryKey: ["brain-access"],
+    queryFn: () => accessFn(),
+    staleTime: 60_000,
+  });
+  return data?.portal === true;
+}
 
 /** Dados do portal (mesma query do /portal-rep: cache compartilhado entre as páginas). */
 export function useRepPortalData() {
@@ -66,6 +93,7 @@ export function RepPortalChrome({
   const solicitacoesAbertas = solicitacoes?.available
     ? solicitacoes.items.filter((s) => solicitacaoEmAberto(s.status)).length
     : 0;
+  const brainLiberado = useBrainPortalAccess();
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -186,6 +214,17 @@ export function RepPortalChrome({
                 </span>
               )}
             </button>
+
+            {brainLiberado && (
+              <button
+                type="button"
+                onClick={() => go("inteligencia")}
+                className={tabClass("inteligencia")}
+              >
+                <BrainCircuit className="h-4 w-4" />
+                Inteligência Comercial
+              </button>
+            )}
           </nav>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { RepAcoesCalendarioView } from "@/components/acoes-reps/RepAcoesCalendar
 import {
   PORTAL_TABS,
   RepPortalChrome,
+  useBrainPortalAccess,
   useRepPortalData,
   type PortalTab,
 } from "@/components/rep-portal/RepPortalChrome";
@@ -19,6 +20,7 @@ import {
 } from "@/components/rep-portal/RepSolicitacaoDialog";
 import { useRepSolicitacoes } from "@/components/rep-portal/use-rep-solicitacoes";
 import { solicitacaoEmAberto } from "@/lib/rep-solicitacoes";
+import { BrainChat } from "@/components/brain/BrainChat";
 
 export const Route = createFileRoute("/portal-rep")({
   ssr: false,
@@ -45,6 +47,7 @@ function PortalRep() {
     void navigate({ to: "/portal-rep", search: t === "metas" ? {} : { tab: t }, replace: true });
 
   const { data, isLoading, error, actions, pendingCount, acceptedCount } = useRepPortalData();
+  const brainLiberado = useBrainPortalAccess();
   const { data: solicitacoes } = useRepSolicitacoes();
   const solicitacoesAbertas = solicitacoes?.available
     ? solicitacoes.items.filter((s) => solicitacaoEmAberto(s.status)).length
@@ -117,6 +120,9 @@ function PortalRep() {
         {activeTab === "solicitacoes" && (
           <RepSolicitacoesView onSolicitar={(tipo) => setPreset({ tipo })} />
         )}
+
+        {/* Inteligência Comercial: somente com a feature flag ligada (o servidor revalida). */}
+        {activeTab === "inteligencia" && brainLiberado && <BrainChat iface="portal" />}
       </main>
 
       <RepSolicitacaoDialog
