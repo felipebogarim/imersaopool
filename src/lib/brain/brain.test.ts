@@ -385,3 +385,25 @@ describe("executarTurno", () => {
     expect(promptSistema({ scope: scopeA })).toContain("SOMENTE à própria carteira");
   });
 });
+
+import { portalLiberado } from "./scope";
+
+describe("portalLiberado (flag global + piloto)", () => {
+  it("piloto libera só o representante listado", () => {
+    expect(portalLiberado(false, [REP_A], [REP_A])).toBe(true);
+    expect(portalLiberado(false, [REP_A], [REP_B])).toBe(false);
+    expect(portalLiberado(false, [], [REP_A])).toBe(false);
+  });
+  it("vínculo ausente ou ambíguo nunca libera, nem com flag global", () => {
+    expect(portalLiberado(true, [REP_A], [])).toBe(false);
+    expect(portalLiberado(true, [REP_A], [REP_A, REP_B])).toBe(false);
+  });
+  it("valor malformado na configuração é ignorado", () => {
+    expect(portalLiberado(false, "rep-a", [REP_A])).toBe(false);
+    expect(portalLiberado(false, { 0: REP_A }, [REP_A])).toBe(false);
+    expect(portalLiberado(false, null, [REP_A])).toBe(false);
+  });
+  it("flag global libera quem tem exatamente um vínculo", () => {
+    expect(portalLiberado(true, null, [REP_B])).toBe(true);
+  });
+});

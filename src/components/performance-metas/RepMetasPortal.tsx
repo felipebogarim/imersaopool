@@ -387,7 +387,7 @@ function QuickGuide({
   onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <aside className="fixed bottom-4 right-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:bottom-6 sm:right-6">
+    <aside className="fixed bottom-4 right-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-2 sm:bottom-6 sm:right-6 [html[data-brain-fab]_&]:right-[5.5rem] [html[data-brain-fab]_&]:max-w-[calc(100vw-6.5rem)] sm:[html[data-brain-fab]_&]:right-[6rem]">
       {open && (
         <div className="w-[360px] max-w-full rounded-2xl border border-blue-200 bg-background p-4 shadow-xl dark:border-blue-900">
           <div className="mb-3 flex items-start gap-3">

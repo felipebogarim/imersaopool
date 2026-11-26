@@ -106,3 +106,17 @@ export function resolverEscopo(e: EntradaEscopo): ResultadoEscopo {
     },
   };
 }
+
+/**
+ * Portal liberado para o login: flag global OU representante na lista piloto (homologação).
+ * Vínculo ausente/ambíguo nunca libera; valores fora do formato são ignorados.
+ */
+export function portalLiberado(
+  flagGlobal: boolean,
+  piloto: unknown,
+  repIds: readonly string[],
+): boolean {
+  if (repIds.length !== 1) return false;
+  if (flagGlobal === true) return true;
+  return Array.isArray(piloto) && piloto.some((id) => typeof id === "string" && id === repIds[0]);
+}

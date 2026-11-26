@@ -205,6 +205,7 @@ export const saveBrainSettings = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       portal_representante_habilitado: z.boolean().optional(),
+      portal_representantes_piloto: z.array(z.string().uuid()).max(50).optional(),
       modelo_padrao: z.string().min(3).max(80).optional(),
       modelo_analise: z.string().min(3).max(80).optional(),
       retencao_conversas_dias: z.number().int().min(1).max(3650).optional(),
@@ -219,6 +220,7 @@ export const saveBrainSettings = createServerFn({ method: "POST" })
     if (data.modelo_padrao || data.modelo_analise) precisa.push("modelos");
     if (
       data.portal_representante_habilitado !== undefined ||
+      data.portal_representantes_piloto !== undefined ||
       data.retencao_conversas_dias ||
       data.retencao_anexos_dias ||
       data.limite_mensagens_dia
@@ -410,4 +412,27 @@ export const setBrainRoleCapability = createServerFn({ method: "POST" })
     const { error } = await q;
     if (error) throw new Error("Não foi possível salvar (migration do Brain aplicada?).");
     return { ok: true };
+  });
+
+/** Representantes da empresa ativa para a lista piloto do portal (somente quem gere custos/limites). */
+export const listBrainPilotReps = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const a = await acesso(context, "plataforma");
+    if (!a.ok || !a.capacidades.includes("custos_limites")) throw new Error("Sem permissão.");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = context.supabase as any;
+    const { data, error } = await sb
+      .from("representatives")
+      .select("id, nome, user_id")
+      .order("nome")
+      .limit(500);
+    if (error) throw new Error("Não foi possível listar os representantes.");
+    return ((data ?? []) as Array<{ id: string; nome: string; user_id: string | null }>).map(
+      (r) => ({
+        id: r.id,
+        nome: r.nome,
+        temLogin: !!r.user_id,
+      }),
+    );
   });

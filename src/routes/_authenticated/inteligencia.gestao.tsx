@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { extractFileText } from "@/lib/sintese-file-text";
 import {
   getBrainAdminOverview,
+  listBrainPilotReps,
   listBrainKnowledge,
   saveBrainKnowledge,
   saveBrainSettings,
@@ -129,8 +130,14 @@ function GestaoBrainPage() {
                     void salvar({ portal_representante_habilitado: e.target.checked });
                   }}
                 />
-                Chat habilitado no portal
+                Chat habilitado para todos os representantes
               </label>
+              {pode("custos_limites") && s.persistencia && (
+                <PilotoPortal
+                  selecionados={s.portal_representantes_piloto}
+                  salvar={(ids) => salvar({ portal_representantes_piloto: ids })}
+                />
+              )}
             </div>
             <ConfigNumeros s={s} pode={pode("custos_limites") && s.persistencia} salvar={salvar} />
             <ConfigModelos s={s} pode={pode("modelos") && s.persistencia} salvar={salvar} />
@@ -553,6 +560,57 @@ function Conhecimento({ pode }: { pode: (c: BrainCapability) => boolean }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Homologação: libera o portal só para representantes escolhidos (flag global desligada). */
+function PilotoPortal({
+  selecionados,
+  salvar,
+}: {
+  selecionados: string[];
+  salvar: (ids: string[]) => Promise<void>;
+}) {
+  const listFn = useServerFn(listBrainPilotReps);
+  const [busca, setBusca] = useState("");
+  const reps = useQuery({ queryKey: ["brain-piloto-reps"], queryFn: () => listFn() });
+  const sel = new Set(selecionados ?? []);
+  const lista = (reps.data ?? []).filter((r) =>
+    r.nome.toLowerCase().includes(busca.trim().toLowerCase()),
+  );
+  const alternar = (id: string, on: boolean) => {
+    const prox = new Set(sel);
+    if (on) prox.add(id);
+    else prox.delete(id);
+    void salvar([...prox]);
+  };
+  return (
+    <div className="space-y-1.5 border-t pt-2">
+      <p className="text-xs font-medium">Piloto (homologação): liberar só para</p>
+      <Input
+        className="h-7 text-xs"
+        placeholder="Buscar representante"
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+      />
+      <div className="max-h-40 space-y-0.5 overflow-y-auto">
+        {lista.map((r) => (
+          <label key={r.id} className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={sel.has(r.id)}
+              onChange={(e) => alternar(r.id, e.target.checked)}
+            />
+            <span className="truncate">{r.nome}</span>
+            {!r.temLogin && <span className="text-[10px] text-muted-foreground">(sem login)</span>}
+          </label>
+        ))}
+        {reps.isLoading && <p className="text-xs text-muted-foreground">Carregando…</p>}
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        {sel.size} representante(s) no piloto. Cada um continua vendo só a própria carteira.
+      </p>
     </div>
   );
 }

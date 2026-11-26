@@ -77,6 +77,16 @@ export function BrainFloating({
     return () => window.removeEventListener("keydown", onKey);
   }, [janela]);
 
+  // Sinaliza o botão na página para outros flutuantes (ex.: "Guia rápido") abrirem espaço.
+  const temBotao = (iface === "portal" ? access?.portal : access?.plataforma) === true && !oculto;
+  useEffect(() => {
+    if (!temBotao) return;
+    document.documentElement.dataset.brainFab = "1";
+    return () => {
+      delete document.documentElement.dataset.brainFab;
+    };
+  }, [temBotao]);
+
   const liberado = iface === "portal" ? access?.portal === true : access?.plataforma === true;
   if (!liberado || oculto) return null;
 

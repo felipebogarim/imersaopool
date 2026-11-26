@@ -10,7 +10,12 @@ import {
   type BrainInterface,
   type BrainScope,
 } from "./types";
-import { capacidadesDosPapeis, resolverEscopo, type ResultadoEscopo } from "./scope";
+import {
+  capacidadesDosPapeis,
+  portalLiberado,
+  resolverEscopo,
+  type ResultadoEscopo,
+} from "./scope";
 import {
   chaveMetas,
   montarCarteira,
@@ -68,6 +73,8 @@ export const ehAusente = (e: { code?: string; message?: string } | null | undefi
 
 export type BrainSettings = {
   portal_representante_habilitado: boolean;
+  /** Representantes liberados para homologação com a flag global desligada. */
+  portal_representantes_piloto: string[];
   modelo_padrao: string;
   modelo_analise: string;
   retencao_conversas_dias: number;
@@ -77,6 +84,7 @@ export type BrainSettings = {
 
 export const SETTINGS_PADRAO: BrainSettings = {
   portal_representante_habilitado: false,
+  portal_representantes_piloto: [],
   modelo_padrao: "google/gemini-2.5-flash",
   modelo_analise: "google/gemini-2.5-pro",
   retencao_conversas_dias: 365,
@@ -128,14 +136,19 @@ export async function resolverAcesso(
     if (roles.error || reps.error) throw new Error("perfil indisponível");
     const papeis = (roles.data ?? []).map((r) => String(r.role));
     const capacidades = capacidadesDosPapeis(papeis, tabela);
+    const repIdsDoLogin = (reps.data ?? []).map((r) => String(r.id));
     const res = resolverEscopo({
       userId,
       interface: iface,
       papeis,
       capacidades,
-      repIds: (reps.data ?? []).map((r) => String(r.id)),
+      repIds: repIdsDoLogin,
       companyId: typeof company.data === "string" ? company.data : null,
-      portalHabilitado: settings.portal_representante_habilitado,
+      portalHabilitado: portalLiberado(
+        settings.portal_representante_habilitado,
+        settings.portal_representantes_piloto,
+        repIdsDoLogin,
+      ),
     });
     return { ...res, settings, capacidades };
   } catch {
