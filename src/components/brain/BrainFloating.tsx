@@ -191,18 +191,19 @@ export function BrainFloating({
               aria-label="Inteligência Comercial"
               onClick={() => setJanela(aberta ? "minimizada" : "aberta")}
               className={cn(
-                "group fixed bottom-5 right-5 z-[55] h-14 w-14 rounded-full shadow-lg ring-1 ring-black/5",
-                "transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                "group fixed bottom-4 right-4 z-[55] h-16 w-16 rounded-full",
+                "transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 aberta && "hidden sm:block",
               )}
             >
+              {/* sombra no "chão" acompanha a flutuação */}
               <span
                 aria-hidden
-                className="absolute inset-0 rounded-full bg-primary/35 motion-safe:animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"
+                className="absolute -bottom-1 left-1/2 h-2 w-9 -translate-x-1/2 rounded-full bg-black/15 blur-[3px] motion-safe:animate-[brain-sombra_4s_ease-in-out_infinite] dark:bg-black/40"
               />
-              <BrainAvatar className="relative h-14 w-14" />
+              <BrainAvatar className="relative h-16 w-16 drop-shadow-[0_6px_10px_rgba(60,40,200,0.35)] motion-safe:animate-[brain-flutuar_4s_ease-in-out_infinite]" />
               {st.enviando && !aberta && (
-                <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-amber-500" />
+                <span className="absolute right-0.5 top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-amber-500 motion-safe:animate-pulse" />
               )}
             </button>
           </TooltipTrigger>

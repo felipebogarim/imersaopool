@@ -268,3 +268,25 @@ a[href^="https://www.lovable.dev"][target="_blank"] {
   overflow: hidden !important;
   pointer-events: none !important;
 }
+
+/* Assistente flutuante (Inteligência Comercial): balão flutuando */
+@keyframes brain-flutuar {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
+@keyframes brain-sombra {
+  0%,
+  100% {
+    transform: translateX(-50%) scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scaleX(0.75);
+    opacity: 0.6;
+  }
+}
